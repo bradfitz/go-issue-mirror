@@ -1,0 +1,12 @@
+{
+	"id": 69491887,
+	"body": "\u003e I would expect that connStmt must be a pop from a stack/queue and putConn must be a push to the stack/queue. And the rest must be designed around that idea. E.g. if a connection can't be used, then it must not be in the stack/queue.\r\n\r\nYeah, that's pretty much it.  The code in HEAD does some additional work:\r\n\r\n  1. It tries to prefer connections which already have the statement prepared on them\r\n  2. While doing that, it cleans up dead connections from the statement's list of connections which the statement has been prepared on\r\n\r\nThat's [this loop](https://github.com/golang/go/blob/301ad790a2eef1962a97f9ccef5de8eff84c12fb/src/database/sql/sql.go#L1375).  I would say other than that loop, the code is straightforward.\r\n\r\nThe suggested change is to make that cleanup happen less often, and spend less resources in the cleanup loop.  That also means that it doesn't try to prefer connections which already have the statement prepared, but I don't consider that a problem.\r\n\r\nAnother alternative would be to go through all the statements in driverConn.finalClose(), and remove the connection from the css list.  It's not obvious that that would be better, though.",
+	"user": {
+		"login": "johto",
+		"id": 951744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-11T11:55:12Z",
+	"updated_at": "2015-01-11T11:55:12Z"
+}

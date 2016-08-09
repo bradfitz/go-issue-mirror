@@ -1,0 +1,21 @@
+{
+	"id": 162541193,
+	"number": 16198,
+	"state": "open",
+	"title": "encoding/xml: no way to output cdata field into a nested node",
+	"body": "\u003e What version of Go are you using (`go version`)?\r\n\r\n`go version go1.6.2 darwin/amd64`\r\n\r\n\u003e What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/akrylysov/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.6.2/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.6.2/libexec/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n\u003e What did you do?\r\n\r\n```\r\ntype Test struct {\r\n\tName string `xml:\"Person\u003eName,cdata\"`\r\n}\r\n```\r\nhttps://play.golang.org/p/aVay4sw8xA\r\n\r\n\r\n\u003e What did you expect to see?\r\n\r\n```\r\n\u003cTest\u003e\u003cPerson\u003e\u003cName\u003e\u003c![CDATA[foo]]\u003c/Name\u003e\u003c/Person\u003e\u003c/Test\u003e\r\n```\r\n\r\n\u003e What did you see instead?\r\n\r\n```\r\nerror: xml: invalid tag in field Name of type main.Test: \"Person\u003eName,cdata\"\r\n```\r\n\r\n\r\nI'm working on a web service which supports JSON and XML as output formats:\r\n```\r\ntype Response struct {\r\n    XMLName xml.Name `json:\"-\" xml:\"response\"`\r\n    Foo string       `json:\"foo\" xml:\"foo\"`\r\n    Bar string       `json:\"bar\" xml:\"bar\"`\r\n}\r\n```\r\nIt worked perfectly, but recently we got a new requirement from our external partner to wrap all XML values into CDATA. So instead of:\r\n```\r\n\u003cresponse\u003e\u003cfoo\u003efoo1\u003c/foo\u003e\u003cbar\u003ebar2\u003c/bar\u003e\u003c/response\u003e\r\n```\r\nI need this:\r\n```\r\n\u003cresponse\u003e\u003cfoo\u003e\u003c![CDATA[foo1]]\u003c/foo\u003e\u003cbar\u003e\u003c![CDATA[bar2]]\u003c/bar\u003e\u003c/response\u003e\r\n```\r\n\r\nCurrently Go doesn't provide a way to do that without introducing a new nested structure like:\r\n```\r\ntype CdataString struct {\r\n\tValue string `xml:\",cdata\"`\r\n}\r\n\r\ntype Response struct {\r\n    XMLName xml.Name `json:\"-\" xml:\"response\"`\r\n    Foo CdataString  `json:\"foo\" xml:\"foo\"`\r\n    Bar CdataString  `json:\"bar\" xml:\"bar\"`\r\n}\r\n```\r\nwhich breaks JSON serialization.\r\n\r\n",
+	"user": {
+		"login": "akrylysov",
+		"id": 673880,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-27T20:29:46Z",
+	"updated_at": "2016-06-27T21:08:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

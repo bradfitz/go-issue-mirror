@@ -1,0 +1,22 @@
+{
+	"id": 72369903,
+	"number": 10653,
+	"state": "closed",
+	"title": "text/template: {{call}} doesn't pass parameters to struct methods",
+	"body": "Go version: `go version go1.4.2 darwin/amd64`\r\nOS: `OS X Yosemite Version 10.10.1`\r\n\r\nWhen using `{{call ...}}` in a template with a struct method the template parser fails to send any arguments to the method. This does work correctly if the method returns a function, or if the function you want to call is set to an attribute.\r\n\r\nIf this isn't intended to work, the error message could be a little clearer.\r\n\r\nThis can be replicated on the Go Playground here: https://play.golang.org/p/Ka8bN3_V1f and the source from the link is below.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"text/template\"\r\n)\r\n\r\ntype TestStructA struct {\r\n\tTest func(string) string\r\n}\r\n\r\nfunc test(s string) string {\r\n\treturn \"Test A Says \" + s + \"\\n\"\r\n}\r\n\r\ntype TestStructB struct {\r\n}\r\n\r\nfunc (self TestStructB) Test() func(string) string {\r\n\treturn func(s string) string { return \"Test B Says \" + s + \"\\n\" }\r\n}\r\n\r\n// DOES NOT WORK\r\ntype TestStructC struct {\r\n}\r\n\r\nfunc (self TestStructC) Test(s string) string {\r\n\treturn \"Test C Says \" + s + \"\\n\"\r\n}\r\n\r\nfunc main() {\r\n\ttempStr := \"{{call .Test \\\"hi\\\"}}\"\r\n\tt := template.Must(template.New(\"test_temp\").Parse(tempStr))\r\n\r\n\ttestA := TestStructA{Test: test}\r\n\terr := t.Execute(os.Stdout, testA)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\ttestB := TestStructB{}\r\n\terr = t.Execute(os.Stdout, testB)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\t// DOES NOT WORK\r\n\ttestC := TestStructC{}\r\n\terr = t.Execute(os.Stdout, testC)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n\r\n```",
+	"user": {
+		"login": "joncalhoun",
+		"id": 1677817,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-01T18:23:34Z",
+	"created_at": "2015-05-01T06:44:37Z",
+	"updated_at": "2016-06-25T02:07:07Z"
+}

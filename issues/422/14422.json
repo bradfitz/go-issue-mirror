@@ -1,0 +1,28 @@
+{
+	"id": 135056151,
+	"number": 14422,
+	"state": "closed",
+	"title": "spec: terminating statements and trailing empty statements",
+	"body": "The Go spec defines certain types of statements as [terminating statements](https://golang.org/ref/spec#Terminating_statements), and all others are not.  Empty statements are not in the list, so therefore they are not terminating statements.\r\n\r\nThe Go spec also says: \"If the function's signature declares result parameters, the function body's statement list must end in a terminating statement.\"\r\n\r\nMy interpretation of that is this file is ill-formed, as f's final statement is not a terminating statement:\r\n\r\n    $ cat f.go\r\n    package f\r\n    \r\n    func f() int {\r\n            return 3\r\n            ;\r\n    }\r\n\r\nHowever, only gotype rejects it:\r\n\r\n    $ go tool compile f.go\r\n    $ gccgo-4.8 -c f.go\r\n    $ gotype f.go\r\n    f.go:6:1: missing return\r\n\r\nRelatedly, the `fallthrough` statement is specifically called out as being allowed as the final *non-empty* statement in a `case` or `default` clause's statement list.  It would seem appropriate to tweak the terminating statement list definition to something similar like:\r\n\r\n\u003e  A statement list ends in a terminating statement if the list is not empty and its final **non-empty** statement is terminating.\r\n\r\nLastly, it seems only cmd/compile actually implements the `fallthrough` logic as specified:\r\n\r\n    $ cat g.go\r\n    package g\r\n    \r\n    func g() {\r\n            switch {\r\n            case false:\r\n                    fallthrough\r\n                    ;\r\n            case true:\r\n            }\r\n    }\r\n    $ go tool compile g.go\r\n    $ gccgo-4.8 -c g.go\r\n    g.go:7:3: error: expected ‘case’ or ‘default’\r\n       ;\r\n       ^\r\n    $ gotype g.go\r\n    g.go:6:3: fallthrough statement out of place",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-19T17:34:36Z",
+	"created_at": "2016-02-20T09:55:17Z",
+	"updated_at": "2016-04-19T17:34:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

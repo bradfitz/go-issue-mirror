@@ -1,0 +1,17 @@
+{
+	"id": 100399812,
+	"number": 12117,
+	"state": "closed",
+	"title": "net/http: ListenAndServe difficult if certificates are not on disk",
+	"body": "`server.ListenAndServe` assumes the certificates are on disk. This is not always the case, for instance if the certificates are held encrypted in a database. In such a case it is undesirable to serialize the decrypted certificates to disk for obvious reasons.\r\n\r\nIt looks like it would be possible to work around this as follows:\r\n\r\n    server := \u0026http.Server{\r\n        Addr: listen,\r\n        TLSConfig: tlsConfig,\r\n        Handler: router,\r\n    }\r\n    server.ListenAndServeTLS(\"\", \"\"))\r\n\r\nwhere `tlsConfig` already has the certificates added to it. Unfortunately this does not work as `ListenAndServerTLS` unconditionally stomps over the `Certificates` member even when it is already provided within the supplied `TLSConfig`, and even if an empty string is passed.\r\n\r\nThe first thing I would suggest is that if the `TLSConfig` has a non-empty Certificates member, it is not overwritten.\r\n\r\nTo get around this it would be possible to simply copy/paste `ListenAndServeTLS`. Unfortunately, it uses the non-exported struct `tcpKeepAliveListener`, which is rather important for https connections using keep-alives. This thus needs to be copied too. This is a useful bit of code which could be exported from `net` rather than kept private here.\r\n\r\nThe second thing I would suggest is that `tlsKepAliveListener` is exported from `net`, and `ListenAndServerTLS` (and friends) use this exported class instead.",
+	"user": {
+		"login": "abligh",
+		"id": 1240226,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-08-11T20:26:33Z",
+	"created_at": "2015-08-11T20:20:01Z",
+	"updated_at": "2015-08-11T20:29:56Z"
+}

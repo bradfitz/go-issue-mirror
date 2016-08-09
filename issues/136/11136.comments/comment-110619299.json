@@ -1,0 +1,12 @@
+{
+	"id": 110619299,
+	"body": "I think race condition is between the goroutine in the `handlePendingDial` and the next new transport. We didn't wait goroutine in the `handlePendingDial` to exit.\r\nI'm sorry I can't access go.googlesource.com so I just upload an alternative patch here:\r\n\r\n```\r\ndiff --git a/src/net/http/transport.go b/src/net/http/transport.go\r\nindex 5de5d94..30e6469 100644\r\n--- a/src/net/http/transport.go\r\n+++ b/src/net/http/transport.go\r\n@@ -523,7 +523,7 @@ func (t *Transport) getConn(req *Request, cm connectMethod) (*persistConn, error\r\n \t}\r\n \tdialc := make(chan dialRes)\r\n \r\n-\thandlePendingDial := func() {\r\n+\thandlePendingDial := func(prePendingDial, postPendingDial func()) {\r\n \t\tif prePendingDial != nil {\r\n \t\t\tprePendingDial()\r\n \t\t}\r\n@@ -556,10 +556,10 @@ func (t *Transport) getConn(req *Request, cm connectMethod) (*persistConn, error\r\n \t\t// else's dial that they didn't use.\r\n \t\t// But our dial is still going, so give it away\r\n \t\t// when it finishes:\r\n-\t\thandlePendingDial()\r\n+\t\thandlePendingDial(prePendingDial, postPendingDial)\r\n \t\treturn pc, nil\r\n \tcase \u003c-cancelc:\r\n-\t\thandlePendingDial()\r\n+\t\thandlePendingDial(prePendingDial, postPendingDial)\r\n \t\treturn nil, errors.New(\"net/http: request canceled while waiting for connection\")\r\n \t}\r\n }\r\n```\r\n",
+	"user": {
+		"login": "tw4452852",
+		"id": 587972,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-10T06:55:47Z",
+	"updated_at": "2015-06-10T06:55:47Z"
+}

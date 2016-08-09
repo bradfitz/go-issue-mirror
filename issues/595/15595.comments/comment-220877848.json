@@ -1,0 +1,12 @@
+{
+	"id": 220877848,
+	"body": "I looked into the problem a little bit and this is what I found:\r\n- The instructions are decoded by function `decode1()` in file src/cmd/internal/unvendor/golang.org/x/arch/x86/x86asm/decode.go. It returns one decoded instruction, whose type is Inst. The type contains members Op, which is the opcode mnemonic, and DataSize, which is the size of the operand.\r\n- For opcode 0x88, it's decoded into a Inst whose Op is MOV, and whose DataSize is 32. When printed out, it's shown as \"MOVL\". Of course the correct DataSize in this case should be 8, not 32. In `decoder1()`, during decoding, the size of the operand is calculated and saved into variable `dataMode`. But searching the code, you can see dataMode is never assigned 8.\r\n- For some x86 opcodes, the operand size is always 8-bit. For example, in file https://github.com/rsc/x86/blob/master/x86.csv, you can see opcode 0x88 matches instruction \"MOV r/m8, r8\", whose operand size is always 8-bit. \r\n- decoder1() uses tables defined in tables.go to decode x86 instructions. A simple fix to the bug can be:\r\n   - Change https://github.com/rsc/x86/blob/master/x86map/map.go so that it generates a map containing all opcodes whose operand size is always 8-bit.\r\n   - Change decoder1() so that inst.DataSize is set to 8 when the opcode is contained in the map. Otherwise, inst.DataSize is calculated the same way as today.",
+	"user": {
+		"login": "feiling",
+		"id": 2679220,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-23T02:58:46Z",
+	"updated_at": "2016-05-23T02:58:46Z"
+}

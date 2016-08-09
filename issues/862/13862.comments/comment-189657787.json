@@ -1,0 +1,12 @@
+{
+	"id": 189657787,
+	"body": "Inspected the code a bit. The error comes from `cmd/internal/objfile/goobj.go`\r\n\r\n```\r\n// pcln does not make sense for Go object files, because each\r\n// symbol has its own individual pcln table, so there is no global\r\n// space of addresses to map.\r\nfunc (f *goobjFile) pcln() (textStart uint64, symtab, pclntab []byte, err error) {\r\n\treturn 0, nil, nil, fmt.Errorf(\"pcln not available in go object file\")\r\n}\r\n\r\n// text does not make sense for Go object files, because\r\n// each function has a separate section.\r\nfunc (f *goobjFile) text() (textStart uint64, text []byte, err error) {\r\n\treturn 0, nil, fmt.Errorf(\"text not available in go object file\")\r\n}\r\n```\r\n\r\nThese are used (via rawFile interface) in Disasm(). The common disassemble code expects a single table and a single slice of text, and operate on that. But these are not directly available in goobj files.\r\n\r\nWhat would be the direction to go here: change Disasm side to be able to consume data in a more flexible way, or collect and construct data in goobj.go to fulfill the existing interfaces (e.g. build a gosym.Table)? Or neither?\r\n\r\n/cc @rsc (since he reworked a bit Disasm back then, might have opinion)",
+	"user": {
+		"login": "cmarcelo",
+		"id": 10478,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-27T14:54:09Z",
+	"updated_at": "2016-02-27T14:54:09Z"
+}

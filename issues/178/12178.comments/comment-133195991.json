@@ -1,0 +1,12 @@
+{
+	"id": 133195991,
+	"body": "So the root cause of this is a subtlety in the System V ABI; the ABI specification defines .note sections as \"special\" sections that are not allocable (SHF_ALLOC):\r\n\r\n```\r\nName\tType\tAttributes\r\n...\r\n.note\tSHT_NOTE\t0\r\n...\r\n```\r\nhttp://refspecs.linuxbase.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/specialsections.html\r\n\r\nHowever, Go relies on the fact that it manually marked the section as allocable, and GNU ld will apply any specified flags to the sections.  As a result, on Linux or other platforms where the allocable flag is honoured, the .note.go.buildid section will be placed roughly in the first 16K or so of the file.\r\n\r\nSolaris ld(1), however, follows the System V ABI specification strictly and ignores any section attributes that the developer specified by \"cleaning\" the section flags by default to match System V although this can be \"overridden\" via a mapfile.\r\n\r\nAs such, it seems like there are two possible solutions:\r\n  * use a .data or other \"expected\" allocable section entry instead of a .note section to store the buildid\r\n  * use a mapfile on Solaris only to force the .note section to be allocable:\r\n```\r\n$ cat /tmp/note.mapfile \r\n$mapfile_version 2\r\n\r\nLOAD_SEGMENT text {\r\n        ASSIGN_SECTION {\r\n                TYPE = SHT_NOTE;\r\n        };\r\n};\r\n$ LD_OPTIONS=-M/tmp/note.mapfile go test -run TestNoteReading\r\nPASS\r\nok      cmd/go  3.289s\r\n```\r\n\r\nComments?",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-20T22:17:43Z",
+	"updated_at": "2015-08-20T22:17:43Z"
+}

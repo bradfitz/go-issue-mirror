@@ -1,0 +1,22 @@
+{
+	"id": 92295784,
+	"number": 11493,
+	"state": "closed",
+	"title": "net/http: Wrong ContentLength when use http.Request.Body as the third parameter of http.NewRequest()",
+	"body": "```go\r\nfunc (h *RedirectHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n    body, _ := r.Body.(io.Reader)\r\n    rLogger.Infof(\"%T\", body)   // print: *http.body\r\n\r\n    req, _ := http.NewRequest(r.Method, h.Dest+r.URL.String(), r.Body)\r\n    rLogger.Infof(\"%d\", req.ContentLength)  // print: 0\r\n    \r\n    ......\r\n}\r\n```\r\n\r\nHere's the net/http/request.go implementation:\r\n```go\r\n// NewRequest returns a new Request given a method, URL, and optional body.\r\n//\r\n// If the provided body is also an io.Closer, the returned\r\n// Request.Body is set to body and will be closed by the Client\r\n// methods Do, Post, and PostForm, and Transport.RoundTrip.\r\nfunc NewRequest(method, urlStr string, body io.Reader) (*Request, error) {\r\n        u, err := url.Parse(urlStr)\r\n        if err != nil {\r\n                return nil, err\r\n        }\r\n        rc, ok := body.(io.ReadCloser)\r\n        if !ok \u0026\u0026 body != nil {\r\n                rc = ioutil.NopCloser(body)\r\n        }\r\n        req := \u0026Request{\r\n                Method:     method,\r\n                URL:        u,\r\n                Proto:      \"HTTP/1.1\",\r\n                ProtoMajor: 1,\r\n                ProtoMinor: 1,\r\n                Header:     make(Header),\r\n                Body:       rc,\r\n                Host:       u.Host,\r\n        }\r\n        if body != nil {\r\n                switch v := body.(type) {\r\n                case *bytes.Buffer:\r\n                        req.ContentLength = int64(v.Len())\r\n                case *bytes.Reader:\r\n                        req.ContentLength = int64(v.Len())\r\n                case *strings.Reader:\r\n                        req.ContentLength = int64(v.Len())\r\n                }\r\n        }\r\n\r\n        return req, nil\r\n}\r\n```",
+	"user": {
+		"login": "xrtgavin",
+		"id": 539937,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-07-01T14:26:23Z",
+	"created_at": "2015-07-01T07:09:10Z",
+	"updated_at": "2016-07-01T17:13:45Z"
+}

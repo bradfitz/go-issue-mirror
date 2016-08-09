@@ -1,0 +1,27 @@
+{
+	"id": 52869601,
+	"number": 9443,
+	"state": "closed",
+	"title": "cmd/6a: go-1.4's \"6a\" lost an x86 addressing mode",
+	"body": "I have been using Go's assembler to optimize some code by using SSE instructions.\r\n\r\nI am running go-1.4 on MacOS 10.8.5.\r\n\r\nI see that 6a has lost an x86 addressing mode due to a bug fix for Solaris in liblink.c. This code could previously compile:\r\n\r\n```\r\n; cat a.go  \r\npackage main\r\n\r\nvar x = 10\r\n\r\nfunc foo() int\r\n\r\nfunc main() { println(foo()) }\r\n; cat a.s\r\nTEXT ·foo(SB),4,$0-0\r\n\tMOVQ $0,CX\r\n\tMOVQ ·x(SB)(CX*1),AX\r\n\tMOVQ AX,ret+8(SP)\r\n\tRET\r\n; go build\r\n; a\r\n10\r\n```\r\n\r\nWhereas now I get the error:\r\n\r\n```\r\nasmand: bad address \"\".x+0(SB)(CX*1)\r\nasmand: bad address \"\".x+0(SB)(CX*1)\r\n```\r\n\r\nLooking for `asmand` I see the following change in liblink/asm6.c:\r\n\r\n```\r\n                        case D_STATIC:\r\n                        case D_EXTERN:\r\n                                if(ctxt-\u003eflag_shared || ctxt-\u003eheadtype == Hnacl)\r\n                                        goto bad;\r\n```\r\nbecame\r\n```\r\n                        case D_EXTERN:\r\n                        case D_STATIC:\r\n                                if(!isextern(a-\u003esym))\r\n                                        goto bad;\r\n```\r\n\r\n`isextern` turns out to be this:\r\n\r\n```\r\n// isextern reports whether s describes an external symbol that must avoid pc-relative addressing.\r\n// This happens on systems like Solaris that call .so functions instead of system calls.\r\n// It does not seem to be necessary for any other systems. This is probably working\r\n// around a Solaris-specific bug that should be fixed differently, but we don't know\r\n// what that bug is. And this does fix it.\r\nstatic int\r\nisextern(LSym *s)\r\n{\r\n        // All the Solaris dynamic imports from libc.so begin with \"libc·\", which\r\n        // the compiler rewrites to \"libc.\" by the time liblink gets it.\r\n        return strncmp(s-\u003ename, \"libc.\", 5) == 0;\r\n}\r\n```\r\n\r\nand so I am guessing this was an unintended regression.",
+	"user": {
+		"login": "rakitzis",
+		"id": 5665770,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-04-26T02:19:53Z",
+	"created_at": "2014-12-25T18:27:09Z",
+	"updated_at": "2016-06-25T01:57:17Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

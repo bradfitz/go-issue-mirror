@@ -1,0 +1,12 @@
+{
+	"id": 162904122,
+	"body": "This code is failing because it compiles. Is this example clearer:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\ntype CustomErrorType struct{}\r\n\r\n// Incorrect method signature, Error() shouldn't have a pointer receiver\r\nfunc (c *CustomErrorType) Error() string {\r\n\treturn \"basic error message\"\r\n}\r\n\r\nfunc doThing() error {\r\n\terr := \u0026CustomErrorType{}\r\n\treturn err // This line should be a compile error, but isn't.\r\n}\r\n\r\nfunc doSomethingElse() error {\r\n\terr := \u0026CustomErrorType{}\r\n\treturn *err // This line correctly doesn't compile because the struct doesn't implement error correctly\r\n}\r\n\r\nfunc main() {\r\n\terr := doThing()\r\n\terr2 := doSomethingElse()\r\n\tfmt.Printf(\"%v\\n%v\", err, err2)\r\n\r\n\t// Impossible type assertion:CustomErrorType does not implement error (Error method has pointer receiver)\r\n\tt, ok := err.(CustomErrorType)\r\n}\r\n```\r\n\r\nIf I save that as \"foo.go\" and run it:\r\n\r\n```\r\n$ go run foo.go\r\n./error_interface.go:19: cannot use *err (type CustomErrorType) as type error in return argument:\r\n        CustomErrorType does not implement error (Error method has pointer receiver)\r\n./error_interface.go:28: impossible type assertion:\r\n        CustomErrorType does not implement error (Error method has pointer receiver)\r\n[1]    86380 exit 2     go run error_interface.go\r\n```\r\n\r\nLines 19 and 28 are correctly showing as incorrect. Line 14, however, shows no errors despite also being an incorrect return.\r\n\r\nThat is what I'm trying to explain as the bug. Does that make more sense now?",
+	"user": {
+		"login": "stuarthicks",
+		"id": 868156,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-08T14:46:49Z",
+	"updated_at": "2015-12-08T14:46:49Z"
+}

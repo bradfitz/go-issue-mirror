@@ -1,0 +1,12 @@
+{
+	"id": 66054413,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003ebork.go is bogus.  It saves file.Fd() instead of saving a reference to the *os.File\nitself.\nWhen the *os.File gets garbage collected, the fd gets closed.  But the SharedBuffer\nfinalizer also closes the fd.  So the garbage collector will close each fd twice. \nClosing an fd twice typically causes EBADF the second time, which is harmless, but if\nthe fd gets reused by an open between the two closes, then the second close stomps on\nsomeone else.\n\n[pid 20287] close(3 \u0026lt;unfinished ...\u0026gt;\n[pid 20286] close(3 \u0026lt;unfinished ...\u0026gt;\n[pid 20287] \u0026lt;... close resumed\u0026gt; )       = 0\n[pid 20286] \u0026lt;... close resumed\u0026gt; )       = -1 EBADF (Bad file descriptor)\n[pid 20287] close(4 \u0026lt;unfinished ...\u0026gt;\n[pid 20286] open(\"/dev/shm/foo\", O_RDWR|O_CREAT|O_EXCL|O_DSYNC|O_NOATIME|O_CLOEXEC, 0666\n\u0026lt;unfinished ...\u0026gt;\n[pid 20287] \u0026lt;... close resumed\u0026gt; )       = -1 EBADF (Bad file descriptor)\n[pid 20286] \u0026lt;... open resumed\u0026gt; )        = 3\n[pid 20287] close(3 \u0026lt;unfinished ...\u0026gt;\n[pid 20286] unlink(\"/dev/shm/foo\" \u0026lt;unfinished ...\u0026gt;\n[pid 20287] \u0026lt;... close resumed\u0026gt; )       = 0\n[pid 20286] \u0026lt;... unlink resumed\u0026gt; )      = 0\n[pid 20287] close(5 \u0026lt;unfinished ...\u0026gt;\n[pid 20286] ftruncate(3, 67108864 \u0026lt;unfinished ...\u0026gt;\n[pid 20287] \u0026lt;... close resumed\u0026gt; )       = -1 EBADF (Bad file descriptor)\n[pid 20286] \u0026lt;... ftruncate resumed\u0026gt; )   = -1 EBADF (Bad file descriptor)\n\nThe solution is to change SharedBuffer to record the *os.File instead of Fd int (and\ncall b.File.Fd() when you need it).  Then you don't need a finalizer on SharedBuffer at\nall.\u003c/pre\u003e\n\n\n\n_Status changed to **Invalid**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-04T14:50:35Z",
+	"updated_at": "2014-12-22T05:54:03Z"
+}

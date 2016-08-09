@@ -1,0 +1,12 @@
+{
+	"id": 66092311,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9 by **justin@fathomdb.com**:\n\n\u003cpre\u003eOK, I like the 'maximal security' approach.  It's fairly contrary to the way every other\nlanguage is going, but it seems a good practice.\n\nI'm not sure what you mean by \"when you convert one interface type to another there is\nno call site\" - perhaps you can provide a quick one-line example if you think it's\nimportant.  Anyway, I think the shim is the way to go, as casting on every interface\ncall is going to be really expensive.\n\nTo expand on the shim approach, currently we do this on an interface call:\n\ns.tab-\u003efun[0](s.data)\n\nInstead, we could change every interface call to do this:\n\nshim(s.tab, 0, s.data)\n\nWe would also need to add some extra data to the itable, specifically an array of\nconvert_to types per method.\n\nSo shim would do this (warning, pseudo-code):\n\nshim(table, index, data) {\nfn = table-\u003efun[index]\nv = fn(data)\nconvert_to = table-\u003econvert_to[index]\nif (convert_to) {\n v = convert(v, convert_to)\n}\nreturn v\n}\n\n\nI think that would work, but would be slow (we pay for another method dispatch whether\nor not we use it).\n\nWe could inline the shim function; this would be the equivalent of doing the conversion\nat each call site.  But we're still paying the convert_to lookup whether or not we need\nit, hence it would be slow.\n\nInstead, we can insert the shim into the itable, but we would always need a shim,\nbecause the signature is different from a struct method.\n\nIf we could steal a register or two on interface calls, we could get around this.  If we\nhave multiple shim functions, encoding index (shim_0, shim_1, shim_2...), then we only\nneed one register.\n\nI hope this makes the shim idea clearer!  I don't see this as being particularly\nexpensive, particularly if it enables smaller code.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-11T20:14:24Z",
+	"updated_at": "2014-12-08T10:41:45Z"
+}

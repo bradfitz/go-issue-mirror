@@ -1,0 +1,12 @@
+{
+	"id": 200660039,
+	"body": "This is a progressive JPEG image. There are two dimensions of progressivity: spectral selection (variables zs and ze in scan.go, ranging in [0, 63]) and successive approximation (variables ah and al in scan.go, ranging in [0, 8), from LSB to MSB, although ah=0 implicitly means ah=8).\r\n\r\nFor this particular image, there are three components, and the SOS markers contain this progression:\r\n\r\nzs, ze, ah, al:  0  0 0 0\tcomponents: 0, 1, 2\r\nzs, ze, ah, al:  1 63 0 0\tcomponents: 1\r\nzs, ze, ah, al:  1 63 0 0\tcomponents: 2\r\nzs, ze, ah, al:  1 63 0 2\tcomponents: 0\r\nzs, ze, ah, al:  1 10 2 1\tcomponents: 0\r\nzs, ze, ah, al: 11 63 2 1\tcomponents: 0\r\nzs, ze, ah, al:  1 10 1 0\tcomponents: 0\r\n\r\nThe combination of all of these is complete (i.e. spectra 0 to 63 and bits 8 exclusive to 0) for components 1 and 2, but it is incomplete for component 0 (the luma component). In particular, there is no data for component 0, spectra 11 to 63 and bits 1 exclusive to 0.\r\n\r\nThe image/jpeg code, as of Go 1.6, waits until both dimensions are complete before performing the de-quantization, IDCT and copy to an *image.YCbCr. This is the \"if zigEnd != blockSize-1 || al != 0 { ... continue }\" code and associated commentary in scan.go.\r\n\r\nAlmost all progressive JPEG images end up complete in both dimensions for all components, but this particular image is incomplete for component 0, so the Go code never writes anything to the Y values of the resultant *image.YCbCr, which is why the broken output is so dark (but still looks recognizable in terms of red and blue hues).\r\n\r\nMy reading of the ITU T.81 JPEG specification (Annex G) doesn't explicitly say that this is a valid image, but it also doesn't rule it out.\r\n\r\nIn any case, the fix is, for progressive JPEG images, to always reconstruct the decoded blocks (by performing the de-quantization, IDCT and copy to an *image.YCbCr), regardless of whether or not they end up complete. Note that, in Go, the jpeg.Decode function does not return until the entire image is decoded, so we still only want to reconstruct each block once, not once per SOS (Start Of Scan) marker.",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-24T04:32:23Z",
+	"updated_at": "2016-03-24T04:32:23Z"
+}

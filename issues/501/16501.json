@@ -1,0 +1,17 @@
+{
+	"id": 167649304,
+	"number": 16501,
+	"state": "closed",
+	"title": "x/net/idna: apply nameprep normalization algorithm",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n```\r\ngo version go1.7rc1 darwin/amd64\r\n```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\n```\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nhttps://play.golang.org/p/zS-UR4WhIx\r\n\r\n```\r\nfunc main() {\r\n\tin1 := \"www.\\u00e9tat.com\"  // e-acute in one rune\r\n\tin2 := \"www.e\\u0301tat.com\" // e-acute in two runes, \"e\" + acute\r\n\r\n    // golang.org/x/net/idna\r\n\tgot1, err1 := idna.ToASCII(in1)\r\n\tgot2, err2 := idna.ToASCII(in2)\r\n\tfmt.Println(got1, err1) // www.xn--tat-9la.com \u003cnil\u003e\r\n\tfmt.Println(got2, err2) // www.xn--etat-vvc.com \u003cnil\u003e\r\n\r\n    // github.com/DanielOaks/go-idn/idna2003\r\n\tgot1, err1 = idna2003.ToASCII(in1)\r\n\tgot2, err2 = idna2003.ToASCII(in2)\r\n\tfmt.Println(got1, err1) // www.xn--tat-9la.com \u003cnil\u003e\r\n\tfmt.Println(got2, err2) // www.xn--tat-9la.com \u003cnil\u003e\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\nWhen running `idna.ToASCII`, it should perform a normalization of unicode before encoding to punycode (https://en.wikipedia.org/wiki/Internationalized_domain_name, section \"ToASCII and ToUnicode\": \"ToASCII will apply the Nameprep algorithm, which converts the label to lowercase and performs other normalization, and will then translate the result to ASCII using Punycode\").\r\n\r\nThe golang.org/x/net/idna does not seem to perform that normalization step, while e.g. the userspace github.com/DanielOaks/go-idn package does.\r\n\r\nSo running idna.ToASCII on `www.état.com` and on `www.e\\u0301tat.com` should (if I understand IDNA correctly) return the same punycode form: `www.xn--tat-9la.com`.\r\n\r\n5. What did you see instead?\r\n\r\nThe userspace package correctly returns `www.xn--tat-9la.com` for both inputs, but x/net/idna returns \"www.xn--tat-9la.com\" and \"www.xn--etat-vvc.com\".\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "PuerkitoBio",
+		"id": 692384,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-07-26T18:26:28Z",
+	"created_at": "2016-07-26T16:14:57Z",
+	"updated_at": "2016-07-26T18:34:10Z"
+}

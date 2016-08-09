@@ -1,0 +1,12 @@
+{
+	"id": 105551539,
+	"body": "I happen to have experience with this kind of issues, here's a few things to take in account:\r\n- On POSIX, the directory must be set writeable to delete a file. On Windows it's the file that must be writable. This difference has many implications. See https://github.com/luci/luci-py/blob/master/client/utils/file_path.py#L805 for python implementation of make_tree_deleteable().\r\n- On Windows, because the read only bit is set on the inode and not on the directory entry, modifying the read only attribute does affect all the other directory entries where the file is hard-linked. This is by design but maybe worth documenting. I personally had to work around this.\r\n- On Windows, the file's DACL can also inhibit file deletion. Note that the DACL is inode local but can inherit from the directory's DACL. IIRC (but I could be wrong) the inode will have the inherited DACL from the initial directory entry of all the hardlinks of this inode.\r\n\r\nThe way to work around Windows is for each file:\r\n- os.Remove()\r\n- If failed, if read only bit is set,\r\n  - Reset ReadOnly\r\n  - os.Remove()\r\n- If failed, try a last time by forcing the DACL:\r\n  - Take ownership of the file. See python code in https://github.com/luci/luci-py/blob/master/client/utils/file_path.py#L830\r\n  - Reset the DACL to grant the current token to have FILE_ALL_ACCESS.\r\n  - os.Remove() again.\r\n\r\nIf desired, I can cook up a CL.",
+	"user": {
+		"login": "maruel",
+		"id": 75011,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-26T14:51:48Z",
+	"updated_at": "2015-05-26T14:52:15Z"
+}

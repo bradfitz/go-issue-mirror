@@ -1,0 +1,22 @@
+{
+	"id": 51286974,
+	"number": 7618,
+	"state": "closed",
+	"title": "net/http/httputil: NewSingleHostReverseProxy doesn't overwrite req.Host",
+	"body": "by **vitaly.dvd**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version go1.2 linux/amd64\n\nWhat steps reproduce the problem?\n\n1. Write simple program on a proxyHost that should forward requests to a targetHost\ncensored.go:  (  \u003ca href=\"http://play.golang.org/p/YXT3zso8Ff\"\u003ehttp://play.golang.org/p/YXT3zso8Ff\u003c/a\u003e  )\n\npackage main\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t\u0026quot;net/http/httputil\u0026quot;\n\t\u0026quot;net/url\u0026quot;\n)\nfunc main() {\n\ttargetUrl, _ := url.Parse(\u0026quot;\u003ca href=\"http://navalny.livejournal.com\u0026quot\"\u003ehttp://navalny.livejournal.com\u0026quot\u003c/a\u003e;)\n\tlog.Fatal(http.ListenAndServe(\u0026quot;:49200\u0026quot;, httputil.NewSingleHostReverseProxy(targetUrl)))\n}\n\n\n2. On a proxyHost (AWS instance in my case)\n    run go program:\n        go run censored.go \n    run tcpDump:\n        sudo tcpdump -vvvs 1024 -l -A host navalny.livejournal.com\n\nWhat happened?\n\nThe HOST header points to my proxy host instead of a target one\n\ncurl -v \u003ca href=\"http://54.228.241.100:49200\"\u003ehttp://54.228.241.100:49200\u003c/a\u003e \u0026gt; /dev/null\nGET / HTTP/1.1\nHost: 54.228.241.100:49200\nUser-Agent: curl/7.30.0\nAccept: */*\nX-Forwarded-For: 109.188.90.98\nAccept-Encoding: gzip\n\nAs a result life journal returns HTTP redirect with Location:\n\u003ca href=\"http://navalny.livejournal.com\"\u003ehttp://navalny.livejournal.com\u003c/a\u003e   (the same target host)\n\n\nWhat should have happened instead?\nThe host header should be set to targetHost,  navalny.livejournal.com in this case.\n\ncurl -v \u003ca href=\"http://54.228.241.100:49200\"\u003ehttp://54.228.241.100:49200\u003c/a\u003e \u0026gt; /dev/null\nGET / HTTP/1.1\nHost: navalny.livejournal.com\nUser-Agent: curl/7.30.0\nAccept: */*\n\n\nPlease provide any additional information below.\n\nfix is simple:  the req.Host should explicitly  rewrite req.Host in\nNewSingleHostReverseProxy\n\n// NewSingleHostReverseProxy returns a new ReverseProxy that rewrites\n// URLs to the scheme, host, and base path provided in target. If the\n// target's path is \u0026quot;/base\u0026quot; and the incoming request was for \u0026quot;/dir\u0026quot;,\n// the target request will be for /base/dir.\nfunc NewSingleHostReverseProxy(target *url.URL) *ReverseProxy {\n\ttargetQuery := target.RawQuery\n\tdirector := func(req *http.Request) {\n\t\treq.URL.Scheme = target.Scheme\n\t\treq.URL.Host = target.Host\n+\t\treq.Host = target.Host\n\t\treq.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)\n\t\tif targetQuery == \u0026quot;\u0026quot; || req.URL.RawQuery == \u0026quot;\u0026quot; {\n\t\t\treq.URL.RawQuery = targetQuery + req.URL.RawQuery\n\t\t} else {\n\t\t\treq.URL.RawQuery = targetQuery + \u0026quot;\u0026amp;\u0026quot; + req.URL.RawQuery\n\t\t}\n\t}\n\treturn \u0026amp;ReverseProxy{Director: director}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:42:19Z",
+	"created_at": "2014-03-24T08:48:35Z",
+	"updated_at": "2016-06-25T01:30:36Z"
+}

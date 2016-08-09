@@ -1,0 +1,22 @@
+{
+	"id": 51277208,
+	"number": 993,
+	"state": "closed",
+	"title": "crypto/x509: TLS connection problems due to cert verification failure",
+	"body": "by **tav@espians.com**:\n\n\u003cpre\u003eThere is an issue with the TLS certifcate verification mechanism. Trying to connect to\nsay\n\u003ca href=\"https://ampifyit.appspot.com\"\u003ehttps://ampifyit.appspot.com\u003c/a\u003e (Google App Engine) with:\n\n    cxn, _ := tls.Dial(\u0026quot;tcp\u0026quot;, \u0026quot;\u0026quot;, \u0026quot;ampifyit.appspot.com:443\u0026quot;)\n    _, err := cxn.Write([]byte(\u0026quot;GET / HTTP/1.1\\r\\n\\r\\n\u0026quot;))\n\n    if err != nil {\n        fmt.Printf(\u0026quot;%s\\n\u0026quot;, err)\n    }\n\nWill result in the connection failing with a bad certificate alert:\n\n    local error: bad certificate\n\nThe problem is caused by the following line in crypto/tls/ca_set:\n\n        func (s *CASet) FindParent(cert *x509.Certificate) (parent *x509.Certificate) {\n            if len(cert.AuthorityKeyId) \u0026gt; 0 {\n=\u0026gt;              return s.bySubjectKeyId[string(cert.AuthorityKeyId)]\n            }\n            return s.byName[nameToKey(\u0026amp;cert.Issuer)]\n        }\n\nThat is, it fails to find a match for the Authority Key Identifier in the CA set's\nSubject Key Identifier -\u0026gt; Root Certificate mapping.\n\nI'm slightly lost as to why it's happening. The certificate chain looks like:\n\n    *.appspot.com\n    Google Internet Authority\n    Equifax Secure Certificate Authority\n\nI initially thought that the problem might be due to the intermediate certificate, but\nthat doesn't seem to be the issue. The code seems to pass along the last certificate\nin the received chain to the FindParent() call, and it works fine when the function\nuses just the byName lookup:\n\n  US/Equifax/Equifax Secure Certificate Authority\n\nThe issue seems to be when the CASet is parsed and loaded using SetFromPEM(). The\nSubjectKeyId for the Equifax certificate in question doesn't match up.\n\nIt returns:\n\n    04:14:48:E6:68:F9:2B:D2:B2:95:D7:47:D8:23:20:10:4F:33:98:90:9F:D4\n\nWhen it should be:\n\n    48:E6:68:F9:2B:D2:B2:95:D7:47:D8:23:20:10:4F:33:98:90:9F:D4\n\nI have no idea where the leading 04:14 appears from.\n\nI'm guessing that the issue is somewhere in x509.parseCertificate()?\n\nOr, perhaps, with the formatting of the CURL CA bundle that's used on OS X 10.5?\nThe ASCII matches up though...\n\n            X509v3 Authority Key Identifier: \n                keyid:48:E6:68:F9:2B:D2:B2:95:D7:47:D8:23:20:10:4F:33:98:90:9F:D4\n\n            X509v3 Subject Key Identifier: \n                48:E6:68:F9:2B:D2:B2:95:D7:47:D8:23:20:10:4F:33:98:90:9F:D4\n\nAnyways, sorry to not be of more help — my ASN.1-fu is non-existent =(\n\nLet me know if there's any other info I could provide.\n\n-- Cheers, tav\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:06:37Z",
+	"created_at": "2010-08-02T03:23:37Z",
+	"updated_at": "2016-06-24T19:18:37Z"
+}

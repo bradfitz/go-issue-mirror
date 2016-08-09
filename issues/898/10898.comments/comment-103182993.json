@@ -1,0 +1,12 @@
+{
+	"id": 103182993,
+	"body": "The pending work isn't the problem. (It's almost certainly all recent allocations and write barriers for publishing these recent allocations, which means the pending pointers have almost no depth. That is, there's no choke-point in the work queue, so while there is pending work, it will be scanned in almost no time during mark termination.)\r\n\r\nThe problem is that this program has a G with a ~70MB stack, which takes \u003e150ms to scan. We see this cost both during the concurrent scan phase and during the re-scan in mark termination (which is why the two durations closely align in each cycle). This probably also explains the 2x slowdown compared to 1.4: this program spends most of its time in GC, and each GC cycle is doing roughly twice as much as it did in 1.4 because of the stack re-scan.\r\n\r\nI'm going to try implementing stack barriers to address this. While this example is just a toy program, it's easy to imagine that there are real programs that have large stacks like this and right now we can't deliver on our low-latency promise when active goroutines have large stacks. Assuming only the top of the stack changes during the concurrent GC phases, this should drastically reduce the stack re-scan time during mark termination.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-18T19:29:52Z",
+	"updated_at": "2015-05-18T19:29:52Z"
+}

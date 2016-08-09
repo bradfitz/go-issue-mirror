@@ -1,0 +1,28 @@
+{
+	"id": 51288026,
+	"number": 8320,
+	"state": "closed",
+	"title": "runtime/race: data race hidden by fake synchronization",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. go run -race the following program:\n\n\u003ca href=\"http://play.golang.org/p/8ju-c1opip\"\u003ehttp://play.golang.org/p/8ju-c1opip\u003c/a\u003e\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;math\u0026quot;\n\t\u0026quot;sync\u0026quot;\n\t//\u0026quot;time\u0026quot;\n)\n\ntype T struct {\n\tType  string\n\tField string\n}\n\ntype U struct {\n\tArg string\n}\n\nfunc main() {\n\targs := []T{\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;A\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;B\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;C\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;D\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;E\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;F\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;G\u0026quot;},\n\t\t{Type: \u0026quot;constant\u0026quot;, Field: \u0026quot;H\u0026quot;},\n\t}\n\twg := new(sync.WaitGroup)\n\twg.Add(len(args))\n\tfor _, arg := range args {\n\t\tlog.Printf(\u0026quot;doing arg: %+v\u0026quot;, arg)\n\t\tlocal := U{Arg: arg.Field}\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\t_ = busy()\n\t\t\tlog.Printf(\u0026quot;%+v\u0026quot;, local)\n\t\t\tif arg.Type != \u0026quot;constant\u0026quot; {\n\t\t\t\tlog.Printf(\u0026quot;argh!\u0026quot;)\n\t\t\t}\n\t\t}()\n\t\t//time.Sleep(100 * time.Millisecond)\n\t}\n\twg.Wait()\n}\n\nfunc busy() float64 {\n\tx := 0.0\n\tfor i := 1; i \u0026lt; 1000000; i++ {\n\t\tx += math.Log(float64(i))\n\t}\n\treturn x\n}\n\nWhat is the expected output? What do you see instead?\n\nExpected:\n\n2014/07/02 23:40:47 doing arg: {Type:constant Field:A}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:B}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:C}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:D}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:E}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:F}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:G}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:H}\n==================\nWARNING: DATA RACE\nWrite by main goroutine:\n  main.main()\n      /tmp/w.go:32 +0x33b\n\nPrevious read by goroutine 5:\n  main.func·001()\n      /tmp/w.go:39 +0x15f\n\nGoroutine 5 (finished) created at:\n  main.main()\n      /tmp/w.go:42 +0x532\n==================\n2014/07/02 23:40:47 {Arg:A}\n2014/07/02 23:40:47 {Arg:B}\n2014/07/02 23:40:47 {Arg:C}\n2014/07/02 23:40:47 {Arg:D}\n2014/07/02 23:40:47 {Arg:E}\n2014/07/02 23:40:47 {Arg:F}\n2014/07/02 23:40:47 {Arg:G}\n2014/07/02 23:40:47 {Arg:H}\n\nInstead:\n\n2014/07/02 23:40:47 doing arg: {Type:constant Field:A}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:B}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:C}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:D}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:E}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:F}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:G}\n2014/07/02 23:40:47 doing arg: {Type:constant Field:H}\n2014/07/02 23:40:47 {Arg:A}\n2014/07/02 23:40:47 {Arg:B}\n2014/07/02 23:40:47 {Arg:C}\n2014/07/02 23:40:47 {Arg:D}\n2014/07/02 23:40:47 {Arg:E}\n2014/07/02 23:40:47 {Arg:F}\n2014/07/02 23:40:47 {Arg:G}\n2014/07/02 23:40:47 {Arg:H}\n\n\nPlease use labels and text to provide additional information.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:46:16Z",
+	"created_at": "2014-07-02T21:42:31Z",
+	"updated_at": "2016-06-25T01:37:33Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51288069,
+	"number": 8353,
+	"state": "open",
+	"title": "go/types: confusing behaviour of Selection.Indirect() for Kind()==MethodVal",
+	"body": "\u003cpre\u003eIn go/types/selection.go, the intended significance of the Indirect flag (for MethodVal)\nis hard to tell from the example.  I was assuming that is means whether there are any\npointer indirections between the type of the receiver and the declared type of the\nmethod, but that doesn't seem to explain it:\n\nI instrumented recordSelection:\n\n% cat sel.go \n\npackage main\n\ntype T struct {}\n\nfunc (T)f() {}\nfunc (*T)g() {}\n\nfunc main() {\n        var x T\n        x.f()\n        x.g()\n\n        var p *T\n        p.f()\n        p.g()\n}\n\n% ./ssadump sel.go\nsel.go:11:2: SEL method (main.T) f() indirect=false\nsel.go:12:2: SEL method (main.T) g() indirect=false\nsel.go:15:2: SEL method (*main.T) f() indirect=true\nsel.go:16:2: SEL method (*main.T) g() indirect=true\n\nIn the last selection, there is no actual indirection between the receiver type *T and\nthe method type *T, yet the indirect flag is reported as true.  (The indirect flag seems\nto record only the pointerness of the receiver, which is redundant information.)\n\nI think, by analogy with field selections, the indirect bit should be set iff there was\nan implicit pointer indirection between the actual receiver type and the formal receiver\ntype, e.g a (T) method was called with an expression of type (*T), or in this example:\n\n   type A struct {}\n   func (*A) f() {}\n   type B struct {*A}\n\n   ... B{}.f()   // indirect, since method (*A).f \n\nAn (A) method is called with an expression of type B.\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-07-10T14:10:52Z",
+	"updated_at": "2015-07-31T17:18:18Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

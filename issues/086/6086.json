@@ -1,0 +1,33 @@
+{
+	"id": 51284657,
+	"number": 6086,
+	"state": "closed",
+	"title": "bufio: revert central buffer pool? figure out a plan for garbage.",
+	"body": "\u003cpre\u003eCLs 8819049 and 9459044 should probably be reverted, and possibly replaced by something\nelse.\n\n[Copy of response on CL 12687043.]\n\nTo expand on my comment, Go doesn't have Free because we have a garbage collector. The\ngarbage collector protects programmers from use-after-free bugs in their own code and in\ncode they are linking against.\n\nIt looks like an implicit \u0026quot;free\u0026quot; slipped in while I wasn't looking, in CL\n8819049, and this just uses it in one more place. I believe that CL should be reverted,\nalong with CL 9459044. Unlike fmt's little reused buffer, there is API in both\nbufio.Reader and bufio.Writer that exposes slices into the buffers to client code. A\nbadly written client might continue to read from or write to the slice after the buffer\nis \u0026quot;freed\u0026quot;, causing failures in completely unrelated pieces of code that just\nhappen to also use bufio.\n\nI understand that you are after performance and buffer reuse, but there are safer ways\nto achieve that when clients need it.\n\nFor example you could define a Reset(r io.Reader) on bufio.Reader and a Reset(w\nio.Writer) on bufio.Writer, to allow clients to reuse a single bufio.Reader or\nbufio.Writer for multiple of their own streams. If the client screws up, they shoot\nthemselves in the foot. With the current scheme, in which a client can \u0026quot;free\u0026quot;\na buffer into the general pool, a bad piece of code can shoot all the other code in the\nfoot.\n\nThis kind of thing is exactly why we removed runtime.Free.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:33:28Z",
+	"created_at": "2013-08-09T01:36:01Z",
+	"updated_at": "2016-06-24T22:54:35Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

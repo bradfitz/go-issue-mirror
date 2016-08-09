@@ -1,0 +1,22 @@
+{
+	"id": 117011378,
+	"number": 13256,
+	"state": "closed",
+	"title": "runtime: Race condition in map_fixed on Linux?",
+	"body": "I was reading the code in mem_linux.go, and discovered what seems to be a race condition in mmap_fixed. If a call to mmap happens between the check addrspace_free(v, n) and mmap(v, n, prot, flags|_MAP_FIXED, fd, offset), then another mmap that happens between the two calls could, at least in theory, return a region within the same address space. The subsequent mmap fixed will happily succeed, even if there is an existing mapping for part of that address space.\r\n\r\n    func mmap_fixed(v unsafe.Pointer, n uintptr, prot, flags, fd int32, offset uint32) unsafe.Pointer {\r\n\t p := mmap(v, n, prot, flags, fd, offset)\r\n\t // On some systems, mmap ignores v without\r\n\t // MAP_FIXED, so retry if the address space is free.\r\n\t if p != v \u0026\u0026 addrspace_free(v, n) {\r\n\t\t if uintptr(p) \u003e 4096 {\r\n\t\t\t munmap(p, n)\r\n\t\t }\r\n\t\t p = mmap(v, n, prot, flags|_MAP_FIXED, fd, offset)\r\n\t }\r\n\t return p\r\n    }",
+	"user": {
+		"login": "eloff",
+		"id": 27574,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-11-17T21:24:58Z",
+	"created_at": "2015-11-15T19:09:14Z",
+	"updated_at": "2015-11-18T05:11:01Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

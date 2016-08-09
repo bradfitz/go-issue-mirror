@@ -1,0 +1,27 @@
+{
+	"id": 51287013,
+	"number": 7646,
+	"state": "closed",
+	"title": "cmd/gc: zero and copy multiword structures more efficiently",
+	"body": "\u003cpre\u003eFor structures of more than 3 words, 8g and 6g emit REP STOSL / REP STOSQ sequences to\nzero the value, and similarly they use REP MOVSL / REP MOVSQ to copy the value. Keith\nhas measured that the overhead of starting a REP is high enough that it probably doesn't\npay off until you get to much larger structures (perhaps as large as 128 or 256 words).\nOn the other hand we can't just emit 100 STOSQ every time we need to zero something:\nthat will bloat the generated code.\n\nA possible compromise is to create a single function stosq256 that contains 256 STOSQ\ninstructions:\n\nTEXT stosq256(SB),7,$0-0\nSTOSQ\nSTOSQ\nSTOSQ\n...\nSTOSQ\nRET\n\nThen the compiler or even liblink could apply a peephole optimization to replace\n\nMOVL $n, CX\nREP STOSQ\n\nwith\n\nCALL stosq256+(256-n)*2\n\nso that for example the longer sequence:\n\nMOVQ $whatever, DI\nMOVL $0, AX\nREP STOSQ\n\nbecomes\n\nMOVQ $whatever, DI\nMOVL $0, AX\nCALL stosq256+(256-n)*2\n\nThe idea is that the CALL+RET overhead will be less than the REP overhead for\nmedium-sized objects.\n\nIf this is straightforward and has a signficant performance benefit it might be worth\ndoing for 1.3.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:42:30Z",
+	"created_at": "2014-03-26T15:18:17Z",
+	"updated_at": "2016-06-25T01:30:52Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

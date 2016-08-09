@@ -1,0 +1,22 @@
+{
+	"id": 51286058,
+	"number": 7005,
+	"state": "closed",
+	"title": "net.sendFile does not use sendfile() on linux in all the cases in which it is available",
+	"body": "by **shawnlandden**:\n\n\u003cpre\u003esendfile() is backed by splice() which can do arbitrary bidirectional IO between a\nlimited set of fd types, including TCP UDP files AF_ALG, etc (anything with a sendpage()\nhandler in the kernel)\n\nthe following application connects two tcp sockets, which sendfile() supports, but the\ngo runtime does not use sendfile()\n\nthis patch doesn't work, and i'm not sure why, i'm being held up by 6776\n\ndiff -r c4b7c0824984 src/pkg/net/sendfile_linux.go\n--- a/src/pkg/net/sendfile_linux.go\tFri Dec 20 23:19:32 2013 -0800\n+++ b/src/pkg/net/sendfile_linux.go\tSun Dec 22 15:42:18 2013 -0800\n@@ -8,6 +8,8 @@\n \t\u0026quot;io\u0026quot;\n \t\u0026quot;os\u0026quot;\n \t\u0026quot;syscall\u0026quot;\n+\t\u0026quot;reflect\u0026quot;\n+\t\u0026quot;fmt\u0026quot;\n )\n \n // maxSendfileSize is the largest chunk size we ask the kernel to copy\n@@ -31,9 +33,17 @@\n \t\t\treturn 0, nil, true\n \t\t}\n \t}\n+\tfmt.Println(reflect.TypeOf(r))\n \tf, ok := r.(*os.File)\n+\tvar src int\n \tif !ok {\n-\t\treturn 0, nil, false\n+\t\tt, ok := r.(*TCPConn)\n+\t\tif !ok {\n+\t\t\treturn 0, nil, false\n+\t\t}\n+\t\tsrc = t.conn.fd.sysfd\n+\t} else {\n+\t\tsrc = int(f.Fd())\n \t}\n \n \tif err := c.writeLock(); err != nil {\n@@ -42,7 +52,6 @@\n \tdefer c.writeUnlock()\n \n \tdst := c.sysfd\n-\tsrc := int(f.Fd())\n \tfor remain \u0026gt; 0 {\n \t\tn := maxSendfileSize\n \t\tif int64(n) \u0026gt; remain {\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1.run \u003ca href=\"http://play.golang.org/p/EvOJBw-Esm\"\u003ehttp://play.golang.org/p/EvOJBw-Esm\u003c/a\u003e in strace\n2. uses read/write when sendfile() possible\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g. gccgo create a program that crashes (debian sid)\n\nWhich operating system are you using?\ndebian sid\n\nWhich version are you using?  (run 'go version')\ngo version go1.2 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:39:01Z",
+	"created_at": "2013-12-22T23:46:09Z",
+	"updated_at": "2016-06-25T01:24:23Z"
+}

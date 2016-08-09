@@ -1,0 +1,33 @@
+{
+	"id": 51285603,
+	"number": 6712,
+	"state": "closed",
+	"title": "net/textproto: CanonicalMIMEHeaderKey panic on strings with spaces",
+	"body": "\u003cpre\u003eCanonicalMIMEHeaderKey panics on certain inputs containing spaces.\n\nReported from a Google user.\n\ne.g. \u0026quot;C Ontent-Transfer-Encoding\u0026quot; will crash.\n\nI'm getting hg codereview SSL errors now (gogo-inflight SSL MITM?) but fix is here:\n\ndiff -r 78cebfb89b21 src/pkg/net/textproto/reader.go\n--- a/src/pkg/net/textproto/reader.go\tFri Nov 01 09:18:35 2013 -0700\n+++ b/src/pkg/net/textproto/reader.go\tSun Nov 03 13:58:32 2013 -0800\n@@ -574,13 +574,10 @@\n \t\t// and upper case after each dash.\n \t\t// (Host, User-Agent, If-Modified-Since).\n \t\t// MIME headers are ASCII only, so no Unicode issues.\n-\t\tif a[i] == ' ' {\n-\t\t\ta[i] = '-'\n-\t\t\tupper = true\n-\t\t\tcontinue\n-\t\t}\n \t\tc := a[i]\n-\t\tif upper \u0026amp;\u0026amp; 'a' \u0026lt;= c \u0026amp;\u0026amp; c \u0026lt;= 'z' {\n+\t\tif c == ' ' {\n+\t\t\tc = '-'\n+\t\t} else if upper \u0026amp;\u0026amp; 'a' \u0026lt;= c \u0026amp;\u0026amp; c \u0026lt;= 'z' {\n \t\t\tc -= toLower\n \t\t} else if !upper \u0026amp;\u0026amp; 'A' \u0026lt;= c \u0026amp;\u0026amp; c \u0026lt;= 'Z' {\n \t\t\tc += toLower\ndiff -r 78cebfb89b21 src/pkg/net/textproto/reader_test.go\n--- a/src/pkg/net/textproto/reader_test.go\tFri Nov 01 09:18:35 2013 -0700\n+++ b/src/pkg/net/textproto/reader_test.go\tSun Nov 03 13:58:32 2013 -0800\n@@ -25,6 +25,10 @@\n \t{\u0026quot;user-agent\u0026quot;, \u0026quot;User-Agent\u0026quot;},\n \t{\u0026quot;USER-AGENT\u0026quot;, \u0026quot;User-Agent\u0026quot;},\n \t{\u0026quot;üser-agenT\u0026quot;, \u0026quot;üser-Agent\u0026quot;}, // non-ASCII unchanged\n+\n+\t// This caused a panic due to mishandling of a space:\n+\t{\u0026quot;C Ontent-Transfer-Encoding\u0026quot;, \u0026quot;C-Ontent-Transfer-Encoding\u0026quot;},\n+\t{\u0026quot;foo bar\u0026quot;, \u0026quot;Foo-Bar\u0026quot;},\n }\n\n func TestCanonicalMIMEHeaderKey(t *testing.T) {\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:37:14Z",
+	"created_at": "2013-11-03T21:59:06Z",
+	"updated_at": "2016-06-25T01:21:49Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

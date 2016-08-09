@@ -1,0 +1,21 @@
+{
+	"id": 127423593,
+	"number": 14014,
+	"state": "open",
+	"title": "cmd/pprof: svg profiles are broken for rpc services",
+	"body": "go version devel +c7754c8 Tue Jan 19 06:20:36 2016 +0000 linux/amd64\r\n\r\nSVG profile for my program shows:\r\n\r\n![svg](https://cloud.githubusercontent.com/assets/1095328/12417130/323aeb56-bea6-11e5-925c-29545b8a6991.png)\r\n\r\nYou can see that as if reflect.Value.call directly allocates a lot. This does not make sense.\r\n\r\nIn text profile I see records that are probably these reflect.Value.call allocations. But in SVG they are trimmed at reflect.Value.call. RPC servers can allocate most of its memory during request serving, so this is pretty unfortunate.\r\n\r\n```\r\n944: 3866624 [15104: 61865984] @ 0x452e65 0x56df40 0x56d0b5 0x40b72d 0x40bf66 0x46d5ae 0x8a17ed 0x8a04b1 0x832e52 0x46fbc1\r\n#\t0x56df40\tgithub.com/google/syzkaller/prog.calcDynamicPrio+0xb0\t\tgopath/src/github.com/google/syzkaller/prog/prio.go:153\r\n#\t0x56d0b5\tgithub.com/google/syzkaller/prog.CalculatePriorities+0x75\tgopath/src/github.com/google/syzkaller/prog/prio.go:31\r\n#\t0x40b72d\tmain.(*Manager).minimizeCorpus+0x9ed\t\t\t\tgopath/src/github.com/google/syzkaller/syz-manager/manager.go:341\r\n#\t0x40bf66\tmain.(*Manager).Connect+0x216\t\t\t\t\tgopath/src/github.com/google/syzkaller/syz-manager/manager.go:363\r\n#\t0x46d5ae\truntime.call64+0x3e\t\t\t\t\t\tgo/src/runtime/asm_amd64.s:473\r\n#\t0x8a17ed\treflect.Value.call+0x120d\t\t\t\t\tgo/src/reflect/value.go:435\r\n#\t0x8a04b1\treflect.Value.Call+0xb1\t\t\t\t\t\tgo/src/reflect/value.go:303\r\n#\t0x832e52\tnet/rpc.(*service).call+0x1c2\t\t\t\t\tgo/src/net/rpc/server.go:383\r\n\r\n1: 1761280 [1: 1761280] @ 0x453261 0x40c701 0x46d5ae 0x8a17ed 0x8a04b1 0x832e52 0x46fbc1\r\n#\t0x40c701\tmain.(*Manager).NewInput+0x611\tgopath/src/github.com/google/syzkaller/syz-manager/manager.go:383\r\n#\t0x46d5ae\truntime.call64+0x3e\t\tgo/src/runtime/asm_amd64.s:473\r\n#\t0x8a17ed\treflect.Value.call+0x120d\tgo/src/reflect/value.go:435\r\n#\t0x8a04b1\treflect.Value.Call+0xb1\t\tgo/src/reflect/value.go:303\r\n#\t0x832e52\tnet/rpc.(*service).call+0x1c2\tgo/src/net/rpc/server.go:383\r\n\r\n1: 1515520 [1: 1515520] @ 0x453261 0x40d8fb 0x40c6b9 0x46d5ae 0x8a17ed 0x8a04b1 0x832e52 0x46fbc1\r\n#\t0x40d8fb\tmain.(*PersistentSet).add+0x49b\tgopath/src/github.com/google/syzkaller/syz-manager/persistent.go:100\r\n#\t0x40c6b9\tmain.(*Manager).NewInput+0x5c9\tgopath/src/github.com/google/syzkaller/syz-manager/manager.go:385\r\n#\t0x46d5ae\truntime.call64+0x3e\t\tgo/src/runtime/asm_amd64.s:473\r\n#\t0x8a17ed\treflect.Value.call+0x120d\tgo/src/reflect/value.go:435\r\n#\t0x8a04b1\treflect.Value.Call+0xb1\t\tgo/src/reflect/value.go:303\r\n#\t0x832e52\tnet/rpc.(*service).call+0x1c2\tgo/src/net/rpc/server.go:383\r\n```",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-01-19T11:19:30Z",
+	"updated_at": "2016-01-21T17:49:01Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

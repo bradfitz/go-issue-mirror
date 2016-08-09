@@ -1,0 +1,12 @@
+{
+	"id": 66076992,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eFor go1 bench tests overall:\n\n 204 [fast2_hit]\n2674 [gen_hit]\n202447 [gen_miss]\n259524 [fast1_miss]\n281748 [fast1_hit]\n472442 [fast2_miss]\n\nWhere fast1 and fast2 are the kind int32/int64/string lookup fast paths, and \"gen\" is\nany map assignment, deletion, or a non-specialized (not int/string) lookup.  \n\nBroken up per-test, the baseline is:\n\n   2 [fast2_hit]\n  48 [gen_hit]\n  63 [fast2_miss]\n 331 [gen_miss]\n12823 [fast1_hit]\n102468 [fast1_miss]\n\n... for just the test infrastructure / binary start-up somehow.  \n\nThen the only interesting ones using maps are:  (these include the baseline numbers)\n\nBenchmarkHTTPClientServer\n   2 [fast2_hit]\n  48 [gen_hit]\n  64 [fast2_miss]\n12823 [fast1_hit]\n102468 [fast1_miss]\n151846 [gen_miss]\n\nBenchmarkJSONEncode\n   2 [fast2_hit]\n  48 [gen_hit]\n  63 [fast2_miss]\n 331 [gen_miss]\n102469 [fast1_miss]\n281748 [fast1_hit]   \u0026lt;\u0026lt;\u0026lt;\u0026lt;\u0026lt; nice\n\nBenchmarkGoParse\n   2 [fast2_hit]\n2674 [gen_hit]\n12823 [fast1_hit]\n50932 [gen_miss]\n259523 [fast1_miss]\n471228 [fast2_miss]\n\nFor net/textproto ReadMIMEHeader's benchmark, which has:\n\n     m[key] = append(m[key], value).\n\n... from the comment above.  Does:\n\n  25 [fast2_miss]\n30050 [fast1_miss]   // m[key] lookup on 9th and 10th keys\n30071 [gen_hit]       // mkey] assignment on 9th and 10th keys\n60101 [BenchmarkReadMIMEHeader-loop]\n541151 [gen_miss]   // m[key] assignment on 1st-8th keys (miss because no hash was done\nfor short-strings when len(m)  \u0026lt;= 8)\n\nIt does better if the header is bigger (more unique keys) or has larger longer (over 32)\nkeys.\n\nFor net/http's BenchmarkServerFakeConnNoKeepAlive:\n\n  22 [gen_hit]\n  27 [fast2_miss]\n841760 [gen_miss]\n\n\nJSONEncode looks to benefit the most from this.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-31T18:28:39Z",
+	"updated_at": "2014-12-22T06:23:42Z"
+}

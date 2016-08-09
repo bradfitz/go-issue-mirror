@@ -1,0 +1,12 @@
+{
+	"id": 140100946,
+	"body": "@potocnyj OK, thanks for the correction. Yes, I understand now. Opening `db.maxOpen*2+n` (for n\u003e0) will not work. Once `db.openNewConnection` becomes the sole source of new connections—and they fail—we aren't triggering additional attempts to service the still pending requests.\r\n\r\nI have additions to the proposed fix that work in this scenario, and it actually simplifies the logic.\r\n\r\nI propose we consolidate the `numOpen` and `pendingOpens` counters into `numOpen` and always increment `numOpen` optimistically. Whenever an attempted connection fails we decrement `numOpen` and call `db.maybeOpenNewConnections`. This change simplifies type DB by removing a field. It also simplifies and harmonizes the logic in `db.conn`, `db.openNewConnection` and `db.maybeOpenNewConnections`.\r\n\r\nDuring testing I also uncovered a panic that occurred when `DB.Close` was called while `len(db.connRequests) \u003e 0`. `DB.Close` ranges over `db.connRequests` and closes each response channel. This resulted in the goroutines waiting on those channels to unblock and operate on a zero value `sql.connRequest`, which contained both a `nil` `*driverConn` and `error`. When that was returned to `db.exec` it caused a `nil` pointer panic. The fix is to use the comma-ok idiom to detect channel closure and return errDBClosed.\r\n\r\nWith these changes all `database/sql` tests pass, including the condition @potocnyj highlighted. I think this is good enough to mail a CL, and the changes are difficult to fully appreciate when described here.",
+	"user": {
+		"login": "ChrisHines",
+		"id": 1060711,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-14T14:37:30Z",
+	"updated_at": "2015-09-14T17:23:30Z"
+}

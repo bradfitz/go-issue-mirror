@@ -1,0 +1,30 @@
+{
+	"id": 51281975,
+	"number": 4329,
+	"state": "closed",
+	"title": "net/http: data race in test",
+	"body": "\u003cpre\u003eI've added instrumentation to syscall.Sendfile(), so that it synchronizes with\nsyscall.Read(), but race builder still shows a race.\nIt's either another bug in race detector, or bug in the test.\nWhat is strange is that race detector detector says that fd.close() happened before\nSendfile() according to wall clock time. It means that something really weird happens in\nthe test.\n\n\n\u003ca href=\"http://build.golang.org/log/bf2017abd5123b784f65272a7cc3eb8f1ccf3e13\"\u003ehttp://build.golang.org/log/bf2017abd5123b784f65272a7cc3eb8f1ccf3e13\u003c/a\u003e\n\nWARNING: DATA RACE\nRead by goroutine 142:\n  net.sendFile()\n      /usr/local/go/src/pkg/net/sendfile_linux.go:47 +0x5da\n  net.(*TCPConn).ReadFrom()\n      /usr/local/go/src/pkg/net/tcpsock_posix.go:80 +0x49\n  net/http.(*response).ReadFrom()\n      /usr/local/go/src/pkg/net/http/server.go:161 +0x11c\n  io.CopyN()\n      /usr/local/go/src/pkg/io/io.go:305 +0x1a0\n  net/http.serveContent()\n      /usr/local/go/src/pkg/net/http/fs.go:236 +0xaa0\n  net/http.ServeContent()\n      /usr/local/go/src/pkg/net/http/fs.go:118 +0x184\n  net/http_test.func·024()\n      /usr/local/go/src/pkg/net/http/fs_test.go:551 +0x19f\n  ??()\n      -:0 +0x401038a1\n  net/http/httptest.(*waitGroupHandler).ServeHTTP()\n      /usr/local/go/src/pkg/net/http/httptest/server.go:180 +0xcb\n  net/http.(*conn).serve()\n      /usr/local/go/src/pkg/net/http/server.go:681 +0x7a7\n\nPrevious write by goroutine 15:\n  os.(*file).close()\n      /usr/local/go/src/pkg/os/file_unix.go:110 +0x15e\n  os.(*File).Close()\n      /usr/local/go/src/pkg/os/file_unix.go:99 +0x43\n  net/http_test.TestServeContent()\n      /usr/local/go/src/pkg/net/http/fs_test.go:626 +0x1710\n  testing.tRunner()\n      /usr/local/go/src/pkg/testing/testing.go:301 +0x8f\n\nGoroutine 142 (running) created at:\n  net/http.(*Server).Serve()\n      /usr/local/go/src/pkg/net/http/server.go:1116 +0x45e\n\nGoroutine 15 (running) created at:\n  testing.RunTests()\n      /usr/local/go/src/pkg/testing/testing.go:377 +0xa8b\n  testing.Main()\n      /usr/local/go/src/pkg/testing/testing.go:313 +0xcd\n  main.main()\n      net/http/_test/_testmain.go:301 +0xda\n  runtime.main()\n      /usr/local/go/src/pkg/runtime/proc.c:248 +0x91\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:22:59Z",
+	"created_at": "2012-11-01T19:50:57Z",
+	"updated_at": "2016-06-24T22:27:33Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

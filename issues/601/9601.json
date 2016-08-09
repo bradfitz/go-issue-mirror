@@ -1,0 +1,21 @@
+{
+	"id": 54453609,
+	"number": 9601,
+	"state": "open",
+	"title": "cmd/cgo: macros for C field names not recognized by cgo",
+	"body": "The linux manpage ipv6(7) states that in6_addr is a C struct containing an unsigned char array[16] with name s6_addr. When compiling a C program, this works:\r\n\r\n```C\r\n#include \u003cstdio.h\u003e\r\n#include \u003cnetinet/in.h\u003e\r\n\r\nint main() {\r\n  struct in6_addr addr;\r\n  printf(\"%s\\n\", addr.s6_addr);\r\n}\r\n```\r\n\r\nHowever, the following Go program does not compile with the error ```addr.s6_addr undefined (type C.struct_in6_addr has no field or method s6_addr)```:\r\n\r\n```Go\r\npackage main\r\n\r\n// #include \u003cnetinet/in.h\u003e\r\n// #include \u003csys/socket.h\u003e\r\nimport \"C\"\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\t// See man 7 ipv6\r\n\tvar addr C.struct_in6_addr\r\n\tfmt.Printf(\"%v\", addr.s6_addr)\r\n}\r\n```\r\nTesting with ```go tool cgo``` reveals that the struct used is defined in in.h, and thus using ```addr.__in6_u``` works with go.\r\n\r\nWhen the include file ```linux/in6.h``` is included, and ```go tool cgo -- -D__USE_KERNEL_IPV6_DEFS test.go``` is run, the correct (man page) definition of ```struct in6_addr``` shows up in ```_obj/_cgo_gotypes.go```.  I do not know how to get go to compile this correctly however.\r\n\r\nGo version used is go version go1.3.3 linux/amd64. Contact me if you need any more information.",
+	"user": {
+		"login": "jeeger",
+		"id": 3542252,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-01-15T14:17:50Z",
+	"updated_at": "2015-04-14T19:45:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

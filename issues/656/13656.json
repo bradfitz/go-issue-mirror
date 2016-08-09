@@ -1,0 +1,21 @@
+{
+	"id": 122797849,
+	"number": 13656,
+	"state": "open",
+	"title": "reflect: add a function for treating C memory as a Go slice",
+	"body": "Now that cgo supports exporting Go functions to C, it would be useful for Go functions to be able to read C memory without making unnecessary copies.  In particular, we would like to be able to read (and write) a C `char*` using functions that operate on a Go `[]byte` (e.g. `bytes.Reader` or `io.Reader.Read`).\r\n\r\n`reflect.NewAt` and `reflect.ArrayOf` get us partway there: we can treat the pointer to C memory as a Go pointer to an array of the correct underlying length, then use `reflect.Value.Slice` to convert that to a slice.  Unfortunately, `reflect.ArrayOf` strands a small amount of memory for a unique `reflect.Type` for every distinct length used: http://play.golang.org/p/lc3QnMnKP_\r\n\r\nWe could consider using `reflect.SliceHeader` instead, but it \"cannot be used safely or portably\" (https://golang.org/pkg/reflect/#SliceHeader).\r\n\r\nSo it seems that we don't have an efficient solution for this conversion.\r\n\r\nThe simplest solution seems like it would be to add a function to the `reflect` package to construct the slice directly.  Following the example of `reflect.MakeSlice` and `reflect.NewAt`, it could be something like:\r\n\r\n```go\r\n    // SliceAt returns a slice value for the specified slice type, length, and capacity,\r\n    // using p as the address of the first element and leaving its contents unchanged.\r\n    func SliceAt(typ Type, len, cap int, p unsafe.Pointer) Value\r\n```",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"created_at": "2015-12-17T18:45:57Z",
+	"updated_at": "2016-05-18T00:57:24Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

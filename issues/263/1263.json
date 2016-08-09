@@ -1,0 +1,28 @@
+{
+	"id": 51277565,
+	"number": 1263,
+	"state": "closed",
+	"title": "json.Marshal writes unexported fields which cannot be Unmarshaled",
+	"body": "\u003cpre\u003etype TestThing {\n  PublicStr string\n  privateStr string\n}\n\nIf I call json.Marshal() on this instance, privateStr will be written out.\n\nReading the data back in to Unmarshal() errors with:\n\njson: cannot unmarshal object key \u0026quot;privateStr\u0026quot; into unexported field\nprivateStr of type noodle.TestThing\n\nThis fixes the export to prune unexported fields.\n\n\n+// Is this an exported - upper case - name?\n+func isExported(name string) bool {\n+\trune, _ := utf8.DecodeRuneInString(name)\n+\treturn unicode.IsUpper(rune)\n+}\n+\n func (e *encodeState) reflectValue(v reflect.Value) {\n \tif v == nil {\n \t\te.WriteString(\u0026quot;null\u0026quot;)\n@@ -210,18 +236,28 @@\n \t\te.WriteByte('{')\n \t\tt := v.Type().(*reflect.StructType)\n \t\tn := v.NumField()\n+\t\tj := 0\n \t\tfor i := 0; i \u0026lt; n; i++ {\n-\t\t\tif i \u0026gt; 0 {\n+\t\t\tf := t.Field(i)\n+\t\t\tvar fieldName string\n+\t\t\tif f.Tag != \u0026quot;\u0026quot; {\n+\t\t\t\tfieldName = f.Tag\n+\t\t\t} else {\n+\t\t\t\tfieldName = f.Name\n+\t\t\t\tif !isExported(fieldName) {\n+\t\t\t\t\tcontinue\n+\t\t\t\t}\n+\t\t\t}\n+\t\t\tif j \u0026gt; 0 {\n \t\t\t\te.WriteByte(',')\n \t\t\t}\n-\t\t\tf := t.Field(i)\n-\t\t\tif f.Tag != \u0026quot;\u0026quot; {\n-\t\t\t\te.string(f.Tag)\n-\t\t\t} else {\n-\t\t\t\te.string(f.Name)\n-\t\t\t}\n+\t\t\te.string(fieldName)\n \t\t\te.WriteByte(':')\n \t\t\te.reflectValue(v.Field(i))\n+\t\t\tj++\n \t\t}\n \t\te.WriteByte('}')\u003c/pre\u003e",
+	"user": {
+		"login": "msolo",
+		"id": 5078276,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:07:33Z",
+	"created_at": "2010-11-09T08:05:42Z",
+	"updated_at": "2016-06-24T19:22:09Z"
+}

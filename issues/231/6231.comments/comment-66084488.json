@@ -1,0 +1,12 @@
+{
+	"id": 66084488,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThe basic problem is that the zero value is used in two different ways - as a genuinely\ninvalid value (as returned by Indirect, Elem, FieldByName, FieldByNameFunc, MapIndex,\nMethodByName and TryRecv), and as the result of reflect.ValueOf(nil).\n\nI would be happy if reflect.ValueOf(nil).IsValid() was true, but that's not a change we\ncan make.\n\nI don't think it's too much of a problem that the zero value returned by the above calls\nbecomes assignment-compatible with nilable values (and it's still unambiguous in all\nthose cases, as a valid value returned by those methods will always have a valid type,\nAFAICS).\n\nHowever SetMapIndex is problematic, as it uses IsValid to determine whether it should\ndelete the key from the map, whereas my proposal would suggest that it should assign a\nnil value to the map.\n\nI think that means that it's not viable, sadly.\n\nI would still very much like to see some kind of better way of working around this\nissue, however. I have so far encountered the issue in at least separate domains so far\n(assignment, channel sends and function calls) and, experimentally, people do not see\nany potential problem with the naive code even when specifically told that there's a\nproblem there.\n\nPerhaps a method like this might help, as an adjunct to Convert:\n\n// AsType returns the value v with the given type t.\n// As a special case, if v is the zero Value and t\n// is a type that may have a nil value, AsType returns\n// the nil value of that type.\n// If v is not assignable to type t, AsType panics.\nfunc (v Value) AsType(t Type) Value\n\nAlternatively:\n\n// ValueOfType is the same as ValueOf except that the\n// returned value will always have type t. If i is nil\n// and values of type t may be nil, the returned value\n// will be reflect.Zero(t); otherwise if i is not assignable\n// to type t, ValueOfType will panic.\n//\n// This can be useful when converting an externally supplied value\n// that will be assigned to some known type.\nfunc ValidValueOf(i interface{}, t Type) reflect.Value\n\nIt's would still be awkward to use (particularly when using\nValue.Call) but still better than the status quo, I think.\u003c/pre\u003e",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-09-10T15:24:32Z",
+	"updated_at": "2014-12-08T10:34:15Z"
+}

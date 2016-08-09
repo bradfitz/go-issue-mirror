@@ -1,0 +1,12 @@
+{
+	"id": 66098277,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eHi, \n\nhere finally what I believe show the problem:\n\npackage main\n\n// #include \u0026lt;unistd.h\u0026gt;\nimport \"C\"\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t_ \"net/http/pprof\"\n\t\"runtime\"\n\t\"sync\"\n\t\"time\"\n)\n\nconst size = 10000\n\nfunc main() {\n\truntime.GOMAXPROCS(0)\n\tstarted := time.Now()\n\n\tgo func() {\n\t\tfmt.Println(\"pprof enabled on port 6060\")\n\t\terr := http.ListenAndServe(\":6060\", nil)\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}()\n\n\t// prepare communication protocol\n\turls := make(chan string, size)\n\twg := new(sync.WaitGroup)\n\n\t// fire a bunch of workers\n\tfor i := 0; i \u0026lt; runtime.NumCPU(); i++ {\n\t\twg.Add(1)\n\t\tgo func(i int) {\n\t\t\tdefer wg.Done()\n\t\t\tfor _ = range urls {\n\t\t\t\t// time.Sleep(1 * time.Millisecond) // nanoseconds\n\t\t\t\tC.usleep(1000) // microseconds\n\t\t\t}\n\t\t}(i)\n\t}\n\n\tfor i := 0; i \u0026lt; size; i++ {\n\t\turls \u0026lt;- \"test\"\n\t}\n\n\t// wait\n\tclose(urls)\n\twg.Wait()\n\tfmt.Println(\"done in\", time.Since(started))\n}\n\nHere I believe the final result should be around 1s, right? With the C call needs on my\nmac 12.860826382s\nThe go version of sleeps instead correctly shows: 1.621176016s\n\nIf I increase the C sleep to 10 ms (10*1000), I get back the same result of the go\ncounterpart: 15.092162142s\n\n\u0026gt; why set GOMAXPROCS to 0?\n\nI believe be the same as GOMAXPROCS=runtime.NumCPU(), I saw that's a common pattern in\ngo.\u003c/pre\u003e",
+	"user": {
+		"login": "DAddYE",
+		"id": 6537,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-03T22:55:24Z",
+	"updated_at": "2014-12-22T06:37:04Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 96083678,
+	"body": "I can't reproduce this locally, so debugging has been slow going. Here's what I've figured out so far.\r\n\r\nThe \"local work\" returned by runqget always comes from p.runnext (the newly introduced field) and the run queue is otherwise empty (runqhead == runqtail). The sequence of events is something like:\r\n\r\n1) Something calls startm(p, true) where p is non-nil (so startm does *not* get a P off the idle list).\r\n2) startm() fails to mget() an existing m, so it calls newm(mspinning, p). At this point, runqempty(p) is true, so p.runnext == 0.\r\n3) The new M starts and enters mstart, which calls mstart1.\r\n4) mstart1 calls mspinning, which sets m.spinning to 1.\r\n5) mstart1 calls schedule.\r\n6) schedule calls runqget, which, somehow, returns a G from p.runnext, causing schedule to panic.\r\n\r\nEither something in the above trace is wrong, or we've somehow added something to the P's run queue in the middle of it.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-24T22:28:21Z",
+	"updated_at": "2015-04-24T22:28:21Z"
+}

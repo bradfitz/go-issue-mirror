@@ -1,0 +1,12 @@
+{
+	"id": 139624066,
+	"body": "@griesemer not sure how the test will avoid atomic loads, that's why I suggested the check-every-N.\r\n\r\nSo the pseudo-go-code before unrolling would look like this:\r\n\r\n```go\r\nloop:   \r\n        // loop-body        \r\n\r\n        if counter \u003e N {          \r\n                counter = 0                       \r\n\r\n                if need_stop = atomic.LoadBool(\u0026runtime.getg().need_stop); need_stop {\r\n                        runtime.Gosched()                                    \r\n                }                                                               \r\n        }                                                                                                                       \r\n        counter++                                                                                                           \r\n        goto loop\r\n``` \r\nafter unrolling it would look like\r\n```go\r\nloop:   \r\n        // loop-body0\r\n        // loop-body2\r\n        // ...\r\n        // loop-bodyM        \r\n\r\n        if counter \u003e N/M {          \r\n                counter = 0                       \r\n\r\n                if need_stop = atomic.LoadBool(\u0026runtime.getg().need_stop); need_stop {\r\n                        runtime.Gosched()                                    \r\n                }                                                               \r\n        }                                                                                                                       \r\n        counter++                                                                                                           \r\n        goto loop\r\n``` \r\n\r\nSo the code inserted would be a constant overhead, but still run every N loops.",
+	"user": {
+		"login": "nightlyone",
+		"id": 1767118,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-11T18:44:31Z",
+	"updated_at": "2015-09-11T18:44:31Z"
+}

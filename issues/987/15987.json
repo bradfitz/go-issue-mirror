@@ -1,0 +1,17 @@
+{
+	"id": 158920990,
+	"number": 15987,
+	"state": "closed",
+	"title": "crypto/x509 shadows an error when marshaling asn1 data",
+	"body": "I was looking at the implementation of the `crypto/x509` library and noticed that one of the `err` values is shadowed.\r\nhttps://github.com/golang/go/blob/master/src/crypto/x509/x509.go#L1798-L1799\r\n\r\n```\r\n// newRawAttributes converts AttributeTypeAndValueSETs from a template\r\n// CertificateRequest's Attributes into tbsCertificateRequest RawAttributes.\r\nfunc newRawAttributes(attributes []pkix.AttributeTypeAndValueSET) ([]asn1.RawValue, error) {\r\n\tvar rawAttributes []asn1.RawValue\r\n\tb, err := asn1.Marshal(attributes)\r\n\trest, err := asn1.Unmarshal(b, \u0026rawAttributes)\r\n\tif err != nil {\r\n\t\treturn nil, err\r\n\t}\r\n\tif len(rest) != 0 {\r\n\t\treturn nil, errors.New(\"x509: failed to unmarshall raw CSR Attributes\")\r\n\t}\r\n\treturn rawAttributes, nil\r\n}\r\n```\r\n\r\nNot sure if there are practical cases where the `asn1.Marshal()` could fail in this case, but it's probably better to handle the `err` return instead. ",
+	"user": {
+		"login": "groob",
+		"id": 1526945,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-06-14T05:18:39Z",
+	"created_at": "2016-06-07T13:20:03Z",
+	"updated_at": "2016-06-14T05:18:39Z"
+}

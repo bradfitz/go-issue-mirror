@@ -1,0 +1,12 @@
+{
+	"id": 132836050,
+	"body": "For go1.5 The problem is types_freebsd.go `strucht if_data8` and its output ztypes_freebsd_amd64.go `ifData` do not have matching fields to FreeBSD 11, specifically the position of `ifi_datalen` which is now `uint16_t`. In short, types_freebsd.go needs to be fixed up to support FreeBSD-11.\r\n\r\nEarlier versions of `go` uses SizeofIfMsghdr (fixed size):\r\n```go\r\nfunc (any *anyMessage) parseInterfaceMessage(b []byte) *InterfaceMessage {\r\n\tp := (*InterfaceMessage)(unsafe.Pointer(any))\r\n\treturn \u0026InterfaceMessage{Header: p.Header, Data: b[SizeofIfMsghdr:any.Msglen]}\r\n}\r\n```\r\n\r\nwhere as 1.5 does (referencing p.Header.Data.Datalen)\r\n:\r\n```go\r\n\treturn \u0026InterfaceMessage{Header: p.Header,\r\n            Data: b[int(unsafe.Offsetof(p.Header.Data))+int(p.Header.Data.Datalen) : any.Msglen]}\r\n```\r\n\r\ntypes_freebsd.go:\r\n```go\r\n// this needs:\r\n#undef ifi_epoch\r\n// and\r\n#undef ifi_lastchange to work also.\r\n\r\nstruct if_data8 {\r\n        u_char  ifi_type;\r\n        u_char  ifi_physical;\r\n        u_char  ifi_addrlen;\r\n        u_char  ifi_hdrlen;\r\n        u_char  ifi_link_state;\r\n        u_char  ifi_spare_char1;\r\n        u_char  ifi_spare_char2;\r\n        u_char  ifi_datalen;\r\n        u_long  ifi_mtu;\r\n        ...\r\n};\r\n```\r\n\r\nFreeBSD if.h:\r\n```c\r\nstruct if_data {\r\n\t/* generic interface information */\r\n\tuint8_t\tifi_type;\t\t/* ethernet, tokenring, etc */\r\n\tuint8_t\tifi_physical;\t\t/* e.g., AUI, Thinnet, 10base-T, etc */\r\n\tuint8_t\tifi_addrlen;\t\t/* media address length */\r\n\tuint8_t\tifi_hdrlen;\t\t/* media header length */\r\n\tuint8_t\tifi_link_state;\t\t/* current link state */\r\n\tuint8_t\tifi_vhid;\t\t/* carp vhid */\r\n\tuint16_t\tifi_datalen;\t/* length of this data struct */\r\n\tuint32_t\tifi_mtu;\t/* maximum transmission unit */\r\n        ....\r\n};\r\n```\r\n",
+	"user": {
+		"login": "l-d-x",
+		"id": 10729706,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-20T00:28:24Z",
+	"updated_at": "2015-08-20T00:42:44Z"
+}

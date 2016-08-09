@@ -1,0 +1,12 @@
+{
+	"id": 103429573,
+	"body": "Hmm..  Though on further though I think that might open up a race condition.  Consider:\r\n\r\n  1. numOpen = 1, and conn() decides to open a connection\r\n  2. The connection attempt fails and maybeOpenNewConnections() writes into db.openerCh\r\n  3. Another goroutine calls conn() again, sees numOpen = 1 and decides to open a connection\r\n  4. connectionOpener receives on db.openerCh and opens a third connection\r\n\r\nNow you have three connections open, even though maxOpenConns is two.\r\n\r\nI'm not sure whether a similar race condition already exists in the code or what the best way to fix it is.  The most simple fix appears to be to change this code in `conn`:\r\n\r\n```go\r\n    if db.maxOpen \u003e 0 \u0026\u0026 db.numOpen \u003e= db.maxOpen\r\n```\r\n\r\nto also take db.pendingOpens into account.  But that might break some code path which already works today.",
+	"user": {
+		"login": "johto",
+		"id": 951744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-19T10:24:59Z",
+	"updated_at": "2015-05-19T10:25:11Z"
+}

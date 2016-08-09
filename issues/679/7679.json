@@ -1,0 +1,22 @@
+{
+	"id": 51287060,
+	"number": 7679,
+	"state": "closed",
+	"title": "astutil: DeleteImport() works improperly when deleting import that has a blank line above.",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.2.1 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Open \u003ca href=\"http://play.golang.org/p/EGlfn7xRzL\"\u003ehttp://play.golang.org/p/EGlfn7xRzL\u003c/a\u003e\n2. Press \u0026quot;Format\u0026quot; with Imports checked\n3. Press \u0026quot;Format\u0026quot; with Imports checked a 2nd time, and notice the output\nchanges.\n\nWhat happened?\nAfter pressing \u0026quot;Format\u0026quot; with Imports checked the first time:\n\n```Go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;github.com/google/go-querystring/query\u0026quot;\n)\n\nfunc main() {\n\tfmt.Println(\u0026quot;goimports: Test removal of first entry in a group.\u0026quot;)\n\n\t//var _ = github.Bool\n\tvar _ = query.Values\n}\n```\n\nAfter pressing it a 2nd time:\n\n```Go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\n\t\u0026quot;github.com/google/go-querystring/query\u0026quot;\n)\n\nfunc main() {\n\tfmt.Println(\u0026quot;goimports: Test removal of first entry in a group.\u0026quot;)\n\n\t//var _ = github.Bool\n\tvar _ = query.Values\n}\n```\n\nWhat should have happened instead?\nThe final output (after 2 presses of Format) should've appeared after pressing Format\nthe first time.\n\nPlease provide any additional information below.\nI've traced the issue to a problem in \u0026quot;code.google.com/p/go.tools/astutil\u0026quot;\npackage, and I offer a fix (along with a currently-failing test, that my fix allows to\npass).\n\nThe original output of Format/goimports does not have a blank line because the output of\nastutil.Imports() is incorrect - it reports the two imports, line after line, as 2\nseparate paragraphs, despite that they don't have a blank line in between.\n\nHowever, the problem is not in astutil.Imports(), instead it is in\nastutil.DeleteImport().\n\nIt occurs only when deleting an import that has a blank line immediately preceding, and\nother imports before that.\n\nIt is related to issue \u003ca href=\"https://golang.org/issue/7132\"\u003ehttps://golang.org/issue/7132\u003c/a\u003e and the code\nthat was added to fix that issue. More specifically, the fix to 7132 adds some code that\nshould be run in all other cases, except the above edge case (i.e. deleting the first\nimport in the 2nd/3rd/4th/etc. group of imports).\n\nHere is a failing test for astutil.DeleteImport():\n\n```Go\nvar deleteTests = []test{\n\t// Existing delete tests...,\n\t{\n\t\tname: \u0026quot;import.13\u0026quot;,\n\t\tpkg:  \u0026quot;io\u0026quot;,\n\t\tin: `package main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\n\t\u0026quot;io\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;utf8\u0026quot;\n\n\t\u0026quot;go/format\u0026quot;\n)\n`,\n\t\tout: `package main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;utf8\u0026quot;\n\n\t\u0026quot;go/format\u0026quot;\n)\n`,\n\t},\n}\n```\n\nWith the latest `code.google.com/p/go.tools/astutil` as of right now, the above test\nfails by producing:\n\n```Go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;utf8\u0026quot;\n\n\t\u0026quot;go/format\u0026quot;\n)\n```\n\nPlease see my patch and tests here (also attached as .patch), I hope it's useful:\n\n\u003ca href=\"https://gist.github.com/shurcooL/9907651/revisions\"\u003ehttps://gist.github.com/shurcooL/9907651/revisions\u003c/a\u003e\n\nWith those changes, old and new tests pass.\n\n$ go test code.google.com/p/go.tools/imports\nok  \tcode.google.com/p/go.tools/imports\t0.068s\n\nAnd running imports.Process() (or `goimports` command) on\n\u003ca href=\"http://play.golang.org/p/EGlfn7xRzL\"\u003ehttp://play.golang.org/p/EGlfn7xRzL\u003c/a\u003e produces correct output on first try.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7679/0/astutil.patch\"\u003eastutil.patch\u003c/a\u003e (2768 bytes)",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:42:39Z",
+	"created_at": "2014-04-01T04:48:44Z",
+	"updated_at": "2016-06-25T01:31:13Z"
+}

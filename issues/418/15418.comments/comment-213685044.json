@@ -1,0 +1,12 @@
+{
+	"id": 213685044,
+	"body": "I found a simpler case looks like this issues.\r\n\r\nhttp://play.golang.org/p/pEhnPbsnDG\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\t/*\r\n\tTimeLine:\r\n\t* Thread A locker.RLock() return\r\n\t* Thread B locker.Lock() start\r\n\t* Thread A locker.RLock() start\r\n\t* Thread A and Thread B are deadlock\r\n\t */\r\n\tlocker:=sync.RWMutex{}\r\n\tlocker.RLock()\r\n\tgo func(){\r\n\t\tlocker.Lock()\r\n\t\tlocker.Unlock()\r\n\t}()\r\n\ttime.Sleep(10*time.Millisecond)\r\n\tlocker.RLock()\r\n\tlocker.RUnlock()\r\n\tlocker.RUnlock()\r\n\ttime.Sleep(10*time.Millisecond)\r\n}\r\n```\r\n\r\nI found another case which is not deadlock.\r\nhttp://play.golang.org/p/cZeBkt11Kv\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tlocker:=sync.RWMutex{}\r\n\tlocker.RLock()\r\n\tgo func(){\r\n\t\tlocker.Lock()\r\n\t\tlocker.Unlock()\r\n\t}()\r\n\tgo func(){\r\n\t\ttime.Sleep(10*time.Millisecond)\r\n\t\tlocker.RLock()\r\n\t\tlocker.RUnlock()\r\n\t}()\r\n\ttime.Sleep(20*time.Millisecond)\r\n\tlocker.RUnlock()\r\n}\r\n```\r\n\r\nSo It looks like that you should not use RLock twice in the same thread from those examples.\r\nIf this is an implement limit,you should add a document to the RWMutex.",
+	"user": {
+		"login": "bronze1man",
+		"id": 1107541,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-23T07:39:58Z",
+	"updated_at": "2016-04-23T07:54:09Z"
+}

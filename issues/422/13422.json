@@ -1,0 +1,17 @@
+{
+	"id": 119293666,
+	"number": 13422,
+	"state": "closed",
+	"title": "race between File.Sync() and RWMutex.RLock()",
+	"body": "This issue was tested on two servers with go1.4.2 linux/amd64 and one with go1.5.1 linux/amd64, all running up-to-date Hardened Gentoo Linux. Playground doesn't have this issue.\r\n\r\nThis code hangs after printing \"3\" in 99% cases:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"os\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tm := \u0026sync.RWMutex{}\r\n\tm.Lock()\r\n\tgo locker(m)\r\n\r\n\tf, err := os.Create(\"/tmp/bug-fsync-mutex\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tfmt.Println(\"1\")\r\n\tm.RLock()\r\n\tfmt.Println(\"2\")\r\n\tf.Sync()\r\n\tfmt.Println(\"3\")\r\n\tm.RLock()\r\n\tfmt.Println(\"4\")\r\n}\r\n\r\nfunc locker(m *sync.RWMutex) {\r\n\tc := time.Tick(10 * time.Millisecond)\r\n\tfor {\r\n\t\tm.Unlock()\r\n\t\t\u003c-c\r\n\t\tm.Lock()\r\n\t}\r\n}\r\n```\r\n```sh\r\n$ go run main.go\r\n1\r\n2\r\n3\r\n\r\n```\r\nNearly any change will \"fix\" this issue:\r\n- removing f.Sync()\r\n- using /dev/null instead of real file\r\n- using os.Open() instead of os.Create()\r\n- increasing Tick() delay to 100 milliseconds (actually in real project which have this issue I use 100 milliseconds, but after removing all unrelated code I had to decrease this delay to reliably have this issue)\r\n- removing locker() and initial m.Lock()\r\n\r\nstrace (without -ff) output is:\r\n```\r\nfutex(0x59af10, FUTEX_WAIT, 0, NULL)    = 0\r\nopenat(AT_FDCWD, \"/tmp/bug-fsync-mutex\", O_RDWR|O_CREAT|O_TRUNC|O_CLOEXEC, 0666) = 3\r\nwrite(1, \"1\\n\", 21\r\n)                      = 2\r\nwrite(1, \"2\\n\", 22\r\n)                      = 2\r\nfsync(3)                                = 0\r\nfutex(0x59a980, FUTEX_WAKE, 1)          = 1\r\nfutex(0x59a8c0, FUTEX_WAKE, 1)          = 1\r\nwrite(1, \"3\\n\", 23\r\n)                      = 2\r\nfutex(0x59af10, FUTEX_WAIT, 0, NULL)    = 0\r\nfutex(0x59af10, FUTEX_WAIT, 0, NULL)    = 0\r\n...\r\n```\r\nand with os.Open() instead of os.Create():\r\n```\r\nfutex(0xc82000ce90, FUTEX_WAKE, 1)      = 1\r\nfutex(0xc82000ce90, FUTEX_WAKE, 1)      = 1\r\nopenat(AT_FDCWD, \"/tmp/bug-fsync-mutex\", O_RDONLY|O_CLOEXEC) = 3\r\nsched_yield()                           = 0\r\nfutex(0x5a18a0, FUTEX_WAKE, 1)          = 0\r\nwrite(1, \"1\\n\", 21\r\n)                      = 2\r\nwrite(1, \"2\\n\", 22\r\n)                      = 2\r\nfsync(3)                                = 0\r\nwrite(1, \"3\\n\", 23\r\n)                      = 2\r\nwrite(1, \"4\\n\", 24\r\n)                      = 2\r\nexit_group(0)                           = ?\r\n+++ exited with 0 +++\r\n```",
+	"user": {
+		"login": "powerman",
+		"id": 1354301,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-28T16:10:37Z",
+	"created_at": "2015-11-28T13:17:49Z",
+	"updated_at": "2015-11-28T16:10:37Z"
+}

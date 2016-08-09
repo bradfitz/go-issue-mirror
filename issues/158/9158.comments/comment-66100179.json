@@ -1,0 +1,12 @@
+{
+	"id": 66100179,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4 by **rjbrown**:\n\n\u003cpre\u003eSorry it's too vague.  The high level issue is that passing the file's last modified\ntime to ServeContent() causes it to fail when Chrome requests byte ranges, as it will do\nwhen playing a movie.  \n\nYou can see the problem if you compile and run the file I sent, and try to use it to\nserve a movie to chrome. (note I think I left in a extra import of \"time\").  You can see\nit working better if you pass in time.Time{} for file modification time, but that turns\noff caching altogether.\n\nOne option would be to simply ignore the last modified time if there are byte ranges,\nand treat it as if time.Time{} was passed in instead.\n\nIf you want to go deeper, I think it may require using an ETag.\n\nI have compared the relevant request and response headers between node.js/Express, which\nseems to work well, and Go.\n\nGo:\n\n request stuff:\n\n  If-Range:Wed, 24 Sep 2014 03:40:19 GMT\n  Range:bytes=311341427-311341481\n\n response stuff:\n\n  Accept-Ranges: bytes\n  Content-Length: 311341482 \n  Content-Type: video/mp4\n  Last-Modified: Wed, 24 Sep 2014 03:40:19 GMT\n  Date: Tue, 25 Nov 2014 01:10:05 GMT\n\n\nnode.js / Express:\n\n request stuff:\n\n  If-Modified-Since:Sun, 23 Nov 2014 02:57:25 GMT\n  If-None-Match:W/\"YDWPLS6jm+fU6uuI0DSUOg==\"\n  Range:bytes=1342296-2097151\n\n response stuff:\n\n  Accept-Ranges:bytes\n  Cache-Control:public, max-age=0\n  Connection:keep-alive\n  Date:Tue, 25 Nov 2014 01:21:33 GMT \n  ETag:W/\"YDWPLS6jm+fU6uuI0DSUOg==\"\n  Last-Modified:Wed, 24 Sep 2014 03:40:19 GMT\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-11-25T02:01:16Z",
+	"updated_at": "2014-12-08T10:50:01Z"
+}

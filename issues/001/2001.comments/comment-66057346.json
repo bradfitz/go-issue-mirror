@@ -1,0 +1,12 @@
+{
+	"id": 66057346,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eSomething similar is happening at tip.\n\nI now sometimes get a deadlock with GOMAXPROCS\u003e1, regardless of whether I call\nruntime.GOMAXPROCS(0).\n\nThe stack trace looks like this:\n\nos.copyenv()\n        go/src/pkg/os/env_unix.go:22 +0x2d\nsync.(*Once).Do(0x901530, 0x42e2ed, 0x200000002, 0x400)\n        go/src/pkg/sync/once.go:40 +0x7b\nos.Getenverror(0x72f134, 0xf80000000e, 0x0, 0xf800000000, 0x0, ...)\n        go/src/pkg/os/env_unix.go:38 +0x55\nos.Getenv(0x72f134, 0x5f4853530000000e, 0xf8481a1000, 0xe, 0x41bd8b, ...)\n        go/src/pkg/os/env_unix.go:57 +0x2f\nmain.main()\n        foo.go:98 +0x47\n\ngoroutine 2 [running]:\nib._Cfunc_ibv_get_async_event(0x3b819f0, 0xf8481a1400)\n        src/pkg/ib/_obj/_cgo_defun.c:371 +0x2f\nib.getAsyncEvents(0x3b819f0, 0x0)\n        src/pkg/ib/_obj/ib.cgo1.go:213 +0x40\ncreated by ib.init·1\n        src/pkg/ib/_obj/ib.cgo1.go:250 +0x1ae\n\nThe ib package's init code essentially does this:\n\nfunc init() {\n    go getAsyncEvents()\n}\n\nI wonder if it's signifcant that the goroutine that calls the Cgo code is started from\nan init function?\n\nI will try again to produce a piece of code that doesn't depend on the C library we're\nusing.\n\nI've also attached an strace.log from a run where it hangs. Not much useful though.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2001/9/strace.log\"\u003estrace.log\u003c/a\u003e (18726 bytes)",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-10-07T14:05:02Z",
+	"updated_at": "2014-12-08T10:10:54Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51279755,
+	"number": 2826,
+	"state": "closed",
+	"title": "net: parseProcNetIGMP is broken on linux-2.6",
+	"body": "by **borman@google.com**:\n\n\u003cpre\u003eThe parseProcNetIGMP function in pkg/net/interface_linux.go is broken.  It incorrectly\nparses each line into fields and then uses wrong heuristics to determine if this is a\nnew interface line or not.\n\nWhat steps will reproduce the problem?\n1. Create a tap interface whose name is length of 10\n2. run \u0026quot;make test\u0026quot; inside of pkg/net\n3. watch panic\n\nWhat is the expected output?\n\nNot a panic\n\nWhat do you see instead?\n\na panic\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g (does not matter)\n\nWhich operating system are you using?\n\nLinux\n\nWhich revision are you using?  (hg identify)\n\nf79343c8a479\n\nPlease provide any additional information below.\n\nThe problem is that the code naively thinks there will be 5 whitespace separated words\non a line that contains an interface name.  This is not the format of this line.  It has\n2 words, a colon, and then 2 more words.  The colon may or may not have whitespace in\nfront of it.  For interface names of length 10 (or greater?) there are only 4 whitespace\nfields since the colon nestles up to the interface name.\n\nThe quick solution is to add the following after the \u0026quot;case 4:\u0026quot; in\nparseProcNetIGMP:\n\n                        if f[1][len(f[1])-1] ==\n                                name = f[1]\n                                continue\n                        }\n\nA more correct fix would be to properly parse this file.  If the first character is not\na space then the line defines an interface, otherwise it does not.  For example:\n\n                if len(l) \u0026gt; 0 \u0026amp;\u0026amp; l[0] == ' ' {\n                        if len(f) == 4 {\n                                if ifi == nil || name == ifi.Name {\n                                        fmt.Sscanf(f[0], \u0026quot;%08x\u0026quot;, \u0026amp;b)\n                                        ifma := IPAddr{IP: IPv4(b[3], b[2], b[1], b[0])}\n                                        ifmat = append(ifmat, ifma.toAddr())\n                                }\n                        }\n                } else if f[1][len(f[1])-1] == ':' {\n                        name = f[1][:len(f[1])-1]\n                } else {\n                        name = f[1]\n                }\n\nThis also demonstrates a problem with the networking tests.  They attempt to use live\nsystem data for the tests.  This is not wise as it only tests what is configured for the\nsystem.  For example, this function should start:\n\nfunc parseProcNetIGMP(ifi *Interface) []Addr {\n        fd, err := open(\u0026quot;/proc/net/igmp\u0026quot;)\n        if err != nil {\n                return nil\n        }\n        defer fd.close()\n        return _parseProcNetIGMP(ifi, fd)\n}\n\nfunc _parseProcNetIGMP(ifi *Interface, fd *file) []Addr {\n\nHowever the use of the internal concreate type \u0026quot;file\u0026quot; rather than an interface\ndoes make testing more difficult.  The parse.go package really should be refactored to\nallow proper and complete testing.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:14:56Z",
+	"created_at": "2012-02-01T17:49:26Z",
+	"updated_at": "2016-06-24T21:25:00Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

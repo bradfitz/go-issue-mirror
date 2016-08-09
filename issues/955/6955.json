@@ -1,0 +1,21 @@
+{
+	"id": 51285983,
+	"number": 6955,
+	"state": "open",
+	"title": "gccgo: netpoll_select.c spins on select(2)",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nDuring our solaris port we reused the gccgo netpoll_select.c. We've recently discovered\nthat when the netpoller is running it will loop continually on select(2)\n\nI've reproduced the problem on linux by replacing the epoll system with select (see diff\nat the bottom of the issue) and reproduced the problem.\n\nWhat is the expected output? What do you see instead?\n\nlucky(~/src) % more bug.go \npackage main\n\nimport \u0026quot;net\u0026quot;\nimport \u0026quot;time\u0026quot;\n\nfunc main() {\n        net.Dial(\u0026quot;tcp\u0026quot;, \u0026quot;www.google.com:80\u0026quot;) // don't care about result, just start poller\n        time.Sleep(time.Minute)\n}\n\nlucky(~/src) % gccgo bug.go\nlucky(~/src) % time ./a.out\n\nreal    1m0.091s\nuser    0m20.851s\nsys     0m39.159s\n\nWe traced this to poller continually retrying the operation. \n\nPlease use labels and text to provide additional information.\n\nIndex: ../devel/gcc/trunk/libgo/Makefile.am\n===================================================================\n--- ../devel/gcc/trunk/libgo/Makefile.am        (revision 205993)\n+++ ../devel/gcc/trunk/libgo/Makefile.am        (working copy)\n@@ -413,7 +413,7 @@\n endif\n \n if LIBGO_IS_LINUX\n-runtime_netpoll_files = runtime/netpoll_epoll.c\n+runtime_netpoll_files = runtime/netpoll_select.c\n else\n if LIBGO_IS_SOLARIS\n runtime_netpoll_files = runtime/netpoll_select.c\nIndex: ../devel/gcc/trunk/libgo/Makefile.in\n===================================================================\n--- ../devel/gcc/trunk/libgo/Makefile.in        (revision 205993)\n+++ ../devel/gcc/trunk/libgo/Makefile.in        (working copy)\n@@ -181,7 +181,7 @@\n @HAVE_SYS_MMAN_H_TRUE@am__objects_2 = mem.lo\n @LIBGO_IS_LINUX_FALSE@@LIBGO_IS_SOLARIS_FALSE@am__objects_3 = netpoll_kqueue.lo\n @LIBGO_IS_LINUX_FALSE@@LIBGO_IS_SOLARIS_TRUE@am__objects_3 = netpoll_select.lo\n-@LIBGO_IS_LINUX_TRUE@am__objects_3 = netpoll_epoll.lo\n+@LIBGO_IS_LINUX_TRUE@am__objects_3 = netpoll_select.lo\n @LIBGO_IS_RTEMS_TRUE@am__objects_4 = rtems-task-variable-add.lo\n @LIBGO_IS_DARWIN_FALSE@@LIBGO_IS_FREEBSD_FALSE@@LIBGO_IS_IRIX_FALSE@@LIBGO_IS_LINUX_FALSE@@LIBGO_IS_NETBSD_FALSE@@LIBGO_IS_SOLARIS_FALSE@am__objects_5 = getncpu-none.lo\n @LIBGO_IS_DARWIN_FALSE@@LIBGO_IS_FREEBSD_FALSE@@LIBGO_IS_IRIX_FALSE@@LIBGO_IS_LINUX_FALSE@@LIBGO_IS_NETBSD_TRUE@@LIBGO_IS_SOLARIS_FALSE@am__objects_5 = getncpu-bsd.lo\n@@ -752,7 +752,7 @@\n @LIBGO_IS_LINUX_TRUE@runtime_getncpu_file = runtime/getncpu-linux.c\n @LIBGO_IS_LINUX_FALSE@@LIBGO_IS_SOLARIS_FALSE@runtime_netpoll_files = runtime/netpoll_kqueue.c\n @LIBGO_IS_LINUX_FALSE@@LIBGO_IS_SOLARIS_TRUE@runtime_netpoll_files = runtime/netpoll_select.c\n-@LIBGO_IS_LINUX_TRUE@runtime_netpoll_files = runtime/netpoll_epoll.c\n+@LIBGO_IS_LINUX_TRUE@runtime_netpoll_files = runtime/netpoll_select.c\n runtime_files = \\\n        runtime/go-append.c \\\n        runtime/go-assert.c \\\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2013-12-15T00:33:04Z",
+	"updated_at": "2015-04-15T17:34:41Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

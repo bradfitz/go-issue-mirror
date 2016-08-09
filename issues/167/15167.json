@@ -1,0 +1,28 @@
+{
+	"id": 146512196,
+	"number": 15167,
+	"state": "closed",
+	"title": "runtime: mksyscall_windows.go -systemdll flag generates code that does not build",
+	"body": "The -systemdll flag says that it should be used if DLLs are to be loaded from Windows system dirctory. And I noticed that golang.org/x/sys/windows/registry \"go generate\" line does not have that flag. So I tried to add -systemdll flag:\r\n\r\n```\r\n# cd $GOPATH/src/golang.org/x/sys/windows/registry\r\n# git diff\r\ndiff --git a/windows/registry/syscall.go b/windows/registry/syscall.go\r\nindex c8a986f..0d07a84 100644\r\n--- a/windows/registry/syscall.go\r\n+++ b/windows/registry/syscall.go\r\n@@ -8,7 +8,7 @@ package registry\r\n \r\n import \"syscall\"\r\n \r\n-//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -xsys -output zsyscall_windows.go syscall.go\r\n+//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -xsys -systemdll -output zsyscall_windows.go syscall.go\r\n \r\n const (\r\n \t_REG_OPTION_NON_VOLATILE = 0\r\n# GOOS=windows go generate\r\n# git diff\r\ndiff --git a/windows/registry/syscall.go b/windows/registry/syscall.go\r\nindex c8a986f..0d07a84 100644\r\n--- a/windows/registry/syscall.go\r\n+++ b/windows/registry/syscall.go\r\n@@ -8,7 +8,7 @@ package registry\r\n \r\n import \"syscall\"\r\n \r\n-//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -xsys -output zsyscall_windows.go syscall.go\r\n+//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -xsys -systemdll -output zsyscall_windows.go syscall.go\r\n \r\n const (\r\n \t_REG_OPTION_NON_VOLATILE = 0\r\ndiff --git a/windows/registry/zsyscall_windows.go b/windows/registry/zsyscall_windows.go\r\nindex 0fa24c6..0a2f4b6 100644\r\n--- a/windows/registry/zsyscall_windows.go\r\n+++ b/windows/registry/zsyscall_windows.go\r\n@@ -4,6 +4,7 @@ package registry\r\n \r\n import (\r\n \t\"golang.org/x/sys/windows\"\r\n+\t\"internal/syscall/windows/sysdll\"\r\n \t\"syscall\"\r\n \t\"unsafe\"\r\n )\r\n@@ -11,8 +12,8 @@ import (\r\n var _ unsafe.Pointer\r\n \r\n var (\r\n-\tmodadvapi32 = windows.NewLazySystemDLL(\"advapi32.dll\")\r\n-\tmodkernel32 = windows.NewLazySystemDLL(\"kernel32.dll\")\r\n+\tmodadvapi32 = windows.NewLazySystemDLL(sysdll.Add(\"advapi32.dll\"))\r\n+\tmodkernel32 = windows.NewLazySystemDLL(sysdll.Add(\"kernel32.dll\"))\r\n \r\n \tprocRegCreateKeyExW           = modadvapi32.NewProc(\"RegCreateKeyExW\")\r\n \tprocRegDeleteKeyW             = modadvapi32.NewProc(\"RegDeleteKeyW\")\r\n# GOOS=windows go build\r\npackage golang.org/x/sys/windows/registry\r\n        imports internal/syscall/windows/sysdll: use of internal package not allowed\r\n#\r\n```\r\n\r\nBut without success.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-05-11T02:31:00Z",
+	"created_at": "2016-04-07T05:19:17Z",
+	"updated_at": "2016-05-11T07:00:59Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

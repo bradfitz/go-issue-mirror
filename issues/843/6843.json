@@ -1,0 +1,30 @@
+{
+	"id": 51285811,
+	"number": 6843,
+	"state": "closed",
+	"title": "net: test fails on misconfigured kernels",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. get tip: hg pull -u\n2. cd src\n3. ./all.bash\n\nWhat is the expected output?\n\nEverything compiles and tests okay.\n\nWhat do you see instead?\n\nA kernel panic.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g.\n\nWhich operating system are you using?\n\nKernel 2.6.26-2-xen-amd64 on a Debian 5.0 system (yes, I know it's obsolete).\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +bddf2a72f5e1 Wed Nov 27 19:32:15 2013 +1100 linux/amd64\n\nPlease provide any additional information below.\n\nThis is a little hard to track down properly, since I'm compiling go on a VPS and cannot\nsee the console kernel messages.  I have two interfaces -- eth0, and the loopback\ninterface.  There are a few issues here.\n\n#1: if an IPv6 address is assigned to eth0, TestDialMultiFDLeak in\nsrc/pkg/net/dial_test.go causes the system to panic.\n\nI used \u0026quot;ip -6 addr del ... \u0026quot; to delete the IPv6 addresses on eth0 (global,\nlink-local).  I got past that test.\n\n#2: if the loopback interface has ::1/128, the system panics at seemingly random places.\n I've seen it crash during these tests: TestUnixListenerSpecificMethods,\nTestUnixConnSpecificMethods, TestStreamConnServer, TestUDPListenClose\n\n#3: with ::1/128 removed from loopback, there are no crashes.  However, it fails one\ntest:\n\n=== RUN TestStreamConnServer\n--- FAIL: TestStreamConnServer (0.00 seconds)\n        server_test.go:218: Dial(\u0026quot;tcp\u0026quot;, \u0026quot;[::1]:52386\u0026quot;) failed: dial tcp [::1]:52386: network is unreachable\n\nI don't expect to use IPv6, so I don't mind disabling it on this server.  Plus, this is\nprobably a Linux issue, likely fixed in a newer kernel; it doesn't seem to be a problem\nwith go (except for #3 -- that test should be fixed).  The same version (commit\nbddf2a72f5e1) works fine on a 3.2.0-55-virtual system.\u003c/pre\u003e",
+	"user": {
+		"login": "faried",
+		"id": 13652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LongTerm"
+		},
+		{
+			"name": "Testing"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2016-05-12T09:59:39Z",
+	"created_at": "2013-11-28T20:01:01Z",
+	"updated_at": "2016-05-12T09:59:39Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

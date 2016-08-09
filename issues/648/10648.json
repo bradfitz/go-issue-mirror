@@ -1,0 +1,22 @@
+{
+	"id": 72291780,
+	"number": 10648,
+	"state": "closed",
+	"title": "encoding/json: marshal does not obey omitempty for empty structures",
+	"body": "Continuing from #9585...\r\n\r\n\u003e A struct value cannot be 'empty'\r\n\r\nWhy can't a struct value be empty? My understanding is that the purpose of \"omitempty\" is to avoid marshalling information that is implicitly understood (e.g. if a value is not set, then it should be the zero value). Given this understanding (which may be flawed; please correct me if I am wrong), it would make sense to compare each field value with the output of [reflect.Zero](http://golang.org/pkg/reflect/#Zero) (since this is the value that Go will create) and use this comparison as the basis for [isEmptyValue](http://golang.org/src/encoding/json/encode.go?s=9105:9654#L280).\r\n\r\nGiven the following type declaration:\r\n\r\n```go\r\ntype MyType struct {\r\n    Field struct {\r\n        SubField int `json:\"subfield,omitempty\"`\r\n    } `json:\"field,omitempty\"`\r\n}\r\n```\r\n\r\nI would expect `MyType{}` to json.Marshal into `{}` because there is no extra data needed to reconstruct this object. Instead, it marshals to `{\"field\":{}}`, even though this doesn't actually encode any more information. (http://play.golang.org/p/xZP2gafHY9)\r\n\r\nI would expect that either:\r\n - [isEmptyValue](http://golang.org/src/encoding/json/encode.go?s=9105:9654#L280) uses [reflect.Zero](http://golang.org/pkg/reflect/#Zero) to do the comparison\r\n - [isEmptyValue](http://golang.org/src/encoding/json/encode.go?s=9105:9654#L280) recursively checks to see if the member fields are empty (if the object is a struct)",
+	"user": {
+		"login": "crawford",
+		"id": 368848,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2016-07-19T21:49:41Z",
+	"created_at": "2015-04-30T21:54:11Z",
+	"updated_at": "2016-07-19T21:49:41Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 68776763,
+	"body": "I don't have the machinery to reproduce this bug today, but here's a possibility: we are not honoring the JNI semantics for GetByteArrayElements / ReleaseByteArrayElements. In particular in seq_android.c we have:\r\n\r\n        jbyte* b = (*env)-\u003eGetByteArrayElements(env, v, \u0026isCopy);\r\n        ...\r\n        MEM_WRITE(int64_t) = (int64_t)((intptr_t)b);\r\n        (*env)-\u003eReleaseByteArrayElements(env, v, (jbyte*)b, 0);\r\n\r\nAt the point that ReleaseByteArrayElements is called, the pointer b is no longer valid. ART is free to stop the world, and as part of garbage collection move the memory. That would fit with the SIGBUS @ChrisSmith is seeing.\r\n\r\nWhat we need to do is:\r\n\r\n        jbyte* b = (*env)-\u003eGetByteArrayElements(env, v, \u0026isCopy);\r\n        // put b on a list of bytearrays maintained by the Seq instance\r\n        MEM_WRITE(int64_t) = (int64_t)((intptr_t)b);\r\n\r\nThen later inside Java_go_Seq_send, have a cleanup phase after the call\r\n\r\n        Send(desc, (GoInt)code, src-\u003ebuf, src-\u003elen, \u0026dst-\u003ebuf, \u0026dst-\u003elen);\r\n        // iterate list, call ReleaseByteArrayElements\r\n\r\nAfter the Send returns, the Go code will have decoded the Seq, which includes copying the bytes out of the pointer.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-05T20:40:01Z",
+	"updated_at": "2015-01-05T20:40:13Z"
+}

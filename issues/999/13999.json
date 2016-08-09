@@ -1,0 +1,25 @@
+{
+	"id": 127256507,
+	"number": 13999,
+	"state": "open",
+	"title": "proposal: encoding/asn1 -  Better handling of ASN.1 CHOICE",
+	"body": "Hi, \r\nI am unfortunate enough to be using the ASN.1 protocol. To make my life a bit less miserable, I would like to propose a change to the encoding/asn1 package.  \r\n\r\nCurrently there is no nice way to handle the ASN.1 CHOICE type. When I want to decode a CHOICE type, I first need to decode the outer message, get the asn1.RawValue for the CHOICE type switch on the ASN.1 tag, create an desired structure instance depending on the tag and decode the RawData into the struct. Let's take some real world example : \r\n\r\nhttps://www.ietf.org/rfc/rfc4210.txt:\r\n```\r\nPKIMessage ::= SEQUENCE {\r\n         header           PKIHeader,\r\n         body             PKIBody,\r\n         protection   [0] PKIProtection OPTIONAL,\r\n         extraCerts   [1] SEQUENCE SIZE (1..MAX) OF CMPCertificate\r\n                          OPTIONAL\r\n     }\r\n\r\n PKIBody ::= CHOICE {\r\n          ir       [0]  CertReqMessages,       --Initialization Req\r\n          ip       [1]  CertRepMessage,        --Initialization Resp\r\n          cr       [2]  CertReqMessages,       --Certification Req\r\n          cp       [3]  CertRepMessage,        --Certification Resp\r\n          p10cr    [4]  CertificationRequest,  --PKCS #10 Cert.  Req.\r\n          popdecc  [5]  POPODecKeyChallContent --pop Challenge\r\n          popdecr  [6]  POPODecKeyRespContent, --pop Response\r\n       [...]\r\n}\r\n``` \r\n\r\nIn GO : \r\n```\r\ntype CertRepMessage struct {\r\n[...]\r\n}\r\n\r\ntype POPODecKeyRespContent struct{\r\n[...]\r\n\r\ntype PKIMessage struct {\r\n\tHeader          PKIHeader\r\n\tPKIBody       asn1.RawValue\r\n\tProtection     asn1.RawValue `asn1:\"tag:0,optional\"` // Not interesting \r\n\tExtraCerts    asn1.RawValue `asn1:\"tag:1,optional\"` // Not interesting \r\n}\r\n```\r\n\r\nDecoding : \r\n```\r\nvar DERBytes []byte // this slice contains received DER encoded PKIMessage\r\nvar pkiMsg PKIMessage\r\n_, err = asn1.Unmarshal(derBytes, \u0026pkiMsg)\r\n\tif err != nil {\r\n\t\treturn nil, err\r\n\t}\r\nvar body interface{}\r\nswitch pkiMsg.PKIBody.Tag{\r\n    case 1:\r\n          body = \u0026CertRepMessage{}\r\n    case 6 : \r\n          body = \u0026POPODecKeyRespContent{}\r\n    default : \r\n          panic(\"Something is wrong here\")\r\n}\r\n\r\n_, err = asn1.Unmarshal(pkiMsg.PKIBody.Bytes, body)\r\n\t\tif err != nil {\r\n\t\t\treturn nil, err\r\n\t\t}\r\n```\r\n\r\nAs you can see i need to call the asn1.Unmarshal twice and the code is bloated more than necessary. \r\nFor encoding it looks similiar, I need to first encode the PKIBody into an ASN.1, and then assign  the resulting byte slice into the PKIMessage.PKIBody.Raw field, along with the appropriate tag. \r\nThen I need to all asn1.Marshal on the whole PKIMessage, with error checks all the way. \r\n\r\n\r\nI want to propose adding an interface \r\n```\r\ntype Choice interface{\r\n      Class() int\r\n      Tag() int \r\n      IsCompound() bool\r\n}\r\n```\r\nInto the ASN.1 package. Structs that would be encoded into the ASN.1 CHOICE field would implement this interface. \r\nThe marshaller would check if it is marshalling such interface and then create asn1.RawValue accordingly. \r\n\r\nFor decoding I would suggest adding a method : \r\nRegisterChoice in the asn1 package : \r\n```\r\ntype choiceSelector{\r\n   class int\r\n   tag int\r\n   isCompound bool\r\n}\r\nvar chociceMap map[choiceSelector]interface // or type.Type\r\n// UPDATE : I am simplifying the method signature a bit\r\nfunc RegisterChoice(type Choice){\r\n       choiceMap[choiceSelector{\r\n             class : type.Class(),\r\n             tag : type.Tag(),\r\n             isCompound: type.IsCompound(),    \r\n       },] = value\r\n}\r\n```\r\nThen the Unmarshal method would check if it unmarshalling a value into a field implementing Choice interface, and look up the appropriate value in the chociceMap. \r\nIf the value is present in the map, it would be initalized properly and then decoded, otherwise marshaller wold leave the field as asn1.RawValue \r\n\r\nThis way the PKIMessage would look like this:\r\n```\r\ntype PKIMessage struct {\r\n\tHeader          PKIHeader\r\n\tPKIBody       interface{} // or asn1.RawValue if you decide that it is OK for the asn1.RawValue to also implement the Choice interface\r\n\tProtection     asn1.RawValue `asn1:\"tag:0,optional\"` // Not interesting \r\n\tExtraCerts    asn1.RawValue `asn1:\"tag:1,optional\"` // Not interesting \r\n}\r\n```\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "szank",
+		"id": 773802,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-01-18T16:02:18Z",
+	"updated_at": "2016-06-10T14:30:01Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

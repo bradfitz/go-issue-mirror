@@ -1,0 +1,22 @@
+{
+	"id": 128420756,
+	"number": 14085,
+	"state": "closed",
+	"title": "mime/multipart: Reader returns part that contains boundary string",
+	"body": "I'm seeing unexpected behavior with the Go HTTP MultipartReader when doing `multipart/related PUT` requests to a REST api which contain 1 JSON part and 3 image parts.  When calling `reader.NextPart()`, it seems to be returning data for both the 3rd and the 4th parts rather than just the 3rd part.  After digging into it further, I noticed that the data it returns for part 3 contains the boundary string itself, which definitely seems like it's breaking the parsing.\r\n\r\nI've only seen this happen rarely, so I think it's dependent on the actual content of the data.\r\n\r\n* Go version: `go1.5.1 darwin/amd64` \r\n* OS/Arch: Centos 7 Linux 64-bit + OSX 64-bit\r\n\r\nSteps to reproduce:\r\n\r\n* Run this [unit test](https://gist.github.com/tleyden/67ae66102dc43ee04690#file-testreadmultipartbody-go)\r\n* Actual: test fails because it finds a part that contains a boundary string\r\n* Expected: no part should returned from `reader.NextPart()` contain the boundary string  \r\n* Expected: the multipart reader should be seeing 4 parts, but it's only seeing 3.  Should match up with what was [seen in wireshark](https://gist.github.com/tleyden/64def2e6c7e668247fec) for the request.\r\n\r\nA hypothesis:\r\n\r\nI did notice that this particular image data happens to contain the byte sequence for `\\r\\n`:\r\n\r\n\u003cimg width=\"1421\" alt=\"hexdump\" src=\"https://cloud.githubusercontent.com/assets/296876/12538487/6e6bf01a-c28f-11e5-9e26-b71cc01bc30f.png\"\u003e\r\n\r\nCould that be causing [this line in multipart.go](https://github.com/golang/go/blob/master/src/mime/multipart/multipart.go#L236) to incorrectly segment it?\r\n\r\n```\r\nline, err := r.bufReader.ReadSlice('\\n')\r\n```\r\n\r\nI'd be more than happy to try to distill this down to a repeatable unit test with no external dependencies.  \r\n\r\n",
+	"user": {
+		"login": "tleyden",
+		"id": 296876,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2016-01-25T06:13:13Z",
+	"created_at": "2016-01-24T19:56:32Z",
+	"updated_at": "2016-01-25T06:20:44Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

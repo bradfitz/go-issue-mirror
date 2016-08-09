@@ -1,0 +1,21 @@
+{
+	"id": 137288939,
+	"number": 14569,
+	"state": "open",
+	"title": "fmt: inconsistent formatting of unicode with %c and %q",
+	"body": "Go1.6\r\n\r\nhttps://play.golang.org/p/XcrX5-8-om\r\n\r\n```\r\ninvalid:\r\nstring     |�|\r\nfmt      c |�|\r\nfmt      q |%!q(int64=1114112)|\r\nstrconv  q |'�'|\r\nfmt      U |U+110000|\r\nfmt U+%04X |U+110000|\r\nfmt     #U |U+110000|\r\n\r\nnon-printable:\r\nstring     ||\r\nfmt      c ||\r\nfmt      q |'\\x00'|\r\nstrconv  q |'\\x00'|\r\nfmt      U |U+0000|\r\nfmt U+%04X |U+0000|\r\nfmt     #U |U+0000|\r\n\r\nprintable:\r\nstring     |⌘|\r\nfmt      c |⌘|\r\nfmt      q |'⌘'|\r\nstrconv  q |'⌘'|\r\nfmt      U |U+2318|\r\nfmt U+%04X |U+2318|\r\nfmt     #U |U+2318 '⌘'|\r\n\r\nmaxInt64:\r\nstring     |�|\r\nfmt      c |�|\r\nfmt      q |%!q(int64=9223372036854775807)|\r\nstrconv  q |'�'|\r\nfmt      U |U+7FFFFFFFFFFFFFFF|\r\nfmt U+%04X |U+7FFFFFFFFFFFFFFF|\r\nfmt     #U |U+7FFFFFFFFFFFFFFF|\r\n\r\nnegative:\r\nstring     |�|\r\nfmt      c |�|\r\nfmt      q |%!q(int64=-1)|\r\nstrconv  q |'�'|\r\nfmt      U |U+FFFFFFFFFFFFFFFF|\r\nfmt U+%04X |U+-001|\r\nfmt     #U |U+FFFFFFFFFFFFFFFF|\r\n\r\nminInt64:\r\nstring     ||\r\nfmt      c |�|\r\nfmt      q |%!q(int64=-9223372036854775808)|\r\nstrconv  q |'\\x00'|\r\nfmt      U |U+8000000000000000|\r\nfmt U+%04X |U+-8000000000000000|\r\nfmt     #U |U+8000000000000000|\r\n```\r\n( Note that strconv should only be looked at within rune/int32 range so minInt64 and maxInt64 here are not relevant due to the explicit rune type conversion in the call to strconv in this example program).\r\n\r\nI would expect fmt %q to be similar to strconv.QuoteRune within rune/int32 range (including negative numbers). E.g. -1 and 1114112 print a quoted utf.RuneError.\r\n\r\nFor values outside int32 range i would expect fmt %c and %q to behave similar. Either both print a badVerb error string or both print an utf8.RuneError (quoted in case of %q). If they print an error string then so should probably %U too.\r\n\r\nAnother possibility is that any invalid unicode point could be rejected by fmt formatting with a badVerb error string for %c %q %U.\r\n\r\nCan/Should fmt be changed to handle these cases more consistently?",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-02-29T15:39:55Z",
+	"updated_at": "2016-03-06T09:38:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

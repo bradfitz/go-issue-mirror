@@ -1,0 +1,12 @@
+{
+	"id": 199492729,
+	"body": "The Go language specifies that certain operations cause a runtime panic.  These operations include dereferencing a pointer that is nil or that is somehow invalid.  That is implemented by installing a signal handler, catching the signal, and turning it into a panic if appropriate.\r\n\r\nWhen using c-shared the Go runtime looks at the location where the signal occurred.  If the signal occurred running non-Go code, it removes the Go signal handler, installs the previous handler if there was one, and raises the signal again.  That is presumably what you are seeing.\r\n\r\nGo c-shared libraries are always multi-threaded and always have background threads running Go code (for the garbage collector if nothing else), so it doesn't work to only install the signal handler while Go code is running.\r\n\r\nFor your purposes you could decide that you don't care about correct Go handling of invalid pointer references, and simply remove the Go signal handler after loading the shared library.  That might work for you, but it would not be a good choice for most Go programs or shared libraries.\r\n\r\nOtherwise, I don't know what to do, but I'm certainly open to suggestions.  The handling of signals with mixed C/Go code is definitely a complex area; see https://golang.org/pkg/os/signal .",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-21T21:24:41Z",
+	"updated_at": "2016-03-21T21:24:41Z"
+}

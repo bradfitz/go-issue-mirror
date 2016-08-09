@@ -1,0 +1,12 @@
+{
+	"id": 122078427,
+	"body": "P0 calls mSpan_Sweep on a large span with an unmarked object on it. mSpan_Sweep calls heapBitsSweepSpan, which invokes the callback for the one object on the span. Because this is a large span, the callback calls initSpan, which clears the bitmap (`P0 [1310]` above). The callback then calls mHeap_Free. This makes the span available for allocation, but this is *too early*.\r\n\r\nP1 grabs this span from the heap to use for 176 byte objects and allocates an LSym in the first slot (`P1 [371]`).\r\n\r\nP0 returns from the callback to heapBitsSweepSpan. It *clears the byte containing the mark*, even though this span has been taken over by P0 at this point.\r\n\r\nI can think of a few solutions.\r\n\r\n1) mSpan_Sweep could delay the mHeap_Free until after the callback and heapBitsSweepSpan returns.\r\n\r\n2) The mSpan_Sweep callback could return a boolean telling heapBitsSweepSpan that the span has been taken care of and it shouldn't touch the bitmap or do anything else with that span.\r\n\r\nI like solution 1 best.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-16T20:21:42Z",
+	"updated_at": "2015-07-16T20:21:42Z"
+}

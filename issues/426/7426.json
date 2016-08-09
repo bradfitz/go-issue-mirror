@@ -1,0 +1,27 @@
+{
+	"id": 51286693,
+	"number": 7426,
+	"state": "closed",
+	"title": "os: Open() makes two system call to open a file on windows",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. Write a simple program calling os.Open and exiting. Run it on Windows while\nmonitoring it with procmon (or alternatively, read the code).\n\nWhat is the expected output?\n\nA single CreateFile system call.\n\nWhat do you see instead?\n\nTwo CreateFile calls.\n\nWhich operating system are you using?\n\nWindows 7\n\nWhich version are you using?  (run 'go version' or 'gccgo --version')\n\nchangeset:   19292:65546d299e5a\nuser:        Josh Bleecher Snyder \u0026lt;josharian@gmail.com\u0026gt;\ndate:        Wed Feb 26 12:25:13 2014 -0800\nsummary:     cmd/gc: fix bad checknil with ints on 32 bit compilers\n\nPlease provide any additional information below.\n\nThis is caused by Open() in file_windows.go calling openDir() first then openFile().\nThere is a brainman comment saying:\n\n  // TODO(brainman): not sure about my logic of assuming it is dir first, then fall back to file\n\nThere is no way to avoid 2 system calls in all cases, but I think opening a file should\nbe tried before opening a directory. I do not recall having used the latter (but maybe\nit is used internally). I have no concrete problem or benchmark about this.\n\nSwitching the calls, and returning the file error when both openFile and openDir fail\nfixes the issue and pass all tests. I do not think openFile might succeed where openDir\ndid before. Reading:\n\n  \u003ca href=\"http://msdn.microsoft.com/en-us/library/windows/desktop/aa363858(v=vs.85).aspx\"\u003ehttp://msdn.microsoft.com/en-us/library/windows/desktop/aa363858(v=vs.85).aspx\u003c/a\u003e\n\nThe only place mentioning directory handle is the dwFlagsAndAttributes section, about\nFILE_FLAG_BACKUP_SEMANTICS, which is never used by syscall.Open().\n\n I can submit a CL if you want.\u003c/pre\u003e",
+	"user": {
+		"login": "pmezard",
+		"id": 1430779,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:41:16Z",
+	"created_at": "2014-02-27T18:26:09Z",
+	"updated_at": "2016-06-25T01:28:36Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

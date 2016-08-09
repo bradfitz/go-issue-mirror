@@ -1,0 +1,22 @@
+{
+	"id": 51286907,
+	"number": 7574,
+	"state": "closed",
+	"title": "net: IPConn can't handle ARP packets",
+	"body": "by **jikai507**:\n\n\u003cpre\u003epackage main\n\nimport (\n\t\u0026quot;bytes\u0026quot;\n\t\u0026quot;encoding/binary\u0026quot;\n\t. \u0026quot;fmt\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;strconv\u0026quot;\n\t\u0026quot;strings\u0026quot;\n)\n\ntype ARP struct {\n\tNetType       uint16\n\tProtoType     uint16\n\tMacAddrLen    uint8\n\tIPAddrLen     uint8\n\tOperationCode uint16\n\tSrcMacAddr    [6]byte\n\tSrcIPAddr     [4]byte\n\tDstMacAddr    [6]byte\n\tDstIPAddr     [4]byte\n}\n\nfunc ParseMacAddr(macaddr string) (mac [6]byte) {\n\tsegments := strings.Split(macaddr, \u0026quot;-\u0026quot;)\n\tfor i := 0; i \u0026lt; 6; i++ {\n\t\tvalue, err := strconv.ParseUint(segments[i], 16, 64)\n\t\tif err != nil {\n\t\t\tpanic(\u0026quot;parse mac addr error\u0026quot;)\n\t\t}\n\t\tmac[i] = byte(value)\n\t}\n\treturn mac\n}\n\nfunc ParseIP(ipaddr string) (ip [4]byte) {\n\tsegments := strings.Split(ipaddr, \u0026quot;.\u0026quot;)\n\tfor i := 0; i \u0026lt; 4; i++ {\n\t\tvalue, err := strconv.Atoi(segments[i])\n\t\tif err != nil {\n\t\t\tpanic(\u0026quot;parse ip addr error\u0026quot;)\n\t\t}\n\t\tip[i] = byte(value)\n\t}\n\treturn ip\n}\n\nfunc main() {\n\tvar (\n\t\tladdr net.IPAddr = net.IPAddr{IP: net.ParseIP(\u0026quot;192.168.137.111\u0026quot;)}\n\t\traddr net.IPAddr = net.IPAddr{IP: net.ParseIP(\u0026quot;192.168.137.1\u0026quot;)}\n\t)\n\n        // problems happens in this row...\n\tipconn, err := net.DialIP(\u0026quot;ip:arp\u0026quot;, \u0026amp;laddr, \u0026amp;raddr)\n\tif err != nil {\n\t\tPrintln(\u0026quot;DialIP() error:\u0026quot;, err.Error())\n\t\treturn\n\t}\n\tdefer ipconn.Close()\n\n\tvar (\n\t\tarp ARP\n\t)\n\tarp.NetType = 0x1      \n\tarp.ProtoType = 0x0800 \n\tarp.MacAddrLen = 6\n\tarp.IPAddrLen = 4\n\tarp.OperationCode = 0x1\n\tarp.SrcMacAddr = ParseMacAddr(\u0026quot;00-23-5A-BD-DF-82\u0026quot;)\n\tarp.SrcIPAddr = ParseIP(\u0026quot;192.168.137.111\u0026quot;)\n\tarp.DstMacAddr = ParseMacAddr(\u0026quot;00-00-00-00-00-00\u0026quot;)\n\tarp.DstIPAddr = ParseIP(\u0026quot;192.168.137.1\u0026quot;)\n\n\tvar (\n\t\tbuffer bytes.Buffer\n\t)\n\tbinary.Write(\u0026amp;buffer, binary.BigEndian, arp)\n\tif _, err := ipconn.Write(buffer.Bytes()); err == nil {\n\t\tPrintln(\u0026quot;send success\u0026quot;)\n\t}\n\n}\n\n\nWhat does 'go version' print?\ngo version go1.2.1 windows/386\n\nWhat happened?\nThe error message like this :\nDialIP() error: dial ip:arp 192.168.137.1: GetProtoByName: The requested name is valid,\nbut no data of the requested type was found.\n\nWhat should have happened instead?\nIf it can run successfully, it should output \u0026quot;send success\u0026quot;.\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:42:05Z",
+	"created_at": "2014-03-18T11:01:06Z",
+	"updated_at": "2016-06-25T01:30:09Z"
+}

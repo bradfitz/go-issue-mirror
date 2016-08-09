@@ -1,0 +1,27 @@
+{
+	"id": 96703081,
+	"number": 11834,
+	"state": "closed",
+	"title": "sync: Pool appears to interact poorly with concurrent GC",
+	"body": "Background: I have a program that has a steady state heap size of \u003c100 MiB, but does a large rate of allocation, all of which is freed quickly. One of the main things I allocate is buffers that can be reused, so I intermediate the allocations through a `sync.Pool`. It may be relevant to my theory below that I call `Get` on only a single goroutine, but call `Put` on multiple goroutines, and the `Put` goroutines are all distinct from the `Get` one.\r\n\r\nI measured the rate that `Get` \"misses\" in the freelist and falls through to the `New` function, and was surprised by how high it was. Here are some observations I made while debugging:\r\n\r\n*   If I set `GODEBUG=gcstoptheworld=2` to disable concurrent garbage collection, the number of freelist misses is 25% as high as before, and my program is 50% faster end-to-end.\r\n\r\n*   If I set `GOGC=off` to disable garbage collection altogether, the number of freelist misses is 1% as high as before, and my program is 60% faster end-to-end.\r\n\r\nDigging into the implementation, it appears that `sync.Pool` grows without bound until the stop-the-world phase of GC, at which point it abandons all of the freelist content. I think there may be a race here that makes this poorly tuned for concurrent GC, at least with my load pattern:\r\n\r\n1.  Goroutine A calls `Get`, and finds the freelist empty. So it goes to allocate.\r\n2.  The allocation triggers a GC run. The GC begins happening concurrently.\r\n3.  Goroutine A allocate several more items, and hands them off to Goroutines B1, B2, ...\r\n4.  Goroutines B1, B2, ... call `Put`, contributing items back to the freelist.\r\n5.  GC reaches the stop-the-world phase and empties the freelist, throwing away the items just added.\r\n6.  Go to (1).\r\n\r\nFrom staring at `gctrace=1` and printf debugging output, it appears my program may be repeatedly tickling this issue.\r\n\r\nI wonder if it would be better to have `sync.Pool` grow its freelist to a high water mark size, then decay exponentially in size with each GC round?\r\n\r\n    go version devel +1421bc1 Wed Jul 22 09:18:33 2015 +0000 linux/amd64\r\n",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2015-07-27T16:35:13Z",
+	"created_at": "2015-07-23T01:14:52Z",
+	"updated_at": "2016-08-05T16:10:58Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

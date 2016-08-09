@@ -1,0 +1,12 @@
+{
+	"id": 66069698,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003ere: comment 7, I wouldn't expect nanosleep to be accurate inside a VM unless something\nlike vmware-tools (no idea what this is for FreeBSD/VirtualBox) is installed.\n\nAfter playing around with my pandaboard this morning, the following is clear\n\npando(~/src) % cat usleep.c \n#include \u0026lt;time.h\u0026gt;\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\n\nint main(int argc, char **argv) {\n        struct timeval start, stop;\n        struct timespec sleep;\n        sleep.tv_sec = 1;\n        if (argc \u0026gt; 1) \n                sleep.tv_sec = atoi(argv[1]);\n        sleep.tv_nsec = 0;\n        gettimeofday(\u0026start, NULL);\n        nanosleep(\u0026sleep, NULL);\n        gettimeofday(\u0026stop, NULL);\n        printf(\"Elapsed %d\\n\", (int)((stop.tv_sec-start.tv_sec)*1000000ULL+(stop.tv_usec-start.tv_usec)));\n        return 0;\n}\n\nwith /sys/devices/system/cpu/cpu?/cpufreq/scaling_governor set to performance the\nresults are very stable\n\n% ./a.out 1; ./a.out 2; ./a.out 3\nElapsed 1000093\nElapsed 2000121\nElapsed 3000030\n\nWith the governor left the default, ondemand, the results flail wildly based on the load\non the machine at the time, and if that load occured after the nanosleep started.\n\n% ./a.out 1; ./a.out 2; ./a.out 3\nElapsed 1704405\nElapsed 2071116\nElapsed 3232047\n\nSo this function sleeps for longer (sometimes MUCH longer) than requested, which is both\ncorrect according to POSIX and unhelpful at the same time.\n\nComparing these results to the older ARM5 systems I have, none of them have the ability\nto vary their clock frequency so this explains why it doesn't fail there.\n\nMy suggestion is to either keep extending the timeout for arm, possibly by as much as\n3x, or skip it entirely.\u003c/pre\u003e\n\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-08-29T22:34:10Z",
+	"updated_at": "2014-12-22T06:17:39Z"
+}

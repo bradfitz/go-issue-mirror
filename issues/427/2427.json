@@ -1,0 +1,27 @@
+{
+	"id": 51279192,
+	"number": 2427,
+	"state": "closed",
+	"title": "net/rpc/jsonrpc: ServeConn doesn't detect network client hangup",
+	"body": "\u003cpre\u003e\u003ca href=\"https://golang.org/issue/1828\"\u003eissue #1828\u003c/a\u003e is unfixed at tip. (And, obviously, no test cases exist for testing this\nbehavior.) Details and patched attachments copied below\n\n\nWhat is the expected output?\nA single \u0026quot;connection reset\u0026quot; log message:\n2011/05/14 16:36:34 rpc: rpc: server cannot decode request: read tcp [::1]:52123:\nconnection reset by peer\n\nWhat do you see instead?\nThe above log message is repeated ad infinitum.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nUbuntu 11.04\n\nWhich revision are you using?  (hg identify)\n5d2ce135523+ (release-branch.r57) release/release.r57.1\nI did check top of tree, though.\n\n\nPlease provide any additional information below.\nThe underlying problem is that rpc.*Server·ServeCodec serves until it gets an os.EOF or\nio.ErrUnexpectedEOF, but json.*Decoder·readValue gets a net.OpError, so it just loops\nforever, trying and failing to read from the same connection.\n\nTwo possible fixes:\n- rpc.*Server·ServeCodec stops serving for all error types instead of just os.EOF and\nio.ErrUnexpectedEOF\n- jsonrpc.*serverCodec·ReadRequestHeader, which calls into the json decoder, masks all\nnon-eof errors as io.ErrUnexpectedEOF\n\nI'm not sure of the ramifications for the first, so I tried the second, and it appears\nto work. Here's a patch that does it:\n--- a/src/pkg/rpc/jsonrpc/server.go     Wed May 04 00:17:17 2011 -0400\n+++ b/src/pkg/rpc/jsonrpc/server.go     Sat May 14 17:34:33 2011 -0700\n@@ -67,6 +67,9 @@\n func (c *serverCodec) ReadRequestHeader(r *rpc.Request) os.Error {\n        c.req.reset()\n        if err := c.dec.Decode(\u0026amp;c.req); err != nil {\n+               if err != os.EOF {\n+                       return io.ErrUnexpectedEOF\n+               }\n                return err\n        }\n        r.ServiceMethod = c.req.Method\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2427/0/main.go\"\u003emain.go\u003c/a\u003e (754 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2427/0/jsonrpc.py\"\u003ejsonrpc.py\u003c/a\u003e (370 bytes)",
+	"user": {
+		"login": "bytbox",
+		"id": 160033,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:12:57Z",
+	"created_at": "2011-11-07T22:46:43Z",
+	"updated_at": "2016-06-24T21:20:11Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

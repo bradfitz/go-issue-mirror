@@ -1,0 +1,12 @@
+{
+	"id": 172750261,
+	"body": "@mattn \r\nYep.\r\nThey both call serveFile funcion.\r\nServeFile: \r\n```go\r\nfunc ServeFile(w ResponseWriter, r *Request, name string) {\r\n\tdir, file := filepath.Split(name)\r\n\tserveFile(w, r, Dir(dir), file, false)   // \u003c- redirect flag is set to be false\r\n}\r\n```\r\nFileServer:\r\n```go\r\nfunc FileServer(root FileSystem) Handler {\r\n\treturn \u0026fileHandler{root}\r\n}\r\nfunc (f *fileHandler) ServeHTTP(w ResponseWriter, r *Request) {\r\n\tupath := r.URL.Path\r\n\tif !strings.HasPrefix(upath, \"/\") {\r\n\t\tupath = \"/\" + upath\r\n\t\tr.URL.Path = upath\r\n\t}\r\n\tserveFile(w, r, f.root, path.Clean(upath), true)  // \u003c- redirect flag's set to be true\r\n}\r\n```\r\nRedirect part in serveFile\r\n```go\r\nif redirect {\r\n\t// redirect to canonical path: / at end of directory url\r\n\t// r.URL.Path always begins with /\r\n\turl := r.URL.Path\r\n\tif d.IsDir() {\r\n\t\tif url[len(url)-1] != '/' {\r\n\t\t\tlocalRedirect(w, r, path.Base(url)+\"/\")\r\n\t\t\treturn\r\n\t\t}\r\n\t} else {\r\n\t\tif url[len(url)-1] == '/' {\r\n\t\t\tlocalRedirect(w, r, \"../\"+path.Base(url))\r\n\t\t\treturn\r\n\t\t}\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "cirfi",
+		"id": 6276193,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-19T06:04:37Z",
+	"updated_at": "2016-01-19T06:05:21Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 95748830,
+	"number": 11763,
+	"state": "closed",
+	"title": "net: ParseMAC cannot parse 20-octet IP over InfiniBand link-layer address",
+	"body": "At the moment, `net.ParseMAC` cannot accept 20-octet IP over InfiniBand link-layer addresses, though they are correctly parsed into `net.Interface`.\r\n\r\n```\r\n$ ip addr show ib0\r\n4: ib0: \u003cNO-CARRIER,BROADCAST,MULTICAST,UP\u003e mtu 4092 qdisc pfifo_fast state DOWN group default qlen 256\r\n    link/infiniband 80:00:00:48:fe:80:00:00:00:00:00:00:00:02:c9:03:00:50:5e:d5 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff\r\n```\r\n\r\nHere is an example program:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"flag\"\r\n        \"log\"\r\n        \"net\"\r\n)\r\n\r\nvar (\r\n        ifaceFlag = flag.String(\"i\", \"ib0\", \"network interface name\")\r\n)\r\n\r\nfunc main() {\r\n        ifi, err := net.InterfaceByName(*ifaceFlag)\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n\r\n        log.Printf(\"%s: %s\", ifi.Name, ifi.HardwareAddr)\r\n\r\n        mac, err := net.ParseMAC(ifi.HardwareAddr.String())\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n\r\n        log.Println(\"%s: %s\", ifi.Name, mac)\r\n}\r\n```\r\n\r\nHere is the output as of Go 1.4.2:\r\n\r\n```\r\n$ go build\r\n$ ./ibmac \r\n2015/07/17 17:11:34 ib0: 80:00:00:48:fe:80:00:00:00:00:00:00:00:02:c9:03:00:50:5e:d5\r\n2015/07/17 17:11:34 invalid MAC address: 80:00:00:48:fe:80:00:00:00:00:00:00:00:02:c9:03:00:50:5e:d5\r\n```\r\n\r\nI will submit a changelist which should fix this issue shortly.",
+	"user": {
+		"login": "mdlayher",
+		"id": 1926905,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-08-24T16:35:14Z",
+	"created_at": "2015-07-17T21:29:00Z",
+	"updated_at": "2015-08-24T16:35:14Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

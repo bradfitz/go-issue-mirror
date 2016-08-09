@@ -1,0 +1,28 @@
+{
+	"id": 51283401,
+	"number": 5283,
+	"state": "closed",
+	"title": "database/sql: assumes that driver.Stmt.Close does not need the connection",
+	"body": "by **awpritchard**:\n\n\u003cpre\u003ego version: the particular manifestation of this I'm hitting reproduces from\n231af8ac63aa (scheduler changes that almost certainly are only revealing the problem,\nnot causing it) through tip (9bb42a7021c9).\n\nsee database/sql/sql.go:1308:\n\u0026gt; func (rs *Rows) Close() error {\n\u0026gt; \tif rs.closed {\n\u0026gt; \t\treturn nil\n\u0026gt; \t}\n\u0026gt; \trs.closed = true\n\u0026gt; \terr := rs.rowsi.Close()\n\u0026gt; \trs.releaseConn(err)\n\u0026gt; \tif rs.closeStmt != nil {\n\u0026gt; \t\trs.closeStmt.Close()\n\u0026gt; \t}\n\u0026gt; \treturn err\n\u0026gt; }\n\nThis puts the Rows' connection back into the idle pool, and then calls the\ndriver.Stmt.Close method of the Stmt it belongs to.  In the postgresql driver\nimplementation (\u003ca href=\"https://github.com/lib/pq)\"\u003ehttps://github.com/lib/pq)\u003c/a\u003e, Stmt.Close communicates with the server (on\nthe connection that was just put back into the idle pool).  Most of the time, this\ncauses no problems, but if another goroutine makes a query at the right (wrong?) time,\nchaos results.\n\nProviding steps to reproduce is difficult, since it would have to involve multiple\npackages and force a race condition to occur.\n\nMoving the call to releaseConn to after the Stmt.Close fixes the problem in my case;\nbut, there are other places that Close a Stmt after releasing its connection.\n\nIn any case, traffic is being sent on \u0026quot;free\u0026quot; connections shortly after they\nare freed, leading to race conditions that kill the driver code.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\n64-bit Linux, 3.7.7\n\nWhich version are you using?  (run 'go version')\ngo version devel +9bb42a7021c9 Thu Apr 11 13:40:14 2013 -0700 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:28:26Z",
+	"created_at": "2013-04-13T03:51:03Z",
+	"updated_at": "2016-06-24T22:38:02Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 209495370,
+	"body": "It looks like atomic.Storep1 on s390 generates a write barrier. On other platforms it does not (that's what `runtime.atomicstorep` is for, though this appears to be completely undocumented).\r\n\r\nGoing a little further down, here's where the \"bad pointer write\" actually happened:\r\n\r\n```\r\ngoroutine 102586 [running]:\r\nruntime.systemstack_switch()\r\n\t/data/golang/workdir/go/src/runtime/asm_s390x.s:203 +0x10 fp=0xc820409be8 sp=0xc820409be0\r\nruntime.writebarrierptr(0x3503d0, 0x400)\r\n\t/data/golang/workdir/go/src/runtime/mbarrier.go:141 +0xd2 fp=0xc820409c18 sp=0xc820409be8\r\nruntime/internal/atomic.Storep1(0x3503d0, 0x400)\r\n\t/data/golang/workdir/go/src/runtime/internal/atomic/atomic_s390x.go:43 +0x56 fp=0xc820409c30 sp=0xc820409c18\r\nruntime.mapzero(0x206f80)\r\n\t/data/golang/workdir/go/src/runtime/hashmap.go:1079 +0x13a fp=0xc820409c60 sp=0xc820409c30\r\n...\r\n```\r\n\r\nThis is actually a scalar write (the zerosize global), but we're doing it using an atomic pointer write (yuck!).\r\n\r\nI'll send a CL.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-13T15:02:43Z",
+	"updated_at": "2016-04-13T15:02:43Z"
+}

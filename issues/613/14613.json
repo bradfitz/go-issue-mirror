@@ -1,0 +1,28 @@
+{
+	"id": 138112359,
+	"number": 14613,
+	"state": "closed",
+	"title": "cmd/go: go test panic in vendoredImportPath",
+	"body": "go1.6 centos7\r\n\r\n******************************************************************\r\n\r\nfile: `src/vendor/mylibtesttest/myapp/myapp_test.go`\r\n```\r\n  package myapp\r\n  import (\r\n     \"mylibtesttest/rds\"\r\n  )\r\n```\r\nfile: `src/vendor/mylibtesttest/rds/rds.go`\r\n```\r\n   package rds\r\n```\r\n**************************************************************************\r\nIn `src/vendor/mylibtesttest/myapp/`\r\n1. \r\ngo test\r\n```\r\n\r\n./myapp_test.go:4: imported and not used: \"vendor/mylibtesttest/rds\"\r\nFAIL    vendor/mylibtesttest/myapp [build failed]\r\n```\r\n2.\r\ngo test myapp_test.go\r\n```\r\npanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 1 [running]:\r\npanic(0x93c000, 0xc8200100a0)\r\n        /root/source/go-go1.6/src/runtime/panic.go:464 +0x3e6\r\nmain.vendoredImportPath(0xc820186000, 0xc82000fca1, 0x11, 0x0, 0x0)\r\n        /root/source/go-go1.6/src/cmd/go/pkg.go:460 +0x67b\r\nmain.loadImport(0xc82000fca1, 0x11, 0xc820154c30, 0x28, 0xc820186000, 0xc820195150, 0xc820154f60, 0x1, 0x1, 0x1, ...)\r\n        /root/source/go-go1.6/src/cmd/go/pkg.go:336 +0xe52\r\nmain.(*builder).test(0xc820176f50, 0xc820186000, 0x0, 0x0, 0xc820404980, 0x0, 0x0)\r\n        /root/source/go-go1.6/src/cmd/go/test.go:632 +0x66d\r\nmain.runTest(0xc897e0, 0xc8200621d0, 0x1, 0x1)\r\n        /root/source/go-go1.6/src/cmd/go/test.go:507 +0x16c5\r\nmain.main()\r\n        /root/source/go-go1.6/src/cmd/go/main.go:181 +0x783\r\n```\r\n\r\n**********************************************************************\r\n\r\nIn `src/cmd/go/pkg.go` function `vendoredImportPath`\r\nWhen we use \"go test myapp_test.go\", parent.ImportPath is \"command-line-arguments\", and it will panic in `return parent.ImportPath[:len(parent.ImportPath)-chopped] + \"/\" + vpath`, because of\r\nlen(parent.ImportPath)-chopped \u003c 0\r\n\r\nI add some code to fix this.\r\n```\r\n    targ := filepath.Join(dir[:i], vpath)\r\n    if isDir(targ) \u0026\u0026 hasGoFiles(targ) {\r\n      \r\n+   if parent.ImportPath == \"command-line-arguments\" {\r\n+       if i == len(root) {\r\n+         return vpath\r\n+       }    \r\n+       return dir[len(root)+1:i] + \"/\" + vpath\r\n+      }    \r\n\r\n      // We started with parent's dir c:\\gopath\\src\\foo\\bar\\baz\\quux\\xyzzy.\r\n      // We know the import path for parent's dir.\r\n      // We chopped off some number of path elements and\r\n      // added vendor\\path to produce c:\\gopath\\src\\foo\\bar\\baz\\vendor\\path.\r\n      // Now we want to know the import path for that directory.\r\n      // Construct it by chopping the same number of path elements\r\n      // (actually the same number of bytes) from parent's import path\r\n      // and then append /vendor/path.\r\n      chopped := len(dir) - i\r\n      if chopped == len(parent.ImportPath)+1 {\r\n        // We walked up from c:\\gopath\\src\\foo\\bar\r\n        // and found c:\\gopath\\src\\vendor\\path.\r\n        // We chopped \\foo\\bar (length 8) but the import path is \"foo/bar\" (length 7).\r\n        // Use \"vendor/path\" without any prefix.\r\n        return vpath\r\n      }    \r\n      return parent.ImportPath[:len(parent.ImportPath)-chopped] + \"/\" + vpath\r\n    }    \r\n```\r\n\r\n\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "wenfang",
+		"id": 3804587,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-04-07T21:34:34Z",
+	"created_at": "2016-03-03T08:37:25Z",
+	"updated_at": "2016-04-19T23:13:51Z",
+	"milestone": {
+		"id": 1688612,
+		"number": 37,
+		"title": "Go1.6.2"
+	}
+}

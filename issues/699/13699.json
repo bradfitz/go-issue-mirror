@@ -1,0 +1,28 @@
+{
+	"id": 123294034,
+	"number": 13699,
+	"state": "closed",
+	"title": "crypto/x509: Panics on some ECDSA keys",
+	"body": "x509.ParseECPrivateKey panics on some input values.\r\n\r\nExpected outcome: ParseECPrivateKey returns the EC key, or an error if the key is malformed.\r\nActual outcome: panic.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/x509\"\r\n\t\"encoding/pem\"\r\n)\r\n\r\n// Generated with gnutls's certtool -p --ecdsa. Only some keys\r\n// generated cause Go to panic; this varies randomly.\r\n// This is an example of such a key.\r\nvar b = []byte(`\r\n-----BEGIN EC PRIVATE KEY-----\r\nMHgCAQEEIQD59DoEub3DqwH1O+bfgOenvD6ve4f8JOYwpKCql2M2RaAKBggqhkjO\r\nPQMBB6FEA0IABEGlG8MYRhtMOaRQSKFtT8KpNbHqf+hujB+iGdbyQ498f9YpV9NE\r\nLvuUtqI+sOpm3aZj3ELzec2mYwsht4iKXT0=\r\n-----END EC PRIVATE KEY-----\r\n`)\r\n\r\nfunc main() {\r\n\tblk, _ := pem.Decode(b)\r\n\tx509.ParseECPrivateKey(blk.Bytes)\r\n}\r\n```\r\n\r\n\r\n```sh\r\n$ go version\r\ngo version go1.5.2 linux/amd64\r\n$ go run ./bugtest.go \r\npanic: runtime error: index out of range\r\n\r\ngoroutine 1 [running]:\r\ncrypto/elliptic.p256GetScalar(0xc820053ce4, 0xc820012b10, 0x21, 0x21)\r\n\t/usr/lib/go/src/crypto/elliptic/p256.go:56 +0x135\r\ncrypto/elliptic.p256Curve.ScalarBaseMult(0xc82000e480, 0xc820012b10, 0x21, 0x21, 0xc820010c40, 0xc82008e0fa)\r\n\t/usr/lib/go/src/crypto/elliptic/p256.go:62 +0x60\r\ncrypto/x509.parseECPrivateKey(0x0, 0xc82008e080, 0x7a, 0x7b, 0x6746e0, 0x0, 0x0)\r\n\t/usr/lib/go/src/crypto/x509/sec1.go:80 +0x697\r\ncrypto/x509.ParseECPrivateKey(0xc82008e080, 0x7a, 0x7b, 0xc820012ae0, 0x0, 0x0)\r\n\t/usr/lib/go/src/crypto/x509/sec1.go:33 +0x4c\r\nmain.main()\r\n\t/home/hugo/Downloads/bugtest.go:18 +0x68\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/usr/lib/go/src/runtime/asm_amd64.s:1721 +0x1\r\nexit status 2\r\n```",
+	"user": {
+		"login": "hlandau",
+		"id": 2270010,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-06T02:17:12Z",
+	"created_at": "2015-12-21T14:59:39Z",
+	"updated_at": "2016-01-06T02:17:12Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

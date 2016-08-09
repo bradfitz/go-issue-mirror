@@ -1,0 +1,27 @@
+{
+	"id": 51281169,
+	"number": 3797,
+	"state": "closed",
+	"title": "cmd/cgo: misleading report on crash in cgo code",
+	"body": "\u003cpre\u003eSIGSEGV in cgo-wrapped mysql produces the following report which is completely\nmisleading:\n\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x0 pc=0x7fc8c17948c2]\ngoroutine 1 [chan receive]:\nnet.(*pollServer).WaitRead(0xf840143c80, 0xf8401486c0, 0xf8400d5c30,\n0xb, 0xf8400d5c01, ...)\n        /usr/local/google/home/msolomon/dev/go/src/pkg/net/fd.go:268 +0x73\nnet.(*netFD).accept(0xf8401486c0, 0x504ed0, 0x0, 0xf84009c210,\n0xf8400aa040, ...)\n\ngdb reveals the real cause:\n\n(gdb) bt\n#0  my_stat (path=0x7f38aa7fac50 \u0026quot;vt-mysql/share/mysql/charsets/Index.xml\u0026quot;,\nstat_area=0x7f38aa7fab90, my_flags=0)\n   at my_lib.c:540\n#1  0x00007f38c4dea70f in my_read_charset_file (filename=0x2 \u0026lt;Address 0x2 out of\nbounds\u0026gt;, myflags=0) at charset.c:338\n#2  0x00007f38c4deb51e in init_available_charsets () at charset.c:431\n#3  0x00007f38c540e400 in pthread_once () at\n../nptl/sysdeps/unix/sysv/linux/x86_64/pthread_once.S:104\n#4  0x00007f38c4deb144 in get_charset_by_csname (cs_name=0x7f3890006ff0\n\u0026quot;utf8\u0026quot;, cs_flags=32, flags=-1434465744) at charset.c:572\n#5  0x00007f38c4dfdc46 in mysql_init_character_set (mysql=0x7f38900009e0) at\nclient.c:1807\n#6  0x00007f38c4dff8ed in mysql_real_connect (mysql=0x7f38900009e0, host=0x7f38c4e03fb0\n\u0026quot;localhost\u0026quot;, user=0x7f38900008c0 \u0026quot;vt_dba\u0026quot;, \n   passwd=\u0026lt;optimized out\u0026gt;, db=0x0, port=\u0026lt;optimized out\u0026gt;, unix_socket=0x7f38900008e0 \u0026quot;/vt/vt_0000041983/mysql.sock\u0026quot;, client_flag=0) at client.c:2224\n#7  0x0000000000527e05 in _cgo_a45dcd6e4066_Cfunc_mysql_real_connect ()\n\nI can understand if Go can't unwind C stack, but at least it can show the correct\ngoroutine that executes cgo call and show status [cgo call].\n\nMike may provide more details.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:20:03Z",
+	"created_at": "2012-07-04T09:27:01Z",
+	"updated_at": "2016-06-24T22:21:13Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

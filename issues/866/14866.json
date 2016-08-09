@@ -1,0 +1,21 @@
+{
+	"id": 141954426,
+	"number": 14866,
+	"state": "open",
+	"title": "net/mail: Empty quoted display name should be allowed in email address",
+	"body": "1) What version of Go are you using (`go version`)?\r\n\r\n1.5.3.\r\n\r\n2) What operating system and processor architecture are you using (`go env`)?\r\n\r\nLinux, amd64\r\n\r\n3) What did you do?\r\n\r\nPass an email address with an empty quoted name, like:\r\n\r\n    \"\" \u003cfoo@bar.com\u003e\r\n\r\nto `mail.Parse()`\r\n\r\n4) What did you expect to see?\r\n\r\nThe email address should parse without error\r\n\r\n5) What did you see instead?\r\n\r\nError returned: mail: missing word in phrase: mail: empty quoted-string\r\n\r\n6) Further info\r\n\r\nWe don't experience this problem on Go 1.4. I found that the offending change was in commit bd1efd50991. The first release containing this change was 1.5, which corroborates the difference I've seen between the behavior in 1.4 and 1.5.\r\n\r\nThe change in `consumeQuotedString`, given the tests that were added along with the change, intends to disallow an empty quoted string in the **username** part of the email address. However, it unintentionally also disallows an empty quoted string as the **display name** part of the email address -- but as far as I can tell, an empty quoted string there is perfectly valid. Since the tests did not address the case of an empty quoted name, I assume that it was an oversight. `consumeQuotedString` is used in these different contexts, and should not **always** disallow an empty quoted string. It should allow an empty quoted string when it's a part of the display name portion of an email address.\r\n\r\nRFC5322 section 3.2.4 defines quoted string as:\r\n\r\n    quoted-string   =       [CFWS]\r\n                            DQUOTE *([FWS] qcontent) [FWS] DQUOTE\r\n                            [CFWS]\r\n\r\nGiven that `qcontent` is attached to a `*`, which allows for zero or more occurrences, then the zero occurrences case results in an empty quoted string, which is allowed by this definition. Thus, Go should allow empty quoted strings in email addresses, at least in the case of the display name.\r\n\r\nFor what it's worth, we're using the github.com/go-gomail package to create the message. If you pass it an empty name, it always puts `\"\" ` before the `\u003caddress\u003e` part ([see responsible function here](https://github.com/go-gomail/gomail/blob/db70192787e8a47ca000133e43647df3950c0083/message.go#L129)), and while this is annoyingly triggering this bug in Go, it does seem to be perfectly valid as far as the RFCs are concerned.\r\n\r\nEven if my interpretation of the RFC were wrong and current Go behavior is right, the tests are clearly not thinking about this specific case, and they should be expanded to do so.\r\n\r\nHere is a play.golang.org reproduction of the bug: http://play.golang.org/p/iSjSINU-Dm",
+	"user": {
+		"login": "mackstann",
+		"id": 2573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-03-18T19:12:52Z",
+	"updated_at": "2016-05-18T00:48:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

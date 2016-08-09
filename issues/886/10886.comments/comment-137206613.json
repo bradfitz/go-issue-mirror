@@ -1,0 +1,12 @@
+{
+	"id": 137206613,
+	"body": "Of course - the changes proposed above cover the case of `db.maxOpen+1` connection attempts being made while we are unable to connect to the database, but in order to cover `db.maxOpen+2` or more, I found that there's an additional check required in the connectionOpener routine that processes queued connections. I came up with something like this:\r\n\r\n```go\r\n func (db *DB) connectionOpener() {\r\n        for range db.openerCh {\r\n                db.openNewConnection()\r\n+\r\n+               db.mu.Lock()\r\n+               if db.numOpen == 0 {\r\n+                       // If there are no open connections,\r\n+                       // check to make sure we don't have any connection requests\r\n+                       // waiting for this one to be freed.\r\n+                       // This is done in a separate goroutine so that there is no chance\r\n+                       // for us to cause a deadlock.\r\n+                       go func() {\r\n+                               db.mu.Lock()\r\n+                               db.maybeOpenNewConnections()\r\n+                               db.mu.Unlock()\r\n+                       }()\r\n+               }\r\n+               db.mu.Unlock()\r\n        }\r\n }\r\n```\r\n\r\nAs I said this is kind of ugly, but as far as I can see we need to have some sort of check here if we want to preserve the ability to open connections in parallel.",
+	"user": {
+		"login": "potocnyj",
+		"id": 2791006,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-02T18:45:53Z",
+	"updated_at": "2015-09-02T18:45:53Z"
+}

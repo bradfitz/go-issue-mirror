@@ -1,0 +1,12 @@
+{
+	"id": 66059182,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eerrno=8 is ERROR_NOT_ENOUGH_MEMORY, so it sounds like your program fails to allocate\nrequired block of address space, perhaps, because there is not enough room to do it.\n\nI take it, some simple program like:\n\npackage main\n\nfunc main() {\n        println(\"Hello\")\n}\n\nworks. Right?\n\nCould you, please revert change to your $GOROOT/src/pkg/runtime/windows/mem.c file, and\napply this one, instead:\n\ndiff -r 6aa111bd2d11 src/pkg/runtime/windows/mem.c\n--- a/src/pkg/runtime/windows/mem.c\tTue Oct 04 15:07:28 2011 +1100\n+++ b/src/pkg/runtime/windows/mem.c\tThu Oct 06 12:21:13 2011 +1100\n@@ -48,14 +48,25 @@\n void*\n runtime·SysReserve(void *v, uintptr n)\n {\n+\truntime·printf(\"SysReserve: v=%p n=%d\\n\", v, n);\n \t// v is just a hint.\n \t// First try at v.\n \tv = runtime·stdcall(runtime·VirtualAlloc, 4, v, n, (uintptr)MEM_RESERVE, (uintptr)PAGE_EXECUTE_READWRITE);\n-\tif(v != nil)\n+\tif(v != nil) {\n+\t\truntime·printf(\"SysReserve: hint worked v=%p\\n\", v);\n \t\treturn v;\n+\t} else {\n+\t\truntime·printf(\"SysReserve: hint failed with errno=%d\\n\", runtime·getlasterror());\n+\t}\n \t\n \t// Next let the kernel choose the address.\n-\treturn runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_EXECUTE_READWRITE);\n+\tv = runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_EXECUTE_READWRITE);\n+\tif(v == nil) {\n+\t\truntime·printf(\"SysReserve: accepting any address failed with errno=%d\\n\",\nruntime·getlasterror());\n+\t\truntime·throw(\"VirtualAlloc\");\n+\t}\n+\truntime·printf(\"SysReserve: accepting any address worked v=%p\\n\", v);\n+\treturn v;\n }\n \n void\n\nThen re-run you test again and show us the output. Please, also run little program above\nand send its output too. I would like to compare the two.\n\nI still do not know what is going on, perhaps, when you link extra mingw windows\nfunctions, they use some extra address space, maybe they load some extra dlls, that we\nhave not enough room to move afterwards.\n\nThank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-10-06T01:28:10Z",
+	"updated_at": "2014-12-08T10:12:29Z"
+}

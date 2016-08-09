@@ -1,0 +1,12 @@
+{
+	"id": 66099207,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eThis should do it. right?\n\nThere's still the unfortunate situation of GQCS being able to write both a pointer and a\nvalue to memory. Could/should we change the overlapped arg to be *uintptr?\n\ndiff -r 17ba03832124 driver/driver_windows.go\n--- a/driver/driver_windows.go\tSat Sep 13 09:10:35 2014 -0700\n+++ b/driver/driver_windows.go\tThu Oct 02 13:47:15 2014 +0100\n@@ -94,9 +94,10 @@\n \t// Read Job notifications about new \"child\" processes and collect them in childProcesses.\n \tgo func() {\n \t\tvar code, key uint32\n-\t\tvar o *syscall.Overlapped\n+\t\tvar o uintptr\n+\t\toa := (**syscall.Overlapped)(unsafe.Pointer(\u0026o))\n \t\tfor {\n-\t\t\terr := syscall.GetQueuedCompletionStatus(iocp, \u0026code, \u0026key, \u0026o, syscall.INFINITE)\n+\t\t\terr := syscall.GetQueuedCompletionStatus(iocp, \u0026code, \u0026key, oa, syscall.INFINITE)\n \t\t\tif err != nil {\n \t\t\t\tlog.Printf(\"GetQueuedCompletionStatus failed: %v\", err)\n \t\t\t\treturn\n@@ -105,7 +106,7 @@\n \t\t\t\tpanic(\"Invalid GetQueuedCompletionStatus key parameter\")\n \t\t\t}\n \t\t\tif code == JOB_OBJECT_MSG_NEW_PROCESS {\n-\t\t\t\tpid := int(uintptr(unsafe.Pointer(o)))\n+\t\t\t\tpid := int(o)\n \t\t\t\tif pid == syscall.Getpid() {\n \t\t\t\t\tcontinue\n \t\t\t\t}\u003c/pre\u003e",
+	"user": {
+		"login": "DanielMorsing",
+		"id": 545573,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-10-02T13:16:28Z",
+	"updated_at": "2014-12-08T10:48:53Z"
+}

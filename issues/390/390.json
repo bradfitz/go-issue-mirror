@@ -1,0 +1,28 @@
+{
+	"id": 51276420,
+	"number": 390,
+	"state": "closed",
+	"title": "slowish performance of rand.Intn on 32-bit machines",
+	"body": "by **bslesinsky**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nRun this program using 6prof:\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;;\n\t\u0026quot;math\u0026quot;;\n\t\u0026quot;rand\u0026quot;;\n\t\u0026quot;time\u0026quot;\n)\n\n\n// roll 100 million dice [0..5]\nfunc main() {\n\trollCount := 100000000;\n\tvar counts [6]int;\n\t\n\tstartTime := time.Nanoseconds();\n\tfor i := 0; i \u0026lt; rollCount; i++ {\n\t\tcounts[rand.Intn(6)]++;\n\t}\n\tstopTime := time.Nanoseconds();\n\trollsPerSecond := float64(rollCount) * math.Pow10(9) / float64(stopTime -\nstartTime);\n\tfmt.Printf(\u0026quot;rolls per second: %.0f\\n\u0026quot;, rollsPerSecond);\n\tfor i,val := range counts {\n\t\tfmt.Printf(\u0026quot;%v: %v\\n\u0026quot;, i, val);\n\t}\n}\n\nWhat is the expected output? What do you see instead?\n\n$ 8g rand_benchmark.go \u0026amp;\u0026amp; 8l rand_benchmark.8 \u0026amp;\u0026amp; 6prof ./8.out \nrolls per second: 4864603\n0: 16669499\n1: 16662025\n2: 16663120\n3: 16664759\n4: 16673946\n5: 16666651\nthreadstopped thread_info -0x40000b1c: send invalid dest\nthreadstopped thread_info -0x40000c1c: send invalid dest\n206 samples (avg 1 threads)\n 37.38%\tdodiv\n 21.84%\t_div64by32\n  9.22%\trand·*rngSource·Int63\n  7.28%\trand·*Rand·Int63\n  5.34%\t_modv\n  5.34%\trand·*Rand·Int63n\n  2.91%\truntime·uint64mod\n  2.43%\tmain·main\n  2.43%\truntime·int64mod\n  1.94%\t_modvu\n  1.46%\trand·*Rand·Intn\n  1.46%\trand·Intn\n  0.49%\tetext\n\n\n\nWhat is your $GOOS?  $GOARCH?\n\ndarwin 386\n\nWhich revision are you using?  (hg identify)\n\n82e3730b70a9+ tip\n\n\nPlease provide any additional information below.\n\nIt looks like it's spending half its time doing a 64 bit divide which\nshouldn't be needed for small n?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:04:24Z",
+	"created_at": "2009-12-07T03:23:48Z",
+	"updated_at": "2016-06-24T19:10:06Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66089049,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eDave - note that pprof support two modes with a profile. The common mode as you mention,\nwhere you need the binary for symbols, and the raw mode which outputs a symbolized\nprofile/heap, this avoids having to have the exact binary around (useful for bug\nreporting, etc).\n\ngo tool pprof --raw \u003ca href=\"http://localhost:6060/debug/pprof/heap\"\u003ehttp://localhost:6060/debug/pprof/heap\u003c/a\u003e\nRead \u003ca href=\"http://localhost:6060/debug/pprof/symbol\"\u003ehttp://localhost:6060/debug/pprof/symbol\u003c/a\u003e\nFetching /pprof/heap profile from localhost:6060 to\n  /tmp/6QVfEKcwS_\nWrote profile to /tmp/6QVfEKcwS_\nAdjusting heap profiles for 1-in-524288 sampling rate\n--- symbol\nbinary=./pprofd\n---\n--- profile\nheap profile: 1: 288 [2: 296] @ heap/1048576\n1: 288 [2: 296] @\n\nThis bug is about the output with --raw not working with the parsing for raw, but there\nare multiple bugs not just the output rendering. \n\nNote if you do as you suggest pprof errors. \n\nmkdir /tmp/pprofd;  cd /tmp/pprofd\ncurl \u003ca href=\"http://play.golang.org/p/oUJCQPRzWL.go\"\u003ehttp://play.golang.org/p/oUJCQPRzWL.go\u003c/a\u003e \u003e pprofd.go\ngo build\n./pprofd\n\nIn another terminal, caputure a heap:\n\ngo tool pprof --raw \u003ca href=\"http://localhost:6060/debug/pprof/heap\"\u003ehttp://localhost:6060/debug/pprof/heap\u003c/a\u003e \u003e /tmp/heap\n\nYour method won't work on symbolized heaps:\n\ngo tool pprof --text  ./pprofd /tmp/heap \n\nFATAL ERROR: Symbolized profile '/tmp/heap' cannot be used with a binary arg.  Try again\nwithout passing './pprofd'.\n\nOptions are - fix pprof --raw as per the help examples:\n\npprof --raw localhost:1234 \u003e ./local.raw\npprof --text ./local.raw\n                       Fetches a remote profile for later analysis and then\n                       analyzes it in text mode.\n\nOptions to fix are - remove --raw from the go fork of pprof or fix it - which shouldn't\nbe too hard, but you want to make sure that FixCallerAddress with raw symbolized\nprofiles does the right thing. I'm happy to take a stab at either.\u003c/pre\u003e",
+	"user": {
+		"login": "pnasrat",
+		"id": 13798,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-30T21:52:16Z",
+	"updated_at": "2014-12-08T10:38:31Z"
+}

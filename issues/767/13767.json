@@ -1,0 +1,22 @@
+{
+	"id": 124205466,
+	"number": 13767,
+	"state": "closed",
+	"title": "net/textproto: CanonicalMIMEHeaderKey ignores keys with `_` in",
+	"body": "textproto.CanonicalMIMEHeaderKey ignores keys with `_` in. If an htttp server returns one of these, then it isn't possible to use `http.Header.Get` to fetch it as it doesn't get canonicalized.\r\n\r\nFor example, Backblaze use keys with `_` in to store metadata - see the [X-Bz-Info-src_last_modified_millis in the upload docs](https://www.backblaze.com/b2/docs/b2_upload_file.html).\r\n\r\nThe Backblaze server returns this header all in lower case.  Because it doesn't get canonicalised by `textproto.CanonicalMIMEHeaderKey` it remains in lower case and consequently `resp.Header.Get(\"X-Bz-Info-src_last_modified_millis\") doesn't find it.\r\n\r\nThis is easy enough to work around, but caused me a bit of suprise and debugging!\r\n\r\nThe comment on [textproto/reader.go on validHeaderFieldByte](https://tip.golang.org/src/net/textproto/reader.go#L573) explains the problem nicely!\r\n\r\n```go\r\n// validHeaderFieldByte reports whether b is a valid byte in a header\r\n// field key. This is actually stricter than RFC 7230, which says:\r\n//   tchar = \"!\" / \"#\" / \"$\" / \"%\" / \"\u0026\" / \"'\" / \"*\" / \"+\" / \"-\" / \".\" /\r\n//           \"^\" / \"_\" / \"`\" / \"|\" / \"~\" / DIGIT / ALPHA\r\n//   token = 1*tchar\r\n// TODO: revisit in Go 1.6+ and possibly expand this. But note that many\r\n// servers have historically dropped '_' to prevent ambiguities when mapping\r\n// to CGI environment variables.\r\nfunc validHeaderFieldByte(b byte) bool {\r\n\treturn ('A' \u003c= b \u0026\u0026 b \u003c= 'Z') ||\r\n\t\t('a' \u003c= b \u0026\u0026 b \u003c= 'z') ||\r\n\t\t('0' \u003c= b \u0026\u0026 b \u003c= '9') ||\r\n\t\tb == '-'\r\n}\r\n```\r\n\r\nThis could cause problems with S3 also which uses a similar scheme for returning user defined metadata too.",
+	"user": {
+		"login": "ncw",
+		"id": 536803,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-02-25T21:01:27Z",
+	"created_at": "2015-12-29T12:36:44Z",
+	"updated_at": "2016-02-25T21:01:27Z",
+	"milestone": {
+		"id": 1414136,
+		"number": 32,
+		"title": "Go1.7Early"
+	}
+}

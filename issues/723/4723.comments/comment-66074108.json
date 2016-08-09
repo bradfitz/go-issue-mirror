@@ -1,0 +1,12 @@
+{
+	"id": 66074108,
+	"body": "\u003ca id=\"c14\"\u003e\u003c/a\u003eComment 14:\n\n\u003cpre\u003eArie,\n\nI am trying to understand what is happening in net.TestShutdown now. I have added better\nerror checking:\n\ndiff -r c11d4d0da2ba src/pkg/net/net_test.go\n--- a/src/pkg/net/net_test.go\tMon Feb 18 14:40:47 2013 -0800\n+++ b/src/pkg/net/net_test.go\tTue Feb 19 14:31:04 2013 +1100\n@@ -5,6 +5,7 @@\n package net\n \n import (\n+\t\"fmt\"\n \t\"io\"\n \t\"io/ioutil\"\n \t\"os\"\n@@ -24,18 +25,33 @@\n \t\t}\n \t}\n \n-\tgo func() {\n+\tsrvch := make(chan error, 1)\n+\n+\tgo func() (serr error) {\n+\t\tdefer func() {\n+\t\t\tsrvch \u0026lt;- serr\n+\t\t}()\n \t\tc, err := ln.Accept()\n \t\tif err != nil {\n-\t\t\tt.Fatalf(\"Accept: %v\", err)\n+\t\t\treturn fmt.Errorf(\"Accept: %v\", err)\n \t\t}\n \t\tvar buf [10]byte\n \t\tn, err := c.Read(buf[:])\n \t\tif n != 0 || err != io.EOF {\n-\t\t\tt.Fatalf(\"server Read = %d, %v; want 0, io.EOF\", n, err)\n+\t\t\treturn fmt.Errorf(\"Read = %d, %v; want 0, io.EOF\", n, err)\n \t\t}\n-\t\tc.Write([]byte(\"response\"))\n-\t\tc.Close()\n+\t\tn, err = c.Write([]byte(\"response\"))\n+\t\tif err != nil {\n+\t\t\treturn fmt.Errorf(\"Write: n=%d %v\", n, err)\n+\t\t}\n+\t\tif n != len(\"response\") {\n+\t\t\treturn fmt.Errorf(\"n=%d bytes written\", n)\n+\t\t}\n+\t\terr = c.Close()\n+\t\tif err != nil {\n+\t\t\treturn fmt.Errorf(\"Close: %v\", err)\n+\t\t}\n+\t\treturn nil\n \t}()\n \n \tc, err := Dial(\"tcp\", ln.Addr().String())\n@@ -51,12 +67,16 @@\n \tvar buf [10]byte\n \tn, err := c.Read(buf[:])\n \tif err != nil {\n-\t\tt.Fatalf(\"client Read: %d, %v\", n, err)\n+\t\tt.Errorf(\"client Read: %d, %v\", n, err)\n \t}\n \tgot := string(buf[:n])\n \tif got != \"response\" {\n \t\tt.Errorf(\"read = %q, want \\\"response\\\"\", got)\n \t}\n+\terr = \u0026lt;-srvch\n+\tif err != nil {\n+\t\tt.Errorf(\"server failed: %v\", err)\n+\t}\n }\n \n func TestShutdownUnix(t *testing.T) {\n\nCan you, please, run it like \"go test -run Shut -v -timeout=3s\" and report your result.\nThank you.\n\nAlso, please check that you do not have any antivirus / firewall programs running that\ncould interfere with our network tests.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-19T03:43:36Z",
+	"updated_at": "2014-12-22T06:21:47Z"
+}

@@ -1,0 +1,32 @@
+{
+	"id": 51282175,
+	"number": 4459,
+	"state": "open",
+	"title": "database/sql: Strange Errors when Closing a Tx's Prepared Statement after Commit",
+	"body": "by **johnkgallagher**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nThis test function demonstrates the problem (note that this won't actually run on\nplay.golang.org because of the dependency on go-sqlite3):\n\u003ca href=\"http://play.golang.org/p/mKL22tAoxR\"\u003ehttp://play.golang.org/p/mKL22tAoxR\u003c/a\u003e\n\nThe code is wrong, but the errors it produces are very confusing and don't at all point\nto the actual problem. On line 19, a transaction's prepared statement's Close() is\ndeferred. However, the transaction is committed before returning from the function,\nwhich means the Close() happens after the Commit. Depending on the driver, this can\ncause:\n\n1. Silent lockup (observed with both go-sqlite3 and github.com/bmizerany/pq)\n2. Very odd driver messages (pq reported nonsensical errors, like \u0026quot;expected 4\narguments, got 1\u0026quot; on a query that had 1 argument)\n3. Memory corruption panic (observed with go-sqlite3 (cgo))\n\nWhat is the expected output?\n\nNothing (success)\n\nWhat do you see instead?\n\nSometimes success, more often either a lockup or \u0026quot;panic: runtime error: invalid\nmemory address or nil pointer dereference\u0026quot;. Commenting out line 19 and uncommenting\nline 29 fixes the problem.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nMac OS X, Linux\n\nWhich version are you using?  (run 'go version')\n\n1.0.3\n\nPlease provide any additional information below.\n\nI'm not sure this is necessarily a bug in database/sql, since the documentation does say\nthat a prepared statement can't be used after a transaction is committed/rolled back.\nHowever, it would be nicer if it coped with this more gracefully, as it seemed\n\u0026quot;natural\u0026quot; (although clearly wrong) to defer the Stmt.Close(). Any of the\nfollowing would have been preferable (to me, at least) than the debugging I did:\n\n1. Transaction closes its open statements inside Commit/Rollback\n2. Stmt.Close() panics if it's called outside the transaction\n3. Stmt.Close() does nothing if it's called outside the transaction\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Suggested"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"created_at": "2012-11-28T01:57:12Z",
+	"updated_at": "2015-04-14T19:45:18Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

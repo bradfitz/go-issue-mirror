@@ -1,0 +1,12 @@
+{
+	"id": 102809085,
+	"body": "Ok , I think I found the culprit: All git urls passed to git are actually intended to end in `.git`. For the `git://` schema, git seems to be clever and adds it, when it is missing, so it works by accident.\r\n\r\nThe fix might be as simple as\r\n```diff\r\ndiff --git a/src/cmd/go/vcs.go b/src/cmd/go/vcs.go\r\nindex 2179000..876fd36 100644\r\n--- a/src/cmd/go/vcs.go\r\n+++ b/src/cmd/go/vcs.go\r\n@@ -104,7 +104,7 @@ var vcsGit = \u0026vcsCmd{\r\n        name: \"Git\",\r\n        cmd:  \"git\",\r\n \r\n-       createCmd:   \"clone {repo} {dir}\",\r\n+       createCmd:   \"clone {repo}.git {dir}\",\r\n        downloadCmd: \"pull --ff-only\",\r\n \r\n        tagCmd: []tagCmd{\r\n@@ -123,7 +123,7 @@ var vcsGit = \u0026vcsCmd{\r\n        tagSyncDefault: \"\",\r\n \r\n        scheme:     []string{\"git\", \"https\", \"http\", \"git+ssh\"},\r\n-       pingCmd:    \"ls-remote {scheme}://{repo}\",\r\n+       pingCmd:    \"ls-remote {scheme}://{repo}.git\",\r\n        remoteRepo: gitRemoteRepo,\r\n }\r\n\r\n```\r\n\r\nBut I'm adding tests for repoRootForImportPathStatic now, to avoid regressions. I will add also maximum coverage to it, to avoid further breakage there. \r\n\r\nStay tuned...",
+	"user": {
+		"login": "nightlyone",
+		"id": 1767118,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-17T14:34:40Z",
+	"updated_at": "2015-05-17T14:34:40Z"
+}

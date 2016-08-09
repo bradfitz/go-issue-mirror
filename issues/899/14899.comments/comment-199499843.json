@@ -1,0 +1,12 @@
+{
+	"id": 199499843,
+	"body": "\u003e When using c-shared the Go runtime looks at the location where the signal occurred. If the signal occurred running non-Go code, it removes the Go signal handler, installs the previous handler if there was one, and raises the signal again. That is presumably what you are seeing.\r\n\r\nThis is what I would expect, but in the way that it's re-raising the signals (by using the kill system call to send the signal to the process) we lose all context.\r\n\r\nThe Windows handler seems to check to see if the IP that caused the fault is not in the range of Go, and if so tells Windows to try the next handler in line. (https://github.com/golang/go/blob/a03bdc3e6bea34abd5077205371e6fb9ef354481/src/runtime/signal_windows.go#L70)\r\n\r\nCouldn't we do something similar?\r\n\r\nI believe in C you can do something like the following:\r\n\r\n```C\r\nstatic struct sigaction _sigsev_old;\r\nstatic struct sigaction _sigsev;\r\n\r\n...\r\n\r\n// Initialize segfault handler, saving original \r\n_sigsev.sa_sigaction = sigsev_handler;\r\n_sigsev.sa_flags = SA_SIGINFO;\r\nsigaction(SIGBUS, \u0026_sigsev, \u0026_sigsev_old);\r\n\r\n...\r\n\r\n// Somewhere inside the segfault handler\r\nif (!isgoexception(siginfo)) {\r\n    _sigsev_old.sa_flags = SA_RESETHAND;\r\n    sigaction(SIGSEGV, \u0026_sigsev_old, NULL);\r\n}\r\n```",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-21T21:43:03Z",
+	"updated_at": "2016-03-21T21:43:03Z"
+}

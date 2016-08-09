@@ -1,0 +1,27 @@
+{
+	"id": 122107191,
+	"number": 13612,
+	"state": "closed",
+	"title": "x/net/ipv4: ipv4.Conn.SetTOS fails on \"tcp\" net.TCPConn",
+	"body": "If you listen for a general \"tcp\" connection instead of a \"tcp4\" connection, ipv4.Conn.SetTOS fails on IPv4 connections (but works with ipv6.Conn.SetTrafficClass on IPv6 connections).\r\n\r\nFrom the https://godoc.org/golang.org/x/net/ipv4 example, if you change net.Listen(\"tcp4\", \"0.0.0.0:1024\") to net.Listen(\"tcp\", \":1024\"):\r\n\r\n```\r\nln, err := net.Listen(\"tcp\", \":1024\")\r\n\tif err != nil {\r\n\t\t// error handling\r\n\t}\r\n\tdefer ln.Close()\r\n\tfor {\r\n\t\tc, err := ln.Accept()\r\n\t\tif err != nil {\r\n\t\t\t// error handling\r\n\t\t}\r\n\t\tgo func(c net.Conn) {\r\n\t\t\tdefer c.Close()\r\n\r\n\t\t\tif err := ipv4.NewConn(c).SetTOS(0x28); err != nil {\r\n\t\t\t\tfmt.Println(\"Error: \", err.Error())\r\n\t\t\t}\r\n\t\t}(c)\r\n\t}\r\n```\r\n\r\nand send an IPv4 request (e.g. curl \"127.0.0.1:1024\"), the IPv4 connections will not have the TOS set, and SetTOS returns \"setsockopt: invalid argument\".\r\n\r\nIPv6 connections in this same scenario (switch to ipv6.NewConn(c).SetTrafficClass) will work.  \r\n\r\nIn my app, I'm testing for the type of connection by checking TCPConn.RemoteAddr() for IPv6 vs. IPv4 and calling the appropriate NewConn wrapper.  IPv6 connections have their TrafficClass set properly.  IPv4 connections generate the above error.\r\n",
+	"user": {
+		"login": "sbowman",
+		"id": 47979,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-12-15T03:16:45Z",
+	"created_at": "2015-12-14T18:58:01Z",
+	"updated_at": "2015-12-15T03:16:45Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

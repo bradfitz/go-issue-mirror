@@ -1,0 +1,27 @@
+{
+	"id": 164431153,
+	"number": 16291,
+	"state": "open",
+	"title": "cmd/compile: make UNDEF into a pseudo-instruction",
+	"body": "The compiler inserts `obj.AUNDEF` instructions into exit blocks without a return instruction, so that liveness analysis understands the control flow. However, `obj.UNDEF` is assembled into a two byte UD2 instruction (`0f 0b`). Something similar occurs on arm, and presumably on other architectures. Since that instruction is unreachable, we may as well omit it entirely, much like we do with `obj.NOP`. (Savings are small, approx 0.15% binary size, but might help a bit in small, hot, cache-sensitive functions.)\r\n\r\nOne easy fix is to change the assemblers to treat `obj.AUNDEF` the same as `obj.NOP`. However, this will break any hand-written assembly that uses UNDEF and wants it to mean UD2.\r\n\r\nAnother fix is to add `obj.AUNDEFNOP`, which plive.go would treat as the same as `obj.AUNDEF`, but which would be converted to `obj.NOP` at assembly time.\r\n\r\nOpinions? I'd rather do the former.\r\n\r\n@randall77 \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-07T23:39:06Z",
+	"updated_at": "2016-07-13T18:58:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

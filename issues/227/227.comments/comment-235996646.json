@@ -1,0 +1,12 @@
+{
+	"id": 235996646,
+	"body": "I found those daemon packages that have emerged too complicated, here is my solution:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"syscall\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\t// check command line flags, configuration etc.\r\n\r\n\t// short delay to avoid race condition between os.StartProcess and os.Exit\r\n\t// can be omitted if the work done above amounts to a sufficient delay\r\n\ttime.Sleep(1 * time.Second)\r\n\r\n\tif os.Getppid() != 1 {\r\n\t\t// I am the parent, spawn child to run as daemon\r\n\t\tbinary, err := exec.LookPath(os.Args[0])\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalln(\"Failed to lookup binary:\", err)\r\n\t\t}\r\n\t\t_, err = os.StartProcess(binary, os.Args, \u0026os.ProcAttr{Dir: \"\", Env: nil,\r\n\t\t\t\tFiles: []*os.File{os.Stdin, os.Stdout, os.Stderr}, Sys: nil})\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalln(\"Failed to start process:\", err)\r\n\t\t}\r\n\t\tos.Exit(0)\r\n\t} else {\r\n\t\t// I am the child, i.e. the daemon, start new session and detach from terminal\r\n\t\t_, err := syscall.Setsid()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalln(\"Failed to create new session:\", err)\r\n\t\t}\r\n\t\tfile, err := os.OpenFile(\"/dev/null\", os.O_RDWR, 0)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalln(\"Failed to open /dev/null:\", err)\r\n\t\t}\r\n\t\tsyscall.Dup2(int(file.Fd()), int(os.Stdin.Fd()))\r\n\t\tsyscall.Dup2(int(file.Fd()), int(os.Stdout.Fd()))\r\n\t\tsyscall.Dup2(int(file.Fd()), int(os.Stderr.Fd()))\r\n\t\tfile.Close()\r\n\t}\r\n\r\n\t// daemon business logic starts here\r\n}\r\n```",
+	"user": {
+		"login": "cschwarz-inco",
+		"id": 6676351,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-28T19:16:55Z",
+	"updated_at": "2016-07-28T19:16:55Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 81090588,
+	"number": 10956,
+	"state": "closed",
+	"title": "archive/zip: cap out of range",
+	"body": "The following program crashes with a panic:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/zip\"\r\n\t\"bytes\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"PK\\x06\\x06PK\\x06\\a0000\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\" +\r\n\t\t\"0000PK\\x05\\x06000000000000\" +\r\n\t\t\"0000\\v\\x00000\\x00\\x00\\x00\\x00\\x00\\x00\\x000\")\r\n\tz, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))\r\n\tif err != nil {\r\n\t\tif z != nil {\r\n\t\t\tpanic(\"non nil z\")\r\n\t\t}\r\n\t\treturn\r\n\t}\r\n\tfor _, f := range z.File {\r\n\t\tr, err := f.Open()\r\n\t\tif err != nil {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tif f.UncompressedSize64 \u003c 1e6 {\r\n\t\t\tn, err := io.Copy(ioutil.Discard, r)\r\n\t\t\tif err == nil \u0026\u0026 uint64(n) != f.UncompressedSize64 {\r\n\t\t\t\tprintln(\"bad size:\", n, f.UncompressedSize64)\r\n\t\t\t\tpanic(\"bad size\")\r\n\t\t\t}\r\n\t\t}\r\n\t\tr.Close()\r\n\t}\r\n}\r\n```\r\n```\r\npanic: runtime error: makeslice: cap out of range\r\n\r\ngoroutine 1 [running]:\r\narchive/zip.(*Reader).init(0xc2080104c0, 0x7fbacc72d1e8, 0xc208014450, 0x39, 0x0, 0x0)\r\n\tsrc/archive/zip/reader.go:81 +0xf7\r\narchive/zip.NewReader(0x7fbacc72d1e8, 0xc208014450, 0x39, 0x7fbacc72d1e8, 0x0, 0x0)\r\n\tsrc/archive/zip/reader.go:69 +0x67\r\nmain.main()\r\n\tzip.go:14 +0x131\r\n```\r\n\r\nThis vulnerability makes it dangerous to open any untrusted zip files. I think that the code must check that the provided data size is large enough to contain the claimed number of files. For example, if the header claims to contains 1e9 files, then data size should be at least dozens of gigs (which should be caught by e.g. HTTP content cap).\r\n\r\non commit 8017ace496f5a21bcd55377e250e325f8ba11d45",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-05-27T18:15:15Z",
+	"created_at": "2015-05-26T18:56:00Z",
+	"updated_at": "2016-06-25T02:09:31Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

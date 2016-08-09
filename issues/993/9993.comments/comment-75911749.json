@@ -1,0 +1,12 @@
+{
+	"id": 75911749,
+	"body": "Linux, right?\n\nThe runtime currently uses 8K pages, so everything should be a multiple of\n8K even if the OS pages are 4K.\n\nI don't see how an madvise call can possibly get a non-multiple of 8K.  It\nis only called from sysUnused, and that is only called with a second\nargument that is ... \u003c\u003c _PageShift.\n\nThere are a few places where munmap uses non-8K multiples.  It's called\nfrom sysFree, and sysFree (and sysAlloc, for that matter) is called from\nsome places with sizes that aren't necessarily page sizes.  Maybe\nsysAlloc/sysFree should round to the page size before calling mmap/munmap?\nIt may not matter, but I'm not sure what mmap/munmap do with partial pages.\n\nYou might want to try setting _PageShift to 16 and see if that helps\nppc64le.  We probably don't want to leave that there, but it would be a\ngood experiment.\n\nOn Tue, Feb 24, 2015 at 9:39 PM, Dave Cheney \u003cnotifications@github.com\u003e\nwrote:\n\n\u003e I am sorry for the imprecise nature of this issue. The symptoms are random\n\u003e SIGSEGV's after processes have been running for several minutes. The most\n\u003e visible effect of this is go test std will segfault half way through the\n\u003e test run, making it impossible to complete a CI build.\n\u003e\n\u003e Last year @mwhudson \u003chttps://github.com/mwhudson\u003e and I saw a similar\n\u003e issue with gccgo-4.9 compiled programs which was eventually traced to the\n\u003e page size of the machine, most ppc64 machines 64k pages, being out of sync\n\u003e with the page size of that the runtime uses.\n\u003e\n\u003e In tracing some processes today I have found occurences of munmap(2) and\n\u003e madvise(2) calls that are not using multiples of 64k\n\u003e\n\u003e munmap(0x3fff82b40000, 26532)           = 0\n\u003e\n\u003e More worrying, I've found examples that don't use a multiple of 4096 bytes!\n\u003e\n\u003e munmap(0x3fff80e10000, 102680)          = 0\n\u003e\n\u003e /cc @randall77 \u003chttps://github.com/randall77\u003e\n\u003e\n\u003e —\n\u003e Reply to this email directly or view it on GitHub\n\u003e \u003chttps://github.com/golang/go/issues/9993\u003e.\n\u003e\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-25T06:22:43Z",
+	"updated_at": "2015-02-25T06:22:43Z"
+}

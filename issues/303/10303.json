@@ -1,0 +1,27 @@
+{
+	"id": 65533453,
+	"number": 10303,
+	"state": "closed",
+	"title": "cmd/cgo: should make pointers passed to C functions escape",
+	"body": "Assume you have some package foo that uses a C function:\r\n\r\n```\r\npackage foo\r\n\r\n/*\r\ntypedef struct Buf {\r\n} Buf;\r\n\r\nvoid Foo(Buf* buf) {\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nfunc Foo() {\r\n    var buf C.Buf\r\n    C.Foo(\u0026buf)\r\n}\r\n```\r\n\r\nIf you compile this package with Go 1.2 (what we use, until we can do some big audit of our cgo usage), we get this:\r\n\r\n```\r\nandrew@andrew-cb:~/escapeme/src/foo$ go version\r\ngo version go1.2 linux/amd64\r\nandrew@andrew-cb:~/escapeme/src/foo$ go build -gcflags \"-m -l -N\"\r\n# foo\r\n./foo.go:14: moved to heap: buf\r\n```\r\n\r\nThis is what we'd expect. Since the heap is (currently) a safe place to put Go-allocated memory referenced by C, we'd expect passing \u0026buf to C.Foo to indicate buf should be heap-allocated.\r\n\r\nOn Go 1.4, we get this:\r\n\r\n```\r\nandrew@andrew-cb:~/escapeme/src/foo$ go version\r\ngo version go1.4.2 linux/amd64\r\nandrew@andrew-cb:~/escapeme/src/foo$ go build -gcflags \"-m -l -N\"\r\n# foo\r\n/tmp/go-build929685257/foo/_obj/_cgo_gotypes.go:12: leaking param: ptr to result ~r1\r\n:10[/tmp/go-build929685257/foo/_obj/_cgo_gotypes.go:27]: _Cfunc_Foo p0 does not escape\r\n:11[/tmp/go-build929685257/foo/_obj/_cgo_gotypes.go:28]: _Cfunc_Foo \u0026p0 does not escape\r\n./foo.go:15: Foo \u0026buf does not escape\r\nandrew@andrew-cb:~/escapeme/src/foo$\r\n```\r\n\r\nFoo \u0026buf does not escape? It totally should! Since it didn't get escaped, we're now passing stack-allocated memory into C. Holy cow that's a bad idea with 1.4, cause stack allocated memory gets moved around.\r\n\r\nAnd here's tip:\r\n\r\n```\r\nandrew@andrew-cb:~/escapeme/src/foo$ go version\r\ngo version devel +f8fd550 Tue Mar 31 13:56:18 2015 +0000 linux/amd64\r\nandrew@andrew-cb:~/escapeme/src/foo$ go build -gcflags \"-m -l -N\"\r\n# foo\r\n/tmp/go-build207622607/foo/_obj/_cgo_gotypes.go:14: leaking param: ptr to result ~r1\r\n:19[/tmp/go-build207622607/foo/_obj/_cgo_gotypes.go:38]: _Cfunc_Foo p0 does not escape\r\n:20[/tmp/go-build207622607/foo/_obj/_cgo_gotypes.go:39]: _Cfunc_Foo \u0026p0 does not escape\r\n./foo.go:15: Foo \u0026buf does not escape\r\nandrew@andrew-cb:~/escapeme/src/foo$ \r\n```",
+	"user": {
+		"login": "jtolds",
+		"id": 109603,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 42,
+	"closed_at": "2015-06-15T17:41:24Z",
+	"created_at": "2015-03-31T19:59:21Z",
+	"updated_at": "2016-06-25T02:04:26Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

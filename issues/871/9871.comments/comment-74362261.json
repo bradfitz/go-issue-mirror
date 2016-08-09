@@ -1,0 +1,12 @@
+{
+	"id": 74362261,
+	"body": "It has been fixed on tip, and the following patch should fix it in 1.4.1.\r\n\r\n```\r\n--- src/runtime/syscall_windows.go 2015-02-14 00:09:23.834294000 -0500\r\n+++ src/runtime/syscall_windows.go  2015-02-14 00:09:50.474651894 -0500\r\n@@ -54,11 +54,13 @@ func compileCallback(fn eface, cleanstac\r\n                panic(\"compilecallback: output parameter size is wrong\")\r\n        }\r\n        argsize := uintptr(0)\r\n-       for _, t := range (*[1024](*_type))(unsafe.Pointer(\u0026ft.in[0]))[:len(ft.in)] {\r\n-               if (*t).size \u003e uintptrSize {\r\n-                       panic(\"compilecallback: input parameter size is wrong\")\r\n+       if len(ft.in) \u003e 0 {\r\n+               for _, t := range (*[1024](*_type))(unsafe.Pointer(\u0026ft.in[0]))[:len(ft.in)] {\r\n+                       if (*t).size \u003e uintptrSize {\r\n+                               panic(\"compilecallback: input parameter size is wrong\")\r\n+                       }\r\n+                       argsize += uintptrSize\r\n                }\r\n-               argsize += uintptrSize\r\n        }\r\n \r\n        lock(\u0026cbs.lock)\r\n```\r\n\r\nI'm not sure if we want to fix it for 1.4.2 or not. Tentatively labeled Go1.4.2.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-14T05:12:20Z",
+	"updated_at": "2015-02-14T05:12:20Z"
+}

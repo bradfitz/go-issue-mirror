@@ -1,0 +1,22 @@
+{
+	"id": 137160253,
+	"number": 14561,
+	"state": "closed",
+	"title": "runtime: under edge conditions, select fails to read from time.After() channel",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\nTested on go1.6 darwin/amd64 and go1.6 linux/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nMac:\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/bobbyz/projects/community/go:/Users/bobbyz/projects/bztech/go:/Users/bobbyz/projects/bobbyz/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nLinux:\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/bobbyz/gopath/\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\n```go\r\n// This is an exact, unaltered copy-paste of the code I'm running.  I trimmed my live code\r\n// down to just this function body in order to test/reproduce\r\nfunc (l *logger) close(timeout time.Duration) error {\r\n\tfmt.Println(\"before select\")\r\n\tselect {\r\n\tcase \u003c-time.After(time.Second):\r\n\t\tfmt.Println(\"timeout occurred\")\r\n\t\treturn errors.New(\"timeout\")\r\n\t}\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nI should see \"before select\" printed.  Then after 1 second, I should see \"timeout occurred\" printed.\r\n\r\n### What did you see instead?\r\n\r\nI see \"before select\" printed.  Nothing else prints and the program never exits.  This is definitely the only function in my code that prints \"before select\", so the close method is called, but the channel read from the time.After channel never happens.  I've noticed the program spins my CPU at 100% while I'm waiting for the timeout that never occurs.\r\n\r\n### Other\r\n\r\nI can only reproduce this when I add a panic() to one of my functions and recover from the panic.  The \"close\" method shown above runs on program termination, after the panic recovery.  If I modify the panicking code to return nil in place of the panic, I can't reproduce.  That portion of code is outside of this close method.  I also can't reproduce if I remove the select and read directly from the channel.\r\n\r\nI ripped apart my code trying to find the cause of the hanging select.  I uploaded a functioning but mangled/stripped copy of the code to https://github.com/bobziuchkovski/golang-select-repro.  The code itself hardly makes sense anymore, but it runs and reproduces the hanging select about 1 in 8 times on my laptop.\r\n\r\nThe select in question is in logger.go on line 110.  The panic is triggered in main.go on line 45.  If I comment-out that panic, I can't reproduce the hanging select.  The close method with the select in question is triggered indirectly via line 40 of main.go",
+	"user": {
+		"login": "bobziuchkovski",
+		"id": 675443,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-05-19T22:25:54Z",
+	"created_at": "2016-02-29T06:00:30Z",
+	"updated_at": "2016-05-20T15:17:22Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

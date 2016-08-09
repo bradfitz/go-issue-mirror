@@ -1,0 +1,12 @@
+{
+	"id": 66062332,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10 by **odysseus9672**:\n\n\u003cpre\u003e\u003e No, it is not stopped, it's just preempted, slow or not yet scheduled for execution.\nIf the program would not  deadlock, then the seqMaker would necessary send the message\nin the future (but it just did not have time before program termination).\n\nReally? That's not what the goroutine list printed at deadlock and output of the\nruntime.Goroutines() function would lead me to believe. Those would lead me to believe\nthat the goroutine that should have sent a message on killChan has already exited. Am I\nreading those pieces of information incorrectly?\n\nHere is my own guess for how it blocks: the main goroutine manages to fill up the input\nchannel of one of the seqMakers in between inter-thread/CPU message synchronizations.\nMeanwhile, on the other CPU, the seqMaker has stopped running. \n\nHere, for example, is some output that makes me think that (version attached):\n\nIteration:  2807  Killchan len:  0  Goroutines:  20\nmap[2789:0xf84007f8f0 2796:0xf84007fea0 2806:0xf840084750 2803:0xf8400844e0\n2793:0xf84007fc30 2797:0xf840084000 2800:0xf840084270 2790:0xf84007f9c0\n2801:0xf840084340 2794:0xf84007fd00 2804:0xf8400845b0 2798:0xf8400840d0\n2791:0xf84007fa90 2795:0xf84007fdd0 2805:0xf840084680 2799:0xf8400841a0\n2792:0xf84007fb60 2802:0xf840084410]\nSend to:  2789\nthrow: all goroutines are asleep - deadlock!\n\ngoroutine 1 [chan send]:\nmain.main()\n\t/Users/sean/borked2fmt.go:63 +0x511\n\ngoroutine 2 [chan receive]:\nmain.resultsCompiler(0xf840023000, 0xf840004a00, 0x6400000064, 0xf8400019b0, 0x0, ...)\n\t/Users/sean/borked2fmt.go:12 +0x38\ncreated by main.main\n\t/Users/sean/borked2fmt.go:49 +0xe4\n\ngoroutine 2809 [chan receive]:\nmain.seqMaker(0xf840084750, 0xf840023000, 0xaf6, 0xf840014000, 0x0, ...)\n\t/Users/sean/borked2fmt.go:29 +0x8b\ncreated by main.main\n\t/Users/sean/borked2fmt.go:69 +0x5bd\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2867/10/borked3fmt.go\"\u003eborked3fmt.go\u003c/a\u003e (2203 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-05T09:29:12Z",
+	"updated_at": "2014-12-08T10:15:06Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51278816,
+	"number": 2161,
+	"state": "closed",
+	"title": "signal.Incoming plus os.StartProcess results in panic",
+	"body": "by **r@rcrowley.org**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. `8g fence.go \u0026amp;\u0026amp; 8l fence.8 \u0026amp;\u0026amp; ./8.out`\n2. In another terminal, send SIGUSR2 to the 8.out process.\n\nWhat is the expected output?\n\n18:49:05.074168 fence.go:16: (open a file descriptor and do work)\n18:49:27.745035 fence.go:37: SIGUSR2: user-defined signal 2\n18:49:27.745898 fence.go:80: p.Pid: 12823\n18:49:27.746709 fence.go:18: (do work with an inherited file descriptor)\n\nThe child process whose PID is printed delivers SIGQUIT to its parent, which exits\ngracefully by returning from main.main, and then should remain running as a child of\ninit.  Delivering SIGUSR2 to the child repeats the process, leaving its child behind,\nand so on.\n\nWhat do you see instead?\n\nThe expected output plus a panic.  See attached panic.txt.  The child does remain as a\nchild of init and the process can be repeated.  The parent consistently panics instead\nof successfully handling the SIGQUIT and returning from main.main.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g version weekly.2011-08-17 9460\n\nWhich operating system are you using?\n\nUbuntu 11.04 on i386.  I have additionally tested in Ubuntu 10.04 and 11.04 on amd64.\n\nWhich revision are you using?  (hg identify)\n\nc62cf48b7dc4 tip\n\nPlease provide any additional information below.\n\nWithout a call to os.StartProcess or syscall.ForkExec, any number of signals may be\nhandled by \u0026lt;-signal.Incoming.\n\nIt additionally doesn't matter...\n\n* which of os.StartProcess or syscall.ForkExec is used.\n* that the same program is being executed.\n* what's passed in the *os.ProcAttr.\n* that exec.LookPath, os.Setenv, are os.Getpid are called in this code path.\n* whether the architecture is i386 or amd64.\n* whether the hypervisor is VirtualBox or Xen.\n* whether the child or an unrelated process delivers the SIGQUIT.\n* whether signals are recieved indirectly by \u0026lt;-signal.Incoming or directly in the\nmain goroutine by runtime.Sigrecv().\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2161/0/panic.txt\"\u003epanic.txt\u003c/a\u003e (2366 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2161/0/fence.go\"\u003efence.go\u003c/a\u003e (1735 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:11:37Z",
+	"created_at": "2011-08-18T19:10:28Z",
+	"updated_at": "2016-06-24T19:33:29Z"
+}

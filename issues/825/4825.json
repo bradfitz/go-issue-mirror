@@ -1,0 +1,27 @@
+{
+	"id": 51282692,
+	"number": 4825,
+	"state": "closed",
+	"title": "encoding/binary: make type error clearer",
+	"body": "by **shakeel.mahate**:\n\n\u003cpre\u003eAccording to godoc: \u0026quot;binary.Read reads structured binary data from r into data.\nData must be a pointer to a fixed-size value or a slice of fixed-size values.\u0026quot;\n\nYou can ask binary.Read() to read a slice of structs which works, but if you have a\nslice as a member of struct, it returns an error \u0026quot;binary.Read: invalid type \u0026quot;\n\nThis works:\ntype S struct {\n  Index int32\n  Ticks int32\n  Analogs [3]int16\n  Digitals [8]byte\n}\ns := make([]S, 1024) // Slice of S works\nbinary.Read(buf, binary.LittleEndian, s)\n\nThis does not work:\ntype S struct {\n  Index int32\n  Ticks int32\n  Analogs []int16 // This is offending slice\n  Digitals []byte // And so is this\n}\ns := make([]S, 1024)\nfor i := range s {\n  s[i].Analogs = make([]int16, 3) // Create the backing store for slices\n  s[i].Digitals = make([]byte, 8) // Ditto\n}\nbinary.Read(buf, binary.LittleEndian, s) // Returns binary.Read: invalid type error\nmessage\n\nFirst of all the error message is very cryptic, because it is not clear why the read\nfailed. It would be better to point out the actual member that failed, S.Analogs\n\nSecondly the syntax for array and slice are very similar and we are encouraged to think\nof them as one and the same. But you can only define an array's length as a constant\nexpression, there is no way to specify the length of an array using non-const\nexpressions. \u003ca href=\"http://golang.org/ref/spec#Constant_expressions\"\u003ehttp://golang.org/ref/spec#Constant_expressions\u003c/a\u003e\n\nSince we truly cannot create non-const arrays, the binary.Read API should support slices\nas members.\n\nI really like the terseness and elegance of the binary.Read API, I create slice of\nstructs and ask read to populate it. I just wish that the structs itself could have a\nslice as a member or provide a better error message.\n\nI had to resort reading each member of the struct individually in order to work around\nthis problem\n\nWork around:\nvar Index, Ticks int32\nAnalogs := make([]int16, 3)\nDigitals := make([]byte, 8)\nfor i := range 1024 {\n  binary.Read(buf, binary.LittleEndian, \u0026amp;Index)\n  // move the buf+4\n  binary.Read(buf, binary.LittleEndian, \u0026amp;Ticks)\n  // move the buf+4\n  binary.Read(buf, binary.LittleEndian, Analogs)\n  // move the buf+(3*2)\n  binary.Read(buf, binary.LittleEndian, Digitals)\n  // move the buf+(8*1)\n}\n\n\nGo version 1.0.3\nWindows 7\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:25:37Z",
+	"created_at": "2013-02-15T17:17:40Z",
+	"updated_at": "2016-06-24T22:33:06Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

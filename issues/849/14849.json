@@ -1,0 +1,17 @@
+{
+	"id": 141726780,
+	"number": 14849,
+	"state": "closed",
+	"title": "cmd/compile: [0:x] slicing doesn't need to protect against past-end-of-object pointers",
+	"body": "For s[i:j:k], SSA does:\r\n```\r\n\trlen = j-i\r\n\trcap = k-i\r\n\tp = s.ptr\r\n\tif rcap != 0 {\r\n\t    p += i * elemsize\r\n\t}\r\n\tresult = (SliceMake p rlen rcap)\r\n```\r\nThe `if` is to make sure we don't end up manufacturing a pointer to the next object in the heap, and thus falsely retaining it.\r\nIf i==0, we don't need that check.\r\n\r\nThis comes up in encoding/binary.littleEndian.Uint64:\r\n```\r\n00008 (get.go:6)\tMOVQ\t\"\".b+16(FP), CX\r\n00009 (get.go:6)\tCMPQ\tCX, $8\r\n00010 (get.go:6)\tJCS\t$0, 18\r\n00011 (get.go:6)\tCMPQ\tCX, $0\r\n00012 (get.go:6)\tJEQ\t$0, 13\r\n00013 (get.go:6)\tMOVQ\t\"\".b(FP), CX\r\n00014 (get.go:6)\tMOVQ\t(CX), CX\r\n00015 (get.go:6)\tVARDEF\t\"\".~r1+24(FP)\r\n00016 (get.go:6)\tMOVQ\tCX, \"\".~r1+24(FP)\r\n00017 (get.go:6)\tRET\r\n00018 (get.go:6)\tCALL\truntime.panicslice(SB)\r\n00019 (get.go:6)\tUNDEF\r\n```\r\n\r\nThat second comparison is useless, and represents the `rcap != 0` comparison.  Maybe we should not emit this check at all if i==0.  Maybe we could detect this comparison is redundant (cx \u003e= 8 implies cx != 0), or maybe we could detect that the branch is dumb because its taken and fallthrough go to the same place (as we've already constant-folded the i*elemsize to 0, there's no phi anymore).\r\n\r\n@dr2chase @brtzsnr ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-03-20T20:57:53Z",
+	"created_at": "2016-03-17T22:53:59Z",
+	"updated_at": "2016-03-20T20:57:53Z"
+}

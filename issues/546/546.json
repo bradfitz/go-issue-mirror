@@ -1,0 +1,28 @@
+{
+	"id": 51276624,
+	"number": 546,
+	"state": "closed",
+	"title": "Build fails on OSX + fix",
+	"body": "by **dean.prichard**:\n\n\u003cpre\u003eproblem introduced by moving GOOS, GOARCH, GOROOT lookup into central\nlibrary. Fix below.\n\nWhat steps will reproduce the problem?\nhg pull -u\nmake all\n\nWhat is the expected output? What do you see instead?\n\nexpected:\n--- cd ../test\n2 known bugs; 0 unexpected bugs\n\n\nobserved:\n\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   reflect.c\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   runtime1.c\n/usr/local/bin/6a darwin/amd64/rt0.s\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   sema.c\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   sigqueue.c\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   string.c\n/usr/local/bin/6a darwin/amd64/sys.s\n/usr/local/bin/6a amd64/asm.s\n/usr/local/bin/6c -Idarwin -Idarwin/amd64 -wF -D_64BIT   malloc.c\nrm -f _obj/runtime.a\n/usr/local/bin/gopack grc _obj/runtime.a _go_.6 asm.6 cgocall.6 chan.6\nclosure.6 float.6 hashmap.6 ifac\ne.6 malloc.6 mcache.6 mcentral.6 mem.6 memmove.6 mfixalloc.6 mgc0.6 mheap.6\nmheapmap64.6 msize.6 print.\n6 proc.6 reflect.6 rune.6 runtime.6 runtime1.6 rt0.6 sema.6 signal.6\nsigqueue.6 slice.6 string.6 symtab\n.6 sys.6 thread.6 traceback.6\ncp _obj/runtime.a \u0026quot;/usr/local/go/pkg/darwin_amd64/runtime.a\u0026quot;\nrm reflect.c string.c sema.c sigqueue.c runtime1.c malloc.c\ncd sync \u0026amp;\u0026amp; /usr/local/bin/gomake install\n/usr/local/bin/6g -o _go_.6 mutex.go rwmutex.go\nmake[2]: *** [_go_.6] Segmentation fault\nmake[2]: *** [_go_.6] Segmentation fault\nmake[1]: *** [container/heap.install] Error 2\nmake[1]: *** Waiting for unfinished jobs....\nmake[2]: *** [_go_.6] Segmentation fault\n/usr/local/bin/6a asm_amd64.s\nmake[1]: *** [utf8.install] Error 2\nmake[1]: *** [exp/draw.install] Error 2\nmake[2]: *** [_go_.6] Segmentation fault\nmake[2]: *** Waiting for unfinished jobs....\nmake[1]: *** [sync.install] Error 2\nmake: *** [build] Error 1\n\n\nWhat is your $GOOS?  $GOARCH?\nGOARCH=amd64\nGOOS=darwin\n\nWhich revision are you using?  (hg identify)\nc3169cad2f47+ tip\n\n\nPlease provide any additional information below.\n\nThis patch fixes it for me:\n\ndiff -r c3169cad2f47 src/cmd/gc/lex.c\n--- a/src/cmd/gc/lex.c  Mon Jan 18 21:46:59 2010 -0800\n+++ b/src/cmd/gc/lex.c  Tue Jan 19 07:07:35 2010 -0700\n@@ -7,6 +7,9 @@\n #include       \u0026quot;y.tab.h\u0026quot;\n #include \u0026lt;ar.h\u0026gt;\n \n+extern char* getgoos(void);\n+extern char* getgoroot(void);\n+\n extern int yychar;\n char nopackage[] = \u0026quot;____\u0026quot;;\n void lexfini(void);\ndiff -r c3169cad2f47 src/cmd/ld/lib.c\n--- a/src/cmd/ld/lib.c  Mon Jan 18 21:46:59 2010 -0800\n+++ b/src/cmd/ld/lib.c  Tue Jan 19 07:07:35 2010 -0700\n@@ -32,6 +32,9 @@\n #include       \u0026quot;lib.h\u0026quot;\n #include       \u0026lt;ar.h\u0026gt;\n\n+extern char* getgoos(void);\n+extern char* getgoroot(void);\n+\n char   symname[]       = SYMDEF;\n char*  libdir[16] = { \u0026quot;.\u0026quot; };\n int    nlibdir = 1;\n@@ -718,8 +721,6 @@\n void\n mywhatsys(void)\n {\n-       char *s;\n-\n        goroot = getgoroot();\n        goos = getgoos();\n        goarch = thestring;     // ignore $GOARCH - we know who we are\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:04:59Z",
+	"created_at": "2010-01-19T14:19:35Z",
+	"updated_at": "2016-06-24T19:13:02Z"
+}

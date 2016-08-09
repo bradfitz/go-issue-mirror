@@ -1,0 +1,12 @@
+{
+	"id": 66069822,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eThe situation where it came up recently was a list that is sorted only\nlazily during a read. We assume adds are infrequent and we want the\nreads to be able to run concurrently most of the time:\n\ntype T struct {\n    mu sync.RWMutex\n    list []int\n    sorted bool\n}\n\nfunc (t *T) add(x int) {\n    t.mu.Lock()\n    t.list = append(t.list, x)\n    t.sorted = false\n    t.mu.RUnlock()\n}\n\nfunc (t *T) read(f func(int)) {\n    t.mu.RLock()\n    for !t.sorted {\n        t.mu.RUnlock()\n        t.mu.Lock()\n        if !t.sorted {\n            sort.Ints(t.list)\n            t.sorted = true\n        }\n        t.mu.Unlock()\n        t.mu.RLock()\n    }\n    for _, x := range t.list {\n        f(x)\n    }\n    t.mu.RUnlock()\n}\n\nIt says 'for !t.sorted' instead of 'if !t.sorted' to avoid a race\nwhere an add comes in between the Unlock and the RLock at the bottom\nof the loop body. With an atomic UnlockAndRLock method, the Unlock +\nRLock sequence could become a single call and the for !t.sorted would\nbecome if !t.sorted - no need for a retry loop.\n\nI don't know if it's a good idea to provide, but that is how it came up.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-09-01T14:29:11Z",
+	"updated_at": "2014-12-08T10:21:22Z"
+}

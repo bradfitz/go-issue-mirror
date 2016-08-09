@@ -1,0 +1,12 @@
+{
+	"id": 66054401,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **jakans@earthlink.net**:\n\n\u003cpre\u003eThanks for pointing out the bug.  It crept in when I started to optimize my real\nprograms, and I didn't catch the obvious.  I'm now calling pngWtr.Flush() with defer\n(tests for nil not shown):\n\n  pngFile, err = os.Open(outPath, os.O_WRONLY|os.O_CREATE, 0644)\n  defer pngFile.Close()\n\n  pngWtr = bufio.NewWriter(pngFile)\n  defer pngWtr.Flush()\n\n  ...\n\n  png.Encode(pngWtr, rgba)\n\nand it behaves properly.\n\nSpeaking of optimizing, goroutines and channels are worth their weight in gold.  My\nworking function requires a many-megabyte buffer.  Initially it created its own buffer,\nand relied on the garbage collector to free it.  This was fine when called in a for loop\nand run sequentially.  But when I called it as a goroutine in the loop, to utilize all 8\nvirtual cores on my Mac Pro, the current garbage collector couldn't keep up, and it\neventually ran out of memory and crashed.\n\nThe simple and elegant solution was to allocate 8 buffers and use a channel of buffer\npointers to store the pool.  The goroutine fetches a buffer from the pool, passes it to\nthe working function, and returns it to the pool before exiting.  It was trivial to\ncode, and a lot easier than writing the mutex calls myself (which I have done in C in\nthe past).  Simplified code is shown below:\n\n  runtime.GOMAXPROCS (NCPU)\n\n  pool := make(chan *Buffer, NCPU)\n  for i := 0; i \u0026lt; NCPU; i++ {\n    pool \u0026lt;- NewBufferStructure()\n  }\n\n  func DoWork(pl chan *Buffer, dr chan\u0026lt;- int) {\n    buf := \u0026lt;- pl\n    DoActualWork(buf)\n    pl \u0026lt;- buf\n    dr \u0026lt;- 0\n  }\n\n  drain := make(chan int, NCPU)\n  for i := 0; i \u0026lt; hundredsOfElements; i++ {\n    go DoWork(pool, drain)\n  }\n  for i := 0; i \u0026lt; hundredsOfElements; i++ {\n    \u0026lt;- drain\n  }\n\nI started programming in high school in 1971, learned good style by studying the FOCAL\n5/69 interpreter source code on the PDP-8, enjoyed writing PDP-11 assembly language in\ncollege, and chose Modula-2 as my preferred language until forced to use C and C++.  Go\nis a breath of fresh air, a pleasure to use, and its design allows difficult tasks to be\naccomplished cleanly and easily.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-04T04:13:52Z",
+	"updated_at": "2014-12-22T05:47:51Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 120489831,
+	"number": 13488,
+	"state": "closed",
+	"title": "net/http: Question mark eaten from URL if no query parameters specified",
+	"body": "1. What version of Go are you using (go version)?\r\n    ```\r\n    go version go1.5.1 windows/amd64\r\n    ```\r\n\r\n2. What operating system and processor architecture are you using?\r\n\r\n    Windows 8.1 Pro (64-bit)\r\n\r\n3. What did you do?\r\n\r\n    There is an (internal) API for which these two URLs identifie two **different** resources: \r\n    A. `http://server.com/api/item.json`\r\n    B. `http://server.com/api/item.json?` \r\n    \r\n    The second URL is indeed **with question mark**, but **without query parameters**.   \r\n    \r\n    I make HTTP GET request using the resource B:\r\n    \r\n    ```\r\n    response, err := http.Get(\"http://server.com/api/item.json?\")\r\n    body, err := ioutil.ReadAll(response.Body)\r\n    response.Body.Close()\r\n    fmt.Printf(\"%s\", body)\r\n    ```\r\n\r\n4. What did you expect to see?\r\n\r\n    I expect to receive representation of the resource B.\r\n\r\n5. What did you see instead?\r\n\r\n    I received representation of the resource A.\r\n\r\n    So, `net/http` somewhat eats-or-skips the question mark if there are no query parameters.\r\n    \r\n    BTW, I'm seeing the same behaviour while using https://github.com/parnurzeal/gorequest package.\r\n\r\n-----\r\n\r\nI'd like to understand the rationale behind this behaviour better.\r\n\r\nIs that because the URL parser interpret the following from [RFC 1738](https://tools.ietf.org/html/rfc1738), section 3.3, that the \"?\" (question mark) is **not part of** the query string, but just separates it?\r\n\r\n```\r\nhttp://\u003chost\u003e:\u003cport\u003e/\u003cpath\u003e?\u003csearchpart\u003e\r\n```\r\n\r\nDoes also the grammar in [RFC 3986](https://tools.ietf.org/html/rfc3986), Appendix A., indicate the \"?\" is *not* part of the actual query string?\r\n\r\n```\r\nURI           = scheme \":\" hier-part [ \"?\" query ] [ \"#\" fragment ]\r\n```\r\n\r\nIf so, is my assumption correct that the `net/http` package decomposes and recomposes URL like `http://server.com/item.json?` applying the suggested (de|re)composition algorithm, i.e.:\r\n```\r\n      if defined(query) then\r\n         append \"?\" to result;\r\n         append query to result;\r\n      endif;\r\n```\r\nand, rightly, assumes the query component as *undefined*, hence superfluous?\r\n\r\n-----\r\n\r\nBTW, I have filed very similar report to the Python Request library (kennethreitz/requests#2912).\r\nI have also tested the requests using number of HTTP packages for different programming languages, here https://github.com/mloskot/http-url-test.\r\nTo summary, 4 of 14 packages eat-or-skip the trailing question mark, namely:\r\n* Go\r\n   * net/http\r\n   * gorequest (parnurzeal/gorequest#65)\r\n* Python Requests\r\n* Node.js shred\r\n",
+	"user": {
+		"login": "mloskot",
+		"id": 80741,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-02-26T16:13:46Z",
+	"created_at": "2015-12-04T21:30:02Z",
+	"updated_at": "2016-02-29T19:58:19Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

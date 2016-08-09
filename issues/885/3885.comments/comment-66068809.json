@@ -1,0 +1,12 @@
+{
+	"id": 66068809,
+	"body": "\u003ca id=\"c16\"\u003e\u003c/a\u003eComment 16:\n\n\u003cpre\u003eRe #15 the benchmark is not as telling as it might seem. The n strings being considered\nin the search look like:\n\n1\n02\n003\n0004\n00005\n000006\n0000007\n00000008\n000000009\n0000000010\n00000000011\n000000000012\n0000000000013\n00000000000014\n000000000000015\n0000000000000016\n\nAs you increase the size of the set, you are also increasing the average length of the\nstrings, which also increases the average length of the strings being searched for. The\nmap lookup must of course hash the key in order to decide where in the table to look,\nand that grows with this average length. So this format is pessimal for the map. It is\nalso optimal for the slice scan, because string comparison doesn't even look at the\nstring data unless the string lengths match. There is only one entry in the slice with\nthe right length, so the whole scan does on average n/2 length comparisons (very cheap)\nand one length-n string comparison. In contrast the map lookup does on average one\nlength-n string hash and one length-n string comparison. The length-n string hash and\nthe n/2 length comparisons are about equal in complexity, so the slice scan and the map\nlookup take roughly the same amount of time.\n\nReal data does not look like this.\n\nIf you change sstr to return strconv.Itoa, so that there are some strings with the same\nlength in the set of keys, the map quickly wins:\n\n   n     scan      map\n   2     22.2     59.0\n   4     34.2     60.3\n   8     50.4     63.2\n  16     60.3     67.0\n  32      100     67.8\n  64      184     66.4\n 128      277     64.7\n 256      504     68.4\n 512     1225     64.6\n1024     2721     57.9\n2048     3930     65.4\n4096     9631     66.4\n\nIt's not worth doing more experiments on the current map implementation.  Keith is\nworking on a new one that may be ready for Go 1.1 or may not be, but either way the\ncurrent one's days are numbered.\u003c/pre\u003e\n\n_Labels changed: added **go1.1maybe**._\n\n_Owner changed to @randall77._\n\n_Status changed to **Started**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-15T15:28:51Z",
+	"updated_at": "2014-12-08T10:20:32Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 140950160,
+	"number": 14829,
+	"state": "closed",
+	"title": "cmd/compile: unnecessary allocation for []byte-\u003estring",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go version go1.6 linux/amd64`\r\nand\r\n`go version devel +ea4b785 Tue Mar 15 08:43:34 2016 +0000 linux/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/justinn/Workspace/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nBenchmarked (a function that calls) strings.Join and looked at the memory allocations with pprof. (With `go test -bench Join -benchmem -memprofile mem.pprof -memprofilerate 1 -run ^$`)\r\n\r\nBenchmarks for strings.Join: http://play.golang.org/p/R7snLsnFmg\r\n\r\nBenchmark results:\r\n```\r\nBenchmarkJoin0-8\t500000000\t         3.21 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkJoin1-8\t500000000\t         3.66 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkJoin2-8\t20000000\t        80.8 ns/op\t       6 B/op\t       2 allocs/op\r\n```\r\n\r\nMemory profile for strings.Join (`go tool pprof --alloc_objects \u003cbinary\u003e mem.pprof`):\r\n```\r\n   1204055    1204055 (flat, cum)   100% of Total\r\n         .          .    358:\tn := len(sep) * (len(a) - 1)\r\n         .          .    359:\tfor i := 0; i \u003c len(a); i++ {\r\n         .          .    360:\t\tn += len(a[i])\r\n         .          .    361:\t}\r\n         .          .    362:\r\n    602028     602028    363:\tb := make([]byte, n)\r\n         .          .    364:\tbp := copy(b, a[0])\r\n         .          .    365:\tfor _, s := range a[1:] {\r\n         .          .    366:\t\tbp += copy(b[bp:], sep)\r\n         .          .    367:\t\tbp += copy(b[bp:], s)\r\n         .          .    368:\t}\r\n    602027     602027    369:\treturn string(b)\r\n         .          .    370:}\r\n```\r\n\r\n\r\n4. What did you expect to see?\r\n\r\nThe compiler reusing the memory of b for the return value. \r\n\r\n5. What did you see instead?\r\n\r\nThe []byte-\u003estring conversion in strings.Join (on line 369) allocates a new string, although the []byte could be reused as there can never be a reference to the []byte after the function returns and the []byte is already on the heap¹.\r\n\r\n¹ Calling 'go build -gcflags=\"-m\" in the strings package confirms this:\r\n```\r\n./strings.go:363: make([]byte, n) escapes to heap\r\n./strings.go:369: string(b) escapes to heap\r\n```\r\n\r\n(Line numbers are from tip)",
+	"user": {
+		"login": "nuss-justin",
+		"id": 6443781,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-03-15T16:26:34Z",
+	"created_at": "2016-03-15T11:51:31Z",
+	"updated_at": "2016-03-15T16:26:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

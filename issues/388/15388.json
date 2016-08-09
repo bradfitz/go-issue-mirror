@@ -1,0 +1,26 @@
+{
+	"id": 149780545,
+	"number": 15388,
+	"state": "open",
+	"title": "os: Stdin is broken in some cases on windows",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6 windows/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nset GOARCH=amd64\r\nset GOOS=windows\r\n\r\n3. What did you do?\r\nI tried to make a Squid (a proxy server) auth helper with Go. It's a simple program that needs to read it's stdin, parse it and send the response to stdout. See http://wiki.squid-cache.org/Features/AddonHelpers for details.\r\nHere is the link to my code: https://play.golang.org/p/NR9PkX0fu7\r\n\r\n4. What did you expect to see?\r\nMy squid instance need to ask credentials upon http request. No error messages related to my program need to be in squid log.\r\n\r\n5. What did you see instead?\r\nEvery thing went fine. I tested the program from console, I tested it with echo, sending login and pass by pipe, like 'echo vasya 1 | sqauth'. No errors detected. Then, I configured Squid to run the program as an auth helper. Squid didn't start. In log file I saw this record: 'read /dev/stdin: The parameter is incorrect.', thre record from line 26 of my code. I spent few hours investigating the problem, and that's what I got. It seems that Squid starts its child processes, and sets its stdin to async socket handlers. It's not pretty good documented in WINAPI doc, but when they run ReadFile on async IO handler with NULL lpOverlapped parameter (it's the last parameter to function), the error 87 happens (The parameter is incorrect). I looked go source code, and I saw that 'File.read' function calls syscall.ReadFile with lpOverlapped == nil in any case.\r\n\r\nThus that the case, when I start go program as children process with stdin as async socket, os.Stdin is always broken and I have no normal way to get data from stdin. Instead I need to use platform dependend syscall. It would be pretty good to use standard os.Stdin in any case. It's interesting that C fgets works fine with normal stdin in the case.\r\n\r\nThe working C programm: [fake.cc.zip](https://github.com/golang/go/files/228057/fake.cc.zip).\r\n\r\n",
+	"user": {
+		"login": "yekimov",
+		"id": 8219333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 12,
+	"created_at": "2016-04-20T14:15:35Z",
+	"updated_at": "2016-04-27T03:15:39Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

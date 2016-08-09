@@ -1,0 +1,12 @@
+{
+	"id": 150693402,
+	"body": "The API is indeed far from perfect, though I'd completely be okay if it were just exposed as is, as one  who has just copied it into my own packages in the past.\r\n\r\nHere's a rough sketch of an alternative API, that would make most tasks simpler and be a bit more idiomatic. \r\n\r\nThe names are largely immaterial, and almost certainly the first thing I thought of; the functionality and structure is what I'm suggesting.\r\n\r\n```\r\ntype Node interface { //or Block or whatever\r\n   //for headers Text() == Lines()[0]\r\n   //for paragraphs Text() == strings.Join(Lines(), \" \") \r\n   //    where each line in Lines() has been run through strings.TrimSpace\r\n   //for preformatted Text() == strings.Join(Lines(), \"\\n\"),\r\n   //    where no line in Lines() contains the initial indent that marked this node as preformatted\r\n   Text() string\r\n   Lines() []string //each line in the node with type-specific processing as described above\r\n   Original() string //the slice of the original text string with no parsing\r\n}\r\n\r\ntype NodeHeader struct {...} //all these implement Node, none export anything\r\n\r\ntype NodePreformatted struct {...}\r\n\r\ntype NodeParagraph struct {...}\r\n\r\nfunc Parse(text string) []Node\r\n```\r\n\r\nType switching would replace op.\r\n\r\nLines() would be equivalent to the lines field on block.\r\n\r\n\r\nNote that\r\n```\r\nfunc OriginalInvariant(text string) bool {\r\n  s := \"\"\r\n  for _, n := range Parse(text) {\r\n    s += n.Original()\r\n  }\r\n  return s == text\r\n}\r\n```\r\nwould return true for all text, allowing line numbering and the like to be derived if necessary.\r\n\r\nThe Text() method (named like the method on bufio.Scanner for the same reason) would cover the majority of uses and Lines() and Original() would allow any others. \r\n\r\nI didn't include a node() method in the interface because it doesn't matter. If someone wants to define their own Node and reparse certain nodes using Original, I say let them go nuts.",
+	"user": {
+		"login": "jimmyfrasche",
+		"id": 375553,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-23T21:09:55Z",
+	"updated_at": "2015-10-23T21:09:55Z"
+}

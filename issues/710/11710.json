@@ -1,0 +1,27 @@
+{
+	"id": 94946950,
+	"number": 11710,
+	"state": "closed",
+	"title": "runtime: go1.5beta1 on Windows 64 with CGO: signal arrived during external code execution",
+	"body": "Go version: go1.5beta1 windows/amd64\r\nOS: Windows 7 SP1 64 bits\r\n\r\nWhen trying to connect to Oracle using https://github.com/mattn/go-oci8 or https://github.com/go-goracle/goracle I get the following errors:\r\n\r\ngo-oci8:\r\n\r\n```\r\nException 0xc0000005 0x8 0x0 0x0\r\nPC=0x0\r\nsignal arrived during external code execution\r\n\r\ngithub.com/mattn/go-oci8._Cfunc_WrapOCIEnvCreate(0x1, 0x0, 0x0, 0x0, 0x0)\r\n        ??:0 +0x5a\r\ngithub.com/mattn/go-oci8.(*OCI8Driver).Open(0x6dc678, 0x5f9560, 0x1d, 0x0, 0x0, 0x0, 0x0)\r\n        C:/Projetos/Go/src/github.com/mattn/go-oci8/oci8.go:531 +0x4a8\r\ndatabase/sql.(*DB).conn(0xc082070140, 0x44c801, 0xc082065ea0, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:710 +0x458\r\ndatabase/sql.(*DB).Ping(0xc082070140, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:491 +0x3d\r\nmain.main()\r\n        C:/projetos/go/exemplos-Go/oracle-connect.go:16 +0x16a\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        c:/go/src/runtime/asm_amd64.s:1696 +0x1\r\n\r\ngoroutine 5 [chan receive]:\r\ndatabase/sql.(*DB).connectionOpener(0xc082070140)\r\n        c:/go/src/database/sql/sql.go:634 +0x4c\r\ncreated by database/sql.Open\r\n        c:/go/src/database/sql/sql.go:481 +0x33d\r\nrax     0x22fd30\r\nrbx     0xc082065a20\r\nrcx     0x22fd30\r\nrdi     0xc082065a20\r\nrsi     0x6b91e0\r\nrbp     0x22fd50\r\nrsp     0x22fce8\r\nr8      0x0\r\nr9      0x0\r\nr10     0xc082008d80\r\nr11     0x55555555555555\r\nr12     0x3\r\nr13     0x6185a2\r\nr14     0x38\r\nr15     0x0\r\nrip     0x0\r\nrflags  0x10246\r\ncs      0x33\r\nfs      0x53\r\ngs      0x2b\r\nexit status 2\r\n```\r\n\r\ngoracle:\r\n\r\n```\r\nException 0xc0000005 0x8 0x0 0x0\r\nPC=0x0\r\nsignal arrived during external code execution\r\n\r\ngopkg.in/goracle.v1/oracle._Cfunc_OCIEnvNlsCreate(0xc082054bd0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xffffff00000000, 0x0)\r\n        ??:0 +0x43\r\ngopkg.in/goracle.v1/oracle.NewEnvironment(0x6620c0, 0x0, 0x0)\r\n        C:/Projetos/Go/src/gopkg.in/goracle.v1/oracle/environment.go:99 +0x266\r\ngopkg.in/goracle.v1/oracle.NewConnection(0x6b5fa0, 0x6, 0x6b5fa7, 0x7, 0x6b5faf, 0xe, 0x6b5f00, 0xc08200e400, 0x0, 0x0)\r\n        C:/Projetos/Go/src/gopkg.in/goracle.v1/oracle/connection.go:132 +0xd1\r\ngopkg.in/goracle%2ev1.(*Driver).Open(0x7b10a0, 0x6b5fa0, 0x1d, 0x0, 0x0, 0x0, 0x0)\r\n        C:/Projetos/Go/src/gopkg.in/goracle.v1/driver.go:255 +0x166\r\ndatabase/sql.(*DB).conn(0xc08206c140, 0x44f601, 0xc082061ea0, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:710 +0x458\r\ndatabase/sql.(*DB).Ping(0xc08206c140, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:491 +0x3d\r\nmain.main()\r\n        C:/projetos/go/exemplos-Go/oracle-connect.go:17 +0x16a\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        c:/go/src/runtime/asm_amd64.s:1696 +0x1\r\n\r\ngoroutine 5 [chan receive]:\r\ndatabase/sql.(*DB).connectionOpener(0xc08206c140)\r\n        c:/go/src/database/sql/sql.go:634 +0x4c\r\ncreated by database/sql.Open\r\n        c:/go/src/database/sql/sql.go:481 +0x33d\r\nrax     0xc082054bd0\r\nrbx     0x0\r\nrcx     0xc082054bd0\r\nrdi     0x0\r\nrsi     0x0\r\nrbp     0x22fda0\r\nrsp     0x22fd18\r\nr8      0x0\r\nr9      0x0\r\nr10     0x0\r\nr11     0x0\r\nr12     0x10\r\nr13     0x6e15bc\r\nr14     0x8\r\nr15     0x2\r\nrip     0x0\r\nrflags  0x10202\r\ncs      0x33\r\nfs      0x53\r\ngs      0x2b\r\nexit status 2\r\n```\r\n\r\nTest code is below. Drivers need to be installed first.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"database/sql\"\r\n\t\"fmt\"\r\n\t_ \"github.com/mattn/go-oci8\"\r\n\t_ \"gopkg.in/goracle.v1\"\r\n)\r\n\r\nfunc main() {\r\n\t// Change to \"goracle\" to test Goracle\r\n\tdb, err := sql.Open(\"oci8\", \"system/manager@127.0.0.1/orcl\")\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t\treturn\r\n\t}\r\n\tdefer db.Close()\r\n\terr = db.Ping()\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t\treturn\r\n\t}\r\n}\r\n```\r\n\r\nThis works using Go 1.4.2. It also works if I use the 32 bit version of Go 1.5beta1 on Windows, or if I use the 64 bit version on Linux.",
+	"user": {
+		"login": "ricsmania",
+		"id": 6311027,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 20,
+	"closed_at": "2015-08-07T14:49:36Z",
+	"created_at": "2015-07-14T13:38:06Z",
+	"updated_at": "2015-08-28T19:42:55Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

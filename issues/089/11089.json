@@ -1,0 +1,33 @@
+{
+	"id": 85634805,
+	"number": 11089,
+	"state": "closed",
+	"title": "runtime: use separate stack for cgo callbacks",
+	"body": "Currently there is a problem combining cgo callbacks and stack copying.  Imagine we pass a pointer to a Go-stack-allocated object into cgo.  That in itself is fine, as the Go stack will not be grown (because no one is running on it) or shrunk (because we forbid it, just like syscalls) during the cgo call.  However, if cgo does a callback into Go, we resume running on the same Go stack.  Additional stack use might force us to grow the Go stack, which involves copying it.  After the callback returns, the pointers that the C code had are now bogus.\r\n\r\nThere are no easy solutions here.  I propose to fix this problem by allocating a new stack for the callback.  That way we can leave the previous Go stack frozen so pointers into it remain valid.  It will be somewhat expensive, but cgo callbacks are hopefully uncommon.  I have not seen any reports of this bug happening in the wild.\r\n\r\nAllocating a new stack for the callback will complicate stack tracebacks, panic, and the like.  There will now potentially be multiple stacks per G, which I'm sure will get tricky. (I've also considered using a whole new G for the callback, but that has its own issues).\r\n\r\nRelated to issue 10303.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-07-11T16:48:14Z",
+	"created_at": "2015-06-05T21:16:56Z",
+	"updated_at": "2016-07-11T22:38:00Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

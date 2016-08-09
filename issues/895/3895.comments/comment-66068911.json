@@ -1,0 +1,12 @@
+{
+	"id": 66068911,
+	"body": "\u003ca id=\"c31\"\u003e\u003c/a\u003eComment 31:\n\n\u003cpre\u003eTim, the issue is that the go command effectively creates the makefile on demand. The\nanalogous situation in make is if you had written the Makefile in a more general way\nlike:\n\nALLOUT=$(shell ls *.in | sed 's/\\.in$$//')\n\nall: foo\n\nfoo: $(ALLOUT)\n\tcat $(ALLOUT) \u003e $@\n\n%: %.in\n\tcat $^ | tr 'a-z' 'A-Z' \u003e $@\n\nIn that case:\n\ng% make foo\ncat a.in | tr 'a-z' 'A-Z' \u003e a\ncat b.in | tr 'a-z' 'A-Z' \u003e b\ncat a b \u003e foo\ng% cat foo\nHELLO\nWORLD\ng% rm b.in b\ng% make foo\nmake: `foo' is up to date.\ng% cat foo\nHELLO\nWORLD\ng% make -B foo\ncat a.in | tr 'a-z' 'A-Z' \u003e a\ncat a \u003e foo\ng% cat foo\nHELLO\ng% \n\nThe reason things work in your version is that there is a duplication of information, so\nthat when you remove b and forget to update the makefile, there is an inconsistency that\nstops the build, and get told things are wrong. But if you had also updated the makefile\n(or been using a self-updating makefile like the one above) you'd run into the same\nthing.\n\nAs I mentioned in #13, we had intended to fix this in most cases by watching for file\nsystem updates, but that turned out to be very difficult to do in anything like a\nportable way. Every OS has invented a different API with wildly different semantics for\nthat.\n\nIt looks like we are going to have to fall back to some kind of content-based hashing\ninstead of mtimes. But that's a big change, and we have higher priority bugs to fix\nright now.\n\nNo one is saying it's not a problem, and no one is saying that we're just going to close\nthe bug.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-08-23T21:29:22Z",
+	"updated_at": "2014-12-08T10:20:37Z"
+}

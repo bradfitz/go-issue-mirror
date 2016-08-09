@@ -1,0 +1,12 @@
+{
+	"id": 66084554,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI'm sorry but I'm not really into reading those long threads now, so I might be\ncompletely wrong.\n\nHowever, IMO a proof that a channel of fixed size N can be used as a limiter within the\nexisting specs and by using a blocking send to it, can be constructed like this:\n\n---\nInitial conditions: Size is zero, Ch (limiter channel) is empty.\n\nBefore a new worker goroutine is started (incrementing Size) a value is sent to Ch. (The\nchannel send HB the goroutine start.)\n\nAfter the goroutine finishes processing, it receives from Ch as the last thing it does\nbefore returning. This decrements size. (Completion of the processing HB before the\nchannel receive.)\n\nTherefore every worker goroutine, while processing something, has exactly one value\nqueued in Ch.\n\nNow suppose there are M goroutines executing, M \u0026gt; N. That requires Ch to accommodate\nmore values than is its capacity. As that's absurd, we get a proof by contradiction.\n---\n\nExample code (\u003ca href=\"http://play.golang.org/p/xUnWcwzXNm)\"\u003ehttp://play.golang.org/p/xUnWcwzXNm)\u003c/a\u003e:\n\n    package main\n    \n    const limit = 4\n    \n    func main() {\n            limiter := make(chan int, limit)\n            for {\n                    limiter \u0026lt;- 42\n                    go func() {\n                            defer func() { \u0026lt;-limiter }()\n                            // ... process something\n                    }()\n            }\n    \n    }\u003c/pre\u003e",
+	"user": {
+		"login": "cznic",
+		"id": 729580,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-25T17:42:27Z",
+	"updated_at": "2014-12-22T06:28:21Z"
+}

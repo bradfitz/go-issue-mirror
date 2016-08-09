@@ -1,0 +1,12 @@
+{
+	"id": 86114685,
+	"body": "\"failed\" means the process on the iOS device died. I have a very similar failure here:\r\n\r\n```\r\nBreakpoint 1: where = libsystem_c.dylib`getwd, address = 0x2f7f7294\r\n(lldb) success\r\n(lldb) Process 54969 stopped\r\n* thread #1: tid = 0x21b6b6, 0x1febb000 dyld`_dyld_start\r\n    frame #0: 0x1febb000 dyld`_dyld_start\r\ndyld`_dyld_start:\r\n-\u003e 0x1febb000:  svcne  #0xcea98f\r\n   0x1febb004:  .long  0x0c1a2a32                ; unknown opcode\r\n   0x1febb008:  .long  0x000000d1                ; unknown opcode\r\n   0x1febb00c:  andeq  r0, r0, r0\r\n(lldb) go_darwin_arm_exec: failed (stage br getwd): \u003cnil\u003e\r\nFAIL\tgo/printer\t49.412s\r\n```\r\n\r\nwhere importantly the timeout was 4m:\r\n\r\n```\r\ngo_darwin_arm_exec: script -q -t 0 /dev/null ios-deploy --debug -u -r -n --args=-test.short=true -test.timeout=4m0s --bundle /var/folders/2g/gfk3yj9d4318d1x3j8jgkjjw0000gn/T/go_darwin_arm_exec_211943220/gotest.app\r\ngo_darwin_arm_exec: parseTimeout of [-test.timeout=4m0s], got 4m0s\r\n```\r\n\r\nSo it is entirely possible this is the process randomly dying on its own, but given the predictable state, the similar timing of each failure (46s and 49s), and the fact that the timeouts were far beyond that, I suspect this is the app being killed by iOS app launch timeout.\r\n\r\nThis means the brTimeout I set in golang.org/cl/8080 may be far too long.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-25T16:45:32Z",
+	"updated_at": "2015-03-25T16:45:48Z"
+}

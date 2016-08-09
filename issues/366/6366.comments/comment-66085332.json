@@ -1,0 +1,12 @@
+{
+	"id": 66085332,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eI just got bitten again by this issue, and the inconsistency between go/types (which I\nbelieve is correct) and gc and gccgo, which I think should be fixed.\n\nAs Ian says, \"[both compilers] implement x.M as 1) see if the type of x has a method M;\n2) if not, see if the type of *x has a method M\".\nThis implementation strategy is not correct.  This is most obvious when the type of x is\na pointer-to-interface type, as in Ian's example, but I think it is equally wrong in the\ncase when x has type **T and there exists a method (*T).M, as in the example at the\nstart of this thread.  The spec says \"Selectors automatically dereference pointers to\nstructs\", but x is not a pointer to a struct here, it's a pointer-to-pointer-to-T; T\nmight not even be a struct.\n\nRuss: my earlier \"non-sequitur\" post was trying to illustrate what I believe is the\ncorrect implementation strategy for x.M():\n- first see if M is in the method set of the type of x;\n- if not, and if x is addressable, see if M is in the method set of the type of \u0026x.\n   (This second part is indeed \"implicit-\u0026\", and doesn't apply to any of the examples in this thread, but is part of the correct implementation.)\nThe spec does not say:\n- if x is a pointer, see if M is in the method set of *x.\nyet this is what both compilers have implemented.\n\n\nAs a side note, I think the spec sentence \"if the field y is also a pointer to a struct,\nx.y.z is shorthand for (*(*x).y).z, and so on\" is redundant.  I think this follows from\nwhat is already said.\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-07-31T02:23:09Z",
+	"updated_at": "2014-12-08T10:35:04Z"
+}

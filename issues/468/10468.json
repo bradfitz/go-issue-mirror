@@ -1,0 +1,21 @@
+{
+	"id": 68733001,
+	"number": 10468,
+	"state": "open",
+	"title": "gdb: Stack pointer is 0 for goroutine 1",
+	"body": "I noted this while writing 53840ad6f19b0c1b27a0731a37341d6159625355, so here is a proper bug report.\r\n\r\n\r\nThis only occurs for goroutine #1, and causes a Python exception. As far as I can tell, it is because for goroutine 1, `pc` is valid but `sp` is 0x0, in `runtime.allgs.sched`. I am not familiar enough with the runtime to discern more currently - i.e. whether it should be fixed in the runtime, or the Python script. I have reproduced on both Linux and FreeBSD. Details are below.\r\n\r\nOperating System:\r\n\r\n```\r\nFreeBSD bb-nas.bb-router 10.1-RELEASE-p9 FreeBSD 10.1-RELEASE-p9 #0: Tue Apr  7 01:09:46 UTC 2015     root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64`\r\n```\r\n\r\nBut it is reproducible on Debian Unstable with vanilla packages as well.\r\n\r\nGDB Version: `GNU gdb (GDB) 7.8.2 [GDB v7.8.2 for FreeBSD]`\r\nGo version: `go version devel +888d44d Wed Apr 15 12:26:24 2015 +0000 freebsd/amd64`\r\n\r\nHow to reproduce:\r\n\r\n```\r\ndaemon404@bb-nas:~/test$ cat test.go\r\npackage main\r\nimport \"fmt\"\r\nfunc main() {\r\n        mapvar := make(map[string]string,5)\r\n        mapvar[\"abc\"] = \"def\"\r\n        mapvar[\"ghi\"] = \"jkl\"\r\n        strvar := \"abc\"\r\n        ptrvar := \u0026strvar\r\n        fmt.Println(\"hi\") // line 10\r\n        _ = ptrvar\r\n}\r\ndaemon404@bb-nas:~/test$ gdb782 ./test\r\nGNU gdb (GDB) 7.8.2 [GDB v7.8.2 for FreeBSD]\r\nCopyright (C) 2014 Free Software Foundation, Inc.\r\nLicense GPLv3+: GNU GPL version 3 or later \u003chttp://gnu.org/licenses/gpl.html\u003e\r\nThis is free software: you are free to change and redistribute it.\r\nThere is NO WARRANTY, to the extent permitted by law.  Type \"show copying\"\r\nand \"show warranty\" for details.\r\nThis GDB was configured as \"x86_64-portbld-freebsd10.1\".\r\nType \"show configuration\" for configuration details.\r\nFor bug reporting instructions, please see:\r\n\u003chttp://www.gnu.org/software/gdb/bugs/\u003e.\r\nFind the GDB manual and other documentation resources online at:\r\n\u003chttp://www.gnu.org/software/gdb/documentation/\u003e.\r\nFor help, type \"help\".\r\nType \"apropos word\" to search for commands related to \"word\"...\r\nReading symbols from ./test...done.\r\nLoading Go Runtime support.\r\n(gdb) br test.go:9\r\nBreakpoint 1 at 0x400d5c: file /home/daemon404/test/test.go, line 9.\r\n(gdb) r\r\nStarting program: /usr/home/daemon404/test/test\r\n\r\nBreakpoint 1, main.main () at /home/daemon404/test/test.go:9\r\n9               fmt.Println(\"hi\") // line 10\r\n(gdb) info goroutine\r\n* 1 running  runtime.systemstack_switch\r\n  2 waiting  runtime.gopark\r\n  3 waiting  runtime.gopark\r\n  4 runnable runtime.runfinq\r\n(gdb) goroutine 1 bt\r\n#0  runtime.systemstack_switch () at /home/daemon404/go/src/runtime/asm_amd64.s:216\r\nBacktrace stopped: Cannot access memory at address 0x0\r\n```",
+	"user": {
+		"login": "dwbuiten",
+		"id": 1189609,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-04-15T16:46:19Z",
+	"updated_at": "2015-06-03T16:14:23Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

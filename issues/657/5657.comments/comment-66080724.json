@@ -1,0 +1,12 @@
+{
+	"id": 66080724,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eright. it's about panic in Go callback functions, the following is a simpler reproducer:\n\n// callback.go\npackage main\n\n// void runThread(void);\nimport \"C\"\n\n//export Callback\nfunc Callback() {\n\tpanic(\"callback panic\")\n}\nfunc main() {\n\tC.runThread()\n\tselect {}\n}\n\n// callback.c\n#include \u0026lt;pthread.h\u0026gt;\n#include \"_cgo_export.h\"\nvoid *thread_main(void *unused) {\n\tCallback();\n}\nvoid runThread() {\n\tpthread_t p;\n\tpthread_create(\u0026p, NULL, thread_main, NULL);\n\tpthread_join(p, 0);\n}\n\n\nOutput:\n$ ./test-panic \nSIGSEGV: segmentation violation\nPC=0x1be6d\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-06-10T18:09:46Z",
+	"updated_at": "2014-12-22T06:25:59Z"
+}

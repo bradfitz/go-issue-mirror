@@ -1,0 +1,22 @@
+{
+	"id": 126969376,
+	"number": 13976,
+	"state": "closed",
+	"title": "cmd/go: go test changes stderr to stdout when you run specific tests",
+	"body": "If you want to run a specific test file (ie, `go test foo_test.go` instead of `go test`), you lose the ability to capture stderr as it is then sent to stdout.\r\nExample: http://play.golang.org/p/Q51fPoXxI3\r\n\r\nThis is because `testStreamOutput` is set to false here when you pass in a single test file but don't provide the verbose flag: https://github.com/golang/go/blob/master/src/cmd/go/test.go#L1079\r\n\r\nI found this behavior surprising and think that `go test foo_test.go` should honor stderr. I had a couple of thoughts on how to approach this. One would be to alter https://github.com/golang/go/blob/master/src/cmd/go/test.go#L410 and have an additional `OR` clause for `len(pkgArgs)==1`, but I'm sure the current design was chosen for a reason. Maybe we could check if all args are `.go` files? Another thought was to assign `cmd.Stderr` to a separate buffer for printing later. Though, I'm not sure the best way to then print it later. Another thought was to not assign `cmd.Stderr` to the buffer, and let stderr come through even when we may not be streaming output, but that seems less than ideal and could be unexpected for the end user.\r\n\r\nI would have prepared a couple of PRs to show either option working, but I can't seem to get a local build of Go to run against `*_test.go` files (it thinks it is importing something requiring C source files and complains about needing cgo). \r\n\r\nNot sure there is anything else I can do until I figure out how to run `go test` with a local build of Go. Is this something y'all agree should be fixed? Thanks and cheers!",
+	"user": {
+		"login": "sethgrid",
+		"id": 989820,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-05-17T23:56:20Z",
+	"created_at": "2016-01-15T22:13:42Z",
+	"updated_at": "2016-05-17T23:56:20Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51277104,
+	"number": 914,
+	"state": "closed",
+	"title": "HTTP header injection bug",
+	"body": "\u003cpre\u003eb761e0299e9b+ release.2010-07-01/release\n\nFor better or worse, the http.Request lets you inject a header via newlines in another\nheader's value.\n\nI discovered this because http.Post looks like this:\n\nfunc Post(url string, bodyType string, body io.Reader) (r *Response, err os.Error)\n\n... and I wondered whether or not I could inject my own header via bodyType.\n\nSure enough:\n\npackage main\n\nimport (\n        \u0026quot;http\u0026quot;\n        \u0026quot;os\u0026quot;\n)\n\nfunc main() {\n        req := new(http.Request)\n        req.Method = \u0026quot;GET\u0026quot;\n        req.RawURL = \u0026quot;\u003ca href=\"http://example.com/\u0026quot\"\u003ehttp://example.com/\u0026quot\u003c/a\u003e;\n        url, _ := http.ParseURL(req.RawURL)\n        req.URL = url\n        req.Proto = \u0026quot;HTTP/1.1\u0026quot;\n        req.ProtoMajor = 1\n        req.ProtoMinor = 1\n        req.Header = map[string]string {\n                \u0026quot;Foo\u0026quot;: \u0026quot;Bar\u0026quot;,\n                \u0026quot;Cache-Control\u0026quot;: \u0026quot;private\u0026quot;,\n                \u0026quot;zzz_HEADER_ATTACK\u0026quot;: \u0026quot;foo\\r\\nCache-Control: public\u0026quot;,\n        }\n        req.Host = \u0026quot;example.com\u0026quot;\n        req.UserAgent = \u0026quot;demo/0.1\u0026quot;\n        req.Write(os.Stdout)\n}\n\n$ ./inject\nGET \u003ca href=\"http://example.com/\"\u003ehttp://example.com/\u003c/a\u003e HTTP/1.1\nHost: example.com\nUser-Agent: demo/0.1\nCache-Control: private\nFoo: Bar\nzzz_HEADER_ATTACK: foo\nCache-Control: public\n\nRFC 2616 says,\n\u003ca href=\"http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2\"\u003ehttp://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2\u003c/a\u003e\n\n       message-header = field-name \u0026quot;:\u0026quot; [ field-value ]\n       field-name     = token\n       field-value    = *( field-content | LWS )\n       field-content  = \u0026lt;the OCTETs making up the field-value\n                        and consisting of either *TEXT or combinations\n                        of token, separators, and quoted-string\u0026gt;\n\nAnd RFC 822 says, for TEXT:\n\n     text        =  \u0026lt;any CHAR, including bare    ; =\u0026gt; atoms, specials,\n                     CR \u0026amp; bare LF, but NOT       ;  comments and\n                     including CRLF\u0026gt;             ;  quoted-strings are\n                                                 ;  NOT recognized.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:06:22Z",
+	"created_at": "2010-07-12T04:09:01Z",
+	"updated_at": "2016-06-24T19:17:37Z"
+}

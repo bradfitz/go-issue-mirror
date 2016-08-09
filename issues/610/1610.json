@@ -1,0 +1,22 @@
+{
+	"id": 51278057,
+	"number": 1610,
+	"state": "closed",
+	"title": "Glob gives up if it can't access a directory",
+	"body": "by **mikesech**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Attempt to use filepath.Glob() with a pattern that will match directories the user\ndoes not have permission to access. For example, \u0026quot;/proc/*/fd/*\u0026quot;, which\nincludes protected directories about processes of other users.\n\nWhat is the expected output?\nGlob, as with the standard POSIX function and the Python implementation, should ignore\ndirectories it cannot open and continue looking for files/directories that match the\npattern.\n\nWhat do you see instead?\nWhen Glob reaches a directory it lacks permissions to stat properly, it  does not\ncontinue searching.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\n\nWhich operating system are you using?\nLinux\n\n\nWhich revision are you using?  (hg identify)\nc5c62aeb6267 tip\n\nPlease provide any additional information below.\nThe problem lies in match.go glob(). It is supposed to append additional matches to the\ngiven matches []string. However, if the stat fails, the given directory cannot be\nconfirmed to be a directory (particularly because the user lacks permissions to treat it\nas one), or Readdirnames fails, it returns nil, getting rid of the original matches\narray. For my example pattern \u0026quot;/proc/*/fd/*\u0026quot;, IsDirectory() returns false,\nwhich causes the problem.\n\nI've attached a patch which simply replaces the three instances of \u0026quot;return\nnil\u0026quot; with \u0026quot;return matches\u0026quot;.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1610/0/glob.patch\"\u003eglob.patch\u003c/a\u003e (633 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:09:05Z",
+	"created_at": "2011-03-15T10:35:21Z",
+	"updated_at": "2016-06-24T19:26:31Z"
+}

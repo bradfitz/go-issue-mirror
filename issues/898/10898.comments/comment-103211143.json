@@ -1,0 +1,12 @@
+{
+	"id": 103211143,
+	"body": "I don't think we can assume that only top of stack changes (it might be\ntrue today due to deficiencies in escape analysis).\n\nFor example, the following contrived program can make the stack grow\narbitrarily large, yet the topmost frame can write to slot in the bottom\nmost frame.\n\npackage main\n\nfunc F(x **int, i int) {\n        if i == 0 {\n                *x = \u0026i\n                return\n        }\n        F(x, i-1)\n}\n\nfunc main() {\n        var x *int\n        F(\u0026x, 10000)\n}\n\nAnd -gcflags -m confirms that x in main is allocated on stack, so this\nproblem is not theoretical.\n$ go build -gcflags -m stk.go\n# command-line-arguments\n./stk.go:3: moved to heap: i\n./stk.go:5: \u0026i escapes to heap\n./stk.go:3: F x does not escape\n./stk.go:13: main \u0026x does not escape\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-18T21:06:28Z",
+	"updated_at": "2015-05-18T21:06:28Z"
+}

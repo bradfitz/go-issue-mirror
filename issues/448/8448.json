@@ -1,0 +1,21 @@
+{
+	"id": 51288216,
+	"number": 8448,
+	"state": "open",
+	"title": "cmd/compile: add branch-free ternary op codegen and use in cgen_slice",
+	"body": "\u003cpre\u003eCL 112570044 introduces a JMP into the middle of slicing, which disrupts some peephole\noptimization. See the CL discussion for details.\n\nWe could fix this by introducing architecture-dependent branch-free ternary ops.\n\nHere are a couple of tested (6g) implementations of the particular function that slicing\nneeds. Their performance is about the same.\n\n// eq0 returns 0 if i == j and i otherwise.\nfunc eq0(i, j int) int {\n\tif i == j {\n\t\treturn 0\n\t}\n\treturn i\n}\n\nTEXT ·eq0(SB),$0\n\tMOVQ\ti+0(FP),AX\n\tCMPQ\tAX,j+8(FP)\n\tSETEQ\tCX\n\tDECQ\tCX\n\tANDQ\tAX, CX\n\tMOVQ\tCX,r+16(FP)\n\tRET\t,\n\nTEXT ·eq0(SB),$0\n\tMOVQ\ti+0(FP),AX\n\tMOVQ\t$0,CX\n\tCMPQ\tAX,j+8(FP)\n\tCMOVQNE\tAX,CX\n\tMOVQ\tCX,r+16(FP)\n\tRET\t,\n\nI'm not sure that this is worth the effort in the near term, though, unless there are\nother places that also would benefit from branch-free ?:.\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2014-07-30T19:27:48Z",
+	"updated_at": "2015-06-08T06:21:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"id": 113484274,
+	"number": 13059,
+	"state": "closed",
+	"title": "go test breaks vendoring because of too aggressive dependency checking",
+	"body": "it looks like `go test` fails for missing dependencies it shouldn't care about. For instance:\r\n\r\nmain.go\r\n```go\r\npackage main\r\nimport \"a\"\r\nfunc main() {\r\n\ta.Foo()\r\n}\r\n```\r\n\r\nvendor/a/a.go\r\n```\r\npackage a\r\nfunc Foo() {}\r\n```\r\n\r\nvendor/a/example/b.go\r\n```go\r\npackage main\r\nimport \"missing\"\r\n```\r\n\r\nWhen creating the above structure, with `GO15VENDOREXPERIMENT=1`, `go build` succeeds, but `go test ./...` fails with:\r\n\r\n```\r\nvendor/a/example/b.go:3:8: cannot find package \"missing\" in any of:\r\n\t/Users/rasky/Sources/go/src/gotestbug/vendor/missing (vendor tree)\r\n\t/usr/local/Cellar/go/1.5/libexec/src/missing (from $GOROOT)\r\n\t/Users/rasky/Sources/go/src/missing (from $GOPATH)\r\n```\r\n\r\nThe example simulates the vendoring of a third-party library `a` which contains an example of usage in a subdirectory; this example includes other third-party libraries that are not required by `a` itself (just for the sake of the example), and thus are not being vendored.\r\n\r\nThere are other real-world cases in which a package can contain subdirectories with main packages which are not part of the package proper, but just additional stuff: for instance, some packages contain additional command-line applications that can be built and installed separately from the package itself. When the package is imported in a vendor tree, these applications should be ignored.\r\n\r\nCan you please clarify why `go test` fails and if you consider this a bug?",
+	"user": {
+		"login": "rasky",
+		"id": 1014109,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-10-27T02:38:59Z",
+	"created_at": "2015-10-27T01:16:22Z",
+	"updated_at": "2015-10-27T03:35:22Z"
+}

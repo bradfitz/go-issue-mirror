@@ -1,0 +1,28 @@
+{
+	"id": 51278595,
+	"number": 1999,
+	"state": "closed",
+	"title": "http: ReverseProxy adds \"Transfer-Encoding: chunked\" to GET requests",
+	"body": "\u003cpre\u003eI wrote a simple reverse proxy using the built in http.ReverseProxy (thank you). \nSnooping with tcpdump on the backend, I noticed that a \u0026quot;Transfer-Encoding:\nchunked\u0026quot; header had been added to the GET request, even though there was no body\nand GET requests don't need a body in the first place.\n\nThis may or may not be legal HTTP, but it certainly confuses some servers out there\n(notably www.google.com!)\n\nWhat steps will reproduce the problem?\n\npackage main\n\nimport (\n        \u0026quot;http\u0026quot;\n        \u0026quot;flag\u0026quot;\n        \u0026quot;log\u0026quot;\n)\n\nvar (\n        httpAddr = flag.String(\u0026quot;http\u0026quot;, \u0026quot;:12345\u0026quot;, \u0026quot;HTTP service address\u0026quot;)\n        backendAddr = flag.String(\u0026quot;backend\u0026quot;, \u0026quot;www.google.com\u0026quot;, \u0026quot;backend address\u0026quot;)\n)\n\nfunc director(req *http.Request) {\n        req.URL.Scheme = \u0026quot;http\u0026quot;\n        req.URL.Host = *backendAddr\n        req.Host = *backendAddr\n}\n\nfunc main() {\n        flag.Parse()\n        proxy := \u0026amp;http.ReverseProxy{Director: director}\n        err := http.ListenAndServe(*httpAddr, proxy)\n        if err != nil {\n                log.Fatal(\u0026quot;ListenAndServe: \u0026quot;, err.String())\n        }\n}\n\n(some fields elided for anonymity)\nbrowser -\u0026gt; proxy\n--------\nGET / HTTP/1.1\nHost: XXX:12345\nUser-Agent: XXX\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Encoding: gzip,deflate,sdch\nAccept-Language: en-US,en;q=0.8\nAccept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.3\nCookie: XXX Cache-Control: max-age=0\nConnection: keep-alive\n\n\n--------\n\nproxy -\u0026gt; www.google.com\n--------\nGET / HTTP/1.1\nHost: www.google.com\nUser-Agent: XXX\nTransfer-Encoding: chunked\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.3\nAccept-Encoding: gzip,deflate,sdch\nAccept-Language: en-US,en;q=0.8\nCache-Control: max-age=0\nConnection: keep-alive\nCookie: XXX\nX-Forwarded-For: XXX\n\n0\n\n\n--------\u003c/pre\u003e",
+	"user": {
+		"login": "dadkins",
+		"id": 507004,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:10:53Z",
+	"created_at": "2011-06-23T15:07:38Z",
+	"updated_at": "2016-06-24T19:31:24Z"
+}

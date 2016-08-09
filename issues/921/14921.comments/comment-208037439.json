@@ -1,0 +1,12 @@
+{
+	"id": 208037439,
+	"body": "I remeasured this after CLs 21812, 21813, and 21814, which address the append and the map iteration cases.\r\n\r\nNew results, using Austin's approach above:\r\n\r\n`29354 1173 2934`\r\n\r\nSo 6% of writes have *dst == src, and 10% have src == nil.\r\n\r\nThe new top lines for *dst == src (line numbers at commit de7ee57c7ead59899d5b412a839c995de0e813b5) are:\r\n\r\n```\r\n 37.57%   420 runtime/proc.go:259 runtime.gopark\r\n 14.13%   158 runtime/mheap.go:603 runtime.(*mheap).allocSpanLocked\r\n  5.28%    59 runtime/mheap.go:588 runtime.(*mheap).allocSpanLocked\r\n  4.92%    55 runtime/mgc.go:1725 runtime.gcCopySpans\r\n  4.92%    55 runtime/mgc.go:1726 runtime.gcCopySpans\r\n```\r\n\r\nThe gopark calls are unnecessary, since all the strings that reach it are constants, but there's no way for the compiler to know that.\r\n\r\nI've filed #15226 for allocSpanLocked. gcCopySpans might deserve a look as well, but we're close to scraping bottom (yay!).\r\n\r\nI will investigate whether it is better to exit writebarrierptr early if src == nil or whether it is better to check it in the generated code and send a CL for one of those to close this issue.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-10T18:24:26Z",
+	"updated_at": "2016-04-10T18:24:26Z"
+}

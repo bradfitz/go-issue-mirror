@@ -1,0 +1,12 @@
+{
+	"id": 133637970,
+	"body": "\u003e Huh. It seems very weird to me to have a segment that refers to non-allocated sections. The whole point of segments is so that the dynamic linker can find things in memory at run time. That fails if the segment only points back to the file.\r\n\r\nThe specification seems to strongly imply that non-allocable sections are expected in the segments by calling some segments \"loadable\" and others not.  For example, in the \"Program Header\" section of the specification (5-1), it states: \"Some entries describe process segments; others give supplementary information and do not contribute to the process image.\"  That seems to pretty clearly imply that some process segments found in the program header will not be loaded into memory.  Again, another one of the dark corners of the standard I think.\r\n\r\n\u003e Does the Solaris linker set the p_vaddr, p_paddr, and p_memsz fields to zero?\r\n\r\nYes, as I showed earlier:\r\n```\r\n$ go build -ldflags -linkmode=external hello.go\r\n$ elfdump hello\r\n...\r\nProgram Header[7]:\r\n    p_vaddr:      0                   p_flags:    0\r\n    p_paddr:      0                   p_type:     [ PT_NOTE ]\r\n    p_filesz:     0x38                p_memsz:    0\r\n    p_offset:     0xbfa80             p_align:    0\r\n...\r\nSection Header[34]:  sh_name: .note.go.buildid\r\n    sh_addr:      0                   sh_flags:   0\r\n    sh_size:      0x38                sh_type:    [ SHT_NOTE ]\r\n    sh_offset:    0xbfa80             sh_entsize: 0\r\n    sh_link:      0                   sh_info:    0\r\n    sh_addralign: 0x20              \r\n...\r\n```\r\n\r\nWhich is logical; the specification states that \"[p_memsz] gives the number of bytes in the memory image of the segment; it may be zero.\"  That implies that `p_vaddr` may also be zero since there is no memory-resident data.  And `p_paddr` is obsolete, so doesn't matter: \" Because System V ignores physical addressing for application programs, this member [p_paddr] has unspecified contents for executable files and shared objects.\".",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-22T05:40:51Z",
+	"updated_at": "2015-08-22T05:40:51Z"
+}

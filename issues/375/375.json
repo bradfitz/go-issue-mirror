@@ -1,0 +1,22 @@
+{
+	"id": 51276399,
+	"number": 375,
+	"state": "closed",
+	"title": "crypto/rsa: GenerateKey: uncaught EOF exception",
+	"body": "by **fabio.pianese**:\n\n\u003cpre\u003eProbable bug in the crypto/rsa package. GenerateKey is declaring new errs\nwhich override the return value ones. Caller function gets a nil error in\nthe top scope because the lower scoped error is not bound to the\nreturn. \n\nWhat steps will reproduce the problem?\n1. generate a rsa private key (let's call it priv)\n2. priv.Validate() or any attempt to print fields from priv results in a crash\n\nWhat is your $GOOS?  $GOARCH?\n$ echo $GOOS $GOARCH\nlinux 386\n\nWhich revision are you using?  (hg identify)\n\n$ hg log -l 1\nchangeset:   4108:d1b75410b793\ntag:         tip\nuser:        Adam Langley \u0026lt;agl@golang.org\u0026gt;\ndate:        Tue Nov 17 18:21:47 2009 -0800\n\nPlease provide any additional information below.\n\nModifying the GenerateKey function as follows properly returns a EOF error\nto the caller. (Thanks to Noah Evans for figuring out the issue!)\n\n----\n// GenerateKeyPair generates an RSA keypair of the given bit size.\nfunc GenerateKey(rand io.Reader, bits int) (priv *PrivateKey, err os.Error) {\n\tpriv = new(PrivateKey);\n\t// Smaller public exponents lead to faster public key\n\t// operations. Since the exponent must be coprime to\n\t// (p-1)(q-1), the smallest possible value is 3. Some have\n\t// suggested that a larger exponent (often 2**16+1) be used\n\t// since previous implementation bugs[1] were avoided when this\n\t// was the case. However, there are no current reasons not to use\n\t// small exponents.\n\t// [1] \u003ca href=\"http://marc.info/?l=cryptography\u0026amp\"\u003ehttp://marc.info/?l=cryptography\u0026amp\u003c/a\u003e;m=115694833312008\u0026amp;w=2\n\tpriv.E = 3;\n\n\tpminus1 := new(big.Int);\n\tqminus1 := new(big.Int);\n\ttotient := new(big.Int);\n\n\tfor {\n\t\tvar p, q *big.Int;   // line changed from original\n\t\tp, err = randomSafePrime(rand, bits/2);\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\n\t\tq, err = randomSafePrime(rand, bits/2);\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\n\t\tif p.Cmp(q) == 0 {\n\t\t\tcontinue\n\t\t}\n\n\t\tn := new(big.Int).Mul(p, q);\n\t\tpminus1.Sub(p, bigOne);\n\t\tqminus1.Sub(q, bigOne);\n\t\ttotient.Mul(pminus1, qminus1);\n\n\t\tg := new(big.Int);\n\t\tpriv.D = new(big.Int);\n\t\ty := new(big.Int);\n\t\te := big.NewInt(int64(priv.E));\n\t\tbig.GcdInt(g, priv.D, y, e, totient);\n\n\t\tif g.Cmp(bigOne) == 0 {\n\t\t\tpriv.D.Add(priv.D, totient);\n\t\t\tpriv.P = p;\n\t\t\tpriv.Q = q;\n\t\t\tpriv.N = n;\n\n\t\t\tbreak;\n\t\t}\n\t}\n\n\treturn;\n}\n\n----\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:04:19Z",
+	"created_at": "2009-12-03T16:16:27Z",
+	"updated_at": "2016-06-24T19:08:55Z"
+}

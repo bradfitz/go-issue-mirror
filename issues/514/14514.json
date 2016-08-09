@@ -1,0 +1,31 @@
+{
+	"id": 136547173,
+	"number": 14514,
+	"state": "closed",
+	"title": "crypto/x509: root_darwin.go does not include trusted root certificates from System/Login keychains",
+	"body": "1. Tested on `go version go1.6 darwin/amd64` and `go version go1.5.3 darwin/amd64`.\r\n2. OS X Yosemite, OS X El Capitan\r\n3. I attempted to connect to a TLS service with a certificate signed by an internal, enterprise certificate authority. The CA certificate was added to the System keychain.\r\n4. I expected to be able to connect to the TLS service without any issue as the certificate is signed by a CA I trust.\r\n5. The program failed to connect to the TLS service, because the CA certificate that issued the certificate is not installed in the SystemRootCertificates.keychain that Go loads trusted roots from.\r\n\r\nOn OS X Yosemite, this issue can be mitigated by installing the certificate into SystemRootCertificates.keychain via `/usr/bin/security` from the terminal:\r\n\r\n```\r\nsudo security add-trusted-cert -k /System/Library/Keychains/SystemRootCertificates.keychain \u003ccertificate\u003e\r\n```\r\n\r\nHowever, on El Capitan this is no longer possible without turning off security protections enabled by Apple.\r\n\r\n`execSecurityRoots` _should_ try to load additional certificates from the System keychain located at `/Library/Keychains/System.keychain`, and the Login keychain (`~/Library/Keychains/login.keychain`).\r\n\r\nThis bug makes distributing Go clients (especially 3rd-party developed) difficult in organizations with an internal PKI.",
+	"user": {
+		"login": "mwielgoszewski",
+		"id": 359029,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2016-05-18T14:27:22Z",
+	"created_at": "2016-02-25T23:39:20Z",
+	"updated_at": "2016-06-23T16:52:59Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

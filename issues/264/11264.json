@@ -1,0 +1,22 @@
+{
+	"id": 89123650,
+	"number": 11264,
+	"state": "closed",
+	"title": "database/sql: Tx.Commit and Tx.Rollback do not remove bad connections from pool",
+	"body": "go version go1.4.2 windows/amd64\r\n\r\nThis issue was originally discovered while using github.com/alexbrainman/odbc, but it does not seem to be a problem specific to that driver. It is minimally reproducible with the below test program.\r\n\r\nThe program runs a query inside a transaction five times. The commit (or rollback) of the second attempt returns `driver.ErrBadConn`.\r\n\r\nI expect the bad connection to get removed from the pool and subsequent transactions to occur on a fresh connection.\r\n\r\nInstead database/sql keeps the bad connection in the pool and subsequent transactions reuse the bad connection and also fail.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"database/sql\"\r\n\t\"database/sql/driver\"\r\n\t\"log\"\r\n\t\"reflect\"\r\n\t\"runtime\"\r\n)\r\n\r\nvar opened, closed int\r\n\r\ntype MockDriver struct{}\r\n\r\nfunc (d *MockDriver) Open(name string) (driver.Conn, error) {\r\n\topened++\r\n\treturn \u0026MockConn{}, NextError()\r\n}\r\n\r\ntype MockConn struct{ err error }\r\n\r\n// NOTE: that this always succeeds, even if c.err != nil this simulates a\r\n// driver that doesn't need to communicate the beginning of a transaction and\r\n// therefore may not be able to discover a bad connection at this point.\r\nfunc (c *MockConn) Begin() (driver.Tx, error) { return \u0026MockTx{c}, nil }\r\n\r\nfunc (c *MockConn) Close() error                              { closed++; return c.Err() }\r\nfunc (c *MockConn) Prepare(query string) (driver.Stmt, error) { return \u0026MockStmt{c}, c.Err() }\r\nfunc (c *MockConn) Err() error {\r\n\tif c.err == nil {\r\n\t\tc.err = NextError()\r\n\t}\r\n\treturn c.err\r\n}\r\n\r\ntype MockTx struct{ c *MockConn }\r\n\r\nfunc (tx *MockTx) Commit() error   { return tx.c.Err() }\r\nfunc (tx *MockTx) Rollback() error { return tx.c.Err() }\r\n\r\ntype MockStmt struct{ c *MockConn }\r\n\r\nfunc (s *MockStmt) Close() error  { return s.c.Err() }\r\nfunc (s *MockStmt) NumInput() int { return -1 }\r\nfunc (s *MockStmt) Exec(args []driver.Value) (driver.Result, error) {\r\n\treturn driver.ResultNoRows, s.c.Err()\r\n}\r\nfunc (s *MockStmt) Query(args []driver.Value) (driver.Rows, error) { return \u0026MockRows{s}, s.c.Err() }\r\n\r\ntype MockRows struct{ s *MockStmt }\r\n\r\nfunc (r *MockRows) Columns() []string              { return []string{} }\r\nfunc (r *MockRows) Close() error                   { return r.s.c.Err() }\r\nfunc (r *MockRows) Next(dest []driver.Value) error { return r.s.c.Err() }\r\n\r\nvar nextError error\r\n\r\nfunc NextError() (err error) {\r\n\terr, nextError = nextError, nil\r\n\treturn\r\n}\r\n\r\nfunc main() {\r\n\tdrv := \u0026MockDriver{}\r\n\tsql.Register(\"mock\", drv)\r\n\tdb, err := sql.Open(\"mock\", \"\")\r\n\tcheckErr(0, err, nil)\r\n\tfor i := 0; i \u003c 5; i++ {\r\n\t\t// this always succeeds because that's the way some drivers may work\r\n\t\ttx, err := db.Begin()\r\n\t\tcheckErr(i, err, nil)\r\n\t\tif err != nil {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\trows, err := tx.Query(\"query\")\r\n\t\tcheckErr(i, err, nil)\r\n\t\tif err != nil {\r\n\t\t\terr = tx.Rollback()\r\n\t\t\tcheckErr(i, err, nil)\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\trows.Close()\r\n\t\tvar want error\r\n\t\tif i == 1 {\r\n\t\t\tnextError, want = driver.ErrBadConn, driver.ErrBadConn\r\n\t\t}\r\n\t\t// fails when i == 1, but the connection is not removed from the pool\r\n\t\terr = tx.Commit()\r\n\t\tcheckErr(i, err, want)\r\n\t\tlog.Printf(\"i(%d), opened: %d, closed: %d\", i, opened, closed)\r\n\t}\r\n\tlog.Printf(\"final, opened: %d, closed: %d\", opened, closed)\r\n}\r\n\r\nfunc checkErr(i int, got, want error) {\r\n\tif !reflect.DeepEqual(got, want) {\r\n\t\t_, _, line, _ := runtime.Caller(1)\r\n\t\tlog.Printf(\"i(%d), line %d: got %v, want %v\", i, line, got, want)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "ChrisHines",
+		"id": 1060711,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2015-09-03T17:09:01Z",
+	"created_at": "2015-06-17T20:53:59Z",
+	"updated_at": "2015-09-03T17:09:01Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51282271,
+	"number": 4531,
+	"state": "closed",
+	"title": "net/http: Transport leaks goroutines when request.ContentLength is explicitly short",
+	"body": "by **zarcardfly**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n  1. sample code: \u003ca href=\"http://play.golang.org/p/IKPtSqNs53\"\u003ehttp://play.golang.org/p/IKPtSqNs53\u003c/a\u003e\n  2. I call http.Client.Do with a http.Request whose ContentLength is unequal to the posted body's length.\n  3. http.Client.Do failed as assume, but the readLoop() goruntine is still running, it hang up at : 558\t\t\trc := \u0026lt;-pc.reqch\n  4. I check the net/http/transport.go code:\n   669\t\tpc.lk.Lock()\n   670\t\tpc.numExpectedResponses++\n   671\t\tpc.lk.Unlock()\n   672\t\n   673\t\terr = req.Request.write(pc.bw, pc.isProxy, req.extra)\n   674\t\tif err != nil {\n   675\t\t\tpc.close()\n   676\t\t\treturn\n   677\t\t}\n   678\t\tpc.bw.Flush()\n   679\t\n   680\t\tch := make(chan responseAndError, 1)\n   681\t\tpc.reqch \u0026lt;- requestAndChan{req.Request, ch, requestedGzip}\n   682\t\tre := \u0026lt;-ch\n   683\t\tpc.lk.Lock()\n   684\t\tpc.numExpectedResponses--\n   685\t\tpc.lk.Unlock() \n  when 673 failed, the function returned without dec numExpectedResponses.\n   544\t\t\tpb, err := pc.br.Peek(1)\n   545\t\n   546\t\t\tpc.lk.Lock()\n   547\t\t\tif pc.numExpectedResponses == 0 {\n   548\t\t\t\tpc.closeLocked()\n   549\t\t\t\tpc.lk.Unlock()\n   550\t\t\t\tif len(pb) \u0026gt; 0 {\n   551\t\t\t\t\tlog.Printf(\u0026quot;Unsolicited response received on idle HTTP channel starting with %q; err=%v\u0026quot;,\n   552\t\t\t\t\t\tstring(pb), err)\n   553\t\t\t\t}\n   554\t\t\t\treturn\n   555\t\t\t}\n   556\t\t\tpc.lk.Unlock()\n   557\t\n   558\t\t\trc := \u0026lt;-pc.reqch\n  And the result of line 547 is false, and then the goroutine block in 558.\n\nWhat is the expected output?\n  the number of goroutine is a small number, such as 5.\n\nWhat do you see instead?\n  the number of goroutine is more than 20.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n  6g\n\nWhich operating system are you using?\n  mac os x 10.8\n\nWhich version are you using?  (run 'go version')\n  I found it in an old version go, but I check the '\u003ca href=\"http://golang.org/src/pkg/net/http/transport.go\"\u003ehttp://golang.org/src/pkg/net/http/transport.go\u003c/a\u003e', it still being there.\n\nPlease provide any additional information below.\n Tell me if I miss something, thank you, and sorry for my poor english.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2014-12-08T10:24:07Z",
+	"created_at": "2012-12-12T15:27:55Z",
+	"updated_at": "2016-06-24T22:29:47Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

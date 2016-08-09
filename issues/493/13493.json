@@ -1,0 +1,21 @@
+{
+	"id": 120523771,
+	"number": 13493,
+	"state": "open",
+	"title": "cmd/compile: storing pointer of a local value escapes",
+	"body": "Using ```go.1.5.1```\r\n\r\nConsider the following program:\r\n```go\r\npackage main\r\n\r\nfunc foo() {\r\n\ttype node struct{ n0, n1 *node }\r\n\tvar nodeCache [1024]node\r\n\tvar nodePtrs [1024]*node\r\n\tnodes := nodePtrs[:0]\r\n\r\n\tn := \u0026nodeCache[0]\r\n\tn.n0 = \u0026nodeCache[1]\r\n\tn.n1 = \u0026nodeCache[2]\r\n\r\n\tnodes = append(nodes, n)\r\n}\r\n\r\nfunc main() {\r\n}\r\n```\r\n\r\nCurrently, the compiler thinks that nodeCache escapes:\r\n```\r\njoetsai@zynx: ~ $ go build -gcflags=-m main11.go \r\n# command-line-arguments\r\n./main11.go:16: can inline main\r\n./main11.go:5: moved to heap: nodeCache\r\n./main11.go:10: \u0026nodeCache[1] escapes to heap\r\n./main11.go:11: \u0026nodeCache[2] escapes to heap\r\n./main11.go:9: \u0026nodeCache[0] escapes to heap\r\n./main11.go:7: foo nodePtrs does not escape\r\n```\r\n\r\nThe compiler should be able to track that pointers to nodeCache leak to nodePtrs and since nodePtrs never escapes, nodeCache never escapes as well.\r\n\r\nThis would be really useful for operating on trees and graphs (that are bounded in size) without any heap allocations.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-12-05T02:40:59Z",
+	"updated_at": "2016-03-21T23:00:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

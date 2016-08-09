@@ -1,0 +1,12 @@
+{
+	"id": 154125747,
+	"body": "Let's also take \"fake PCs\" off the table. That will introduce significant complexity and confusion.\n\nNew API is needed, but probably not much.\n\nIt's true that a single PC may in general correspond to a tiny call stack of func/file/line entries. Assume this:\n\n\ttype Frame struct {\n\t\tFunc string\n\t\tFile string\n\t\tLine int\n\t}\n\n\ttype Frames struct { ... opaque ... }\n\t\n\tfunc (*Frames) Len() int\n\tfunc (*Frames) Frame(int) Frame // 0 is inner-most frame\n\nThen:\n\n1. FuncForPC can be left alone: each byte of code does belong to just one function.\n2. (*Func).FileLine(pc) can continue to return the top-most (outer-most) file/line in the call stack for pc.\n3. (*Func).Frames(pc) can return the more complete Frames information.\n4. Callers can be left alone: there really is a stack of program counters at run time, and Callers can continue to return them. The skip parameter counts frames, not PCs (today those are the same).\n5. Caller can count frames instead of PCs but otherwise is fine. This means that if you have a PC corresponding to two frames, Callers(i) and Callers(i+1) may both return that PC, just with different file, line information. It would be nice if it returned a function name too, but oh well.\n\nPeople who report full stacks using repeated calls to Callers are already writing quadratic code, so it seems okay that it's imperfect in a different way now too. People who want to report the full call stack more carefully will use Callers to get some PCs and then call FuncForPC+Frames for each of those.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-05T17:12:38Z",
+	"updated_at": "2015-11-05T17:12:38Z"
+}

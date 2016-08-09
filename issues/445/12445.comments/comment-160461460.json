@@ -1,0 +1,12 @@
+{
+	"id": 160461460,
+	"body": "@RLH Thanks.  I understand the idea that under a moving GC that a single \"pointer value\" (in the Go spec/language sense) might at a given time have multiple bit patterns at the machine implementation level, and so this complicates the implementation of Go pointer equality.\r\n\r\nHowever, we seem to have different interpretations of the spec's `uintptr(unsafe.Pointer(\u0026s)) + unsafe.Offsetof(s.f) == uintptr(unsafe.Pointer(\u0026s.f))` guarantee (which I'll emphasize again is currently written using *integer* equality, not *pointer* equality).  It sounds like you interpret the guarantee is precisely worded and only holds when \u0026s and \u0026s.f are all locally visible to the compiler so it can be satisfied via CSE optimizations, whereas I've instead interpreted it generalizes to examples like this (even assuming no inlining/cross-package compiler optimizations):\r\n\r\n    package pkg\r\n\r\n    import \"unsafe\"\r\n\r\n    type S struct { E, F int }\r\n\r\n    func Func(p, q unsafe.Pointer) bool {\r\n        return uintptr(p) + unsafe.Offsetof(S{}.F) == uintptr(q)\r\n    }\r\n\r\n.\r\n\r\n    package main\r\n\r\n    import (\r\n        \"unsafe\"\r\n        \"./pkg\"\r\n    )\r\n\r\n    func main() {\r\n        var s pkg.S\r\n        if !pkg.Func(unsafe.Pointer(\u0026s), unsafe.Pointer(\u0026s.F)) {\r\n            panic(\"spec violation\")\r\n        }\r\n    }\r\n\r\nSo at the very least I think it's worth deciding/clarifying which interpretation of the spec is intended.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-29T19:57:29Z",
+	"updated_at": "2015-11-29T19:57:29Z"
+}

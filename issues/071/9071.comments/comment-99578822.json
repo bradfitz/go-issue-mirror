@@ -1,0 +1,12 @@
+{
+	"id": 99578822,
+	"body": "Your svg shows handleConnection calling SetReadDeadline.  And indeed, it calls it in a loop:\r\n\r\n```\r\nfunc handleConnection(conn net.Conn, stopChan chan bool, wg *sync.WaitGroup) {\r\n\tdefer func() {\r\n\t\tconn.Close()\r\n\t\twg.Done()\r\n\r\n\t}()\r\n\tvar (\r\n\t\te      error\r\n\t\tbuffer []byte\r\n\t)\r\n\tbuffer = make([]byte, 16384)\r\n\r\n\trunning := true\r\n\tfor running {\r\n\t\te = conn.SetReadDeadline(time.Now().Add(5 * time.Second))\r\n\t\tselect {\r\n\t\tcase _, running = \u003c-stopChan:\r\n\t\tdefault:\r\n\t\t\t_, e = conn.Read(buffer)\r\n\t\t\tif e != nil {\r\n\t\t\t\tif neterr, ok := e.(net.Error); ok \u0026\u0026 neterr.Timeout() {\r\n\t\t\t\t\tcontinue\r\n\t\t\t\t} else {\r\n\t\t\t\t\trunning = false\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\r\n}\r\n```\r\n\r\nIf one of them ever times out, neterr.Timeout() will be true and you'll loop forever.\r\n\r\nIf you can still reproduce with that fixed and Go tip or Go 1.4.2, let us know.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-06T19:18:20Z",
+	"updated_at": "2015-05-06T19:18:20Z"
+}

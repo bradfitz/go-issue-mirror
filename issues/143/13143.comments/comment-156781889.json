@@ -1,0 +1,12 @@
+{
+	"id": 156781889,
+	"body": "I increased the fidelity of the system call model in my proof (and fixed a few bugs in STP) and finally found a way this can happen. I've also managed to reproduce it on linux/386 with a few helping hacks in the runtime.\r\n\r\nThe cause is ultimately quite simple: In mHeap_SysAlloc, if an allocation at arena_used would exceed arena_end (but wouldn't yet push us past arena_start+_MaxArean32), we try to extend the arena reservation by another 256 MB. Note that this could be a small allocation, which is consistent with this bug. We extend the arena by calling sysReserve, which calls mmap without MAP_FIXED on 32-bit, which means the address is just a hint and the kernel can put the mapping wherever it wants. If it happens to choose an address below arena_start (the kernel also chose arena_start, so there could be lots of space below it), then it's the beginning of the end. We don't detect that case in mHeap_SysAlloc. In fact, mHeap_SysAlloc will totally screw up arena_end and arena_used and then return the low pointer to mHeap_Grow, which will subtract arena_start from the pointer, which will underflow and produce a huge value of p, which we'll then use as an index in to h_spans, which will panic.\r\n\r\nThe fix is just to check for this case in mHeap_SysAlloc. I'll roll a CL tomorrow or Monday.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-15T05:10:00Z",
+	"updated_at": "2015-11-15T05:16:10Z"
+}

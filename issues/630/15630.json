@@ -1,0 +1,27 @@
+{
+	"id": 154051317,
+	"number": 15630,
+	"state": "open",
+	"title": "cmd/vet: doesn't handle complex64 or complex128 types in asm functions",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux/amd64\r\n\r\n3. What did you do?\r\ngo vet doesn't properly handle complex types in asm functions.  To reproduce, \r\n\r\nasm.go:\r\n```go\r\npackage main\r\n\r\nfunc CVTc128toc64(n complex128) complex64\r\n```\r\nasm_amd64.s:\r\n```go \r\n// func CVTc128toc64(n complex128) complex64\r\nTEXT ·CVTc128toc64(SB), $0-8\r\n        CVTPD2PS n+0(FP), X0\r\n        MOVB     n+0(FP), AX\r\n        MOVAPS   X0, ret+8(FP)\r\n        RET\r\n```\r\n4. What did you expect to see?\r\nI expect go vet output for these files to be: \r\n```\r\nasm_amd64.s:2: [amd64] CVTc128toc64: wrong argument size 8; expected $...-24\r\nasm_amd64.s:4: [amd64] CVTc128toc64: invalid MOVB of n+0(FP); complex128 is a 16-byte value\r\nasm_amd64.s:3: [amd64] CVTc128toc64: invalid offset ret+8(FP); expected ret+16(FP)\r\n```\r\n\r\n5. What did you see instead?\r\nThe output from go vet is:\r\n```\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm.go:3: unknown assembly argument type complex128\r\nasm.go:3: unknown assembly argument type complex64\r\nasm_amd64.s:2: [amd64] CVTc128toc64: function CVTc128toc64 missing Go declaration\r\n```\r\n",
+	"user": {
+		"login": "Kunde21",
+		"id": 10493268,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-05-10T16:34:22Z",
+	"updated_at": "2016-06-21T21:29:50Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

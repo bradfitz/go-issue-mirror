@@ -1,0 +1,17 @@
+{
+	"id": 158665863,
+	"number": 15971,
+	"state": "closed",
+	"title": "syscall.Stat_t{} for blocks always returns 0 instead of amount of blocks present on hdd",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.4.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nCentos 7\r\nGOARCH=\"amd64\"\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n         linuxproc \"github.com/c9s/goprocinfo/linux\"\r\n        \"regexp\"\r\n        \"syscall\"\r\n)\r\n\r\nfunc main() {\r\n        var disk = make([]string, 1)\r\n        var match = regexp.MustCompile(\"[a-z]{3,4}$\")\r\n        stat, err := linuxproc.ReadDiskStats(\"/proc/diskstats\")\r\n        if err != nil {\r\n                fmt.Printf(\"Erroc accured %v\\n\", err)\r\n        }\r\n        for i := range stat {\r\n                match1 := match.MatchString(stat[i].Name)\r\n                if match1 {\r\n                        fmt.Println(stat[i].Name)\r\n                        makePath := \"/dev/\" + stat[i].Name\r\n                        disk = append(disk, makePath)\r\n                }\r\n        }\r\n        // var path string\r\n         var fs = syscall.Stat_t{}\r\n        for i := range disk {\r\n        //      fs := syscall.Stat_t{}\r\n                path := disk[i]\r\n                fmt.Println(path)\r\n                err := syscall.Stat(path, \u0026fs)\r\n                if err != nil {\r\n                        fmt.Printf(\"FATAL: %v\\n\", err)\r\n                }\r\n                fmt.Printf(\"Blocks on device: %s %d\\n\", path, fs.Blocks)\r\n                fmt.Printf(\"Blocksize: %s %d\\n\", path, fs.Blksize)\r\n                fmt.Printf(\"space of disk: %s %v\\n\", path, fs.Blocks*fs.Blksize)\r\n        }\r\n\r\n}\r\n\r\n4. What did you expect to see?\r\nReal amount blocks on device\r\n\r\n5. What did you see instead?\r\nfs.Blocks returns 0\r\n\r\n",
+	"user": {
+		"login": "pkutys",
+		"id": 17408006,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-06T14:04:18Z",
+	"created_at": "2016-06-06T12:29:06Z",
+	"updated_at": "2016-06-06T14:04:18Z"
+}

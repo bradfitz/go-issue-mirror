@@ -1,0 +1,28 @@
+{
+	"id": 51277196,
+	"number": 984,
+	"state": "closed",
+	"title": "Strange concurrency/performance issues on Mac",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nBelow is a part of my main.go. It starts a number\nof servers executing a very expensive task (annealing() takes \u0026gt;1s), consisting of\nsome numerical tasks and a simulated evolution of neural networks.\n\n\nfunc main(){\n    const NCPU=4\n    const SERVERS=3\n    runtime.GOMAXPROCS(NCPU)\n\n    incomingNets := make(chan string,1)\n\n    for ii:=0; ii\u0026lt;SERVERS; ii++{\n      go genNetsServer(incomingNets)\n    }\n    \n    nets := make(map[string] int)\n        \n    for ii:=0; ii\u0026lt;100; ii++ {\n      nets[\u0026lt;-incomingNets]++\n      fmt.Fprint(os.Stderr,\u0026quot;pling!\u0026quot;)\n    }\n  }\n  \n  func genNetsServer(report chan\u0026lt;- string) {\n    net:=new(Net)\n    net.Allocate()\n    net.Init(1,10,0,0)\n    for {\n      annealing(0.5, 0.00001,-0.2 , net)\n      if net.TestSequenceStrict()==1 {\n\treport \u0026lt;- net.ToStringC14n()\n      }\n    }\n  }\n\n\nThe servers need no input at all. After finishing the task a server sends\nthe result back to the main function on the incomingNets channel. main() exits after\na specific number of strings is recieved.\n\nWhat is the expected output?\n\nJust a few \u0026quot;pling!\u0026quot;s on Stderr.\n\nEverything works fine on my Dual Core Laptop (2.2GHz, 1GB) running:\nLinux FlorianLaptop 2.6.32-5-amd64 #1 SMP Sat Jul 24 01:47:24 UTC 2010 x86_64 GNU/Linux\n\nPerformance increases almost linear using NCPU=4 SERVERS=3 instead of\nNCPU=anything SERVERS=1. Usually a run looks like this:\n\ntime ./main.out\npling!.....pling!\nreal    1m5.243s\nuser    1m40.638s\nsys     0m10.005s\n\nWhat do you see instead?\n\nCrosscompiling the same sourcecode with the same compiler on the same Laptop (newest)\nfor darwin instead of\nlinux and running it on a much more powerfull machine (2.8GHz) with the specs below,\nresults in a totally different behavior.\n\ncplx4:~ *****$ uname -a\nDarwin cplx4 9.1.1 Darwin Kernel Version 9.1.1: Fri Dec 14 19:00:14 PST 2007;\nroot:xnu-1228.1.30~1/RELEASE_I386 i386\ncplx4:~ *****$ hostinfo \nMach kernel version:\n         Darwin Kernel Version 9.1.1: Fri Dec 14 19:00:14 PST 2007; root:xnu-1228.1.30~1/RELEASE_I386\nKernel configured for up to 8 processors.\n8 processors are physically available.\n8 processors are logically available.\nProcessor type: i486 (Intel 80486)\nProcessors active: 0 1 2 3 4 5 6 7\nPrimary memory available: 32.00 gigabytes\nDefault processor set: 80 tasks, 241 threads, 8 processors\nLoad average: 0.00, Mach factor: 7.99\n\nUsing NCPU=anything SERVERS=1 or NCPU=1 SERVERS=anything results in slightly better\nperformance\ncompared to the linux laptop due to the additional 0.6GHz. But setting NCPU=8 and\nSERVERS to \u0026gt;2 results in\nan explosion of real, user and system time. With increasing numbers for SERVER the\ngrowth of the\nperformance disatvantage is worse than linear. The system-time increases faster than\nuser time.\nUsing SERVERS-values above 5 results in hours instead of a minute.\n\nWhat is your $GOOS?  $GOARCH?\n\nlinux/darwin\namd64\n\nWhich revision are you using?  (hg identify)\n\nI always use the newest revision since about two weeks updating on a per day basis.\n\nhg identify\n2ccf0549da35 tip\n\nPlease provide any additional information below.\n\nA mac mini with a more recent OS X and a CPU with about 2.5GHz showed similar behavior\nto the \n8 core machine some days ago.\nA glance at the system monitor revealed 100% CPU load (~25% system-load) for both cores.\n\nI tried values like NCPU=21 SERVERS=20 on my linux-laptop and the result was almost the\nsame as with \nNCPU=4 SERVERS=3, which is the fastest combination of values.\n\nI did some profiling with 6prof and pprof on linux to check whether something odd\nhappens during execution. But\nthe time spent collecting garbage is not getting out of hand and most of the time the\nsystem isn't doing anything\nRAM-expensive like copying slices. About 40% of the time is spent in two functions doing\nsome float64 numbercrunching,\nwhich is the expected behavior.\nSadly I can't do a similar analysis on the 8-core mac since it's part of a Cluster\n(which doesn't do anything atm, checked that first) and does't even have a c-compiler or \ninternet access.\n\nSummary:\n\nUsing multiple expensive goroutines on a 8-core mac results in performance far worse\nthan doing the same on my linux laptop.\n\nTesting:\n\nIf you want me to test some sourcecode on any of the machines mentioned above or do\nsomething else, \nsimply answer to this issue or write to the list.\nleave a comment here.\u003c/pre\u003e",
+	"user": {
+		"login": "MaVo159",
+		"id": 917690,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:06:35Z",
+	"created_at": "2010-07-31T21:15:49Z",
+	"updated_at": "2016-06-24T19:18:30Z"
+}

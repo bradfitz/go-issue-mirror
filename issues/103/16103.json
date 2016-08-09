@@ -1,0 +1,26 @@
+{
+	"id": 160999425,
+	"number": 16103,
+	"state": "open",
+	"title": "debug/pe: ImportedSymbols returns no symbols",
+	"body": "Running this program:\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"debug/pe\"\r\n    \"fmt\"\r\n    \"os\"\r\n)\r\n\r\nfunc main() {\r\n    for _, v := range os.Args[1:] {\r\n        f, err := pe.Open(v)\r\n        if err != nil {\r\n            fmt.Fprintf(os.Stderr, \"can not create PE structure for %s: %v\\n\", v, err)\r\n            continue\r\n        }\r\n        defer f.Close()\r\n\r\n        libs, err := f.ImportedSymbols()\r\n        if err != nil {\r\n            fmt.Fprintf(os.Stderr, \"can not get imported symbols: %v\\n\", err)\r\n            continue\r\n        }\r\n        for _, v := range libs {\r\n            fmt.Printf(\"%s\\n\", v)\r\n        }\r\n    }\r\n}\r\n```\r\n\r\nwith [PsService.zip](https://github.com/golang/go/files/318935/PsService.zip) file as argument, lists no imported dlls / functions. But it should:\r\n\r\n```\r\n$ objdump -x PsService.exe | sed '/The Import Tables/,$!d' | head\r\nThe Import Tables (interpreted .rdata section contents)\r\n vma:            Hint    Time      Forward  DLL       First\r\n                 Table   Stamp     Chain    Name      Thunk\r\n 00026aa4       00026e18 00000000 00000000 00026e7e 000202ac\r\n\r\n        DLL Name: VERSION.dll\r\n        vma:  Hint/Ord Member-Name Bound-To\r\n        26e4e       0  GetFileVersionInfoA\r\n        26e64       3  GetFileVersionInfoSizeA\r\n        26e3c      13  VerQueryValueA\r\n$\r\n```\r\n\r\nThe reason for this is because debug/pe assumes that imported symbols live in section named \".idata\", but it is not always true (as you can see from objdump output). We should use PE \"The Data Directory\" to determine location of imported info.\r\n\r\nAlex\r\n",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 0,
+	"created_at": "2016-06-18T01:06:59Z",
+	"updated_at": "2016-06-20T21:55:33Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 198572327,
+	"body": "You are correct that the last block in DEFLATE is marked as such, but as I noted above, the current implementation of compress/flate does not make that easily known. We could alter flate to report EOF more agressively, but that would be a more invasive change to flate. It's certainly do-able, but it's also very fragile, because it means that zlib is dependent on more strict behavior than what io.Reader promises.\r\n\r\nI'm wondering, you seem to be attempting to read a series of zlib encoded stream back-to-back and you know the uncompressed size. Can you do something similar to the following?\r\n```go\r\nvar rd io.Reader // Let's say your data stream is in here\r\nchunks := []int64{13, 1323, 251} // Uncompressed size of each chunk\r\n\r\n// Wrap your reader with bufio.Reader to ensure that it satisfies io.ByteReader.\r\nrd = bufio.NewReader(rd)\r\n\r\nfor _, nchk := range chunks {\r\n\tzr, err := zlib.NewReader(rd)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tvar buf bytes.Buffer\r\n\tn, err := io.CopyN(\u0026buf, zr, nchk+1) // Read one byte past EOF to fully consume stream\r\n\tswitch {\r\n\tcase err == nil || n \u003e nchk:\r\n\t\tpanic(\"ZLIB stream is longer than expected\")\r\n\tcase err != io.EOF:\r\n\t\tpanic(err)\r\n\tcase n \u003c nchk:\r\n\t\tpanic(\"ZLIB stream is shorter than expected\")\r\n\t}\r\n\r\n\tif err := zr.Close(); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n```\r\n\r\nP.S. io.CopyN does allocate a buffer on each use. You could use a combination io.LimitedReader and io.CopyBuffer to avoid that allocation if performance matters.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-18T23:00:09Z",
+	"updated_at": "2016-03-18T23:03:43Z"
+}

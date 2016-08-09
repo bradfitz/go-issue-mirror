@@ -1,0 +1,12 @@
+{
+	"id": 66091011,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThe test makes 3 requests, but it does not know that the servers handler for /slow\nrequest has started. It may not be even received from Listen. Or received from Listen\nand the handler goroutine is kicked off, but it has not yet executed wg.Add.\n\nThe test is at fault, it must do something along the lines of:\n\nreceived := make(chan bool)\n\nmux.HandleFunc(\"/slow\", func(w ResponseWriter, r *Request) {\n  received \u0026lt;- true\n  time.Sleep(2 * time.Second)\n})\n\n\u0026lt;-received\n// Only NOW we do know that wg.Add has happened!\nts.Close()\n\n-------------------------------------\n\nEssentially what happens here is:\n\nvar wg sync.WaitGroup\n\ngo func() {  // this is slow handler\n  wg.Add(1)\n  time.Sleep(2 * time.Second)\n  wg.Done()\n}()\n\nwg.Wait()\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-07T17:11:01Z",
+	"updated_at": "2014-12-22T06:32:22Z"
+}

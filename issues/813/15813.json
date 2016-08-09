@@ -1,0 +1,32 @@
+{
+	"id": 156411542,
+	"number": 15813,
+	"state": "closed",
+	"title": "text/scanner: revert CL 19622?",
+	"body": "[CL 19622](https://golang.org/cl/19622) inserted a text/scanner prefix at the beginning of any error printed to standard error.\n\nThis was motivated by confusion on #14166 about where some output was coming from. But the fix seems to me a regression, at least in the case where the scanner knows the file name. If, say, a program like a compiler or assembler were using text/scanner to lex its input and using text/scanner's default error implementation (that is, not providing a custom error implementation), then previously an invocation reporting a lexical problem might look like:\n\n```\n$ myprogram foo.txt\nfoo.txt:10:12: illegal hexadecimal number\n$\n```\n\nNow it looks like:\n\n```\n$ myprogram foo.txt\ntext/scanner: foo.txt:10:12: illegal hexadecimal number\n$\n```\n\nI do understand that if the file name is not known, then this is confusing, as in #14166:\n\n```\n$ myprogram \u003c foo.txt\n10:12: illegal hexadecimal number\n$\n```\n\nBut perhaps the fix, if one must be made, would be to replace an empty file name with a pseudo-name like `\u003cinput\u003e`, as in:\n\n```\n$ myprogram \u003c foo.txt\n\u003cinput\u003e:10:12: illegal hexadecimal number\n$\n```\n\nI think this form makes it clearer that 10:12 is an input position, without exposing an implementation detail (namely the use of text/scanner).\n\nThe critical point here is that the errors printed by text/scanner are expected by the users of text/scanner; they are a natural part of the operation of scanning input.\n\nIn contrast, in the rare case where a package prints a message to standard error to report an problem such as a consistency violation, that message is not unexpected and so a prefix is entirely appropriate.\n\nI suggest text/scanner be changed to remove the new text/scanner prefix and possibly print `\u003cinput\u003e` instead of an empty file name at the beginning of an error message (but not in Position.String, which might have other users).",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-25T15:45:25Z",
+	"created_at": "2016-05-24T03:16:02Z",
+	"updated_at": "2016-05-25T15:45:25Z",
+	"milestone": {
+		"id": 1783753,
+		"number": 43,
+		"title": "Go1.7Beta"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

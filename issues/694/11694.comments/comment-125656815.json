@@ -1,0 +1,12 @@
+{
+	"id": 125656815,
+	"body": "\u003e 16 hours and 51000+ GCs and we saw only two large pauses which is well\r\n\u003e within 4 nines, so not bad, not critical, but worth noting.\r\n\r\nDefinitely not bad for a worst-case test program.\r\n\r\n\u003e One theory Austin and I have discussed is that the scheduler, dispose, and\r\n\u003e write barriers can conspire to hide the a pointer from the GC.\r\n\u003e If dispose has a partially full work buffer and places it on the partial\r\n\u003e list but before the GC can grab and process it the scheduler runs a\r\n\u003e mutator that grabs the same partially full work  buffer. This repeats until\r\n\u003e we reach the mark termination phase where the GC finally\r\n\u003e finds the pointer along with a lot of work to do.\r\n\r\nThe sequence that I'm envisioning is somewhat different. Initially, all workers are idle, there's only one workbuf, and it's on the partial list. 1) A write barrier grabs a partial buffer to add a pointer; 2) some worker or the scheduler wakes up; 3) the worker or scheduler sees that there are no workbufs on the global queues and there are no active workers and signals completion of mark 2; 4) the write barrier disposes its buffer, but we're already going in to mark termination.\r\n\r\n\u003e One solution is to have dispose put the work buffer on the full list where\r\n\u003e the write barrier will not ask for it until the GC empties it.\r\n\r\nNote that this is equivalent to simply not using the work.partial list, since this is the only thing that puts buffers on the partial list. That isn't necessarily a bad thing, but it's not obvious to me what all of the consequences of that are.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-28T15:37:55Z",
+	"updated_at": "2015-07-28T15:37:55Z"
+}

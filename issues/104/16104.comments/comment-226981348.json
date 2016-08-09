@@ -1,0 +1,12 @@
+{
+	"id": 226981348,
+	"body": "But it does return. As mentioned earlier, `go get` has no child processes. There is no `git` process running. And if it was a `git` issue, I would expect to experience this when `git clone` is run manually as well, but also as mentioned, it works fine 100% of the time.\r\n\r\n```\r\n# ps -ef | grep 'go get'\r\nphemmer  23977  8359  0 01:57 pts/16   00:00:00 /usr/bin/go get -t -d -v -x github.com/influxdata/telegraf\r\n\r\n# ps --ppid 23977 \r\nUSER       PID PRI  NI %CPU %MEM STAT     ELAPSED COMMAND\r\n\r\n# ps -ef|grep git\r\nphemmer  23977  8359  0 01:57 pts/16   00:00:00 /usr/bin/go get -t -d -v -x github.com/influxdata/telegraf\r\nphemmer  23991     1  0 01:57 ?        00:00:00 ssh: /tmp/.ssh_control-github.com-22-git [mux]\r\n```\r\n\r\nThough that last line did lead me down another route of investigation. Killing the ssh control process (PID 23991) does make `go get` resume. But as you can see from the `ps -ef` output (3rd column), the PPID is 1, meaning it's a background process. Why is `go get` waiting for it? **How** is it even waiting for it? The `wait` system call only lets you listen to processes which are your child, so how is this process which is not a child of `go get` blocking `go get`?",
+	"user": {
+		"login": "phemmer",
+		"id": 1826947,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-19T06:04:59Z",
+	"updated_at": "2016-06-19T06:04:59Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 84067417,
+	"body": "@davecheney I have to say that Russ's comments above seem right to me: errClosing is not EOF.  I think that returning io.EOF for errClosing will simplify some current code but at the cost of future confusion by programmers trying to understand why they are getting EOF.\r\n\r\nI think the error happens when two different goroutines have a net.Conn, and one goroutine calls Close, and the other goroutine calls Read (or friends) or Write (or friends) or Close or CloseRead or CloseWrite.  Or, similarly, with a TCPListener or UnixListener where one goroutine calls Close and the other calls Accept.  At least for Read/Write/Accept this is clearly an error condition but I don't see why it is an end-of-file.  What happens do a regular socket descriptor if you close and then read?  You don't get EOF.  You get EINVAL.\r\n\r\nIn a comment above you said the errClosing might be wrapped in a net.OpError, but I don't see how that can happen.  Can you explain the case where that can occur?\r\n\r\nI think it might be useful to distinguish two cases.  One is where the read/write is in progress, and then some other goroutine closes the connection.  I think we have to return errClosing for that case.  Nothing else properly conveys what happened.  The other is where the close happens, and then after that some other goroutine does a read/write.  For that I think we could return a different error (errClosed?).  Perhaps if we distinguish those cases we can separate ourselves from concerns that all other interfaces need to support errClosing, and then perhaps we can export it.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-20T16:52:29Z",
+	"updated_at": "2015-03-20T16:52:29Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 105671960,
+	"number": 12557,
+	"state": "closed",
+	"title": "archive/tar: call to Next does not detect that stream is truncated",
+	"body": "Using ```go1.5```\r\n\r\nAs part of fixing #12436, I discovered that just calling Next alone without manually reading the data causes it to not detect a truncated stream.\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/hex\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n)\r\nimport \"archive/tar\"\r\n\r\nfunc main() {\r\n\ttruncData, _ := hex.DecodeString(data)\r\n\r\n\tfmt.Println(\"Decode with manual discard:\")\r\n\ttr := tar.NewReader(bytes.NewReader(truncData))\r\n\tfor {\r\n\t\t_, err := tr.Next()\r\n\t\tif err == io.EOF {\r\n\t\t\tfmt.Println(\"STOP_NEXT:\", err)\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tif err != nil {\r\n\t\t\tfmt.Println(\"FAIL_NEXT:\", err)\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tif _, err := io.Copy(ioutil.Discard, tr); err != nil {\r\n\t\t\tfmt.Println(\"FAIL_READ:\", err)\r\n\t\t\tbreak\r\n\t\t}\r\n\t}\r\n\r\n\tfmt.Println(\"\\nDecode with automatic discard:\")\r\n\ttr = tar.NewReader(bytes.NewReader(truncData))\r\n\tfor {\r\n\t\t_, err := tr.Next()\r\n\t\tif err == io.EOF {\r\n\t\t\tfmt.Println(\"STOP_NEXT:\", err)\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tif err != nil {\r\n\t\t\tfmt.Println(\"FAIL_NEXT:\", err)\r\n\t\t\tbreak\r\n\t\t}\r\n\t\t// Without manually consuming the data, the next\r\n\t\t// call to Next should automatically consume it,\r\n\t\t// realize that the stream is truncated and return \r\n\t\t// an error. But it doesn't.\r\n\t}\r\n}\r\n\r\n// This is a truncated and invalid Tar file. GNU and BSD tar all reject this.\r\nconst data = \"616161000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000003030303036343400303030313735300030303031\" +\r\n\t\"373530003030303030303030303536003132353734303537323436003031\" +\r\n\t\"303431320020300000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000075737461722020007261777200\" +\r\n\t\"00000000000000000000000000000000000000000000000000000064736e\" +\r\n\t\"657400000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000000000000000000000000000000000000000000000000000000000000\" +\r\n\t\"000054686520717569636b2062726f776e20666f78206a756d706564206f\" +\r\n\t\"76657220746865206c617a7920646f672e\"\r\n```\r\n\r\nCurrently, this outputs:\r\n```\r\nDecode with manual discard:\r\nFAIL_READ: unexpected EOF\r\n\r\nDecode with automatic discard:\r\nSTOP_NEXT: EOF\r\n```\r\n\r\nIt should output:\r\n```\r\nDecode with manual discard:\r\nFAIL_READ: unexpected EOF\r\n\r\nDecode with automatic discard:\r\nFAIL_NEXT: unexpected EOF\r\n```\r\n\r\n@dsymonds, is this expected behavior, or should I fix this as well?",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-11-06T04:31:42Z",
+	"created_at": "2015-09-09T19:54:00Z",
+	"updated_at": "2015-11-06T04:31:42Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

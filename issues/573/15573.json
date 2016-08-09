@@ -1,0 +1,27 @@
+{
+	"id": 153485156,
+	"number": 15573,
+	"state": "open",
+	"title": "archive/tar: Does not handle pax archives with members larger than 8GB",
+	"body": "* I am using Go 1.6.2: `go version go1.6.2 linux/amd64`\r\n\r\n* Here's my full environment (`go env`)\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n* I created a 9GB file of NULs and tarred it using `tar -H pax` on linux:\r\n\r\n```\r\ndd if=/dev/zero bs=1000000 count=9000 of=big.dat\r\ntar -H pax -cf big.tar big.dat\r\n```\r\nthen I scanned the tar file using the `archive/tar` library\r\n\r\nHere's the utility program I used to do so, also [as a gist](https://gist.github.com/dkolbly/1f4315411d0c322c35db94648c77017d)\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"archive/tar\"\r\n\t\"crypto/sha1\"\r\n\t\"encoding/hex\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tvar src io.Reader\r\n\r\n\tif os.Args[1] == \"-\" {\r\n\t\tsrc = os.Stdin\r\n\t} else {\r\n\t\ts, err := os.Open(os.Args[1])\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tsrc = s\r\n\t}\r\n\tr := tar.NewReader(src)\r\n\tfor {\r\n\t\thdr, err := r.Next()\r\n\t\tif err == io.EOF {\r\n\t\t\tfmt.Printf(\"done\\n\")\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tfmt.Printf(\"%12d '%c' %s\\n\", hdr.Size, hdr.Typeflag, hdr.Name)\r\n\t\thash := sha1.New()\r\n\t\tn, err := io.Copy(hash, r)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tdigest := hex.EncodeToString(hash.Sum(nil))\r\n\t\tfmt.Printf(\"   ... copied %d bytes: %s\\n\", n, digest)\r\n\t}\r\n}\r\n```\r\n\r\n* I expected to see it extract 9GB from the tarfile and compute a sha1 of `6e55...` (i.e., the SHA1 of 9GBs of NULs) \r\n\r\nSomething like this:\r\n```\r\n  9000000000 '0' big.dat\r\n   ... copied 9000000000 bytes: 6e55e4710d345e664f11d2306b8400da36648971\r\ndone\r\n```\r\n\r\n* What I actually saw was a report of a 9GB file member (correct), but *no* bytes read and the SHA1 of an empty string (wrong):\r\n```\r\n  9000000000 '0' big.dat\r\n   ... copied 0 bytes: da39a3ee5e6b4b0d3255bfef95601890afd80709\r\ndone\r\n```\r\n\r\n* Best guess about what is wrong...\r\n\r\nI'm pretty sure the issue is that by the time we call `mergePAX()`, the `numBytesReader` has already been configured with the wrong size, so even though we [fix up the `hdr.Size` in mergePAX](https://github.com/golang/go/blob/master/src/archive/tar/reader.go#L298), it's too late for `curr`, the `numBytesReader` which is already a `*regFileReader` with nb=0.\r\n\r\n",
+	"user": {
+		"login": "dkolbly",
+		"id": 1017053,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-05-06T16:08:56Z",
+	"updated_at": "2016-05-06T16:58:40Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

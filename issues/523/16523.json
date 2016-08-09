@@ -1,0 +1,33 @@
+{
+	"id": 168017152,
+	"number": 16523,
+	"state": "closed",
+	"title": "net: race where Dialer.DialContext returns connections with altered write deadlines",
+	"body": "Consider the following test which starts a serial chain of reverse proxies and then slams the chain with many concurrent requests.\r\n```go\r\nconst (\r\n\t// Adjust these two values to control frequency of i/o error occurrence.\r\n\t// numConcurrentRequests seems to have greater effect on my system.\r\n\tnumProxyChain = 20\r\n\tnumConcurrentRequests = 20\r\n\r\n\tport = 8080\r\n\ttopPort = port + numProxyChain\r\n)\r\n\r\nfunc main() {\r\n\t// Start a chain of reverse proxies.\r\n\tgo http.ListenAndServe(fmt.Sprintf(\"0.0.0.0:%d\", port), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tif _, err := w.Write([]byte(\"the quick brown fox jumped over the lazy dog\")); err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t}))\r\n\tfor i := port + 1; i \u003c= topPort; i++ {\r\n\t\turl, _ := url.Parse(fmt.Sprintf(\"http://localhost:%d\", i-1))\r\n\t\trp := httputil.NewSingleHostReverseProxy(url)\r\n\t\trp.Transport = \u0026http.Transport{\r\n\t\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}, // This is crucial. Don't know why!\r\n\t\t}\r\n\t\tgo http.ListenAndServe(fmt.Sprintf(\"0.0.0.0:%d\", i), rp)\r\n\t}\r\n\r\n\tvar fail, total uint64\r\n\tgo func() {\r\n\t\t// Stall until servers are ready.\r\n\t\tfor {\r\n\t\t\tif _, err := http.Get(fmt.Sprintf(\"http://localhost:%d\", topPort)); err == nil {\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t}\r\n\r\n\t\t// Slam the servers!\r\n\t\tfor {\r\n\t\t\tvar wg sync.WaitGroup\r\n\t\t\tfor i := 0; i \u003c numConcurrentRequests; i++ {\r\n\t\t\t\twg.Add(1)\r\n\t\t\t\tgo func() {\r\n\t\t\t\t\tdefer wg.Done()\r\n\t\t\t\t\tatomic.AddUint64(\u0026total, 1)\r\n\t\t\t\t\tnow := time.Now()\r\n\t\t\t\t\tresp, err := http.Get(fmt.Sprintf(\"http://localhost:%d\", topPort))\r\n\t\t\t\t\td := time.Now().Sub(now)\r\n\t\t\t\t\tif err != nil {\r\n\t\t\t\t\t\tatomic.AddUint64(\u0026fail, 1)\r\n\t\t\t\t\t\tfmt.Println(err, d)\r\n\t\t\t\t\t\treturn\r\n\t\t\t\t\t}\r\n\t\t\t\t\tif resp.Status != \"200 OK\" {\r\n\t\t\t\t\t\tatomic.AddUint64(\u0026fail, 1)\r\n\t\t\t\t\t\tfmt.Println(resp.Status, d)\r\n\t\t\t\t\t}\r\n\t\t\t\t\tresp.Body.Close()\r\n\t\t\t\t}()\r\n\t\t\t}\r\n\t\t\twg.Wait()\r\n\t\t}\r\n\t}()\r\n\r\n\ttime.Sleep(5 * time.Second)\r\n\tnf, nt := atomic.LoadUint64(\u0026fail), atomic.LoadUint64(\u0026total)\r\n\tfmt.Printf(\"Failure rate %0.2f%% (%d of %d)\\n\", float64(nf)/float64(nt)*100, nf, nt)\r\n\tif nf \u003e 0 {\r\n\t\tos.Exit(1)\r\n\t}\r\n}\r\n```\r\nRunning this test on `go1.7rc3` produces several failed GET requests:\r\n```\r\n...\r\n2016/07/27 22:41:32 http: proxy error: write tcp 127.0.0.1:54671-\u003e127.0.0.1:8080: i/o timeout\r\n502 Bad Gateway 41.756424ms\r\n2016/07/27 22:41:33 http: proxy error: write tcp 127.0.0.1:58984-\u003e127.0.0.1:8081: i/o timeout\r\n502 Bad Gateway 29.08107ms\r\n2016/07/27 22:41:33 http: proxy error: write tcp 127.0.0.1:59777-\u003e127.0.0.1:8080: i/o timeout\r\n502 Bad Gateway 35.419027ms\r\nFailure rate 0.70% (19 of 2720)\r\n```\r\nWhile running this test on `go1.6.2` produces no failed GET requests:\r\n```\r\nFailure rate 0.00% (0 of 2920)\r\n```\r\n\r\nI don't believe it is proper behavior to fail with an i/o timeout error after only ~40ms of real time. Something is causing the connection to timeout too early. Git bisect indicates the source of this issue as 1518d431321100cd9f0e18d740da7c835ba438dd.\r\n\r\nThis is a regression from `go1.6.2`\r\n\r\n/CC @bradfitz @broady @adg ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-08-02T00:55:58Z",
+	"created_at": "2016-07-28T05:44:54Z",
+	"updated_at": "2016-08-02T00:57:46Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

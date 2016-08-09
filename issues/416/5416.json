@@ -1,0 +1,22 @@
+{
+	"id": 51283596,
+	"number": 5416,
+	"state": "closed",
+	"title": "go.tools/godoc: add dirtree parallelism",
+	"body": "\u003cpre\u003eGodoc should build dirtrees in parallel.\n\nWhen starting up initially over all Google's internal code, it starts up quicker with\nsomething like:\n\n\n--- dirtrees.go\n+++ dirtrees.go\n@@ -51,9 +51,15 @@ func isPkgDir(fi os.FileInfo) bool {\n \n type treeBuilder struct {\n        maxDepth int\n+\n+       // gate is a buffered channel to gate concurrency to newDirTree.\n+       // Send on gate before a call to newDirTree. newDirTree will\n+       // read from it on its exit.\n+       gate chan bool\n }\n \n func (b *treeBuilder) newDirTree(fset *token.FileSet, path, name string, depth int) *Directory {\n+       defer func() { \u0026lt;-b.gate }()\n        if name == testdataDirName {\n                return nil\n        }\n@@ -112,19 +118,23 @@ func (b *treeBuilder) newDirTree(fset *token.FileSet, path, name\nstring, depth i\n        // create subdirectory tree\n        var dirs []*Directory\n        if ndirs \u0026gt; 0 {\n-               dirs = make([]*Directory, ndirs)\n-               i := 0\n+               var dirc []\u0026lt;-chan *Directory\n                for _, d := range list {\n                        if isPkgDir(d) {\n                                name := d.Name()\n-                               dd := b.newDirTree(fset, pathpkg.Join(path, name), name,\ndepth+1)\n-                               if dd != nil {\n-                                       dirs[i] = dd\n-                                       i++\n-                               }\n+                               c := make(chan *Directory, 1)\n+                               dirc = append(dirc, c)\n+                               b.gate \u0026lt;- true\n+                               go func() {\n+                                       c \u0026lt;- b.newDirTree(fset, pathpkg.Join(path,\nname), name, depth+1)\n+                               }()\n+                       }\n+               }\n+               for _, c := range dirc {\n+                       if dd := \u0026lt;-c; dd != nil {\n+                               dirs = append(dirs, dd)\n                        }\n                }\n-               dirs = dirs[0:i]\n        }\n \n        // if there are no package files and no subdirectories\n@@ -151,6 +161,8 @@ func (b *treeBuilder) newDirTree(fset *token.FileSet, path, name\nstring, depth i\n        }\n }\n \n+var fsTreeUpdateGoroutines = 1\n+\n // newDirectory creates a new package directory tree with at most maxDepth\n // levels, anchored at root. The result tree is pruned such that it only\n // contains directories that contain package files or that contain\n@@ -177,7 +189,10 @@ func newDirectory(root string, maxDepth int) *Directory {\n        if maxDepth \u0026lt; 0 {\n                maxDepth = 1e6 // \u0026quot;infinity\u0026quot;\n        }\n-       b := treeBuilder{maxDepth}\n+       b := \u0026amp;treeBuilder{\n+               maxDepth: maxDepth,\n+               gate:     make(chan bool, fsTreeUpdateGoroutines),\n+       }\n        // the file set provided is only for local parsing, no position\n        // information escapes and thus we don't need to save the set\n        return b.newDirTree(token.NewFileSet(), root, d.Name(), 0)\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:29:18Z",
+	"created_at": "2013-05-06T19:56:43Z",
+	"updated_at": "2016-06-24T22:39:28Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 235482846,
+	"body": "I think that is the correct way to respect both connection level and stream level flow control. The values for steams and connection can be same or different, but I think there is an implementation logic bug. When data is received by connection, connection level window should be open for other steams, it should not wait until data is ready by handler. Reading the data or not by the handler should not be concerned by connection level, it is stream level issue. Please comment what potential issues you can think of with that patch.\r\n\r\nRegarding the default values, connection level window size should be based on the bandwidth delay product. If it too small, it will under utilize the bandwidth (by idling waiting for window to open after RTT). If it is too big, data will be buffered by TCP which may delay/block control frames or other streams. Ideally we should start with a reasonable default (64K?) and adjust it based on the measured RTT and estimated bandwidth. Not sure it we want to be that optimized. Otherwise we can set a reasonable default. It may be helpful to expose a function for user to control, with RTT and estimated BW available to user.\r\n\r\nThe steam level default should be the same as connection level (equal to bandwidth delay product). If memory is not a issue. However, if we do want to limit server memory, we could limit steam level window size and max number of steams, at the cost of not fully utilizing the whole BW by each steam.\r\n\r\nI think this is not server default steam \u0026 conn flow control value issue, it is a flow control bug, so I changed the title back.\r\n",
+	"user": {
+		"login": "wujieliulan",
+		"id": 2224380,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-27T04:46:05Z",
+	"updated_at": "2016-07-27T05:06:22Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51286621,
+	"number": 7377,
+	"state": "closed",
+	"title": "os/exec: Cmd does not attempt to run ./prog.exe, when execution of ./prog requested",
+	"body": "\u003cpre\u003eApply this diff:\n\ndiff --git a/src/pkg/os/exec/exec_test.go b/src/pkg/os/exec/exec_test.go\n--- a/src/pkg/os/exec/exec_test.go\n+++ b/src/pkg/os/exec/exec_test.go\n@@ -687,3 +687,23 @@\n \t\tos.Exit(2)\n \t}\n }\n+\n+func TestWindowsRelativeCommandWithoutExtention(t *testing.T) {\n+\tcd, err := os.Getwd()\n+\tif err != nil {\n+\t\tt.Fatalf(\u0026quot;Getwd: %v\u0026quot;, err)\n+\t}\n+\tdefer os.Chdir(cd)\n+\n+\tbindir := filepath.Join(runtime.GOROOT(), \u0026quot;bin\u0026quot;)\n+\terr = os.Chdir(bindir)\n+\tif err != nil {\n+\t\tt.Fatalf(\u0026quot;Chdir(%v): %v\u0026quot;, bindir, err)\n+\t}\n+\t// the file name is actually go.exe on windows\n+\tcmd := exec.Command(\u0026quot;./go\u0026quot;, \u0026quot;env\u0026quot;)\n+\tout, err := cmd.CombinedOutput()\n+\tif err != nil {\n+\t\tt.Errorf(\u0026quot;cmd failed: %v %v\u0026quot;, err, string(out))\n+\t}\n+}\n\nto hg id b5eda189b974\n\nand run the test. It should succeed, but fails on windows with:\n\nC:\\go\\root\\src\u0026gt;u:\\test -test.v -test.run=Exten\n=== RUN TestWindowsRelativeCommandWithoutExtention\n--- FAIL: TestWindowsRelativeCommandWithoutExtention (0.00 seconds)\n        exec_test.go:707: cmd failed: fork/exec ./go: The system cannot find the file specified.\nFAIL\n\nThe problem is introduced by:\n\nos/exec: fix Command with relative paths\n\nCommand was (and is) documented like:\n\u0026quot;If name contains no path separators, Command uses LookPath to\nresolve the path to a complete name if possible. Otherwise it\nuses name directly.\u0026quot;\n\nBut that wasn't true. It always did LookPath, and then\nset a sticky error that the user couldn't unset.\nAnd then if cmd.Dir was changed, Start would still fail\ndue to the earlier sticky error being set.\n\nThis keeps LookPath in the same place as before (so no user\nvisible changes in cmd.Path after Command), but only does\nit when the documentation says it will happen.\n\nAlso, clarify the docs about a relative Dir path.\n\nNo change in any existing behavior, except using Command\nis now possible with relative paths. Previously it only\nworked if you built the *Cmd by hand.\n\nFixes  \u003ca href=\"https://golang.org/issue/7228\"\u003eissue #7228\u003c/a\u003e \n\nLGTM=iant\nR=iant\nCC=adg, golang-codereviews\n\u003ca href=\"https://golang.org/cl/59580044\"\u003ehttps://golang.org/cl/59580044\u003c/a\u003e\n\nThe problem was first discovered when 48a4a9afb88b failed on windows. I also think that\nour current windows-386 builder is broken for the same reason. It outputs:\n\nfork/exec c:\\gobuilder\\windows-386-ec2-b5eda189b974\\go\\bin\\go: The system cannot find\nthe file specified.\n\nfor every subrepo build.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:41:03Z",
+	"created_at": "2014-02-21T06:33:29Z",
+	"updated_at": "2016-06-25T01:28:06Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

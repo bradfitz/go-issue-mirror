@@ -1,0 +1,22 @@
+{
+	"id": 132096182,
+	"number": 14254,
+	"state": "closed",
+	"title": "x/exp/shiny/driver/windriver: zsyscall_windows.go generation is broken",
+	"body": "Steps to reproduce the problem\r\n```\r\n# pwd                                                                   \r\n/root/src/golang.org/x/exp/shiny/driver/windriver                                     \r\n# git diff                                                              \r\n# GOOS=windows go install                                               \r\n# GOOS=windows go generate                                              \r\n# git diff                                                              \r\ndiff --git a/shiny/driver/windriver/zsyscall_windows.go b/shiny/driver/windriver/zsyscall_windows.go\r\nindex 7a70f4f..2b2aa95 100644\r\n--- a/shiny/driver/windriver/zsyscall_windows.go\r\n+++ b/shiny/driver/windriver/zsyscall_windows.go\r\n@@ -4,7 +4,6 @@ package windriver\r\n \r\n import \"unsafe\"\r\n import \"syscall\"\r\n-import \"golang.org/x/exp/shiny/driver/internal/win32\"\r\n \r\n var _ unsafe.Pointer\r\n \r\n# GOOS=windows go install                                               \r\n# golang.org/x/exp/shiny/driver/windriver                                             \r\n./zsyscall_windows.go:39: undefined: win32 in win32.HDC                               \r\n./zsyscall_windows.go:41: undefined: win32                                            \r\n./zsyscall_windows.go:52: undefined: win32 in win32.HDC                               \r\n./zsyscall_windows.go:64: undefined: win32 in win32.HDC                               \r\n./zsyscall_windows.go:77: undefined: win32 in win32.HDC                               \r\n./zsyscall_windows.go:89: undefined: win32 in win32.HDC                               \r\n./zsyscall_windows.go:115: undefined: win32 in win32.HDC                              \r\n./zsyscall_windows.go:41: too many errors                                             \r\n#                                                                       \r\n```\r\n\r\nThis issue was introduced in CL 17676. @crawshaw must have changed zsyscall_windows.go by hand, and I didn't reilized that during review.\r\n\r\nWe can just change all win32.HDC in zsyscall_windows.go (and, probably, in exp/shiny/driver/internal/win32/zsyscall_windows.go) into syscall.Handle.\r\n\r\nAlternatively we can teach $GOROOT/src/syscall/mksyscall_windows.go to include 'import \"golang.org/x/exp/shiny/driver/internal/win32\"'. But that means some sort of new convention here. mksyscall_windows.go would have to be able to resolve win32 into  golang.org/x/exp/shiny/driver/internal/win32. Maybe it can deduce this by looking at imports in syscall_windows.go. But current syscall_windows.go does not import golang.org/x/exp/shiny/driver/internal/win32, so we would have to change that. I am not convinced it is a good approach.\r\n\r\nMaybe do something different.\r\n\r\nWhat do you think, David?\r\n\r\n/cc @crawshaw for comments\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2016-03-05T07:44:20Z",
+	"created_at": "2016-02-08T09:55:14Z",
+	"updated_at": "2016-03-05T07:44:20Z"
+}

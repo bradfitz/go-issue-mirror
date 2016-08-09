@@ -1,0 +1,12 @@
+{
+	"id": 157003089,
+	"body": "This is an unfortunate resolution. A very common use case for Timer.Reset is\r\nto use it as a substitute for time.After in a select loop to avoid creating garbage.\r\nWith the current semantics, this is not possible (or at least quite hard) to do reliably.\r\n\r\nConsider the following loop:\r\n\t\r\n\tfunc run() {\r\n\t\tconst timeout = 100 * time.Microsecond\r\n\t\tt := time.NewTimer(timeout)\r\n\t\tfor i := 0; i \u003c 10000; i++ {\r\n\t\t\tselect {\r\n\t\t\tcase \u003c-time.After(timeout + time.Duration(rand.Intn(10000) - 5000)):\r\n\t\t\tcase \u003c-t.C:\r\n\t\t\t}\r\n\t\t\tt.Reset(timeout)\r\n\t\t}\r\n\t}\r\n\r\nHere the time.After is modelling some external event that fires, and the\r\ntimer provides a timeout for that event.  As written, the loop does not\r\nwork correctly. In a third of cases, the select terminates immediately\r\nbecause there is a value already in the channel.\r\n\r\nThe challenge here is to find a way of resetting the timer so that the\r\nselect statement is guaranteed not to terminate before 100 microseconds\r\nhave passed, and without imposing additional waits in the loop.\r\n\r\nNone of the solutions presented in this thread (other than changing\r\nReset itself) are sufficient. The only thing that works is to create a\r\nnew timer, which means that Timer.Reset is unfit for the very purpose\r\nit was made for - reducing GC load by reusing the timer.\r\n\r\nHere is some code that demonstrates this:\r\nhttp://play.golang.org/p/u0hkTIE2LN\r\n\r\nIf we can't fix timer.Reset, perhaps we could add a new method that\r\nprovides the semantics that we actually need in this kind of situation.\r\n",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-16T11:30:28Z",
+	"updated_at": "2015-11-16T11:30:28Z"
+}

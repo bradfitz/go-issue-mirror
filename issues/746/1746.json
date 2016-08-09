@@ -1,0 +1,28 @@
+{
+	"id": 51278246,
+	"number": 1746,
+	"state": "closed",
+	"title": "garbage collection error on linux/386",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. update to 7f2899bf1256\n2. clpatch 4444064 and 4437075\n3. GOARCH=386 all.bash on Linux\n\nWhat is the expected output? What do you see instead?\n\nShould work.  Instead, cgo in package net typically fails \nin scanstack during garbage collection.  The chosen sp and\nstack base do not seem to be in sync.  Part of the problem\nis that sched.sp and stackbase and stackguard can be changing\neven during garbage collection if a goroutine comes out of\na system call.  They change while it is executing things like\nschedlock which lets it notice that it needs to stop.\n\nI have been trying to avoid the race by having a separate\ncopy of the variables established at entersyscall, but the\nrace persists.  I'm clearly doing something wrong.\n\nWithout the extra checks from 4437075, the race results from\ng-\u0026gt;stackbase and g-\u0026gt;stackguard being ahead of g-\u0026gt;sched.sp.\nThat is, since g-\u0026gt;sched.sp was recorded a new stack frame\nhas been created and g-\u0026gt;stackbase and g-\u0026gt;stackguard refer to it.\n\nDuring the scan, two things can happen.\n\n1. sp is before stk.  In this case sp - stk (a uintptr) wraps so\nis very large, which on 386 means still very large when promoted\nto int64, which makes scanstack's call to scanblock eventually\nfault accessing unmapped memory.  (On amd64 it becomes a negative\nint64 and scanblock does nothing, meaning the garbage collector\nwould miss some pointers, except that the new stack frame\nhas nothing interesting in it, since the world is stopped.\nIt's just a few calls to things like schedlock and futex.)\n\n2. sp is after stk.  In this case sp - stk is larger than it\nshould be but not 'very large' so more gets scanned than should.\nThis will keep garbage from getting collected but should not\ncause crashes.\n\nNow that I've written this I think the solution is to just\nunwind the stack until we find the segment containing sp,\nand then start the scan there.  It is probably necessary\nto add the stack bottom pointer to the Stktop struct, because\nwe cannot guarantee to load g-\u0026gt;stackguard and g-\u0026gt;stackbase\nand get corresponding values, since they are being changed\nunderfoot.\n\nMañana.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:09:42Z",
+	"created_at": "2011-04-27T04:42:12Z",
+	"updated_at": "2016-06-24T19:28:11Z"
+}

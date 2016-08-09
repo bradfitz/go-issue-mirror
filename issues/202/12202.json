@@ -1,0 +1,26 @@
+{
+	"id": 101946396,
+	"number": 12202,
+	"state": "open",
+	"title": "image/jpeg: specify APP1 segment for outputting EXIF data in jpeg.Encode()?",
+	"body": "Currently there is no way to output EXIF in jpeg.Encode() so if a JPEG file is modified use image/jpeg the EXIF info is lost.\r\n\r\nReading EXIF using jpeg.Decode() has a similar problem but reopening the file and reading a few kilo bytes is probably an acceptable workaround. Reopening a file to insert a segment is much more cumbersome and inefficient.\r\n\r\nOne way to do this is to introduce a new field in jpeg.Options. Something like below diff. Thoughts?\r\n```\r\ndiff --git a/src/image/jpeg/reader.go b/src/image/jpeg/reader.go\r\nindex adf97ab..5942609 100644\r\n--- a/src/image/jpeg/reader.go\r\n+++ b/src/image/jpeg/reader.go\r\n@@ -64,6 +64,7 @@ const (\r\n        // but in practice, their use is described at\r\n        // http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html\r\n        app0Marker  = 0xe0\r\n+       app1Marker  = 0xe1\r\n        app14Marker = 0xee\r\n        app15Marker = 0xef\r\n )\r\ndiff --git a/src/image/jpeg/writer.go b/src/image/jpeg/writer.go\r\nindex 91bbde3..e404efa 100644\r\n--- a/src/image/jpeg/writer.go\r\n+++ b/src/image/jpeg/writer.go\r\n@@ -541,6 +541,7 @@ const DefaultQuality = 75\r\n // Quality ranges from 1 to 100 inclusive, higher is better.\r\n type Options struct {\r\n        Quality int\r\n+       App1Data []byte\r\n }\r\n \r\n // Encode writes the Image m to w in JPEG 4:2:0 baseline format with the given\r\n@@ -597,6 +598,12 @@ func Encode(w io.Writer, m image.Image, o *Options) error {\r\n        e.buf[0] = 0xff\r\n        e.buf[1] = 0xd8\r\n        e.write(e.buf[:2])\r\n+\r\n+       // Write APP1 data if specified\r\n+       if o != nil \u0026\u0026 o.App1Data != nil {\r\n+               e.writeMarkerHeader(app1Marker, 2 + len(o.App1Data))\r\n+               e.write(o.App1Data)\r\n+       }\r\n\r\n```",
+	"user": {
+		"login": "jdeng",
+		"id": 196648,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 5,
+	"created_at": "2015-08-19T16:58:35Z",
+	"updated_at": "2015-10-26T11:01:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

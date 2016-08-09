@@ -1,0 +1,33 @@
+{
+	"id": 83248530,
+	"number": 11012,
+	"state": "closed",
+	"title": "x/tools/cmd/godoc: Panic in loader.(*importer).addFiles",
+	"body": "I'm running Go 1.4.2 installed from homebrew on OS X:\r\n\r\n    % go version\r\n    go version go1.4.2 darwin/amd64\r\n    \r\n    % go env\r\n    GOARCH=\"amd64\"\r\n    GOBIN=\"\"\r\n    GOCHAR=\"6\"\r\n    GOEXE=\"\"\r\n    GOHOSTARCH=\"amd64\"\r\n    GOHOSTOS=\"darwin\"\r\n    GOOS=\"darwin\"\r\n    GOPATH=\"/Users/jacobsa/go\"\r\n    GORACE=\"\"\r\n    GOROOT=\"/Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec\"\r\n    GOTOOLDIR=\"/Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/pkg/tool/darwin_amd64\"\r\n    CC=\"clang\"\r\n    GOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\n    CXX=\"clang++\"\r\n    CGO_ENABLED=\"1\"\r\n\r\nI've just a minute ago updated godoc to golang/tools@8ccf558e8ad400746c297c66f6493427d382cfe4 using:\r\n\r\n    go get -u -v golang.org/x/tools/godoc\r\n\r\nWhen I run it like this:\r\n\r\n    godoc -analysis type,pointer -http :1234\r\n\r\nIt always crashes after 5-6 seconds with:\r\n\r\n```\r\n2015/06/01 11:02:30 Loading and type-checking packages...\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x37d816]\r\n\r\ngoroutine 1111 [running]:\r\ngolang.org/x/tools/go/loader.(*importer).addFiles(0xc2081fc000, 0x0, 0xb2e9a0, 0x0, 0x0, 0x0)\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/go/loader/loader.go:1108 +0x276\r\ngolang.org/x/tools/go/loader.(*Config).Load(0xc20813e140, 0x7ff750, 0x0, 0x0)\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/go/loader/loader.go:710 +0x1b39\r\ngolang.org/x/tools/godoc/analysis.Run(0x6e2001, 0xc208036b30)\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/godoc/analysis/analysis.go:378 +0xc17\r\ncreated by main.main\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/cmd/godoc/main.go:307 +0x1af0\r\n\r\ngoroutine 1 [IO wait]:\r\nnet.(*pollDesc).Wait(0xc2084f2290, 0x72, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/fd_poll_runtime.go:84 +0x47\r\nnet.(*pollDesc).WaitRead(0xc2084f2290, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/fd_poll_runtime.go:89 +0x43\r\nnet.(*netFD).accept(0xc2084f2230, 0x0, 0xc39e30, 0xc2082696b8)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/fd_unix.go:419 +0x40b\r\nnet.(*TCPListener).AcceptTCP(0xc2084aada0, 0x934e4, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/tcpsock_posix.go:234 +0x4e\r\nnet/http.tcpKeepAliveListener.Accept(0xc2084aada0, 0x0, 0x0, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/http/server.go:1976 +0x4c\r\nnet/http.(*Server).Serve(0xc2086d2cc0, 0xc55738, 0xc2084aada0, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/http/server.go:1728 +0x92\r\nnet/http.(*Server).ListenAndServe(0xc2086d2cc0, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/http/server.go:1718 +0x154\r\nnet/http.ListenAndServe(0x7fff5fbffafb, 0x5, 0xc54670, 0xc20803c990, 0x0, 0x0)\r\n        /Users/jacobsa/.homebrew/Cellar/go/1.4.2/libexec/src/net/http/server.go:1808 +0xba\r\nmain.main()\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/cmd/godoc/main.go:311 +0x192e\r\n\r\ngoroutine 1093 [sleep]:\r\ngolang.org/x/tools/godoc.(*Corpus).refreshMetadataLoop(0xc2080369c0)\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/godoc/meta.go:142 +0x62\r\ncreated by golang.org/x/tools/godoc.(*Corpus).Init\r\n        /private/tmp/go20150526-58358-v7wg96/go/src/golang.org/x/tools/godoc/corpus.go:145 +0x89\r\n```\r\n\r\n[Here](https://gist.githubusercontent.com/jacobsa/b5940132827bf5bbfac6/raw/9717cf2772652f5f0b4076ab8110cc3e13576b5c/gistfile1.txt) is a full log.",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-07-28T03:02:08Z",
+	"created_at": "2015-06-01T01:04:56Z",
+	"updated_at": "2016-08-05T16:09:42Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

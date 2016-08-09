@@ -1,0 +1,12 @@
+{
+	"id": 227415023,
+	"body": "This is working as expected.\r\n\r\nGo does not have its own command line into parameter list converter (not yet). It uses Windows CommandLineToArgvW for that job. And CommandLineToArgvW converts\r\n```\r\n`test.exe \"c:\\test\\\"`\r\n```\r\ninto\r\n```\r\n []string{`test.exe`, `c:\\test\"`}.\r\n```\r\nSee https://msdn.microsoft.com/en-us/library/ms880421 for CommandLineToArgvW rules.\r\n\r\nLuckily we also have new CL https://go-review.googlesource.com/#/c/22932 pending, that replaces call into Windows CommandLineToArgvW with a Go code. I just tried adding your command line to the test there https://go-review.googlesource.com/#/c/22932/2/src/os/exec_windows_test.go@32, and the test still pass. I also printed `out` from the test:\r\n```\r\nC:\\Users\\Alex\u003eu:\\test -test.v -test.run=Command\r\n=== RUN   TestCommandLineToArgv\r\n--- PASS: TestCommandLineToArgv (0.01s)\r\n        exec_windows_test.go:44: out=[\"test\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"a\" \"b\" \"c\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\" \"a\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"123\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\"123\\\"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\"123\" \"456\\\"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\\\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\\\\\"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\\\\\\\\\"\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\\\\\"x\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\"\\\"\\\\\\\"\"]\r\n        exec_windows_test.go:44: out=[\"cmd line\" \"abc\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"\\\\\\\\\\\"x\\\"y z\"]\r\n        exec_windows_test.go:44: out=[\"test\" \"b\" \"x\\ty\"]\r\n        exec_windows_test.go:44: out=[\"test.exe\" \"c:\\\\test\\\"\"]\r\nPASS\r\n\r\nC:\\Users\\Alex\u003e\r\n```\r\nAs you can see, the last line looks just like output of your program.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-21T11:40:36Z",
+	"updated_at": "2016-06-21T11:40:36Z"
+}

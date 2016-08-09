@@ -1,0 +1,12 @@
+{
+	"id": 66087614,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6 by **Neelance**:\n\n\u003cpre\u003eThe approach that go/types uses seems to be consistent, but it is not compatible with\nmath/rand.  In this package there is:\n\nvar globalRand = New(\u0026lockedSource{src: NewSource(1)})\n\n// NewSource returns a new pseudo-random Source seeded with the given value.\nfunc NewSource(seed int64) Source {\n    var rng rngSource\n    rng.Seed(seed)\n    return \u0026rng\n}\n\n// Seed uses the provided seed value to initialize the generator to a deterministic\nstate.\nfunc (rng *rngSource) Seed(seed int64) {\n[...]\n            u ^= rng_cooked[i]\n[...]\n}\n\nvar (\n  // cooked random numbers\n  // the state of the rng\n  // after 780e10 iterations\n  rng_cooked [_LEN]int64 = [...]int64{\n    5041579894721019882, 4646389086726545243, 1395769623340756751, 5333664234075297259,\n[...]\n  }\n)\n\nHere, go/types fails to see the dependency from globalRand to rng_cooked. It may occur\n(in my case it did) that globalRand is initialized before rng_cooked and then Seed will\nonly use zeros instead of the cooked random numbers. What if the same happens to a\npackage like crypto/rand? Then the security of the package would be nondeterministically\nbroken. What I want to say is that even if the decision is that math/rand is wrong\naccording to the specification, it wouldn't be good to allow this kind of mistake so\neasily. Maybe certain operations should be not permitted in initializers?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-05T10:08:45Z",
+	"updated_at": "2014-12-08T10:37:12Z"
+}

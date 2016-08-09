@@ -1,0 +1,25 @@
+{
+	"id": 51281036,
+	"number": 3714,
+	"state": "closed",
+	"title": "exp/notify: data race",
+	"body": "\u003cpre\u003eThreadSanitizer says:\nWARNING: Possible data race during read of size 1 at 0xf840049448: {{{\n   T2 (L{}):\n    #0  exp/inotify.TestInotifyEvents /usr/local/google/home/dvyukov/gorace/go/src/pkg/exp/inotify/inotify_linux_test.go:70\n    #1  testing.tRunner /usr/local/google/home/dvyukov/gorace/go/src/pkg/testing/testing.go:273\n    #2  runtime.goexit /usr/local/google/home/dvyukov/gorace/go/src/pkg/runtime/proc.c:273\n  Concurrent write(s) happened at (OR AFTER) these points:\n   T5 (L{}):\n    #0  exp/inotify._func_002 /usr/local/google/home/dvyukov/gorace/go/src/pkg/exp/inotify/inotify_linux_test.go:52\n    #1  runtime.goexit /usr/local/google/home/dvyukov/gorace/go/src/pkg/runtime/proc.c:273\n  Location 0xf840049448 is 0 bytes inside a block starting at 0xf840049448 of size 8 allocated by T2 from heap:\n    #0  exp/inotify.TestInotifyEvents /usr/local/google/home/dvyukov/gorace/go/src/pkg/exp/inotify/inotify_linux_test.go:46\n    #1  testing.tRunner /usr/local/google/home/dvyukov/gorace/go/src/pkg/testing/testing.go:273\n    #2  runtime.goexit /usr/local/google/home/dvyukov/gorace/go/src/pkg/runtime/proc.c:273\n}}}\n\nThe test uses time.Sleep(1 * time.Second) for synchronization.\nI think it's better to use what is uses later:\n        select {\n        case \u0026lt;-done:\n                t.Log(\u0026quot;event channel closed\u0026quot;)\n        case \u0026lt;-time.After(1 * time.Second):\n                t.Fatal(\u0026quot;event stream was not closed after 1 second\u0026quot;)\n        }\nIt will not only make \u0026quot;more correct\u0026quot;, but also speedup the test.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:19:35Z",
+	"created_at": "2012-06-08T19:35:08Z",
+	"updated_at": "2016-06-24T22:20:09Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 57444185,
+	"number": 9852,
+	"state": "closed",
+	"title": "cmd/gc: reads/writes of two adjacent int16 should be merged",
+	"body": "```\r\n% go version\r\ngo version devel +b3be360 Thu Feb 12 09:53:52 2015 +0000 linux/amd64\r\n```\r\n\r\nSee code here: http://play.golang.org/p/kjdeoQMylE. \r\n\r\nThe generated code for main.g is\r\n\r\n```\r\nTEXT main.g(SB) a.go\r\n        a.go:11 0x400d90        64488b0c25f0ffffff      FS MOVQ FS:0xfffffff0, CX\r\n        a.go:11 0x400d99        483b6110                CMPQ 0x10(CX), SP\r\n        a.go:11 0x400d9d        7707                    JA 0x400da6\r\n        a.go:11 0x400d9f        e89c270400              CALL runtime.morestack_noctxt(SB)\r\n        a.go:11 0x400da4        ebea                    JMP main.g(SB)\r\n        a.go:11 0x400da6        4883ec08                SUBQ $0x8, SP\r\n\r\n        a.go:12 0x400daa        480fb75c2410            MOVZX 0x10(SP), BX ; HERE\r\n        a.go:12 0x400db0        66891c24                MOVW BX, 0(SP)     ; HERE\r\n        a.go:12 0x400db4        480fb75c2412            MOVZX 0x12(SP), BX ; HERE\r\n        a.go:12 0x400dba        66895c2402              MOVW BX, 0x2(SP)   ; HERE\r\n\r\n        a.go:12 0x400dbf        8b5c2414                MOVL 0x14(SP), BX\r\n        a.go:12 0x400dc3        895c2404                MOVL BX, 0x4(SP)\r\n        a.go:12 0x400dc7        e834feffff              CALL main.f(SB)\r\n        a.go:13 0x400dcc        4883c408                ADDQ $0x8, SP\r\n        a.go:13 0x400dd0        c3                      RET\r\n        a.go:13 0x400dd1        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400dd3        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400dd5        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400dd7        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400dd9        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400ddb        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400ddd        0000                    ADDL AL, 0(AX)\r\n        a.go:13 0x400ddf        00                      ?\r\n```\r\n\r\nThe lines I marked with HERE should only be two instructions\r\n````\r\n        a.go:12 0x400dbf        8b5c2410                MOVL 0x10(SP), BX\r\n        a.go:12 0x400dc3        895c2400                MOVL BX, 0x0(SP)\r\n```",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-02-14T05:37:13Z",
+	"created_at": "2015-02-12T10:46:12Z",
+	"updated_at": "2015-08-14T08:29:26Z"
+}

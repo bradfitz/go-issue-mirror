@@ -1,0 +1,33 @@
+{
+	"id": 51286933,
+	"number": 7591,
+	"state": "closed",
+	"title": "runtime: multiword objects can be partially live/nonlive",
+	"body": "\u003cpre\u003eWhen we compute liveness for variables in cmd/gc/plive.c, we do it at the variable\nlevel.  But by the time we get to the assembly level, multi-word variables (strings,\nslices, probably others) are in multiple memory locations.  All memory locations\ncontaining a single variable get set to the same state in the liveness bitmaps.\n\nBut the assembly the compiler generates thinks something different.  For example,\nconsider this program:\n\nvar b = []byte{1,2,3,4,5}\n\nfunc f(n int) int {\n\ts := string(b)\n\truntime.GC()\n\treturn len(s)\n}\n\nOnly s.len is live after the GC call, s.str is never used.  So the compiler never\nbothers to store the pointer returned by the string constructor to s.str.  At the GC\ncall, s is half-initialized.  But both words are marked as live so GC will use s.str as\na root.\n\n        ...\n\t0x0019 00025 (/usr/local/google/home/khr/go/livelen.go:7)\tMOVQ\t$0,40(SP)\n\t0x0022 00034 (/usr/local/google/home/khr/go/livelen.go:7)\tMOVQ\t$0,48(SP)\n\t0x002b 00043 (/usr/local/google/home/khr/go/livelen.go:7)\tFUNCDATA\t$2,\u0026quot;\u0026quot;.gcargs·0+0(SB)\n\t0x002b 00043 (/usr/local/google/home/khr/go/livelen.go:7)\tFUNCDATA\t$3,\u0026quot;\u0026quot;.gclocals·1+0(SB)\n\t0x002b 00043 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\t\u0026quot;\u0026quot;.b+0(SB),BX\n\t0x0033 00051 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\tBX,(SP)\n\t0x0037 00055 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\t\u0026quot;\u0026quot;.b+8(SB),BX\n\t0x003f 00063 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\tBX,8(SP)\n\t0x0044 00068 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\t\u0026quot;\u0026quot;.b+16(SB),BX\n\t0x004c 00076 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\tBX,16(SP)\n\t0x0051 00081 (/usr/local/google/home/khr/go/livelen.go:8)\tPCDATA\t$0,$40\n\t0x0051 00081 (/usr/local/google/home/khr/go/livelen.go:8)\tPCDATA\t$1,$1\n\t0x0051 00081 (/usr/local/google/home/khr/go/livelen.go:8)\tCALL\t,runtime.slicebytetostring(SB)\n\t0x0056 00086 (/usr/local/google/home/khr/go/livelen.go:8)\tPCDATA\t$0,$-1\n\t0x0056 00086 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\t24(SP),BX  \u0026lt;- this value never gets stored to \u0026quot;\u0026quot;.s+40(SP)\n\t0x005b 00091 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\t32(SP),BX\n\t0x0060 00096 (/usr/local/google/home/khr/go/livelen.go:8)\tMOVQ\tBX,\u0026quot;\u0026quot;.s+48(SP)\n\t0x0065 00101 (/usr/local/google/home/khr/go/livelen.go:9)\tPCDATA\t$0,$0\n\t0x0065 00101 (/usr/local/google/home/khr/go/livelen.go:9)\tPCDATA\t$1,$2\n\t0x0065 00101 (/usr/local/google/home/khr/go/livelen.go:9)\tCALL\t,runtime.GC(SB)\n        ...\n\nThis is currently not breaking the builders because we're over-zeroing on entry at the\nmoment.  But if we use liveness info to prune zeroing, we'll be chasing junk pointers\nduring GC.\n\nI'm not really sure what the right answer here is.  We could force the compiler to store\nall parts of an object whenever any part is live.  Or we could modify the liveness\nbitmaps to accurately account for what parts are live or not.\n\n\u003ca href=\"https://golang.org/issue/7564\"\u003eissue #7564\u003c/a\u003e is related (keeping slice capacity around).\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:42:11Z",
+	"created_at": "2014-03-19T23:39:47Z",
+	"updated_at": "2016-06-25T01:30:21Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

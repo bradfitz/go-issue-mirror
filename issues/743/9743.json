@@ -1,0 +1,21 @@
+{
+	"id": 56091841,
+	"number": 9743,
+	"state": "open",
+	"title": "ponies: Ways to analyze or even enforce data lifetimes",
+	"body": "I wish -race or oracle or a new tool in the spirit of errcheck could help prevent these kinds of mistakes:\r\n\r\n1. io.Writer Write is not allowed to hold on to the buffer past its return. Yet that's an easy bug to cause; e.g. send the buffer on a channel.\r\n\r\n2. Anything that uses sync.Pool (or its own pool) for e.g. incoming network requests, and calls handler functions, has this issue if the handler holds on the value returned to the pool. This might include net/http.Handler Request, ResponseWriter, etc.\r\n\r\n3. As a more complex case, https://github.com/boltdb/bolt has `func (db *DB) View(fn func(*Tx) error) error` where the function passed in can do `val := txn.Bucket(b).Get(key)` and the val []byte is only valid inside that View transaction. It's quite easy to accidentally write\r\n\r\n```go\r\nvar result []byte\r\nget := func(txn *bolt.Tx) error {\r\n    result = txn.Bucket(\"widgets\").Get(\"frobnizer\")\r\n    return nil\r\n}\r\nif err := db.View(get); err != nil { ... }\r\n```\r\n\r\nbut the database is free to reuse the memory pointed to by `result` immediately after `get` returns.\r\n\r\n",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-01-30T22:14:56Z",
+	"updated_at": "2015-04-10T02:01:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

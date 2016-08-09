@@ -1,0 +1,27 @@
+{
+	"id": 51287663,
+	"number": 8092,
+	"state": "closed",
+	"title": "cmd/cgo: misgenerated offsets when passing C-side arguments to winapi functions on windows/386",
+	"body": "\u003cpre\u003epackage main\n// #cgo LDFLAGS: -luser32\n// #include \u0026lt;windows.h\u0026gt;\n// CHAR *title = \u0026quot;Hi\u0026quot;;\n// CHAR *text = \u0026quot;There\u0026quot;;\nimport \u0026quot;C\u0026quot;\nfunc main() {\nC.MessageBox(nil, C.title, C.text, C.MB_OK)\n}\n\nWindows XP shows a generic \u0026quot;this program has stopped working\u0026quot; dialog. In wine,\nthis results in\n\nwine: Unhandled page fault on read access to 0x140d8b6c at address 0xf73f99c6 (thread\n0009), starting debugger...\n\nDisassembling wintest.exe as produced by cross-compiling on linux/amd64 in IDA reveals\nthat our main() function gets compiled to\n\n.text:0040101C                 sub     esp, 14h\n.text:0040101F                 mov     [esp+14h+var_14], 0\n.text:00401026                 mov     ebx, off_45A090       ; correctly points to\nanother pointer which points to the \u0026quot;Hi\u0026quot; string\n.text:0040102C                 mov     ebp, [ebx]\n.text:0040102E                 mov     [esp+14h+var_10], ebp\n.text:00401032                 mov     ebx, off_45A08C       ; incorrectly points to\n0x401000, which is the address of main.main()!\n.text:00401038                 mov     ebp, [ebx]\n.text:0040103A                 mov     [esp+14h+var_C], ebp\n.text:0040103E                 mov     [esp+14h+var_8], 0\n.text:00401046                 call    sub_4010A0            ; main.main() in this case\nwas found and labelled manually; this is the __Cfunc_MessageBoxA the above produced\n\nand the data:\n\n.data:0045A08C off_45A08C      dd offset main_main     ; DATA XREF: main_main+32\u0018r\n.data:0045A090 off_45A090      dd offset off_45A0DC    ; DATA XREF: main_main+26\u0018r\n\n.data:0045A0DC off_45A0DC      dd offset aHi           ; DATA XREF: .data:off_45A090\u0018o\n\nWhat's more, the \u0026quot;There\u0026quot; string is still there, before the \u0026quot;Hi\u0026quot;\nstring:\n\n.text:00440878                 db  54h ; T\n.text:00440879                 db  68h ; h\n.text:0044087A                 db  65h ; e\n.text:0044087B                 db  72h ; r\n.text:0044087C                 db  65h ; e\n.text:0044087D                 db    0\n.text:0044087E aHi             db 'Hi',0               ; DATA XREF: .data:off_45A0DC\u0019o\n\nSwitching to calling MessageBoxA() directly doesn't fix this; it still fails to run. So\ndoes switching to wide strings and MessageBoxW().\n\nThe same happens both on native Windows and when cross-compiling with wine. I also\ndisassembled a native Windows build; it has the same code (though the \u0026quot;Hi\u0026quot;\nstring seems to be missing; I'm probably doing something wrong and will re-evaluate when\nthis issue is fixed).\n\nWindows cgo works fine; a simple program (println(C.WM_ACTIVATE)) works...\n\n\u0026gt;rem windows\n\u0026gt;go version\ngo version go1.3beta2 +aecdc70c44ac Fri May 23 17:39:58 2014 -0700 windows/386\n\u0026gt;gcc --version\ngcc (i686-win32-sjlj, Built by MinGW-W64 project) 4.8.2\nCopyright (C) 2013 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n$ # linux\n$ go version\ngo version go1.3beta2 +aecdc70c44ac Fri May 23 17:39:58 2014 -0700 linux/amd64\n$ i686-w64-mingw32-gcc --version\ni686-w64-mingw32-gcc (GCC) 4.8.2\nCopyright (C) 2013 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nThanks.\u003c/pre\u003e",
+	"user": {
+		"login": "andlabs",
+		"id": 718242,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:44:52Z",
+	"created_at": "2014-05-24T21:24:59Z",
+	"updated_at": "2016-06-25T01:35:17Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

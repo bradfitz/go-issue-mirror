@@ -1,0 +1,12 @@
+{
+	"id": 71712889,
+	"body": "@adg just use `git config remote.origin.url` instead of `git remote -v`. This also halves the code, as we need no parsing, just a check against supported schemes.\r\n\r\n```diff\r\ndiff --git a/src/cmd/go/vcs.go b/src/cmd/go/vcs.go\r\nindex 1cac613..302c990 100644\r\n--- a/src/cmd/go/vcs.go\r\n+++ b/src/cmd/go/vcs.go\r\n@@ -122,32 +122,21 @@ var vcsGit = \u0026vcsCmd{\r\n }\r\n \r\n func gitRemoteRepo(vcsGit *vcsCmd, rootDir string) (remoteRepo string, err error) {\r\n-       outb, err := vcsGit.runOutput(rootDir, \"remote -v\")\r\n+       cmd := \"config remote.origin.url\"\r\n+       errParse := errors.New(\"unable to parse output of git \" + cmd)\r\n+\r\n+       outb, err := vcsGit.runOutput(rootDir, cmd)\r\n        if err != nil {\r\n                return \"\", err\r\n        }\r\n-       out := string(outb)\r\n-\r\n-       // Expect:\r\n-       // origin       https://github.com/rsc/pdf (fetch)\r\n-       // origin       https://github.com/rsc/pdf (push)\r\n-       // use first line only.\r\n-\r\n-       if !strings.HasPrefix(out, \"origin\\t\") {\r\n-               return \"\", fmt.Errorf(\"unable to parse output of git remote -v\")\r\n-       }\r\n-       out = strings.TrimPrefix(out, \"origin\\t\")\r\n-       i := strings.Index(out, \"\\n\")\r\n-       if i \u003c 0 {\r\n-               return \"\", fmt.Errorf(\"unable to parse output of git remote -v\")\r\n-       }\r\n-       out = out[:i]\r\n-       i = strings.LastIndex(out, \" \")\r\n-       if i \u003c 0 {\r\n-               return \"\", fmt.Errorf(\"unable to parse output of git remote -v\")\r\n+       repoUrl := strings.TrimSpace(string(outb))\r\n+       for _, s := range vcsGit.scheme {\r\n+               if strings.HasPrefix(repoUrl, s) {\r\n+                       return repoUrl, nil\r\n+               }\r\n        }\r\n-       out = out[:i]\r\n-       return strings.TrimSpace(string(out)), nil\r\n+       return \"\", errParse\r\n+\r\n }\r\n \r\n```",
+	"user": {
+		"login": "nightlyone",
+		"id": 1767118,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-27T19:37:56Z",
+	"updated_at": "2015-01-27T19:37:56Z"
+}

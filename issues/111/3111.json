@@ -1,0 +1,22 @@
+{
+	"id": 51280135,
+	"number": 3111,
+	"state": "closed",
+	"title": "process.Wait is not returning on SIGSTOP",
+	"body": "by **awalterschulze**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull\u0026quot;, \u0026quot;hg update default\u0026quot;, rebuild, and\nretry\nwhat you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\nfunc testSiggy(t *testing.T, sig syscall.Signal) {\n\ttestName := \u0026quot;TestSIGSTOP2\u0026quot;\n\ttestBinary := os.Args[0]\n\tprocAttr := \u0026amp;os.ProcAttr{\u0026quot;.\u0026quot;, []string{}, []*os.File{os.Stdin, os.Stdout, os.Stderr}, nil}\n\tproc, err := os.StartProcess(testBinary, []string{testBinary, \u0026quot;-test.run=\u0026quot; + testName, \u0026quot;-testing.proc=true\u0026quot;}, procAttr)\n\tif err != nil {\n\t\tt.Fatalf(\u0026quot;Could not start test process\u0026quot;)\n\t}\n\tfmt.Printf(\u0026quot;Process started\\n\u0026quot;)\n\tif err := syscall.Kill(proc.Pid, sig); err != nil {\n\t\tpanic(os.NewSyscallError(\u0026quot;kill\u0026quot;, err))\n\t}\n\tfmt.Printf(\u0026quot;Waiting\\n\u0026quot;)\n\tstate, err := proc.Wait()\n\tfmt.Printf(\u0026quot;Waited\\n\u0026quot;)\n\tif err != nil {\n\t\tt.Fatalf(\u0026quot;Could not wait for test process err = %v\u0026quot;, err)\n\t}\n\tfmt.Printf(\u0026quot;state = %v\\n\u0026quot;, state)\n\tif state.Success() {\n\t\tt.Fatal(\u0026quot;Test process completed\u0026quot;)\n\t}\n}\n\nfunc TestSIGKILL(t *testing.T) {\n\ttestSiggy(t, syscall.SIGKILL)\n}\n\nfunc TestSIGSTOP(t *testing.T) {\n\ttestSiggy(t, syscall.SIGSTOP)\n}\n\nfunc TestSIGSTOPPROC(t *testing.T) {\n\tif !testingProc {\n\t\tfmt.Printf(\u0026quot;\u0026lt;\u0026lt;\u0026lt; N/A TestSIGSTOP2\\n\u0026quot;)\n\t\treturn\n\t}\n\tfmt.Printf(\u0026quot;\u0026gt;\u0026gt;\u0026gt; STARTING SIGSTOP2\\n\u0026quot;)\n\ttime.Sleep(math.MaxInt64)\n\tfmt.Printf(\u0026quot;!!! Test Process Completed\\n\u0026quot;)\n}\n\nvar (\n\ttestingProc = false\n)\n\nfunc init() {\n\tflag.BoolVar(\u0026amp;testingProc, \u0026quot;testing.proc\u0026quot;, false, \u0026quot;only run these tests if flag is set\u0026quot;)\n}\n\nWhat is the expected output?\nTestSIGKILL and TestSIGSTOP should pass\n\nWhat do you see instead?\nTestSIGKILL passed, but TestSIGSTOP hangs, since proc.Wait() is not returning\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n\nWhich operating system are you using?\nFedora\n\nWhich revision are you using?  (hg identify)\n23 Feb 2012\n\nPlease provide any additional information below.\nThis working in a previous version of go\nos.Wait(pid, os.WSTOPPED)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:16:12Z",
+	"created_at": "2012-02-23T08:22:07Z",
+	"updated_at": "2016-06-24T21:28:33Z"
+}

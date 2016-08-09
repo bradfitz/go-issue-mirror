@@ -1,0 +1,27 @@
+{
+	"id": 51287298,
+	"number": 7847,
+	"state": "closed",
+	"title": "net/http: leaked Transport in tests ",
+	"body": "\u003cpre\u003eThe net/http package tests fail quite consistently with \n\u0026quot;Test appears to have leaked a Transport\u0026quot;\n\nWhat does 'go version' print?\ngo version devel +f613443bb13a Tue Apr 22 21:12:15 2014 -0700 linux/amd64\n(tip)\n\nWhat steps reproduce the problem?\nRun the following tests a few times. It reproduces roughly once every 10 runs.\ngo test -v net/http\n-run=\u0026quot;TestTransportCancelRequest$|TestTransportSocketLateBinding\u0026quot;\n\nWhat happened?\n=== RUN TestTransportCancelRequestInDial\n--- PASS: TestTransportCancelRequestInDial (0.00 seconds)\n=== RUN TestTransportSocketLateBinding\n--- FAIL: TestTransportSocketLateBinding (1.21 seconds)\n\tz_last_test.go:96: Test appears to have leaked a Transport:\n\t\tnet.runtime_pollWait(0x7f2d5a7a0938, 0x72, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/runtime/netpoll.goc:146 +0x66\n\t\tnet.(*pollDesc).Wait(0xc208043020, 0x72, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_poll_runtime.go:84 +0x46\n\t\tnet.(*pollDesc).WaitRead(0xc208043020, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_poll_runtime.go:89 +0x42\n\t\tnet.(*netFD).Read(0xc208042fc0, 0xc20828f000, 0x1000, 0x1000, 0x0, 0x7f2d5a79f408, 0xb)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_unix.go:232 +0x30e\n\t\tnet.(*conn).Read(0xc20805c0f8, 0xc20828f000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/net.go:122 +0xe7\n\t\tnet/http.noteEOFReader.Read(0x7f2d5a7a0cb8, 0xc20805c0f8, 0xc208060688, 0xc20828f000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/transport.go:1200 +0x7a\n\t\tnet/http.(*noteEOFReader).Read(0xc208058e60, 0xc20828f000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/chunked.go:1 +0xdf\n\t\tbufio.(*Reader).fill(0xc208046c00)\n\t\t\t/home/gustav/go.tip/src/pkg/bufio/bufio.go:97 +0x1a2\n\t\tbufio.(*Reader).Peek(0xc208046c00, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/bufio/bufio.go:132 +0x101\n\t\tnet/http.(*persistConn).readLoop(0xc208060630)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/transport.go:779 +0x9e\n\t\tcreated by net/http.(*Transport).dialConn\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/transport.go:597 +0x912\n\t\t\n\t\tnet.runtime_pollWait(0x7f2d5a7a0a98, 0x72, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/runtime/netpoll.goc:146 +0x66\n\t\tnet.(*pollDesc).Wait(0xc2080431e0, 0x72, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_poll_runtime.go:84 +0x46\n\t\tnet.(*pollDesc).WaitRead(0xc2080431e0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_poll_runtime.go:89 +0x42\n\t\tnet.(*netFD).Read(0xc208043180, 0xc2084b1000, 0x1000, 0x1000, 0x0, 0x7f2d5a79f408, 0xb)\n\t\t\t/home/gustav/go.tip/src/pkg/net/fd_unix.go:232 +0x30e\n\t\tnet.(*conn).Read(0xc20805c100, 0xc2084b1000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/net.go:122 +0xe7\n\t\tnet/http.(*liveSwitchReader).Read(0xc208068628, 0xc2084b1000, 0x1000, 0x1000, 0x54cfbb, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/server.go:206 +0xc4\n\t\tio.(*LimitedReader).Read(0xc208058ee0, 0xc2084b1000, 0x1000, 0x1000, 0x7f2d5a793d80, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/io/io.go:399 +0xcd\n\t\tbufio.(*Reader).fill(0xc208046c60)\n\t\t\t/home/gustav/go.tip/src/pkg/bufio/bufio.go:97 +0x1a2\n\t\tbufio.(*Reader).ReadSlice(0xc208046c60, 0x53880a, 0x0, 0x0, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/bufio/bufio.go:295 +0x2ad\n\t\tbufio.(*Reader).ReadLine(0xc208046c60, 0x0, 0x0, 0x0, 0x7f2d5a794a00, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/bufio/bufio.go:313 +0x9c\n\t\tnet/textproto.(*Reader).readLineSlice(0xc208292450, 0x0, 0x0, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/textproto/reader.go:55 +0x9d\n\t\tnet/textproto.(*Reader).ReadLine(0xc208292450, 0x0, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/textproto/reader.go:36 +0x4b\n\t\tnet/http.ReadRequest(0xc208046c60, 0xc208084820, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/request.go:556 +0xac\n\t\tnet/http.(*conn).readRequest(0xc208068600, 0x0, 0x0, 0x0)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/server.go:577 +0x20b\n\t\tnet/http.(*conn).serve(0xc208068600)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/server.go:1134 +0x57b\n\t\tcreated by net/http.(*Server).Serve\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/server.go:1723 +0x2ea\n\t\t\n\t\tnet/http.(*persistConn).writeLoop(0xc208060630)\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/transport.go:882 +0x336\n\t\tcreated by net/http.(*Transport).dialConn\n\t\t\t/home/gustav/go.tip/src/pkg/net/http/transport.go:598 +0x92a\nFAIL\nexit status 1\nFAIL\tnet/http\t1.211s\n\nWhat should have happened instead?\n=== RUN TestTransportCancelRequestInDial\n--- PASS: TestTransportCancelRequestInDial (0.00 seconds)\n=== RUN TestTransportSocketLateBinding\n--- PASS: TestTransportSocketLateBinding (0.45 seconds)\nPASS\nok  \tnet/http\t0.455s\n\nPlease provide any additional information below.\n$ uname -a\nLinux gpaul-dell 3.13.9-100.fc19.x86_64 #1 SMP Fri Apr 4 00:51:59 UTC 2014 x86_64 x86_64\nx86_64 GNU/Linux\u003c/pre\u003e",
+	"user": {
+		"login": "gpaul",
+		"id": 442,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:43:33Z",
+	"created_at": "2014-04-23T12:19:39Z",
+	"updated_at": "2016-06-25T01:32:55Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

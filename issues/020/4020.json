@@ -1,0 +1,27 @@
+{
+	"id": 51281521,
+	"number": 4020,
+	"state": "closed",
+	"title": "runtime: FileLine result is incorrect for addresses within init() functions that span files",
+	"body": "\u003cpre\u003eReflection over the callstack reports incorrect file/line information for init()\nfunctions that span source files.  The filename is always that of the source file\ncontaining the first statement of init(), and the line number is garbage, often negative.\n\nThe compiler and linker are doing the right thing; the problem is in runtime/symtab.c,\nwhich is making the simplifying assumption that \u0026quot;we don't need the full generality\nof the z entry history stack because there are no includes in go\u0026quot;, i.e. every\nfunction (Func) is associated with exactly one file.  Because init() can be spread\nacross files, this assumption is false.\n\nLuckily the public interfaces are all sound, but the following changes are required:\n\n(1) symtab.c: push each 'z' symbol on a spaghetti stack associated with the object file.\n Don't throw the previous stack away each time we encounter a new start-of-object\n(z.value=1) symbol.\n(2) symtab.c: to convert a composite line number (z.value) to a source line, invert the\nspaghetti stack to a tree and visit it depth-first until the file containing the z.value\nis found; then subtract the deltas for each file on the path via which it was found.\n(3) extern.go: reflect the changes to the underlying C code.\n\nWhile you're there, you may want to support 'Z' symbols (#line directives).\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4020/0/bug.tar.bz2\"\u003ebug.tar.bz2\u003c/a\u003e (678 bytes)",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:21:19Z",
+	"created_at": "2012-08-29T17:50:31Z",
+	"updated_at": "2016-06-24T22:23:54Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

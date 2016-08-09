@@ -1,0 +1,31 @@
+{
+	"id": 166653027,
+	"number": 16450,
+	"state": "open",
+	"title": "net/http: http.Server.ReadTimeout never reset in http2",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo1.7rc2\r\ngo1.6.3\r\ngo1.6 if you use http2 (custom Transport without ExpectContinueTimeout)\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux_amd64\r\n\r\n3. What did you do?\r\n\r\nhttps://play.golang.org/p/7nC5EIVRCq  (change `my_cert`, `my_key` and `my_host`)\r\nSet a `ReadTimeout` on `http.Server`. Make several requests to the server using the same client (so that the TCP conn is re-used). With http2 program exits with 'unexpected EOF' after `ReadTimeout`.\r\n\r\n4. What did you expect to see? 5. What did you see instead?\r\n\r\nProgram should run forever.\r\n\r\nThis works:\r\n\u003e GODEBUG=http2client=0 go run the_file.go\r\n\r\nThis fails:\r\n\u003e go run the_file.go\r\n\r\nProgram exits after `ReadTimeout` because the TCP connection hits it's deadline, is closed. This means that in http2 `ReadTimeout` applies not to a single request but to the keep-alive connection.\r\n\r\nThe deadline is set here during TLS handshake: https://github.com/golang/go/blob/master/src/net/http/server.go#L1501-L1503\r\n\r\nIn http1 case the deadline is reset every request: https://github.com/golang/go/blob/master/src/net/http/server.go#L743-L751\r\n\r\nIn http2 it is never reset. I suspect the solution is to reset the deadline here: https://github.com/golang/net/blob/master/http2/server.go#L579-L602\r\n\r\nThere is a similar problem with `WriteTimeout`. The example program will hang after `WriteTimeout`.\r\n\r\nThis was fixed for http1 in #4676.",
+	"user": {
+		"login": "grahamking",
+		"id": 180418,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-07-20T18:44:32Z",
+	"updated_at": "2016-07-21T03:13:09Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

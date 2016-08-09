@@ -1,0 +1,12 @@
+{
+	"id": 66088716,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eThanks.  What I see is this:\n\nSCHED 3ms: gomaxprocs=1 idleprocs=0 threads=4 idlethreads=0 runqueue=0 gcwaiting=0\nnmidlelocked=1 nmspinning=0 stopwait=0 sysmonwait=0\n  P0: status=0 schedtick=4 syscalltick=4 m=-1 runqsize=1/128 gfreecnt=0\n  M3: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M2: p=-1 curg=2 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M1: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=1 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M0: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=1\n  G1: status=4(chan receive) m=-1 lockedm=0\n  G2: status=3() m=2 lockedm=-1\n  G3: status=1(chan send) m=-1 lockedm=-1\n\nG3 is runnable but no M is running it.  That never changes.  For some reason when G3\nbecame runnable no M picked it up.  The \"chan send\" means that it was sleeping on a\nchannel send.  Presumably G1 received the value.  At that point G3 was woken up in\nruntime_ready.  It was added to P0's runtime queue, where we see it.  When G1 went to\nsleep on another channel receive, G0 should have started running.  Because G3 is locked\nto an M due to LockOSThread (lockedm=0) the code in park0 in proc.c would have called\nstoplockedm.  That would have released P0 from M0.  And P0 should have started running\nG3 from its queue.  Somehow that didn't happen.\n\nI would guess that the most likely problem is something to do with runtime_notewakeup\nand runtime_notesleep in runtime/lock_futex.c.  I would suggest looking at the\ndisassembly of those routines closely to see if they are doing correct atomic operatoins\nfor ARM.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-04T01:27:17Z",
+	"updated_at": "2014-12-08T10:38:12Z"
+}

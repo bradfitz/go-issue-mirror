@@ -1,0 +1,12 @@
+{
+	"id": 88247703,
+	"body": "well, this is not a escape analysis bug per-se.\n\nFor example, the example function call C.Foo(\u0026buf) in the issue report\ngets translated to a call to this func:\nfunc _Cfunc_Foo(p0 *_Ctype_struct_Buf) (r1 _Ctype_void) {\n        _cgo_runtime_cgocall_errno(_cgo_0b9ef0be51ea_Cfunc_Foo,\nuintptr(unsafe.Pointer(\u0026p0)))\n        return\n}\n\nAnd you can see the p0 really is not escaping.\nWe should add something like:\n        use(unsafe.Pointer(p0))\nwhere use is defined in assembly as a NOP, and have the prototype:\nfunc use(unsafe.Pointer)\n\nJust like what we did for the syscall package.\n\nThe reason I think it is not done is that we still are not clear about what\nkind of\nguarantee we want to provide for passing Go pointers to C code. In the pass\nwe talked about always making a copy, but apparently that proposal is\ndismissed\nafter hearing severe opposing voice from the community.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-31T21:06:53Z",
+	"updated_at": "2015-03-31T21:06:53Z"
+}

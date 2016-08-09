@@ -1,0 +1,12 @@
+{
+	"id": 66091800,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThis DTrace script confirms my hypothesis:\n\n    #!/usr/sbin/dtrace -qs\n    \n    #pragma D option bufsize=16m\n    \n    syscall::*connect*:entry,\n    syscall::*accept*:return,\n    syscall::*socket*:return,\n    syscall::close:entry,\n    syscall::shutdown:entry\n    /pid == $target/\n    {\n    \tprintf(\"%d %d %d %s: fd=%d\\n\", timestamp, cpu, tid, probefunc, arg0)\n    }\n    \n    pid$target::port_associate:entry,\n    pid$target::port_dissociate:entry\n    {\n    \tprintf(\"%d %d %d %s: fd=%d\\n\", timestamp, cpu, tid, probefunc, arg2)\n    }\n    \n    pid$target::port_associate:return {\n    \tprintf(\"%d %d %d %s: ret=%d, err: %d\\n\", timestamp, cpu, tid, probefunc, arg1, errno)\n    }\n    \n    pid$target:a.out:runtime*throw:entry,\n    pid$target:a.out:runtime*netpollupdate:entry\n    {\n    \tprintf(\"%d %d %d %s\\n\", timestamp, cpu, tid, probefunc)\n    }\n\nIt produces this output:\n\n    8012180560989292 5 9 runtime.netpollupdate\n    8012180560990449 8 1 port_dissociate: fd=7\n    8012180560994819 5 9 port_associate: fd=7\n    8012180560996355 8 1 close: fd=7\n    8012180561000587 5 9 port_associate: ret=-1, err: 81\n    8012180561004031 8 1 port_dissociate: fd=6\n    8012180561009313 8 1 close: fd=6\n    8012180561015050 8 1 port_dissociate: fd=5\n    8012180561019511 8 1 close: fd=5\n    8012180561042683 5 9 runtime.throw\n\nFields are timestamp, cpu it's running on, thread id, function,\narguments or return values.\n\nThread #9 enters netpollupdate and calls port_associate with fd=7, before\nport_associate returns, thread #1 calls close on fd=7. port_associate\nreturns on thread #9 with EBADFD.\n\nWhat happens here is that the netpoller is unblocked in the normal I/O\nshutdown procedure. The netpoller runs in its own thread; closing the file\ndescriptor happens in a different thread. The Solaris network poller has\nto re-arm itself because it uses level-triggered I/O. It indiscriminately\nre-arms itself, it doesn't check the reason for the wakeup.\n\nThe fix is simple, make Solaris runtime·netpollupdate check if the\nPollDesc is closing and don't re-arm in that case. runtime_pollUnblock\nwill set it to closing before unblocking the poller.\u003c/pre\u003e",
+	"user": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-26T18:15:14Z",
+	"updated_at": "2014-12-08T10:41:11Z"
+}

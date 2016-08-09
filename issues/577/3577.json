@@ -1,0 +1,33 @@
+{
+	"id": 51280829,
+	"number": 3577,
+	"state": "closed",
+	"title": "encoding/base64: SetReadDeadline fails to set deadline on socket when piped thru base64 decoder",
+	"body": "by **branimirkaradzic**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nConnect client to server, expect base64 encoded stream from client, but do not send any\ndata from client to server.\n\nSetReadDeadline fails to set deadline on socket when piped thru base64 decoder. When\nusing socket without piping thru decoder it works properly. Incoming client connection\nis not sending any data to server. Read should time out every 8 seconds since it's not\ngetting data, but it seems that deadline except first two times is not respected at all.\n\nCode looks like (sorry for just snippets of code, didn't have time to make simple repro):\n\n\t\t\tnowNs := time.Now().UnixNano()\n\t\t\tnextNs := nowNs + 4e9\n\t\t\tvar recvs uint64\n\n\t\t\t// rw is net.Conn\n\t\t\tdec = base64.NewDecoder(base64.StdEncoding, rw) // BUG\n\n\t\t\tfor valid {\n\n\t\t\t\trw.SetReadDeadline(time.Now().Add(time.Duration(8e9)))\n\t\t\t\tsize, err = dec.Read(conn.buf[conn.write : MaxConnectionBufferSize-1]) // BUG\n\n\t\t\t\t// size, err = rw.Read(conn.buf[conn.write : MaxConnectionBufferSize-1]) // WORKS\n\n\t\t\t\t// ...\n\n\t\t\t\trecvs++\n\t\t\t\tnowNs = time.Now().UnixNano()\n\t\t\t\tif nowNs \u0026gt; nextNs {\n\t\t\t\t\tnextNs += 4e9\n\t\t\t\t\tcommon.LogPrint(\u0026quot;Recvs in 4secs: \u0026quot;, recvs)\n\t\t\t\t}\n\n\t\t\t\t// ...\n\t\t\t}\n\n\n\nWhat is the expected output?\n\nTCP/Socket Expected\n\n2012/04/28 20:41:07 Recvs in 4secs: 1\n2012/04/28 20:41:15 Recvs in 4secs: 2\n2012/04/28 20:41:23 Recvs in 4secs: 3\n2012/04/28 20:41:31 Recvs in 4secs: 4\n2012/04/28 20:41:39 Recvs in 4secs: 5\n2012/04/28 20:41:47 Recvs in 4secs: 6\n2012/04/28 20:41:55 Recvs in 4secs: 7\n2012/04/28 20:42:03 Recvs in 4secs: 8\n2012/04/28 20:42:11 Recvs in 4secs: 9\n2012/04/28 20:42:19 Recvs in 4secs: 10\n2012/04/28 20:42:27 Recvs in 4secs: 11\n2012/04/28 20:42:35 Recvs in 4secs: 12\n2012/04/28 20:42:43 Recvs in 4secs: 13\n2012/04/28 20:42:51 Recvs in 4secs: 14\n\nWhat do you see instead?\n\nWebSocket (base64 decoded) BUG\n\n2012/04/28 20:39:02 Recvs in 4secs: 1\n2012/04/28 20:39:02 Recvs in 4secs: 2\n2012/04/28 20:39:06 Recvs in 4secs: 11736743\n2012/04/28 20:39:10 Recvs in 4secs: 23067466\n2012/04/28 20:39:14 Recvs in 4secs: 34411471\n2012/04/28 20:39:18 Recvs in 4secs: 45633855\n2012/04/28 20:39:22 Recvs in 4secs: 57184139\n2012/04/28 20:39:26 Recvs in 4secs: 68857818\n2012/04/28 20:39:30 Recvs in 4secs: 80664859\n2012/04/28 20:39:34 Recvs in 4secs: 92219575\n2012/04/28 20:39:38 Recvs in 4secs: 103553508\n2012/04/28 20:39:42 Recvs in 4secs: 115327688\n2012/04/28 20:39:46 Recvs in 4secs: 127280610\n2012/04/28 20:39:50 Recvs in 4secs: 138754879\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux\n\nWhich version are you using?  (run 'go version')\ngo version go1.0.1\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"closed_at": "2014-12-08T10:18:49Z",
+	"created_at": "2012-04-29T04:09:42Z",
+	"updated_at": "2016-08-05T16:08:07Z",
+	"milestone": {
+		"id": 1067193,
+		"number": 9,
+		"title": "Go1.0.2"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 117129082,
+	"number": 13271,
+	"state": "closed",
+	"title": "runtime: map key hashing is slow for compound types (array/struct)",
+	"body": "It seems that map[[8]byte]int is much slower than map[uint64]int purely because of the time spent on hashing the key.\r\n\r\nconsider this benchmark\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"testing\"\r\n\r\n\t//\r\n\t\"reflect\"\r\n\t\"unsafe\"\r\n)\r\n\r\nfunc BenchmarkMap1S(b *testing.B) {\r\n\tm := make(map[string]int)\r\n\r\n\tk_tmp := [12]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1}\r\n\tk := string(k_tmp[:])\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap1S3U(b *testing.B) {\r\n\tm := make(map[string]int)\r\n\r\n\tk_tmp := [3]uint32{0, 1, 2}\r\n\th := reflect.StringHeader{Data: uintptr(unsafe.Pointer(\u0026k_tmp[0])), Len: len(k_tmp) * int(unsafe.Sizeof(k_tmp[0]))}\r\n\tk := *(*string)(unsafe.Pointer(\u0026h))\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\thh := reflect.StringHeader{Data: uintptr(unsafe.Pointer(\u0026k_tmp[0])), Len: 12}\r\n\t\tkk := *(*string)(unsafe.Pointer(\u0026hh))\r\n\t\tcounter += m[kk]\r\n\t}\r\n}\r\nfunc BenchmarkMap1Str3U(b *testing.B) {\r\n\tm := make(map[string]int)\r\n\r\n\tk_tmp := [3]uint32{0, 1, 2}\r\n\th := (*[12]byte)(unsafe.Pointer(\u0026k_tmp[0]))\r\n\tk := string(h[:])\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\thh := (*[12]byte)(unsafe.Pointer(\u0026k_tmp[0]))\r\n\t\tkk := string(hh[:])\r\n\t\tcounter += m[kk]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap12C(b *testing.B) {\r\n\tm := make(map[[12]byte]int)\r\n\r\n\tk := [12]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1}\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap3U(b *testing.B) {\r\n\tm := make(map[[3]uint32]int)\r\n\r\n\tk := [3]uint32{0, 1, 2}\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap2L(b *testing.B) {\r\n\tm := make(map[[2]uint64]int)\r\n\r\n\tk := [2]uint64{1234, 456}\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap1L(b *testing.B) {\r\n\tm := make(map[uint64]int)\r\n\r\n\tk := uint64(1234)\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc BenchmarkMap1K(b *testing.B) {\r\n\tm := make(map[interface{}]int)\r\n\r\n\tk := \u0026struct {\r\n\t\tk interface{}\r\n\t}{k: 1234}\r\n\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\ntype M struct {\r\n\tk uint64\r\n}\r\n\r\nfunc BenchmarkMap1M(b *testing.B) {\r\n\tm := make(map[M]int)\r\n\r\n\tk := M{1234}\r\n\r\n\tm[k] = 1\r\n\r\n\tb.ResetTimer()\r\n\r\n\tcounter := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tcounter += m[k]\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\r\n}\r\n```\r\n\r\nmy results for this benchmark are as follows\r\n```\r\nBenchmarkMap1S-4        200000000                6.36 ns/op            0 B/op          0 allocs/op\r\nBenchmarkMap1S3U-4      200000000                7.56 ns/op            0 B/op          0 allocs/op\r\nBenchmarkMap1Str3U-4    50000000                27.6 ns/op             0 B/op          0 allocs/op\r\nBenchmarkMap12C-4       50000000                27.0 ns/op             0 B/op          0 allocs/op\r\nBenchmarkMap3U-4        50000000                27.3 ns/op             0 B/op          0 allocs/op\r\nBenchmarkMap2L-4        50000000                26.3 ns/op             0 B/op          0 allocs/op\r\nBenchmarkMap1L-4        300000000                5.26 ns/op            0 B/op          0 allocs/op\r\nBenchmarkMap1K-4        50000000                28.0 ns/op             0 B/op          0 allocs/op\r\nBenchmarkMap1M-4        100000000               16.1 ns/op             0 B/op          0 allocs/op\r\n```\r\nWould love if compiler would recognize that compound types memory layout is flat and hash them as byte arrays.\r\nWe currently use workaround like BenchmarkMap1S3U (with map sets constructing real GC visible strings) which is fugly.\r\n\r\ntested on go versions 1.4 and 1.5.1",
+	"user": {
+		"login": "anton-povarov",
+		"id": 4687144,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2015-12-07T20:14:22Z",
+	"created_at": "2015-11-16T13:58:18Z",
+	"updated_at": "2015-12-07T20:14:22Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

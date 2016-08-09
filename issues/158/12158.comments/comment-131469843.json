@@ -1,0 +1,12 @@
+{
+	"id": 131469843,
+	"body": "I suspect that the reason moving the C.z_stream into the C heap fixed the problem is that the C.z_stream contains pointers back into the Go heap (next_in, next_out) that have been advanced beyond the original allocation. In C it is legal to allocate n bytes and then store p+n in a data structure. In Go it is not: p+n may point at the next allocated block in memory - it points outside the original allocation. By moving those pointers into the C heap you hide them from the GC and the GC no longer complains. It is an interesting failure mode for us to consider. (/cc @ianlancetaylor @RLH @dr2chase @aclements)\r\n\r\nIf your code is now working with the C.z_stream moved out, then I think there's not much more for us to do here. In that case please close this issue. We're going to work on defining exactly what to expect from cgo in Go 1.6, and this is good input for us. Thank you. \r\n\r\nIf you are still seeing crashes, please let us know. If you just want to move on, you can set GODEBUG=invalidptr=0 in your environment to turn off this diagnostic + crash. But it is probably not a good idea to ignore - it means something is wrong that could break in a more serious way later.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-15T23:43:50Z",
+	"updated_at": "2015-08-15T23:43:50Z"
+}

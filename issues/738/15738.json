@@ -1,0 +1,27 @@
+{
+	"id": 155627960,
+	"number": 15738,
+	"state": "open",
+	"title": "gccgo: go test -compiler gccgo github.com/golang/protobuf/proto fails",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\nmwhudson@aeglos:~$ gccgo-5 --version\r\ngccgo-5 (Ubuntu 5.3.1-14ubuntu2) 5.3.1 20160413\r\nCopyright (C) 2015 Free Software Foundation, Inc.\r\nThis is free software; see the source for copying conditions.  There is NO\r\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\r\n\r\nmwhudson@aeglos:~$ gccgo-6 --version\r\ngccgo-6 (Ubuntu 6.0.1-0ubuntu1) 6.0.0 20160414 (experimental) [trunk revision 234994]\r\nCopyright (C) 2016 Free Software Foundation, Inc.\r\nThis is free software; see the source for copying conditions.  There is NO\r\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nUbuntu 16.04\r\n\r\n3. What did you do?\r\n\r\ngo get github.com/golang/protobuf/...\r\ngo test -compiler gccgo github.com/golang/protobuf/proto\r\n\r\n4. What did you expect to see?\r\n\r\nok  \tgithub.com/golang/protobuf/proto\t0.028s\r\n\r\n5. What did you see instead?\r\n\r\n```\r\nmwhudson@aeglos:~$ go test -compiler gccgo github.com/golang/protobuf/proto\r\npanic: runtime error: assignment to entry in nil map\r\n\r\ngoroutine 16 [running]:\r\nruntime_dopanic\r\n\t../../../src/libgo/runtime/panic.c:131\r\n__go_panic\r\n\t../../../src/libgo/runtime/go-panic.c:111\r\nruntime_panicstring\r\n\t../../../src/libgo/runtime/panic.c:216\r\n__go_map_index\r\n\t../../../src/libgo/runtime/go-map-index.c:94\r\ngithub_com_golang_protobuf_proto.RegisterType\r\n\t/opt/opensource/gopath/src/github.com/golang/protobuf/proto/properties.go:838\r\nany.$init0\r\n\t/opt/opensource/gopath/src/github.com/golang/protobuf/ptypes/any/any.pb.go:94\r\ngithub_com_golang_protobuf_ptypes_any..import\r\n\t/opt/opensource/gopath/src/github.com/golang/protobuf/ptypes/any/any.pb.go:93\r\n__go_init_main\r\n\t/tmp/go-build202436886/github.com/golang/protobuf/proto/_test/_testmain.go:2\r\nruntime_main\r\n\t../../../src/libgo/runtime/proc.c:604\r\n\r\ngoroutine 17 [runnable]:\r\nkickoff\r\n\t../../../src/libgo/runtime/proc.c:232\r\ncreated by runtime_main\r\n\t../../../src/libgo/runtime/proc.c:598\r\n\r\ngoroutine 18 [runnable]:\r\nkickoff\r\n\t../../../src/libgo/runtime/proc.c:232\r\ncreated by runtime_createfing\r\n\t../../../src/libgo/runtime/mgc0.c:2577\r\nFAIL\tgithub.com/golang/protobuf/proto\t0.066s\r\n```\r\n\r\nThe failing code is from \"github.com/golang/protobuf/proto\":\r\n\r\n```go\r\n// RegisterType is called from generated code and maps from the fully qualified\r\n// proto name to the type (pointer to struct) of the protocol buffer.\r\nfunc RegisterType(x Message, name string) {\r\n\tif _, ok := protoTypes[name]; ok {\r\n\t\t// TODO: Some day, make this a panic.\r\n\t\tlog.Printf(\"proto: duplicate proto type registered: %s\", name)\r\n\t\treturn\r\n\t}\r\n\tt := reflect.TypeOf(x)\r\n\tprotoTypes[name] = t // \u003c---- crashing here!\r\n\trevProtoTypes[t] = name\r\n}\r\n```\r\n\r\nprotoTypes is initialized in a global var block:\r\n\r\n```go\r\n// A registry of all linked message types.\r\n// The string is a fully-qualified proto name (\"pkg.Message\").\r\nvar (\r\n\tprotoTypes    = make(map[string]reflect.Type)\r\n\trevProtoTypes = make(map[reflect.Type]string)\r\n)\r\n```\r\n\r\nIt is called from an init function in \"github.com/golang/protobuf/ptypes/any/\":\r\n\r\n```go\r\nfunc init() {\r\n\tproto.RegisterType((*Any)(nil), \"google.protobuf.Any\")\r\n}\r\n```\r\n\r\nSo it looks like this init function is being called before that of \"github.com/golang/protobuf/proto\", which seems reasonably impossible (and indeed, I can't reproduce this in a trivial test case).",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "thanm",
+		"id": 12280172,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"created_at": "2016-05-19T00:02:30Z",
+	"updated_at": "2016-07-28T20:07:35Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

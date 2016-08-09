@@ -1,0 +1,12 @@
+{
+	"id": 236186175,
+	"body": "I think we should share correct behavior of the function at first.\r\nHere is `mklink`'s behavior on windows 10. ( I hope it is applicable to other versions)\r\n\r\n|Command|PrintName|SubstituteName|Flags|\r\n|----------|-----------|----------------|-----|\r\n|mklink link test|test|test|1|\r\n|mklink link \\work\\test|\\work\\test|\\work\\test|1|\r\n|mklink link C:test|C:\\work\\test|\\??\\C:\\work\\test|0|\r\n|mklink link C:\\work\\test|C:\\work\\test|\\??\\C:\\work\\test|0|\r\n|mklink link \\\\\\\\localhost\\work|\\\\\\\\localhost\\work|\\??\\UNC\\localhost\\work|0|\r\n|(`syscall.CreateSymbolicLink` results are same as above)||||\r\n|||||\r\n|mklink link test /J|\r\n|mklink link \\work\\test /J|\r\n|mklink link C:test /J|\r\n|mklink link C:\\work\\test /J|C:\\work\\test|\\??\\C:work\\test||\r\n\r\nSo,  I think `CreateSymbolicLink` should behave like this:\r\n\r\n```go\r\nfunc CreateSymbolicLink(link, target string) {\r\n  ...\r\n  // build reparse data buffer\r\n  volume := filepath.VolumeName(target)\r\n  switch len(volume) {\r\n  case 0:\r\n    // set PrintName to target\r\n    // set SubstituteName to target\r\n    // set Flags to 1\r\n  case 2:\r\n    target = filepath.Abs(target)\r\n    // set PrintName to target\r\n    // set SubstituteName to \"\\??\\\" + target\r\n  default: // isUNC\r\n    // set PrintName to target\r\n    // set SubstituteName to \"\\??\\UNC\" + target[1:]\r\n  }\r\n  ...\r\n}\r\n```\r\n\r\nAnd,\r\n\r\n```go\r\nfunc CreateMountPoint(link, target string) {\r\n  ...\r\n  // build reparse data buffer\r\n  target = filepath.Abs(target)\r\n  // set PrintName to target\r\n  // set SubstituteName to \"\\??\\\" + target\r\n  ...\r\n}\r\n```",
+	"user": {
+		"login": "hirochachacha",
+		"id": 898442,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-29T13:53:45Z",
+	"updated_at": "2016-07-30T01:01:38Z"
+}

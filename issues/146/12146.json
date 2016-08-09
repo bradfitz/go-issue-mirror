@@ -1,0 +1,30 @@
+{
+	"id": 100922633,
+	"number": 12146,
+	"state": "closed",
+	"title": "encoding/json: allow non-string map keys that implement encoding.TextMarshaler/TextUnmarshaler",
+	"body": "Original discussion at https://groups.google.com/forum/#!searchin/golang-dev/json$20map/golang-dev/5gSHNrJQpUI/vZGSGRmUrC0J\r\n\r\nCurrently, json.Marshal will fail to marshal Go maps that have non-string keys, e.g.:\r\n\r\n    // http://play.golang.org/p/2m9wLZATqw\r\n    type Coord struct { X,Y int }\r\n    occupied := map[Coord]bool{}\r\n    occupied[Coord{1,2}] = true\r\n    data, err := json.Marshal(occupied)\r\n    fmt.Printf(\"Data: %s\\nErr: %v\", data, err)\r\n\r\nI propose to enhance the encoding/json package such that:\r\n  1. for `json.Marshal`\r\n    * If the map key is a string kind it is used directly.\r\n    * Otherwise if the map key satisfies the encoding.TextMarshaler interface then that is used to generate the map key.\r\n    * Otherwise it fails as it does today.\r\n  2. for `json.Unmarshal`\r\n    * If the map key is a string kind it is written directly.\r\n    * Otherwise if the map key satisfies the encoding.TextUnmarshaler interface then that is used to decode the map key.\r\n    * Otherwise it fails as it does today.\r\n\r\nExample\r\n=======\r\n\r\n(http://play.golang.org/p/VxhFluFKTX)\r\n\r\nThis would, for example, allow a `map[Coord]bool` to be Marshaled \u0026 Unmarshaled if `Coord` was defined as:\r\n\r\n    type Coord struct{ X, Y int }\r\n    func (c Coord) MarshalText() ([]byte, error) {\r\n        return []byte(fmt.Sprintf(\"%d,%d\", c.X, c.Y)), nil\r\n    }\r\n    func (c *Coord) UnmarshalText(p []byte) error {\r\n        if n, err := fmt.Sscanf(string(p), \"%d,%d\", \u0026c.X, \u0026c.Y); err != nil {\r\n            return err\r\n        } else if n != 2 {\r\n            return errors.New(\"Cannot parse coord: \" + string(p))\r\n        }\r\n        return nil\r\n    }\r\n\r\nAnd the Go struct\r\n\r\n    map[Coord]bool{Coord{1, 2}: true, Coord{3, 4}: true}\r\n\r\nwould correspond to\r\n\r\n    {\"1,2\": true,\"3,4\":true}\r\n\r\nConsiderations\r\n===========\r\n\r\nIf the struct marshals to a non-unique value, e.g.\r\n\r\n    func (c Coord) MarshalText() ([]byte, error) {\r\n        return []byte(\"always the same\"), nil\r\n    }\r\n\r\nThe the json encoder would output JSON that has repeated keys, e.g.:\r\n\r\n    {\"always the same\": true,\"always the same\":true}\r\n\r\nThis is valid JSON.\r\n\r\nSimilarly, when decoding a map, it would unmarshal each key and value and then assign that into the map, so last-write-wins, as is currently done.\r\n\r\nAn interesting side effect is that it would then be possible to explicitly handle JSON with repeated keys (or even explicitly record the order of the json keys) by having the go-side map key TextUnmarshaler have non-deterministic unmarshaling (e.g. record timestamp for each unmarshal).\r\n\r\n\r\n",
+	"user": {
+		"login": "augustoroman",
+		"id": 676565,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Accepted"
+		}
+	],
+	"comments": 32,
+	"closed_at": "2016-04-05T15:08:29Z",
+	"created_at": "2015-08-14T03:20:19Z",
+	"updated_at": "2016-04-05T15:08:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

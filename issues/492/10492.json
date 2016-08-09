@@ -1,0 +1,33 @@
+{
+	"id": 69144262,
+	"number": 10492,
+	"state": "closed",
+	"title": "runtime: GODEBUG=gccheckmark=1 messes up the GC trigger",
+	"body": "Checkmark appears to throw off the heap statistics used to compute the GC trigger.\r\n\r\nFor example,\r\n```\r\n$ GODEBUG=gctrace=1,gccheckmark=0 ./go1.test -test.bench=TimeFormat -test.benchtime=10s                          \r\ngc #1 @0.296s 0%: 0+0+0+58+0 ms clock, 0+0+0+0/0/0+0 ms cpu, 4-\u003e262-\u003e262 MB, 1 P\r\ntesting: warning: no tests to run\r\nPASS\r\nBenchmarkTimeFormat\tgc #2 @2.182s 0%: 0+0+0+0+10 ms clock, 0+0+0+0/0/0+10 ms cpu, 325-\u003e325-\u003e1 MB, 1 P (forced)\r\ngc #3 @2.185s 0%: 0+0+0+0+3 ms clock, 0+0+0+0/0/0+3 ms cpu, 287-\u003e287-\u003e0 MB, 1 P (forced)\r\ngc #4 @2.189s 0%: 0+0+0+0+3 ms clock, 0+0+0+0/0/0+3 ms cpu, 287-\u003e287-\u003e1 MB, 1 P (forced)\r\ngc #5 @2.197s 1%: 0+0+0+0+4 ms clock, 0+0+0+0/0/0+4 ms cpu, 287-\u003e287-\u003e0 MB, 1 P (forced)\r\ngc #6 @2.601s 1%: 0+0+0+0+17 ms clock, 0+0+0+0/0/0+17 ms cpu, 317-\u003e317-\u003e0 MB, 1 P (forced)\r\ngc #7 @4.059s 1%: 0+0+0+57+12 ms clock, 0+0+0+3/0/0+12 ms cpu, 396-\u003e399-\u003e4 MB, 1 P\r\ngc #8 @6.653s 1%: 0+0+0+32+21 ms clock, 0+0+0+2/0/0+21 ms cpu, 489-\u003e491-\u003e3 MB, 1 P\r\ngc #9 @9.848s 1%: 0+0+0+31+30 ms clock, 0+0+0+2/0/0+30 ms cpu, 532-\u003e534-\u003e3 MB, 1 P\r\ngc #10 @13.316s 1%: 0+0+0+12+31 ms clock, 0+0+0+3/0/0+31 ms cpu, 555-\u003e555-\u003e2 MB, 1 P\r\ngc #11 @16.931s 1%: 0+0+0+15+28 ms clock, 0+0+0+2/0/0+28 ms cpu, 561-\u003e561-\u003e2 MB, 1 P\r\ngc #12 @20.537s 1%: 0+0+0+10+28 ms clock, 0+0+0+2/0/0+28 ms cpu, 561-\u003e562-\u003e2 MB, 1 P\r\n50000000\t       396 ns/op\r\n\r\n$ GODEBUG=gctrace=1,gccheckmark=1 ./go1.test -test.bench=TimeFormat -test.benchtime=10s                          \r\ngc #1 @0.390s 0%: 0+0+0+56+0 ms clock, 0+0+0+0/0/0+0 ms cpu, 4-\u003e262-\u003e262 MB, 1 P\r\ntesting: warning: no tests to run\r\nPASS\r\nBenchmarkTimeFormat\tgc #2 @2.391s 0%: 0+0+0+0+8 ms clock, 0+0+0+0/0/0+8 ms cpu, 325-\u003e325-\u003e1 MB, 1 P (forced)\r\ngc #3 @2.394s 0%: 0+0+0+0+2 ms clock, 0+0+0+0/0/0+2 ms cpu, 1-\u003e1-\u003e0 MB, 1 P (forced)\r\ngc #4 @2.397s 0%: 0+0+0+0+2 ms clock, 0+0+0+0/0/0+2 ms cpu, 1-\u003e1-\u003e0 MB, 1 P (forced)\r\ngc #5 @2.404s 0%: 0+0+0+0+3 ms clock, 0+0+0+0/0/0+3 ms cpu, 2-\u003e2-\u003e1 MB, 1 P (forced)\r\ngc #6 @2.469s 0%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e5-\u003e3 MB, 1 P\r\ngc #7 @2.530s 0%: 0+0+0+30+0 ms clock, 0+0+0+3/0/0+0 ms cpu, 5-\u003e7-\u003e3 MB, 1 P\r\ngc #8 @2.620s 1%: 0+0+0+33+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 5-\u003e9-\u003e3 MB, 1 P\r\ngc #9 @2.731s 1%: 0+0+0+31+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 5-\u003e10-\u003e3 MB, 1 P\r\ngc #10 @2.857s 1%: 0+0+0+29+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 5-\u003e12-\u003e3 MB, 1 P\r\ngc #11 @2.864s 1%: 0+0+0+0+3 ms clock, 0+0+0+2/0/0+3 ms cpu, 3-\u003e3-\u003e1 MB, 1 P (forced)\r\ngc #12 @2.929s 1%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e6-\u003e3 MB, 1 P\r\ngc #13 @3.000s 1%: 0+0+0+38+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 6-\u003e8-\u003e3 MB, 1 P\r\ngc #14 @3.090s 1%: 0+0+0+31+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 6-\u003e9-\u003e3 MB, 1 P\r\ngc #15 @3.211s 1%: 0+0+0+37+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 6-\u003e12-\u003e3 MB, 1 P\r\ngc #16 @3.352s 1%: 0+0+0+35+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 6-\u003e14-\u003e3 MB, 1 P\r\ngc #17 @3.523s 1%: 0+0+0+38+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 5-\u003e16-\u003e3 MB, 1 P\r\ngc #18 @3.714s 1%: 0+0+0+31+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 5-\u003e17-\u003e3 MB, 1 P\r\ngc #19 @3.916s 1%: 0+0+0+19+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e18-\u003e2 MB, 1 P\r\ngc #20 @4.158s 1%: 0+0+0+32+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e20-\u003e3 MB, 1 P\r\ngc #21 @4.409s 1%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e22-\u003e3 MB, 1 P\r\ngc #22 @4.681s 1%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e24-\u003e3 MB, 1 P\r\ngc #23 @4.983s 1%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e26-\u003e3 MB, 1 P\r\ngc #24 @5.315s 1%: 0+0+0+32+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e28-\u003e3 MB, 1 P\r\ngc #25 @5.658s 1%: 0+0+0+33+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e30-\u003e3 MB, 1 P\r\ngc #26 @6.040s 1%: 0+0+0+35+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e31-\u003e3 MB, 1 P\r\ngc #27 @6.413s 1%: 0+0+0+19+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e32-\u003e2 MB, 1 P\r\ngc #28 @6.815s 1%: 0+0+0+16+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e33-\u003e2 MB, 1 P\r\ngc #29 @7.238s 1%: 0+0+0+18+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e34-\u003e2 MB, 1 P\r\ngc #30 @7.681s 1%: 0+0+0+34+0 ms clock, 0+0+0+3/0/0+0 ms cpu, 4-\u003e36-\u003e3 MB, 1 P\r\ngc #31 @8.134s 1%: 0+0+0+34+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e38-\u003e3 MB, 1 P\r\ngc #32 @8.607s 1%: 0+0+0+36+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e40-\u003e3 MB, 1 P\r\ngc #33 @9.111s 1%: 0+0+0+35+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e42-\u003e3 MB, 1 P\r\ngc #34 @9.634s 1%: 0+0+0+36+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e44-\u003e3 MB, 1 P\r\ngc #35 @10.188s 1%: 0+0+0+31+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e46-\u003e3 MB, 1 P\r\ngc #36 @10.762s 1%: 0+0+0+33+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e48-\u003e3 MB, 1 P\r\ngc #37 @11.345s 0%: 0+0+0+18+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e49-\u003e2 MB, 1 P\r\ngc #38 @11.949s 0%: 0+0+0+17+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e50-\u003e2 MB, 1 P\r\ngc #39 @12.573s 0%: 0+0+0+19+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e51-\u003e2 MB, 1 P\r\ngc #40 @13.198s 0%: 0+0+0+14+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e51-\u003e2 MB, 1 P\r\ngc #41 @13.853s 0%: 0+0+0+32+0 ms clock, 0+0+0+2/0/0+0 ms cpu, 4-\u003e53-\u003e3 MB, 1 P\r\ngc #42 @14.560s 0%: 0+0+0+31+0 ms clock, 0+0+0+3/0/0+0 ms cpu, 4-\u003e55-\u003e3 MB, 1 P\r\n30000000\t       398 ns/op\r\n```\r\n\r\nThis happens both on the current master (which doesn't have the GC pacer) and with the GC pacer.\r\n\r\n@RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-06-29T15:58:46Z",
+	"created_at": "2015-04-17T13:58:05Z",
+	"updated_at": "2016-06-28T21:53:33Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

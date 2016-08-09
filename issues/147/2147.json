@@ -1,0 +1,27 @@
+{
+	"id": 51278798,
+	"number": 2147,
+	"state": "closed",
+	"title": "x/net/websocket: Missing EOF in TLS encrypted websocket connections",
+	"body": "by **nroos@webware-experts.de**:\n\n\u003cpre\u003eWhen reading from a TLS encrypted websocket connection with websocket.Read(), and the\nconnection gets closed, the Read() does not return an error (does not return at all).\n\nWhat steps will reproduce the problem?\n1. Generate a key and certificate:\n   openssl req -x509 -nodes -days 365 -subj '/C=US/ST=Oregon/L=Portland/CN=websocket.com' -newkey rsa:1024 -keyout key -out cert\n\n2. Compile the server and client, source code below\n\n3. Run the server\n\n4. Run the client; it opens a websocket connection to the server, after 2 seconds, the\nconnection gets closed\n\nWhat is the expected output?\n\nClient should say \u0026quot;Expecting EOF: EOF\u0026quot;\n\nWhat do you see instead?\n\n\u0026quot;Expecting EOF:\u0026quot;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g\n\nWhich operating system are you using?\n\nLinux (Kubuntu)\n\nWhich revision are you using?  (hg identify)\n\n998062d21eea tip\n\nPlease provide any additional information below.\n\n--- Server ---\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;http\u0026quot;\n\t\u0026quot;websocket\u0026quot;\n)\n\nfunc server(ws *websocket.Conn) {\n\tfmt.Printf(\u0026quot;new connection\\n\u0026quot;)\n\tbuf := make([]byte, 100)\n\tfor {\n\t\tif _, err := ws.Read(buf); err != nil {\n\t\t\tfmt.Printf(\u0026quot;%s\u0026quot;, err.String())\n\t\t\tbreak\n\t\t}\n\t}\n\tfmt.Printf(\u0026quot; =\u0026gt; closing connection\\n\u0026quot;, )\n\tws.Close()\n}\n\nfunc main() {\n\thttp.Handle(\u0026quot;/websocket\u0026quot;, websocket.Handler(server))\n\terr := http.ListenAndServeTLS(\u0026quot;:12345\u0026quot;, \u0026quot;cert\u0026quot;, \u0026quot;key\u0026quot;, nil)\n//\terr := http.ListenAndServe(\u0026quot;:12345\u0026quot;, nil)\n\tif err != nil {\n\t\tpanic(\u0026quot;ListenAndServe: \u0026quot; + err.String())\n\t}\n}\n\n--- Client ---\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;time\u0026quot;\n\t\u0026quot;websocket\u0026quot;\n)\n\nfunc main() {\n\tws, err := websocket.Dial(\u0026quot;wss://localhost:12345/websocket\u0026quot;, \u0026quot;\u0026quot;, \u0026quot;\u003ca href=\"http://localhost/\u0026quot\"\u003ehttp://localhost/\u0026quot\u003c/a\u003e;)\n//\tws, err := websocket.Dial(\u0026quot;ws://localhost:12345/websocket\u0026quot;, \u0026quot;\u0026quot;,\n\u0026quot;\u003ca href=\"http://localhost/\u0026quot\"\u003ehttp://localhost/\u0026quot\u003c/a\u003e;)\n\tif err != nil {\n\t\tpanic(\u0026quot;Dial: \u0026quot; + err.String())\n\t}\n\tgo readFromServer(ws)\n\ttime.Sleep(2000000000)\n\tfmt.Printf(\u0026quot;Expecting EOF: \u0026quot;)\n\tws.Close()\n\ttime.Sleep(60000000000)\n}\n\nfunc readFromServer(ws *websocket.Conn) {\n\tbuf := make([]byte, 1000)\n\tfor {\n\t\tif _, err := ws.Read(buf); err != nil {\n\t\t\tfmt.Printf(\u0026quot;%s\\n\u0026quot;, err.String())\n\t\t\tbreak\n\t\t}\n\t}\n}\n\n--- ---\n\nUnencrypted connections work as intended; uncomment the lines in the server and client\nto check this\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:11:33Z",
+	"created_at": "2011-08-11T09:10:50Z",
+	"updated_at": "2016-08-05T16:08:03Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

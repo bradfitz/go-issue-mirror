@@ -1,0 +1,33 @@
+{
+	"id": 51287803,
+	"number": 8180,
+	"state": "closed",
+	"title": "net/http: double Content-Length in Response.Write on POST/PUT Request",
+	"body": "\u003cpre\u003eFrom golang-dev:\n\n\u0026quot;\u0026quot;\u0026quot;\nMatthew Endsley:\n\nI was testing the go1.3rc1 release on our codebase and found it failed one of our test\ncases involving http responses.\n\nIt appears that in some cases, http.Response.Write will emit 2 Content-Length headers. A\nshort example the reproduces the behavior can be found here:\n\u003ca href=\"http://play.golang.org/p/qsH1MeVSHu\"\u003ehttp://play.golang.org/p/qsH1MeVSHu\u003c/a\u003e\n\nIn go 1.2 this generated the following output:\nHTTP/1.1 200 OK\nContent-Length: 0\n\nIn go1.3rc1 I'm getting the following:\nHTTP/1.1 200 OK\nContent-Length: 0\nContent-Length: 0\n\nFor reference, on current tip (087e446f2c41) I see the same output as go1.3rc1\n\nAs a side note, this issue only occurs if response.Request.Method is \u0026quot;POST\u0026quot;.\nIf the request method is \u0026quot;GET\u0026quot; the duplicate Content-Length is not emitted.\n\u0026quot;\u0026quot;\u0026quot;\n\n\n\nThe problem was introduced in revision b2ebbbcfc615 for fixing \u003ca href=\"https://golang.org/issue/5381\"\u003eissue #5381\u003c/a\u003e. The net/http\nServer doesn't use this code, but it is a regression from 1.2.  In the earlier fix, I\ndidn't take care of the case where PUT/POST were special-cased in transfer.go ages ago\nin revision 4d792b5bea35 for HTTP Requests, but the transfer code deals with both\nRequests and Responses, so a Content-Length of length 0 was always being sent for\nResponses too.  That code deserves a second look in Go 1.4, but will fix minimally for\nnow.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:45:22Z",
+	"created_at": "2014-06-10T23:47:34Z",
+	"updated_at": "2016-06-25T01:36:12Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

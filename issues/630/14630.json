@@ -1,0 +1,23 @@
+{
+	"id": 138323018,
+	"number": 14630,
+	"state": "closed",
+	"title": "runtime: memmove 1.6x slower than \"REP; MOVSB\" on amd64",
+	"body": "Snappy is a simple compression format that, for incompressible input such as a JPEG file, doesn't do much more than calling runtime·memmove.\r\n\r\nhttps://github.com/golang/snappy/blob/master/decode_amd64.s has a chunk of code (grep for callMemmove) that essentially does some bounds checking, and then\r\n\r\nspill registers\r\nCALL runtime·memmove(DI, SI, CX)\r\nunspill registers\r\nADDQ CX, DI\r\nADDQ CX, SI\r\n\r\nReplacing this with \"REP; MOVSB\" should be equivalent, but turns out to be 1.6x faster on one benchmark.\r\n\r\n```\r\n$ git diff\r\ndiff --git a/decode_amd64.s b/decode_amd64.s\r\nindex 1486aba..651519f 100644\r\n--- a/decode_amd64.s\r\n+++ b/decode_amd64.s\r\n@@ -141,6 +141,9 @@ callMemmove:\r\n        CMPQ CX, BX\r\n        JGT  errCorrupt\r\n \r\n+       REP; MOVSB\r\n+       JMP loop\r\n+\r\n        // copy(dst[d:], src[s:s+length])\r\n        //\r\n        // This means calling runtime·memmove(\u0026dst[d], \u0026src[s], length), so we push\r\n```\r\n\r\nOld:\r\nBenchmark_UFlat2-8\t  200000\t      8154 ns/op\t15094.70 MB/s\r\nNew:\r\nBenchmark_UFlat2-8\t  300000\t      4957 ns/op\t24831.90 MB/s\r\n\r\nThe UFlat2 benchmark is indeed decoding a 123,093 byte JPEG file, and the bulk of the time in one decoding is spent in two memmove calls, of length 65218 and 57557. The first one is slightly less than 65536 because the JPEG header is slightly compressible, and is not encoded solely as a literal src-to-dst copy.\r\n\r\nI'm happy to try to extract the UFlat2 snappy benchmark as a separate, minimal repro case, if that would help.\r\n\r\nLong story short, it seems that if \"REP; MOVSB\" is significantly faster than runtime·memmove in some cases, then runtime·memmove should just (conditionally) issue \"REP; MOVSB\". I don't have a good sense what that condition should be though.\r\n\r\nThis is admittedly on a relatively brawny amd64 machine ([/proc/cpuinfo attached](https://github.com/golang/go/files/157819/cpuinfo.txt)), \"Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz\". I suspect that the same patch actually performs worse on my relatively wimpy home computer (also amd64). I'll update the issue with those numbers later.",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"closed_at": "2016-03-21T19:10:48Z",
+	"created_at": "2016-03-03T22:59:12Z",
+	"updated_at": "2016-03-31T11:40:23Z"
+}

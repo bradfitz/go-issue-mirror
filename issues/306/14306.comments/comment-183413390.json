@@ -1,0 +1,12 @@
+{
+	"id": 183413390,
+	"body": "My guess at this point is a missing write barrier.  It's in the New function of Dave's repo:\r\n```\r\nfunc New(intf interface{}) KeyImpl {\r\n\tswitch t := intf.(type) {\r\n\tcase map[string]interface{}:\r\n\t\tintf = \u0026t\r\n\tdefault:\r\n\t\tpanic(fmt.Sprintf(\"Invalid type for key: %T\", intf))\r\n\t}\r\n\treturn KeyImpl{key: intf}\r\n}\r\n```\r\nSince we take the address of t and that address is returned, t is heap allocated.  When t is initialized with t := intf.(type), we allocate a chunk of memory using newobject (the type being map[string]interface{}) and store the data portion of the interface to it.  That write does not have a write barrier, and I think it should.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-12T17:01:12Z",
+	"updated_at": "2016-02-12T17:01:31Z"
+}

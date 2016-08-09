@@ -1,0 +1,12 @@
+{
+	"id": 234807323,
+	"body": "I also now see that #16384 recently added that `filepath.ToSlash(dest)` after the strings.Replace call.\r\n\r\nI haven't gone through #16384 in detail to track down exactly why `filepath.ToSlash(dest)` was added there, but as I mentioned in my first comment above, that `filepath.ToSlash(dest)` *might* very well be unnecessary after the suggested possible fix from my first comment above.  That said, it would likely require a review of the problem from #16384 to determine that, though.\r\n\r\nFinally, sorry for the long report, but to more explicitly tie together my first comment and second comment above: if those guesses about original intent there are correct, the net result for all my comments would be:\r\n\r\n```diff\r\ndiff --git a/refactor/rename/mvpkg.go b/refactor/rename/mvpkg.go\r\nindex cd416c5..26905ab 100644\r\n--- a/refactor/rename/mvpkg.go\r\n+++ b/refactor/rename/mvpkg.go\r\n@@ -79,12 +79,13 @@ func Move(ctxt *build.Context, from, to, moveTmpl string) error {\r\n                for r := range rev[pkg] {\r\n                        affectedPackages[r] = true\r\n                }\r\n-               // Ensure directories have a trailing separator.\r\n+               // Normalize any trailing separators (via Clean) to ensure we\r\n+               // replace the substrings in pkg consistently.\r\n                dest := strings.Replace(pkg,\r\n-                       filepath.Join(from, \"\"),\r\n-                       filepath.Join(to, \"\"),\r\n+                       path.Clean(from),\r\n+                       path.Clean(to),\r\n                        1)\r\n-               destinations[pkg] = filepath.ToSlash(dest)\r\n+               destinations[pkg] = dest\r\n        }\r\n```",
+	"user": {
+		"login": "thepudds",
+		"id": 20628140,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-24T22:40:24Z",
+	"updated_at": "2016-07-24T23:17:14Z"
+}

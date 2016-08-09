@@ -1,0 +1,27 @@
+{
+	"id": 51280646,
+	"number": 3463,
+	"state": "closed",
+	"title": "fmt: Println(i) is 3x slower than in C",
+	"body": "\u003cpre\u003eGo 1, Linux amd64.\n\nWhat steps will reproduce the problem?\n\n1. Consider the following Go program: (\u003ca href=\"http://play.golang.org/p/ScKzejb3Oc\"\u003ehttp://play.golang.org/p/ScKzejb3Oc\u003c/a\u003e )\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tfor i := 0; i \u0026lt; 1\u0026lt;\u0026lt;25; i++ {\n\t\tfmt.Println(i)\n\t}\n}\n\n2. Consider the following Python program:\n\nfor i in xrange(1 \u0026lt;\u0026lt; 25): print i\n\n3. And the following C program:\n\n#include \u0026lt;stdio.h\u0026gt;\n\nint main(void) {\n  for (int i = 0; i \u0026lt; 1 \u0026lt;\u0026lt; 25; i++) {\n    printf(\u0026quot;%d\\n\u0026quot;, i);\n  }\n} \n\n4. Build Go program with:\n$ go build print.go\n\nand C program with:\n$ gcc print.c -o print_c -c99\n\n5. Run programs:\n\n$ time ./print \u0026gt; /dev/null\nreal\t0m18.336s\nuser\t0m15.497s\nsys\t0m2.824s\n\n$ time python print.py \u0026gt; /dev/null # I use python 2.7.2\nreal\t0m9.484s\nuser\t0m9.473s\nsys\t0m0.004s\n\n$ time ./print_c \u0026gt; /dev/null\nreal\t0m2.580s\nuser\t0m2.560s\nsys\t0m0.020s\n\n\nWhat is the expected output?\nIt's expected that Go is as fast a C and faster than Python. \n\nWhat do you see instead?\nGo is painfully slow on this microbenchmark.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g (via go build)\n\nWhich operating system are you using?\nLinux krasin-tupak 3.0.0-16-generic #29-Ubuntu SMP Tue Feb 14 12:48:51 UTC 2012 x86_64\nx86_64 x86_64 GNU/Linux\n\nWhich version are you using?  (run 'go version')\ngo version go1\n\nPlease provide any additional information below.\n\nAt first, I have ran the above programs under strace and realized that C and Python\nversions use buffered stdout, but Go invokes write(2) on every line. I have modified\nprint.c:\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\n#include \u0026lt;string.h\u0026gt;\n#include \u0026lt;unistd.h\u0026gt;\n\nint main(void) {\n  for (int i = 0; i \u0026lt; 1 \u0026lt;\u0026lt; 25; i++) {\n    char buf[30];\n    snprintf(buf, 30, \u0026quot;%d\\n\u0026quot;, i);\n    write(1, buf, strlen(buf)+1);\n  }\n}\n\ncompiled with:\n$ gcc print.c -o print_c -std=c99\n\n$ time ./print_c \u0026gt; /dev/null\nreal\t0m6.184s\nuser\t0m4.104s\nsys\t0m2.072s\n\nAs we can see, this is not the only reason for Go to be so slow. It's not even the main\nreason. C is 6x faster if stdout is buffered and 3x faster if non-buffered.\n\nI feel like something can be optimized.\u003c/pre\u003e",
+	"user": {
+		"login": "krasin",
+		"id": 21159,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 25,
+	"closed_at": "2016-03-27T20:27:19Z",
+	"created_at": "2012-04-03T03:26:21Z",
+	"updated_at": "2016-03-29T06:16:55Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

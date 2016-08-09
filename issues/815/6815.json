@@ -1,0 +1,33 @@
+{
+	"id": 51285771,
+	"number": 6815,
+	"state": "open",
+	"title": "spec: extend comma-ok expressions to 4 basic operations",
+	"body": "\u003cpre\u003eThis is a proposal for a (backward-compatible) language extension.\n\nThe notion of comma-ok expressions can be extended in a natural way to the 4 basic\narithmetic operations (+, -, *, /) such that a 2nd result value (traditionally the\n\u0026quot;ok\u0026quot; value) provides the carry, borrow, overflow, and remainder value,\nrespectively.\n\nSpecifically (spec wording):\n\n-----\n\nA binary expression with one the four basic arithmetic operators may be used in an\nassignment of initialization of the special form:\n\n   z, c = x op y\n   z, c := x op y\n   var z, c = x op y\n   var z, c T = x op y\n\nThe operator op must be one of +, -, *, or /. The value and type of z is the same as in\nthe single-result form. In the special form, the type of c is the same as the type of z,\nand the value of c is defined as follows:\n\nFor +, -, and /, the value of c is (x op y) \u0026gt;\u0026gt; s with the operation carried out in\ntwice the precision of the types of the operands, and with s = operand type size in\nbits. For /, the value of c is the remainder x%y.\n\nIn other words:\n\n   for +, c is the \u0026quot;carry\u0026quot; value (0 or 1)\n   for -, c is the \u0026quot;borrow\u0026quot; value (0 or -1)\n   for *, c is the \u0026quot;overflow\u0026quot; value \n   for /, c is the remainder\n\n-----\n\nThe implementation is straight-forward since these c values tend to be computed anyway:\nFor +, and -, the value of c corresponds to the \u0026quot;carry/borrow bit\u0026quot; usually\ncomputed always for these operations. The carry bit simply needs to be converted and\nstored (between 1 to 3 machine instructions, depending on architecture, storage\nlocation). Division operations usually leave the remainder in a register. Only\nmultiplication requires double-width arithmetic, and only if c is required.\n\nApplications:\n\n- Code that needs to check for integer overflow can be simplified. For unsigned ints,\nthe c value is the desired bit.\n- Numeric conversions (from integer to decimal) require both / and % on the same\noperands. Providing q, r := x/y is likely to run twice as fast w/o the need for the\ncompiler to detect that a % operation following a / is using the same operands.\n- Some of the core routines required for arbitrary precision arithmetic can be written\nin a straight-forward manner in Go and should achieve similar performance as\ncorresponding assembly code, without the need for fancy compiler optimizations.\n\nConcrete example: If x, y, z represent fixed-size high precision unsigned integers (n*64\nbits), + could be written as follows:\n\n   const n = 100\n   var x, y, z [n]uint64\n\n   // compute z = x + y\n   var c uint64\n   for i, x := range x {\n            z[i], c = x + y[i] + c\n   }\n\nWithout the special z, c = x + y form, analogous code written in c will be prohibitively\nexpensive compared to the respective assembly.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"comments": 15,
+	"created_at": "2013-11-21T22:18:51Z",
+	"updated_at": "2016-07-18T18:00:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

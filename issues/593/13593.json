@@ -1,0 +1,21 @@
+{
+	"id": 121837854,
+	"number": 13593,
+	"state": "open",
+	"title": "x/net/http2: investigate client write buffering",
+	"body": "testClientWrite in http2 mode with CL https://go-review.googlesource.com/#/c/17751/1 fails, but the fails aren't that consistent\r\n\r\nRun 1:\r\n```shell\r\n$ go test -cover\r\n--- FAIL: TestClientWrites_h2 (0.00s)\r\n\tclient_test.go:578: Get request did 8 Write calls, want 1\r\n\tclient_test.go:587: Post request did 3 Write calls, want 1\r\nFAIL\r\ncoverage: 78.6% of statements\r\nexit status 1\r\nFAIL\tnet/http\t23.081s\r\n```\r\n\r\nRun 2:\r\n```shell\r\n$ go test -cover\r\n--- FAIL: TestClientWrites_h2 (0.01s)\r\n\tclient_test.go:578: Get request did 8 Write calls, want 1\r\nFAIL\r\ncoverage: 78.5% of statements\r\nexit status 1\r\n```\r\n\r\nThe diff that produced this is\r\n```diff\r\ndiff --git a/src/net/http/client_test.go b/src/net/http/client_test.go\r\nindex e72f3bc..05a543c 100644\r\n--- a/src/net/http/client_test.go\r\n+++ b/src/net/http/client_test.go\r\n@@ -550,11 +550,14 @@ func (c *writeCountingConn) Write(p []byte) (int, error) {\r\n \r\n // TestClientWrites verifies that client requests are buffered and we\r\n // don't send a TCP packet per line of the http request + body.\r\n-func TestClientWrites(t *testing.T) {\r\n+func TestClientWrites_h1(t *testing.T) { testClientWrites(t, h1Mode) }\r\n+func TestClientWrites_h2(t *testing.T) { testClientWrites(t, h2Mode) }\r\n+\r\n+func testClientWrites(t *testing.T, h2 bool) {\r\n \tdefer afterTest(t)\r\n-\tts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\r\n+\tcst := newClientServerTest(t, h2, HandlerFunc(func(w ResponseWriter, r *Request) {\r\n \t}))\r\n-\tdefer ts.Close()\r\n+\tdefer cst.close()\r\n \r\n \twrites := 0\r\n \tdialer := func(netz string, addr string) (net.Conn, error) {\r\n@@ -564,9 +567,10 @@ func TestClientWrites(t *testing.T) {\r\n \t\t}\r\n \t\treturn c, err\r\n \t}\r\n-\tc := \u0026Client{Transport: \u0026Transport{Dial: dialer}}\r\n+\tcst.c.Transport.(*Transport).Dial = dialer\r\n \r\n-\t_, err := c.Get(ts.URL)\r\n+\tc := cst.c\r\n+\t_, err := c.Get(cst.ts.URL)\r\n \tif err != nil {\r\n \t\tt.Fatal(err)\r\n \t}\r\n@@ -575,7 +579,7 @@ func TestClientWrites(t *testing.T) {\r\n \t}\r\n \r\n \twrites = 0\r\n-\t_, err = c.PostForm(ts.URL, url.Values{\"foo\": {\"bar\"}})\r\n+\t_, err = c.PostForm(cst.ts.URL, url.Values{\"foo\": {\"bar\"}})\r\n \tif err != nil {\r\n \t\tt.Fatal(err)\r\n \t}\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-12-12T06:49:13Z",
+	"updated_at": "2015-12-12T18:50:59Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

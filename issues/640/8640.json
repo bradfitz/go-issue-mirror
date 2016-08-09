@@ -1,0 +1,22 @@
+{
+	"id": 51288481,
+	"number": 8640,
+	"state": "closed",
+	"title": "builders: use the buildlet for Windows builds",
+	"body": "\u003cpre\u003eThis bug is about moving the Windows builders to GCE per the document\n\u003ca href=\"http://golang.org/s/builderplan\"\u003ehttp://golang.org/s/builderplan\u003c/a\u003e\n\nThe plan is roughly:\n\n1) prepare a Windows disk image (partially automated, partially manually?) to a point\nwhere it has a compiler and a minimal Go program (\u0026quot;gobuildstrap\u0026quot;) set to run\non boot.\n\n2) snapshot the disk image of 1). basically never change it.\n\n3) When we want to do a Windows build, the Coordinator will programmatically create a\nnew Windows VM instance and set some instance metadata:\n\n     * buildstrap-url-program\n     * random-instance-key\n\nThe gobuildstrap program upon boot will fetch the URL specified by the\n\u0026quot;buildstrap-url-program\u0026quot; instance attribute and run it. This is the unit we\ncan update easily over time, without preparing a whole new Windows system image. It will\nbe a static Windows Go binary we cross-compile from Linux or Mac.\n\nThat second binary (\u0026quot;gowinbuilder\u0026quot;) then does a single build (or possibly\nmore, upon success) and shuts down the VM.  The \u0026quot;random-instance-key\u0026quot;\nattribute will be set by the Coordinator to a random string and used as auth for the\nHTTP handlers server exposed by the gowinbuilder.  The HTTP methods are things like\n\u0026quot;POST /do-a-build\u0026quot; with the body of the POST being a compressed tarball of the\n$GOROOT.  The Coordinator will just stream that over the network to it.  The response to\nthe POST can be the live stream of the stdout/stderr build output. The exit status can\nbe in HTTP Trailers.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2015-02-07T21:15:08Z",
+	"created_at": "2014-09-03T22:51:08Z",
+	"updated_at": "2016-06-25T01:40:37Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51285241,
+	"number": 6474,
+	"state": "closed",
+	"title": "encoding/xml: allow avoiding infinite recursion in EncodeElement",
+	"body": "\u003cpre\u003eWhen using MarshalXML if you want to modify just the surrounding tag it's difficult to\ndo so. Calling EncodeElement results in a recursive error.\n\nThe only work around, other than manually marshaling each field, is to typedef the\nstruct to an alternate type:\n\n\ntype _TransactionRequest TransactionRequest;\n\nfunc (tr TransactionRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {\n\treturn e.EncodeElement(_TransactionRequest(tr), xml.StartElement{\n\t\t\tName: xml.Name{\u0026quot;\u0026quot;, \u0026quot;createTransactionRequest\u0026quot;},\n\t\t\tAttr: []xml.Attr{\n\t\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns:xsi\u0026quot;}, \u0026quot;\u003ca href=\"http://www.w3.org/2001/XMLSchema-instance\u0026quot\"\u003ehttp://www.w3.org/2001/XMLSchema-instance\u0026quot\u003c/a\u003e;},\n\t\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns:xsd\u0026quot;}, \u0026quot;\u003ca href=\"http://www.w3.org/2001/XMLSchema\u0026quot\"\u003ehttp://www.w3.org/2001/XMLSchema\u0026quot\u003c/a\u003e;},\n\t\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns\u0026quot;}, \u0026quot;AnetApi/xml/v1/schema/AnetApiSchema.xsd\u0026quot;},\n\t\t\t\t},\n\t\t})\n}\n\n\nThere needs to be a way to Marshal the contents of the struct without the surrounding\ntag, perhaps \u0026quot;EncodeBody\u0026quot;:\n\n\nfunc (tr TransactionRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) (err\nerror) {\n\tstart = xml.StartElement{\n\t\t\tName: xml.Name{\u0026quot;\u0026quot;, \u0026quot;createTransactionRequest\u0026quot;},\n\t\t\tAttr: []xml.Attr{\n\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns:xsi\u0026quot;}, \u0026quot;\u003ca href=\"http://www.w3.org/2001/XMLSchema-instance\u0026quot\"\u003ehttp://www.w3.org/2001/XMLSchema-instance\u0026quot\u003c/a\u003e;},\n\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns:xsd\u0026quot;}, \u0026quot;\u003ca href=\"http://www.w3.org/2001/XMLSchema\u0026quot\"\u003ehttp://www.w3.org/2001/XMLSchema\u0026quot\u003c/a\u003e;},\n\t\t\t\txml.Attr{xml.Name{\u0026quot;\u0026quot;, \u0026quot;xmlns\u0026quot;}, \u0026quot;AnetApi/xml/v1/schema/AnetApiSchema.xsd\u0026quot;},\n\t\t\t},\n\t\t}\n\tif err = e.EncodeToken(start); err != nil {\n\t\treturn\n\t}\n\tif err = e.EncodeBody(tr); err != nil {\n\t\treturn\n\t}\n\tif err = e.EncodeToken(EndElement{start.Name}); err != nil {\n\t\treturn\n\t}\n}\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngc default\n\nWhich operating system are you using?\n\nOS X 10.8.5\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +f4d1cb8d9a91 Thu Sep 19 22:34:33 2013 +1000 darwin/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "lukescott",
+		"id": 486224,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:35:45Z",
+	"created_at": "2013-09-24T20:47:08Z",
+	"updated_at": "2016-06-25T01:19:37Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

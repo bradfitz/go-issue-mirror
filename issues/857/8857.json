@@ -1,0 +1,28 @@
+{
+	"id": 51288792,
+	"number": 8857,
+	"state": "closed",
+	"title": "net/http/httptest: ResponseRecorder does not mimic real behavior of WriteHeader()",
+	"body": "\u003cpre\u003ehttptest.ResponseRecorder does not mimic the behavior of the net/http package when\nheaders are written after a call to WriteHeader().\n\nPer the documentation for http.ResponseWriter:\n\n    Header returns the header map that will be sent by WriteHeader.\n    Changing the header after a call to WriteHeader (or Write) has\n    no effect.\n\nHowever, if you change the header after a call to WriteHeader while using\nhttptest.ResponseRecorder the result will appear as though the header was set (and sent)\ncorrectly. \n\nThis appears to be caused by the fact that in this function:\n\n// Header returns the response headers.\nfunc (rw *ResponseRecorder) Header() http.Header {\n        m := rw.HeaderMap\n        if m == nil {\n                m = make(http.Header)\n                rw.HeaderMap = m\n        }\n        return m\n}\n\nthere is no check to see if rw.wroteHeader is true. Anything set before or after\n`rw.wroteHeader = true` will still show up in this map.\n\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. In an http.HandlerFunc, call rw.Header().Set(\u0026quot;Some-Header\u0026quot;,\n\u0026quot;Some-Value\u0026quot;) after a call to rw.WriteHeader(statuscode)\n2. Call this handler by passing in an httptest.ResponseRecorder\n\nWhat happened?\n\nrecorder.HeaderMap[\u0026quot;Some-Header\u0026quot;][0] will be set to \u0026quot;Some-Value\u0026quot;\n\nWhat should have happened instead?\n\n\u0026quot;Some-Header\u0026quot; should not have been set\u003c/pre\u003e",
+	"user": {
+		"login": "scottferg",
+		"id": 74309,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-03-08T19:30:57Z",
+	"created_at": "2014-10-02T14:14:40Z",
+	"updated_at": "2016-05-19T20:00:25Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

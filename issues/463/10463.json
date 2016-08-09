@@ -1,0 +1,27 @@
+{
+	"id": 68568035,
+	"number": 10463,
+	"state": "open",
+	"title": "net/http: Host headers with ports never match routes in ServeMux",
+	"body": "So, in https://howsmyssl.com ([jmhodges/howsmyssl](https://github.com/jmhodges/howsmyssl)), we redirect all incoming requests that don't match the domain www.howsmyssl.com to the correct domain. This captures folks typing in `howsmyssl.com` and also folks coming in from the `howsmytls.com` domains that are not yet used, etc.\r\n\r\nThat is, it uses code like\r\n\r\n    m.Handle(\"www.howsmyssl.com/\", doSomething)\r\n    m.Handler(\"/\", redirectToDomain(\"www.howsmyssl.com\"))\r\n\r\nHowever, it appears that there are some clients that include the port in HTTPS requests and, on redirect, always re-include the port from the first request's Host header. Those requests will fall into a redirect loop with the above code. For instance, curl will just reuse a user-supplied Host header\r\n\r\n    $ curl -L -H'Host: example.com:443' https://example.com/\r\n     curl: (47) Maximum (50) redirects followed\r\n\r\nThis has caused a user to create a [bug against howsmyssl](https://github.com/jmhodges/howsmyssl/issues/25) because certain libraries and tools can't avoid re-including the port and fall into redirect loops. \r\n\r\nSo, I tried to fix this with routing by adding\r\n\r\n    m.Handle(\"www.howsmyssl.com:443/\", doSomething)\r\n\r\nto the code. However, it seems http.ServeMux will never match the port included in the route and, instead, only uses the incoming URI's host (not the Host header).\r\n\r\nOne might say to just 404 in the default case, but this will just cause the `Host: www.howsmyssl.com:443` requests to 404, instead.\r\n\r\nI have a gross hack to strip the port from all incoming requests' Host headers, before it hits the muxer, but this problem seems like one common to a lot of HTTPS services and could be better handled there.\r\n\r\nStripping all ports from Host headers seems ill-advised, but adding ports as a part of the muxer seems like it would work okay.\r\n\r\n",
+	"user": {
+		"login": "jmhodges",
+		"id": 598,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-04-15T04:07:48Z",
+	"updated_at": "2015-06-29T04:15:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

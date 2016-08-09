@@ -1,0 +1,33 @@
+{
+	"id": 62510458,
+	"number": 10187,
+	"state": "closed",
+	"title": "x/mobile/cmd/gomobile: init needs to detect when to fetch ndk archives or reuse existing ones.",
+	"body": "Moving the discussion from https://go-review.googlesource.com/#/c/7162/ to here.\r\n\r\nThe gomobile init command fetches android NDK and open AL archives and builds necessary tools for android app build. When the go version used to build those tools differs from the current go root version, the gomobile init command has to rerun. In order to avoid downloading the archives again whenever we sync the go root (tip), we added a small hack - If a small file that's written at the end of previous gomobile init run exists, we skip downloading the archive and just build the tools against the new go root.\r\n\r\nNote: users can always request to start from scratch by supplying the -u option.\r\n\r\nThis simple hack is not sufficient when the required set of archives changes. (e.g. initially we were okay with android NDK, and now we need openAL archive too).\r\n\r\ncl/7162 was an attempt to detect this condition. \r\n\r\nThe initial version was to record the required archive list in a json file. If it doesn't match with what the gomobile tool requires now, we start from scratch. It's simple, but cannot detect corrupted tool chains - what if the files are gone or misplaced.\r\n\r\nThe second version was to check the tool directory and see if necessary files are in the expected places. It's not perfect because we don't check all files. Checking against some checksums is the next thing to do. \r\n\r\nAnother proposal is to store the fetched archives (tar.gz files) in a directory under GOPATH/pkg/gomobile, and if all of the required archives exist, reuse them and start the init process from extracting the archives. Which is much cleaner than the second version. But, this adds complexity  and more points to break compared to letting gomobile init always start from scratch.\r\n\r\nFinally, we can make 'gomobile init' always start from scratch by default. Make it possible to skip the ndk fetch optionally - for developers who have to work with tip. ",
+	"user": {
+		"login": "hyangah",
+		"id": 4999471,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "hyangah",
+		"id": 4999471,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-05-07T17:21:16Z",
+	"created_at": "2015-03-17T20:30:28Z",
+	"updated_at": "2016-06-25T02:03:28Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

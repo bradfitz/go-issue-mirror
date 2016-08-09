@@ -1,0 +1,12 @@
+{
+	"id": 177381740,
+	"body": "I think you're making this more complicated than it needs to be. It's up to the application programmer to pick the size of the reserved memory. Well-written recovery code is going to take very little memory. All it should do is drop references to data structures, call runtime.GC() and then re-reserve memory.\r\n\r\nControl over every single function call isn't necessary. It's a common pattern that there are a small number of goroutines doing \"housekeeping\", and one or more goroutines doing the heavy transactions, and those are the ones that need to throttle. The reserved memory allows the housekeeping code to continue. All we need is a way for goroutines (or functions) to register that they want to handle an OOM panic. The heavy allocation functions register this interest and no-one else does. When the initial OOM occurs, the functions that registered interest will get the notification and stop what they're doing (just like with panic()), and all the others will continue, eating a little from the reserved memory.\r\n\r\nI think that we can do this with a \"soft panic\", which only affects those functions who have registered. If registered, the notification has the same behaviour as a panic(). One possible API is to have a defer-like statement (perhaps onnotification) that a function can use to register interest. Every function up the call stack that registered would get the notification. Another possible API is a failifnotified() function which would return a bool indicating whether a notification was received while running the provided function.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-31T04:21:06Z",
+	"updated_at": "2016-01-31T04:21:06Z"
+}

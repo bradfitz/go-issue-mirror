@@ -1,0 +1,27 @@
+{
+	"id": 51279282,
+	"number": 2490,
+	"state": "closed",
+	"title": "x/net/websocket: using cgo call unnecessarily?",
+	"body": "by **vladimir.webdev**:\n\n\u003cpre\u003eComplete code to reproduce:\n\npackage main\n\nimport (\n       \u0026quot;fmt\u0026quot;\n       \u0026quot;websocket\u0026quot;\n)\n\nfunc openConn(ch chan\u0026lt;- int) {\n       ws, err := websocket.Dial(\u0026quot;ws://localhost:9999/\u0026quot;, \u0026quot;\u0026quot;, \u0026quot;http://\nlocalhost/\u0026quot;)\n       if err != nil {\n               fmt.Sprintf(\u0026quot;Dial: \u0026quot; + err.String())\n       }\n       defer ws.Close()\n\n       ch \u0026lt;- 1\n}\n\nfunc main() {\n       ch := make(chan int)\n\n       for i := 0; i \u0026lt; 1000; i++ {\n               go openConn(ch)\n       }\n\n       ch \u0026lt;- 1\n}\n\nIt fails with:\n\nruntime/cgo: pthread_create failed: Resource temporarily unavailable\nSIGABRT: abort\nPC=0xf97422\n\nDiscussion:\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/520bdb93d99ee536/a1fdd8c8640cce46#a1fdd8c8640cce46\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/520bdb93d99ee536/a1fdd8c8640cce46#a1fdd8c8640cce46\u003c/a\u003e\n\nQuote from 0xe2.0x9a.0...@gmail.com:\n\nThe websocket.Dial function is (indirectly) using cgo. Each cgo call\nbehaves like a syscall. The websocket.Dial() function will try to\nallocate C memory when performing address lookup - the memory\nallocation (a cgo call) causes the Go runtime to create another OS\nthread to handle goroutines. An OS thread (presumably, the newly\ncreated one) calls websocket.Dial() from another goroutine created by\nyour program, and tries to allocate another piece of C memory, which\nin turn creates another OS thread.\nThis ends up creating too many OS threads.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:13:17Z",
+	"created_at": "2011-11-22T11:18:25Z",
+	"updated_at": "2016-08-05T16:08:06Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"id": 147690508,
+	"number": 15250,
+	"state": "closed",
+	"title": "net: reading a connectionless datagram socket after a CloseRead still blocks indefinitely",
+	"body": "I was trying to cleanly close a Unix socket (i.e. stop receiving traffic, read all the socket buffer and then close the socket) but found it a bit cumbersome.\r\n\r\nThe issue is that the following code blocks indefinitely:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n)\r\n\r\nfunc main() {\r\n\tvar socket = \"/tmp/test.sock\"\r\n\taddr, err := net.ResolveUnixAddr(\"unixgram\", socket)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tconn, err := net.ListenUnixgram(\"unixgram\", addr)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tw, err := net.DialUnix(\"unixgram\", nil, conn.LocalAddr().(*net.UnixAddr))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tif _, err := w.Write([]byte(\"foo\")); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tif err := conn.CloseRead(); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tbuf := make([]byte, 10)\r\n\tn, err := conn.Read(buf)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Println(string(buf[:n])) // Prints foo.\r\n\r\n\tn, err = conn.Read(buf) // Hangs indefinitely. Should it return io.EOF?\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Println(string(buf[:n]))\r\n}\r\n```\r\n\r\nTo read all the socket buffer without blocking indefinitely you have to either:\r\n 1.  use `conn.Close()` after a timeout to unblock `conn.Read()`\r\n 2. use `conn.File()` and `syscall.SetNonblock()` to read the connection buffer in a non-blocking way\r\n\r\nI don't like `1.` since it would make my tests slow or flaky. `2.` works well but it makes the code more complex.\r\n\r\n\r\nSince after a `CloseRead()`, a socket cannot receive more data I think it would make sense that `Read` returns an `io.EOF` when it reaches the end of the connection buffer.",
+	"user": {
+		"login": "alexcesaro",
+		"id": 832479,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-04-14T09:04:58Z",
+	"created_at": "2016-04-12T09:29:49Z",
+	"updated_at": "2016-04-14T09:04:59Z"
+}

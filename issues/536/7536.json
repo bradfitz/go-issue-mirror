@@ -1,0 +1,22 @@
+{
+	"id": 51286850,
+	"number": 7536,
+	"state": "closed",
+	"title": "encoding/json: MarshalJSON isn't called for fields of a non-pointer struct",
+	"body": "by **timothy.stranex**:\n\n\u003cpre\u003e$ go version\ngo version go1.2 darwin/amd64\n\nHere is a link to a program on play.golang.org that demonstrates the problem.\n\u003ca href=\"http://play.golang.org/p/HXNEgYhZgE\"\u003ehttp://play.golang.org/p/HXNEgYhZgE\u003c/a\u003e\n\nFor reference, this is the program:\n\n-------\npackage main\n\nimport \u0026quot;encoding/json\u0026quot;\nimport \u0026quot;fmt\u0026quot;\n\ntype DecimalE8 int64\n\nfunc (d *DecimalE8) MarshalJSON() ([]byte, error) {\n\treturn []byte(fmt.Sprintf(\u0026quot;%.8f\u0026quot;, float64(*d) / 1e8)), nil\n}\n\ntype Payment struct {\n\tAmount DecimalE8\n}\n\nfunc main() {\n\tvar p Payment\n\tp.Amount = 123456789\n\n\ts1, _ := json.Marshal(p)\n\tfmt.Println(string(s1))\n\n\ts2, _ := json.Marshal(\u0026amp;p)\n\tfmt.Println(string(s2))\n}\n-------\n\nThe actual output from this program is:\n{\u0026quot;Amount\u0026quot;:123456789}\n{\u0026quot;Amount\u0026quot;:1.23456789}\n\nThe expected output is:\n{\u0026quot;Amount\u0026quot;:1.23456789}\n{\u0026quot;Amount\u0026quot;:1.23456789}\n\nBasically it seems that DecimalE8.MarshalJSON isn't being used when the struct is passed\nas a value to json.Marshal but it is used when it's passed as a pointer. I would expect\nthat DecimalE8.MarshalJSON be used in both cases.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:41:55Z",
+	"created_at": "2014-03-13T16:02:37Z",
+	"updated_at": "2016-06-25T01:29:45Z"
+}

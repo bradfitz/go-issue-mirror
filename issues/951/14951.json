@@ -1,0 +1,21 @@
+{
+	"id": 143365538,
+	"number": 14951,
+	"state": "open",
+	"title": "runtime: mutator assists are over-aggressive, especially at high GOGC",
+	"body": "@RLH and I have been discussing this problem for the past week. This issue is to track our thoughts.\r\n\r\nThe current GC pacer is conservative about scheduling mutator assists and this leads to a cycle where we over-assist (use too much CPU for GC) and under-shoot the heap goal.\r\n\r\nSpecifically, GC currently assumes it may have to scan the entire live heap before the live heap size reaches the heap goal. It sets the assist ratio accordingly. If the reachable heap is growing, this conservative assumption is necessary to prevent the mutator from outpacing the garbage collector and spiraling the heap size up. However, in steady state (where the reachable heap size is roughly the same as it was the last GC cycle), this means we'll finish garbage collection when we're less than 100/(GOGC+100) of the way from the trigger to the goal (1/2 way for GOGC=100; 1/4 way for GOGC=300; etc).\r\n\r\n![overassist](https://cloud.githubusercontent.com/assets/2688315/14031881/762a8fd4-f1e5-11e5-990f-b35e165ec558.png)\r\n\r\nYou might think the trigger controller would adapt by setting the GC trigger lower in response to the over-utilization, but in fact, this drives the trigger controller into a state of persistent CPU over-utilization and heap under-shoot. Currently, the trigger controller will leave the trigger where it is if we're anywhere on the white edge between CPU utilization and heap over-shoot shown below:\r\n\r\n![trigger](https://cloud.githubusercontent.com/assets/2688315/14031986/229bc756-f1e6-11e5-832e-76109cbe5f04.png)\r\n\r\nThe under-shoot caused by the over-assist forces the trigger controller to the left of the ideal point on this curve. Since this persists, we eventually settle well to the left of the ideal, repeatedly setting the trigger too close to the goal, which leads to the next cycle setting a high assist ratio and again finishing early.\r\n\r\nThis is particularly visible in applications with a high allocation rate and/or high GOGC.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"created_at": "2016-03-24T21:32:18Z",
+	"updated_at": "2016-03-31T14:26:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

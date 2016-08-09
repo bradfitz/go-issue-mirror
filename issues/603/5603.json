@@ -1,0 +1,22 @@
+{
+	"id": 51283892,
+	"number": 5603,
+	"state": "closed",
+	"title": "cmd/cgo: long long not working with gcc 4.7 on Windows",
+	"body": "by **zombie.fml**:\n\n\u003cpre\u003eSummary: __attribute__((__packed__)) is broken on Windows with gcc 4.7\nusing the default compiler options.\n\nI noticed this problem when compiling go on Windows. The build failed when testing\nmisc/cgo/test at `testParallelSleep`. It reported a very long duration between\ntwo parallel 1s sleeps.\n\nThis is my system information:\n\ngcc.exe (GCC) 4.7.2/mingw ** NOTE gcc version is important\ngo version go1.1 windows/386\n8g\nWindows 7 32-bit\n\nWith gcc 4.7, Windows mingw targets are using the -mms-bitfields option by default.\nSee \u003ca href=\"http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52991\"\u003ehttp://gcc.gnu.org/bugzilla/show_bug.cgi?id=52991\u003c/a\u003e and\n\u003ca href=\"http://gcc.gnu.org/gcc-4.7/changes.html\"\u003ehttp://gcc.gnu.org/gcc-4.7/changes.html\u003c/a\u003e\n\nThis flag causes __attribute__((__packed__)) not working as intended on structs.\ncgo generates code that relies on __attribute__((__packed__)) which is then broken.\n\nI wrote a simple test code at \u003ca href=\"http://play.golang.org/p/VnXvU4yQPw\"\u003ehttp://play.golang.org/p/VnXvU4yQPw\u003c/a\u003e\nThe expected output is four 0x12345678. But the output is:\n\n$ go run 64.go\nx0 = 0x12345678, x1 = 0x1234567800000000, x2 = 0x12345678, x3 = 0x1234567800000000, x4 =\n0x12345678\n\nI modified cgo generated intermediate c code during compiling to output the\nstruct size. Like this one:\n\nvoid\n_cgo_f861c44e4fb7_Cfunc_foo1(void *v)\n{\n\tstruct foo {\n\t\tvoid* p0;\n\t\tlong long int r;\n\t} __attribute__((__packed__)) *a = v;\n\tint i = 0;\n\tunsigned char *p = (unsigned char*)a;\n\ta-\u0026gt;r = foo1((void*)a-\u0026gt;p0);\n\tfor (i = 0; i \u0026lt; sizeof(*a); i++, p++) {\n\t\tprintf(\u0026quot;0x%x \u0026quot;, *p);\n\t}\n\tprintf(\u0026quot;--foo1, sizeof = %d, offset(r) = %d\\n\u0026quot;, sizeof(*a), offsetof(struct foo, r));\n}\n\nAnd I got this output:\n\n$ go run 64.go\nx0 = 0x12345678, x1 = 0x1234567800000000, x2 = 0x12345678, x3 = 0x1234567800000000, x4 =\n0x12345678\n0x78 0x56 0x34 0x12 0x0 0x0 0x0 0x0 --foo0, sizeof = 8, offset(r) = 0\n0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x78 0x56 0x34 0x12 0x0 0x0 0x0 0x0 --foo1, sizeof = 16,\noffset(r) = 8\n0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x78 0x56 0x34 0x12 0x0 0x0 0x0 0x0 --foo2, sizeof = 16,\noffset(r) = 8\n0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x78 0x56 0x34 0x12 0x0\n0x0 0x0 0x0 --foo3, sizeof = 24, offset(r) = 16\n0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x78 0x56 0x34 0x12 0x0\n0x0 0x0 0x0 --foo4, sizeof = 24, offset(r) = 16\n\nThere's a 4-byte padding in foo1 and foo3 which is not expected. The ·_Cfunc_foo1\nand ·_Cfunc_foo3 functions in _cgo_defun.c passes a 12 and 20 bytes buffer to \n_cgo_f861c44e4fb7_Cfunc_foo1 and _cgo_f861c44e4fb7_Cfunc_foo3 respectively. But\nthe actual struct sizes are 16 and 24 respectively.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:30:29Z",
+	"created_at": "2013-05-31T14:09:31Z",
+	"updated_at": "2016-06-24T22:41:34Z"
+}

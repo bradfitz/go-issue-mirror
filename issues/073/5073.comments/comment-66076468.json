@@ -1,0 +1,12 @@
+{
+	"id": 66076468,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThe test is in \u003ca href=\"https://golang.org/cl/7799046/\"\u003ehttps://golang.org/cl/7799046/\u003c/a\u003e\n\nMake sure that fix is not in your tree (if I submit it soon) or sync to 43eb97ed849a,\nand then patch in that test  to os/exec/exec_test.go (after TestPipes), making the loop\ncount much more than 4.  Say, 50:\n\n// \u003ca href=\"https://golang.org/issue/5071\"\u003eissue #5071\u003c/a\u003e\nfunc TestPipeLookPathLeak(t *testing.T) {\n        fd0 := numOpenFDS(t)\n        for i := 0; i \u0026lt; 50; i++ {\n                cmd := Command(\"something-that-does-not-exist-binary\")\n\t        cmd.StdoutPipe()\n                cmd.StderrPipe()\n\t        cmd.StdinPipe()\n                if err := cmd.Run(); err == nil {\n                        t.Fatal(\"unexpected success\")\n\t        }\n        }\n        fdGrowth := numOpenFDS(t) - fd0\n\tif fdGrowth \u0026gt; 2 {\n                t.Errorf(\"leaked %d fds; want ~0\", fdGrowth)\n        }\n}\n\nfunc numOpenFDS(t *testing.T) int {\n        lsof, err := Command(\"lsof\", \"-n\", \"-p\", strconv.Itoa(os.Getpid())).Output()\n        if err != nil {\n                t.Skip(\"skipping test; error finding or running lsof\")\n                return 0\n        }\n\treturn bytes.Count(lsof, []byte(\"\\n\"))\n}\n\n\n...\n\nAnd then run \"go test -v os/exec\" (run all tests, not just the leaky one, because a\nfuture one must use epoll_wait)\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-18T15:13:55Z",
+	"updated_at": "2014-12-22T06:23:24Z"
+}

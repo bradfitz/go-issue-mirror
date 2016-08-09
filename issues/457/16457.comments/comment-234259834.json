@@ -1,0 +1,12 @@
+{
+	"id": 234259834,
+	"body": "Looks as though the 1.7 compiler has decided to leave the sqrt() call inside the inner loop for some reason (in spite of it being loop-invariant).  Assembly for 1.7 for the inner loop looks like\r\n\r\n```\r\n\t0x0115 00277 (testcase.go:52)\tMOVLQZX\tSI, R9\r\n\t0x0118 00280 (testcase.go:52)\tCVTSQ2SD\tR9, X0\r\n\t0x011d 00285 (testcase.go:52)\tSQRTSD\tX0, X0\r\n\t0x0121 00289 (testcase.go:52)\tCVTTSD2SQ\tX0, R9\r\n\t0x0126 00294 (testcase.go:53)\tCMPL\tR8, R9\r\n\t0x0129 00297 (testcase.go:53)\tJHI\t$0, 341\r\n\t0x012b 00299 (testcase.go:54)\tTESTL\tR8, R8\r\n\t0x012e 00302 (testcase.go:54)\tJEQ\t$0, 334\r\n\t0x0130 00304 (testcase.go:54)\tMOVL\tSI, AX\r\n\t0x0132 00306 (testcase.go:54)\tXORQ\tDX, DX\r\n\t0x0135 00309 (testcase.go:54)\tDIVL\tR8\r\n\t0x0138 00312 (testcase.go:54)\tTESTL\tDX, DX\r\n\t0x013a 00314 (testcase.go:54)\tJEQ\t$0, 327\r\n\t0x013c 00316 (testcase.go:53)\tADDL\t$2, R8\r\n\t0x0140 00320 (testcase.go:60)\tMOVQ\t\"\".autotmp_48+88(SP), DX\r\n\t0x0145 00325 (testcase.go:52)\tJMP\t277\r\n\r\n```\r\nFor 1.6 the inner loop looks like:\r\n\r\n```\r\n\t0x01e2 00482 (testcase.go:54)\tMOVL\tSI, AX\r\n\t0x01e4 00484 (testcase.go:54)\tMOVL\t$0, DX\r\n\t0x01e6 00486 (testcase.go:54)\tDIVL\tCX\r\n\t0x01e8 00488 (testcase.go:54)\tCMPL\tDX, $0\r\n\t0x01eb 00491 (testcase.go:54)\tJEQ\t270\r\n\t0x01f1 00497 (testcase.go:53)\tADDL\t$2, CX\r\n\t0x01f4 00500 (testcase.go:53)\tNOP\r\n\t0x01f4 00500 (testcase.go:53)\tCMPL\tCX, R8\r\n\t0x01f7 00503 (testcase.go:53)\tJLS\t$0, 482\r\n\r\n```\r\nAlso appears that the 1.7 compiler is not able to eliminate divide-by-zero check if I am reading that correctly, but I don't think that's the real performance issue.\r\n",
+	"user": {
+		"login": "thanm",
+		"id": 12280172,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-21T13:53:32Z",
+	"updated_at": "2016-07-21T13:53:32Z"
+}

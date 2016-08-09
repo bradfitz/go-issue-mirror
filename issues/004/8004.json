@@ -1,0 +1,27 @@
+{
+	"id": 51287531,
+	"number": 8004,
+	"state": "closed",
+	"title": "runtime: \"valid\" use of reflect.SliceHeader confuses garbage collector",
+	"body": "\u003cpre\u003eBroken even in Go 1.2 but legal according to what we've typically said about the use of\nSliceHeader. It's not clear what to do. The simplest thing might be to make any GC\nprogram treat *SliceHeader the same as unsafe.Pointer, so that the collection uses the\nheap type information to follow the pointer.\n\n\u003ca href=\"http://play.golang.org/p/FusOBSDXlo\"\u003ehttp://play.golang.org/p/FusOBSDXlo\u003c/a\u003e\n\npackage main\n\nimport (\n\t\u0026quot;reflect\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n\t\u0026quot;unsafe\u0026quot;\n)\n\nfunc main() {\n\tvar all []interface{}\n\tfor i := 0; i \u0026lt; 100; i++ {\n\t\tp := new([]int)\n\t\t*p = append(*p, 1, 2, 3, 4)\n\t\th := (*reflect.SliceHeader)(unsafe.Pointer(p))\n\t\tall = append(all, h, p)\n\t}\n\truntime.GC()\n\tfor i := 0; i \u0026lt; 100; i++ {\n\t\tp := *all[2*i+1].(*[]int)\n\t\tif p[0] != 1 || p[1] != 2 || p[2] != 3 || p[3] != 4 {\n\t\t\tprintln(\u0026quot;bad slice1 at index\u0026quot;, i, p[0], p[1], p[2], p[3])\n\t\t}\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:44:22Z",
+	"created_at": "2014-05-15T17:56:02Z",
+	"updated_at": "2016-06-25T01:34:21Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

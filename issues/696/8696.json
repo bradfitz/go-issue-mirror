@@ -1,0 +1,27 @@
+{
+	"id": 51288566,
+	"number": 8696,
+	"state": "closed",
+	"title": "runtime: StackCopyAlways may try to relocate C stacks",
+	"body": "by **joshrickmar**:\n\n\u003cpre\u003eTesting a program using gotk3 (github.com/conformal/gotk3) with go tip, I'm seeing some\nissues when callbacks (written with Go) are called from a C stack.  Since changeset\n525df84041d0, which enables StackCopyAlways, I can predictably reproduce the following\nruntime panic:\n\nruntime: copystack: no locals info for runtime.cgocallback_gofunc\nfatal error: split stack not allowed\n\ngotk3 keeps closures around that are run when GObject signals for the object the closure\nwas connected to are fired.  Here is the relevant C code, which causes the Go function\ngoMarshal to run whenever the GClosure is invoked:\n\nextern void     goMarshal(GClosure *, GValue *, guint, GValue *, gpointer, GValue *);\n \nstatic GClosure *\n_g_closure_new()\n{\n        GClosure        *closure;\n\n        closure = g_closure_new_simple(sizeof(GClosure), NULL);\n        g_closure_set_marshal(closure, (GClosureMarshal)(goMarshal));\n        return (closure);\n}\n\ngoMarshal then looks up the correct (reflected) Go closure to run, and invokes it, while\nstill on the C stack.\n\nIf this is invalid Go usage then I'll be happy to modify gotk3 to be 1.4 compatible, but\nI'm unsure how this would be possible while still running Go code on the C stack.  Ideas?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:48:13Z",
+	"created_at": "2014-09-10T14:19:09Z",
+	"updated_at": "2016-06-25T01:41:10Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

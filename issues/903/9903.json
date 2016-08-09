@@ -1,0 +1,30 @@
+{
+	"id": 57887379,
+	"number": 9903,
+	"state": "closed",
+	"title": "time: fix test flakiness on OpenBSD",
+	"body": "The time tests seem flaky on OpenBSD for some reason.  E.g., recent-ish time.TestAfterQueuing failures on openbsd/amd64:\r\n\r\nhttp://build.golang.org/log/7cf643d530ccbe39c97376ffdb2af64db66bcb5d\r\nhttp://build.golang.org/log/10a9c8a1ffc2a088f48a12fdc9379f91a8bbc8b8\r\nhttp://build.golang.org/log/702430fd8bf22805d19672d0795f6bc0d1395e6b\r\nhttp://build.golang.org/log/cb50ea140b06232bdecb4c926134c9113f94e56a\r\n\r\nHere's a time.TestReset failure on openbsd/amd64:\r\n\r\nhttp://build.golang.org/log/26bb60d01823523470ffe47c7ed5fa9cdb280513\r\n\r\nFlakiness has been seen on openbsd/386 in the past too; e.g.\r\n\r\nhttp://build.golang.org/log/bd19f8590db8c7f317b3f968ac1af5126f5449cf\r\n\r\nI've previously conjectured that this could be related to random scheduling delays interacting with repeated absolute\u003c-\u003erelative timeout conversions in package runtime, but after measuring this seems unlikely (see https://groups.google.com/d/msg/golang-dev/AbSUgOucZyk/6ea0yP3ba1QJ).\r\n\r\nIt's possible this is actually an OpenBSD kernel issue.  One conjecture I have at the moment is that the tc_windup() function (http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/kern/kern_tc.c) is not multiprocessor safe, because it doesn't use proper memory barriers.  E.g., the final \"timehands = th;\" assignment might become visible to another thread before the modifications to the struct timehands's fields become visible.\r\n\r\nAside: I pointed this out privately to PHK in 2010, to which he responded \"You are probably right, explicit memory barriers are probably called for.\" but FreeBSD still does not use memory barriers in tc_windup() either as far as I can tell: https://github.com/freebsd/freebsd/blob/master/sys/kern/kern_tc.c\r\n\r\nNetBSD appears to have added explicit memory barriers back in 2007: http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/kern/kern_tc.c#rev1.20",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "OS-OpenBSD"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-05-06T19:27:13Z",
+	"created_at": "2015-02-17T06:12:20Z",
+	"updated_at": "2016-06-25T02:01:02Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

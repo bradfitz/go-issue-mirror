@@ -1,0 +1,12 @@
+{
+	"id": 213893555,
+	"body": "I ran into this issue while trying to improve the speed of bcrypt. Running something like the following benchmarks (https://bitbucket.org/snippets/SamWhited/aKK6k):\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"sync\"\r\n\t\"testing\"\r\n\r\n\t\"golang.org/x/crypto/bcrypt\"\r\n)\r\n\r\nvar pass = []byte(`superfly`)\r\n\r\nconst cost = 11\r\n\r\nfunc BenchmarkBcrypt(b *testing.B) {\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tcrypt, _ := bcrypt.GenerateFromPassword(pass, cost)\r\n\t\t_ = crypt\r\n\t}\r\n}\r\n\r\n// One should probably generally limit CPU bound work to a handful of goroutines/threads,\r\n// but for the purpose of example, do it the naive way and just emulate someone who has\r\n// run their bcrypts directly in the requests without gating the max number that can run at once…\r\nfunc runParallelBcrypts(num int) {\r\n\tvar wg sync.WaitGroup\r\n\twg.Add(num)\r\n\tfor i := 0; i \u003c num; i++ {\r\n\t\tgo func() {\r\n\t\t\tcrypt, _ := bcrypt.GenerateFromPassword(pass, cost)\r\n\t\t\t_ = crypt\r\n\t\t\twg.Done()\r\n\t\t}()\r\n\t}\r\n\twg.Wait()\r\n}\r\n\r\nfunc BenchmarkBcrypt10Parallel(b *testing.B) {\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\trunParallelBcrypts(10)\r\n\t}\r\n}\r\n\r\nfunc BenchmarkBcrypt100Parallel(b *testing.B) {\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\trunParallelBcrypts(100)\r\n\t}\r\n}\r\n```\r\n\r\nresulted in a small, but noticeable (especially at higher levels of concurrency) improvement in performing lots of bcrypts (the improvement mostly appears to come from the blowfish `ExpandKey` function, which isn't inlined by default and makes a *lot* of function calls in a loop) when forcing the function to be inlined.\r\n\r\nNumbers and graph:\r\n\r\nhttps://docs.google.com/spreadsheets/d/1aUpR62qS7CJkPEO2CzNwY4R0MHFxM1WbdBJZAeRmYK8/edit?usp=sharing\r\n\r\nthe only change between benchmarks here was setting maxBudget to 1000 (which is enough to inline the `ExpandKey` function).\r\n\r\n*EDIT*: Slightly different format for the report I put together that is self contained and doesn't fall down hard on low bandwidth connections: http://bl.ocks.org/SamWhited/ebe4f5923526c0d9220f1b5b23b56eba",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-24T05:50:26Z",
+	"updated_at": "2016-04-25T19:13:50Z"
+}

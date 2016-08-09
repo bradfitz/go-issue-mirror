@@ -1,0 +1,12 @@
+{
+	"id": 111642321,
+	"body": "\u003e I have not looked at the GC code recently, but I would assume that GC threads are still able to discover pointers by means other than picking up write barrier buffers. And consequently something along the following lines should be possible. Thread 1 allocates an object O and updates arena_used/h_spans. Then thread 1 writes pointer to O into heap. Then GC thread discovers the pointer on its own (by following pointers from roots). GC thread sees the updates value of arena_used, so it starts processing the pointer. But GC thread does not see the updated value of h_spans, so when it consults the span table it finds a stale span on no span at all. At this point GC decided that the pointer is bogus and terminates the program.\r\n\r\nI definitely agree that the GC thread could observe a nil *mspan if the object came from a freshly allocated span. However, I argue that this is safe because scanobject will simply ignore the pointer and whatever thread published it to the heap will eventually execute the write barrier, which will grey the object. In a race-free program, the publishing thread will observe sufficiently up-to-date arena_used and spans because it either allocated the object itself or got it through some means that created a happens-before edge.\r\n\r\nI think you're also right that the GC can observe a non-nil stale span, which is much more of a danger. One way this can happen right now is that we publish span pointers without a barrier, so the GC could observe a pointer in h_spans but observe stale values of the pointed-to mspan. Half of Russ' CL 10817 addresses this by making stores to h_spans atomic. The data dependency takes care of the load side.\r\n\r\nI think the only other way this can happen is when an existing span transitions from free to in-use during a GC cycle. In this case, the GC could observe a pointer into the span, but observe the stale span state and crash. Somewhat ironically, what's currently on HEAD simply ignores this case, which I believe is a correct way to fix it since the write barrier on the mutator thread will take care of greying the object. However, CL 10818 proposes re-enabling this test.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-12T23:40:14Z",
+	"updated_at": "2015-06-12T23:40:14Z"
+}

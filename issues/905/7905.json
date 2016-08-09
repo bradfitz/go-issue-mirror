@@ -1,0 +1,27 @@
+{
+	"id": 51287378,
+	"number": 7905,
+	"state": "closed",
+	"title": "testing: provide access to initial thread from tests",
+	"body": "\u003cpre\u003eI spent some time on GopherCon trying to figure how to make the qml package work\nsmoothly on Mac OS. Apparently it was working fine out of luck, because the OS requires\nsome calls to be made from the initial thread. Now something unrelated was touched, and\nthe graphic goroutine is landing on a different thread and generating errors.\n\nThe solution is simple: an init function that locks the main thread, and a qml.Run\nfunction that runs the main loop. Problem solved.\n\nExcept, that doesn't work with the testing package anymore, because the test logic\nitself is run at the end of main, and tests are moved on their own goroutine.\n\nThis problem might be easily solved by changing the test template from:\n\n  testing.Main(matchString, tests, benchmarks, examples)\n\nto something like:\n\n  go func() {\n          testing.Main(matchString, tests, benchmarks, examples)\n          close(done)\n  }()\n  if testing.RunFromMain != nil {\n          testing.RunFromMain(done)\n  }\n  \u0026lt;-done\n\nThen, for the qml package, I'd implement RunFromMain along the lines of:\n\n  testing.RunFromMain = func(done chan struct{}) {\n          stopWhenClosed(done)\n          qml.Run(nil)\n  }\n\nCan we add such a testing.RunFromMain hook?\n\nAnother alternative, suggested by Dmitry Vyukov, is to run tests on the initial thread\ninstead of spawning them in goroutines. That would solve the problem too.\u003c/pre\u003e",
+	"user": {
+		"login": "niemeyer",
+		"id": 378683,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:43:49Z",
+	"created_at": "2014-04-30T16:25:19Z",
+	"updated_at": "2016-06-25T01:33:27Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

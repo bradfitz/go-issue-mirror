@@ -1,0 +1,12 @@
+{
+	"id": 66065641,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThe fundamental difference is demonstrated by this trivial program:\n\nfunc main() {\n  x := 257.0\n  println(uint8(x))\n}\n\n6g: prints 1\n8g: prints 0\n\niant tells me that gccgo prints 1 in 64-bit mode and 255 in 32-bit mode. I'll re-assign\nthe bug to him, and let iant/rsc decide where to take it.\n\n\nphrozen10, a workaround is to change the lines in func HSVToRGB from\n\n    r := uint8((fR * 255) + 0.5)\n    g := uint8((fG * 255) + 0.5)\n    b := uint8((fB * 255) + 0.5)\n\nto\n\n    conv := func(x float64) uint8 {\n        if x \u0026lt; 0 {\n            return 0\n        }\n        if x \u0026gt; 1 {\n            return 255\n        }\n        return uint8(int(x*255 + 0.5))\n    }\n    r, g, b := conv(fR), conv(fG), conv(fB)\n\nThat should give you similar colors on both 32-bit and 64-bit.\n\nEven so, the actual image produced will differ between the 32-bit and 64-bit versions.\nThe sin/cos implementations are slightly different on each (IIUC 32-bit uses 80-bit\nfloats for intermediate values, 64-bit uses 64-bit floats throughout), and even though\nthe differences are initially small, chaotic attractors will magnify any small\nperturbation.\u003c/pre\u003e\n\n\n_Owner changed to @ianlancetaylor._",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-29T05:02:56Z",
+	"updated_at": "2014-12-22T06:12:53Z"
+}

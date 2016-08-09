@@ -1,0 +1,12 @@
+{
+	"id": 66049517,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1 by **x41@freeshell.org**:\n\n\u003cpre\u003e/usr/include/bits/string3.h:106: warning: \ncall to __builtin___strcpy_chk will always overflow destination buffer\n\nAnd this i intentionally not allowed with -D_FORTIFY_SOURCE=2, which doesn't allow\ncrossing field boundaries for str*/stp* etc. functions (and still allows that\nfor mem* etc.).\n\nIf we use -00 the problem is resolved, but if we really need to use -02 or -03\nwe have to edit Make.conf and modify like this:\n \nCFLAGS=-ggdb -I$(GOROOT)/include -O2 -fno-inline -D_FORTIFY_SOURCE=1\n\n\nThe difference between -D_FORTIFY_SOURCE=1 and -D_FORTIFY_SOURCE=2\nis e.g. for\nstruct S { struct T { char buf[5]; int x; } t; char buf[20]; } var;\nWith -D_FORTIFY_SOURCE=1,\nstrcpy (\u0026var.t.buf[1], \"abcdefg\");\nis not considered an overflow (object is whole VAR), while\nwith -D_FORTIFY_SOURCE=2\nstrcpy (\u0026var.t.buf[1], \"abcdefg\");\nwill be considered a buffer overflow.\n\n==================================================\n NOTE: In Ubuntu 8.10 and later versions, -D_FORTIFY_SOURCE=2\n is set by default, and is activated when -O is set to 2 or higher.\n This enables additional compile-time and run-time checks for several\n libc functions.  To disable, specify either -U_FORTIFY_SOURCE or\n -D_FORTIFY_SOURCE=0.\n==================================================\n\nIt thus OK to keep the bug as RESOLVED\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2009-12-08T05:16:09Z",
+	"updated_at": "2014-12-08T10:04:25Z"
+}

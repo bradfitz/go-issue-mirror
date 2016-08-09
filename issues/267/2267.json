@@ -1,0 +1,28 @@
+{
+	"id": 51278971,
+	"number": 2267,
+	"state": "closed",
+	"title": "encoding/gob: spin / crash",
+	"body": "\u003cpre\u003eEither the docs or implementation are wrong.\n\nThis crashes (after a few second pause burning CPU):\n\n$ cat gob.go\npackage main\n\nimport (\n\t\u0026quot;bytes\u0026quot;\n\t\u0026quot;gob\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\ntype BlobRef struct {\n\tfoo, bar string\n}\n\nfunc (br *BlobRef) String() string {\n\tif br == nil {\n\t\treturn \u0026quot;\u0026lt;nil BlobRef\u0026gt;\u0026quot;\n\t}\n\treturn br.foo + \u0026quot;-\u0026quot; + br.bar\n}\n\nfunc (br *BlobRef) GobEncode() ([]byte, os.Error) {\n\tlog.Printf(\u0026quot;GobEncode\u0026quot;)\n        return []byte(br.String()), nil\n}\n\nfunc (br *BlobRef) GobDecode(b []byte) os.Error {\n\tif br == nil {\n\t\tpanic(\u0026quot;nil receiver in GobDecode\u0026quot;)\n\t}\n\tlog.Printf(\u0026quot;GobDecode(%q)\u0026quot;, string(b))\n\tbr.foo = \u0026quot;foo\u0026quot;\n\tbr.bar = \u0026quot;bar\u0026quot;\n\treturn nil\n}\n\nfunc main() {\n\tbr := \u0026amp;BlobRef{\u0026quot;foo\u0026quot;, \u0026quot;bar\u0026quot;}\n\tlog.Printf(\u0026quot;blobref String = %q\u0026quot;, br)\n\n\tbuf := new(bytes.Buffer)\n\te := gob.NewEncoder(buf)\n\terr := e.Encode(br)\n        if err != nil {\n\t\tlog.Fatalf(\u0026quot;Encode: %v\u0026quot;, err)\n        }\n\n\td := gob.NewDecoder(buf)\n        var got *BlobRef\n        err = d.Decode(\u0026amp;got)\n        if err != nil {\n\t\tlog.Fatalf(\u0026quot;Decode: %v\u0026quot;, err)\n        }\n\tif got == nil {\n                log.Fatalf(\u0026quot;got == nil\u0026quot;)\n        }\n\n\tif got.String() != br.String() {\n                log.Fatalf(\u0026quot;got = %q, want %q\u0026quot;, got, br)\n\t}\n\tlog.Printf(\u0026quot;got = %q\u0026quot;, \u0026amp;got)\n}\n\n\n$ gorun gob.go\n2011/09/16 17:30:30 blobref String = \u0026quot;foo-bar\u0026quot;\n2011/09/16 17:30:30 GobEncode\n2011/09/16 17:30:30 GobDecode(\u0026quot;foo-bar\u0026quot;)\nunexpected fault address 0x0\nthrow: fault\n[signal 0xb code=0x80 addr=0x0 pc=0x409172]\n\ngoroutine 1 [running]:\nmain.(*BlobRef).String(0xf840000740, 0x45e7b0, 0xf8400002b8, 0x0)\n\t/home/bradfitz/goplay/gob.go:18 +0x7d\nmain.main()\n\t/home/bradfitz/goplay/gob.go:57 +0x427\n\n\n\n$ hg identify\n849002209017 tip\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2267/0/gob.go\"\u003egob.go\u003c/a\u003e (1089 bytes)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:12:12Z",
+	"created_at": "2011-09-17T00:32:36Z",
+	"updated_at": "2016-06-24T19:34:52Z"
+}

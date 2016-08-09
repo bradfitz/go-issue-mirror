@@ -1,0 +1,27 @@
+{
+	"id": 51288217,
+	"number": 8449,
+	"state": "closed",
+	"title": "log/syslog: New/Dial fail on FreeBSD",
+	"body": "by **erickheit@dyn.com**:\n\n\u003cpre\u003e% go version\ngo version go1.3 freebsd/amd64\n% uname -v\nFreeBSD 9.1-RELEASE #0 r243825: Tue Dec  4 09:23:10 UTC 2012\nroot@farrell.cse.buffalo.edu:/usr/obj/usr/src/sys/GENERIC\n\nsyslog.New() correctly finds the syslog unix-domain socket on linux, but not\non freebsd. On my (somewhat out-of-date) freebsd system, the code below gives\nthe less-than-helpful message: \u0026quot;Unix syslog delivery error\u0026quot;\n\nIt looks like a simple fix is to add \u0026quot;/var/run/log\u0026quot; to the logPaths list in\nsrc/pkg/log/syslog/syslog_unix.go\n\nThe workaround, of course, is to call\n\tsyslog.Dial(\u0026quot;unixgram\u0026quot;, \u0026quot;/var/run/log\u0026quot;,...)\ninstead, but that's not terribly portable.\n\nHere's a trivial test program:\n\npackage main\nimport \u0026quot;log/syslog\u0026quot;\nimport \u0026quot;fmt\u0026quot;\nimport \u0026quot;os\u0026quot;\n\nfunc main() {\n    slog, err := syslog.New(syslog.LOG_DAEMON, \u0026quot;stuff\u0026quot;)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \u0026quot;syslog.New failed: \u0026quot;, err)\n    }\n    slog.Info(\u0026quot;can you see me logging?\u0026quot;)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:46:59Z",
+	"created_at": "2014-07-30T21:58:38Z",
+	"updated_at": "2016-06-25T01:38:45Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

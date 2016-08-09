@@ -1,0 +1,33 @@
+{
+	"id": 51282813,
+	"number": 4907,
+	"state": "closed",
+	"title": "runtime: premature garbage collection crash",
+	"body": "\u003cpre\u003eFrom discussion of CL 7093045.\n\nThis reproduces the crash on both Linux and OS X amd64, building at tip.\n\n$ cat main.go\npackage main\n\nimport (\n\t\u0026quot;os\u0026quot;\n\t_ \u0026quot;./p\u0026quot;\n)\n\nfunc main() {\n\tos.Stat(os.Args[0])\n}\n$ cat p/p.go\npackage p\n\nimport \u0026quot;os\u0026quot;\n\nfunc unused() {\n\tfor arg := os.Args[1:]; len(arg) \u0026gt; 0; {\n\t}\n}\n$ go run main.go\nunexpected fault address 0x5002200001\nfatal error: fault\n[signal 0xb code=0x1 addr=0x5002200001 pc=0x41c105]\n\ngoroutine 1 [running]:\nruntime.throw(0x4881ca, 0x5002200001)\n\t/home/rsc/go/src/pkg/runtime/panic.c:462 +0x67\nruntime.sigpanic()\n\t/home/rsc/go/src/pkg/runtime/thread_linux.c:202 +0xe7\nsyscall.ByteSliceFromString(0x5002200001, 0xc200018078, 0xc200046000, 0xc2000290c0,\n0x419960, ...)\n\t/home/rsc/go/src/pkg/syscall/syscall.go:38 +0x45\nsyscall.BytePtrFromString(0x5002200001, 0xc200018078, 0x100000001, 0x2cc00000001,\n0x4464e0, ...)\n\t/home/rsc/go/src/pkg/syscall/syscall.go:56 +0x2f\nsyscall.Stat(0x5002200001, 0xc200018078, 0xc200046000, 0x0, 0x0, ...)\n\t/home/rsc/go/src/pkg/syscall/zerrors_linux_amd64.go:3179 +0x44\nos.Stat(0x5002200001, 0xc200018078, 0x0, 0x0, 0x0, ...)\n\t/home/rsc/go/src/pkg/os/file_unix.go:132 +0x6f\nmain.main()\n\t/home/rsc/main.go:9 +0x3d\nruntime.main()\n\t/home/rsc/go/src/pkg/runtime/proc.c:257 +0x99\nruntime.goexit()\n\t/home/rsc/go/src/pkg/runtime/proc.c:286\nexit status 2\n$ \n\nUsing hardware watchpoints I can see the memory get collected:\n\n$ go build main.go\n$ gdb main\nReading symbols from /home/rsc/main...done.\nLoading Go Runtime support.\n(gdb) print \u0026amp;'os.Args'\n$1 = (uintptr *) 0x48aaf8 \u0026lt;os.Args\u0026gt;\n(gdb) watch *(uintptr*)0x48aaf8\nHardware watchpoint 1: *(uintptr*)0x48aaf8\n(gdb) r\nStarting program: /home/rsc/main \ngoenvs_args 1 0x7fffffffe808 0x7fffffffead2 0x0\nHardware watchpoint 1: *(uintptr*)0x48aaf8\n\nOld value = 0\nNew value = 833223753728\n# NOTE: gdb is showing the line *after* the instruction that did the write.\nruntime.goargs () at /home/rsc/go/src/pkg/runtime/runtime.c:93\n93\t\tos·Args.len = argc;\n(gdb) print/x *(uintptr*)0x48aaf8\n$3 = 0xc200018000\n(gdb) watch *(uintptr*)0xc200018000\nHardware watchpoint 2: *(uintptr*)0xc200018000\n(gdb) x/2xg 0xc200018000\n0xc200018000:\t0x00007fffffffead2\t0x000000000000000e\n(gdb) c\nContinuing.\ngoenvs_unix 1 0x7fffffffeae1\nHardware watchpoint 2: *(uintptr*)0xc200018000\n\nOld value = 140737488349906\nNew value = 833223754240\n# NOTE: gdb is showing the line *after* again. The actual line is:\n158\t\tend-\u0026gt;next = s-\u0026gt;freelist;\nruntime.MCentral_FreeSpan (c=void, s=void, n=void, start=void, end=void)\n    at /home/rsc/go/src/pkg/runtime/mcentral.c:159\n159\t\ts-\u0026gt;freelist = start;\n(gdb) where\n#0  runtime.MCentral_FreeSpan (c=void, s=void, n=void, start=void, end=void)\n    at /home/rsc/go/src/pkg/runtime/mcentral.c:159\n#1  0x00000000004095fc in sweepspan (idx=void)\n    at /home/rsc/go/src/pkg/runtime/mgc0.c:1256\n#2  0x000000000040d034 in runtime.parfordo (desc=void)\n    at /home/rsc/go/src/pkg/runtime/parfor.c:101\n#3  0x0000000000409f27 in gc (args=void)\n    at /home/rsc/go/src/pkg/runtime/mgc0.c:1539\n#4  0x00000000004177a0 in ?? ()\n    at /home/rsc/go/src/pkg/runtime/asm_amd64.s:242\n#5  0x00007ffff7f7edb4 in ?? ()\n#6  0x00007ffff7f7e100 in ?? ()\n#7  0x00007ffff7f7efb8 in ?? ()\n#8  0x00007ffff7f7ed80 in ?? ()\n#9  0x0000000000409beb in runtime.gc (force=void)\n    at /home/rsc/go/src/pkg/runtime/mgc0.c:1462\n#10 0x0000000000000000 in ?? ()\n(gdb)\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:26:07Z",
+	"created_at": "2013-02-25T15:11:22Z",
+	"updated_at": "2016-06-24T22:34:02Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

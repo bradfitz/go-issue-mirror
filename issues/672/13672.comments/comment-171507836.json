@@ -1,0 +1,12 @@
+{
+	"id": 171507836,
+	"body": "cmd/link/internal/amd64/asm.go seems to want to reject this case:\r\n\r\n\tcase 256 + ld.R_X86_64_PC32:\r\n\t\tif targ.Type == obj.SDYNIMPORT {\r\n\t\t\tld.Diag(\"unexpected R_X86_64_PC32 relocation for dynamic symbol %s\", targ.Name)\r\n\t\t}\r\n\t\tif targ.Type == 0 || targ.Type == obj.SXREF {\r\n\t\t\tld.Diag(\"unknown symbol %s in pcrel\", targ.Name)\r\n\t\t}\r\n\t\tr.Type = obj.R_PCREL\r\n\t\tr.Add += 4\r\n\t\treturn\r\n\r\nBut this only applies to the symbols that the linker knows are being imported. I believe here the generated .o file has inside it a reference to __imp_longjmp, and the linker knows nothing about that, and in particular does not have it marked as SDYNIMPORT, so no error is produced.\r\n\r\nI don't believe the linker is set up to handle this case. It's not just a trivial fix. Given that, we should probably leave this for Go 1.7.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-14T02:18:38Z",
+	"updated_at": "2016-01-14T02:18:38Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 115957117,
+	"number": 13193,
+	"state": "closed",
+	"title": "net: UDPConn.SetReadBuffer unexpected behavior on BSD architectures",
+	"body": "When using UDPConn.SetReadBuffer, I expect to be able to set the buffer up to the kernel limit `kern.ipc.maxsockbuf`, but I am getting failures on Darwin and FreeBSD when trying to do that.\r\n\r\nFrom what I can tell, this should be supported, assuming the code is doing a `setsockopt` on the `SO_RCVBUF` constant, from the bsd [setsockopt man page](https://www.freebsd.org/cgi/man.cgi?query=setsockopt\u0026sektion=2):\r\n\r\n```\r\nSO_SNDBUF and SO_RCVBUF are options to adjust the normal buffer sizes\r\n     allocated for output and input buffers, respectively.  The\tbuffer size\r\n     may be increased for high-volume connections, or may be decreased to\r\n     limit the possible\tbacklog\tof incoming data.  The system places an\tabso-\r\n     lute maximum on these values, which is accessible through the sysctl(3)\r\n     MIB variable ``kern.ipc.maxsockbuf''.\r\n```\r\n\r\n**Versions**\r\n```\r\n$ go version\r\ngo version go1.5.1 darwin/amd64\r\n$ uname -srm\r\nDarwin 15.0.0 x86_64\r\n```\r\n\r\nand FreeBSD: \r\n\r\n```\r\n$ uname -srm\r\nFreeBSD 10.1-RELEASE amd64\r\n```\r\n\r\n**What did you do?**\r\n\r\nThis script fails on any BSD/Darwin architecture, where `ReadBuffer` is set equal to `kern.ipc.maxsockbuf`, error output I get is `set udp [::]:55647: setsockopt: no buffer space available`\r\n\r\n```go\r\n// setreadbuffer.go\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"net\"\r\n)\r\n\r\nconst (\r\n    // Darwin Limit\r\n    // sysctl kern.ipc.maxsockbuf -\u003e 8388608\r\n    ReadBuffer = 8388608 // - (911 * 1024) // (this works if you subtract 911kb)\r\n\r\n    // FreeBSD Limit\r\n    // sysctl kern.ipc.maxsockbuf -\u003e 2097152\r\n    // ReadBuffer = 2097152\r\n\r\n    // Linux Limit\r\n    // sysctl net.core.rmem_max -\u003e 212992\r\n    // ReadBuffer = 212992 // (this works on Linux)\r\n)\r\n\r\nfunc main() {\r\n    addr, _ := net.ResolveUDPAddr(\"udp\", \":80891\")\r\n\r\n    conn, err := net.ListenUDP(\"udp\", addr)\r\n    if err != nil {\r\n        fmt.Printf(\"Failed to set up UDP listener at address %s: %s\", \":8089\", err)\r\n        panic(err)\r\n    }\r\n    defer conn.Close()\r\n\r\n    err = conn.SetReadBuffer(ReadBuffer) // THIS FAILS\r\n    if err != nil {\r\n        fmt.Printf(\"Failed to set UDP read buffer to %d: %s\",\r\n            ReadBuffer, err)\r\n    }\r\n}\r\n```\r\n\r\n**What did you expect to see?**\r\n\r\nI would expect `conn.SetReadBuffer(ReadBuffer)` to succeed when `ReadBuffer` is less than or equal to `kern.ipc.maxsockbuf`\r\n\r\n**What did you see instead?**\r\n\r\nOn BSD/Darwin, `conn.SetReadBuffer(ReadBuffer)` fails when `ReadBuffer` is equal to `kern.ipc.maxsockbuf`. From my limited testing it doesn't start passing until you subtract ~12% from the max.",
+	"user": {
+		"login": "sparrc",
+		"id": 7155926,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-11-09T22:49:08Z",
+	"created_at": "2015-11-09T20:18:53Z",
+	"updated_at": "2015-11-09T22:49:08Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 229674622,
+	"body": "I found the issue. I dug into the PIL code and found out that it they do not apply filters for paletted images. `image/png` chooses the filter with the smallest sum, but apparently the unfiltered results can be compressed much better (at least for paletted images). \r\n\r\nChanging [a single line](https://github.com/golang/go/blob/c007ce824d9a4fccb148f9204e04c23ed2984b71/src/image/png/writer.go#L424) from\r\n``if level != zlib.NoCompression {``\r\nto \r\n``if level != zlib.NoCompression \u0026\u0026 cb != cbP8 {``\r\nreduced my test image from 43366 to 35177 bytes.\r\n\r\nThis is in line with the results from PIL and Image Magick.",
+	"user": {
+		"login": "olt",
+		"id": 235174,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-30T14:26:43Z",
+	"updated_at": "2016-06-30T14:26:43Z"
+}

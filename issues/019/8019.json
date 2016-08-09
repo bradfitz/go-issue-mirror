@@ -1,0 +1,27 @@
+{
+	"id": 51287562,
+	"number": 8019,
+	"state": "closed",
+	"title": "runtime: FreeOSMemory does not free memory immediately ",
+	"body": "\u003cpre\u003eReported on golang-nuts:\n\nFreeOSMemory does a GC and then frees all unused spans. But with concurrent GC, spans\nare not updated during GC. So if you do:\n\n1. use lots of memory\n2. FreeOSMemory\n3. sleep\n\nThe memory from 1 won't be released.\n\n---------- Forwarded message ----------\nSubject: [go-nuts] Why memory is not garbaged collected here?\n\nHello everyone,\n\nI've been playing a bit with Go to check the garbage collector, and I found an\nunexpected behaviour (unexpected for me). I don't know if it is a bug or something that\nI don't really understand.\n\nEverything has been tested on tip version.\n\nProgram is here: \u003ca href=\"http://play.golang.org/p/QbfGh5xnhF\"\u003ehttp://play.golang.org/p/QbfGh5xnhF\u003c/a\u003e\n\npackage main\n\nimport (\n    \u0026quot;time\u0026quot;\n    //    \u0026quot;runtime/debug\u0026quot;\n)\n\nfunc main() {\n    f()\n    //    debug.FreeOSMemory()\n    //    debug.FreeOSMemory()\n    time.Sleep(10 * time.Hour)\n}\n\nfunc f() {\n    a := make([]int, 100000000)\n    for i := range a {\n        a[i] = i\n    }\n}\n\nThe program allocates 763 MB of RAM (on 64-bits architecture) and then sleeps for 10\nhours. I've been monitoring the memory used and the GC work by setting GODEBUG=gotrace=1\n\nWith the FreeOSMemory() lines commented, the memory is never GC'd nor released back to\nthe system. I've waited about 30 minutes.\n\nWith one single line of FreeOSMemory(), the memory is not freed immediately (as I\nexpected) but it seems that in the 2-3 next automatic GC runs it is finally found and\nfreed, and eventually, released back to the OS.\n\nWith two FreeOSMemory() lines, the memory is released immediately (I suppose that in the\nsecond call).\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:44:28Z",
+	"created_at": "2014-05-18T07:23:57Z",
+	"updated_at": "2016-06-25T01:34:31Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

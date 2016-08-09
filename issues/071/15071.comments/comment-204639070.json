@@ -1,0 +1,12 @@
+{
+	"id": 204639070,
+	"body": "It's now trying to inline switches (the point of the offending CL), but it doesn't know how to inline the fallthrough in `k8s.io/kubernetes/pkg/api/resource/quantity.go`:\r\n\r\n```go\r\n// Neg sets q to the negative value of y.\r\n// It updates the format of q to match y.\r\nfunc (q *Quantity) Neg(y Quantity) error {\r\n        switch {\r\n        case y.Amount == nil:\r\n                *q = y\r\n        case q.Amount == nil:\r\n                q.Amount = \u0026inf.Dec{}\r\n                fallthrough\r\n        default:\r\n                q.Amount.Neg(y.Amount)  \r\n                q.Format = y.Format             \r\n        }\r\n        return nil\r\n}\r\n```\r\n\r\nRemoving the fallthrough makes it compile.\r\n\r\nMarking fallthrough as hairy fixes it, but means that switch can no longer be inlined:\r\n\r\n```patch\r\ndiff --git a/src/cmd/compile/internal/gc/inl.go b/src/cmd/compile/internal/gc/inl.go\r\nindex c21af77..230eb43 100644\r\n--- a/src/cmd/compile/internal/gc/inl.go\r\n+++ b/src/cmd/compile/internal/gc/inl.go\r\n@@ -215,6 +215,7 @@ func ishairy(n *Node, budget *int) bool {\r\n                OFOR,\r\n                OSELECT,\r\n                OTYPESW,\r\n+               OXFALL,\r\n                OPROC,\r\n                ODEFER,\r\n                ODCLTYPE, // can't print yet\r\n```\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-02T03:38:49Z",
+	"updated_at": "2016-04-02T03:38:49Z"
+}

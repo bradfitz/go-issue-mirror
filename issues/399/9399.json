@@ -1,0 +1,21 @@
+{
+	"id": 52493793,
+	"number": 9399,
+	"state": "open",
+	"title": "x/tools/cmd/vet: Add check for channels that must be buffered",
+	"body": "There are at least two places in the standard library where channels must have a non-zero buffer in order for the program to be correct:\r\n\r\n1. `os.Signal` channels passed to [`signal.Notify`](https://golang.org/pkg/os/signal/#Notify).\r\n1. `*rpc.Call` channels passed to [`Client.Go`](https://golang.org/pkg/net/rpc/#Client.Go) in `net/rpc`.\r\n\r\nI propose a vet check that ensures that these channels are buffered.\r\n\r\nI took a quick look at @rsc's [pubgo](https://code.google.com/p/rsc/downloads/detail?name=pubgo.zip) dataset (circa early 2013), and in the code that compiles, I found 161 calls to `make(chan os.Signal)` of which 61 were unbuffered. I do not have a newer dataset handy (is there one?) but I think it's reasonable to guess that the ratio in newer code would not have changed significantly.\r\n\r\nI currently have a vet check written that ensures that all calls to `make(os.Signal)` have a non-zero buffer, but this check seems a bit too simplistic, as there may be uses for these channels that do not require a buffer. I think it's safer to require buffered channels to be passed into the mentioned calls. However, I'm not familiar enough with the relevant packages to understand what the best approach for this is.\r\n\r\nThis was originally discussed [on the mailing list](https://groups.google.com/forum/#!topic/golang-dev/9LZB8PT-sVg).",
+	"user": {
+		"login": "titanous",
+		"id": 13026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2014-12-19T15:22:47Z",
+	"updated_at": "2015-04-14T19:37:53Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

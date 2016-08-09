@@ -1,0 +1,12 @@
+{
+	"id": 220210888,
+	"body": "Ok, I have some small idea what is happening here. gccgo appears to have a concept of a \"package priority\" where if package A that imports package B then package B will have a higher priority than A. In fact a package's priority is defined to be one greater than that of all the packages it imports.\r\n\r\nInit functions are then called in low to high priority order.\r\n\r\nBuuuuuut when testing a package there are two versions of a package in play, the \"usual\" one and the \"test\" one, and they don't necessarily have the same priorities:\r\n\r\n```\r\n$ go test -work -c -a -compiler gccgo github.com/golang/protobuf/proto\r\nWORK=/tmp/go-build010939228\r\n$ WORK=/tmp/go-build010939228\r\n$ objcopy  --dump-section .go_export=\u003e(cat) $WORK/github.com/golang/protobuf/libproto.a | grep priority\r\npriority 8;\r\n$ objcopy  --dump-section .go_export=\u003e(cat) $WORK/github.com/golang/protobuf/proto/_test/github.com/golang/protobuf/libproto.a | grep priority\r\npriority 9;\r\n```\r\n\r\n(as it happens, package \"testing\" has priority 8).\r\n\r\nSo when package A's external tests depend on a package B that depends on package A, package B's priority is set based on the non-testy version of A, which means its priority can be lower than that of the testy version of A. Hilarity ensues.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-19T02:17:59Z",
+	"updated_at": "2016-05-24T01:09:17Z"
+}

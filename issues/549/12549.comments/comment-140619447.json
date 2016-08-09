@@ -1,0 +1,12 @@
+{
+	"id": 140619447,
+	"body": "Ahh, a clue. Here's the output from a failing run of \"setarch `uname -m` -R strace  -o trace3.txt -e mmap,munmap ./recover4\" (the setarch disables aslr so I can diff things):\r\n\r\n```\r\nmmap(0x4000000000, 65536, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4000000000\r\nmunmap(0x4000000000, 65536)             = 0\r\nmmap(NULL, 262144, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7fbf000\r\nmmap(0x4820000000, 1048576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4820000000\r\nmmap(0x481fff0000, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x481fff0000\r\nmmap(0x4000000000, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4000000000\r\nmmap(NULL, 65536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7faf000\r\nmmap(NULL, 1439992, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7e4f000\r\nmmap(NULL, 262144, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7e0f000\r\nmmap(NULL, 1048576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7d0f000\r\nmunmap(0x7fb7d8f000, 262144)            = 0\r\nmmap(0x4820100000, 1048576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4820100000\r\nmmap(NULL, 262144, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb7d8f000\r\n+++ exited with 2 +++\r\n```\r\n\r\nSo the problem is that between the munmap and (presumably) the memory access to the munmapped region in memcopy, something calls asks mmap for precisely as many bytes as was munmapped, and the kernel hands back the munmapped address!",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-16T04:00:22Z",
+	"updated_at": "2015-09-16T04:00:22Z"
+}

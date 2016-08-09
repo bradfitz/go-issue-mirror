@@ -1,0 +1,28 @@
+{
+	"id": 119301598,
+	"number": 13423,
+	"state": "closed",
+	"title": "cmd/cgo: panic instead of error for insufficient arguments to C function",
+	"body": "There appears to be a regression in cgo, where when a C function is called with not enough arguments, it causes cgo to panic instead of printing a meaningful error:\r\n\r\n```\r\npackage main\r\n\r\n// #include \u003cmath.h\u003e\r\n// #cgo LDFLAGS: -lm\r\nimport \"C\"\r\n\r\nfunc main() {\r\n\t_ = C.sin()\r\n}\r\n```\r\n\r\nIn go 1.4 go build prints out:\r\n```./foo.go:8: not enough arguments in call to _Cfunc_sin```\r\n\r\nAt tip, the output is a panic during the execution of cgo:\r\n```\r\npanic: runtime error: index out of range\r\n\r\ngoroutine 1 [running]:\r\nmain.(*Package).rewriteCall(0xc82009e0f0, 0xc820082120, 0xc820076b00, 0xc8200a0180)\r\n\t/Users/cookieo9/local/go/src/cmd/cgo/gcc.go:606 +0xc58\r\nmain.(*Package).rewriteCalls(0xc82009e0f0, 0xc820082120)\r\n\t/Users/cookieo9/local/go/src/cmd/cgo/gcc.go:593 +0x1f8\r\nmain.(*Package).Translate(0xc82009e0f0, 0xc820082120)\r\n\t/Users/cookieo9/local/go/src/cmd/cgo/gcc.go:170 +0x197\r\nmain.main()\r\n\t/Users/cookieo9/local/go/src/cmd/cgo/main.go:275 +0x1055\r\n```\r\n\r\nGoing the other way (i.e.: having too many arguments) produces the same error as go 1.4:\r\n```./foo.go:8: too many arguments in call to _Cfunc_sin```\r\n\r\nThe only function I tested which doesn't panic, and prints the correct error is malloc, although I believe that's a result of special handling for malloc. Other functions I tested included \"strcpy\", \"strlen\", and \"calloc\" (from https://groups.google.com/forum/#!topic/golang-dev/TquSAX-w6NA).\r\n\r\nI have tested this at tip on darwin-amd64 (El Capitain), and linux-arm (Raspberry Pi 2)\r\n",
+	"user": {
+		"login": "cookieo9",
+		"id": 109270,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-02T21:02:45Z",
+	"created_at": "2015-11-28T15:30:56Z",
+	"updated_at": "2015-12-02T21:02:45Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

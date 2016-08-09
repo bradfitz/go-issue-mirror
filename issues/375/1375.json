@@ -1,0 +1,22 @@
+{
+	"id": 51277720,
+	"number": 1375,
+	"state": "closed",
+	"title": "net.Listener.Close() doesn't close the listener until another connection is accepted",
+	"body": "\u003cpre\u003eAttached is a file that demonstrates this issue. To run it, just run;\n6g closebug2.go \u0026amp;\u0026amp; 6l closebug2.6 \u0026amp;\u0026amp; ./6.out\n\nThis starts a server (listener.Accept() in a loop), and then closes the listener after\none second. However, it\nstill accepts one more connection (you can see this by running telnet localhost 9999).\nOnly after that connection is processed is the listener closed. \n\nWhat steps will reproduce the problem?\n1. Call listener.Accept in a loop (this blocks)\n2. On a separate goroutine, call listener.Close()\n3. the listener will not close until another connection is accepted\n\nWhat is the expected output?\nThe listener will close immediately\n\nWhat do you see instead?\nThe listener waits until another connection has been accepted, then closes\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nosx\n\nWhich revision are you using?  (hg identify)\n51c777dbccb9+ release/release.2010-12-22\n\nPlease provide any additional information below.\nThe problem seems to be in net/fd.go\n\nBoth fd.Close() and fd.Accept() call fd.incref(), which acquires a lock. It seems that\nthe lock is held by Accept(), and only when it is released is Close() called. \n\nShould there be a special condition that handles this?\u003c/pre\u003e",
+	"user": {
+		"login": "hoisie",
+		"id": 125547,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:08:02Z",
+	"created_at": "2010-12-29T23:46:03Z",
+	"updated_at": "2016-06-24T19:23:34Z"
+}

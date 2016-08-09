@@ -1,0 +1,22 @@
+{
+	"id": 51283270,
+	"number": 5197,
+	"state": "closed",
+	"title": "net/http: No way to bind a server to a tcp4 address.",
+	"body": "by **sam.falvo**:\n\n\u003cpre\u003eI've searched for a solution to this issue, but I couldn't find anything obviously\nrelevant.\n\nWhat steps will reproduce the problem?\n1.  Please see code at \u003ca href=\"http://play.golang.org/p/KyVr28Tw-K\"\u003ehttp://play.golang.org/p/KyVr28Tw-K\u003c/a\u003e\n2.  Build go 1.0.3 from source with CGO_ENABLED=0\n3.  go build the program referenced in (1) above.\n4.  go install it, then copy to a CentOS 5.8 machine.\n5.  Execute it with bin/whatever.\n6.  In another console, type \u0026quot;netstat -nlp\u0026quot; to view listening sockets.\n7.  Observe that the program only waits on :::80, but not on 0.0.0.0:80 or on *:80.\n8.  Execute curl -X GET \u0026quot;\u003ca href=\"http://ipv4.address.of.server:8080/\u0026quot\"\u003ehttp://ipv4.address.of.server:8080/\u0026quot\u003c/a\u003e;\n9.  Observe no connection is possible.\n10.  Execute curl -X GET \u0026quot;\u003ca href=\"http://ipv6.address.of.server:8080/\u0026quot\"\u003ehttp://ipv6.address.of.server:8080/\u0026quot\u003c/a\u003e;\n11.  Observe connection works as expected.\n\nWhat is the expected output?\nI don't have any problems with net/http binding to one network protocol at a time; I can\nalways launch multiple goroutines for each supported network.  However, the code linked\nabove is pretty clearly configured to bind to an IPv4 endpoint, not to an IPv6 endpoint\n(observe lack of [::]:8080 in the address string).\n\nWhat do you see instead?\nIt binds to IPv6 endpoint no matter what, which causes connections to be rejected by my\ncloud server, wherein I cannot turn off IPv6 support (I tried everything I knew how, and\nthen some).\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\n\nWhich operating system are you using?\nOn Ubuntu 12, it behaves well, as the kernel apparently treats a binding to :::8080 the\nsame as *:8080.  On CentOS 5.8 (see additional info below), I fail to connect when using\nIPv4 addresses.\n\nWhich version are you using?  (run 'go version')\ngo1.0.3\n\nPlease provide any additional information below.\nYes, I know CentOS 5.8 isn't supported, but that's what my cloud server is running;\nupgrading isn't possible, as the purpose of the code is to perform tests of another\nprogram on an OS configuration that our customers continue using.  Since I have 13\ndifferent OS configs to check on, I figured using Go would be ideal since I can just\nsplat the static binary to all 13 machines at once and be off and running.\n\nI think the long-term solution for this would be to somehow extend the Server struct\nwith a set of optional fields to help control which network the server should listen on.\n E.g., the following would be ideal:\n\ns := \u0026amp;http.Server{\n  Addr: \u0026quot;:8080\u0026quot;,\n  AddrType: net.TCP4,\n  // etc...\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:27:53Z",
+	"created_at": "2013-04-03T19:56:35Z",
+	"updated_at": "2016-06-24T22:37:04Z"
+}

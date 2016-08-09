@@ -1,0 +1,12 @@
+{
+	"id": 156119633,
+	"body": "It took an overnight run, but I was able to reproduce this four times in ~150 runs on freebsd-amd64-gce93 for commit ddbc802 (the last known failure) with the following:\r\n\r\n```\r\ngit checkout ddbc802 \u0026\u0026 \\\r\nVM=$(gomote create freebsd-amd64-gce93) \u0026\u0026 \\\r\ngomote push $VM \u0026\u0026 \\\r\ngomote run $VM ./go/src/make.bash \u0026\u0026 \\\r\ngomote run -e GOPATH=/tmp/workdir/x $VM /bin/sh -c 'PATH=$PWD/go/bin:$PWD/x/bin:$PATH; go get golang.org/x/tools/cmd/stress \u0026\u0026 cd go/test \u0026\u0026 stress -failure \"main.alloc want\" go run run.go'\r\n```\r\n\r\nwhile running the following to keep the VM up\r\n\r\n```\r\nwhile sleep 300 \u0026\u0026 gomote ping user-austin-freebsd-amd64-gce93-0; do true; done\r\n```\r\n\r\nIt seems that running heapsampling.go in isolation isn't sufficient. The perturbation caused by the tests running concurrently seems necessary.\r\n\r\nI'm going to try adding some more debugging information to the failure and will run it again.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-12T14:40:25Z",
+	"updated_at": "2015-11-12T14:40:25Z"
+}

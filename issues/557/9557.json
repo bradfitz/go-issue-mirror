@@ -1,0 +1,33 @@
+{
+	"id": 53952708,
+	"number": 9557,
+	"state": "closed",
+	"title": "cmd/cgo: Selector pointer shorthand does not operate with cgo structs named directly",
+	"body": "**What version of Go are you using (go version)?**\r\ngo version go1.4 linux/amd64\r\n\r\n**Issue**\r\nThe specification states that \"if the type of x is a named pointer type and (\\*x).f is a valid selector expression denoting a field (but not a method), x.f is shorthand for (\\*x).f.\"\r\n\r\nWhen a C variable containing a struct pointer is assigned to a Go variable, the shorthand applies to selector expressions using that variable. However, it seems that the shorthand does not apply in the case that the C variable is named directly, without the use of a temporary variable. I try to illustrate this in the example below:\r\n\r\n~~~\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n)\r\n\r\n// struct blah {\r\n//   int a;\r\n// };\r\n//\r\n// struct blah *foo;\r\n//\r\n// void\r\n// blah_alloc() {\r\n//   foo = malloc(sizeof(struct blah));\r\n//   foo-\u003ea = 7;\r\n// }\r\nimport \"C\"\r\n\r\ntype bar struct {\r\n\ta int\r\n}\r\n\r\nvar buzz *bar\r\n\r\nfunc init() {\r\n\tbuzz = \u0026bar{}\r\n}\r\n\r\nfunc main() {\r\n\t// works\r\n\t// implicit foo.a -\u003e (*foo).a\r\n\tfoo := C.foo\r\n\tfmt.Println(foo.a)\r\n\r\n\t// works\r\n\tfmt.Println((*C.foo).a)\r\n\r\n\t// doesn't work, compiler displays an error\r\n\t// implicit C.foo -\u003e (*C.foo).a\r\n\tfmt.Println(C.foo.a)\r\n\r\n\t// works\r\n\tfmt.Println(buzz.a)\r\n}\r\n~~~\r\n",
+	"user": {
+		"login": "jyc",
+		"id": 360412,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-01-12T21:51:10Z",
+	"created_at": "2015-01-10T09:37:11Z",
+	"updated_at": "2016-06-25T01:58:14Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

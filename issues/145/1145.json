@@ -1,0 +1,27 @@
+{
+	"id": 51277409,
+	"number": 1145,
+	"state": "closed",
+	"title": "x/net/websocket: small reads should not fail",
+	"body": "by **joamaki**:\n\n\u003cpre\u003eWebsocket's Read() method returns os.E2BIG if the message doesn't fit\nthe buffer. The JSON decoder doesn't handle this and returns the error\nto the caller.\n\nI'm currently working around this with:\n\n--- a/src/pkg/json/stream.go\tMon Sep 27 11:42:58 2010 +1000\n+++ b/src/pkg/json/stream.go\tMon Sep 27 10:25:10 2010 +0300\n@@ -107,7 +107,17 @@\n \n \t\t// Read.  Delay error for next iteration (after scan).\n \t\tvar n int\n-\t\tn, err = dec.r.Read(dec.buf[len(dec.buf):cap(dec.buf)])\n+\t\tfor {\n+\t\t\tn, err = dec.r.Read(dec.buf[len(dec.buf):cap(dec.buf)])\n+\t\t\tif err == os.E2BIG {\n+\t\t\t\tnewBuf := make([]byte, len(dec.buf), 2*cap(dec.buf)+minRead)\n+\t\t\t\tcopy(newBuf, dec.buf)\n+\t\t\t\tdec.buf = newBuf\n+\t\t\t\tcontinue\n+\t\t\t}\n+\t\t\tbreak\n+\t\t}\n+\n \t\tdec.buf = dec.buf[0 : len(dec.buf)+n]\n \t}\n \treturn scanp, nil\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:07:09Z",
+	"created_at": "2010-09-27T07:28:31Z",
+	"updated_at": "2016-08-05T16:07:58Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

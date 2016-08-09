@@ -1,0 +1,28 @@
+{
+	"id": 136163586,
+	"number": 14496,
+	"state": "closed",
+	"title": "go/types: config.Check complains \"can't find import\" for vendored packages if they haven't been installed",
+	"body": "\r\n**1 What version of Go are you using (go version)?**\r\n\r\n    $ go version\r\n    go version go1.6 linux/amd64\r\n\r\n**2 What operating system and processor architecture are you using?**\r\n\r\n    $ cat /etc/issue\r\n    Ubuntu 15.10 \\n \\l\r\n\r\n    $ lscpu\r\n    Architecture:          x86_64\r\n    ...\r\n\r\n**3 What did you do?**\r\n\r\n    $ tree $GOPATH/src\r\n    ├── a\r\n    │   ├── a.go\r\n    │   └── vendor\r\n    │       └── b\r\n    │           └── b.go\r\n    └── build\r\n        └── main.go\r\n\r\n    $ cat $GOPATH/src/build/main.go\r\n```go    \r\npackage main\r\n    \r\n    import (\r\n    \t\"go/ast\"\r\n    \t\"go/build\"\r\n    \t\"go/importer\"\r\n    \t\"go/parser\"\r\n    \t\"go/token\"\r\n    \t\"go/types\"\r\n    \t\"os\"\r\n    \t\"path\"\r\n    )\r\n\r\n    func panicOnErr(err error) {\r\n    \tif err != nil {\r\n    \t\tpanic(err.Error())\r\n    \t}\r\n    }\r\n    \r\n    func main() {\r\n    \tgopath := os.Getenv(\"GOPATH\")   \r\n\t    dir := path.Join(gopath, \"src\", \"a\")\r\n    \r\n    \t//\tprintln(\"dir: \" + dir)\r\n    \tfset := token.NewFileSet()\r\n    \tbuildPkg, err := build.ImportDir(dir, build.ImportMode(0))\r\n    \r\n    \tpanicOnErr(err)\r\n    \r\n    \tastFiles := []*ast.File{}\r\n    \r\n    \tfor _, filename := range buildPkg.GoFiles {\r\n    \t\tfile, err := parser.ParseFile(fset, path.Join(dir, filename), nil, parser.AllErrors)\r\n\t    \tpanicOnErr(err)\r\n\t    \tastFiles = append(astFiles, file)\r\n\t    }\r\n    \r\n\t    for _, filename := range buildPkg.CgoFiles {\r\n\t\t    file, err := parser.ParseFile(fset, path.Join(dir, filename), nil, parser.AllErrors)\r\n\t\t    panicOnErr(err)\r\n\t\t    astFiles = append(astFiles, file)\r\n\t    }\r\n    \r\n\t    typesInfo := \u0026types.Info{\r\n\t\t    Types: make(map[ast.Expr]types.TypeAndValue),\r\n\t\t    Defs:  make(map[*ast.Ident]types.Object),\r\n\t\t    Uses:  make(map[*ast.Ident]types.Object),\r\n\t    }\r\n    \r\n    \tvar conf types.Config\r\n    \tconf.Importer = importer.Default()\r\n    \tconf.IgnoreFuncBodies = true\r\n    \ttypesPkg, err := conf.Check(buildPkg.Name, fset, astFiles, typesInfo)\r\n    \r\n    \tpanicOnErr(err)\r\n    \r\n    \t_ = typesPkg\r\n    }\r\n```\r\n    $ cat $GOPATH/src/a/a.go\r\n```go\r\n    package a\r\n    \r\n    import \"b\"\r\n    \r\n    var foo = b.Foo\r\n```\r\n    $ cat $GOPATH/src/a/vendor/b/b.go\r\n\r\n```go    \r\n    package b\r\n    \r\n    var Foo = \"bar\"\r\n```\r\n**4 What did you expect to see?**\r\n\r\nNothing (that's OK)\r\n\r\n    $ go run build/main.go\r\n\r\n**5 What did you see instead?**\r\n\r\n    $ go env \u0026\u0026 go version \u0026\u0026 go run $GOPATH/src/build/main.go \r\n    GOARCH=\"amd64\"\r\n    GOBIN=\"\"\r\n    GOEXE=\"\"\r\n    GOHOSTARCH=\"amd64\"\r\n    GOHOSTOS=\"linux\"\r\n    GOOS=\"linux\"\r\n    GOPATH=\"/home/benny/Entwicklung/testdebug/gopath\"\r\n    GORACE=\"\"\r\n    GOROOT=\"/home/benny/bin/go\"\r\n    GOTOOLDIR=\"/home/benny/bin/go/pkg/tool/linux_amd64\"\r\n    GO15VENDOREXPERIMENT=\"1\"\r\n    CC=\"gcc\"\r\n    GOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\n    CXX=\"g++\"\r\n    CGO_ENABLED=\"1\"\r\n    go version go1.6 linux/amd64\r\n    panic: a/a.go:3:8: could not import b (can't find import: a/vendor/b)\r\n    \r\n    goroutine 1 [running]:\r\n    panic(0x653760, 0xc82000ade0)\r\n    \tgo/src/runtime/panic.go:464 +0x3e6\r\n    main.panicOnErr(0x7fb0a76aac58, 0xc82000fe00)\r\n    \tbuild/main.go:16 +0x7e\r\n    main.main()\r\n    \tbuild/main.go:56 +0x8bd\r\n    exit status 2\r\n\r\n**Further information**\r\n\r\nWhen installing the vendor package \r\n\r\n    $ go install $GOPATH/src/a/vendor/b \r\n\r\nbefore running \r\n\r\n    $ go run $GOPATH/src/build/main.go\r\n\r\nIt runs fine as expected. After removing the build \r\n\r\n    $ rm $GOPATH/pkg/linux_amd64/a/vendor/b.a\r\n\r\nIt complains again\r\n\r\n    $ go run $GOPATH/src/build/main.go\r\n    panic: a/a.go:3:8: could not import b (can't find import: a/vendor/b)\r\n    \r\n    goroutine 1 [running]:\r\n    panic(0x653760, 0xc82000ade0)\r\n        go/src/runtime/panic.go:464 +0x3e6\r\n    main.panicOnErr(0x7fb0a76aac58, 0xc82000fe00)\r\n        build/main.go:16 +0x7e\r\n    main.main()\r\n        build/main.go:56 +0x8bd\r\n    exit status 2\r\n\r\nProbably related to https://github.com/golang/go/issues/14215",
+	"user": {
+		"login": "metakeule",
+		"id": 180603,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-02-26T18:49:30Z",
+	"created_at": "2016-02-24T19:33:10Z",
+	"updated_at": "2016-02-26T18:49:31Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

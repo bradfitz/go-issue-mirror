@@ -1,0 +1,26 @@
+{
+	"id": 112249121,
+	"number": 12994,
+	"state": "open",
+	"title": "proposal: spec: allow unsafe.Alignof and unsafe.Sizeof to take a type literal argument",
+	"body": "Proposal:\r\n\r\nRelax `unsafe.Alignof` and `unsafe.Sizeof` to accept either an expression or type literal argument.\r\nIf a type literal argument is provided, then they return the alignment or size (respectively) of the specified type.\r\n\r\nArguments for:\r\n\r\n- Simple consistent syntax for finding the alignment or size of a type, regardless of its underlying type.\r\n- Within the standard library, there are 105 instances of `(Align|Size)of\\([^)]*(\\(0\\)|\\{\\})\\)`.\r\n\r\nArguments against:\r\n   \r\n- Just turd polishing; \"using package unsafe is going to be ugly anyway\".\r\n- You can already write something like `unsafe.Sizeof(*new(T))` if you can't/don't know the underlying type of `T`.\r\n- Use cases are much less common outside of the standard library.  \r\n\r\nNotes:\r\n\r\n- Go's function call syntax already allows the first argument to be a type rather than an expression.\r\n  + Caveat: While the built-in functions `make` and `new` take a type *instead of* an expression, `unsafe.Alignof` and `unsafe.Sizeof` would be the first functions to accept *either* a type or expression.\r\n\r\n- In the expression `a.b`, `a` may already be either an expression or a receiver type.\r\n  + Caveat: `unsafe.Alignof(x)` and `unsafe.Sizeof(x)` would be the first expressions where x can be either an expression or an *arbitrary* type literal (i.e., not just `T` or `*T`, but also `[]T`, `chan T`, `struct{T}`, etc).\r\n\r\n- Because `unsafe.Alignof` and `unsafe.Sizeof` are defined as compile-time constant expressions, type checking code already needs to special case them (i.e., as opposed to stubbing them as something like `func Sizeof(x interface{}) uintptr`).\r\n\r\n- If the untyped composite literal proposal is accepted, parsers/type-checkers/compilers/etc will need to be updated for Go 1.6 anyway.\r\n\r\n- Proof-of-concept CLs:\r\n  + cmd/compile: https://golang.org/cl/16092\r\n  + go/types: https://golang.org/cl/16093\r\n\r\nCC @griesemer",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 2,
+	"created_at": "2015-10-19T22:50:53Z",
+	"updated_at": "2015-10-24T04:59:26Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

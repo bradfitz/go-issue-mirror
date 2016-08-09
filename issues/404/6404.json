@@ -1,0 +1,25 @@
+{
+	"id": 51285137,
+	"number": 6404,
+	"state": "closed",
+	"title": "atomic/asm_386 panic on go1.1.2 linux/386",
+	"body": "by **mark.chadwick**:\n\n\u003cpre\u003eThe atomic package will panic reading certain int64 values (on go1.1.2 linux/386). In\nthe following program, atomic will panic when reading the \u0026quot;uncounted\u0026quot; field of\na \u0026quot;WillPanic\u0026quot; struct (but not of the other structs).\n\npackage main\n\nimport (\n  \u0026quot;sync/atomic\u0026quot;\n  \u0026quot;log\u0026quot;\n)\n\ntype WillPass struct {\n  uncounted int64\n}\n\ntype WillAlsoPass struct {\n  init      int64\n  uncounted int64\n}\n\ntype WillPanic struct {\n  init      bool\n  uncounted int64\n}\n\nfunc main() {\n  willPass := \u0026amp;WillPass{}\n  willAlsoPass := \u0026amp;WillAlsoPass{}\n  willPanic := \u0026amp;WillPanic{}\n  var n int64 = 2\n\n  atomic.AddInt64(\u0026amp;willPass.uncounted, n)\n  log.Printf(\u0026quot;willPass count is %d\u0026quot;, willPass.uncounted)\n\n  atomic.AddInt64(\u0026amp;willAlsoPass.uncounted, n)\n  log.Printf(\u0026quot;willAlsoPass count is %d\u0026quot;, willAlsoPass.uncounted)\n\n  // Kaboom\n  atomic.AddInt64(\u0026amp;willPanic.uncounted, n)\n  log.Printf(\u0026quot;willPanic count is %d\u0026quot;, willPanic.uncounted)\n}\n\nRunning the above yields the following:\n\n$ uname -a \u0026amp;\u0026amp; go version \u0026amp;\u0026amp; go run main.go \nLinux host #43-Ubuntu SMP Wed Jan 4 18:22:57 UTC 2012 i686 GNU/Linux\ngo version go1.1.2 linux/386\n2013/09/16 20:41:21 willPass count is 2\n2013/09/16 20:41:21 willAlsoPass count is 2\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x1 pc=0x806489c]\n\ngoroutine 1 [running]:\nsync/atomic.AddUint64()\n        /usr/local/go/src/pkg/sync/atomic/asm_386.s:69 +0xc\nmain.main()\n        /mnt/jenkins/tmp/gotest/main.go:35 +0x1c8\n\ngoroutine 2 [runnable]:\nexit status 2\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6404/0/main.go\"\u003emain.go\u003c/a\u003e (653 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:35:18Z",
+	"created_at": "2013-09-16T20:45:13Z",
+	"updated_at": "2016-06-25T01:18:53Z"
+}

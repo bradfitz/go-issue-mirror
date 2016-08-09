@@ -1,0 +1,17 @@
+{
+	"id": 165691926,
+	"number": 16382,
+	"state": "closed",
+	"title": "time: Sleep() never returns on macOS Sierra beta2",
+	"body": "This wasn't happening on my machine before I installed the macOS beta. Kind of regretting it now! 😁 \r\n\r\n1. What version of Go are you using?\r\n`go version go1.6.2 darwin/amd64`\r\n\r\n\r\n2. What operating system and processor architecture are you using?\r\n`macOS Sierra beta2 (macOS 10.12 16A238m)`\r\n`on amd64`\r\n\r\n\r\n3. What did you do?\r\nCompiled and ran the following small program:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\ti := 0\r\n\tfor {\r\n\t\ti++\r\n\t\tfmt.Printf(\"Sleeping, pass #%d... \", i)\r\n\t\ttime.Sleep(time.Millisecond * 50)\r\n\t\tfmt.Printf(\"done.\\n\")\r\n\t}\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\nA practically infinite number of loop iterations.\r\n\r\n\r\n5. What did you see instead?\r\nOutput for a few seconds, then nothing, because time.Sleep() fails to return after a few iterations of the loop.\r\nUsing a debugger (https://github.com/derekparker/delve), I'm able to interrupt the program and grab a stack trace when it freezes, and it's always exactly the same:\r\n```\r\n0  0x0000000000056c43 in runtime.mach_semaphore_timedwait\r\n   at /usr/local/go/src/runtime/sys_darwin_amd64.s:421\r\n1  0x0000000000026d0b in runtime.semasleep1\r\n   at /usr/local/go/src/runtime/os1_darwin.go:412\r\n2  0x000000000004b250 in runtime.semasleep.func1\r\n   at /usr/local/go/src/runtime/os1_darwin.go:439\r\n3  0x0000000000053597 in runtime.systemstack\r\n   at /usr/local/go/src/runtime/asm_amd64.s:291\r\n4  0x000000000002d390 in runtime.startTheWorldWithSema\r\n   at /usr/local/go/src/runtime/proc.go:986\r\n5  0x0000000000183600 in (nil)\r\n   at ?:-1\r\n```\r\n\r\nI get the same result if the for loop is moved into a separate goroutine, or if the sleep duration is varied.",
+	"user": {
+		"login": "zhaytee",
+		"id": 43938,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-07-15T01:19:07Z",
+	"created_at": "2016-07-15T01:13:55Z",
+	"updated_at": "2016-07-15T01:23:14Z"
+}

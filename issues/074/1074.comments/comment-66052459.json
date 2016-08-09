@@ -1,0 +1,12 @@
+{
+	"id": 66052459,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003ePS: Explanation of the runtime-consequences, to answer this issue.\n\nIn Go, methods can be associated with any type. The type information is only stored with\na value when the value is assigned to an interface variable (in contrast to say, typical\nJava, C++, Smalltalk, Javascript implementations, etc. where objects contain a pointer\nto the respective type descriptor if the object supports dynamic dispatch). In Go, to\nmake dynamic dispatch (method invocation through an interface) fast, a\nvalue-and-interface specific dispatch table is created on the fly upon assignment (this\nis hashed and cached, so subsequent assignments are reasonably fast). A dynamic method\ndispatch becomes simply an indirection through that dispatch table (analogous to a C++\nvtable).\n\nThis also happens when passing arguments to an interface parameter, or returning a\nresult to an interface variable. If contravariant parameters and covariant result types\nwere permitted, the actual parameter and result types are not statically known at a call\nsite of an (interface) method since an interface's implementation may have methods with\ndifferent parameter and result types. As a result, the computation of the corresponding\ndispatch tables for the values passed to interface parameters/results depends on the\ntype of the value passed *and* the signature of the *dynamically* selected method (as\nopposed to the statically known signature of the method as found in the interface). This\nadds significant extra runtime complexity and cost.\n\nThere are alternative designs where the dispatch is done through say an inline cache. In\nthose designs, no computation is required upon assignment to an interface  variable, but\nfor a method dispatch a lookup is performed initially, to fill an inline cache. Such a\ndesign has other problems though: inline caches may behave very badly if there are\nseparate threads running through the same callsite with different types. Alternatively,\na lookup could be performed at each method invcocation which would avoid these problems\nbut likely be slower than what we have now.\n\nThe jury is out on what is the best solution.\n\nPlease use golang-nuts to discuss the merits of changing the type system or discuss this\nany further. Thanks.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-09-03T20:31:26Z",
+	"updated_at": "2014-12-08T10:06:53Z"
+}

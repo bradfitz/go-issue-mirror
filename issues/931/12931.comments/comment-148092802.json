@@ -1,0 +1,12 @@
+{
+	"id": 148092802,
+	"body": "Following code will help you reproduce this problem more easily:\r\n\r\n\r\n    package main\r\n\r\n    import (\r\n        \"log\"\r\n        \"math/rand\"\r\n        \"net/http\"\r\n        \"os\"\r\n        \"os/signal\"\r\n        \"time\"\r\n    )\r\n\r\n    func init() {\r\n        rand.Seed(time.Now().UnixNano())\r\n    }\r\n\r\n    var letterRunes = []rune(\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\")\r\n\r\n    func RandStringRunes(n int) string {\r\n        b := make([]rune, n)\r\n        for i := range b {\r\n            b[i] = letterRunes[rand.Intn(len(letterRunes))]\r\n        }\r\n        return string(b)\r\n    }\r\n\r\n    func main() {\r\n        c := make(chan os.Signal, 1)\r\n        signal.Notify(c)\r\n        go func() {\r\n            for s := range c {\r\n                log.Println(\"recv signal: \", s.String())\r\n            }\r\n        }()\r\n\r\n        http.HandleFunc(\"/hello\", func(rw http.ResponseWriter, r *http.Request) {\r\n            c := http.Client{\r\n                Transport: \u0026http.Transport{\r\n                    DisableKeepAlives: true,\r\n                },\r\n            }\r\n            req, _ := http.NewRequest(\"GET\", \"http://www.baidu.com\", nil)\r\n            resp, _ := c.Do(req)\r\n            if resp != nil \u0026\u0026 resp.Body != nil {\r\n                resp.Body.Close()\r\n            }\r\n            http.Error(rw, RandStringRunes(10000000), http.StatusOK)\r\n        })\r\n        log.Fatal(http.ListenAndServe(\":8888\", nil))\r\n    }\r\n",
+	"user": {
+		"login": "xlvector",
+		"id": 100203,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-14T15:49:49Z",
+	"updated_at": "2015-10-14T15:49:49Z"
+}

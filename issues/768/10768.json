@@ -1,0 +1,33 @@
+{
+	"id": 74952959,
+	"number": 10768,
+	"state": "closed",
+	"title": "net/mail: Address.String() and ParseAddress() don't match RFC 5322",
+	"body": "I have noticed that `Address.String()` and `ParseAddress()` functions don't match [RFC 5322](https://tools.ietf.org/html/rfc5322), especially regarding quoted-strings, and some other special cases.\r\n\r\nMost simple way to find out if `Address.String()` and `ParseAddress()` do their job, is to look if a parsed and formatted mail address can be parsed again, which isn't the case: https://play.golang.org/p/Kl0FDI-BxO\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\nimport \"net/mail\"\r\n\r\nfunc main() {\r\n\ta, _ := mail.ParseAddress(`\" \"@test.com`)\r\n\tfmt.Println(`\" \"@test.com`)\r\n\tfmt.Println(a)\r\n\t_, err := mail.ParseAddress(a.String())\r\n\tfmt.Println(err)\r\n\r\n\tfmt.Println()\r\n\r\n\ta, _ = mail.ParseAddress(`\"hello@world\"@test.com`)\r\n\tfmt.Println(`\"hello@world\"@test.com`)\r\n\tfmt.Println(a)\r\n\t_, err = mail.ParseAddress(a.String())\r\n\tfmt.Println(err)\r\n\r\n}\r\n```\r\n\r\n```\r\n\" \"@test.com\r\n\u003c @test.com\u003e\r\nmail: invalid string\r\n\r\n\"hello@world\"@test.com\r\n\u003chello@world@test.com\u003e\r\nmail: unclosed angle-addr\r\n```\r\n\r\nI fixed this problem, and wrote tests for other special cases: https://go-review.googlesource.com/#/c/8724/  \r\nI created this patch request a month ago, but hadn't got any answer unfortunately...",
+	"user": {
+		"login": "DenBeke",
+		"id": 3856745,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "dsymonds",
+		"id": 31506,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-07-22T20:37:42Z",
+	"created_at": "2015-05-10T16:31:18Z",
+	"updated_at": "2016-08-05T16:09:36Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

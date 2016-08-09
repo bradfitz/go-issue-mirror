@@ -1,0 +1,12 @@
+{
+	"id": 102720716,
+	"body": "I think this isn't actually a problem, though (if I'm right), it may be worth writing down the reason in the code.\r\n\r\nWriting p into a global isn't a problem. We rescan globals during mark termination, which means we've stopped the world and synchronized with any other thread that may have changed arena_used or h_spans.\r\n\r\nI claim it also isn't a problem if a thread writes p into a heap object. This will invoke the write barrier, which will publish p to the garbage collector by (eventually) putting a work buffer on the global work buffer list. The arena_used update happens before p is added to the local work buffer (*), which happens before the work buffer is pushed to the global list, which happens before the work buffer pop by the GC, which happens before GC observes p. Hence GC will observe a sufficiently up-to-date value of arena_used.\r\n\r\n(*) Unless (maybe this is what you're getting at?), there was bad synchronization on p in the first place and the allocating thread and the thread that published p to the heap are different threads and p was obtained without establishing happens-before. But this would seem to be an extension of our policy of allowing memory safety violations when there are races in user code.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-17T01:50:24Z",
+	"updated_at": "2015-05-17T01:50:24Z"
+}

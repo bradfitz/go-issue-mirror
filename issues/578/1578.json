@@ -1,0 +1,22 @@
+{
+	"id": 51278011,
+	"number": 1578,
+	"state": "closed",
+	"title": "Go runtime crashes on hardened kernels with W^X memory restrictions",
+	"body": "by **danderson@google.com**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile a trivial hello world with the 8* compiler suite.\n2. Deploy this binary to a 32-bit server running a kernel patched with grsecurity.\n3. Run binary.\n\nWhat is the expected output?\n\nThe binary should run happily.\n\nWhat do you see instead?\n\nThe binary outputs \u0026quot;throw: out of memory (FixAlloc)\u0026quot; and hangs.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g.\n\nWhich operating system are you using?\n\nLinux atlas.natulte.net 2.6.32.24-grsec #1 SMP Fri Oct 22 21:57:04 PDT 2010 i686\nGNU/Linux\n\nWhich revision are you using?  (hg identify)\n\n03da6860bb39 tip\n\nPlease provide any additional information below.\n\nSuspecting a binary compatibility issue, I tried to rebuild the entire Go universe on\nthis server. ./all.bash crashes the first time it tries to run cgo, with the same error.\n\nstrace pinpoints the specific startup failure:\n\nmmap2(NULL, 131072, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) =\n-1 EPERM (Operation not permitted)\n\nIn kernels hardened with the PaX features of grsecurity, mmap() denies requests for\nmemory that is both writable and executable, to stop attacks that dump shellcode into\nmemory and then execute it. It's likely that other hardened kernels (e.g. the more\npopular SELinux) enforce the same restrictions.\n\nI haven't yet had time to examine the needs of the Go runtime's allocator, but my hope\nis that it doesn't actually need executable memory, in which case the fix is trivially\nremoving the X bit from the mmap() call.\n\nPaX also comes with a commandline utility to toggle some protection features on a\nper-binary basis. Unfortunately, this tool claims that Go binaries have a malformed ELF\nheader, so I'm unable to toggle the flags. I need to further diagnose this subfailure to\nfigure out if there's a bug in the ELF writer.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:08:58Z",
+	"created_at": "2011-03-04T13:28:54Z",
+	"updated_at": "2016-06-24T19:26:08Z"
+}

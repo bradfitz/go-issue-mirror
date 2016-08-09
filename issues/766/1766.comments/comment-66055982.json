@@ -1,0 +1,12 @@
+{
+	"id": 66055982,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eYou can see the assembly by using a standard tool like gdb or objdump\nbut also by running 6l with the -a flag.\n\nOn my Linux system, I get\n\naddloop1_c (0.24s)\n.L10:\n\taddl\t%ecx, %edx\n\taddl\t$1, %ecx\n\tcmpl\t%ecx, %esi\n\tjg\t.L10\n\naddloop1_modular (0.95s)\n421734\t01c1                 | (6)\tADDL\tAX,CX\n421736\tffc0                 | (5)\tINCL\t,AX\n421738\t39d0                 | (5)\tCMPL\tAX,DX\n42173a\t7cf8                 | (5)\tJLT\t,421734\n\nIt looks like the only difference is the incl vs addl $1. \nShould that really cause such a huge time difference?\n\naddloop1_monolithic (2.83s)\n400d36\t0144244c             | (12)\tADDL\tAX,main.t+76(SP)\n400d3a\tffc0                 | (11)\tINCL\t,AX\n400d3c\t418b18               | (11)\tMOVL\t(R8),BX\n400d3f\t39c3                 | (11)\tCMPL\tBX,AX\n400d41\t7ff3                 | (11)\tJGT\t,400d36\n\nHere the difference is the use of (R8) as the limit.\nBecause the call to fmt.Sscan took the address of limit,\nthe code is being overly conservative about making sure\nit sees changes to limit.  I will take a note to fix that:\nit only really needs to reload from memory after an\nassignment through a pointer or a function call.\u003c/pre\u003e\n\n\n_Owner changed to @rsc._\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-02T13:02:18Z",
+	"updated_at": "2014-12-08T10:09:48Z"
+}

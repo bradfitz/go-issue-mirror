@@ -1,0 +1,33 @@
+{
+	"id": 51287032,
+	"number": 7660,
+	"state": "closed",
+	"title": "http/httptest: waitgroup race detection seems to give false positives relating to httptest.Server.Close",
+	"body": "by **samuele.pedroni**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.2.1 linux/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\nhave a package foo with attached foo_test.go\n\nrun the tests there with race detection on repeatedly:\n\n$ for i in $(seq 100); do go test -race  || break ; done\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.314s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.311s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.316s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.312s\nPASS\nok  \t_/home/pedronis/scratch/foo\t1.311s\n==================\nWARNING: DATA RACE\nWrite by goroutine 3:\n  sync.raceWrite()\n      /usr/lib/go/src/pkg/sync/race.go:41 +0x35\n  sync.(*WaitGroup).Wait()\n      /usr/lib/go/src/pkg/sync/waitgroup.go:120 +0x16d\n  net/http/httptest.(*Server).Close()\n      /usr/lib/go/src/pkg/net/http/httptest/server.go:168 +0x6a\n  _/home/pedronis/scratch/foo.TestSendPostTimeout1()\n      /home/pedronis/scratch/foo/foo_test.go:53 +0x2c0\n  testing.tRunner()\n      /usr/lib/go/src/pkg/testing/testing.go:391 +0x10f\n\nPrevious read by goroutine 6:\n  sync.raceRead()\n      /usr/lib/go/src/pkg/sync/race.go:37 +0x35\n  sync.(*WaitGroup).Add()\n      /usr/lib/go/src/pkg/sync/waitgroup.go:60 +0xc1\n  net/http/httptest.(*waitGroupHandler).ServeHTTP()\n      /usr/lib/go/src/pkg/net/http/httptest/server.go:198 +0x5e\n  net/http.serverHandler.ServeHTTP()\n      /usr/lib/go/src/pkg/net/http/server.go:1597 +0x1ca\n  net/http.(*conn).serve()\n      /usr/lib/go/src/pkg/net/http/server.go:1167 +0xc00\n\nGoroutine 3 (running) created at:\n  testing.RunTests()\n      /usr/lib/go/src/pkg/testing/testing.go:471 +0xb3c\n  testing.Main()\n      /usr/lib/go/src/pkg/testing/testing.go:403 +0xa2\n  main.main()\n      _/home/pedronis/scratch/foo/_test/_testmain.go:47 +0xdc\n\nGoroutine 6 (running) created at:\n  net/http.(*Server).Serve()\n      /usr/lib/go/src/pkg/net/http/server.go:1644 +0x2c1\n==================\nPASS\nFound 1 data race(s)\nexit status 66\nFAIL\t_/home/pedronis/scratch/foo\t1.315s\n\nWhat happened?\n\nit seems to give a spurious race related to the waitgroup used by httptest.Server to\nwait on requests to finish\n\nWhat should have happened instead?\n\nreading the code there shouldn't be a race there afaict\n\nPlease provide any additional information below.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7660/0/foo_test.go\"\u003efoo_test.go\u003c/a\u003e (1097 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:42:32Z",
+	"created_at": "2014-03-28T16:44:54Z",
+	"updated_at": "2016-06-25T01:31:01Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

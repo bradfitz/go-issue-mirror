@@ -1,0 +1,22 @@
+{
+	"id": 153842807,
+	"number": 15617,
+	"state": "closed",
+	"title": "crypto/sha1: out-of-bounds access in blockAVX2",
+	"body": "go version devel +149ac34 Mon May 9 17:50:29 2016 +0000 linux/amd64\r\n\r\n```\r\nunexpected fault address 0x7f736efbf000\r\nfatal error: fault\r\n[signal SIGSEGV: segmentation violation code=0x2 addr=0x7f736efbf000 pc=0x44b655]\r\n\r\ngoroutine 1 [running]:\r\nruntime.throw(0x46a144, 0x5)\r\n\tsrc/runtime/panic.go:566 +0x8b fp=0xc4200797e0 sp=0xc4200797c8\r\nruntime.sigpanic()\r\n\tsrc/runtime/sigpanic_unix.go:27 +0x27e fp=0xc420079830 sp=0xc4200797e0\r\ncrypto/sha1.blockAVX2(0xc420079e70, 0x7f736efbef00, 0x100, 0x1100)\r\n\tsrc/crypto/sha1/sha1block_amd64.s:1458 +0x4e5 fp=0xc420079db8 sp=0xc420079830\r\ncrypto/sha1.block(0xc420079e70, 0x7f736efbef00, 0x100, 0x1100)\r\n\tsrc/crypto/sha1/sha1block_amd64.go:19 +0x7e fp=0xc420079de0 sp=0xc420079db8\r\ncrypto/sha1.(*digest).Write(0xc420079e70, 0x7f736efbef00, 0x100, 0x1100, 0x3, 0xc4200001a0, 0x4226fa)\r\n\tsrc/crypto/sha1/sha1.go:75 +0x116 fp=0xc420079e20 sp=0xc420079de0\r\ncrypto/sha1.Sum(0x7f736efbef00, 0x100, 0x1100, 0x0, 0x0, 0x0)\r\n\tsrc/crypto/sha1/sha1.go:128 +0xcc fp=0xc420079ee0 sp=0xc420079e20\r\nmain.main()\r\n\t/tmp/sha1.go:19 +0x15b fp=0xc420079f50 sp=0xc420079ee0\r\nruntime.main()\r\n\tsrc/runtime/proc.go:189 +0x20a fp=0xc420079fa0 sp=0xc420079f50\r\nruntime.goexit()\r\n\tsrc/runtime/asm_amd64.s:2058 +0x1 fp=0xc420079fa8 sp=0xc420079fa0\r\n```\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/sha1\"\r\n\t\"syscall\"\r\n)\r\n\r\nfunc main() {\r\n\tconst pageSize = 4 \u003c\u003c 10\r\n\tdata, err := syscall.Mmap(0, 0, 2*pageSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_ANON|syscall.MAP_PRIVATE)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tif err := syscall.Mprotect(data[pageSize:], syscall.PROT_NONE); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfor i := 0; i \u003c pageSize; i++ {\r\n\t\tprintln(i)\r\n\t\tsha1.Sum(data[pageSize-i : pageSize])\r\n\t}\r\n}\r\n```\r\n\r\nOne does not simply write native code.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-05-26T11:35:06Z",
+	"created_at": "2016-05-09T18:47:04Z",
+	"updated_at": "2016-05-26T11:35:06Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

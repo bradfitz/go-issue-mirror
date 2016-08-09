@@ -1,0 +1,22 @@
+{
+	"id": 51283964,
+	"number": 5646,
+	"state": "closed",
+	"title": "Incorrect generation of cgo_export.h file for CGo on 64-bit machines",
+	"body": "by **TheBrokenToaster**:\n\n\u003cpre\u003eOne of the changes from Go 1.0 to Go 1.1 was that the size of an \u0026quot;int\u0026quot; was now\ndependent on the native architecture of the CPU. In Go 1.0, the size of the\n\u0026quot;len\u0026quot; and \u0026quot;cap\u0026quot; fields in a GoSlice was always 32-bits. However, in\nGo 1.1, those fields could be 32-bits or 64-bits depending on architecture.\n\nSimilarly, when using the GoSlice struct with CGo, the size of \u0026quot;len\u0026quot; and\n\u0026quot;cap\u0026quot; fields should be architecture dependent. Currently, it uses the\n\u0026quot;int\u0026quot; type, in which C language gives no guarantee that it is architecture\ndependent.\n\nThe _cgo_export.h header is currently (INCORRECT):\n    typedef struct { char *p; int n; } GoString;\n    typedef struct { void *data; int len; int cap; } GoSlice;\n\nInstead it should be (CORRECT):\n    typedef struct { char *p; GoInt n; } GoString;\n    typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;\n\nNote: The GoString struct happens to work due to data structure alignment, but will\nstill suffer from a integer overflow if the string length was greater than 2^32.\n\n----\n\nWhat steps will reproduce the problem?\n    1.) Download the attachment.\n    2.) Compile and run demo.go on a 64-bit machine\n\n\nWhat is the expected output?\n    sizeof(GoSlice): 16\n      sizeof(GoSlice.data): 8\n      sizeof(GoSlice.len): 4\n      sizeof(GoSlice.cap): 4\n    sizeof(GoString): 16\n      sizeof(GoString.p): 8\n      sizeof(GoString.n): 4\n\n    Print length of each GoSlice element\n      Index 0: len=0, cap=0\n      Index 1: len=417792, cap=194\n      Hexdump: 00400500c2000000 0000000000000000 2823000000000000 00600600c2000000\n\n    Print length of each GoString element\n      Index 0: len=10\n      Index 1: len=16\n      Index 2: len=18\n      Hexdump: 9050430000000000 0a00000000000000 105a430000000000 1000000000000000 d052430000000000 1200000000000000\n\n\nWhat do you see instead?\n    sizeof(GoSlice): 24\n      sizeof(GoSlice.data): 8\n      sizeof(GoSlice.len): 8\n      sizeof(GoSlice.cap): 8\n    sizeof(GoString): 16\n      sizeof(GoString.p): 8\n      sizeof(GoString.n): 8\n\n    Print length of each GoSlice element\n      Index 0: len=0, cap=9000\n      Index 1: len=123, cap=456\n      Hexdump: 00400500c2000000 0000000000000000 2823000000000000 00600600c2000000 7b00000000000000 c801000000000000\n\n    Print length of each GoString element\n      Index 0: len=10\n      Index 1: len=16\n      Index 2: len=18\n      Hexdump: 9050430000000000 0a00000000000000 105a430000000000 1000000000000000 d052430000000000 1200000000000000\n\n\nWhich compiler are you using?\n    6g\n\n\nWhich operating system are you using?\n    Linux Mint 14 Nadia\n\n\nWhich version are you using?\n    go version go1.1 linux/amd64\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5646/0/cgo_bug.tar.gz\"\u003ecgo_bug.tar.gz\u003c/a\u003e (1253 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:30:48Z",
+	"created_at": "2013-06-06T08:15:40Z",
+	"updated_at": "2016-06-24T22:41:59Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 54081567,
+	"number": 9569,
+	"state": "closed",
+	"title": "go/ssa: crash during SSA construction",
+	"body": "package main\r\n\r\ntype I interface {\r\n\tf() chan int\r\n}\r\n\r\nfunc f(i I) {\r\n\tselect {\r\n\tcase \u003c-chan int(nil):\r\n\t\tvar i I\r\n\tcase \u003c-i.f():\r\n\t}\r\n}\r\n% ssadump -build=F a.go\r\npanic: no Value for type.Object i\r\n\r\ngoroutine 17 [running]:\r\ngolang.org/x/tools/go/ssa.(*Function).lookup(0xc2080dc140, 0x7f4b4894e730, 0xc2080c63c0, 0x0, 0x0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/func.go:429 +0x1d3\r\ngolang.org/x/tools/go/ssa.(*builder).addr(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e2b8, 0xc2080c4220, 0x0, 0x0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:334 +0x2ca\r\ngolang.org/x/tools/go/ssa.(*builder).expr(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e2b8, 0xc2080c4220, 0x0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:463 +0x2c9\r\ngolang.org/x/tools/go/ssa.(*builder).receiver(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e2b8, 0xc2080c4220, 0xc2080c0100, 0xc2080c6410, 0x0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:745 +0x354\r\ngolang.org/x/tools/go/ssa.(*builder).setCallFunc(0xc208105bb7, 0xc2080dc140, 0xc20805e280, 0xc208106040)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:770 +0x1bd\r\ngolang.org/x/tools/go/ssa.(*builder).setCall(0xc208105bb7, 0xc2080dc140, 0xc20805e280, 0xc208106040)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:896 +0x5a\r\ngolang.org/x/tools/go/ssa.(*builder).expr0(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e408, 0xc20805e280, 0x7, 0x7f4b4894e6d0, 0xc2080c43e0, 0x0, 0x0, 0x0, ...)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:531 +0x1a8c\r\ngolang.org/x/tools/go/ssa.(*builder).expr(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e408, 0xc20805e280, 0x0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:465 +0x3c9\r\ngolang.org/x/tools/go/ssa.(*builder).selectStmt(0xc208105bb7, 0xc2080dc140, 0xc2080601d0, 0x0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:1404 +0x240d\r\ngolang.org/x/tools/go/ssa.(*builder).stmt(0xc208105bb7, 0xc2080dc140, 0x7f4b4894e590, 0xc2080601d0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2025 +0xb5e\r\ngolang.org/x/tools/go/ssa.(*builder).stmtList(0xc208105bb7, 0xc2080dc140, 0xc2080601e0, 0x1, 0x1)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:725 +0xa5\r\ngolang.org/x/tools/go/ssa.(*builder).stmt(0xc208105bb7, 0xc2080dc140, 0x7f4b4894edd0, 0xc2080b0330)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:1993 +0x2872\r\ngolang.org/x/tools/go/ssa.(*builder).buildFunction(0xc208105bb7, 0xc2080dc140)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2086 +0x53a\r\ngolang.org/x/tools/go/ssa.(*builder).buildFuncDecl(0xc208105bb7, 0xc2080d2100, 0xc2080b0360)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2128 +0x59b\r\ngolang.org/x/tools/go/ssa.(*Package).Build(0xc2080d2100)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2246 +0x1046\r\ngolang.org/x/tools/go/ssa.func·001(0xc2080d2100)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2144 +0x31\r\ncreated by golang.org/x/tools/go/ssa.(*Program).BuildAll\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2146 +0x155\r\n\r\ngoroutine 1 [semacquire]:\r\nsync.(*WaitGroup).Wait(0xc2080c44e0)\r\n        /home/adonovan/go/src/sync/waitgroup.go:132 +0x169\r\ngolang.org/x/tools/go/ssa.(*Program).BuildAll(0xc2080b20e0)\r\n        /home/adonovan/got5/src/golang.org/x/tools/go/ssa/builder.go:2149 +0xdd\r\nmain.doMain(0x0, 0x0)\r\n",
+	"user": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-01-12T18:09:10Z",
+	"created_at": "2015-01-12T17:25:55Z",
+	"updated_at": "2016-06-25T01:58:19Z"
+}

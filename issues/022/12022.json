@@ -1,0 +1,22 @@
+{
+	"id": 99086752,
+	"number": 12022,
+	"state": "closed",
+	"title": "cmd/compile: generate better SSA code for shift-by-constant",
+	"body": "```go\r\npackage p\r\n\r\nfunc f_ssa(x uint8) uint8 {\r\n\treturn x \u003e\u003e 4\r\n}\r\n```\r\n\r\ndoes not account for the fact that 4 is a constant, and instead does a shift+mask dance. Just a question of adding a bunch of new rewrite rules.\r\n\r\nCurrently it generates:\r\n\r\n```\r\n\"\".f_ssa t=1 size=64 value=0 args=0x10 locals=0x8\r\n\t0x0000 00000 (x.go:3)\tTEXT\t\"\".f_ssa(SB), $8-16\r\n\t0x0000 00000 (x.go:3)\tSUBQ\t$8, SP\r\n\t0x0004 00004 (x.go:3)\tFUNCDATA\t$0, \"\".gcargs·0(SB)\r\n\t0x0004 00004 (x.go:3)\tFUNCDATA\t$1, \"\".gclocals·1(SB)\r\n\t0x0004 00004 (x.go:3)\tLEAQ\t16(SP), AX\r\n\t0x0009 00009 (x.go:3)\tMOVB\t(AX), CL\r\n\t0x000b 00011 (x.go:3)\tMOVB\tCL, (SP)\r\n\t0x000e 00014 (x.go:4)\tMOVQ\t$4, CX\r\n\t0x0015 00021 (x.go:3)\tMOVB\t(SP), BL\r\n\t0x0018 00024 (x.go:4)\tMOVB\tBL, BPB\r\n\t0x001b 00027 (x.go:4)\tSHRB\tCL, BPB\r\n\t0x001e 00030 (x.go:4)\tCMPQ\tCX, $8\r\n\t0x0022 00034 (x.go:4)\tSBBL\tSI, SI\r\n\t0x0024 00036 (x.go:4)\tMOVB\tBPB, DIB\r\n\t0x0027 00039 (x.go:4)\tANDB\tSIB, DIB\r\n\t0x002a 00042 (x.go:3)\tLEAQ\t24(SP), R8\r\n\t0x002f 00047 (x.go:3)\tMOVB\t$0, R9B\r\n\t0x0032 00050 (x.go:3)\tMOVB\tR9B, (R8)\r\n\t0x0035 00053 (x.go:4)\tMOVB\tDIB, (R8)\r\n\t0x0038 00056 (x.go:3)\tADDQ\t$8, SP\r\n\t0x003c 00060 (x.go:3)\tRET\r\n```\r\n\r\nIt should be much closer to the old backend:\r\n\r\n```\r\n\"\".f_ssa t=1 size=16 value=0 args=0x10 locals=0x0\r\n\t0x0000 00000 (x.go:3)\tTEXT\t\"\".f_ssa(SB), $0-16\r\n\t0x0000 00000 (x.go:3)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0000 00000 (x.go:3)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0000 00000 (x.go:4)\tMOVBQZX\t\"\".x+8(FP), BX\r\n\t0x0005 00005 (x.go:4)\tSHRB\t$4, BL\r\n\t0x0008 00008 (x.go:4)\tMOVB\tBL, \"\".~r1+16(FP)\r\n\t0x000c 00012 (x.go:4)\tRET\r\n```\r\n\r\n/cc @randall77 @brtzsnr\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-08-21T19:57:59Z",
+	"created_at": "2015-08-04T23:59:20Z",
+	"updated_at": "2015-08-21T19:57:59Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

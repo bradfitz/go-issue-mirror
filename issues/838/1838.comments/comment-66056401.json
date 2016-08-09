@@ -1,0 +1,12 @@
+{
+	"id": 66056401,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eMost of this is not a memory leak.\n\nFive copies.\n\n1. main's Client has not been closed, so the server's handler for that connection\n   is still active.  Its main goroutine is looping in ServeCodec doing:\n      service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)\n      ...\n      go service.call(server, sending, mtype, req, argv, replyv, codec)\nSince another readRequest has not happened, ServeCodec is still holding onto\nthe previous replyv, which holds a pointer to the original copy of the reply buffer.\n\n2. main's Client has not been closed, so the server's handler for that connection\nis still active.  Its gob.Encoder has an internal output buffer that has grown\nto accommodate the giant response and will be reused for future responses.\n\n3. main's Client has not been closed.  Its gob.Decoder has grown dec.tmp to\nhold a single incoming message.\n\n4. main's Client has not been closed.  Its gob.Decoder has grown dec.buf to\nhold a single incoming message.\n\n5. main's reply variable holds the result returned by the RPC (a copy made\nduring gob decode).\n\nIf you change the code to allocate the client and make the RPC in a\nfunction and to call c.Close before returning from that function, then\nthe client and server are both done and gone when the garbage collection\nruns in main.main.  Then there is one copy left, pointed at by a dreg in \nthe runtime left over from the reflect.Call inside gob.\n\nI have sent out CL 5674109 to fix the runtime dreg.  The rest is working \nas intended as far as gob is concerned.  With that CL and moving the\nclient ops into a function that calls c.Close before returning, the change\nprint says half a megabyte instead of hundreds of megabytes.\u003c/pre\u003e\n\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-19T08:06:11Z",
+	"updated_at": "2014-12-08T10:10:08Z"
+}

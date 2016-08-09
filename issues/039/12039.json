@@ -1,0 +1,28 @@
+{
+	"id": 99257366,
+	"number": 12039,
+	"state": "closed",
+	"title": "encoding/gob: deserializes internal Struct{\u00260} as nil",
+	"body": "Until now I thought gob serializing + deserializing will recreate the object so that it is equal to the original according to reflect.DeepEqual. In fact, isn't this the one most basic requirement for serialization?\r\n\r\nHowever, this is a case where it won't:\r\n\r\nhttp://play.golang.org/p/CWP5m7RKIg\r\n\r\nExpected behavior: for any object a, gob.NewEncoder(...).Encode(a) will\r\n- either fail\r\n- or write a buffer that, when gob.NewDecoder(...).Decode()'d, will yield a value b with reflect.DeepEqual(a, b).\r\n\r\nActual behavior: it silently turns the allocated zero into a nil.\r\n\r\nNote that gob's documentation is ambiguous about this; it first writes:\r\n\"Pointers are not transmitted, but the things they point to are transmitted; that is, the values are flattened.\"\r\nwhich is nice, but later - in the encoding details - writes:\r\n\"If a field [of a struct] has the zero value for its type, it is omitted from the transmission.\"\r\n\r\nWhen reading it first, I assumed this \"zero value\" only includes nil because the field is pointer-typed. However, it seems like the zero value of the underlying type is considered a zero value here too.\r\n\r\nTherefore I suppose there are two ways to fix it:\r\n1. Make gob support above requirement in conjunction with reflect.DeepEqual.\r\n2. Introduce another module that does.",
+	"user": {
+		"login": "divVerent",
+		"id": 251568,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-09-02T20:23:23Z",
+	"created_at": "2015-08-05T17:26:01Z",
+	"updated_at": "2015-09-02T20:35:24Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

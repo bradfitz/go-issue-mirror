@@ -1,0 +1,12 @@
+{
+	"id": 131281500,
+	"body": "Initially I wasn't storing a pointer to a C heap, I was allocating the struct directly on the Go heap (`C.z_stream` vs `*C.z_stream`) and passing it to C.  Since CG had access to the entire struct it was causing panics by the pointers inside that struct that were initialized by `zlib`.  Now I'm just storing a pointer to the C heap, so there are no such errors.  This is likely the better way of doing it since none of those pointers need to be garbage collected anyway.  Again, I assume that this is intended behavior, but it was non obvious (at least to me) so it might be nice to document it.\r\n\r\nAs far as the scoping issues, I may be missing something.  The `buf` and `p` variables that I'm passing pointers to C don't go out of scope until the function returns.  At that point `libz` is finished using them.  I suppose those pointers are still stored in the `z_stream` struct, but they shouldn't be accessed.  That being said, since there are no guarantees that a future version of `libz` won't invalidate this assumption, I suppose I should be storing them in the same scope as the `z_stream` pointer (In my case inside of the `Reader` struct).  ",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-15T02:40:03Z",
+	"updated_at": "2015-08-15T02:41:24Z"
+}

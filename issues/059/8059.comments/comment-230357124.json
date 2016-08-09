@@ -1,0 +1,12 @@
+{
+	"id": 230357124,
+	"body": "Experiencing something similar.  I have a binary file that I read into a byte array.  Binary file is 2Gb. When it's loaded into mem, the process mem usage is over 6GB.  After about 5 minutes, the mem usage drops down.  Wrote a simple app to reproduce and can do so each time.  \r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"flag\"\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"os\"\r\n\t\"os/signal\"\r\n\t\"runtime\"\r\n)\r\n\r\nvar fileToRead = flag.String(\"filetoread\", \"\", \"file to load into mem\")\r\n\r\nfunc main() {\r\n\tflag.Parse()\r\n\r\n\tarr, err := func() ([]byte, error) {\r\n\t\tfile, err := os.Open(*fileToRead)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tdefer file.Close()\r\n\r\n\t\treturn ioutil.ReadAll(file)\r\n\t}()\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tfmt.Printf(\"Read %d bytes\", len(arr))\r\n\r\n\texitChan := make(chan os.Signal)\r\n\tsignal.Notify(exitChan, os.Interrupt)\r\n\t\u003c-exitChan\r\n}\r\n```\r\n\r\nAdded runtime.GC() after the printf statement with no affect.  If I call debug.FreeOSMemory(), the memory is released after a few seconds.  Version: go version go1.6.2 darwin/amd64",
+	"user": {
+		"login": "carlfn",
+		"id": 6538260,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-04T21:44:03Z",
+	"updated_at": "2016-07-04T22:24:47Z"
+}

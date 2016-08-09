@@ -1,0 +1,30 @@
+{
+	"id": 51284540,
+	"number": 6008,
+	"state": "closed",
+	"title": "os/exec: clarify requirements for stdin/stdout",
+	"body": "\u003cpre\u003eHere is code from golang-nuts:\n        cmd := exec.Command(\u0026quot;cat\u0026quot;)\n        in, _ := cmd.StdinPipe()\n        out, _ := cmd.StdoutPipe()\n        cmd.Start()\n        go func() { defer os.Stdout.Close(); io.Copy(os.Stdout, out) }()\n        go func() { defer in.Close(); io.Copy(in, os.Stdin) }()\n        cmd.Wait()\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/gjkbC6M4cAU\n\nThis has 2 data races:\n1. Both cmd and user close 'in'.\n2. Cmd closes 'out', while user reads from it.\n\nI've seen similar races in several projects.\n\nos/exec documentation must clearly explain:\n1. When it is allowed to close stdin/stdout (only after Wait?)\n2. How to stream stdout (it's easy to race with stdout.Close in Wait)\n3. How to close stdin to notify the process about end of input data (e.g. cat)\n4. How/when to use thread-safe Reader/Writer\n\nIt all is basically impossible to get right first time.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:33:03Z",
+	"created_at": "2013-08-01T10:17:45Z",
+	"updated_at": "2016-06-24T22:53:13Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

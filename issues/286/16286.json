@@ -1,0 +1,30 @@
+{
+	"id": 164366861,
+	"number": 16286,
+	"state": "closed",
+	"title": "runtime: Docker daemon on Windows using 1.7 beta2 can deadlock all goroutines",
+	"body": "It looks like https://github.com/golang/go/commit/276b1777717ec5a0a02364a5aee806f8076bb60b introduces a case where an application can become completely deadlocked. This was found through https://github.com/docker/docker/pull/23235 in an attempt to verify that docker can be upgraded to golang 1.7 successfully\r\n\r\n@aclements @runcom @alexbrainman @jstarks \r\n\r\n\r\n\r\nPlease answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo 1.7 beta2, and through git bisect working back to commit 276b1777.\r\n\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOCHAR=6\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=e:\\go\\src\\github.com\\docker\\docker\\vendor;e:\\go\r\nset GORACE=\r\nset GOROOT=C:\\go\r\nset GOTOOLDIR=C:\\go\\pkg\\tool\\windows_amd64\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nI wish this were easier than it were, but running docker CI against binaries built against the above versions of golang. This also requires Windows Server 2016 builds more recent than the public TP5. I was specifically running on build 14375. The reason for newer builds is that TP5 does not support the  newer APIs needed by docker, so we use older APIs in Windows. Post TP5, we make extensive use of callback APIs from C code in Windows to golang and make use of golang channels for callbacks. This appears to line up with the changes in https://github.com/golang/go/commit/276b1777717ec5a0a02364a5aee806f8076bb60b \r\n\r\nIt was found by running the CLI test `TestRestartContainerwithRestartPolicy`, although I've seen it fail on other tests too. The most reliable way of repro was starting the test, killing the daemon 5 or 6 seconds after containers have been started, then start cycle a few times through starting the daemon, seeing if it deadlocks, if not, killing it and restarting it again.\r\n\r\n4. What did you expect to see?\r\n\r\nNo deadlock\r\n\r\n5. What did you see instead?\r\n\r\nDocker daemon completely locks up. Even an added goroutine which prints to the console every 100ms no longer makes forward progress. \r\n\r\n",
+	"user": {
+		"login": "jhowardmsft",
+		"id": 10522484,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2016-07-08T02:06:26Z",
+	"created_at": "2016-07-07T17:42:16Z",
+	"updated_at": "2016-07-08T02:06:26Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

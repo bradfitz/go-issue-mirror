@@ -1,0 +1,17 @@
+{
+	"id": 151019770,
+	"number": 15442,
+	"state": "closed",
+	"title": "runtime: tight loop hangs process completely after some time",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 windows/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nWindows 10.0.10586 am64\r\n\r\n3. What did you do?\r\nRan this code\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"runtime\"\r\n)\r\n\r\nfunc main() {\r\n\truntime.GOMAXPROCS(2)\r\n\tch := make(chan bool)\r\n\r\n\tgo func() {\r\n\t\tfor {\r\n\t\t\tch \u003c- true\r\n\t\t\tlog.Println(\"sent\")\r\n\t\t}\r\n\t}()\r\n\r\n\tgo func() {\r\n\t\tfor {\r\n\t\t\t\u003c-ch\r\n\t\t\tlog.Println(\"received\")\r\n\t\t}\r\n\t}()\r\n\r\n\tfor {\t\r\n\t}\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\nProcess printing \"sent\" and \"received\" until terminated\r\n\r\n5. What did you see instead?\r\nProcess runs and prints as expected for about 2 seconds and then hangs. Nothing is printed after that, process just eats up CPU. No panics or anything.\r\n\r\nI put `runtime.GOMAXPROCS(2)` to make sure that there're multiple threads that goroutines can ran on. Obviously with `runtime.GOMAXPROCS(1)` process would hang immediately as expected - for loop will not yield execution.\r\n\r\nI tried to replace the for loop with this so that main goroutine can yield execution:\r\n```\r\ngo func() {\r\n\tfor {\r\n\t}\r\n}()\r\n\r\nselect {}\r\n```\r\nBut exactly the same thing happens. Now, if I put `time.Sleep(10 * time.Millisecond)` or longer after `log.Println(\"sent\")` then process no longer hangs. I ran it for a minute and it's just kept going. Don't know, maybe it will still hang much later. If I change it to 2 ms then it hangs after 30 seconds. I tried to collect trace data but it looks like it gets corrupted because trace doesn't finish. When I try to view the trace it says \"failed to parse trace: no EvFrequency event\".\r\n\r\nEverything behaves exactly the same on Mac OSX El capitan 10.11.4 (15E65) Go 1.6.2\r\n\r\nI read the #10958 but here the weird thing is that it actually runs for awhile completely fine and only after that it hangs. ",
+	"user": {
+		"login": "creker",
+		"id": 2558271,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 26,
+	"closed_at": "2016-04-27T04:13:47Z",
+	"created_at": "2016-04-26T01:36:05Z",
+	"updated_at": "2016-05-04T23:08:57Z"
+}

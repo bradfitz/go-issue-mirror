@@ -1,0 +1,33 @@
+{
+	"id": 60482138,
+	"number": 10127,
+	"state": "closed",
+	"title": "x/tools/go/ssa: bad code generation for struct declaration and assignment",
+	"body": "Issue discovered in http://golang.org/src/compress/flate/inflate.go\r\nwhen testing that package in https://github.com/tardisgo/tardisgo\r\nusing go version go1.4.2 darwin/amd64\r\n\r\nProgram demonstrating error: [reset.go](https://github.com/tardisgo/tardisgo-samples/blob/master/errors/reset/reset.go)\r\n\r\n```\r\n$ go run reset.go\r\ngood\r\ngood\r\ngood\r\n$ ssadump -run reset.go\r\ngood\r\ngood\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n```\r\n\r\nOffending code generated:\r\n```\r\nfunc (f *decompressor) ResetBad() { // abridged from the orginal version in the compress/flate package\r\n\t*f = decompressor{\r\n\t\thist: f.hist,\r\n\t}\r\n}\r\n\r\n/* SSA:\r\n# Name: (*main.decompressor).ResetBad\r\n# Package: main\r\n# Location: reset.go:60:24\r\n# Locals:\r\n#   0:\tt0 decompressor\r\nfunc (f *decompressor) ResetBad():\r\n0:                                                                entry P:0 S:0\r\n\tt0 = local decompressor ()                                *decompressor\r\n\tt1 = *t0                                                   decompressor\r\n\t*f = t1\r\n\tt2 = \u0026f.hist [#9]                                         **[32768]byte\r\n\tt3 = \u0026f.hist [#9]                                         **[32768]byte\r\n\tt4 = *t3                                                   *[32768]byte\r\n\t*t2 = t4\r\n\treturn\r\n*/\r\n```\r\nThe problem is that *f is overwritten and then used to fetch a field value.\r\nUsing a temporary variable in Go fixes the problem, see the ResetOK method.\r\n\r\n\r\n",
+	"user": {
+		"login": "elliott5",
+		"id": 4050742,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-04-18T12:42:53Z",
+	"created_at": "2015-03-10T10:58:44Z",
+	"updated_at": "2016-06-25T02:03:00Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

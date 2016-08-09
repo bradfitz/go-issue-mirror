@@ -1,0 +1,12 @@
+{
+	"id": 70976186,
+	"body": "I took a look at the stack trace you mentioned,\nhttps://gist.github.com/stevvooe/12e63e5f902b5ba7ec01\n\nI'm sure it's due to a nil writer. FYI, the analysis goes as follows:\n1. line 530 of bufio/bufio.go is:\n      n, err := b.wr.Write(b.buf[0:b.n])\nthis line needs the following memory accesses:\n(1) load b.wr and b.n, this requires b to be valid Writer pointer\n(2) load b.buf, slice it, this requires b to valid Writer pointer, but it\n     doesn't need b.buf to contain valid pointer.\n(3) load the function pointer from b.wr.\n(4) call the function indirectly\n\nb is not nil, as we can see from the arguments dump, b == 0xc208208900.\nso (1) and (2) are not the cause.\n\n(4) might cause problem but note that pc=0x78154a is not zero, so the\nonly possibility is step 3 (and generally if the pc is wrong in (4), it is\nalmost\ncertain a memory corruption bug.)\n\n2. Note that addr=0x20 in the 2nd line. This is address that is being\naccessed. 0x20 is precisely the offset of first function pointer in an itab\n(itab makes up the first half of a non-empty interface).\n\nAs the interface in question is Writer, which only contains one method,\nthe address of Write should be offset 0x20. at this is consistent with our\nanalysis.\n\nso the cause is itab == nil, this is only possible if the whole interface\nis nil.\n\nHope this helps when you diagnose problems like this in the future.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-22T06:12:41Z",
+	"updated_at": "2015-01-22T06:12:41Z"
+}

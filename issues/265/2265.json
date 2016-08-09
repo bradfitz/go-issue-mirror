@@ -1,0 +1,28 @@
+{
+	"id": 51278966,
+	"number": 2265,
+	"state": "closed",
+	"title": "encoding/xml: Inconsistent XMLName behaviour for Marshal/Unmarshal",
+	"body": "by **chrisfarms**:\n\n\u003cpre\u003eWhen xml.Marshal is called on a struct it will happily reflect the information in the\n\u0026quot;tag\u0026quot; of an XMLName member regardless of the type to give the struct a\ntag-name in it's XML form. This is backed up by the documentation which says:\n \n\u0026gt; The name of that XML element is taken from, in order of preference:\n\u0026gt;     - the tag on an XMLName field, if the data is a struct               \n\u0026gt;     - the value of an XMLName field of type xml.Name\n\u0026gt;     ...\n\nHowever xml.Unmarshal *does* care about the XMLName field being of type xml.Name, and\ncurrently returns the error \u0026quot;field XMLName does not have type xml.Name\u0026quot; if you\nhave it set to something else.\n\nThis is firstly inconsistant with xml.Marshal but it also makes it impossible to use\nxml.Marshal alongside other Marshallers (like json/bson) without poluting the state's\nnamespace with XMLName fields. Inorder to exclude fields from other Marshallers the\nconvention has been started to tag fields as \u0026quot;omitempty\u0026quot;; which will cause the\nfield not to display if it is at it's \u0026quot;zero\u0026quot; state, XMLName cannot have such\nas zero-state since it is a struct, so it is nicer to use a pointer/bool value for\nXMLName so it can be easily excluded when I want to Marshal my struct by some other wire\nformat.\n\nAttached is the proposed minor change, that simply stops erring if it can't set the name\non the XMLName field, which is just optional metadata anyway.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2265/0/go-xml-read.diff\"\u003ego-xml-read.diff\u003c/a\u003e (525 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:12:12Z",
+	"created_at": "2011-09-16T20:33:38Z",
+	"updated_at": "2016-06-24T19:34:50Z"
+}

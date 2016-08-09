@@ -1,0 +1,12 @@
+{
+	"id": 66078447,
+	"body": "\u003ca id=\"c27\"\u003e\u003c/a\u003eComment 27 by **hb@hannobraun.de**:\n\n\u003cpre\u003eRe #24:\n\n\u003e 1. Yup, that is strange. Can you please audit your code, and any dependencies for\ncalls to os.Exit(0).\n\nNothing found with grep. I'll do a more thorough search and report back, if I find\nsomething.\n\n\u003e Re 4. If you're not explicitly using cgo (it is unlikely you'd not know you were using\nit) then we can rule this out. Running ldd on the final binary will be the best test.\n\nI'm 100% sure we're not using cgo in our own code. I've thoroughly searched the\ndependencies, so I'm sure about that as well. In fact, one of our dependencies (mymysql)\nwas using cgo. We switched to another MySQL driver\n(\u003ca href=\"https://github.com/go-sql-driver/mysql)\"\u003ehttps://github.com/go-sql-driver/mysql)\u003c/a\u003e and reconfirmed before reporting this issue.\n\nHere's the ldd output:\n\tlinux-vdso.so.1 =\u003e  (0x00007fffb354a000)\n\tlibpthread.so.0 =\u003e /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fdc5eb80000)\n\tlibc.so.6 =\u003e /lib/x86_64-linux-gnu/libc.so.6 (0x00007fdc5e7c1000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fdc5edb7000)\n\n\n\u003e 5. Yes, although it should be less of an issue if you are not using cgo to embed a\nforeign library. \n\nLet's first see how the process fares with profiling removed (this is deployed as of\nnow). I've added this to my list of things to try.\n\n\n\u003e 6. Pass CGO_ENABLED=0 when building Go.\n\nI did this and it made no difference to the build. I think we can rule cgo out.\n\n\n\u003e 7. is a real concern. Can you please run your process with the flag, GOGCTRACE=1 and\npost the full output from startup to restart/crash. If your process reaches 16Gb, you\nwill get a panic because the heap in 1.0.x had a maximum size of 16Gb.\n\nAs I said, the memory use is subject to ongoing optimization work and I expect to reduce\nit significantly very soon.\nThe 16Gb limit shouldn't be a concern in this case though, since we're running on a tip\nversion from mid-April (go version devel +0704ea89235b Tue Apr 16 09:08:06 2013 -0700\nlinux/amd64). Or am I mistaken about this?\n\nI'll see what I can do about GOGCTRACE=1 and report back.\n\n\n\u003e 8. Btw, you're not stripping your binaries by chance ?\n\nNo.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-05-03T10:55:42Z",
+	"updated_at": "2014-12-08T10:28:49Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51277835,
+	"number": 1460,
+	"state": "closed",
+	"title": "exec.*Cmd.Wait fails with ERROR_INVALID_PARAMETER on windows",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nCompile and run this program:\n\npackage main\n\nimport \u0026quot;syscall\u0026quot;\nimport \u0026quot;exec\u0026quot;\nimport \u0026quot;log\u0026quot;\n\nfunc main() {\n\tp, err := exec.Run(\u0026quot;cmd\u0026quot;, []string{\u0026quot;/c\u0026quot;, \u0026quot;dir\u0026quot;}, nil, \u0026quot;\u0026quot;,\n\t\texec.DevNull, exec.DevNull, exec.DevNull)\n\tif err != nil {\n\t\tlog.Exit(err)\n\t}\n\tsyscall.Sleep(3000000000)\n\t_, err = p.Wait(0)\n\tif err != nil {\n\t\tlog.Exitf(\u0026quot;Wait failed with error \\\u0026quot;%s\\\u0026quot;\\n\u0026quot;, err.String())\n\t}\n\tprintln(\u0026quot;Success.\u0026quot;)\n}\n\nWhat is the expected output? \nSuccess.\n\nWhat do you see instead?\n2011/02/01 14:17:47 Wait failed with error \u0026quot;wait: The parameter is incorrect.\u0026quot;\n\nPlease use labels and text to provide additional information.\n\nThe problem is pid is not reliable process identifier on windows, must use handle\nreturned by windows api CreateProcess instead. But current os interface doesn't support\nthat. To demonstrate, this is what is happening under covers for correspondent os\nfunctions on Windows:\n\nos.ForkExec(...) (pid):\nhandle, pid = CreateProcess(...)\t// create process\nCloseHandle(handle)\t\t\t// close handle, we're not going to use it\nreturn pid\n\nos.Wait(pid) (rc):\nhandle := OpenProcess(pid)\t\t// find our process, convert pid into handle\nWaitForSingleObject(handle)\t\t// wait for process to end\nrc = GetExitCodeProcess(handle)\t\t// get exit code\nCloseHandle(handle)\t\t\t// done with our process\nreturn rc\n\nUnder certain conditions (on Windows 2000 much more often then others), OpenProcess\nfails, because pid was reused or whatever, therefore we can't continue to retrieve exit\ncode.\n\nThe interface should be:\n\nos.ForkExec(...) (handle, pid):\nhandle, pid = CreateProcess(...)\t// create process\nreturn handle, pid\n\nos.Wait(handle) (rc):\nWaitForSingleObject(handle)\t\t// wait for process to end\nrc = GetExitCodeProcess(handle)\t\t// get exit code\nreturn rc\n\nClose process handle once done:\nCloseHandle(handle)\t\t\t// done with our process\n\nThis can be accommodated if we introduce os.Process structure to hide all os specific\nimplementation details. There is an issue\n\u003ca href=\"https://golang.org/issue/1004\"\u003ehttps://golang.org/issue/1004\u003c/a\u003e about it. But I couldn't reproduce the\nproblem on non Windows 2000 os. Now, thanks to mattn, we've got a test case.\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:08:26Z",
+	"created_at": "2011-02-01T03:46:24Z",
+	"updated_at": "2016-06-24T19:24:38Z"
+}

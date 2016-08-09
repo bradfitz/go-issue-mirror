@@ -1,0 +1,33 @@
+{
+	"id": 86398303,
+	"number": 11122,
+	"state": "closed",
+	"title": "net/http: flaky TestTransportHeadChunkedResponse",
+	"body": "Noticed at http://build.golang.org/log/c4295893036b8f63339f2fdcfa6a7f052edbdfa4\r\n```\r\n--- FAIL: TestTransportHeadChunkedResponse-4 (0.02s)\r\n\ttransport_test.go:611: ip/ports differed between head requests: \"127.0.0.1:54643\" vs \"127.0.0.1:54644\"\r\nFAIL\r\nFAIL\tnet/http\t10.889s\r\n```\r\n\r\nThe test is simply:\r\n\r\n```go\r\n        defer afterTest(t)\r\n        ts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\r\n                if r.Method != \"HEAD\" {\r\n                        panic(\"expected HEAD; got \" + r.Method)\r\n                }\r\n                w.Header().Set(\"Transfer-Encoding\", \"chunked\") // client should ignore                                                     \r\n                w.Header().Set(\"x-client-ipport\", r.RemoteAddr)\r\n                w.WriteHeader(200)\r\n        }))\r\n        defer ts.Close()\r\n \r\n        tr := \u0026Transport{DisableKeepAlives: false}\r\n        c := \u0026Client{Transport: tr}\r\n\r\n        res1, err := c.Head(ts.URL)\r\n        if err != nil {\r\n                t.Fatalf(\"request 1 error: %v\", err)\r\n        }\r\n        res2, err := c.Head(ts.URL)\r\n        if err != nil {\r\n                t.Fatalf(\"request 2 error: %v\", err)\r\n        }\r\n        if v1, v2 := res1.Header.Get(\"x-client-ipport\"), res2.Header.Get(\"x-client-ipport\"); v1 != v2 {\r\n                t.Errorf(\"ip/ports differed between head requests: %q vs %q\", v1, v2)\r\n        }\r\n}\r\n```\r\n\r\nPerhaps the first Head returns but the second Head call starts before the background Transport goroutines get scheduled and register that the connection is idle.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-06-29T04:25:51Z",
+	"created_at": "2015-06-09T01:26:48Z",
+	"updated_at": "2016-07-11T22:38:01Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

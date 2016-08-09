@@ -1,0 +1,28 @@
+{
+	"id": 124267499,
+	"number": 13777,
+	"state": "closed",
+	"title": "cmd/compile: bad export data causes \"unexpected string literal\" on import",
+	"body": "The root cause appears to be function-summary escape data appearing within a function type where it is not expected.\r\n\r\nCompilation of this file\r\n```\r\npackage burnin\r\n\r\ntype sendCmdFunc func(string)\r\n\r\nfunc sendCommand(c string) {}\r\n\r\nfunc NewSomething() {\r\n\t// This works...\r\n\t// var sendCmd sendCmdFunc\r\n\t// sendCmd = sendCommand\r\n\r\n\t// This fails...\r\n\tsendCmd := sendCommand\r\n\r\n\t_ = sendCmd\r\n}\r\n```\r\ncreates export data that won't parse.  The syntax error \"unexpected string literal\" is attributed to the importing line.  For example, building this file will yield such an error:\r\n```\r\npackage main\r\n\r\nimport (\r\n\tx \"./burnin\" // Syntax error is attributed to this line.\r\n)\r\n\r\nfunc main() {\r\n\tx.NewSomething()\r\n}\r\n```\r\nComparing the export data from the \"This works\" variant to the one that fails, it appears that escape data attached to an in-line (as opposed to named) function type causes the problem:\r\n```\r\ndiff -c {bad,good}/__.PKGDEF\r\n*** bad/__.PKGDEF\t2015-12-29 13:42:38.000000000 -0500\r\n--- good/__.PKGDEF\t2015-12-29 13:42:32.000000000 -0500\r\n***************\r\n*** 3,9 ****\r\n  \r\n  $$\r\n  package burnin\r\n! \tfunc @\"\".NewSomething () {  var @\"\".sendCmd·1 func(@\"\".c·1 string \"esc:0x1\"); @\"\".sendCmd·1 = @\"\".sendCommand; _ = @\"\".sendCmd·1 }\r\n  \tfunc @\"\".sendCommand (@\"\".c·1 string \"esc:0x1\") {  }\r\n  \r\n  $$\r\n--- 3,10 ----\r\n  \r\n  $$\r\n  package burnin\r\n! \tfunc @\"\".NewSomething () { var @\"\".sendCmd·1 @\"\".sendCmdFunc; ; @\"\".sendCmd·1 = @\"\".sendCommand; _ = @\"\".sendCmd·1 }\r\n! \ttype @\"\".sendCmdFunc func(? string)\r\n  \tfunc @\"\".sendCommand (@\"\".c·1 string \"esc:0x1\") {  }\r\n  \r\n  $$\r\n```\r\n",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-05T15:42:34Z",
+	"created_at": "2015-12-29T20:59:54Z",
+	"updated_at": "2016-02-16T18:00:13Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

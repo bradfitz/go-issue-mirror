@@ -1,0 +1,12 @@
+{
+	"id": 177692924,
+	"body": "I got the same problem, for I will close the listener in another gorotine like:\r\n```\r\nl, _ = net.Listen(\"tcp\", ...)\r\nerr = http.Serve(l, ...)\r\n\r\ngo func(){\r\n    \u003c- closing\r\n    _ = l.Close()\r\n}()\r\n```\r\n\r\nSo, I want to know whether the err is errClosing or critical error. But I find a workaround, to set the state in my application level:\r\n\r\n```\r\nisListenerClosed := false\r\n\r\nl, _ = net.Listen(\"tcp\", ...)\r\nif err = http.Serve(l, ...); err != nil {\r\n    if isListenerClosed {\r\n        // it's closed by me.\r\n    }\r\n    // critical error.\r\n}\r\n\r\ngo func(){\r\n    \u003c- closing\r\n    isListenerClosed = true\r\n    _ = l.Close()\r\n}()\r\n```\r\n\r\nThe code is here: https://github.com/ossrs/go-oryx/commit/75915c22e49141d8d210f17a0065becce57d3770\r\n\r\nI think the application can finger it out whether the err is errClosing.",
+	"user": {
+		"login": "winlinvip",
+		"id": 2777660,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-01T01:45:29Z",
+	"updated_at": "2016-02-01T01:48:28Z"
+}

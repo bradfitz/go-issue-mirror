@@ -1,0 +1,27 @@
+{
+	"id": 51288964,
+	"number": 8995,
+	"state": "closed",
+	"title": "runtime: onM_gsignalok is wrong on arm",
+	"body": "\u003cpre\u003eIn onM_gsignalok, the LR is lost in the onsignal case during the BL.\n\ndiff -r 048e2219734a src/runtime/asm_arm.s\n--- a/src/runtime/asm_arm.s\tFri Oct 24 10:58:13 2014 -0400\n+++ b/src/runtime/asm_arm.s\tFri Oct 24 16:30:56 2014 -0400\n@@ -201,15 +201,17 @@\n \tRET\n \n // func onM_signalok(fn func())\n-TEXT runtime·onM_signalok(SB), NOSPLIT, $-4-4\n+TEXT runtime·onM_signalok(SB), NOSPLIT, $4-4\n \tMOVW\tg_m(g), R1\n \tMOVW\tm_gsignal(R1), R2\n+\tMOVW\tfn+0(FP), R0\n \tCMP\tg, R2\n \tB.EQ\tongsignal\n-\tB\truntime·onM(SB)\n+\tMOVW\tR0, 4(R13)\n+\tBL\truntime·onM(SB)\n+\tRET\n \n ongsignal:\n-\tMOVW\tfn+0(FP), R0\n \tMOVW\tR0, R7\n \tMOVW\t0(R0), R0\n \tBL\t(R0)\n\nAustin found this when porting the code to power64. \n\nThis would only affect a call to onM_signalok from the signal stack, which means during\nthe signal handler. The only calls to onM_signalok arise from throw/gothrow/startpanic.\nThere are no calls to throw or gothrow in the signal handler, but there is a call to\nstartpanic. \n\nThis should mean that if you send a program-killing signal to a Go program on arm (for\nexample kill -abrt) then the RET after the BL (R0) should return back to itself (back to\nthe RET), which should cause an infinite loop instead of the usual death messages.\n\nCan someone check this and ideally add a test and the fix? I don't want to touch this\ncode unless we are sure it is actually broken.\n\nSimple test for manual testing:\n\npackage main\n\nimport \u0026quot;time\u0026quot;\n\nfunc main() {\n\ttime.Sleep(100 * time.Second)\n}\n\n\njust send it a kill -abrt or type ^\\\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:49:28Z",
+	"created_at": "2014-10-24T20:43:34Z",
+	"updated_at": "2016-06-25T01:43:35Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

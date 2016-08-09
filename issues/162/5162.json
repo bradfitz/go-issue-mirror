@@ -1,0 +1,27 @@
+{
+	"id": 51283218,
+	"number": 5162,
+	"state": "closed",
+	"title": "cmd/gc: array-equality comparison (==) produces wrong answer",
+	"body": "by **thom.boyer**:\n\n\u003cpre\u003eWhen two arrays of type `[7]int` are compared with `==`, the results are incorrect --\nand they are incorrect in different ways, depending on whether or not an extra variable \ndeclaration and comparison is present.\n\nMy sample program demonstrating this behavior is at \u003ca href=\"http://play.golang.org/p/SdG4HDrJRh\"\u003ehttp://play.golang.org/p/SdG4HDrJRh\u003c/a\u003e\n\nNote that when the two arrays are of type `[2]int`, the results are correct. I have also\nseen that `[7]uint8` gives the same incorrect results as for `[7]int`.\n\nI am relying on this section of [The Go Programming Language\nSpecification](\u003ca href=\"http://golang.org/ref/spec)\"\u003ehttp://golang.org/ref/spec)\u003c/a\u003e in determining what I believe to be the\ncorrect behavior:\n\u0026gt; Array values are comparable if values of the array element type are comparable. \n\u0026gt; Two array values are equal if their corresponding elements are equal.\nBut even if my understanding of array-equality is wrong, it still seems that there's a\nweird inconsistency in the behavior.\n\nIn some circumstances, arrays with identical content will return false when compared\nwith `==`. For an example, this function (from the sample program), claims that two\narrays with the same content are not equal:\n\n\tfunc ExampleArray7Comparison() {\n\t\tonesA := [7]int{1, 1, 1, 1, 1, 1, 1}\n\t\tonesB := [7]int{1, 1, 1, 1, 1, 1, 1}\n\t\ttwos  := [7]int{2, 2, 2, 2, 2, 2, 2}\n\t\tfmt.Printf(\u0026quot;onesA==onesB is %5t; onesB==twos is %5t\\n\u0026quot;,\n\t\t               onesA==onesB,        onesB==twos)\n\t\t// Output:\n\t\t// onesA==onesB is  true; onesB==twos is false\n\t}\n\nIn some circumstances, arrays with different content will return true when compared with\n`==`. (Declaring, and using, and extra variable seems to change the behavior.) For an\nexample, this function (from the sample program), claims that two arrays with different\ncontent are equal:\n\n\tfunc ExampleArray7ComparisonWithExtraVariable() {\n\t\tonesA := [7]int{1, 1, 1, 1, 1, 1, 1}\n\t\tonesB := [7]int{1, 1, 1, 1, 1, 1, 1}\n\t\ttwos  := [7]int{2, 2, 2, 2, 2, 2, 2}\n\t\tx := onesA\n\t\tfmt.Printf(\u0026quot;onesA==onesB is %5t; onesB==twos is %5t; onesA==x is %5t\\n\u0026quot;,\n\t\t               onesA==onesB,        onesB==twos,        onesA==x)\n\t\t// Output:\n\t\t// onesA==onesB is  true; onesB==twos is false; onesA==x is  true\n\t}\n\n\n\nSteps to reproduce the problem:\n1. Compare two array values of type `[7]int`, using the `==` operator.\n\nWhat is the expected output?\n    onesA==onesB is  true; onesB==twos is false\n    onesA==onesB is  true; onesB==twos is false\n    onesA==onesB is  true; onesB==twos is false; onesA==x is  true\n\nWhat do you see instead?\n    onesA==onesB is  true; onesB==twos is false\n    onesA==onesB is false; onesB==twos is false\n    onesA==onesB is  true; onesB==twos is  true; onesA==x is  true\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n    8g\n\nWhich operating system are you using?\n    Mac OS X 10.8.3\n\nWhich version are you using?  (run 'go version')\n    go1.0.3\n\nPlease provide any additional information below.\n    I see this bug both on my own system and in the Go Playground.\n\n    The attached file, array_test.go, is identical to the contents of the play.golang.org program.\n\n    This is the result I see when I run `go test` on the sample program:\n\n$ go test example/array\n--- FAIL: ExampleArray7Comparison (0.00 seconds)\ngot:\nonesA==onesB is false; onesB==twos is false\nwant:\nonesA==onesB is  true; onesB==twos is false\n--- FAIL: ExampleArray7ComparisonWithExtraVariable (0.00 seconds)\ngot:\nonesA==onesB is  true; onesB==twos is  true; onesA==x is  true\nwant:\nonesA==onesB is  true; onesB==twos is false; onesA==x is  true\nFAIL\nFAIL\texample/array\t0.016s\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5162/0/array_test.go\"\u003earray_test.go\u003c/a\u003e (1135 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:27:38Z",
+	"created_at": "2013-03-30T19:00:36Z",
+	"updated_at": "2016-06-24T22:36:44Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

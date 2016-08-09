@@ -1,0 +1,12 @@
+{
+	"id": 150488002,
+	"body": "I'm seeing a race between the SIGINT reset coming from the cshared lib, and setting it in main. If I put a sleep(1) at the top of main before signal(SIGINT, handleInterrupt) call, then main wins and the handleInterrupt() gets called back on ctrl-c. Without the sleep, the main's signal() call goes before the reset from the cshared lib, and main's setting is wiped out.\r\n\r\n\r\n~~~\r\n#include \u003cstdio.h\u003e\r\n#include \u003csignal.h\u003e\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cunistd.h\u003e\r\n\r\n// forward declaration. BlockInSelect() is \r\n// defined in the c-shared library in mygolib/mygolib.go\r\nvoid BlockInSelect();\r\n\r\n// set my the handleInterrupt() signal handler.\r\nstatic int R_interrupts_pending = 0;\r\n\r\nstatic void handleInterrupt(int dummy)\r\n{\r\n    R_interrupts_pending = 1;\r\n    printf(\"\\n handleInterrupt called back!\\n\"); // problem: this is never hit when the mygolib is linked.\r\n    signal(SIGINT, handleInterrupt);\r\n}\r\n\r\n\r\nint main() {\r\n  // race condition here:\r\n  // OSX: with this sleep in place, then the following signal() will take effect, overriding what the cshared library is doing. Without the sleep (sleep commented out), the cshared library reset of the SIGINT handler happens after the following signal() call.\r\n  //sleep(1); \r\n  signal(SIGINT,  handleInterrupt);\r\n  \r\n  printf(\"about to call BlockInSelect(), which will exit after receiving 2 ctrl-c SIGINT signals.\\n\");\r\n\r\n  BlockInSelect();\r\n  printf(\"back from BlockInSelect\\n\");\r\n  signal(SIGINT,  handleInterrupt);\r\n  sleep(10);\r\n  \r\n  printf(\"after sleep 10, back out of BlockInSelect()! R_interrupts_pending = %d\\n\", R_interrupts_pending);\r\n  return 0;\r\n}\r\n~~~\r\n",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-23T06:26:09Z",
+	"updated_at": "2015-10-23T06:26:09Z"
+}

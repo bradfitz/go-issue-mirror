@@ -1,0 +1,28 @@
+{
+	"id": 160942626,
+	"number": 16095,
+	"state": "closed",
+	"title": "cmd/compile: bad liveness",
+	"body": "I've found a case where we don't generate live variable bitmaps correctly (using https://go-review.googlesource.com/c/23924/).\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"runtime\"\r\n)\r\n\r\nvar sink *[20]byte\r\n\r\nfunc f() (x [20]byte) {\r\n\t// Force x to be allocated on the heap.\r\n\tsink = \u0026x\r\n\tsink = nil\r\n\r\n\t// Go to deferreturn after the panic below.\r\n\tdefer func() {\r\n\t\trecover()\r\n\t}()\r\n\r\n\t// This call collects the heap-allocated version of x (!)\r\n\truntime.GC()\r\n\r\n\t// Allocate that same object again and clobber it.\r\n\ty := new([20]byte)\r\n\tfor i := 0; i \u003c 20; i++ {\r\n\t\ty[i] = 99\r\n\t}\r\n\t// Make sure y is heap allocated.\r\n\tsink = y\r\n\r\n\tpanic(nil)\r\n\r\n\t// After the recover we reach the deferreturn, which\r\n\t// copies the heap version of x back to the stack.\r\n\t// It gets the pointer to x from a stack slot that was\r\n\t// not marked as live during the call to runtime.GC().\r\n}\r\nfunc main() {\r\n\tx := f()\r\n\tfor _, v := range x {\r\n\t\tif v != 0 {\r\n\t\t\tfmt.Printf(\"%v\\n\", x)\r\n\t\t\tpanic(\"bad\")\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nThis program works in go1.2.2 but panics in later versions (go.1.3.3 through tip).  I've labeled in 1.7maybe because it's not like we're breaking something that used to work.\r\n\r\nSee #16026.\r\n\r\nThe bug I think is a combination of:\r\n1) Control flow only reaches the (non-panic) return point because of a recover() in a defer.\r\n2) The use of \u0026x is implicit at the return point.\r\n\r\nThe fix may be as simple as marking \u0026v as live throughout the function for all return variables.  We could probably restrict it to only functions that defer.\r\n\r\n@aclements ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-06-27T16:50:46Z",
+	"created_at": "2016-06-17T17:58:37Z",
+	"updated_at": "2016-06-27T16:50:46Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

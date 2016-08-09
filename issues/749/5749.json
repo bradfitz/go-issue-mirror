@@ -1,0 +1,25 @@
+{
+	"id": 51284129,
+	"number": 5749,
+	"state": "closed",
+	"title": "time: leads to memory leaks",
+	"body": "\u003cpre\u003eThis is uncomfortably amusing bug.\n\nSo what we have:\n - a bug that depends on fraction of second when RPC connection is established \n - a bug that intelligently works around -Z linker flag\n - a bug that exploits details of code generation to combine high part of a real pointer with a random garbage to generate random pointers\n - a bug that wipes out own tracks over time\n\nToo much coincidences for one bug, don't you find? :)\nAs a result it non-deterministically but reliably pins random memory blocks in 1GB of\nheap, non-deterministically unpins it over time and pins new blocks.\n\nNot sure where to start...\n\nLet's start with the time.Time struct layout:\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/time/time.go\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/time/time.go\u003c/a\u003e\ntype Time struct {\n        sec int64\n        nsec int32\n        loc *Location\n}\n\nNote that nsec is int32 with a padding right after it (on amd64).\n\nThen time.Unix() functions:\nfunc Unix(sec int64, nsec int64) Time {\n\t...\n        return Time{sec + unixToInternal, int32(nsec), Local}\n}\n\nWhen it stores nsec into return value, it writes 4 bytes leaving the high 4 bytes\nunchanged:\n  4c9ea7:       48 89 54 24 18          mov    %rdx,0x18(%rsp)\n  4c9eac:       89 5c 24 20             mov    %ebx,0x20(%rsp)\n  4c9eb0:       48 89 44 24 28          mov    %rax,0x28(%rsp)\n  4c9eb5:       c3                      retq   \n\nOn timer goroutine this stack location episodically contains a real pointer (from\nruntime.ready form or from other function calls). So this write combines 0x00c2 high\npart of a real pointer with nsec value, producing completely random but real pointers\ninto first GB of heap.\n\nNote that -Z does not prevent this, because (1) it does nothing for functions w/o stack\nframes (time.Unix() does not have a stack frame) and (2) it does not zeroize return\nvalues at all.\n\ntime.Ticker uses time.Unix() to create Time values. So the values received from\ntime.Ticker.C frequently contain values that look like random pointers.\n\nThen, the program contains healthChecks() function along the lines of:\n\nfunc (conn *Conn) healthChecks() {\n\tticker := time.NewTicker(1 * time.Second)\n\tvar err error\n\tmsg := newMessage()\n\terr = conn.sendHealthCheck(msg)\n\tfor err == nil {\n\t\tnow := \u0026lt;-ticker.C\n\t\tif conn.needToSendHealthCheck(now) {\n\t\t\terr = conn.sendHealthCheck(msg, side)\n\t\t}\n\t}\n}\n\nIt has a ticker with 1 second period (which is important as well).\n\nAfter receiving from the ticker it obtains that random pointer value in 0x18(rsp).\nUsually the function does not send health checks and so preserves the pointer value till\nnext ticker chan wait.\n\nGC usually finds healthChecks goroutines blocked exactly on ticker chan.\n\nWhen it scans the stack, it can not obtain arglen info for runtime.chanrecv1. So it\nconservatively assumes that args are the whole frame of the caller (healthChecks) w/o\narg pointer info.\nThis way it finds the fake pointer/time value on the stack and pins a random memory\nblock in first GB.\n\nNote that precision improvements on tip do not fix this. I actually describe how it\nworks on tip.\n\nHere is what I observed:\ngoroutine 59 [chan receive]:\nConn.healthChecks(0xc2100563c0, 0xc2101ce500, 0xc2101ce5a0) fp=0x7f90070f4f88\nsp=0x7f90070f4e40 arglen=0x18 varlen=0x110\n\nThe frame block 0x7f90070f4e40 is scanned twice. First time to scan local vars of\nhealthChecks with size 0x110:\nblock 0x7f90070f4e70-0x7f90070f4f80(0x110)   \n\nand the second time to scan args to runtime.chanrecv1 with size 0x148:\nblock 0x7f90070f4e40-0x7f90070f4f88(0x148)   \n\nThis second scan finds the weird pointer 0xc217defd59 at 0x18(rsp) pointing into middle\nof 4MB heap block 0xc217a77000-0xc217e77000.\n\nThis bug has a higher probability of pinning large memory blocks. Now, since healthCheck\nticker period is 1 second, it tends to generate similar fake pointers over and over\nagain (nsec values are close). E.g. for the 4MB block, it has the grace window of 4\nmsec. But due to time drift and delays, it will release the block eventually leaving no\ntraces behind itself (but pin a new block).\n\nPhew!\n\nActions we need to take:\n\n1. Fix -Z so that it is useful in such cases.\n\n2. Of course long term we need 100% precise GC, but in short term:\n\n3. Teach GC about argsize of chanrecv/send/select, because lots of goroutines are\nblocked there during the scan.\n\n4. Fix time.Unix() function so that it does not produce fake pointers.\n\n5. Look into compiler code generation to prevent such issues in other places.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "GarbageCollector"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:31:31Z",
+	"created_at": "2013-06-21T15:00:47Z",
+	"updated_at": "2016-06-24T22:43:01Z"
+}

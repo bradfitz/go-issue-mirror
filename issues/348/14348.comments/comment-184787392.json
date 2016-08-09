@@ -1,0 +1,12 @@
+{
+	"id": 184787392,
+	"body": "Sorry, bear with me, but I still don't understand. It sounds like you want to be able to distinguish the output of the two `go list` commands in:\r\n\r\n    cd $GOROOT/src/io\r\n    go list -json ./ioutil\r\n    go list -json io/ioutil\r\n\r\nand also that you want\r\n\r\n    cd $GOROOT/src/io\r\n    go list ./...\r\n\r\nto report about a package \"./ioutil\" instead of \"io/ioutil\". I don't really see why that's useful. The standard name of the package is io/ioutil, not ./ioutil. The fact that you can refer to it as \"./ioutil\" or \"./...\" from within the $GOROOT/src/io directory is a convenience only. It shouldn't propagate into the rest of the toolchain.\r\n\r\nI don't know what golint does for reporting relative paths to source files, but I can tell you what the go command itself does, and I would suggest golint do the same.\r\n\r\nThe go command uses this code, which works very well in practice. At least I can't remember a single complaint about the decisions it makes:\r\n\r\n```\r\n// shortPath returns an absolute or relative name for path, whatever is shorter.\r\nfunc shortPath(path string) string {\r\n\tif rel, err := filepath.Rel(cwd, path); err == nil \u0026\u0026 len(rel) \u003c len(path) {\r\n\t\treturn rel\r\n\t}\r\n\treturn path\r\n}\r\n\r\n// relPaths returns a copy of paths with absolute paths\r\n// made relative to the current directory if they would be shorter.\r\nfunc relPaths(paths []string) []string {\r\n\tvar out []string\r\n\tpwd, _ := os.Getwd()\r\n\tfor _, p := range paths {\r\n\t\trel, err := filepath.Rel(pwd, p)\r\n\t\tif err == nil \u0026\u0026 len(rel) \u003c len(p) {\r\n\t\t\tp = rel\r\n\t\t}\r\n\t\tout = append(out, p)\r\n\t}\r\n\treturn out\r\n}\r\n```",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-16T17:30:22Z",
+	"updated_at": "2016-02-16T17:30:22Z"
+}

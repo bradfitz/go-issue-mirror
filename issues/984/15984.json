@@ -1,0 +1,21 @@
+{
+	"id": 158835289,
+	"number": 15984,
+	"state": "open",
+	"title": "Proposal: x/net: new package to register socket types with package net",
+	"body": "As of now, there is still no way to access the runtime network poller with custom socket types.  As a follow up to #15021, I'd like to try implementing a new package in `x/net` that contains a `Socket` type which can later be plumbed into package `net`, enabling access to the runtime network poller.\r\n\r\nThe basis of this proposal lies in a comment by @mikioh here: https://github.com/golang/go/issues/15021#issuecomment-207163426\r\n\r\n\u003e Need to have a replacement for the syscall package\r\n\u003e - No use of types in the syscall package is mandatory because the syscall package is locked down and will be deprecated\r\n\u003e - The new package should provide a type that represents some sort of tuple known as a socket\r\n\u003e - The new package should provide flexibility for system adaptation not only for the existing kernels \r\n\r\nI have not found a name I'm happy with for this package, but for now, let's refer to it as `x/net/socket`.  The API could look something like the following:\r\n\r\n```go\r\npackage socket\r\n\r\n// Custom socket types that can be registered with this package, identified\r\n// by address family.\r\ntype Socket interface {\r\n    Family() int\r\n    Addr() Addr\r\n    ToAddr(sa Sockaddr) Addr\r\n    ToSockaddr(addr Addr) Sockaddr\r\n}\r\n\r\n// A syscall.Sockaddr, without importing syscall.\r\n// Not sure if there is a way around this.  Maybe importing syscall for\r\n// syscall.Sockaddr is okay, since this isn't changing package syscall?\r\ntype Sockaddr interface{}\r\n\r\n// Duplication of net.Addr.  Can't import net directly because this package\r\n// could be vendored into the standard library and used by net later.\r\ntype Addr interface {\r\n    Network() string // name of the network\r\n    String() string  // string form of address\r\n}\r\n\r\n// Registers a Socket into the package.\r\nfunc Register(s Socket)\r\n\r\n// Retrieves all Sockets registered into the package.  Can be used\r\n// by net later to handle unknown address families.\r\nfunc Sockets() []Socket\r\n```\r\n\r\nIf this proposal is on the right track, I'd be happy to start working on the new package.  In a later proposal, we can discuss the mechanism for plumbing it into package `net`.\r\n\r\nThanks for your time!  Let me know if there are any unresolved questions.\r\n\r\n/cc @mikioh ",
+	"user": {
+		"login": "mdlayher",
+		"id": 1926905,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-06-07T04:21:31Z",
+	"updated_at": "2016-06-17T01:49:30Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

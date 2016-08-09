@@ -1,0 +1,33 @@
+{
+	"id": 76085593,
+	"number": 10802,
+	"state": "closed",
+	"title": "path/filepath: Rel() returns invalid path if volume case is different",
+	"body": "Go version - `go1.4.2 windows/amd64`\r\nOperating system - `Windows 7 64-bit`\r\n\r\nThe problem:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main() {\r\n\trelpath, err := filepath.Rel(`E:\\Projects\\`, `e:\\Projects\\src`)\r\n\tif err != nil {\r\n\t\tprintln(err.Error())\r\n\t\treturn\r\n\t}\r\n\tprintln(relpath)\r\n}\r\n```\r\n\r\nOutput:\r\n```\r\nRel: can't make \\Projects\\src relative to \\Projects\r\n```\r\n\r\nExpected:\r\n```\r\nsrc\r\n```\r\n\r\nI've ocassionally found this when some go program's `os.Getcwd()` call returned me a path with lowercased volume name - not sure why this happened, can't reproduce anymore. Some users, who set their `GOPATH` to something like `e:\\Projects` might have problems.\r\n\r\nProbably, on Windows, `VolumeName()` should have separate implementation like this:\r\n```go\r\nfunc VolumeName(path string) string {\r\n\tif !isUNC(path) {\r\n\t\treturn strings.ToUpper(path[:volumeNameLen(path)])\r\n\t}\r\n\treturn path[:volumeNameLen(path)]\r\n}\r\n```\r\n\r\nHelpful link - [Naming Files, Paths, and Namespaces](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx)",
+	"user": {
+		"login": "kpashka",
+		"id": 8525882,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"assignee": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2015-11-12T19:58:58Z",
+	"created_at": "2015-05-13T18:50:35Z",
+	"updated_at": "2015-11-16T00:51:12Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

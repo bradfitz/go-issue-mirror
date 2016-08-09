@@ -1,0 +1,12 @@
+{
+	"id": 166014071,
+	"body": "I ran some tests, it looks like the second error above is actually fixed. Probably the bad data in the .o file was causing the linker to ignore whatever we wrote, and now that it's correct it works.\r\n\r\nThe first problem above is still a real issue. If I run\r\n\r\n```\r\ngo build -buildmode=c-archive -ldflags=\"-tmpdir .\\tmpo\" -o test.a calc.go\r\ngcc -o test test_driver.o test.a -lws2_32 -lntdll\r\n```\r\n\r\nThe output is perfect, everything works, rainbows and unicorns.\r\n\r\nIf I run\r\n\r\n```\r\ngo build -buildmode=c-archive  -o test.a calc.go\r\ngcc -o test test_driver.o test.a -lws2_32 -lntdll\r\n```\r\n\r\nThen I get:\r\n\r\n```\r\ntest.a(000000.o): In function `Sum':\r\nC:/Users/CHRIST~1/AppData/Local/Temp/go-build304995930/command-line-arguments/_obj/_cgo_export.c:19: undefined reference to `_cgoexp_f070ceaf1261_Sum'\r\nC:/Users/CHRIST~1/AppData/Local/Temp/go-build304995930/command-line-arguments/_obj/_cgo_export.c:19: undefined reference to `crosscall2'\r\ntest.a(000000.o):calc.cgo2.c:(.rdata$.refptr._cgoexp_f070ceaf1261_Sum[.refptr._cgoexp_f070ceaf1261_Sum]+0x0): undefined reference to `_cgoexp_f070ceaf1261_Sum'\r\ncollect2.exe: error: ld returned 1 exit status\r\n```\r\n\r\nWhich is similar to a problem I described last week. The objdump output indicates that the go.o file has not apparently been completely consumed:\r\n\r\n```\r\n$ objdump -a test.a\r\nIn archive test.a:\r\nobjdump: go.o: File format not recognized\r\n\r\n000000.o:     file format pe-x86-64\r\nrw-rw-rw- 0/0   4165 Dec 19 13:53 2015 000000.o\r\n\r\n\r\n000001.o:     file format pe-x86-64\r\nrw-rw-rw- 0/0  16188 Dec 19 13:53 2015 000001.o\r\n```\r\n\r\n",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-19T18:57:03Z",
+	"updated_at": "2015-12-19T18:57:03Z"
+}

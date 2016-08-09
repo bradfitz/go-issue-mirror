@@ -1,0 +1,21 @@
+{
+	"id": 165628094,
+	"number": 16378,
+	"state": "open",
+	"title": "go/build: does not know about buildmode pkg directories",
+	"body": "Create and build/install imp.go:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"go/build\"\r\n\t\"log\"\r\n)\r\n\r\nfunc main() {\r\n\tpkg, err := build.Import(\"fmt\", \"\", build.FindOnly|build.AllowBinary)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tfmt.Println(pkg.PkgObj)\r\n}\r\n```\r\n\r\nThen try to use it with `darwin/arm`:\r\n\r\n```bash\r\n$ GOOS=darwin GOARCH=386 go install std\r\n$ GOOS=darwin GOARCH=arm go install std\r\n$ cd $GOROOT/pkg\r\n$ pwd\r\n/Users/josh/go/tip/pkg\r\n$ ls -d darwin_arm* darwin_386*\r\ndarwin_386\t\tdarwin_arm_shared\r\n$ GOOS=darwin GOARCH=386 ./imp\r\n/Users/josh/go/tip/pkg/darwin_386/fmt.a\r\n$ GOOS=darwin GOARCH=arm ./imp\r\n/Users/josh/go/tip/pkg/darwin_arm/fmt.a\r\n```\r\n\r\nObserve that the installed arm packages are in `darwin_arm_shared`, but according to go/build, the PkgObjs are to be found in `darwin_arm`.\r\n\r\nThis comes up in practice when attempting to do a cross-platform `go vet` invocation, because vet cannot find the `fmt` (and other) packages, which results in a flood of incorrect errors.\r\n\r\nI'd love help fixing this. I'm not sure what/where the correct fix is, or even who to ask for help. This will shortly block my progress on #11041, so an R=go1.8 CL would be deeply appreciated.\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-07-14T18:32:08Z",
+	"updated_at": "2016-07-14T22:00:30Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

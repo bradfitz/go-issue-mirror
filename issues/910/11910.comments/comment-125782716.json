@@ -1,0 +1,12 @@
+{
+	"id": 125782716,
+	"body": "The varying success/failures is because\r\n\r\n    56\t\tvar f struct {\r\n    57\t\t\tx uintptr\r\n    58\t\t}\r\n    59\t\tf.x = uintptr(unsafe.Pointer(\u0026f))\r\n    60\t\tfn := *(*func())(unsafe.Pointer(\u0026f))\r\n    61\t\tfn()\r\n\r\nsets x to some memory address and then treats it as an instruction sequence.  Unsurprisingly, an arbitrary memory address is not always a valid instruction sequence, so sometimes it results in SIGILL.  Varying the environment affects the behavior because that affects what memory address x will be set to.\r\n\r\nRepro'ing the \"cannot find main.f on stack\" error, I found it was from executing this instruction sequence:\r\n\r\n    18335ea4:   a4                      movsb  %ds:(%esi),%es:(%edi)\r\n    18335ea5:   5e                      pop    %esi\r\n    18335ea6:   33 18                   xor    (%eax),%ebx\r\n\r\nIt triggers a SIGSEGV on the last instruction (PC=0x18335ea6) because %eax happens to be 0x0.  I suspect the previous pop instruction is causing CL 12026's stack unwinding heuristic to fail.\r\n\r\nI know historically OpenBSD on i386 has not utilized PAE, so it doesn't provide per-page no-execute control, hence why the target instructions actually matter for it.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-28T23:39:13Z",
+	"updated_at": "2015-07-28T23:49:07Z"
+}

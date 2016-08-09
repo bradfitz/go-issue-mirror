@@ -1,0 +1,12 @@
+{
+	"id": 187529424,
+	"body": "I'm not quite sure this is a bug.\r\nThe problem is that the `break` statement compiles to nothing.  The `JLE` is part of the `if`.  The compiler gets to something like this:\r\n```\r\nblock1: if ... goto block2 else block3\r\nblock2: goto block4 (this is the break exiting the loop)\r\n```\r\nSo block1 is assigned line 7 and block2 is assigned line 8 (correctly, so far).\r\nBut block2 is empty, so at some point the compiler decides that block1.true should jump directly to block4.  To get the result you want, we would have to copy block2's line number into block1.  But what if block3 is also empty and goes somewhere else?  Which of block2 or block3 gets to impose its line number on block1?  I think it makes more sense to let block1 keep its original line number.\r\n\r\nA fix would be to not short-circuit the empty block2, it will get a JMP, and the JMP can be line 8.  Maybe we can do that for `-N`, but we probably don't want to do that in general.\r\n\r\nI'm sympathetic to trying to set a breakpoint on the break instruction, but I'm not sure we've got a way to make that happen, any more than we do for other source-level constructs that compile to no code.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-23T04:52:31Z",
+	"updated_at": "2016-02-23T04:52:31Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 195348080,
+	"body": "I think you misunderstand what Dialer.DualStack is. It just enables \"Happy Eyeballs\" dialing defined in RFC 6555. Even if DualStack is false, Dialer.Dial tries to connect a list of destination addresses when network is \"tcp\".\r\n\r\nI'm still not sure what you want to do, but it looks like you simply want to  prefer IPv4 to IPv6. If so, you can write your favorite dial function like the following:\r\n```\r\ntr := http.Transport{Dial: myDial}\r\nsrcs := []net.TCPAddr{\r\n        {IP: ...},\r\n        {IP: ...},\r\n}\r\n\r\nfunc myDial(network, addr string) (c net.Conn, err error) {\r\n        host, port, err := net.SplitHostPort(addr)\r\n        if err != nil {\r\n                return nil, err\r\n        }\r\n        ips, err := net.LookupIP(host)\r\n        if err != nil {\r\n                return nil, err\r\n        }\r\n        d := net.Dialer{Timeout: 3 * time.Second}\r\n        var fallbacks []net.IP\r\n        for _, ip := range ips {\r\n                if ip.To4() != nil {\r\n                        for _, src := range srcs {\r\n                                d.LocalAddr = \u0026src\r\n                                c, err = d.Dial(\"tcp4\", addr)\r\n                                if err != nil {\r\n                                        continue\r\n                                }\r\n                                return\r\n                        }\r\n                }\r\n                if ip.To16() != nil \u0026\u0026 ip.To4() == nil {\r\n                        fallbacks = append(fallbacks, ip)\r\n                }\r\n        }\r\n        for _, ip := range fallbacks {\r\n                d.LocalAddr = nil\r\n                c, err = d.Dial(\"tcp6\", net.JoinHostPort(ip.String(), port))\r\n                if err != nil {\r\n                        continue\r\n                }\r\n                return\r\n        }\r\n        return nil, errors.New(\"oops\")\r\n}\r\n```",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-11T12:28:06Z",
+	"updated_at": "2016-03-11T12:52:47Z"
+}

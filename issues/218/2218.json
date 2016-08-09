@@ -1,0 +1,28 @@
+{
+	"id": 51278904,
+	"number": 2218,
+	"state": "closed",
+	"title": "textproto reader multiline does not deal with rfc959 correctly",
+	"body": "by **steview.woodcock**:\n\n\u003cpre\u003eDesc:\nThe textproto package  multiline support \ndoes not correctly deal with the FTP multi-line spec.\n\nThis was refered to in a code review: \u003ca href=\"http://golang.org/cl/1892052\"\u003ehttp://golang.org/cl/1892052\u003c/a\u003e:\n--------------\nDescription\nnet/textproto: Handle multi-line responses\n\nThis is required for FTP and SMTP; maybe others.\n------------\n\n Specifically, the issue is the reader  expects every line to have the same code prefix which is \nnot the case for FTP, as intermediate lines can start with spaces or \nother text to provide extra info. This breaks the parsing and causes \nit to report a mismatched status code sequence. \nFrom \u003ca href=\"http://www.ietf.org/rfc/rfc959.txt\"\u003ehttp://www.ietf.org/rfc/rfc959.txt\u003c/a\u003e (page 36) \n---------------------------- \nThus the format for multi-line replies is that the first line \n         will begin with the exact required reply code, followed \n         immediately by a Hyphen, \u0026quot;-\u0026quot; (also known as Minus), followed \nby \n         text.  The last line will begin with the same code, followed \n         immediately by Space \u0026lt;SP\u0026gt;, optionally some text, and the \nTelnet \n         end-of-line code. \n            For example: \n                                123-First line \n                                Second line \n                                  234 A line beginning with numbers \n                                123 The last line \n         The user-process then simply needs to search for the second \n         occurrence of the same reply code, followed by \u0026lt;SP\u0026gt; (Space), \nat \n         the beginning of a line, and ignore all intermediary lines. \nIf \n         an intermediary line begins with a 3-digit number, the Server \n         must pad the front  to avoid confusion. \n------------------------- \n\nWhat steps will reproduce the problem?\n1.run the following test:\nimport ( \n        \u0026quot;testing\u0026quot; \n        \u0026quot;fmt\u0026quot; \n        \u0026quot;net/textproto\u0026quot; \n        \u0026quot;bufio\u0026quot; \n        \u0026quot;strings\u0026quot; \n) \nfunc reader(s string) *textproto.Reader { \n        return textproto.NewReader(bufio.NewReader(strings.NewReader(s))) \n} \n\nfunc TestReader(t *testing.T) { \n        reader:= reader(\u0026quot;230-Anonymous access granted, restrictions apply\\n \nPlease read the file README.txt\\n230    it was last modified on Tue \nAug 15 14:29:31 2000 - 4033 days ago\u0026quot;) \n        code, msg, err :=reader.ReadResponse(230) \n        if  err !=nil { \n                t.Errorf(\u0026quot;#%d: error, fail %q \\n\u0026quot;, code, err) \n        }else{ \n                fmt.Printf(\u0026quot;Response: %d %s \\n\u0026quot;,code,msg) \n        } \n} \n\nwhich fails with: \ntesting  : --- FAIL: ftp.TestReader (0.00 seconds) \n        #230: error, fail \u0026quot;status code mismatch: 230, 0\u0026quot; \nFAIL \n\nWhat is the expected output?\nshould print Response: 230 Anonymous access granted, restrictions apply\n\nWhat do you see instead?\ntesting  : --- FAIL: ftp.TestReader (0.00 seconds) \n        #230: error, fail \u0026quot;status code mismatch: 230, 0\u0026quot; \nFAIL \n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nOSX\n\nWhich revision are you using?  (hg identify)\nrelease/release.r59\n\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:11:57Z",
+	"created_at": "2011-09-02T03:57:26Z",
+	"updated_at": "2016-06-24T19:34:13Z"
+}

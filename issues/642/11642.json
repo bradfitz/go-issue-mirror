@@ -1,0 +1,22 @@
+{
+	"id": 94114160,
+	"number": 11642,
+	"state": "closed",
+	"title": "text/template: allow explicit redefinition of a template",
+	"body": "Hey Go team, \r\n\r\nI am interested in redefinition of templates. Implicit redefinition is disallowed. How about explicit redefinition? Either:\r\n\r\n- `Template.Remove(name string)` followed by `Template.ParseFiles(names ...string)`\r\n- `Template.Redefine(name, body string)` / `Template.RedefineFile(name, file string)`\r\n\r\n#### Scenario\r\n\r\nWe have a server which watches a folder for updates. When it receives a write or create for a file, it re-reads in the template. This allows for no-downtime updates to our templates, which is something we value greatly. It also allows for a more streamlined development process (developer isn't spending time restarting the server locally on changes).\r\n\r\nWith each filesystem event, we receive the event type and the file it affects. We would like to be able to redefine this template at runtime as these events are triggered.\r\n\r\n#### Currently...\r\n\r\n```go\r\n// Template has been changes on the filesystem.\r\n// Re-read and parse. Store the latest.\r\n// Always throws the 'redefinition' error.\r\n_, err := rootTmpl.ParseFiles(event.FileName)\r\nif err != nil {\r\n    log.Printf(\"error reading template '%s': %v\", event.FileName, err)\r\n}\r\n```\r\n\r\nUnfortunately, this fails every time, with `template: redefinition of template %NAME%`.\r\n\r\n#### Proposal\r\n\r\nMy proposal is to allow an explicit removal or redefinition. An example with `Template.Remove(name string)`...\r\n\r\n```go\r\n// Allow explicit removal of a template to allow redefinition.\r\nerr := rootTmpl.Remove(event.FileName)\r\nif err != nil \u0026\u0026 err != template.ErrorNoSuchTemplate {\r\n    log.Printf(\"error removing template '%s': %v\", event.FileName, err)\r\n}\r\n\r\n// This should NOT return an error.\r\n_, err = rootTmpl.ParseFiles(event.FileName)\r\nif err != nil {\r\n    log.Printf(\"error reading template '%s': %v\", event.FileName, err)\r\n}\r\n```\r\n\r\n#### Current Work-Around\r\n\r\nTo get around this, we bind to `SIGUSR1` and re-read all the templates (`Template.ParseFilesGlob`), blocking requests until it's re-defined.",
+	"user": {
+		"login": "parkr",
+		"id": 237985,
+		"type": "User",
+		"site_admin": true
+	},
+	"comments": 3,
+	"closed_at": "2015-09-17T23:17:15Z",
+	"created_at": "2015-07-09T18:02:51Z",
+	"updated_at": "2015-09-17T23:17:15Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

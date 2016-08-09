@@ -1,0 +1,25 @@
+{
+	"id": 51286082,
+	"number": 7019,
+	"state": "closed",
+	"title": "sync: return true from the last WaitGroup.Done",
+	"body": "\u003cpre\u003eFrequently when you are using WaitGroup you do:\n\n\tvar wg sync.WaitGroup\n\twg.Add(N)\n\tfor i := 0; i \u0026lt; N; i++ {\n\t\tgo func() {\n\t\t\tfor v := range in {\n\t\t\t\tout \u0026lt;- v * v\n\t\t\t}\n\t\t\twg.Done()\n\t\t}()\n\t}\n\tgo func() {\n\t\twg.Wait()\n\t\tclose(out)\n\t}()\n\nIt would be nice to do it w/o the helper goroutine:\n\n\tvar wg sync.WaitGroup\n\twg.Add(N)\n\tfor i := 0; i \u0026lt; N; i++ {\n\t\tgo func() {\n\t\t\tfor v := range in {\n\t\t\t\tout \u0026lt;- v * v\n\t\t\t}\n\t\t\tif wg.Done() {\n\t\t\t\tclose(out)\n\t\t\t}\n\t\t}()\n\t}\n\nI.e. WaitGroup.Done/Add return true when the counter drops to zero.\nThis breaks backward compatibility (var f func() = wg.Done), so marking \u0026quot;Go2\u0026quot;.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Go2"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:39:05Z",
+	"created_at": "2013-12-27T06:03:38Z",
+	"updated_at": "2016-06-25T01:24:34Z"
+}

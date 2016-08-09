@@ -1,0 +1,27 @@
+{
+	"id": 51279015,
+	"number": 2296,
+	"state": "closed",
+	"title": "gccgo: segfault during 64-bit mod on ARM",
+	"body": "by **clement.vasseur**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. Apply the patches, this seems necessary to build an ARM cross-compiler.\n\n2. Configure gccgo cross-compiler for ARM:\n\n$ ../gcc/configure --build=x86_64-build_unknown-linux-gnu\n--host=x86_64-build_unknown-linux-gnu --target=arm-go-linux-uclibcgnueabi\n--enable-languages=c,c++,go --disable-multilib --with-float=soft --disable-libmudflap\n--disable-libgomp --disable-libssp --enable-threads=posix\n\n3. Build the compiler. It fails when trying to build the libgo standard library, each\ntime a 64-bit modulo is used in a go source code.\n\nlibgo/syscalls/sysfile_posix.go: In function 'syscall.NsecToTimespec':\nlibgo/syscalls/sysfile_posix.go:390:33: internal compiler error: Segmentation fault\n\nWhat is the expected output? What do you see instead?\n\nA minimal example of go source code that triggers the segmentation fault is provided.\n\n$ ./go1 -quiet mod64.go\nmod64.go: In function 'main.main':\nmod64.go:5:2: internal compiler error: Segmentation fault\nPlease submit a full bug report,\nwith preprocessed source if appropriate.\nSee \u0026lt;\u003ca href=\"http://gcc.gnu.org/bugs.html\u0026gt\"\u003ehttp://gcc.gnu.org/bugs.html\u0026gt\u003c/a\u003e; for instructions.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngccgo\n\nWhich operating system are you using?\n\nUbuntu 11.04\n\nWhich revision are you using?  (hg identify)\n\ngcc trunk revision 179047\n\nPlease provide any additional information below.\n\nHere is the backtrace:\n\nProgram received signal SIGSEGV, Segmentation fault.\n0x00000000007fdc00 in aggregate_value_p (exp=0x0, fntype=0x0) at\n../../gccgo-svn/gcc/function.c:1972\n1972\t  const_tree type = (TYPE_P (exp)) ? exp : TREE_TYPE (exp);\n(gdb) bt\n#0  0x00000000007fdc00 in aggregate_value_p (exp=0x0, fntype=0x0) at\n../../gccgo-svn/gcc/function.c:1972\n#1  0x00000000005d0ef9 in emit_library_call_value_1 (retval=1, orgfun=0x7ffff7edf640,\nvalue=0x0, fn_type=LCT_CONST, outmode=TImode, nargs=2, p=0x7fffffffced0)\n    at ../../gccgo-svn/gcc/calls.c:3425\n#2  0x00000000005d3135 in emit_library_call_value (orgfun=0x7ffff7edf640, value=0x0,\nfn_type=LCT_CONST, outmode=TImode, nargs=2) at ../../gccgo-svn/gcc/calls.c:4089\n#3  0x000000000096c481 in expand_twoval_binop_libfunc (binoptab=0x17f0ca8,\nop0=0x7ffff697ea00, op1=0x7ffff7eb6430, targ0=0x0, targ1=0x7ffff697eaa0, code=MOD)\n    at ../../gccgo-svn/gcc/optabs.c:2385\n#4  0x00000000006db808 in expand_divmod (rem_flag=1, code=TRUNC_MOD_EXPR, mode=DImode,\nop0=0x7ffff697ea00, op1=0x7ffff7eb6430, target=0x0, unsignedp=0) at\n../../gccgo-svn/gcc/expmed.c:4901\n#5  0x0000000000703505 in expand_expr_real_2 (ops=0x7fffffffdba0, target=0x7ffff69816c0,\ntmode=DImode, modifier=EXPAND_NORMAL) at ../../gccgo-svn/gcc/expr.c:8217\n#6  0x00000000005df8d0 in expand_gimple_stmt_1 (stmt=0x7ffff698d000) at\n../../gccgo-svn/gcc/cfgexpand.c:2012\n#7  0x00000000005dfb34 in expand_gimple_stmt (stmt=0x7ffff698d000) at\n../../gccgo-svn/gcc/cfgexpand.c:2073\n#8  0x00000000005e9034 in expand_gimple_basic_block (bb=0x7ffff7edc2d8) at\n../../gccgo-svn/gcc/cfgexpand.c:3813\n#9  0x00000000005eadd9 in gimple_expand_cfg () at ../../gccgo-svn/gcc/cfgexpand.c:4321\n#10 0x0000000000985c39 in execute_one_pass (pass=0x1761680) at\n../../gccgo-svn/gcc/passes.c:2063\n#11 0x0000000000985e1f in execute_pass_list (pass=0x1761680) at\n../../gccgo-svn/gcc/passes.c:2118\n#12 0x0000000000b1bfa5 in tree_rest_of_compilation (fndecl=0x7ffff6983700) at\n../../gccgo-svn/gcc/tree-optimize.c:420\n#13 0x00000000006182ab in cgraph_expand_function (node=0x7ffff698e000) at\n../../gccgo-svn/gcc/cgraphunit.c:1803\n#14 0x0000000000618752 in cgraph_output_in_order () at\n../../gccgo-svn/gcc/cgraphunit.c:1960\n#15 0x0000000000618b5a in cgraph_optimize () at ../../gccgo-svn/gcc/cgraphunit.c:2127\n#16 0x0000000000615fe4 in cgraph_finalize_compilation_unit () at\n../../gccgo-svn/gcc/cgraphunit.c:1310\n#17 0x00000000004ef752 in Gogo::write_globals (this=0x1925f10) at\n../../gccgo-svn/gcc/go/gofrontend/gogo-tree.cc:828\n#18 0x00000000004df7d7 in go_langhook_write_globals () at\n../../gccgo-svn/gcc/go/go-lang.c:341\n#19 0x0000000000a7a90c in compile_file () at ../../gccgo-svn/gcc/toplev.c:564\n#20 0x0000000000a7c9e9 in do_compile () at ../../gccgo-svn/gcc/toplev.c:1886\n#21 0x0000000000a7cb5c in toplev_main (argc=3, argv=0x7fffffffe518) at\n../../gccgo-svn/gcc/toplev.c:1962\n#22 0x0000000000554ed4 in main (argc=3, argv=0x7fffffffe518) at\n../../gccgo-svn/gcc/main.c:36\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2296/0/gcc-objcopy-for-target.patch\"\u003egcc-objcopy-for-target.patch\u003c/a\u003e (15735 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2296/0/gcc-go-syscall-linux-arm.patch\"\u003egcc-go-syscall-linux-arm.patch\u003c/a\u003e (846 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2296/0/mod64.go\"\u003emod64.go\u003c/a\u003e (57 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:12:21Z",
+	"created_at": "2011-09-23T14:08:55Z",
+	"updated_at": "2016-06-24T19:35:15Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

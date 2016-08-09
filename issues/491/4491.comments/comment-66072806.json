@@ -1,0 +1,12 @@
+{
+	"id": 66072806,
+	"body": "\u003ca id=\"c19\"\u003e\u003c/a\u003eComment 19:\n\n\u003cpre\u003eThanks, that was enough for me to puzzle through what's going on. The signal setup\nduring clone says:\n\n        // Disable signals during clone, so that the new thread starts\n        // with signals disabled.  It will enable them in minit.\n        runtime·rtsigprocmask(SIG_SETMASK, \u0026sigset_all, \u0026oset, sizeof oset);\n        ret = runtime·clone(flags, stk, m, g, fn);\n        runtime·rtsigprocmask(SIG_SETMASK, \u0026oset, nil, sizeof oset);\n\nbut the minit says\n\n        // Initialize signal handling.\n        m-\u003egsignal = runtime·malg(32*1024);     // OS X wants \u003e=8K, Linux \u003e=2K\n        runtime·signalstack((byte*)m-\u003egsignal-\u003estackguard - StackGuard, 32*1024);\n        runtime·rtsigprocmask(SIG_SETMASK, \u0026sigset_none, nil, sizeof sigset_none);\n\nThe sigset_none should be whatever signals the parent had; clone should record them in\nm-\u003e somewhere and minit should use them.  Any use of SIG_SETMASK with sigset_none is\nwrong - that variable should probably be deleted.\u003c/pre\u003e\n\n_Labels changed: added **go1.1**, **size-m**, **suggested**, removed **go1.1maybe**._\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-10T21:38:30Z",
+	"updated_at": "2014-12-08T10:23:55Z"
+}

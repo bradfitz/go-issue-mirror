@@ -1,0 +1,12 @@
+{
+	"id": 186462367,
+	"body": "I'm looking at this in the context of also supporting stack tracebacks for C code called by cgo.  I would like to support those tracebacks in Callers and get good information for them in runtime/pprof and friends.  Currently it's hard to correctly turn the Callers information into a good stack traceback, as can be seen by the fact that the implementation in runtime/pprof is subtly incorrect (it checks for runtime.gopanic where it should check for runtime.sigpanic).\r\n\r\nRuss's `Frames` suggestion makes sense for Go, but it's hard to implement for C code, and it doesn't address the complexities of when and how much to adjust the PC value.\r\n\r\nI propose that rather than referring to sigpanic in Callers, we instead say\r\n\r\n    // To easily look up file/line information for the call sequence, use\r\n    // CallersIterate.\r\n\r\nand then we implement\r\n\r\n    // CallersIterator may be used to get function/file/line information\r\n    // for a slice of PC values returned by Callers.\r\n    type CallersIterator struct ...\r\n    \r\n    // CallersIterate takes a slice of PC returned by Callers and prepares\r\n    // to return function/file/line information.\r\n    // Do not change the slice until you are done with the CallersIterator.\r\n    func CallersIterate(callers []uintptr) *CallersIterator {}\r\n    \r\n    // Next returns function/function entry point/file/line information\r\n    // for the next caller.\r\n    // If more is false, there are no more callers (the other results are valid).\r\n    // This method may return multiple times for a single PC value in the\r\n    // original slice, to represent inlined functions.\r\n    // If no information is available, function and/or file may be empty,\r\n    // and line may be zero.\r\n    func (ci* CallersIterator) Next() (pc uintptr, function string, entry uintptr, file string, line int, more bool) {}",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-20T00:09:59Z",
+	"updated_at": "2016-02-20T00:09:59Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51287723,
+	"number": 8132,
+	"state": "closed",
+	"title": "runtime: leftover panic in traceback",
+	"body": "\u003cpre\u003eThe windows builders are failing with a message about leftover panic in traceback,\nevidence of a bug in CL 100870044. \n\nThe bug is not windows-specific; windows was just lucky enough to trigger it somewhat\nreliably. This variant of the program crashing on windows crashes everywhere.\n\ng% cat x.go\npackage main\n\nimport \u0026quot;runtime\u0026quot;\n\nfunc main() {\n\tfunc() {\n\t\tdefer func() {\n\t\t\truntime.GC()\n\t\t\trecover()\n\t\t}()\n\t\tvar x [8192]byte\n\t\tfunc(x [8192]byte) {\n\t\t\tdefer func() {\n\t\t\t\tif err := recover(); err != nil {\n\t\t\t\t\tpanic(\u0026quot;wrap: \u0026quot; + err.(string))\n\t\t\t\t}\n\t\t\t}()\n\t\t\tpanic(\u0026quot;bad\u0026quot;)\n\t\t}(x)\n\t}()\n}\ng% go run x.go\nruntime: g16: leftover panic argp=0x2080a3f08 pc=0x2170\nfatal error: traceback has leftover defers or panics\n\nruntime stack:\nruntime.throw(0x52ff7)\n\t/Users/rsc/g/go/src/pkg/runtime/panic.c:520 +0x69 fp=0x7fff5fbff2b8 sp=0x7fff5fbff2a0\nruntime.gentraceback(0xab36, 0x2208245f48, 0x0, 0x20807c120, 0x0, 0x0, 0x7fffffff,\n0x9270, 0x7fff5fbff4a0, 0x0)\n\t/Users/rsc/g/go/src/pkg/runtime/traceback_x86.c:312 +0x3a3 fp=0x7fff5fbff3a0 sp=0x7fff5fbff2b8\naddstackroots(0x20807c120, 0x7fff5fbff4a0)\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:1692 +0x168 fp=0x7fff5fbff430 sp=0x7fff5fbff3a0\nmarkroot(0x208090480, 0x5)\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:1321 +0xbe fp=0x7fff5fbff4b0 sp=0x7fff5fbff430\nruntime.parfordo(0x208090480)\n\t/Users/rsc/g/go/src/pkg/runtime/parfor.c:88 +0xa3 fp=0x7fff5fbff528 sp=0x7fff5fbff4b0\ngc(0x2208245f60)\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:2407 +0x1d6 fp=0x7fff5fbff658 sp=0x7fff5fbff528\nmgc(0x20807c120)\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:2349 +0x2e fp=0x7fff5fbff668 sp=0x7fff5fbff658\nruntime.mcall(0x20957)\n\t/Users/rsc/g/go/src/pkg/runtime/asm_amd64.s:181 +0x4b fp=0x7fff5fbff678 sp=0x7fff5fbff668\n\ngoroutine 16 [garbage collection]:\nruntime.gc(0x2)\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:2329 +0x1c6 fp=0x2208245f78 sp=0x2208245f48\nruntime.GC()\n\t/Users/rsc/g/go/src/pkg/runtime/malloc.goc:853 +0x26 fp=0x2208245f88 sp=0x2208245f78\nmain.func·001()\n\t/Users/rsc/winshare/x.go:8 +0x1e fp=0x2208245fa8 sp=0x2208245f88\n----- stack segment boundary -----\nruntime.panic(0x272c0, 0x20807a030)\n\t/Users/rsc/g/go/src/pkg/runtime/panic.c:248 +0x18d fp=0x2208247f50 sp=0x2208247eb8\nmain.func·002()\n\t/Users/rsc/winshare/x.go:15 +0xce fp=0x2208247fa8 sp=0x2208247f50\n----- stack segment boundary -----\nruntime.panic(0x272c0, 0x20807a010)\n\t/Users/rsc/g/go/src/pkg/runtime/panic.c:248 +0x18d fp=0x2080a3f08 sp=0x2080a3e70\nmain.func·003(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)\n\t/Users/rsc/winshare/x.go:18 +0x7f fp=0x2080a3f40 sp=0x2080a3f08\nmain.func·004()\n\t/Users/rsc/winshare/x.go:19 +0x94 fp=0x2080a7f48 sp=0x2080a3f40\nmain.main()\n\t/Users/rsc/winshare/x.go:20 +0x1a fp=0x2080a7f50 sp=0x2080a7f48\nruntime.main()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:247 +0x11a fp=0x2080a7fa8 sp=0x2080a7f50\nruntime.goexit()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:1445 fp=0x2080a7fb0 sp=0x2080a7fa8\ncreated by _rt0_go\n\t/Users/rsc/g/go/src/pkg/runtime/asm_amd64.s:97 +0x120\n\ngoroutine 17 [runnable]:\nruntime.MHeap_Scavenger()\n\t/Users/rsc/g/go/src/pkg/runtime/mheap.c:507 fp=0x2208249fa8 sp=0x2208249fa0\nruntime.goexit()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:1445 fp=0x2208249fb0 sp=0x2208249fa8\ncreated by runtime.main\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:207\n\ngoroutine 18 [runnable]:\nbgsweep()\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:1976 fp=0x220822dfa8 sp=0x220822dfa0\nruntime.goexit()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:1445 fp=0x220822dfb0 sp=0x220822dfa8\ncreated by runtime.gc\n\t/Users/rsc/g/go/src/pkg/runtime/mgc0.c:2268\nexit status 2\ng%\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:45:06Z",
+	"created_at": "2014-06-01T13:53:24Z",
+	"updated_at": "2016-06-25T01:35:42Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

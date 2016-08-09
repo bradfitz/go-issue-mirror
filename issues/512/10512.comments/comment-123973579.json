@@ -1,0 +1,12 @@
+{
+	"id": 123973579,
+	"body": "We can exclude all the machines where the test fails, but what if users want to use those machines? It is starting to sound like linux/x86 is the one system that works. Maybe darwin/amd64 too.\r\n\r\nFundamentally, the problem seems to be that the trace code assumes synchronized cputicks results across cores, and (as I understand it) modern systems make no such guarantee. @aclements says that Intel may have a soft guarantee about cores on the same chip, but there is no guarantee for cores in different sockets. @ianlancetaylor says that there is complex code in Linux to synchronize RDTSC counters across different cores. So linux/x86 should be okay. But obviously linux/ppc64le is not, so probably linux/non-x86 is not. And non-linux is probably not, once there are multiple sockets.\r\n\r\nTracing is not super high frequency. Perhaps instead of relying on the cpu ticks for sorting, traceEvent could do an xadd64(\u0026traceseq, +1) to get a unique sequence number, and that number could be recorded in the profile and used as the sort key. I realize that would cause contention in the traceseq cache line. But again tracing is not super high frequency, and you only pay for it when it's on, so the slowdown might be entirely tolerable. At least you'd get correct answers.\r\n\r\nThoughts?",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-23T05:23:49Z",
+	"updated_at": "2015-07-23T05:23:49Z"
+}

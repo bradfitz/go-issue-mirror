@@ -1,0 +1,12 @@
+{
+	"id": 225938905,
+	"body": "Real arm devices works OK. This problem only occurs under x86(i386 only) with arm translation.\r\n\r\nI have made a cleaner fix, just change the detection order:\r\n\r\n```\r\n/src/sync/atomic/asm_linux_arm.s\r\n\r\nTEXT setupAndCallCAS64\u003c\u003e(SB),NOSPLIT,$-4-21\r\n\t//1. try to use armCAS64(LDREXD, STREXD)\r\n\tMOVB\truntime·armArch(SB), R0\r\n\t// LDREXD, STREXD only present on ARMv6K or higher\r\n\tCMP\t$6, R0 // TODO(minux): how to differentiate ARMv6 with ARMv6K?\r\n\tMOVW.CS\t$·armCompareAndSwapUint64(SB), R1\r\n\tMOVW.CS\tR1, armCAS64(SB)\r\n\tMOVW.CS\tR1, R15\r\n\t//2. try to use __kuser_cmpxchg64\r\n\tMOVW\t$0xffff0ffc, R0 // __kuser_helper_version\r\n\tMOVW\t(R0), R0\r\n\t// __kuser_cmpxchg64 only present if helper version \u003e= 5\r\n\tCMP \t$5, R0\r\n\tMOVW.CS\t$kernelCAS64\u003c\u003e(SB), R1\r\n\tMOVW.CS\tR1, armCAS64(SB)\r\n\tMOVW.CS\tR1, R15 // R15 = hardware PC\r\n\t//3. we are out of luck, can only use runtime's emulated 64-bit cas\r\n\tMOVW\t$·generalCAS64(SB), R1\r\n\tMOVW\tR1, armCAS64(SB)\r\n\tMOVW\tR1, R15\r\n\r\n```\r\n\r\n",
+	"user": {
+		"login": "wxiaoguang",
+		"id": 2114189,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-14T16:32:23Z",
+	"updated_at": "2016-06-14T16:32:23Z"
+}

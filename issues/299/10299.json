@@ -1,0 +1,22 @@
+{
+	"id": 65503244,
+	"number": 10299,
+	"state": "closed",
+	"title": "spec: defer/recover statement unable to alter return values",
+	"body": "go's defer and recover actions don't operate as expected.  The example here:\r\nhttps://golang.org/doc/effective_go.html\r\n\r\n```\r\n// Compile returns a parsed representation of the regular expression.\r\nfunc Compile(str string) (regexp *Regexp, err error) {\r\n    regexp = new(Regexp)\r\n    // doParse will panic if there is a parse error.\r\n    defer func() {\r\n        if e := recover(); e != nil {\r\n            regexp = nil    // Clear return value.\r\n            err = e.(Error) // Will re-panic if not a parse error.\r\n        }\r\n    }()\r\n    return regexp.doParse(str), nil\r\n}\r\n```\r\n\r\nWhen the above code executes, regexp is set to nil inside the defer function, but the value returned from Compile is non-nil.  Its as if changes made in the deferred function are discarded.\r\n\r\nNote, the above is the example from the documentation that I based my test case on.  I used the above example to write the lock testing code below, which is where I actually found this issue:\r\n\r\n```\r\nfunc isLocked(m *sync.Mutex) (locked bool) {\r\n     locked = true\r\n\r\n     defer func() {\r\n          if r := recover(); r != nil {\r\n                glog.Infof(\"Mutex is unlocked\\n\")\r\n                locked = false\r\n           }\r\n      }()\r\n\r\n      m.Unlock()\r\n      if (locked == false) {\r\n          glog.Infof(\"Mutex is locked\\n\")\r\n           m.Lock()\r\n       }\r\n\r\n      return\r\n}\r\n```\r\n\r\nI understand the above code is racy, but I'm limiting its use to a single thread for the purposes of testing the code.  In this code, if I call m.Unlock() on an already unlocked mutex I see both the \"Mutex is unlocked\" and the \"Mutex is locked\" message in series.  This indicates that the assignment of locked to false is being discarded on exit from the deferred function, and callers will only ever see a return code of true from this.  That seems to be in conflict with the documentation, and just plain broken, as the deferred function clearly has visibility to the locked variable, but writes are silently discarded.",
+	"user": {
+		"login": "nhorman",
+		"id": 1032926,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-04-01T00:56:06Z",
+	"created_at": "2015-03-31T17:23:53Z",
+	"updated_at": "2016-06-25T02:04:23Z"
+}

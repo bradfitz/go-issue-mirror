@@ -1,0 +1,12 @@
+{
+	"id": 66072259,
+	"body": "\u003ca id=\"c15\"\u003e\u003c/a\u003eComment 15:\n\n\u003cpre\u003ecould you please try this very conservative patch:\ndiff -r f5b22a4df675 src/pkg/runtime/sys_linux_amd64.s\n--- a/src/pkg/runtime/sys_linux_amd64.s Sat Nov 17 11:16:07 2012 -0800\n+++ b/src/pkg/runtime/sys_linux_amd64.s Sun Nov 18 05:10:46 2012 +0800\n@@ -100,16 +100,19 @@\n        SYSCALL\n        RET\n \n+frameSize = 120 // also change the frame size below\n // func now() (sec int64, nsec int32)\n-TEXT time·now(SB), 7, $32\n+TEXT time·now(SB), 0, $120 // 32\n        MOVQ    runtime·__vdso_clock_gettime_sym(SB), AX\n        CMPQ    AX, $0\n        JEQ     fallback_gtod\n        MOVL    $0, DI // CLOCK_REALTIME\n+       ADDQ    $(frameSize-32), SP\n        LEAQ    8(SP), SI\n        CALL    AX\n        MOVQ    8(SP), AX       // sec\n        MOVQ    16(SP), DX      // nsec\n+       SUBQ    $(frameSize-32), SP\n        MOVQ    AX, sec+0(FP)\n        MOVL    DX, nsec+8(FP)\n        RET\n\nmaybe you need to tweak value of frameSize.\nsorry, i couldn't reproduce the problem on gentoo with kernel 3.5.2 and\ni couldn't update the kernel now.\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-17T21:16:08Z",
+	"updated_at": "2014-12-08T10:23:25Z"
+}

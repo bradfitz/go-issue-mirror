@@ -1,0 +1,33 @@
+{
+	"id": 95957851,
+	"number": 11794,
+	"state": "closed",
+	"title": "runtime: -buildmode=c-shared generated code hijack's signals from main program",
+	"body": "It looks like a shared object created with `-buildmode=c-shared` \"hijack's\" signal handling away from the main program.\r\n\r\nI'm experimenting with Go shared objects as plugins. The main process has signal handling implemented to do graceful shutdown. However, the main program does not receive signals anymore after a Go shared object was loaded.\r\n\r\nI would expect the main program to receive (and handle) the signals. Instead, signals are completely ignored. It requires `SIGKILL` to kill the process.\r\n\r\nSimple code to reproduce:\r\n\r\nmain.go:\r\n```go\r\npackage main\r\n\r\nfunc init() {}\r\n\r\nfunc main() {}\r\n```\r\n\r\n_main.c:\r\n```c\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cstdio.h\u003e\r\n#include \u003cdlfcn.h\u003e\r\n\r\nint main() {\r\n\tvoid *plugin;\r\n\tplugin = dlopen(\"./gopkg.so\", RTLD_NOW);\r\n\tif (!plugin) {\r\n\t\t exit(1);\r\n\t}\r\n\t\r\n\twhile(1) {\r\n\t\tsleep(1);\r\n\t}\r\n\t\r\n\treturn 0;\r\n}\r\n```\r\n\r\nrun:\r\n```sh\r\ngo build -buildmode c-shared -o gopkg.so\r\ngcc -o main _main.c -ldl\r\n./main\r\nctrl-c\r\n```",
+	"user": {
+		"login": "GeertJohan",
+		"id": 564501,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-07-24T20:29:16Z",
+	"created_at": "2015-07-19T23:21:04Z",
+	"updated_at": "2016-08-05T16:10:43Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"id": 51289131,
+	"number": 9129,
+	"state": "open",
+	"title": "runtime: support parallel cache-oblivious algorithms",
+	"body": "\u003cpre\u003eCache-oblivious algorithms automatically take advantage of all levels of caches present\nin the system (register set, L1/L2/L2, disk) by recursively sub-dividing the problem\ninto smaller parts:\n\u003ca href=\"http://en.wikipedia.org/wiki/Cache-oblivious_algorithm\"\u003ehttp://en.wikipedia.org/wiki/Cache-oblivious_algorithm\u003c/a\u003e\n\nRecursive divide-and-conquer is the working horse of lots of parallel algorithms.\n\nHere is a sample program that does simple O(N^2) computation using 4 methods:\n1. sequential naive (iterative)\n2. sequential cache-oblivious\n3. parallel naive (iterative)\n4. parallel cache-oblivious\n\n\u003ca href=\"http://play.golang.org/p/P4vh-GxnRz\"\u003ehttp://play.golang.org/p/P4vh-GxnRz\u003c/a\u003e\n\nResults are:\n\nserial sum... 3m0.149312702s (sum=480293945344)\ncache oblivious sum... 1m59.191344136s (sum=480293945344)\nparallel sum(1)... 2m45.547188918s (sum=480293945344)\nparallel sum(2)... 1m29.9953968s (sum=480293945344)\nparallel sum(4)... 46.828645173s (sum=480293945344)\nparallel sum(8)... 27.005117917s (sum=480293945344)\nparallel sum(16)... 13.942930282s (sum=480293945344)\nparallel sum(32)... 10.920164632s (sum=480293945344)\ncache oblivious parallel sum(1)... 2m32.863516062s (sum=480293945344)\ncache oblivious parallel sum(2)... 1m13.964254945s (sum=480293945344)\ncache oblivious parallel sum(4)... 43.00664982s (sum=480293945344)\ncache oblivious parallel sum(8)... 21.625423811s (sum=480293945344)\ncache oblivious parallel sum(16)... 13.566854603s (sum=480293945344)\ncache oblivious parallel sum(32)... 9.740402766s (sum=480293945344)\n\nSequential cache-oblivious algorithm is 33% faster even on this small data set. However,\nparallel cache-oblivious version does not show this speedup. The problem is that\nparallel cache-oblivious algorithms require LIFO scheduling (or at least as close to\nLIFO as possible), but current goroutine scheduler does FIFO. As the result the\nalgorithm does BFS instead of DFS, this not only breaks cache locality, but also\nincreases memory consumption from N to 2^N (where N is the depth of the\ndivide-and-conquer tree).\n\nCurrently a user has to make a choice between efficient cache usage or parallelization,\nbut not both. One way or another we need to support such algorithms.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2014-11-19T09:25:39Z",
+	"updated_at": "2015-04-14T19:45:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

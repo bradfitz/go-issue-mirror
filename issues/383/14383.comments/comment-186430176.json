@@ -1,0 +1,12 @@
+{
+	"id": 186430176,
+	"body": "The race appears to be in the function timerproc() in runtime/time.go. The mutex timers.lock is unlocked for calling the runtime timer function, which sends the time into the channel. Therefore timer.Stop can return before the time value is written to the channel.\r\n\r\nCalling the runtime timer function with the mutex locked, ensures that timer.Stop cannot return before the channel is written too. I tested all.bash and also checked the test function from @anacrolix. I think this can be justified because there is no way for a user to set the runtime timer function. I even checked whether I can compile the time package outside of GOROOT; it didn't work.\r\n\r\nOn the other hand I can't see how\r\n\r\n    if !tr.Stop() {\r\n        \u003c-tr.C\r\n    }\r\n\r\nshould fail. At least on Linux AMD64 I was not able to trigger the modified test to fail, even after creating 1 million goroutines.\r\n\r\nIt appears there are two ways to address this issue:\r\n\r\nA) Amend the documentation of time.Stop(), or\r\nB) calling the runtime timer function with the timers.lock hold.\r\n\r\nI prefer B because it fixes the Test above.\r\n\r\n@bradfitz You are right, there is no race in the test code.",
+	"user": {
+		"login": "ulikunitz",
+		"id": 8460565,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-19T22:09:23Z",
+	"updated_at": "2016-02-19T22:09:23Z"
+}

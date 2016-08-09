@@ -1,0 +1,12 @@
+{
+	"id": 66053820,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7 by **piotrnar**:\n\n\u003cpre\u003e\u003e netFD.decref() also calls fd.sysfile.Close() which calls syscall.CloseHandle().\n\u003e But, as you pointed out, it should call syscall.closesocket() instead.\n\nNo, it wouldn't help - I checked it.\nI am not quite sure how it works, but it seems that using closehandle instead of close\nin this place will not solve the issue.\n\nFirst of all \"fd.sysfile\" seems to be some kind of high level virtual file, not the\nactual socket handle that stays open.\nWhat needs to be freed is the \"sysfd\" handle - this is a socket handle that stays\nunfreed causing the resource leaks.\n\nI tried closing \"sysfd\" in the decref(), but then I get occasional errors later on.\nIt seems like this handle is still being used somewhere else and it shouldn't be closed\nhere.\nThe question is: if not here - then where?\nAnd why isn't it a problem for Unix implementations?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-12-29T19:36:24Z",
+	"updated_at": "2014-12-08T10:08:01Z"
+}

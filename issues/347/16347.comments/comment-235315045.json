@@ -1,0 +1,12 @@
+{
+	"id": 235315045,
+	"body": "Relevant OpenSSL source (which I'm still digging through):\r\n- [`check_name_constraints()`](https://github.com/openssl/openssl/blob/ba1a1c3783bec68830da3a375b581afc73226ff4/crypto/x509/x509_vfy.c#L557)\r\n- [`crypto/x509v3/v3_ncons.c`](https://github.com/openssl/openssl/blob/ba1a1c3783bec68830da3a375b581afc73226ff4/crypto/x509v3/v3_ncons.c)\r\n   - [`static int nc_match(GENERAL_NAME *gen, NAME_CONSTRAINTS *nc)`](https://github.com/openssl/openssl/blob/ba1a1c3783bec68830da3a375b581afc73226ff4/crypto/x509v3/v3_ncons.c#L275)\r\n   - [`static int nc_match_single(GENERAL_NAME *gen, GENERAL_NAME *base)`](https://github.com/openssl/openssl/blob/ba1a1c3783bec68830da3a375b581afc73226ff4/crypto/x509v3/v3_ncons.c#L327)\r\n      - This seems to be where the types of name constraints are differentiated.\r\n   - [`static int nc_dns(ASN1_IA5STRING *dns, ASN1_IA5STRING *base)`](https://github.com/openssl/openssl/blob/ba1a1c3783bec68830da3a375b581afc73226ff4/crypto/x509v3/v3_ncons.c#L372)\r\n      - DNS constraints are checked\r\n\r\n```c\r\nstatic int nc_dns(ASN1_IA5STRING *dns, ASN1_IA5STRING *base)\r\n{\r\n    char *baseptr = (char *)base-\u003edata;\r\n    char *dnsptr = (char *)dns-\u003edata;\r\n    /* Empty matches everything */\r\n    if (!*baseptr)\r\n        return X509_V_OK;\r\n    /*  \r\n     * Otherwise can add zero or more components on the left so compare RHS\r\n     * and if dns is longer and expect '.' as preceding character.\r\n     */\r\n    if (dns-\u003elength \u003e base-\u003elength) {\r\n        dnsptr += dns-\u003elength - base-\u003elength;\r\n        if (*baseptr != '.' \u0026\u0026 dnsptr[-1] != '.')\r\n            return X509_V_ERR_PERMITTED_VIOLATION;\r\n    }   \r\n\r\n    if (strcasecmp(baseptr, dnsptr))\r\n        return X509_V_ERR_PERMITTED_VIOLATION;\r\n\r\n    return X509_V_OK;\r\n\r\n}\r\n```",
+	"user": {
+		"login": "JonathonReinhart",
+		"id": 1916566,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-26T15:58:21Z",
+	"updated_at": "2016-07-26T16:06:24Z"
+}

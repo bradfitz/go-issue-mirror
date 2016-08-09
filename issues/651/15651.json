@@ -1,0 +1,27 @@
+{
+	"id": 154329997,
+	"number": 15651,
+	"state": "open",
+	"title": "go/types/gcexportdata: new package for loading types.Objects from gc export data",
+	"body": "Currently (tip prior to go 1.7) the go/importer package provides an implementation of the go/types.Importer interface that loads types.Packages and types.Objects from gc exportdata.  However, the standard library provides only very restricted access to this functionality (`importer.For`).  For example, there is no way to control how the importer finds .a files nor any way to access to the position information recorded in the export data, and the API provides no access to the functions that convert a types.Package to a []byte and back again.  So, many clients need to use the golang.org/x/tools/go/gcimporter15 package, whose implementation is essentially identical, but whose API is not artificially restricted by the `importer.For` bottleneck.  Maintaining the two packages is a nuisance and there is a risk of version skew.\r\n\r\nI propose that the Go 1.8 standard library include a new package that is essentially equivalent to gcimporter15, and that the latter package be deprecated.\r\n\r\nThe API of the new standard package would look like this:\r\n\r\n```\r\npackage gcexportdata // import \"go/types/gcexportdata\"\r\n\r\n// Export a package.\r\nfunc  Export(fset *go/token.FileSet, pkg *go/types.Package) []byte\r\n\r\n// Import a package.\r\nfunc  Import(fset *go/token.FileSet, imports map[string]*go/types.Package, data []byte, path string) (*go/types.Package, error)\r\n\r\n// Find an archive file for the specified import, following GOPATH conventions.\r\nfunc  FindArchive(path string, srcDir string) (filename string, id string)\r\n\r\n// Read from r (an archive file) up until the start of the export data.\r\nfunc  Advance(r *bufio.Reader) error\r\n```\r\n\r\nIt might be better for `Import` and `Export` to take a single config struct as a parameter so that options can be added later without breaking compatibility, since the export data format will surely change as the compiler evolves.",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-05-11T20:01:15Z",
+	"updated_at": "2016-05-11T20:14:55Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

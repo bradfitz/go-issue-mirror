@@ -1,0 +1,12 @@
+{
+	"id": 66056348,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12:\n\n\u003cpre\u003ethanks, Nigel. I never tire of being wrong :)\n\nso, with this in mind the following change fixes huffman_bit_writer.go to correctly\ncompress small size inputs which are just on the boundary between a fixed a dynamic\nencoding tables and which (if dynamic were to be chosen) would result in zero matchType\ntokens:\n\n\n$ hg diff\ndiff -r ab29d2698a47 src/pkg/compress/flate/huffman_bit_writer.go\n--- a/src/pkg/compress/flate/huffman_bit_writer.go\tMon May 23 14:05:18 2011 -0700\n+++ b/src/pkg/compress/flate/huffman_bit_writer.go\tTue May 24 08:08:26 2011 -0600\n@@ -462,7 +462,7 @@\n \tvar literalEncoding *huffmanEncoder\n \tvar offsetEncoding *huffmanEncoder\n \n-\tif fixedSize \u0026lt;= dynamicSize {\n+\tif fixedSize \u0026lt;= dynamicSize || numOffsets == 1 {\n \t\tw.writeFixedHeader(eof)\n \t\tliteralEncoding = fixedLiteralEncoding\n \t\toffsetEncoding = fixedOffsetEncoding\n\nthis change, in essence, forces a fixedSize encoding table for those particular inputs.\n\nthere's no need to change the inflate.go function (commenting out line 98-101) since\nthere is no broken input generated anymore.\n\nwith this change go, zlib and python read go-generated content just fine:\n\n\n$ cat t.go \npackage main\n\nimport (\n\t\"compress/zlib\"\n\t\"os\"\n)\n\nfunc main() {\n\tcontent := []byte(\"test a reasonable sized string that can be compressed\")\n\tw, _ := zlib.NewWriter(os.Stdout)\n\tw.Write(content)\n\tw.Close()\n}\n$ 6g t.go; 6l t.6\n$ ./6.out \u0026gt; g\n$ ./zpipe -d \u0026lt; g\ntest a reasonable sized string that can be compressed   # '\\n' appended\n$ python\n\n\u0026gt;\u0026gt;\u0026gt; f=open('g')\n\u0026gt;\u0026gt;\u0026gt; zlib.decompress(f.read())\n'test a reasonable sized string that can be compressed'\n\u0026gt;\u0026gt;\u0026gt; ^D\n$\u003c/pre\u003e",
+	"user": {
+		"login": "mirtchovski",
+		"id": 2047078,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-24T14:16:43Z",
+	"updated_at": "2014-12-22T05:56:06Z"
+}

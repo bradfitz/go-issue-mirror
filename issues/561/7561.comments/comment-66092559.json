@@ -1,0 +1,12 @@
+{
+	"id": 66092559,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI have investigated this: here is a minimal example:\n\npackage p\n\nvar connect func() (int, error)\n\nvar conns = make(map[int][]int)\n\nfunc TestMultipleReturnToMap() {\n      var i, j int\n      var err error\n      conns[i][j], err = connect()\n      _ = err\n}\n\nThe issues arises because multiple returns \"a, b = f()\" is walked to:\n\n{\n    CALL f\n    a = SP[n0]\n    b = SP[n1]\n}\n\nThen because racewalk cannot insert instrumentation between CALL and y = SP[n], it\ninserts them at the end. However, map indexing is not an actual assignement so if you\nhave \"m[x], y = f()\" it becomes:\n\n{\n    CALL f\n    tmp = SP[n0]\n    y = SP[n1]\n    m[x] = tmp\n}\n\nand racewalk again puts all instrumentation at the end. Thus is becomes:\n\n{\n    CALL f\n    tmp = SP[n0]\n    y = SP[n1]\n    *p = tmp \n    // init of previous statement\n    p = mapassign1(m, x)\n    raceread(...); readwrite(...)   \n}\n\nInstead it should be:\n\n{\n    CALL f\n    tmp = SP[n0]\n    y = SP[n1]\n    \u0026lt;instrumentation of y if it is on the heap\u0026gt;\n    // instrumentation of m[x] = tmp\n    p = mapassign1(m, x)\n    raceread(m); readwrite(p)\n    *p = tmp \n}\n\nI'm not sure yet how to do this properly, I need a closer look later in the week.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-17T22:55:41Z",
+	"updated_at": "2014-12-22T06:33:21Z"
+}

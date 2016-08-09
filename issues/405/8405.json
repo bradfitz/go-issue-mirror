@@ -1,0 +1,33 @@
+{
+	"id": 51288141,
+	"number": 8405,
+	"state": "closed",
+	"title": "cmd/gc: make interface updates atomic wrt garbage collector",
+	"body": "\u003cpre\u003eToday garbage collection treats interfaces as multiword objects: the type word tells\nwhether the data word is a pointer.\n\nWhen we move to a concurrent garbage collector that effectively races with the other\ngoroutines, interface updates made by an ordinary goroutine must be seen atomically by\nthe concurrent collector. It must not be possible for the collector to observe a\nhalf-updated interface value.\n\n(The same general problem applies to slices and strings, but the solution will be\ndifferent, so they are a separate issue, \u003ca href=\"https://golang.org/issue/8404\"\u003eissue #8404\u003c/a\u003e.)\n\nThere are at least three possibilities:\n\n(1) Use double-word atomic operations to read and write any interface value stored in\nthe heap. Interface values on the stack can still be modified using non-atomic\noperations, because stack scans happen only at safe points.\n\n(2) Change interface representations so that the data word is always a pointer. The\ngarbage collector would ignore type and always scan data sa a pointer, reducing the read\nto a single word, making it atomic.\n\n(3) Change interface representations to be three words: type, ptr-data, non-ptr data.\nThe garbage collector would ignore type and always scan ptr-data as a pointer, reducing\nthe read to a single word, making it atomic.\n\nThe benefit of (1) is no representation changes. The drawback is that the atomic\noperation may be too expensive and may not even be available on all systems (64-bit\nIntel Atom chips?). We don't actually know how many interface updates occur on the stack\nvs the heap. My guess is that probably more than half are on the stack, so maybe making\nheap updates more expensive is not terrible.\n\nThe benefit of (2) is no atomics and no interface value size change. It also brings the\ngc and gccgo implementations in line (gccgo already does this). The drawback is the\nallocations when converting from integer/bool/tiny struct to interface.\n\nThe benefit of (3) is no allocations. The drawback is the larger interface value size. I\nexpect that there are many places in the code that assume two-word interfaces and that\nchanging this will require tracking down these many latent assumptions.\n\nI don't think we know which of these is the right solution. We need more data about (1)\nhow many interface read/writes are from the heap as opposed to the stack, and how\nexpensive/available the atomic operations are, (2) how many interface values would now\nallocate in a typical program, and (3) how much extra space is taken up by the larger\ninterface values and how invasive the change in size is to other code.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 27,
+	"closed_at": "2014-12-08T10:46:40Z",
+	"created_at": "2014-07-22T01:27:05Z",
+	"updated_at": "2016-06-25T01:38:24Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

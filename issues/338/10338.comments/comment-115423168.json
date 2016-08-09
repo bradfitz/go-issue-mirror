@@ -1,0 +1,12 @@
+{
+	"id": 115423168,
+	"body": "The root cause is that `Wait` blocks for all `io.Copy` operations to complete.  This is correct, but in the test case here, the deadlock is on `io.pipe.rwait`.  Adding a `pw.Close` after `pw.Write` will remove the deadlock.  stdout/stderr won't have this problem since they will receive the broken pipe error.\r\n\r\nFixing this isn't straightforward.  Ideally, there would be a way to interrupt the read call in `stdin()`'s copy goroutine.  It could be emulated with a `select` and an interrupt channel, but then that can leak a copy goroutine.  I'm unsure of a clean way of fixing this.",
+	"user": {
+		"login": "zombiezen",
+		"id": 181535,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-25T22:51:49Z",
+	"updated_at": "2015-06-25T22:51:49Z"
+}

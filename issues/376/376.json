@@ -1,0 +1,28 @@
+{
+	"id": 51276400,
+	"number": 376,
+	"state": "closed",
+	"title": "garbage collection issue in FreeBSD",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Create a test.go with\n\npackage main\n\nimport (\n       \u0026quot;fmt\u0026quot;;\n       \u0026quot;os\u0026quot;;\n       \u0026quot;runtime\u0026quot;;\n)\n\nfunc process(file string, c chan string) {\n       fmt.Printf(\u0026quot;processing %s...\\n\u0026quot;, file);\n       for i := uint(0); i \u0026lt; 1\u0026lt;\u0026lt;31; i++ {}\n       c \u0026lt;- file\n}\n\nfunc main() {\n       runtime.GOMAXPROCS(4);\n\n       c := make(chan string);\n\n       for i := 1; i \u0026lt; len(os.Args); i++ {\n               go process(os.Args[i], c)\n       }\n\n       for i := 1; i \u0026lt; len(os.Args); i++ {\n               fmt.Printf(\u0026quot;Done processing %s\\n\u0026quot;, \u0026lt;-c);\n       }\n}\n\n2. Compile and Run on FreeBSD\n\nWhat is the expected output? What do you see instead?\n\nOccasionally (maybe 50% of the time) it runs properly. The rest of the\ntime, I either get segfaults in MCentral_Free (looks like it's trying to\nfree nil) or the following trace:\n\n\u0026gt; ./6.out a b c\nprocessing a...\nprocessing b...\nodd span state=0 span=0xa1000d8a68 base=0xa1001b0000 sizeclass=10 n=27\nsize=144 npages=1\ns-\u0026gt;base sizeclass 10 v=0xa1001b0000 base=0xa1001b0000 gcref=0xa10024c9f0\nblocksize=4096 nobj=27 size=144 end=0xa10024ca5c end=0xa1001b1000\nthrow: bad gcref\n\npanic PC=0xa10019c478\nthrow+0x3e /usr/home/dho/golang/src/pkg/runtime/runtime.c:74\n        throw(0x441e46, 0x0)\nmlookup+0x270 /usr/home/dho/golang/src/pkg/runtime/malloc.c:164\n        mlookup(0x1b0000, 0xa1, 0x0, 0x0, 0x0, ...)\nmalloc+0xe7 /usr/home/dho/golang/src/pkg/runtime/malloc.c:47\n        malloc(0x90, 0x0)\nmalg+0x1e /usr/home/dho/golang/src/pkg/runtime/proc.c:737\n        malg(0x8000, 0x0)\nminit+0x1b /usr/home/dho/golang/src/pkg/runtime/freebsd/thread.c:164\n        minit()\nmstart+0x42 /usr/home/dho/golang/src/pkg/runtime/proc.c:392\n        mstart()\nthr_start+0xb /usr/home/dho/golang/src/pkg/runtime/freebsd/amd64/sys.s:32\n        thr_start()\n\ngoroutine 4 [1]:\ngoexit /usr/home/dho/golang/src/pkg/runtime/proc.c:135\n        goexit()\n0xa100147018 unknown pc\n\ngoroutine 3 [2]:\nruntime·entersyscall+0x50 /usr/home/dho/golang/src/pkg/runtime/proc.c:545\n        runtime·entersyscall()\nsyscall·Syscall+0x5b\n/usr/home/dho/golang/src/pkg/syscall/asm_freebsd_amd64.s:46\n        syscall·Syscall()\nsyscall·Write+0x5d /usr/home/dho/golang/src/pkg/syscall/exec.go:17\n        syscall·Write(0x1, 0xa1, 0x171c40, 0xa1, 0x10, ...)\nos·*File·Write+0x5f /usr/home/dho/golang/src/pkg/os/file.go:162\n        os·*File·Write(0x172d50, 0xa1, 0x171c40, 0xa1, 0x10, ...)\nfmt·Fprintf+0xe8 /usr/home/dho/golang/src/pkg/fmt/print.go:214\n        fmt·Fprintf(0x1af000, 0xa1, 0x172d50, 0xa1, 0x45a9d0, ...)\nfmt·Printf+0x72 /usr/home/dho/golang/src/pkg/fmt/print.go:220\n        fmt·Printf(0x45a9d0, 0x0, 0x11, 0x0, 0x444c18, ...)\nmain·process+0x5a /usr/home/dho/test.go:9\n        main·process(0x147010, 0xa1, 0x1, 0x0, 0x192000, ...)\ngoexit /usr/home/dho/golang/src/pkg/runtime/proc.c:135\n        goexit()\n0xa100147010 unknown pc\n\ngoroutine 2 [2]:\nruntime·entersyscall+0x50 /usr/home/dho/golang/src/pkg/runtime/proc.c:545\n        runtime·entersyscall()\nsyscall·Syscall+0x5b\n/usr/home/dho/golang/src/pkg/syscall/asm_freebsd_amd64.s:46\n        syscall·Syscall()\nsyscall·Write+0x5d /usr/home/dho/golang/src/pkg/syscall/exec.go:17\n        syscall·Write(0x1, 0xa1, 0x171840, 0xa1, 0x10, ...)\nos·*File·Write+0x5f /usr/home/dho/golang/src/pkg/os/file.go:162\n        os·*File·Write(0x172d50, 0xa1, 0x171840, 0xa1, 0x10, ...)\nfmt·Fprintf+0xe8 /usr/home/dho/golang/src/pkg/fmt/print.go:214\n        fmt·Fprintf(0x1af000, 0xa1, 0x172d50, 0xa1, 0x45a9d0, ...)\nfmt·Printf+0x72 /usr/home/dho/golang/src/pkg/fmt/print.go:220\n        fmt·Printf(0x45a9d0, 0x0, 0x11, 0x0, 0x444c18, ...)\nmain·process+0x5a /usr/home/dho/test.go:9\n        main·process(0x147008, 0xa1, 0x1, 0x0, 0x192000, ...)\ngoexit /usr/home/dho/golang/src/pkg/runtime/proc.c:135\n        goexit()\n0xa100147008 unknown pc\n\ngoroutine 1 [4]:\ngosched+0x34 /usr/home/dho/golang/src/pkg/runtime/proc.c:521\n        gosched()\nchanrecv+0x318 /usr/home/dho/golang/src/pkg/runtime/chan.c:319\n        chanrecv(0x192000, 0xa1, 0x174f80, 0xa1, 0x0, ...)\nruntime·chanrecv1+0x50 /usr/home/dho/golang/src/pkg/runtime/chan.c:415\n        runtime·chanrecv1(0x192000, 0xa1)\nmain·main+0xc3 /usr/home/dho/test.go:23\n        main·main()\nmainstart+0xf /usr/home/dho/golang/src/pkg/runtime/amd64/asm.s:54\n        mainstart()\ngoexit /usr/home/dho/golang/src/pkg/runtime/proc.c:135\n        goexit()\nSegmentation fault (core dumped)\n\nWhat is your $GOOS?  $GOARCH?\nfreebsd/amd64\n\nWhich revision are you using?  (hg identify)\n68ebc44e8429 tip\n\n\nPlease provide any additional information below.\nLooks like it's my bug and my problem :)\u003c/pre\u003e",
+	"user": {
+		"login": "dhobsd",
+		"id": 168647,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:04:19Z",
+	"created_at": "2009-12-03T16:42:21Z",
+	"updated_at": "2016-06-24T19:08:56Z"
+}

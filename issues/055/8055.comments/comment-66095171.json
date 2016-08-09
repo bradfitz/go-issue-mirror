@@ -1,0 +1,12 @@
+{
+	"id": 66095171,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003e'Scale on load' means that djpeg ignores some of the DCT data while decompressing the\nimage.  For a 256x256 image with a scaling factor of 2, djpeg will decompress the image\ndirectly into 128x128.  This is probably what the size hint enables in imagemagick. \nThis reduces the peak memory usage (128*128*3 instead of 256*256*3) and also gives you a\nsmaller input image to your resize function, assuming your goal is to generate an image\nthat isn't exactly 1/2, 1/4 or 1/8 the original size.  The cr2_test.go benchmarks in the\nlinked changelist test just that.  They take an CR2 image you provide, which has a large\nthumbnail in it (5616 x 3744 for the numbers below), decode and resize to 128x128.  It\ncompares the time for decoding and resizing entirely in Go with BenchmarkStdlib, and\nalso decompressing by piping to djpeg with a sample factor of 1, 2, 4, and 8 before\nresizing down to 128x128.  The results are:\n\n$  go test -test.bench 'Stdlib|Djpeg'                                                   \n                                       \nPASS\nBenchmarkStdlib        1        1677506024 ns/op\nBenchmarkDjpeg1        1        1426977483 ns/op\nBenchmarkDjpeg2        5         428295667 ns/op\nBenchmarkDjpeg4       10         156096810 ns/op\nBenchmarkDjpeg8       20          81281665 ns/op\nok      camlistore.org/pkg/images       13.014s\n\n\nComparing the results of BenchmarkStdlib vs BenchmarkStdlib is basically comparing the\npure-Go CR2 thumbnail decoder versus piping JPEG bytes to the djpeg subprocess and\nreading and parsing the PNM data returned.\n\nThe BenchmarkDjpeg[248] cases are the more interesting ones.  Assuming your target image\nsize is smaller than 1/2, 1/4 or 1/8 of your original image size, you can see\nsignificant improvements in resize time.\u003c/pre\u003e",
+	"user": {
+		"login": "wathiede",
+		"id": 1043363,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-29T14:36:03Z",
+	"updated_at": "2014-12-08T10:44:43Z"
+}

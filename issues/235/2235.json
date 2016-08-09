@@ -1,0 +1,22 @@
+{
+	"id": 51278922,
+	"number": 2235,
+	"state": "closed",
+	"title": "template: could evalArg/validateType propagate a value of type T to *T, if a method/fn's argument is of type *T?",
+	"body": "by **mt4swm**:\n\n\u003cpre\u003eSometimes one has a struct that contains other structs, or\nslices of structs, as members:\n\n\ttype T2 struct {\n\t\tA T1\n\t\tB []T1\n\t} \n\nWhen using the template engine with this struct as data, I\nwould like to be able to call a Method or a template function\nthat has an argument of type *T1, not T1, for efficiency.\n\nFor now, if a template contains\n\t{{ func .A }}\n\nwith func being a user defined function taking one argument\nof type *T1, the template engine will print an error like:\n\n\ttemplate: wrong type for value; expected *T1; got T1\n\nI think it would be nice if the template engine could\nautomatically take the address of a value, if it detects that\nits type then would match a function argument's type.\n\nThe patch below to exec.c:validateType tries to implement\nthis behaviour. It appears to work both in case of methods and functions.\n\nMichael\n\n--- a/src/pkg/template/exec.go\n+++ b/src/pkg/template/exec.go\n@@ -506,7 +506,11 @@\n \t\ts.errorf(\u0026quot;invalid value; expected %s\u0026quot;, typ)\n \t}\n \tif !value.Type().AssignableTo(typ) {\n-\t\ts.errorf(\u0026quot;wrong type for value; expected %s; got %s\u0026quot;, typ, value.Type())\n+\t\tif reflect.PtrTo(value.Type()).AssignableTo(typ) {\n+\t\t\tvalue = value.Addr()\n+\t\t} else {\n+\t\t\ts.errorf(\u0026quot;wrong type for value; expected %s; got %s\u0026quot;, typ, value.Type())\n+\t\t}\n \t}\n \treturn value\n }\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:12:01Z",
+	"created_at": "2011-09-06T11:48:57Z",
+	"updated_at": "2016-06-24T19:34:29Z"
+}

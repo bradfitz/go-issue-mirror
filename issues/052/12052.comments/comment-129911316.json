@@ -1,0 +1,12 @@
+{
+	"id": 129911316,
+	"body": "Debugging this a bit further i extracted the dialClosedPort function from dial_test.go into a small standalone program and using this and tcpdump i saw that there were no RST packets sent.\r\nThis comes down to this setting:\r\n\r\n$ sysctl net.inet.tcp.blackhole  \r\nnet.inet.tcp.blackhole: 2\r\n\r\nThis usually prevents our SYN flooded servers from responding with a RST flood which is a good thing. Sadly this is a global option and not per interface, so this also happens on the loopback device.\r\nSetting this to zero generates the correct answer to the SYN packets and the net testsuite concludes in just above 2 seconds.\r\n\r\nThis fixes the original problem. It seems this test was introduced with 1.5 so it never blew up before.\r\n\r\nI still get the http test errors but as i only get them on one of two machines i'll consider them a local problem for now.",
+	"user": {
+		"login": "aperum",
+		"id": 8442937,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-11T14:41:32Z",
+	"updated_at": "2015-08-11T14:41:32Z"
+}

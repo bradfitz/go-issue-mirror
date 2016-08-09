@@ -1,0 +1,12 @@
+{
+	"id": 162152017,
+	"body": "Posix defines ss_size to be the stack size (i.e. currently allocated, not maximum allocatable):\r\n* http://pubs.opengroup.org/onlinepubs/007908799/xsh/signal.h.html\r\n\r\nIt looks like when RLIMIT_STACK is set to a specific value, the stack size is set to that value (after all, this is just allocating virtual address space, not actual memory which will only happen when a page fault occurs). When RLIMIT_STACK is unlimited, it can't do that, obviously, and thus allocates the minimum (2*PAGESIZE which should be 8KB by default, but I'm guessing by the time ld.so finishes its work, it has grown by one extra page to give your 0x3000 value).\r\n\r\nI'm not sure what purpose `g-\u003estacklo` serves in the Go runtime, and the default RLIMIT_STACK is 10MB. Your change would probably cause a segfault if RLIMIT_STACK were set under 1MB and the stack grew that large. Perhaps a better approach is to getrlimit RLIMIT_STACK, and if it is RLIM_INFINITY, use 1MB (or 2MB, or 10MB), otherwise use `ctx.uc_stack.ss_size`.\r\n\r\nGo is in good company: Java had the same issue (note the lame response):\r\n* http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4474311\r\n",
+	"user": {
+		"login": "fazalmajid",
+		"id": 331198,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-05T06:32:15Z",
+	"updated_at": "2015-12-05T06:32:15Z"
+}

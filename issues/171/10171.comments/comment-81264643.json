@@ -1,0 +1,12 @@
+{
+	"id": 81264643,
+	"body": "Looking at the openssl output more carefully it does seem that they are just going through all the RSA private key parsers and trying to see if it matches any of them, before bailing.\r\n\r\nIt seems that to achieve what I want to do in Go I will have to do the PEM decoding and then try to parse it using the available formats:\r\n\r\n```go\r\nfunc checkPassword(pem *pem.Block, password string) {\r\n\tkey, err := x509.DecryptPEMBlock(pem, []byte(password))\r\n\tif err == nil {\r\n\t\tvalidKey := false\r\n\t\t_, err = x509.ParsePKCS8PrivateKey(key)\r\n\t\tif err == nil {\r\n\t\t\tvalidKey = true\r\n\t\t}\r\n\r\n\t\t_, err = x509.ParsePKCS1PrivateKey(key)\r\n\t\tif err == nil {\r\n\t\t\tvalidKey = true\r\n\t\t}\r\n\r\n\t\tif validKey == true {\r\n\t\t\tfmt.Println(\"Valid password found: \" + password)\r\n\t\t}\r\n\t}\r\n}\r\n```\r\nI'm ok with closing this as a \"works as intended\" with the caveat that this might be confusing for other people too. Maybe a source-code comment indicating this potential caveat would be appropriate? Not sure if it is a contrived example someone decoding an encrypted PEM but not actually trying to parse the private key.",
+	"user": {
+		"login": "diogomonica",
+		"id": 55332,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-15T22:23:52Z",
+	"updated_at": "2015-03-15T22:23:52Z"
+}

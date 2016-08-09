@@ -1,0 +1,12 @@
+{
+	"id": 146343405,
+	"body": "```go\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/json\"\r\n\t\"errors\"\r\n\t\"flag\"\r\n\t\"fmt\"\r\n\t\"html/template\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"math\"\r\n\t\"net/http\"\r\n\t\"runtime\"\r\n\t\"sort\"\r\n\t\"strconv\"\r\n\t\"strings\"\r\n\t\"time\"\r\n\r\n\t\"github.com/Azure/azure-sdk-for-go/storage\"\r\n\t\"github.com/davecheney/profile\"\r\n\t_ \"github.com/go-sql-driver/mysql\"\r\n\t\"github.com/gorilla/mux\"\r\n)\r\n\r\nfunc contentTypeWrapper(handler http.HandlerFunc, contentType string) http.HandlerFunc {\r\n\treturn func(w http.ResponseWriter, r *http.Request) {\r\n\t\tw.Header().Set(\"Content-Type\", contentType)\r\n\t\thandler(w, r)\r\n\t}\r\n}\r\n\r\nfunc benchmarkWrapper(handler http.HandlerFunc) http.HandlerFunc {\r\n\treturn func(w http.ResponseWriter, r *http.Request) {\r\n\t\tdate := time.Now()\r\n\t\tstart := time.Now().UnixNano()\r\n\t\thandler(w, r)\r\n\t\tend := time.Now().UnixNano() - start\r\n\t\tbenchmark := benchmark{\r\n\t\t\tDuration: float64(end),\r\n\t\t\tRoute:    r.URL.Path,\r\n\t\t\tMethod:   r.Method,\r\n\t\t\tTag:      \"[HTTP]\",\r\n\t\t\tDate:     date,\r\n\t\t}\r\n\t\tmetrics = append(metrics, benchmark)\r\n\t\tgatherCoreMetrics(\"[HTTP]\", start, r)\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\truntime.GOMAXPROCS(runtime.NumCPU())\r\n        flag.Parse()\r\n        pcfg := profile.Config{\r\n\t\tMemProfile:   true,\r\n\t\tCPUProfile:   true,\r\n\t\tBlockProfile: true,\r\n\t}\r\n\tpcfg.ProfilePath = \".\"\r\n\tdefer profile.Start(\u0026pcfg).Stop()\r\n        r := mux.NewRouter()\r\n\tr.HandleFunc(\"/pictures\", contentTypeWrapper(benchmarkWrapper(authWrapper(picturesHandler)), \"application/json\")).Methods(\"GET\")\r\n        http.Handle(\"/\", r)\r\n\thttp.Handle(\"/static/\", http.StripPrefix(\"/static/\", http.FileServer(http.Dir(\"./public\"))))\r\n\t//http.ListenAndServe(\":\"+os.Getenv(\"HTTP_PLATFORM_PORT\"), nil)\r\n\thttp.ListenAndServe(\":\"+\"8989\", nil)\r\n}\r\n```\r\n\r\nThe picturesHandler does some HTTP requests against S3 buckets (only meta data), nothing fancy. Writes it into a []myCustomStruct and json.Marshals it and does w.Write(response)",
+	"user": {
+		"login": "daemonfire300",
+		"id": 135746,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-07T21:51:25Z",
+	"updated_at": "2015-10-07T21:51:25Z"
+}

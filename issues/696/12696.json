@@ -1,0 +1,21 @@
+{
+	"id": 107352380,
+	"number": 12696,
+	"state": "open",
+	"title": "x/tools/imports: Feature Request: Ability to customize behavior without needing to fork.",
+	"body": "Currently, the `golang.org/x/tools/imports` features some internal configuration options to make it possible to adjust it to run (in a limited capacity) in environments where there is no raw filesystem access (for example, App Engine):\r\n\r\n```Go\r\n// importPathToName returns the package name for the given import path.\r\nvar importPathToName = importPathToNameGoPath\r\n\r\n// loadExports returns a list exports for a package.\r\nvar loadExports = loadExportsGoPath\r\n\r\n// findImport searches for a package with the given symbols.\r\n// If no package is found, findImport returns \"\".\r\n// Declared as a variable rather than a function so goimports can be easily\r\n// extended by adding a file with an init function.\r\nvar findImport = findImportGoPath\r\n```\r\n\r\nThere's a few code generation files like `mkindex.go` to help pre-compute static indices of packages for such environments.\r\n\r\nHowever, since those variables are unexported, the only current way to make changes there is to fork the entire `golang.org/x/tools/imports` package.\r\n\r\nIt's slightly more convenient in that a new file can be added with `init()` that overrides the internal variables, but the rest of the package will still be a fork that needs to be maintained and kept up to date.\r\n\r\n#### Feature Request\r\n\r\nWhat do you think about adding a means to override those internal configuration funcs (or provide your own implementations) and pre-computed indices. Perhaps via:\r\n\r\n```Go\r\n// Or \"Context\" or \"Configuration\" or whatever name works best.\r\ntype Config struct {\r\n\tImportPathToName func(importPath string) (packageName string)\r\n\tLoadExports      func(dir string) map[string]bool\r\n\tFindImport       func(pkgName string, symbols map[string]bool) (string, bool, error)\r\n\tStdlib           map[string]string\r\n}\r\n\r\nfunc (c *Config) Process(filename string, src []byte, opt *Options) ([]byte, error) { ... }\r\n\r\n// Process formats and adjusts imports for the provided file.\r\n// If opt is nil the defaults are used.\r\nfunc Process(filename string, src []byte, opt *Options) ([]byte, error) {\r\n\treturn defaultConfig.Process(filename, src, opt)\r\n}\r\n```\r\n\r\nOr something like that, to make it possible to import `golang.org/x/tools/imports` and configure it to one's needs, without needing to fork it.\r\n\r\nAdditionally, it'd be great if the `findImport`, etc. implementations that currently rely on raw filesystem access and import low level packages like `os` could be moved into a separate file with a build tag like `// +build !nacl` to prevent them from being included on systems where those low level packages are not available.\r\n\r\nSome context on where I'd like to use this can seen in https://github.com/gopherjs/gopherjs.github.io/commit/40f830c9d55988778ea02cfe00608dc6adf00685, where I had to fork `imports` and customize for the [GopherJS Playground](http://www.gopherjs.org/playground/). Since the code runs in a browser, a static index is used, and unused code importing `os` and `sync` is removed.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-09-19T19:44:56Z",
+	"updated_at": "2015-10-23T19:53:55Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

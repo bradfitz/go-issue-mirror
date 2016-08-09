@@ -1,0 +1,12 @@
+{
+	"id": 66054656,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eYour ReadConsole api function prototype is wrong. If you look on Microsoft website, you\nwill find it looks like:\n\nBOOL WINAPI ReadConsole(\n  __in      HANDLE hConsoleInput,\n  __out     LPVOID lpBuffer,\n  __in      DWORD nNumberOfCharsToRead,\n  __out     LPDWORD lpNumberOfCharsRead,\n  __in_opt  LPVOID pInputControl\n);\n\nIf I change your program accordingly:\n\npackage main\n\nimport (\n\t\"fmt\"\n\t\"flag\"\n\t\"log\"\n\t\"os\"\n\t\"syscall\"\n)\n\n// OLD sys ReadConsoleW(handle int32, buf []uint16, done *uint32) (errno int)\n//sys ReadConsoleW(handle int32, buf []uint16, todo uint32, done *uint32, inputcontrol\n*byte) (errno int)\n\nfunc main() {\n\tconst BUFSIZE = 1024\n\tvar done uint32\n\tvar e int\n\tuseReadFile := flag.Bool(\"readfile\", false, \"use syscall.ReadFile instead of syscall.ReadConsoleW\")\n\tflag.Parse()\n\tfd := int32(os.Stdin.Fd())\n\tfmt.Printf(\"before syscall\\n\")\n\tif !*useReadFile {\n\t\tvar ubuf = make([]uint16, BUFSIZE)\n\t\te = ReadConsoleW(fd, ubuf, BUFSIZE, \u0026done, nil)\n\t} else {\n\t\tvar buf = make([]uint8, BUFSIZE)\n\t\te = syscall.ReadFile(fd, buf, \u0026done, nil)\n\t}\n\tfmt.Printf(\"after syscall, n=%d e=%s\\n\", done, os.Errno(e))\n}\n\nit doesn't crash any more. You must always use correct parameters when you call windows\nAPI.\n\nThe reason it used to \"work\" in the past is your call was \"close enough\". We used to\nallocate plenty of parameter space for every api call, more often then not we had much\nmore then required, so, if your call didn't supply \"enough\" parameters, we would,\nusually, provide some room there, so Windows could write there without making damage.\nNot anymore. After recent change, all calls will have exact number of parameters as\nspecified by the caller (you), so you can't be sloppy anymore.\n\nAlex\u003c/pre\u003e\n\n_Labels changed: added **os-windows**._\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-17T00:26:43Z",
+	"updated_at": "2014-12-08T10:08:42Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 111361577,
+	"number": 12929,
+	"state": "open",
+	"title": "x/mobile/cmd/gomobile: CGO_CFLAGS is overwritten during go bind -target=ios",
+	"body": "hi, \r\nI faced an issue when I run gomobile bind with CGO_CFLAGS and CGO_LDFLAGS like\r\n```\r\nCGO_CFLAGS=\"-I/usr/local/include\" \\\r\nCGO_LDFLAGS=\"-L/usr/local/lib\" gomobile build -target=ios -v\r\n```\r\nbut output told me that there a header file not found.\r\nIt turns out when we build ios, the CGO_CFLAGS and CGO_LDFLAGS are overwritten.\r\nhttps://github.com/golang/mobile/blob/master/cmd/gomobile/env.go#L132\r\n\r\nI have a way to workaround this:\r\n```\r\nindex 5458bc2..00cb78c 100644\r\n--- a/cmd/gomobile/env.go\r\n+++ b/cmd/gomobile/env.go\r\n@@ -119,8 +119,8 @@ func envInit() (err error) {\r\n                \"GOARM=7\",\r\n                \"CC=\" + clang,\r\n                \"CXX=\" + clang,\r\n-               \"CGO_CFLAGS=\" + cflags + \" -arch \" + archClang(\"arm\"),\r\n-               \"CGO_LDFLAGS=\" + cflags + \" -arch \" + archClang(\"arm\"),\r\n+               \"CGO_CFLAGS=\" + os.Getenv(\"CGO_CFLAGS\") + \" \" + cflags + \" -arch \" + archClang(\"arm\"),\r\n+               \"CGO_LDFLAGS=\" + os.Getenv(\"CGO_LDFLAGS\") + \" \" + cflags + \" -arch \" + archClang(\"arm\"),\r\n                \"CGO_ENABLED=1\",\r\n        }\r\n        darwinArm64Env = []string{\r\n@@ -128,8 +128,8 @@ func envInit() (err error) {\r\n                \"GOARCH=arm64\",\r\n                \"CC=\" + clang,\r\n                \"CXX=\" + clang,\r\n-               \"CGO_CFLAGS=\" + cflags + \" -arch \" + archClang(\"arm64\"),\r\n-               \"CGO_LDFLAGS=\" + cflags + \" -arch \" + archClang(\"arm64\"),\r\n+               \"CGO_CFLAGS=\" + os.Getenv(\"CGO_CFLAGS\") + \" \" + cflags + \" -arch \" + archClang(\"arm64\"),\r\n+               \"CGO_LDFLAGS=\" + os.Getenv(\"CGO_LDFLAGS\") + \" \" + cflags + \" -arch \" + archClang(\"arm64\"),\r\n                \"CGO_ENABLED=1\",\r\n        }\r\n\r\n@@ -142,8 +142,8 @@ func envInit() (err error) {\r\n                \"GOARCH=386\",\r\n                \"CC=\" + clang,\r\n                \"CXX=\" + clang,\r\n-               \"CGO_CFLAGS=\" + cflags + \" -mios-simulator-version-min=6.1 -arch \" + archClang(\"386\"),\r\n-               \"CGO_LDFLAGS=\" + cflags + \" -mios-simulator-version-min=6.1 -arch \" + archClang(\"386\"),\r\n+               \"CGO_CFLAGS=\" + os.Getenv(\"CGO_CFLAGS\") + \" \" + cflags + \" -mios-simulator-version-min=6.1 -arch \" + archClang(\"386\"),\r\n+               \"CGO_LDFLAGS=\" + os.Getenv(\"CGO_LDFLAGS\") + \" \" + cflags + \" -mios-simulator-version-min=6.1 -arch \" + archClang(\"386\"),\r\n                \"CGO_ENABLED=1\",\r\n        }\r\n        darwinAmd64Env = []string{\r\n\r\n```\r\nlet me know if you think this is an issue.\r\n",
+	"user": {
+		"login": "hsinhoyeh",
+		"id": 2792682,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-10-14T09:48:18Z",
+	"updated_at": "2015-10-16T08:10:53Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

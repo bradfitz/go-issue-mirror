@@ -1,0 +1,28 @@
+{
+	"id": 51278468,
+	"number": 1907,
+	"state": "closed",
+	"title": "big: DivMod and Mod should not edit their arguments",
+	"body": "\u003cpre\u003edivLarge (called from DivMod (called from Mod)) assumes that it can temporarily shift\nthe divisor left and then shift it back down.  This is not okay if there are multiple\nparallel calls to DivMod (or Mod) using the same divisor.  Since the divisor is\nlogically a value parameter to the operation, I believe such parallel calls should be\nsafe, so the code is buggy.  \n\nThis manifests itself in crypto code which often does Mod by large constants shared\namong goroutines (for example key parameters).  The particular example posted on\ngolang-nuts involved elliptic.P521().P but really any operation could trigger it.  Test\nprogram below.\n\npackage main\n\nimport (\n\t\u0026quot;crypto/elliptic\u0026quot;\n\t\u0026quot;crypto/rand\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n)\n\nfunc run() {\n\tcurve := elliptic.P521()\n\tfor i := 0;; i++ {\n\t\tcurve.GenerateKey(rand.Reader)\n\t\tif i%1000 == 0 {\n\t\t\tlog.Println(i)\n\t\t}\n\t}\n}\n\nfunc main() {\n\truntime.GOMAXPROCS(2)\n\tgo run()\n\trun()\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:10:28Z",
+	"created_at": "2011-06-02T14:05:45Z",
+	"updated_at": "2016-06-24T19:30:15Z"
+}

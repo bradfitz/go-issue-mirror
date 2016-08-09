@@ -1,0 +1,27 @@
+{
+	"id": 104391142,
+	"number": 12444,
+	"state": "closed",
+	"title": "runtime: Windows AMD64 calling convention violation in usleep2",
+	"body": "There's a Windows calling convention violation in usleep2 in runtime/sys_windows_amd64.s.\r\n\r\nThis issue was partially fixed by #8174 runtime: not aligned stack before call into NtWaitForSingleObject in usleep2, but the fix was insufficient to satisfy Windows AMD64 calling conventions. There needs to be 32 bytes of stack space allocated by the caller in order to have home locations for four parameters (even if there are fewer than four parameters). And of course these bytes can be immediately trashed by the callee, so be careful where you store ptime and the original stack pointer. See https://msdn.microsoft.com/en-us/library/ew5tede7.aspx.\r\n\r\nThis is causing failures on checked (debug) builds of Windows where NtWaitForSingleObject copies its parameters to their home locations, causing data to get overwritten on usleep2's stack, causing an AV. There's no guarantee that Windows won't start doing this in release builds in the future; for now it's just making it difficult to test development versions of Windows while using programs written in go.\r\n\r\n@alexbrainman",
+	"user": {
+		"login": "jstarks",
+		"id": 9548354,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-09-15T01:15:15Z",
+	"created_at": "2015-09-02T02:37:36Z",
+	"updated_at": "2015-09-15T01:15:15Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

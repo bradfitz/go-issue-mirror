@@ -1,0 +1,26 @@
+{
+	"id": 52061725,
+	"number": 9334,
+	"state": "open",
+	"title": "net: Listen is unfriendly to multiple address families, endpoints and subflows",
+	"body": "The following example program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"net\"\r\n)\r\n\r\nfunc main() {\r\n        net.Listen(\"tcp\", \"localhost:8080\")\r\n        select{}\r\n}\r\n```\r\n\r\nCurrently yields this result:\r\n```\r\n$ netstat -nl | grep 8080\r\ntcp        0      0 127.0.0.1:8080          0.0.0.0:*               LISTEN\r\n```\r\n\r\nWhile the following result would be optimal:\r\n```\r\n$ netstat -nl | grep 8080\r\ntcp6       0      0 127.0.0.1:8080          :::*                    LISTEN\r\ntcp6       0      0 ::1:8080                :::*                    LISTEN\r\n```\r\n\r\n(Note that the first socket is actually dualstack, and bound to ::ffff:127.0.0.1, but that's less critical than adding the second socket bound to ::1.)\r\n\r\nMore generally, when you call `net.Listen()` on a hostname which resolves to multiple IPv4/IPv6 addresses, only the first IPv4 address is selected.  An analogous problem occurs if you `Listen(\"tcp\", \":8080\")` on an operating system that doesn't support dualstack sockets: instead of returning a pair of sockets bound to `[::]:8080` and `0.0.0.0:80`, you only get IPv4.\r\n\r\nThe fundamental flaw is that `Listen()` assumes a single socket, which is a leaky abstraction that's inappropriate for high-level things like example servers, e.g.:\r\nhttp://golang.org/pkg/net/#pkg-overview\r\n\r\nGo should either adapt the `Listen()` API to support multiple sockets, or if that's not feasible, a new multi-socket API should be introduced, which deprecates `Listen()` for all cases except simple non-wildcard addresses.",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 10,
+	"created_at": "2014-12-16T01:17:45Z",
+	"updated_at": "2015-04-14T19:45:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

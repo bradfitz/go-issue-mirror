@@ -1,0 +1,27 @@
+{
+	"id": 95945684,
+	"number": 11790,
+	"state": "closed",
+	"title": "cmd/compile: Incorrect error following named pointer dereference on field",
+	"body": "The fix to prevent incorrect dereference of a named pointer type on a method prevents an explicit dereference, but only when it follows a dereference of a field.\r\n\r\nThis relates to https://github.com/golang/go/commit/40818cfe1c3601a8b88d6935e255064aab07679b and I am seeing the problem with ```go version go1.5beta2 darwin/amd64```.\r\n\r\nThe following program (similar to the example in the Spec section on Selectors) gives the error ```q.M0 undefined```. Strangely, this error only appears after first referencing ```q.x```. If the ```q.x``` line is commented out, the following line succeeds. Reverse the order of the lines (put ```q.x``` after ```(*q).T0.M0()```) and the program compiles and works!\r\n\r\n```\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\ntype T0 struct {\r\n\tx int\r\n}\r\n\r\nfunc (*T0) M0() {\r\n\tfmt.Println(\"M0\")\r\n}\r\n\r\ntype T2 struct {\r\n\t*T0\r\n}\r\n\r\ntype Q *T2\r\n\r\nfunc main() {\r\n\tt0 := T0{42}\r\n\tt2 := T2{\u0026t0}\r\n\tvar q Q = \u0026t2\r\n\tfmt.Println(q.x)  // Comment out either this line or the next line and the program works\r\n\t(*q).T0.M0()\r\n}\r\n```\r\n\r\nWhat did you expect to see?\r\n```\r\n42\r\nM0\r\n```\r\nWhat did you see instead?\r\n```\r\n./bug.go:24: q.M0 undefined (type Q has no field or method M0)\r\n```",
+	"user": {
+		"login": "pto",
+		"id": 543546,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-07-23T14:19:24Z",
+	"created_at": "2015-07-19T20:17:34Z",
+	"updated_at": "2016-08-05T16:10:43Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

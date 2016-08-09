@@ -1,0 +1,25 @@
+{
+	"id": 79129359,
+	"number": 10928,
+	"state": "closed",
+	"title": "x/mobile/cmd/gomobile: not setting TMP directory on Windows",
+	"body": "# Bug Report\r\n## What version of Go are you using (go version)?\r\n\r\nI'm using `go version devel +3a3773c Fri May 8 17:01:24 2015 +0000 windows/amd64`\r\n\r\n## What operating system and processor architecture are you using?\r\n\r\nWindows 8.1 Pro, x86_64.\r\n\r\n## What did you do?\r\n\r\nAfter setting up a development tip GOROOT, I installed gomobile and attempted to run `gomobile init`. I have successfully been able to do this on Linux / x86_64.\r\n\r\n## What did you expect to see?\r\n\r\nThe Android NDK setup and gomobile ready to bind packages.\r\n\r\n## What did you see instead?\r\n\r\nI got the following error after running `gomobile init -x -v`:\r\n\r\n```\r\ngomobile: cannot get cmd/dist version: exit status 2 (go tool dist: mkdir C:\\Windows\\go-tool-dist-506627087: Access is denied.\r\n```\r\n\r\n# Resolution\r\nI discovered the problem's root with `checkVersionMatch()` at https://github.com/golang/mobile/blob/master/cmd/gomobile/init.go#L394 . Running `dist.exe`, as `checkVersionMatch()` attempts to do, will try to create a temporary file as part of its init process (see https://github.com/golang/go/blob/master/src/cmd/dist/build.go#L216 ). On Windows, os.TempDir will use [GetTempPath](https://msdn.microsoft.com/en-us/library/windows/desktop/aa364992%28v=vs.85%29.aspx?f=255\u0026MSPPError=-2147217396) to resolve where to create its temporary directory.\r\n\r\nNote, then, the configuration of `cmd.Env` in `checkVersionMatch()` above. It lacks the appropriate envars for Windows to steer it correctly to the appropriate temp directory. I added the following code immediately after setting `cmd.Env`:\r\n```go\r\n\tif goos == \"windows\" {\r\n\t\tcmd.Env = append(cmd.Env, \"TMP=\" + os.Getenv(\"TMP\"))\r\n\t}\r\n```\r\nOne quick gomobile rebuild later, and `gomobile init` ran to completion successfully and as expected.",
+	"user": {
+		"login": "merickson",
+		"id": 734363,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-06-01T00:45:12Z",
+	"created_at": "2015-05-21T19:28:07Z",
+	"updated_at": "2016-06-25T02:09:21Z"
+}

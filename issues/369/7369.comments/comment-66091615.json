@@ -1,0 +1,12 @@
+{
+	"id": 66091615,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eThe continue-to-end is related to a new OS thread which starts after the first\nbreakpoint (that breakpoint doesn't have to be on the first line of the file). In the\ngdb session below, I set two breakpoints, on the first two lines:\n\nAt the first breakpoint we are in the only thread, 7933. \n\nAt the second breakpoint a new thread has started (a child of the first thread), and gdb\nthinks we are in that one now, 7939. A 'list' displays the contents of\nruntime/atomic_amd64x.c, even though 'info threads' and 'bt' say we are in main.\nStepping over lines after this works correctly.\n\n---\n(gdb) l\n1       package main\n2\n3       func main() {\n4               println(\"one\")\n5               println(\"two\")\n6               println(\"three\")\n7               println(\"four\")\n8       }\n(gdb) b 4\nBreakpoint 1 at 0x400c19: file /home/graham/s2.go, line 4.\n(gdb) b 5\nBreakpoint 2 at 0x400c39: file /home/graham/s2.go, line 5.\n(gdb) r\nStarting program: /home/graham/s2 \n\nBreakpoint 1, main.main () at /home/graham/s2.go:4\n4               println(\"one\")\n(gdb) info threads\n  Id   Target Id         Frame \n* 1    LWP 7933 \"s2\"     main.main () at /home/graham/s2.go:4\n(gdb) n\none[New LWP 7939]\n\n[Switching to LWP 7939]\n\nBreakpoint 2, main.main () at /home/graham/s2.go:5\n5               println(\"two\")\n(gdb) info threads\n  Id   Target Id         Frame \n* 2    LWP 7939 \"s2\"     main.main () at /home/graham/s2.go:5\n  1    LWP 7933 \"s2\"     0x000000000041f9c3 in runtime.futex () at /home/graham/src/go/src/pkg/runtime/atomic_amd64x.c:28\n(gdb) l\n28              return *addr;\n29      }\n(gdb) bt\n#0  main.main () at /home/graham/s2.go:5\n(gdb) l 1\n1       // Copyright 2009 The Go Authors. All rights reserved.\n2       // Use of this source code is governed by a BSD-style\n3       // license that can be found in the LICENSE file.\n4\n5       // +build amd64 amd64p32\n6\n7       #include \"runtime.h\"\n8       #include \"../../cmd/ld/textflag.h\"\n9\n10      #pragma textflag NOSPLIT\n(gdb) n\ntwo\n6               println(\"three\")\n(gdb) n\nthree\n---\n\nI continue digging.\u003c/pre\u003e",
+	"user": {
+		"login": "grahamking",
+		"id": 180418,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-28T05:10:23Z",
+	"updated_at": "2014-12-08T10:41:01Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 51287414,
+	"number": 7930,
+	"state": "open",
+	"title": "nacl: support sel_ldr_x86_64 -h/-r/-w etc fd passing",
+	"body": "\u003cpre\u003eIt seems the nacl syscall package's \u0026quot;var files\u0026quot; trickery does not let it\naccess nacl fds other than 0,1,2. Being able to access open files passed in by the\nparent would be nice for things like safely running a query over file contents.\n\nRunning go tip f613443b.\n\nHow to reproduce:\n\ncat read.go \u0026amp;\u0026amp; GOOS=nacl GOARCH=amd64p32 go build -o read read.go \u0026amp;\u0026amp;\nsel_ldr_x86_64 -r10:10 ./read 10\u0026lt;read.go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\tbuf := make([]byte, 8192)\n\tn, err := syscall.Read(10, buf)\n\tif err != nil {\n\t\tlog.Printf(\u0026quot;read error: %s\u0026quot;, err)\n\t} else {\n\t\tfmt.Printf(\u0026quot;read %d %q\\n\u0026quot;, n, buf[:n])\n\t}\n}\n[30054,1836660608:14:11:08.380778] Native Client module will be loaded at base address\n0x00004fc600000000\nruntime: nacl_exception_stack: error 38\nruntime: nacl_exception_handler: error 38\nruntime: nacl_exception_stack: error 38\nruntime: nacl_exception_handler: error 38\nruntime: nacl_exception_stack: error 38\nruntime: nacl_exception_handler: error 38\nruntime: nacl_exception_stack: error 38\nruntime: nacl_exception_handler: error 38\n2014/05/03 21:11:08 read error: Bad file number\n[30054,1836447488:14:11:08.398073]\nNaClRuntimeHostInterfaceReportExitStatus(0x7fa56df36040, 0x0)\n\nThe only creation of type naclFile seem to be in fd_nacl.go init(), for fds 0, 1, 2.\n\n\nAs a proof of concept, these two work:\n\ndiff --git i/src/pkg/syscall/fd_nacl.go w/src/pkg/syscall/fd_nacl.go\nindex cbc8315..d157085 100644\n--- i/src/pkg/syscall/fd_nacl.go\n+++ w/src/pkg/syscall/fd_nacl.go\n@@ -318,3 +318,7 @@ func Pipe(fd []int) error {\n        fd[1] = newFD(\u0026amp;pipeFile{wr: q})\n        return nil\n }\n+\n+func OpenNacl(naclFD int) (fd uintptr) {\n+       return uintptr(newFD(\u0026amp;naclFile{naclFD: naclFD}))\n+}\n\n\npackage main\n\nimport (\n\t\u0026quot;io\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\tfd := syscall.OpenNacl(10)\n\tf := os.NewFile(fd, \u0026quot;/dev/fd/10\u0026quot;)\n\tn, err := io.Copy(os.Stdout, f)\n\tlog.Println(n, err)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-NaCl"
+		}
+	],
+	"comments": 3,
+	"created_at": "2014-05-03T21:23:05Z",
+	"updated_at": "2015-04-15T01:39:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

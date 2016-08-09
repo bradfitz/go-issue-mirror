@@ -1,0 +1,33 @@
+{
+	"id": 51282344,
+	"number": 4589,
+	"state": "closed",
+	"title": "io/ioutil: Discard's ReadFrom method's intentional raciness is actually harmful",
+	"body": "\u003cpre\u003eAfter a couple days of on \u0026amp; off frustrated debugging, I've just discovered a bug in\nioutil.Discard.\n\nThe original version of ioutil.Discard was safe:\n\u003ca href=\"https://code.google.com/p/go/source/detail?r=cb593b108aa5\"\u003ehttps://code.google.com/p/go/source/detail?r=cb593b108aa5\u003c/a\u003e , it only had  Write method.\n\nA later commit added a ReadFrom method:\n\u003ca href=\"https://code.google.com/p/go/source/detail?r=13faa632ba3a#\"\u003ehttps://code.google.com/p/go/source/detail?r=13faa632ba3a#\u003c/a\u003e\n\nThat ReadFrom CL uses an intentionally-racy global variable, blackHole, which is re-used\nfor all Read calls.\n\nio.Copy uses ReadFrom, if available:\n\n    func Copy(dst Writer, src Reader) (written int64, err error) {\n            // If the writer has a ReadFrom method, use it to do the copy.                                                                                                                                                              \n            // Avoids an allocation and a copy.                                                                                                                                                                                         \n            if rt, ok := dst.(ReaderFrom); ok {\n                   return rt.ReadFrom(src)\n            }\n            ......\n\nThe race detector had a problem with this,\n\u003ca href=\"https://golang.org/issue/3970\"\u003ehttps://golang.org/issue/3970\u003c/a\u003e , and so worked around it by using a\nsafe version: \u003ca href=\"https://code.google.com/p/go/source/detail?r=1e55cf10aa4f#\"\u003ehttps://code.google.com/p/go/source/detail?r=1e55cf10aa4f#\u003c/a\u003e\n\nAnd I just hit this problem in a real program, getting corrupt SHA-1 results from files.\n\nIn my program, I had a io.Reader wrapper which calculated the SHA-1 of contents as they\nwere read.\n\nIn some cases, my code did:\n\n     io.Copy(ioutil.Discard, sha1TrackingReader)\n\n... which resulted in calls to ioutil.Discard.ReadFrom(sha1TrackingReader) and meant\nthat my sha1TrackingReader got the same racy buffer provided to it from multiple\nconcurrent goroutines.\n\nHence my SHA-1 corruption.\n\nMy workaround fix\n(\u003ca href=\"https://github.com/bradfitz/camlistore/commit/22621b80f67afe117189cbf15467e84eb79ec8d8)\"\u003ehttps://github.com/bradfitz/camlistore/commit/22621b80f67afe117189cbf15467e84eb79ec8d8)\u003c/a\u003e\nwas:\n\n      _, err = io.Copy(struct{ io.Writer }{ioutil.Discard}, td)\n\nConsidering how much time it took me to debug this, how surprising it was, and how it\nbroke composition of standard interface types, I think this should be fixed.  If we do a\nGo1.0.4, I'd like it to be fixed there, too.\n\nThe memory allocation reduction (of reusing the global variable) can be obtained with a\nsimple byte pool channel instead.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:24:21Z",
+	"created_at": "2012-12-26T20:54:30Z",
+	"updated_at": "2016-06-24T22:30:28Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

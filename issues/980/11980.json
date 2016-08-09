@@ -1,0 +1,22 @@
+{
+	"id": 98553790,
+	"number": 11980,
+	"state": "closed",
+	"title": "x/mobile/gl: GetAttachedShaders panics with no shaders attached",
+	"body": "When calling `gl.GetAttachedShaders(program)` on a program that has no shaders attached, an avoidable panic occurs.\r\n\r\n```go\r\npanic: runtime error: index out of range\r\n\r\ngoroutine 21 [running]:\r\ngolang.org/x/mobile/gl.GetAttachedShaders(0x1, 0x0, 0x0, 0x0)\r\n\t/Users/shazow/local/go1.5/src/golang.org/x/mobile/gl/gl.go:860 +0x1d0\r\n```\r\n\r\nWe get the number of attached shaders with `shadersLen := GetProgrami(p, ATTACHED_SHADERS)` and allocate the buffer based on that number, but we never check if it's zero.\r\n\r\nSimplest fix would be something like this:\r\n\r\n```diff\r\nfunc GetAttachedShaders(p Program) []Shader {\r\n\tshadersLen := GetProgrami(p, ATTACHED_SHADERS)\r\n+\tif shadersLen == 0 {\r\n+\t\treturn []Shader{}\r\n+\t}\r\n\tvar n C.GLsizei\r\n\tbuf := make([]C.GLuint, shadersLen)\r\n\t...\r\n```\r\n\r\nThis is on `go version devel +71832ff Fri Jul 3 21:39:04 2015 +0000 darwin/amd64` with the latest x/mobile (9865dd0).\r\n\r\n(Happy to do a CL if that would be more convenient.)",
+	"user": {
+		"login": "shazow",
+		"id": 6292,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-08-10T17:42:16Z",
+	"created_at": "2015-08-01T18:13:01Z",
+	"updated_at": "2015-08-10T17:42:16Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

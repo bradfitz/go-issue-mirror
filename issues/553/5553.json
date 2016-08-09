@@ -1,0 +1,22 @@
+{
+	"id": 51283821,
+	"number": 5553,
+	"state": "closed",
+	"title": "arm: misc/cgo/test segfaults",
+	"body": "by **capnm9**:\n\n\u003cpre\u003euname -a\nLinux rpi 3.6.11+ #452 PREEMPT Fri May 17 14:25:40 BST 2013 armv6l GNU/Linux\n\nhg identify \n04036ca6715a tip\n\n# ../misc/cgo/test\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\nscatter = 0xd44f0\nhello from C\nsignal: segmentation fault\nFAIL\t_/data/go/misc/cgo/test\t2.489s\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\ntestLibgcc is disabled on ARM because 5l cannot handle thumb library.\nscatter = 0xd44f0\nhello from C\nsignal: segmentation fault\nFAIL\t_/data/go/misc/cgo/test\t2.380s\n...\n...\nALL TESTS PASSED\n\n+ I wonder why the tests are ignored (i.e. doesn't stop the build).\n\n----\n\n(gdb) r\nStarting program: /data/go/misc/cgo/test/test.test --test.run Test5337\n[Thread debugging using libthread_db enabled]\nUsing host libthread_db library \u0026quot;/lib/arm-linux-gnueabihf/libthread_db.so.1\u0026quot;.\n[New Thread 0xb69e3470 (LWP 21248)]\n[New Thread 0xb60e2470 (LWP 21249)]\n[New Thread 0xb58d2470 (LWP 21250)]\n[New Thread 0xb50d2470 (LWP 21251)]\n\nProgram received signal SIGSEGV, Segmentation fault.\n[Switching to Thread 0xb58d2470 (LWP 21250)]\nruntime.sigtramp () at /data/go/src/pkg/runtime/sys_linux_arm.s:300\n300\t\tMOVW\tm_gsignal(m), g\n(gdb) bt\n#0  runtime.sigtramp () at /data/go/src/pkg/runtime/sys_linux_arm.s:300\n#1  0x000d4c4c in x_cgo_load_gm ()\n#2  0x00000000 in ?? ()\n(gdb) list\n295\t\t// save g\n296\t\tMOVW\tg, R3\n297\t\tMOVW\tg, 20(R13)\n298\t\n299\t\t// g = m-\u0026gt;gsignal\n300\t\tMOVW\tm_gsignal(m), g\n301\t\n302\t\t// copy arguments for call to sighandler\n303\t\t// R0 is already saved above\n304\t\tMOVW\tR1, 8(R13)\n(gdb) disas\nDump of assembler code for function runtime.sigtramp:\n   0x00034f68 \u0026lt;+0\u0026gt;:\tstr\tlr, [sp, #-28]!\n   0x00034f6c \u0026lt;+4\u0026gt;:\tstr\tr0, [sp, #4]\n   0x00034f70 \u0026lt;+8\u0026gt;:\tldr\tr11, [pc, #52]\t; 0x34fac \u0026lt;runtime.sigtramp+68\u0026gt;\n   0x00034f74 \u0026lt;+12\u0026gt;:\tldr\tr0, [r11]\n   0x00034f78 \u0026lt;+16\u0026gt;:\tcmp\tr0, #0\n   0x00034f7c \u0026lt;+20\u0026gt;:\taddne\tlr, pc, #0\n   0x00034f80 \u0026lt;+24\u0026gt;:\taddne\tpc, r0, #0\n   0x00034f84 \u0026lt;+28\u0026gt;:\tmov\tr3, r10\n   0x00034f88 \u0026lt;+32\u0026gt;:\tstr\tr10, [sp, #20]\n=\u0026gt; 0x00034f8c \u0026lt;+36\u0026gt;:\tldr\tr10, [r9, #44]\t; 0x2c\n   0x00034f90 \u0026lt;+40\u0026gt;:\tstr\tr1, [sp, #8]\n   0x00034f94 \u0026lt;+44\u0026gt;:\tstr\tr2, [sp, #12]\n   0x00034f98 \u0026lt;+48\u0026gt;:\tstr\tr3, [sp, #16]\n   0x00034f9c \u0026lt;+52\u0026gt;:\tbl\t0x2b3d4 \u0026lt;runtime.sighandler\u0026gt;\n   0x00034fa0 \u0026lt;+56\u0026gt;:\tldr\tr10, [sp, #20]\n   0x00034fa4 \u0026lt;+60\u0026gt;:\tldr\tpc, [sp], #28\n   0x00034fa8 \u0026lt;+64\u0026gt;:\tb\t0x34fa8 \u0026lt;runtime.sigtramp+64\u0026gt;\n   0x00034fac \u0026lt;+68\u0026gt;:\tandseq\tr5, r11, r0, asr #14\nEnd of assembler dump.\n(gdb) info registers \nr0             0xb58d2930\t3045927216\nr1             0xb58d1a70\t3045923440\nr2             0xb58d1af0\t3045923568\nr3             0x0\t0\nr4             0x1b\t27\nr5             0x0\t0\nr6             0xb58d2684\t3045926532\nr7             0x10c\t268\nr8             0x0\t0\nr9             0x0\t0\nr10            0x0\t0\nr11            0x1b5740\t1791808\nr12            0xb6fa64e0\t3069863136\nsp             0xb58d1a54\t0xb58d1a54\nlr             0xd4c4c\t871500\npc             0x34f8c\t0x34f8c \u0026lt;runtime.sigtramp+36\u0026gt;\ncpsr           0x20000010\t536870928\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:30:13Z",
+	"created_at": "2013-05-24T02:56:32Z",
+	"updated_at": "2016-06-24T22:41:00Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 136155813,
+	"number": 14494,
+	"state": "closed",
+	"title": "cmd/vet: shadowed variables check doesn't catch shadowing from short assignment in if statements",
+	"body": "For the following example:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/json\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tif len(os.Args) != 2 {\r\n\t\tlog.Fatal(\"Usage: jsonformat.go \u003cfilename\u003e\")\r\n\t}\r\n\r\n\tbyt, err := ioutil.ReadFile(os.Args[1])\r\n\tif err != nil {\r\n\t\tlog.Fatalf(\"ERROR: Unable to read file %q: %v\\n\", os.Args[1], err)\r\n\t}\r\n\r\n\tvar dat map[string]interface{}\r\n\r\n\tif err := json.Unmarshal(byt, \u0026dat); err != nil { // this err is not flagged as masking the err in the outer scope, incorrectly\r\n\t\tlog.Fatalf(\"ERROR: Invalid JSON file  '%v': %v\\n\", os.Args[1], err)\r\n\t}\r\n\r\n\tif output, err := json.MarshalIndent(dat, \"\", \"  \"); err != nil { // this err is flagged as masking the err in the outer scope, correctly\r\n\t\tlog.Fatalf(\"ERROR: Unable to indent JSON file: %v\\n\", os.Args[1])\r\n\t} else {\r\n\t\tos.Stdout.Write(append(output, '\\n'))\r\n\t}\r\n}\r\n```\r\n\r\nOne the errors is not flagged correctly, even when using `-shadowstrict`. My version of `go tool vet` is at `108746816ddf01ad0c2dbea08a1baef08bc47313`",
+	"user": {
+		"login": "stevekuznetsov",
+		"id": 7328370,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-02-25T01:49:21Z",
+	"created_at": "2016-02-24T19:04:28Z",
+	"updated_at": "2016-02-25T04:55:35Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51286043,
+	"number": 6997,
+	"state": "closed",
+	"title": "runtime: signal handler interferes with pthread_cancel/join on linux",
+	"body": "by **sqweek**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. Make cgo calls to a C library that uses pthreads\n2. Make the library call pthread_cancel on one of its threads\nI created a small test case, available at \u003ca href=\"https://github.com/sqweek/signal32-bug\"\u003ehttps://github.com/sqweek/signal32-bug\u003c/a\u003e\n\nWhat is the expected output?\n\nThe thread is cancelled and the program continues running.\n\nWhat do you see instead?\n\nThe program crashes with message:\nruntime: signal received on thread not created by Go: signal 32\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ncgo/6g\n\nWhich operating system are you using?\n\nLinux 3.12.0-1\n\nWhich version are you using?  (run 'go version')\n\nReproduced on both:\ngo version go1.1.2 linux/amd64\ngo version devel +f4d1cb8d9a91 Thu Sep 19 22:34:33 2013 +1000 linux/amd64\n\nPlease provide any additional information below.\n\nAccording to \u003ca href=\"http://man7.org/linux/man-pages/man3/pthread_cancel.3.html#NOTES\"\u003ehttp://man7.org/linux/man-pages/man3/pthread_cancel.3.html#NOTES\u003c/a\u003e\npthread_cancel() is implemented via signals on linux.\n\nI tried changing signal 32's flags to 0 in pkg/runtime/signals_linux.h which fixes the\ncrash, but the program then hangs in pthread_join(). gdb reports the cancelled thread\nstill exists and is blocked (ie, \u0026quot;finish\u0026quot; never got anywhere) in\n__libc_disable_asynccancel():\n\nThread 5 (Thread 0x7ffff6010700 (LWP 12137)):\n#0  0x00007ffff7905aff in __libc_disable_asynccancel () from /usr/lib/libc.so.6\n#1  0x00007ffff78cab49 in nanosleep () from /usr/lib/libc.so.6\n#2  0x00007ffff78ca9d4 in sleep () from /usr/lib/libc.so.6\n#3  0x000000000040100e in threadfunc (dummy=\u0026lt;optimized out\u0026gt;)\n    at /d/code/go/src/github.com/sqweek/signal32-bug/thread.c:10\n#4  0x00007ffff7bc70a2 in start_thread () from /usr/lib/libpthread.so.0\n#5  0x00007ffff78f949d in clone () from /usr/lib/libc.so.6\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:38:59Z",
+	"created_at": "2013-12-21T05:35:18Z",
+	"updated_at": "2016-06-25T01:24:20Z"
+}

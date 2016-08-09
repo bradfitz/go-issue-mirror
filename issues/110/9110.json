@@ -1,0 +1,33 @@
+{
+	"id": 51289109,
+	"number": 9110,
+	"state": "closed",
+	"title": "runtime: sudog leak",
+	"body": "\u003cpre\u003eThe SudoG recycling code is very sloppy about zeroing fields that are no longer needed.\nWe have already fixed elem and selectdone, but next and waitlink are basically never\ncleared either. This leads in real programs to an arbitrarily large number of SudoG's\nleaking. \n\nSpecifically, the waitlink field is set during select but not cleared until the SudoG is\nnext reused for a channel send/recv or select. Uses of a SudoG for sync.Cond don't set\nor use waitlink at all. Similarly, the next field is left intact on return from\nreleaseSudog, and worse it is left intact when the cache head is nil'ed out.\n\nThe effect of this is that after a select the entries added to the SudoG cache have a\n.waitlink list pointing in the opposite direction of the .next list in the cache.\nOperations by sync.Cond can reorder entries on the cache .next list without affecting\nthe .waitlink list, creating the possibility of a .waitlink pointing at basically the\nrest of the list. Then if that entry is being used by a sync.Cond.Wait when a GC happens\nand c.sudogcache is set to nil, nothing is collected, because the entry blocked in\nsync.Cond.Wait has a waitlist pointing at the whole list that was just\n\u0026quot;discarded\u0026quot;. Even worse, when that sync.Cond.Wait finishes and puts that SudoG\ninto c.sudogcache, the .waitlink will still be dangling back to the earlier list,\npinning the whole thing in memory. \n\nIn programs with the right mix of non-trivial selects and sync.Cond operations end up\nwith allocated SudoGs that are heavily cross-linked by all these dangling pointers.\nSetting c.sudogcache = nil does make sure that the SudoGs stop being used, but chances\nare very good that there is a dangling .waitlink (probably many) pointing into the list\nthat keeps a large fraction of it from being collected. And then on the next collection\nchances are very good that that SudoG keeping the previous generation from being\ncollected itself finds a way not to get collected, causing the leaks to pile up\naribtrarily.\n\nBelow is a simple program that leaks basically all of its SudoG in each iteration of the\nfor { }.\n\nAttached is a picture of the SudoGs for the first iteration, showing the next and\nwaitlink links and how nothing gets collected.\n\nThis is an abstracted version of something I observed in a Google production server\ntesting Go 1.4.\n\npackage main\n\nimport (\n\t\u0026quot;runtime\u0026quot;\n\t\u0026quot;runtime/debug\u0026quot;\n\t\u0026quot;sync\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\tdebug.SetGCPercent(1000000) // only GC when we ask for GC\n\n\trelease := func() {}\n\tfor {\n\t\tc := make(chan int)\n\t\tfor i := 0; i \u0026lt; 1000; i++ {\n\t\t\tgo func() {\n\t\t\t\tselect {\n\t\t\t\tcase \u0026lt;-c:\n\t\t\t\tcase \u0026lt;-c:\n\t\t\t\tcase \u0026lt;-c:\n\t\t\t\t}\n\t\t\t}()\n\t\t}\n\t\ttime.Sleep(10 * time.Millisecond)\n\t\trelease()\n\n\t\tclose(c) // let select put its sudog's into the cache\n\t\ttime.Sleep(10 * time.Millisecond)\n\n\t\t// pick up top sudog\n\t\tvar cond1 sync.Cond\n\t\tvar mu1 sync.Mutex\n\t\tcond1.L = \u0026amp;mu1\n\t\tgo func() {\n\t\t\tmu1.Lock()\n\t\t\tcond1.Wait()\n\t\t\tmu1.Unlock()\n\t\t}()\n\t\ttime.Sleep(1 * time.Millisecond)\n\n\t\t// pick up next sudog\n\t\tvar cond2 sync.Cond\n\t\tvar mu2 sync.Mutex\n\t\tcond2.L = \u0026amp;mu2\n\t\tgo func() {\n\t\t\tmu2.Lock()\n\t\t\tcond2.Wait()\n\t\t\tmu2.Unlock()\n\t\t}()\n\t\ttime.Sleep(1 * time.Millisecond)\n\n\t\t// put top sudog back\n\t\tcond1.Broadcast()\n\t\ttime.Sleep(1 * time.Millisecond)\n\n\t\t// drop cache on floor\n\t\truntime.GC()\n\n\t\t// release cond2 after select has gotten to run\n\t\trelease = func() {\n\t\t\tcond2.Broadcast()\n\t\t\ttime.Sleep(1 * time.Millisecond)\n\t\t}\n\t}\n}\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/9110/0/IMG_1907.JPG\"\u003eIMG_1907.JPG\u003c/a\u003e (377479 bytes)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:49:52Z",
+	"created_at": "2014-11-16T20:57:08Z",
+	"updated_at": "2016-06-25T01:44:31Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51287826,
+	"number": 8197,
+	"state": "closed",
+	"title": "runtime: amd64 vdso parser issues",
+	"body": "by **amluto**:\n\n\u003cpre\u003eThe vdso parser\n(\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/runtime/vdso_linux_amd64.c)\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/runtime/vdso_linux_amd64.c)\u003c/a\u003e appears\nto have multiple issues.\n\n1. It looks at the section table.  It shouldn't.  In-memory mappings of DSOs are not\nrequired to have section tables at all.\n\n2. It does this:\n\n        for(i=0; i\u0026lt;vdso_info-\u0026gt;num_sym; i++) {\n                Elf64_Sym *sym = \u0026amp;vdso_info-\u0026gt;symtab[i];\n\nThat's bogus.  There's no guarantee that the number of symbols in the dynamic symbol\ntable equals the number of SHT_DYNSYM entries.\n\n3. The error handling is completely broken.  The code does, *in function scope*:\n\n        struct vdso_info vdso_info;\n\nand then assumes that vdso_info is zero-initialized.  C doesn't work that way.\n\nThis code appears to borrow heavily from the reference parser I wrote in\nDocumentation/vDSO/parse_vdso.c in the kernel tree, but all three of these bugs seem to\nbe go-specific additions to the code :(\n\n\nThere's a report that Go programs don't run on early Linux 3.16 builds.  I haven't\nreproduced it yet, but if this problem is real, I will probably do something to allow\nthese broken Go programs to run, but they are unlikely to continue being able to find\nvDSO functions.\n\nPlease fix your vDSO parser.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 43,
+	"closed_at": "2014-12-08T10:45:27Z",
+	"created_at": "2014-06-12T17:35:05Z",
+	"updated_at": "2016-06-25T01:36:23Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

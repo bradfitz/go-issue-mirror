@@ -1,0 +1,22 @@
+{
+	"id": 51285521,
+	"number": 6658,
+	"state": "closed",
+	"title": "url.Parse incorrectly unescapes \"%2F\" back into a literal slash",
+	"body": "by **Jens.Alfke**:\n\n\u003cpre\u003eurl.Parse changes escaped “/“ characters (“%2F”) back into literal slashes. This\nalters the meaning of the URL, and will cause trouble with HTTP handlers if they need to\naccept path components containing slashes.\n\nHere’s a playground example: \u003ca href=\"http://play.golang.org/p/3q4yN7QsGf\"\u003ehttp://play.golang.org/p/3q4yN7QsGf\u003c/a\u003e\nIt demonstrates that calling\n\turl.Parse(\u0026quot;\u003ca href=\"http://example.com/AC%2FDC/Back%20In%20Black\"\u003ehttp://example.com/AC%2FDC/Back%20In%20Black\u003c/a\u003e”)\nresults in the URL\n\t\u003ca href=\"http://example.com/AC/DC/Back%20In%20Black\"\u003ehttp://example.com/AC/DC/Back%20In%20Black\u003c/a\u003e\nwhere the %2F has incorrectly been unescaped into a “/“. \n\nThis will cause trouble when an HTTP handler breaks the path apart — imagine a REST\nserver that returns info about a record album given a GET to the path\n“/artist/albumname”. Works great until you look up AC/DC — you encode the artist\nas “AC%2FDC” then plug that into a URL, but the Go side unescapes the %2F, and the\npath components end up as [“AC”, “DC”, “Back In Black”] which of course\ndoesn’t work.\n\nAs a more serious example, CouchDB's REST API allows document IDs to contain slash\ncharacters, which then have to be escaped in URLs. I'm implementing a CouchDB-compatible\nserver (\u003ca href=\"https://github.com/couchbase/sync_gateway)\"\u003ehttps://github.com/couchbase/sync_gateway)\u003c/a\u003e which cannot correctly handle such\ndocuments.\n\nI can't think of a way for an HTTP handler to work around this, because the URL that it\ngets in the Request object has already been damaged, and I don't think it can find the\noriginal raw URL string from the client.\n\nWhat steps will reproduce the problem?\nRun \u003ca href=\"http://play.golang.org/p/3q4yN7QsGf\"\u003ehttp://play.golang.org/p/3q4yN7QsGf\u003c/a\u003e\n\nWhat is the expected output?\nPath components decode as [\u0026quot;AC/DC\u0026quot;, \u0026quot;Back In Black\u0026quot;]\n\nWhat do you see instead?\nPath components decode as [\u0026quot;AC\u0026quot;, \u0026quot;DC\u0026quot;, \u0026quot;Back In Black\u0026quot;].\nThe example panics.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\ngo build\n\nWhich operating system are you using?\nMac OS X 10.9\n\nWhich version are you using?  (run 'go version')\n1.1.2\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:36:57Z",
+	"created_at": "2013-10-24T21:44:20Z",
+	"updated_at": "2016-06-25T01:21:20Z"
+}

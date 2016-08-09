@@ -1,0 +1,17 @@
+{
+	"id": 137206350,
+	"number": 14564,
+	"state": "closed",
+	"title": "cmd/compile: suboptimal code generated for a[b]++; a[b]++",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ndev.ssa branch\r\ngo version devel +8107b00 Sun Feb 28 22:29:23 2016 +0000 linux/amd64\r\n\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\namd64\r\n\r\n3. What did you do?\r\nhttp://play.golang.org/p/kEmOTtpIGU\r\n\r\n```golang\r\nfunc g_ssa(a[]int, b int) {\r\n        a[b]++\r\n        a[b]++\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\nThe code is optimized as if it was a[b] += 2\r\n\r\n\r\n5. What did you see instead?\r\n\r\nThe code generated was:\r\nRead from mem\r\nInc\r\nWrite to mem\r\nRead from mem\r\nInc\r\nWrite to mem\r\n\r\nThe read to/write from memory in the middle are redundant. \r\n\r\n\r\n```\r\n% GOSSAFUNC=g_ssa go build a.go\r\n\r\ng_ssa \u003cnil\u003e\r\n  b1:\r\n    v1 = InitMem \u003cmem\u003e\r\n    v27 = Arg \u003c*uint8\u003e {a} [0] : a[*uint8]\r\n    v7 = Arg \u003cint\u003e {b} [0] : b[int]\r\n    v26 = Arg \u003cint\u003e {a} [8] : a+8[int]\r\n    v19 = LoadReg \u003cint\u003e v7 : CX\r\n    v10 = LoadReg \u003cint\u003e v26 : AX\r\n    v43 = CMPQ \u003cflags\u003e v19 v10\r\n    ULT v43 -\u003e b7 b3 (likely)\r\n  b7: \u003c- b1\r\n    v13 = LoadReg \u003c*uint8\u003e v27 : DX\r\n    v15 = MOVQloadidx8 \u003cint\u003e [0] v13 v19 v1 : AX\r\n    v17 = ADDQconst \u003cint\u003e [1] v15 : AX\r\n    v25 = MOVQstoreidx8 \u003cmem\u003e [0] v13 v19 v17 v1\r\n    v35 = MOVQloadidx8 \u003cint\u003e [0] v13 v19 v25 : AX\r\n    v37 = ADDQconst \u003cint\u003e [1] v35 : AX\r\n    v45 = MOVQstoreidx8 \u003cmem\u003e [0] v13 v19 v37 v25\r\n    Ret v45\r\n  b3: \u003c- b1\r\n    v11 = CALLstatic \u003cmem\u003e {runtime.panicindex} [0] v1\r\n    Exit v11\r\nname b[int]: [v7]\r\n```\r\n",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-03-09T11:13:55Z",
+	"created_at": "2016-02-29T10:01:54Z",
+	"updated_at": "2016-03-09T11:13:55Z"
+}

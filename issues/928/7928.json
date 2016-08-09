@@ -1,0 +1,33 @@
+{
+	"id": 51287412,
+	"number": 7928,
+	"state": "closed",
+	"title": "crypto/aes: unexpected fault address from Encrypt and Decrypt with wrong sizes on amd64",
+	"body": "by **ej@evanjones.ca**:\n\n\u003cpre\u003ecrypto/aes/cipher_asm.go doesn't check the sizes of the input or output slices. If you\naccidentally call this with a slice that is too small, it reads and writes memory past\nthe end of the slice, and occasionally crashes (see below).\n\nThe Go version for other platforms reliably panics with \u0026quot;index out of range\u0026quot;.\nPotential fix: Access dst[blockSize-1] and src[blockSize-1] before calling\nencrypt/decryptBlockAsm to force the Go runtime to do the appropriate bounds checking?\nI'm happy to write a patch and a test.\n\n\nRelevant source:\n\n\u003ca href=\"http://golang.org/src/pkg/crypto/aes/cipher_asm.go\"\u003ehttp://golang.org/src/pkg/crypto/aes/cipher_asm.go\u003c/a\u003e\n\n\nCrash output:\n\nunexpected fault address 0x20904a000\nfatal error: fault\n[signal 0xa code=0x2 addr=0x20904a000 pc=0x2b2e7]\n\ngoroutine 16 [running]:\nruntime.throw(0x1542a7)\n\t/usr/local/go/src/pkg/runtime/panic.c:520 +0x69 fp=0x2081c7d20\nruntime.sigpanic()\n\t/usr/local/go/src/pkg/runtime/os_darwin.c:448 +0x25b fp=0x2081c7d38\nruntime: unknown argument frame size for crypto/aes.encryptBlockAsm called from 0x2af1b\n[crypto/aes.encryptBlock]\ncrypto/aes.encryptBlockAsm()\n\t/Users/ej/go-1.3beta1/src/pkg/crypto/aes/asm_amd64.s:25 +0x17 fp=0x2081c7d40\ncrypto/aes.encryptBlock(0x2081c00b0, 0x2c, 0x2c, 0x208238000, 0x10, 0x10, 0x209049ff8,\n0x1, 0x1)\n\t/Users/ej/go-1.3beta1/src/pkg/crypto/aes/cipher_asm.go:19 +0x8b fp=0x2081c7d98\ncrypto/aes.(*aesCipher).Encrypt(0x2081ae180, 0x208238000, 0x10, 0x10, 0x209049ff8, 0x1,\n0x1)\n\t/Users/ej/go-1.3beta1/src/pkg/crypto/aes/cipher.go:49 +0x7d fp=0x2081c7de8\nmain.main()\n\t/Users/ej/wtf.go:21 +0x2da fp=0x2081c7f50\nruntime.main()\n\t/usr/local/go/src/pkg/runtime/proc.c:247 +0x11a fp=0x2081c7fa8\nruntime.goexit()\n\t/usr/local/go/src/pkg/runtime/proc.c:1430 fp=0x2081c7fb0\ncreated by _rt0_go\n\t/usr/local/go/src/pkg/runtime/asm_amd64.s:97 +0x120\n\n\nDetails:\n\ngo version devel +f8b50ad4cac4 Mon Apr 21 17:00:27 2014 -0700 + darwin/amd64\n\n\nProgram to reproduce this crash:\n\npackage main\n\nimport (\n\t\u0026quot;crypto/aes\u0026quot;\n\t\u0026quot;log\u0026quot;\n)\n\nfunc main() {\n\tkey := make([]byte, aes.BlockSize)\n\tblock, err := aes.NewCipher(key)\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;NewCipher:\u0026quot;, err)\n\t}\n\n\t// keep old slices around to force allocation\n\tslices := [][]byte{}\n\ti := 0\n\tfor {\n\t\tdestination := make([]byte, aes.BlockSize)\n\t\tzeroLength := []byte{0x00}\n\t\tblock.Encrypt(destination, zeroLength)\n\t\tslices = append(slices, zeroLength)\n\n\t\ti += 1\n\t\tlog.Print(i)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:43:56Z",
+	"created_at": "2014-05-02T20:23:52Z",
+	"updated_at": "2016-06-25T01:33:38Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

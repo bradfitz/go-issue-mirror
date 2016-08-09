@@ -1,0 +1,12 @@
+{
+	"id": 172674666,
+	"body": "Crash 1452891329 on go version 505fa7b comes in the middle of runtime.gcBgMarkWorker [during a call to runtime.acquirem](https://github.com/golang/go/blob/505fa7b/src/runtime/mgc.go#L1390). This isn't the first call to runtime.acquirem in that function, which means that the worker must have had an m when it started and then lost it (otherwise we'd see a segfault at the [first call](https://github.com/golang/go/blob/505fa7b/src/runtime/mgc.go#L1355)).\r\n\r\nCrash 1453060415 on go version go1.6beta2 comes at the [call to runtime.acquirem at the start of runtime.gopark](https://github.com/golang/go/blob/go1.6beta2/src/runtime/proc.go#L249). I looked through the stack of the crashed goroutine for instruction addresses and found a 64-bit aligned value of 0x000000000041f0fc at address 0xc8202a7f40, between the stack.hi value of 0xc8202a7fe0 and the rsp value of 0xc8202a7f20. The instruction address corresponds to the [return from runtime.gopark at the top of runtime.gcBgMarkWorker's for loop](https://github.com/golang/go/blob/go1.6beta2/src/runtime/mgc.go#L1378). If I've unwound the stack correctly, this means that gcBgMarkWorker calling gopark calling acquirem led to the second crash.\r\n\r\n```\r\n$ go tool objdump /path/to/program-1453060415 | grep -C 3 '0x41f0fc'\r\n\tmgc.go:1378\t0x41f0e9\tc644242014\t\tMOVL $0x14, 0x20(SP)\r\n\tmgc.go:1378\t0x41f0ee\t48c744242800000000\tMOVQ $0x0, 0x28(SP)\r\n\tmgc.go:1378\t0x41f0f7\te8f4530100\t\tCALL runtime.gopark(SB)\r\n\tmgc.go:1383\t0x41f0fc\t488b6c2470\t\tMOVQ 0x70(SP), BP\r\n\tmgc.go:1383\t0x41f101\t4883fd00\t\tCMPQ $0x0, BP\r\n\tmgc.go:1383\t0x41f105\t0f845d050000\t\tJE 0x41f668\r\n\tmgc.go:1383\t0x41f10b\t488b9d10120000\t\tMOVQ 0x1210(BP), BX\r\n```\r\n\r\nThe gcBgMarkWorker goroutines had an m when they were created, but had their execution resumed at some point without an m.",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-18T22:49:54Z",
+	"updated_at": "2016-01-18T22:49:54Z"
+}

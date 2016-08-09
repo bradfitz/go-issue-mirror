@@ -1,0 +1,22 @@
+{
+	"id": 106127479,
+	"number": 12596,
+	"state": "closed",
+	"title": "runtime: Extremely slow append",
+	"body": "While trying to reproduce an OOM I found out that appending to a slice is extremely slow. Well beyond what one would expect, even accounting for slice growth and consequent data copy.\r\n\r\nThe following sample code appends repeatedly a 2kB slice to a slice. I tried go 1.5.1 on linux x86-64 and  mac osx. between 500MB and 1.5GB the growth slows to a crawl. \r\n\r\nSample code: \r\n```\r\npackage main\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tslimslice := make([]uint64, 256, 256)\r\n\tfatslice := make([]uint64, 0)\r\n\ti := 0\r\n\tlastlog := time.Now()\r\n\tvar lastsize uint64\r\n\tfor {\r\n\t\ti++\r\n\t\tfatslice = append(fatslice, slimslice...)\r\n\t\tif i%(1024*128) == 0 {\r\n\t\t\tnow := time.Now()\r\n\t\t\tsize := (uint64(len(fatslice)) * 8) / 1024 / 1024\r\n\t\t\tfmt.Println(\"written \", size, \"MB total. Speed last chunk: \", float64(size-lastsize)/now.Sub(lastlog).Seconds(), \"MB/s\")\r\n\t\t\tlastlog = now\r\n\t\t\tlastsize = size\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nOutput:\r\n```\r\n$ ./slowappend \r\nwritten  256 MB total. Speed last chunk:  356.02722734909923 MB/s\r\nwritten  512 MB total. Speed last chunk:  439.0343920798045 MB/s\r\n```\r\nThen is basically gets stuck with 100% to 200% cpu\r\n\r\nProfiler output:\r\n```\r\n$ go tool pprof -text ./slowappend  /tmp/profile569733554/cpu.pprof\r\n3.49s of 3.53s total (98.87%)\r\nDropped 18 nodes (cum \u003c= 0.02s)\r\n      flat  flat%   sum%        cum   cum%\r\n     2.29s 64.87% 64.87%      2.29s 64.87%  runtime.memmove\r\n     0.43s 12.18% 77.05%      0.84s 23.80%  runtime.scang\r\n     0.34s  9.63% 86.69%      0.34s  9.63%  runtime.memclr\r\n     0.29s  8.22% 94.90%      0.41s 11.61%  runtime.readgstatus\r\n     0.09s  2.55% 97.45%      0.12s  3.40%  runtime.atomicload\r\n     0.03s  0.85% 98.30%      0.03s  0.85%  runtime.nop\r\n     0.01s  0.28% 98.58%      0.04s  1.13%  runtime.heapBitsSweepSpan\r\n     0.01s  0.28% 98.87%      0.85s 24.08%  runtime.parfordo\r\n         0     0% 98.87%      2.61s 73.94%  main.main\r\n         0     0% 98.87%      0.84s 23.80%  runtime.backgroundgc\r\n         0     0% 98.87%      0.04s  1.13%  runtime.bgsweep\r\n         0     0% 98.87%      0.84s 23.80%  runtime.gc\r\n         0     0% 98.87%      0.84s 23.80%  runtime.gc.func1\r\n         0     0% 98.87%      0.84s 23.80%  runtime.gcscan_m\r\n         0     0% 98.87%      3.49s 98.87%  runtime.goexit\r\n         0     0% 98.87%      0.04s  1.13%  runtime.gosweepone\r\n         0     0% 98.87%      0.04s  1.13%  runtime.gosweepone.func1\r\n         0     0% 98.87%      2.47s 69.97%  runtime.growslice\r\n         0     0% 98.87%      2.47s 69.97%  runtime.growslice_n\r\n```\r\n\r\nMachine configuration: 64GB x86-64 Ubuntu 14.04 on a VM, Go 1.5.1 (similar results with Go 1.5). ",
+	"user": {
+		"login": "m-m-f",
+		"id": 9353884,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-10-14T18:33:45Z",
+	"created_at": "2015-09-12T04:02:28Z",
+	"updated_at": "2015-10-14T18:33:45Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

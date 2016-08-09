@@ -1,0 +1,12 @@
+{
+	"id": 209482043,
+	"body": "FWIW, adding\n\n\tdefer func() { println(x) }()\n\nat the top of func f in the test program makes the test pass (because then SSA knows x is needed at various points in the function).\n\nAnother variant on the test program, making sure that writes are flushed even when they're about to be overwritten, if code between the write and the overwrite might panic.\n\n```\npackage main\n\nimport \"runtime\"\n\nfunc f(x []byte, start int64) {\n\tdefer func() {\n\t\trecover()\n\t\tif delta := inuse() - start; delta \u003e 1\u003c\u003c20 {\n\t\t\tprintln(\"after alloc: expected delta below 1MB, got: \", delta)\n\t\t}\n\t}()\n\tif delta := inuse() - start; delta \u003c 9\u003c\u003c20 {\n\t\tprintln(\"after alloc: expected delta at least 9MB, got: \", delta)\n\t}\n\tn1 := runtime.GOMAXPROCS(-1)\n\tn2 := runtime.GOMAXPROCS(-1)\n\tx = nil\n\ty := 1 / (n1 - n2)\n\tx = make([]byte, 10\u003c\u003c20)\n\tprintln(y)\n}\n\nfunc main() {\n\tx := inuse()\n\tf(make([]byte, 10\u003c\u003c20), x)\n}\n\nfunc inuse() int64 {\n\truntime.GC()\n\tvar st runtime.MemStats\n\truntime.ReadMemStats(\u0026st)\n\treturn int64(st.Alloc)\n}\n```",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-13T14:44:30Z",
+	"updated_at": "2016-04-13T14:44:30Z"
+}

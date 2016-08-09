@@ -1,0 +1,12 @@
+{
+	"id": 66049412,
+	"body": "\u003ca id=\"c26\"\u003e\u003c/a\u003eComment 26 by **ckrueger**:\n\n\u003cpre\u003eI am in favor of doing away with := entirely because of the desire to control what is\ndone per-value on multiple returns.  \n\nThe :val syntax described above seems nice and short and would seem like valid syntactic\nsugar for a keyword driven solution:\n\n:x = f(), declare(shadow) and initialize x, infer type\nx  = f(), assign x, infer type\n\nwould be the same as\n\nauto var x = f(), declare(shadow) and initialize x, infer type\nauto x = f(), assign x, infer type\n\nto revisit the implicit/explicit example shown above in comment 21:\n\nvar x = \"unum\"\n\nfunc implicit() {\n\tfmt.Println(x) // x = \"unum\"\n\t:x = \"one\" //\u0026lt;- potentially make this an error, redeclaration after use in same scope.\n\t//:x = \"two\" \u0026lt;- would not compile, can only declare once in scope\n\tfmt.Println(x) // x = \"one\", global x still = \"unum\"\n\tif :x, :err = 1, (*int)(nil); err == nil {\n\t\tfmt.Println(x) // x = 1\n\t}\n\tfmt.Println(x) // x = \"one\"\n}\n\nfunc explicit() {\n\tfmt.Println(x) // x = \"unum\"\n\t{\n\t\t:x = \"one\"\n\t\tfmt.Println(x) // x = \"one\"\n\t\t{\n\t\t\tif :x, :err = 1, (*int)(nil); err == nil {\n\t\t\t\tfmt.Println(x) // x = 1\n\t\t\t}\n\t\t}\n\t\tfmt.Println(x) // x = \"one\"\n\t}\n\tfmt.Println(x) // x = \"unum\"\n}\n\nto revisit the example in the original post:\n\nfunc f() (err os.Error) {\n  :v, err = g(); \u0026lt;-- reusing err for return\n  if err != nil {\n    return;\n  }\n  if v {\n    :v, err = h(); \u0026lt;-- shadowing v, but reusing err for return\n    if err != nil {\n      return;\n    }\n  }\n}\n\nin addition, if one wants to enforce typing per-value, specifying type removes the need\nfor :val as you cannot re-specify a type on an existing value and thus initialisation is\ninferred.\n\nint :x, os.Error err = f(); initialize and assign x/error, don't compile if return value\n2 is not os.Error\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-04-06T18:41:28Z",
+	"updated_at": "2014-12-22T05:45:15Z"
+}

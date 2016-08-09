@@ -1,0 +1,26 @@
+{
+	"id": 143811144,
+	"number": 14984,
+	"state": "open",
+	"title": "net/http: mechanism to dynamically change MaxIdleConnsPerHost?",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n\r\n* What version of Go are you using (`go version`)?\r\n```\r\n1.6\r\n```\r\n\r\n* What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/hernan/apps/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/Users/hernan/apps/go/go-src/go\"\r\nGOTOOLDIR=\"/Users/hernan/apps/go/go-src/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/vw/ht0lksb16l199rbp98p7hhfr0000gn/T/go-build001484838=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n* What did you do?\r\n\r\nIt is not possible for clients of ```http.Transport``` to dynamically change MaxIdleConnsPerHost attribute. It would be great to have a ```sync.RWMutex``` as an attribute of ```http.Transport```, so this is possible.\r\n\r\nThe use case is that for HTTP/1.1 Hosts, it would be nice for the client to have the possibility of adjusting max-idle connections base on usage.\r\n\r\nThe following gist shows the problem:\r\nhttps://gist.github.com/go-loco/810fe53d8aee8879b8d1\r\n\r\nMaking the following changes to http.Transport would add this feature:\r\n\r\n```\r\n    // MaxIdleConnsPerHost, if non-zero, controls the maximum idle\r\n\t// (keep-alive) connections to keep per-host. If zero,\r\n\t// DefaultMaxIdleConnsPerHost is used.\r\n\tMaxIdleConnsPerHost int\r\n\r\n\t// MaxIdleConnsMutex, let you dynamically change the\r\n\t// MaxIdleConnsPerHost without creating a data race.\r\n\t//\r\n\t// Usage:\r\n\t//\r\n\t// \tMaxIdleConnsMutex.Lock()\r\n\t// \tMaxIdleConnsPerHost = newValue\r\n\t// \tMaxIdleConnsMutex.Unlock()\r\n\t//\r\n\tMaxIdleConnsMutex sync.RWMutex\r\n```\r\n\r\n\r\n```\r\nfunc (t *Transport) tryPutIdleConn(pconn *persistConn) error {\r\n\r\n\tt.MaxIdleConnsMutex.RLock()\r\n\tmax := t.MaxIdleConnsPerHost\r\n\tt.MaxIdleConnsMutex.RUnlock()\r\n\r\n\tif t.DisableKeepAlives || max \u003c 0 {\r\n\t\treturn errKeepAlivesDisabled\r\n\t}\r\n\tif pconn.isBroken() {\r\n\t\treturn errConnBroken\r\n\t}\r\n\tkey := pconn.cacheKey\r\n\r\n\tif max == 0 {\r\n\t\tmax = DefaultMaxIdleConnsPerHost\r\n\t}\r\n...\r\n```\r\n\r\n",
+	"user": {
+		"login": "go-loco",
+		"id": 212119,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FeatureRequest"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-03-27T13:56:00Z",
+	"updated_at": "2016-05-19T17:23:56Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

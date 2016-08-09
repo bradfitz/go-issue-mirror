@@ -1,0 +1,21 @@
+{
+	"id": 94274890,
+	"number": 11655,
+	"state": "open",
+	"title": "bufio: can improve bufio.Scanner and bufio.Reader for bytes.Reader and strings.Reader",
+	"body": "bufio.Scanner and bufio.Reader will copy all bytes from io.Reader to internal buffer, copy is unnecessary while io.Reader is bytes.Reader or strings.Reader.\r\n\r\nnow code is \r\n````go\r\n    \t// NewScanner returns a new Scanner to read from r.\r\n    \t// The split function defaults to ScanLines.\r\n    \tfunc NewScanner(r io.Reader) *Scanner {\r\n    \t\treturn \u0026Scanner{\r\n    \t\t\tr:            r,\r\n    \t\t\tsplit:        ScanLines,\r\n    \t\t\tmaxTokenSize: MaxScanTokenSize,\r\n    \t\t\tbuf:          make([]byte, 4096), // Plausible starting size; needn't be large.\r\n    \t\t}\r\n    \t}\r\n````\r\n\r\n\r\nimprove code is \r\n````go\r\n        type eofReader struct {}\r\n    \tfunc (r *eofReader) Read(p []byte) (n int64, e error) {\r\n    \t    \treturn 0, io.EOF\r\n    \t}\r\n    \tvar  eof_reader = \u0026eofReader {}\r\n    \t// NewScanner returns a new Scanner to read from r.\r\n    \t// The split function defaults to ScanLines.\r\n    \tfunc NewScanner(r io.Reader) *Scanner {\r\n    \t\tif br, ok := r.(bytes.Reader); ok {\r\n    \t\t      \t return \u0026Scanner{\r\n    \t\t\t      \tr:            eof_reader,\r\n    \t\t   \t      \tsplit:        ScanLines,\r\n    \t\t\t      \tmaxTokenSize: MaxScanTokenSize,\r\n    \t\t\t      \tbuf:          br.Bytes(),    // bytes.Reader should add Bytes() method for this.\r\n    \t\t    \t}\r\n    \t\t}\r\n    \t\treturn \u0026Scanner{\r\n    \t\t\tr:            r,\r\n    \t\t\tsplit:        ScanLines,\r\n    \t\t\tmaxTokenSize: MaxScanTokenSize,\r\n    \t\t\tbuf:          make([]byte, 4096), // Plausible starting size; needn't be large.\r\n    \t\t}\r\n    \t}\r\n````\r\n",
+	"user": {
+		"login": "runner-mei",
+		"id": 1052632,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-07-10T10:18:53Z",
+	"updated_at": "2015-07-13T05:33:46Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

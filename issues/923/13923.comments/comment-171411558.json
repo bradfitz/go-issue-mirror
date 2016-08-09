@@ -1,0 +1,12 @@
+{
+	"id": 171411558,
+	"body": "It seems like it made it past the runtime check but ended up crashing again:\r\n\r\n    Program terminated with signal 4, Illegal instruction.\r\n    #0  runtime.fastrand1 ()\r\n        at /home/kevinz/workspace/go-freebsd-amd64-bootstrap/src/runtime/asm_386.s:1561\r\n\r\nThe illegal instruction in question is CMOVS:\r\n\r\n    (gdb) disassemble\r\n    Dump of assembler code for function runtime.fastrand1:\r\n    0x080961d0 \u003cruntime.fastrand1+0\u003e:\tmov    %gs:0xfffffffc,%eax\r\n    0x080961d7 \u003cruntime.fastrand1+7\u003e:\tmov    0x18(%eax),%eax\r\n    0x080961da \u003cruntime.fastrand1+10\u003e:\tmov    0x9c(%eax),%edx\r\n    0x080961e0 \u003cruntime.fastrand1+16\u003e:\tadd    %edx,%edx\r\n    0x080961e2 \u003cruntime.fastrand1+18\u003e:\tmov    %edx,%ebx\r\n    0x080961e4 \u003cruntime.fastrand1+20\u003e:\txor    $0x88888eef,%edx\r\n    0x080961ea \u003cruntime.fastrand1+26\u003e:\tcmovs  %ebx,%edx\r\n    0x080961ed \u003cruntime.fastrand1+29\u003e:\tmov    %edx,0x9c(%eax)\r\n    0x080961f3 \u003cruntime.fastrand1+35\u003e:\tmov    %edx,0x4(%esp)\r\n    0x080961f7 \u003cruntime.fastrand1+39\u003e:\tret    \r\n    0x080961f8 \u003cruntime.fastrand1+40\u003e:\tint3   \r\n    0x080961f9 \u003cruntime.fastrand1+41\u003e:\tint3   \r\n    0x080961fa \u003cruntime.fastrand1+42\u003e:\tint3   \r\n    0x080961fb \u003cruntime.fastrand1+43\u003e:\tint3   \r\n    0x080961fc \u003cruntime.fastrand1+44\u003e:\tint3   \r\n    0x080961fd \u003cruntime.fastrand1+45\u003e:\tint3   \r\n    0x080961fe \u003cruntime.fastrand1+46\u003e:\tint3   \r\n    0x080961ff \u003cruntime.fastrand1+47\u003e:\tint3   \r\n    End of assembler dump.\r\n\r\nFrom `asm_386.s`:\r\n\r\n    TEXT runtime·fastrand1(SB), NOSPLIT, $0-4\r\n        get_tls(CX)\r\n        MOVL\tg(CX), AX\r\n        MOVL\tg_m(AX), AX\r\n        MOVL\tm_fastrand(AX), DX\r\n        ADDL\tDX, DX\r\n        MOVL\tDX, BX\r\n        XORL\t$0x88888eef, DX\r\n        CMOVLMI\tBX, DX\r\n        MOVL\tDX, m_fastrand(AX)\r\n        MOVL\tDX, ret+0(FP)\r\n        RET\r\n\r\nIt seems like the 'fucomip' issue was fixed but I'm not sure because 'cmovs' showed up.",
+	"user": {
+		"login": "Partmedia",
+		"id": 3229565,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-13T19:45:23Z",
+	"updated_at": "2016-01-13T19:45:23Z"
+}

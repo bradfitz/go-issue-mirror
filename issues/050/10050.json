@@ -1,0 +1,27 @@
+{
+	"id": 59458421,
+	"number": 10050,
+	"state": "open",
+	"title": "liblink, cmd/ld: don't encode the instruction being relocated in Reloc.add",
+	"body": "When I first implemented cgo for ARM, I made the wrong precedence to encode\r\nthe instruction itself in the relocation's addend field. It makes everything harder:\r\n\r\nliblink must stuff the real addend into the instruction, put it in reloc.add, and then\r\nin the linker, it must get the real addend out from the instruction, calculate the\r\nreal value, and stuff the value back into the instruction.\r\n\r\nAdditionally, it makes -S output unreadable.\r\n```\r\nrel 20+4 t=6 runtime.morestack_noctxt+9bfffffe\r\nrel 40+4 t=6 runtime.duffzero+eb00005e\r\n```\r\n(Note: the 2nd line is calling into the middle of duffzero, but you can't tell\r\nanything from the addend without some shifts and masks to figure out the\r\noffset)\r\nCompare this to the 6g -S output:\r\n```\r\nrel 16+4 t=4 runtime.morestack_noctxt+0\r\nrel 37+4 t=4 runtime.duffzero+228\r\n```\r\n\r\nI suspect this is because in cmd/ld/lib.c, we always pass a zero val (the variable o)\r\nto archreloc, instead, it really should pass the original value read from the symbol.\r\n\r\nShould we correct this? so that archreloc is passed the real instrutions/data being\r\nrelocated in *val argument, and we place the real addend in Reloc.add field?\r\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-03-02T09:43:31Z",
+	"updated_at": "2015-08-25T02:00:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

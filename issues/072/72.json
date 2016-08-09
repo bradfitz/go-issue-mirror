@@ -1,0 +1,28 @@
+{
+	"id": 51276016,
+	"number": 72,
+	"state": "closed",
+	"title": "Consistent Time Handling",
+	"body": "by **vomjom**:\n\n\u003cpre\u003eRight now, Go has two separate representations for the time:\n\na. Seconds since the UNIX epoch\nb. Nanoseconds since the UNIX epoch\n\nThis gets inconsistent because functions like time.Sleep() take nanosecond \nunits as an argument, but os.Time() returns two values: seconds since epoch \nand nanoseconds after those seconds.\n\nNot only that, but in package \u0026quot;time\u0026quot;, there are two functions: \ntime.Seconds() and time.Nanoseconds() which return seconds since epoch and \nnanoseconds since epoch.  The other handlers in the \u0026quot;time\u0026quot; package only \nhandle the seconds since epoch case.\n\nGo needs to standardize on a single DateTime representation, as is done in \n.NET, Java, boost, and python.\n\nHere are my ideas:\n\n1. .NET and boost (as well as PostgreSQL and MySQL) have DateTime \nrepresentations that are exactly 8 bytes.  This is useful because a lot of \napplications tend to store quite a few of them (in my particular \napplication, I have 500 million of them stored).\n\n2. For ease of calculation, Go should continue to use the number of \nnanoseconds since UNIX epoch, but no longer have a seconds since epoch \nrepresentation.  This has one issue, though.  With 64 bits, it can only \nrepresent times between the years 1678 and 2262.  I don't imagine that this \nis a problem for most uses, however.\n\n3. Go should include constants representing units of time, for example:\n\nconst (\n    Nanosecond = 1;\n    Microsecond = 1e3 * Nanosecond;\n    Millisecond = 1e3 * Microsecond;\n    Second = 1e3 * Millisecond;\n    Minute = 60 * Second;\n    Hour = 60 * Minute;\n    Day = 24 * Hour;\n)\n\nThis would allow simple expressions such as:\n\nif end - start \u0026gt;= 2 * time.Second { ... }\n\n4. All times should be represented in UTC.  If someone needs to print a \ntime, there can be a function that prints it to local time or to a \nparticular time zone.\n\nIf a user needs to keep track of time zones, there would be a separate time \nzone struct that they can use separately whenever they need to print or \nconvert the time.\n\nThis helps the DateTime representation stay compact at 8 bytes.\n\n5. The DateTime should have its own type (perhaps replacing the Time struct \nthat exists now?), instead of the explicit int64 representation that's \neverywhere now.\n\nAny thoughts?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2014-12-08T10:03:08Z",
+	"created_at": "2009-11-11T23:43:29Z",
+	"updated_at": "2016-06-24T19:00:19Z"
+}

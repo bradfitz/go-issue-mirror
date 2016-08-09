@@ -1,0 +1,22 @@
+{
+	"id": 57878384,
+	"number": 9900,
+	"state": "closed",
+	"title": "syscall: mksyscall_windows.go generate unused unsafe package",
+	"body": "```go\r\npackage main\r\n\r\n//sys GetForegroundWindow() (hwnd syscall.Handle) = user32.GetForegroundWindow\r\n\r\nfunc main() {\r\n}\r\n```\r\n\r\n```\r\nC:\\temp\u003ego run c:/go/src/syscall/mksyscall_windows.go -output bar.go foo.go\r\n```\r\n```\r\nC:\\temp\u003ego build\r\n.\\bar.go:5: imported and not used: \"unsafe\"\r\n```\r\n\r\nSince mksyscall_windows.go uses template, we should handle whether parameters has pointer before execute template.\r\nMost easy ways to fix this:\r\n\r\n```diff\r\ndiff --git a/src/syscall/mksyscall_windows.go b/src/syscall/mksyscall_windows.go\r\nindex cb540d3..3e29901 100644\r\n--- a/src/syscall/mksyscall_windows.go\r\n+++ b/src/syscall/mksyscall_windows.go\r\n@@ -65,6 +65,7 @@ import (\r\n var (\r\n \tfilename       = flag.String(\"output\", \"\", \"output file name (standard output if omitted)\")\r\n \tprintTraceFlag = flag.Bool(\"trace\", false, \"generate print statement after every syscall\")\r\n+\thasUnsafe      = false\r\n )\r\n \r\n func trim(s string) string {\r\n@@ -171,10 +172,12 @@ func (p *Param) SyscallArgList() []string {\r\n \tvar s string\r\n \tswitch {\r\n \tcase t[0] == '*':\r\n+\t\thasUnsafe = true\r\n \t\ts = fmt.Sprintf(\"unsafe.Pointer(%s)\", p.Name)\r\n \tcase t == \"bool\":\r\n \t\ts = p.tmpVar()\r\n \tcase strings.HasPrefix(t, \"[]\"):\r\n+\t\thasUnsafe = true\r\n \t\treturn []string{\r\n \t\t\tfmt.Sprintf(\"uintptr(unsafe.Pointer(%s))\", p.tmpVar()),\r\n \t\t\tfmt.Sprintf(\"uintptr(len(%s))\", p.Name),\r\n@@ -306,6 +309,7 @@ func (r *Rets) SetErrorCode() string {\r\n \ts := \"\"\r\n \tswitch {\r\n \tcase r.Type[0] == '*':\r\n+\t\thasUnsafe = true\r\n \t\ts = fmt.Sprintf(\"%s = (%s)(unsafe.Pointer(r0))\", r.Name, r.Type)\r\n \tcase r.Type == \"bool\":\r\n \t\ts = fmt.Sprintf(\"%s = r0 != 0\", r.Name)\r\n@@ -716,6 +720,15 @@ func main() {\r\n \tif err != nil {\r\n \t\tlog.Fatal(err)\r\n \t}\r\n+\r\n+\t// TODO: When there is pointer, unsafe package is needless.\r\n+\tif !hasUnsafe {\r\n+\t\ts := string(data)\r\n+\t\tif pos := strings.Index(s, \"import \\\"unsafe\\\"\\n\"); pos \u003e= 0 {\r\n+\t\t\tdata = []byte(s[:pos] + s[pos+16:])\r\n+\t\t}\r\n+\t}\r\n+\r\n \tif *filename == \"\" {\r\n \t\t_, err = os.Stdout.Write(data)\r\n \t} else {\r\n```",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-02-17T08:33:11Z",
+	"created_at": "2015-02-17T03:10:23Z",
+	"updated_at": "2016-06-25T02:01:01Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 159889948,
+	"number": 16046,
+	"state": "open",
+	"title": "x/net/http2: does not conform to RFC strictly",
+	"body": "I builded a HTTP2 Server Demo by x/net/http2 of Golang and  found some  behaviors that does not conform to [RFC7540](http://www.rfc-editor.org/rfc/rfc7540.txt) strictly.  I’d like to separate it into four categories: Wrong ErrorCode, Wrong ErrorType, WrongFrame and Ignoring.\r\n\r\n- Wrong ErrorCode\r\nthis means client receives an unExpected ErrorCode from  the server according to the rfc.  \r\ne.g. when an endpoint receives a HEADERS Frame when the stream is in half closed (remote) state, the server response a stream error of code PROTOCOL_ERROR. While rfc has said  that \"it MUST respond with a stream error of code STREAM_CLOSED\"(rfc 7540, section 5.1).\r\n\r\n- Wrong ErrorType\r\nthis means the server is expected to response a connection error, but actually it responses a stream error instead, or vice versa. \r\ne.g. when sending a DATA Frame in a  stream that is in idle state,  the server responds with an RST_STREAM. while rfc has ruled that \"it MUST treat it as a  connection error of type PROTOCOL_ERROR\"(rfc 7540, section 5.1).\r\n\r\n- Wrong Frame\r\nthis is the case that  when sending a HEADERS frame that contains the connection-specific header field,  we expect to receive a RST_STREAM Frame from server, because rfc has ruled that  \"An endpoint MUST NOT generate an HTTP/2 message containing connection-specific header fields; any message containing connection-specific header fields MUST be treated as malformed\"(rfc 7540, section 8.1.2.2) and \"Malformed requests or responses that are detected MUST be treated as a stream error  of type  PROTOCOL_ERROR\"(rfc 7540, section 8.1.2.6).  but actually the client receives a DATA frame,  the payload of which is \"request header \\\"Connection\\\" is not valid in HTTP/2”. \t\r\n\r\n- Ignoring\r\nthis means that the server seems to ignore some frames under certain conditions. for example, when sending a Headers Frame that depend on itself , the server does not seems to be affected and  responds with a normal DATA Frame. while rfc has said that \"A stream cannot depend on itself. An endpoint MUST treat this as a stream error of type PROTOCOL_ERROR\"(rfc 7540, section 5.3.1).\r\n \r\nall case code can be found from [here](https://github.com/summerwind/h2spec). \r\none more question, any plans to fix these problems in the near future?\r\n",
+	"user": {
+		"login": "changlidong",
+		"id": 17612978,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-13T07:42:04Z",
+	"updated_at": "2016-06-13T15:15:45Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

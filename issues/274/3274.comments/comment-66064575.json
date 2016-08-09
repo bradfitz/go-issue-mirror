@@ -1,0 +1,12 @@
+{
+	"id": 66064575,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11 by **efekty**:\n\n\u003cpre\u003eThe problem is not todo it manualy. \n\n1. When we want to \"translate\" a lot of struct like winapi, I prefer to be lasy and test\nit. \nI have no \"len\" of struct. How nice to have it in reflect package :)\n\n2. As You can see in \"5 Comment\", in C++ WriteFile example, MS dll :(\n - the struct must to be with alignment, sizeof(hdr)==16 \n - and I must send the \"len\", sizeof(BITMAPFILEHEADER)==14\n\n3. The next problem is to have struct in ByteBuffer, operate by big inherit struct, not\nto copy. \nI don't know how to do it without __unaligned.\n\nRealy unsafe errors:\n\npackage main\nimport(\n\t\"unsafe\"\n\t\"fmt\"\n)\ntype ZZZ struct { a uint16;  b uint32; c uint16;  d uint16; e uint32 }\nfunc main() {\n\t\tvar z ZZZ = ZZZ{a:1, b:2, c:3, d:4, e:5}\n\t\tsize := int(unsafe.Sizeof(z))\n\t\tfmt.Printf(\"# unsafe.Sizeof(z): %d\\n\", size)\n\t\t\n\t\tvar b = make([]byte, 16)\n\t\tb[0]=1 //2\n\t\tb[2]=9 // saved in alignment :(\n\t\tb[4]=2 //4\n\t\tb[8]=3 //2\n\t\tb[10]=4 //2\n\t\tb[12]=5 //4\n\t\tp:=unsafe.Pointer(\u0026b[0])\n\t\tvar zz *ZZZ\n\t\tzz = (*ZZZ)(p)\n\t\tfmt.Printf(\"# zz = %+v\\n\", zz)\n\n\t\tbb := make([]byte, 12)\n\t\tbb[0]=1 //2\n//\t\tbb[x]=9 // error, forgot about alignment\n\t\tbb[2]=2 //4\n\t\tbb[6]=3 //2\n\t\tbb[8]=4 //2\n\t\tbb[10]=5 //4 \n\t\tpp:=unsafe.Pointer(\u0026bb[0])\n\t\tvar zzz *ZZZ\n\t\tzzz = (*ZZZ)(pp)\n\t\tfmt.Printf(\"# zzz = %+v\\n\", zzz)\n} \nOutput:\n# unsafe.Sizeof(z): 16\n# zz = \u0026{a:1 b:2 c:3 d:4 e:5}\n# zzz = \u0026{a:1 b:196608 c:4 d:5 e:0}\n__________________________________________________________________\n\nSo I vote to __unaligned, or wait for Your advice. \n(I know it is posible with reflection, but copy and not so easy :)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-13T20:33:27Z",
+	"updated_at": "2014-12-08T10:17:00Z"
+}

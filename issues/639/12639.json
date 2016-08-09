@@ -1,0 +1,17 @@
+{
+	"id": 106716643,
+	"number": 12639,
+	"state": "closed",
+	"title": "cmd/go: dlopen returns before init has finished",
+	"body": "**version and OS**\r\n\r\n    $ go version  \r\n    go version go1.5.1 linux/amd64\r\n\r\n**What did you do?**\r\nI tried to dlopen c-shared go object. Please check sample code below:\r\nmain.c\r\n```main.c\r\n/* cc -export-dynamic main.c -ldl */\r\n#include \u003cdlfcn.h\u003e\r\n#include \u003cstdio.h\u003e\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cunistd.h\u003e\r\n\r\nstatic volatile int n;\r\n\r\nint add(void)\r\n{\r\n        return ++n;\r\n}\r\n\r\nint main(int argc, char *argv[])\r\n{\r\n        void *handle;\r\n\r\n        if ((handle = dlopen(argv[1], RTLD_NOW)) == NULL) {\r\n                fprintf(stderr, \"dlopen: %s - %s\\n\", argv[1], dlerror());\r\n                exit(EXIT_FAILURE);\r\n        }\r\n        /* sleep(1); */\r\n        printf(\"n: %d\\n\", n);\r\n\r\n        return EXIT_SUCCESS;\r\n}\r\n```\r\ndso.go\r\n```dso.go\r\n// go build -buildmode=c-shared dso.go\r\npackage main\r\n\r\n/*\r\nextern int add(void);\r\n#cgo LDFLAGS: -Wl,--unresolved-symbols=ignore-all\r\n*/\r\nimport \"C\"\r\nimport \"fmt\"\r\n\r\nfunc init() {\r\n        fmt.Printf(\"init finished: %d\\n\", C.add())\r\n}\r\n\r\nfunc main() {}\r\n```\r\ncomple both as commented top of the code, and try ``./a.out ./dso``  \r\n\r\n**What did you expect to see?**\r\nI expected to see a message and \"n: 1\". in dlopen(3)\r\n\r\n    Constructor  routines  are  executed  before dlopen() returns,  \r\n    and destructor routines are executed before dlclose() returns.\r\n\r\nbut (my, users) constructor, func init() seems to be defered. \r\n\r\n**What did you see instead?**\r\nIt shows \"n: 0\", I can see the expected by enabling sleep(1), in comment.\r\n\r\n",
+	"user": {
+		"login": "chamaken",
+		"id": 4514661,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-09-16T08:06:49Z",
+	"created_at": "2015-09-16T07:36:10Z",
+	"updated_at": "2015-09-16T08:07:04Z"
+}

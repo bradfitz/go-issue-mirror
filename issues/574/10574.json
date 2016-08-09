@@ -1,0 +1,33 @@
+{
+	"id": 70919030,
+	"number": 10574,
+	"state": "closed",
+	"title": "text/template/parse: Parse will leak go routines if parsing fails",
+	"body": "(From https://groups.google.com/forum/#!topic/golang-nuts/6nTWBLbAyKo)\r\n\r\n\r\nWhen Parse() is called, a new lexer is created, and it will run in the background:\r\n\r\n```go\r\nfunc (t *Tree) Parse(text, leftDelim, rightDelim string, treeSet map[string]*Tree, funcs ...map[string]interface{}) (tree *Tree, err error) {\r\n\r\n[...]\r\n\r\nt.startParse(funcs, lex(t.Name, text, leftDelim, rightDelim))\r\n\r\n[...]\r\n\r\n}\r\n```\r\n\r\n(https://github.com/golang/go/blob/master/src/text/template/parse/parse.go#L228)\r\n\r\nThis will start a go routine :\r\n\r\n```go\r\n// lex creates a new scanner for the input string.\r\nfunc lex(name, input, left, right string) *lexer {\r\n\tif left == \"\" {\r\n\t\tleft = leftDelim\r\n\t}\r\n\tif right == \"\" {\r\n\t\tright = rightDelim\r\n\t}\r\n\tl := \u0026lexer{\r\n\t\tname:       name,\r\n\t\tinput:      input,\r\n\t\tleftDelim:  left,\r\n\t\trightDelim: right,\r\n\t\titems:      make(chan item),\r\n\t}\r\n\tgo l.run()\r\n\treturn l\r\n}\r\n```\r\n\r\n(https://github.com/golang/go/blob/master/src/text/template/parse/lex.go#L191)\r\n\r\nNow if the parser fails to parse, it will panic, and the error is recovered :\r\n\r\n```go \r\n// recover is the handler that turns panics into returns from the top level of Parse.\r\nfunc (t *Tree) recover(errp *error) {\r\n\te := recover()\r\n\tif e != nil {\r\n\t\tif _, ok := e.(runtime.Error); ok {\r\n\t\t\tpanic(e)\r\n\t\t}\r\n\t\tif t != nil {\r\n\t\t\tt.stopParse()\r\n\t\t}\r\n\t\t*errp = e.(error)\r\n\t}\r\n\treturn\r\n}\r\n```\r\n(https://github.com/golang/go/blob/master/src/text/template/parse/parse.go#L191)\r\n\r\nwhich will call t.stopParse():\r\n\r\n```go\r\n// stopParse terminates parsing.\r\nfunc (t *Tree) stopParse() {\r\n\tt.lex = nil\r\n\tt.vars = nil\r\n\tt.funcs = nil\r\n}\r\n```\r\n\r\nThe lexer should be GC, except it's still running in the background, because no parser is there to pull on the channel. \r\nI think the lex should have a abort() method to end the routine cleanly, otherwise each time the parser is called and failing, we leave a running lexer behind.\r\n\r\nI will create a pull request to fix this, as I have already some code for that.\r\nps: Minux has confirmed the bug http://play.golang.org/p/qTQXuT3ktV\r\n",
+	"user": {
+		"login": "gravis",
+		"id": 12752,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2015-05-05T16:03:13Z",
+	"created_at": "2015-04-25T14:25:37Z",
+	"updated_at": "2016-06-25T02:06:28Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

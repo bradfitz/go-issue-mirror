@@ -1,0 +1,30 @@
+{
+	"id": 51286908,
+	"number": 7575,
+	"state": "closed",
+	"title": "expvar: deadlock in Map.String",
+	"body": "\u003cpre\u003eDetected by experimental deadlock detector in cl/77450043.\n\n==================\nWARNING: DEADLOCK\nGoroutine 999 lock mutex 11 while holding mutex 11:\n  sync.(*RWMutex).RLock()\n      src/pkg/sync/rwmutex.go:42 +0xa2\n  expvar.(*Map).String()\n      src/pkg/expvar/expvar.go:106 +0x77\n  expvar.TestMapCounter()\n      src/pkg/expvar/expvar_test.go:113 +0x53f\n  testing.tRunner()\n      src/pkg/testing/testing.go:422 +0x121\n\nMutex 11 was previously locked here:\n  sync.(*RWMutex).RLock()\n      src/pkg/sync/rwmutex.go:42 +0xa2\n  expvar.(*Map).Do()\n      src/pkg/expvar/expvar.go:203 +0x54\n  expvar.(*Map).String()\n      src/pkg/expvar/expvar.go:117 +0x1b4\n  expvar.TestMapCounter()\n      src/pkg/expvar/expvar_test.go:113 +0x53f\n  testing.tRunner()\n      src/pkg/testing/testing.go:422 +0x121\n==================\n\nIn fact the following program crashes with \u0026quot;fatal error: all goroutines are asleep\n- deadlock!\u0026quot;:\n\u003ca href=\"http://play.golang.org/p/1uvDCFc0Vx\"\u003ehttp://play.golang.org/p/1uvDCFc0Vx\u003c/a\u003e\n\nThe problem is in the Map.String function that locks v.mu recursively (the second time\nin v.Do):\n\nfunc (v *Map) String() string {\n\tv.mu.RLock()\n\tdefer v.mu.RUnlock()\n\tvar b bytes.Buffer\n\tfmt.Fprintf(\u0026amp;b, \u0026quot;{\u0026quot;)\n\tfirst := true\n\tv.Do(func(kv KeyValue) {\n\t\tif !first {\n\t\t\tfmt.Fprintf(\u0026amp;b, \u0026quot;, \u0026quot;)\n\t\t}\n\t\tfmt.Fprintf(\u0026amp;b, \u0026quot;\\\u0026quot;%s\\\u0026quot;: %v\u0026quot;, kv.Key, kv.Value)\n\t\tfirst = false\n\t})\n\tfmt.Fprintf(\u0026amp;b, \u0026quot;}\u0026quot;)\n\treturn b.String()\n}\n\nsync.RWMutex is not recursive for readers (and for writers)\n.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:42:05Z",
+	"created_at": "2014-03-18T15:55:52Z",
+	"updated_at": "2016-06-25T01:30:10Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

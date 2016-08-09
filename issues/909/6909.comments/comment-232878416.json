@@ -1,0 +1,16 @@
+{
+	"id": 232878416,
+	"body": "When I wrote my comment above, my project was using [wgo](https://github.com/skelterjohn/wgo) (wrapper around go cmd) for dependencies.  We have since switched to vendoring with [govendor](https://github.com/kardianos/govendor).  After a lot of trial and error, I got this to work.  The key is to replace the `./...` wildcards with a list of your project packages (excluding vendored).  One occurrence must be replaced with a list, and the other with a comma-separated list.\r\n\r\nHere's how I did it using govendor:\r\n\r\n```bash\r\n# create list of project packages, excluding vendored (with govendor)\r\nexport PKGS=$(govendor list -no-status +local)\r\n\r\n# make comma-separated\r\nexport PKGS_DELIM=$(echo \"$PKGS\" | paste -sd \",\" -)\r\n\r\n# run with full coverage (including other packages) with govendor\r\ngo list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}govendor test -covermode count -coverprofile {{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $PKGS_DELIM {{.ImportPath}}{{end}}' $PKGS | xargs -I {} bash -c {}\r\n```\r\n\u0026nbsp;\r\n\r\nIf not using govendor, this should also work:\r\n\r\n```bash\r\n# as in @rodrigocorsi2 comment above (using full path to grep due to 'grep -n' alias)\r\nexport PKGS=$(go list ./... | /usr/bin/grep -v /vendor/)\r\n\r\n# make comma-separated\r\nexport PKGS_DELIM=$(echo \"$PKGS\" | paste -sd \",\" -)\r\n\r\n# should work as before replacing './...' with vars\r\ngo list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -covermode count -coverprofile {{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $PKGS_DELIM {{.ImportPath}}{{end}}' $PKGS | xargs -I {} bash -c {}\r\n```\r\n\r\n",
+	"user": {
+		"login": "mmindenhall",
+		"id": 1106269,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-07-15T07:01:49Z",
+	"updated_at": "2016-07-15T07:01:49Z"
+}

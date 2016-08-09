@@ -1,0 +1,28 @@
+{
+	"id": 51277530,
+	"number": 1237,
+	"state": "closed",
+	"title": "godoc broken in 3ee58453e961+ tip ",
+	"body": "by **ehog.hedge**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. update go to 3ee58453e961+ tip\n2. rebuild\n3. run godoc -http=:9999\n\nWhat is the expected output?\n\n  godoc runs and serves on 9999.\n\nWhat do you see instead?\n\nBOOM.\n\npanic: runtime error: slice bounds out of range\n\npanic PC=0x7f804b6fcc70\nruntime.panic+0xb2 /home/chris/GoRoot/src/pkg/runtime/proc.c:1028\n       runtime.panic(0x55b800, 0x7f804b266360)\npanicstring+0x69 /home/chris/GoRoot/src/pkg/runtime/runtime.c:83\n       panicstring(0x79e1eb, 0x2c00000001)\nruntime.panicslice+0x25 /home/chris/GoRoot/src/pkg/runtime/runtime.c:50\n       runtime.panicslice()\ngo/doc.CommentText+0x63d /home/chris/GoRoot/src/pkg/go/doc/comment.go:83\n       go/doc.CommentText(0x7f804b266a20, 0x60000000d, 0x516e54, 0xd)\nmain.*treeBuilder·newDirTree+0x8b0\n/home/chris/GoRoot/src/cmd/godoc/dirtrees.go:136\n       main.*treeBuilder·newDirTree(0x7f804b7e28f0, 0x7f804b145b20,\n0x7f800000001e, 0x7f804b2ad8d8, 0x6, ...)\nmain.*treeBuilder·newDirTree+0x468\n/home/chris/GoRoot/src/cmd/godoc/dirtrees.go:151\n       main.*treeBuilder·newDirTree(0x7f804b7e28f0, 0x7f804b2c51e0,\n0x7f8000000017, 0x7f804b762d53, 0x4, ...)\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nWhich operating system are you using?\nWhich revision are you using?  (hg identify)\n\n6g, linux, 3ee58453e961+ tip\n\nPlease provide any additional information below.\n\nLooks like the problem is in doc/comment.go at line 83; code starting at line\n80 is\n\n      // Add final \u0026quot;\u0026quot; entry to get trailing newline from Join.\n       // The original loop always leaves room for one more.\n       if n \u0026gt; 0 \u0026amp;\u0026amp; lines[n-1] != \u0026quot;\u0026quot; {\n               lines = lines[0 : n+1]\n               lines[n] = \u0026quot;\u0026quot;\n       }\n\nI note code above this is now using append \u0026amp; wondered if the \u0026quot;always \nleaves room\u0026quot; invariant had been invalidated. As an experiment I \nreplaced the lines\n\n       lines = lines[0 : n+1]\n       lines[n] = \u0026quot;\u0026quot;\n\nwith\n       lines = append( lines, \u0026quot;\u0026quot; )\n\nand rebuilt. Problem went away.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:07:26Z",
+	"created_at": "2010-10-28T08:39:42Z",
+	"updated_at": "2016-06-24T19:21:49Z"
+}

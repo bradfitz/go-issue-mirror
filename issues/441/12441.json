@@ -1,0 +1,17 @@
+{
+	"id": 104364915,
+	"number": 12441,
+	"state": "closed",
+	"title": "dev.ssa: encoding/gob test failure",
+	"body": "I’m not sure of the best place to fix this.\r\n\r\nThis code:\r\n```\r\nfunc f_ssa(a float64, b bool) int {\r\n        switch {\r\n        }\r\n        if a != 0 || b {\r\n                return 1\r\n        }\r\n        return 2\r\n}\r\n```\r\n\r\ngenerates the following:\r\n```\r\n...\r\nv32     00006 (/tmp/c.go:3)     MOVQ    $0, AX\r\nv27     00007 (/tmp/c.go:3)     MOVB    16(SP), CX\r\nv24     00008 (/tmp/c.go:3)     MOVSD   8(SP), X0\r\nv9      00009 (/tmp/c.go:3)     MOVQ    AX, 24(SP)\r\nv11     00010 (/tmp/c.go:6)     MOVSD   $(0.0), X1\r\nv16     00011 (/tmp/c.go:6)     UCOMISD X1, X0\r\nv12     00012 (/tmp/c.go:6)     SETNE   DX\r\nv12     00013 (/tmp/c.go:6)     SETPS   AX\r\nv12     00014 (/tmp/c.go:6)     ORQ     AX, DX\r\nb3      00015 (/tmp/c.go:6)     JNE     17\r\nb3      00016 (/tmp/c.go:6)     JPC     25\r\n...\r\n```\r\n\r\nCalling this with f_ssa(0, true) should return 1, but it’s returning 2.\r\n\r\nThe OR in v12 clears the parity flag, causing the JPC to be taken when it shouldn’t be.  The OR is inserted manually when generating the ssa.OpAMD64SETNEF value.\r\n\r\nThis is the second time in a week where code insertion/rewrite outside of ssa causes subtle bugs :)\r\n\r\n\r\n@dr2chase @randall77 @josharian ",
+	"user": {
+		"login": "tzneal",
+		"id": 64753,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-09-01T22:22:44Z",
+	"created_at": "2015-09-01T22:09:31Z",
+	"updated_at": "2015-09-01T22:22:44Z"
+}

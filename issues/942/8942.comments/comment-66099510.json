@@ -1,0 +1,12 @@
+{
+	"id": 66099510,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eRelated: the malloc that shows up is all stack-less because it is on the g0 stack.\nProbably want to charge g0 ticks to the curg if there is one. Something like\n\ndiff -r 284a98e61e32 src/runtime/proc.c\n--- a/src/runtime/proc.c\tWed Oct 15 19:33:15 2014 -0400\n+++ b/src/runtime/proc.c\tWed Oct 15 23:13:50 2014 -0400\n@@ -2436,7 +2436,7 @@\n void\n runtime·sigprof(uint8 *pc, uint8 *sp, uint8 *lr, G *gp, M *mp)\n {\n-\tint32 n;\n+\tint32 n, off;\n \tbool traceback;\n \t// Do not use global m in this function, use mp instead.\n \t// On windows one m is sending reports about all the g's, so m means a wrong thing.\n@@ -2530,9 +2530,20 @@\n \t   ((uint8*)runtime·gogo \u0026lt;= pc \u0026\u0026 pc \u0026lt; (uint8*)runtime·gogo + RuntimeGogoBytes))\n \t\ttraceback = false;\n \n+\toff = 0;\n+\tif(gp == mp-\u0026gt;g0 \u0026\u0026 mp-\u0026gt;curg != nil) {\n+\t\tstk[0] = (uintptr)pc;\n+\t\toff = 1;\n+\t\tgp = mp-\u0026gt;curg;\n+\t\tpc = (uint8*)gp-\u0026gt;sched.pc;\n+\t\tsp = (uint8*)gp-\u0026gt;sched.sp;\n+\t\tlr = 0;\n+\t\ttraceback = true;\n+\t}\n+\n \tn = 0;\n \tif(traceback)\n-\t\tn = runtime·gentraceback((uintptr)pc, (uintptr)sp, (uintptr)lr, gp, 0, stk,\nnelem(stk), nil, nil, false);\n+\t\tn = runtime·gentraceback((uintptr)pc, (uintptr)sp, (uintptr)lr, gp, 0, stk+off,\nnelem(stk)-off, nil, nil, false);\n \tif(!traceback || n \u0026lt;= 0) {\n \t\t// Normal traceback is impossible or has failed.\n \t\t// See if it falls into several common cases.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-10-16T03:14:27Z",
+	"updated_at": "2014-12-22T06:37:51Z"
+}

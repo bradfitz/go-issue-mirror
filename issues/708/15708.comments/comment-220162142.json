@@ -1,0 +1,16 @@
+{
+	"id": 220162142,
+	"body": "There is a subtle interplay between the definition of method sets, how they are enlarged via embedding, and the rules for selector lookup. My reading of the spec is that there is a conflict, and that all compilers and go/types consistently decide these programs by looking at a) the basic definition of method sets (https://tip.golang.org/ref/spec#Method_sets), and b) the basic rules for selector lookup (https://tip.golang.org/ref/spec#Selectors), rather then how method sets are extended (which also historically was described later in the development of Go).\r\n\r\nSpecifically, in your first case, `S1.M` is a selector expression. When type-checking a selector expression, we look (per the spec) for the most shallow `M` defined directly with a (base) type. The most shallow such `M` is the one method directly associated with `S1` (the receiver base type is `S1`). There is no further search at this point, and no consideration of how that `M` is used. But that `M` requires a `*S1` receiver rather than a `S1` (and there is no implicit indirection possible), hence the method expression is invalid.\r\n\r\nIn other words, the way method sets are extended by way of embedding is really implicitly defined by way of how method/field lookup works. We may want to be more careful in describing how method sets are extended in https://tip.golang.org/ref/spec#Struct_types. For instance, the notion of depth (as in \"the shallowest\") is not present there, yet it is crucial for lookup.\r\n\r\nThus, I believe the compilers and go/types are correct.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-05-18T21:21:59Z",
+	"updated_at": "2016-05-18T21:21:59Z"
+}

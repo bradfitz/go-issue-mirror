@@ -1,0 +1,22 @@
+{
+	"id": 51288277,
+	"number": 8490,
+	"state": "closed",
+	"title": "os: SameFile fails for paths like c:a.txt on windows",
+	"body": "\u003cpre\u003eC:\\go\\root\\src\\pkg\\os\u0026gt;hg id\nf3bac1f13638+\n\nC:\\go\\root\\src\\pkg\\os\u0026gt;hg diff\ndiff -r f3bac1f13638 src/pkg/os/os_windows_test.go\n--- a/src/pkg/os/os_windows_test.go     Thu Aug 07 10:25:50 2014 +1000\n+++ b/src/pkg/os/os_windows_test.go     Thu Aug 07 15:06:21 2014 +1000\n@@ -4,7 +4,9 @@\n        \u0026quot;io/ioutil\u0026quot;\n        \u0026quot;os\u0026quot;\n        \u0026quot;path/filepath\u0026quot;\n+       \u0026quot;runtime\u0026quot;\n        \u0026quot;syscall\u0026quot;\n+       \u0026quot;testing\u0026quot;\n )\n\n func init() {\n@@ -25,3 +27,58 @@\n                supportsSymlinks = false\n        }\n }\n+\n+func TestSameWindowsFile(t *testing.T) {\n+       temp, err := ioutil.TempDir(\u0026quot;\u0026quot;, \u0026quot;TestSameWindowsFile\u0026quot;)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       defer os.RemoveAll(temp)\n+\n+       wd, err := os.Getwd()\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       err = os.Chdir(temp)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       defer os.Chdir(wd)\n+\n+       f, err := os.Create(\u0026quot;a\u0026quot;)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       f.Close()\n+\n+       ia1, err := os.Stat(\u0026quot;a\u0026quot;)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+\n+       path, err := filepath.Abs(\u0026quot;a\u0026quot;)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       ia2, err := os.Stat(path)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       if !os.SameFile(ia1, ia2) {\n+               t.Errorf(\u0026quot;files should be same\u0026quot;)\n+       }\n+\n+       if runtime.GOOS == \u0026quot;windows\u0026quot; {\n+               p := filepath.VolumeName(path) + filepath.Base(path)\n+               if err != nil {\n+                       t.Fatal(err)\n+               }\n+               ia3, err := os.Stat(p)\n+               if err != nil {\n+                       t.Fatal(err)\n+               }\n+               if !os.SameFile(ia1, ia3) {\n+                       t.Errorf(\u0026quot;files should be same\u0026quot;)\n+               }\n+       }\n+}\n\nC:\\go\\root\\src\\pkg\\os\u0026gt;go test -run=SameWindowsFile\n--- FAIL: TestSameWindowsFile (0.00s)\n        os_windows_test.go:81: files should be same\nFAIL\nexit status 1\nFAIL    os      0.094s\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:47:09Z",
+	"created_at": "2014-08-07T05:10:34Z",
+	"updated_at": "2016-06-25T01:39:14Z"
+}

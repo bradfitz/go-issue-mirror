@@ -1,0 +1,26 @@
+{
+	"id": 79546728,
+	"number": 10935,
+	"state": "open",
+	"title": "os: Stat fails on NTFS volumes with Deduplication enabled",
+	"body": "* Go Version: go1.4.2 windows/amd64\r\n* OS and Arch: Windows 8.1 Pro 64-bit.\r\n* Action: \u003ccode\u003eos.Stat(\"Path\\to\\deduped.file\")\u003c/code\u003e\r\n* Expected Result: successfully returns (FileInfo, nil)\r\n* Actual Result: \u003ccode\u003eerr := \"readlink Path\\to\\deduped.file: The system cannot find the file specified.\"\u003c/code\u003e\r\n\r\nFrom a bit of digging, the issue is caused by NTFS Dedupe using reparse points for deduplicated files. The Windows implementation of [fileStat.Mode()](https://github.com/golang/go/blob/439b32936367c3efd0dadab48dd51202e1a510f1/src/os/types_windows.go#L42-L44) treats all reparse points as symlinks, however there are several [other cases](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365511(v=vs.85).aspx) to consider, including Deduplication and Mount Points, neither of which are symlinks.\r\n\r\nThe Windows implementation of os.Readlink() already performs a [sanity check](https://github.com/golang/go/blob/439b32936367c3efd0dadab48dd51202e1a510f1/src/syscall/syscall_windows.go#L1005-L1007) to ensure that it is handling a symlink. Ideally a similar inspection could be performed in Mode(), checking for \u003ccode\u003eIO_REPARSE_TAG_DEDUP == 0x80000013\u003c/code\u003e and stripping the Symlink flag, allowing the file to be treated as Regular.",
+	"user": {
+		"login": "NTmatter",
+		"id": 243993,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 6,
+	"created_at": "2015-05-22T17:50:09Z",
+	"updated_at": "2016-01-07T01:57:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

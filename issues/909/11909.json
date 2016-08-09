@@ -1,0 +1,21 @@
+{
+	"id": 97717144,
+	"number": 11909,
+	"state": "open",
+	"title": "build: hardcoded gcc command lines do not allow using TDM64 gcc on 32-bit Windows",
+	"body": "TDM64 is bi-arch gcc distribution with unusual configuration : 32-bit compiler produces 64-bit object files / executables by default, -m32 is required for 32-bit compilation.\r\nSee http://tdm-gcc.tdragon.net/quirks for details.\r\n\r\nThere are few places in Go source tree where C compiler name and required switches ( in particular -m32/-m64 ) are not obtained from environment variables or by running go env :\r\n* on tip in src/runtime/syscall_windows_test.go\r\n  * initialization of cbDLLs variable\r\n  * C compiler run in function TestReturnAfterStackGrowInCallback\r\n  * test for C compiler availability in TestStdcallAndCDeclCallbacks and TestReturnAfterStackGrowInCallback\r\n* on 1.4.2\r\n  * in src/make.bat\r\n  * in src/runtime/syscall_windows_test.go : initialization of cbDLLs variable\r\n  * in misc/cgo/testso/test.bat\r\n\r\nAs a result you simply can't build 1.4.2 using TDM64 on 32-bit Windows : compiled dist.exe is 64-bit.\r\n\r\nOn tip runtime test fails because of 64-bit test.dll :\r\n```\r\n--- FAIL: TestStdcallAndCDeclCallbacks (1.18s)\r\npanic: Failed to load D:\\opt\\usr\\src\\go\\tmp\\TestCDeclCallback075906618\\test.dll: %1 is not a valid Win32 application. [recovered]\r\n\tpanic: Failed to load D:\\opt\\usr\\src\\go\\tmp\\TestCDeclCallback075906618\\test.dll: %1 is not a valid Win32 application.\r\n\r\ngoroutine 103859 [running]:\r\ntesting.tRunner.func1(0x10d774a0)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:449 +0x131\r\nsyscall.MustLoadDLL(0x111c9100, 0x39, 0x1120c8d0)\r\n\tD:/opt/usr/src/go/jtip/src/syscall/dll_windows.go:62 +0x64\r\nruntime_test.(*cbTest).run(0x10dbbf04, 0x10d774a0, 0x111c9100, 0x39)\r\n\tD:/opt/usr/src/go/jtip/src/runtime/syscall_windows_test.go:399 +0x2d\r\nruntime_test.TestStdcallAndCDeclCallbacks(0x10d774a0)\r\n\tD:/opt/usr/src/go/jtip/src/runtime/syscall_windows_test.go:451 +0x406\r\ntesting.tRunner(0x10d774a0, 0x711084)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:455 +0x8f\r\ncreated by testing.RunTests\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:560 +0x6e9\r\n\r\ngoroutine 1 [chan receive]:\r\ntesting.RunTests(0x657f3c, 0x7108e0, 0xaa, 0xaa, 0x59a401)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:561 +0x71b\r\ntesting.(*M).Run(0x10db9f7c, 0x10d27fa0)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:493 +0x68\r\nmain.main()\r\n\truntime/_test/_testmain.go:880 +0x100\r\n\r\ngoroutine 102820 [chan receive]:\r\ntesting.(*T).Parallel(0x10d77b00)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:421 +0x65\r\nruntime_test.TestStackGrowth(0x10d77b00)\r\n\tD:/opt/usr/src/go/jtip/src/runtime/stack_test.go:74 +0x25\r\ntesting.tRunner(0x10d77b00, 0x710f04)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:455 +0x8f\r\ncreated by testing.RunTests\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:560 +0x6e9\r\n\r\ngoroutine 102821 [chan receive]:\r\ntesting.RunTests.func1(0x10d28380, 0x10d77b00)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:564 +0x3e\r\ncreated by testing.RunTests\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:565 +0x765\r\n\r\ngoroutine 102823 [chan receive]:\r\ntesting.RunTests.func1(0x10d28380, 0x10d77b60)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:564 +0x3e\r\ncreated by testing.RunTests\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:565 +0x765\r\n\r\ngoroutine 102822 [chan receive]:\r\ntesting.(*T).Parallel(0x10d77b60)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:421 +0x65\r\nruntime_test.TestStackGrowthCallback(0x10d77b60)\r\n\tD:/opt/usr/src/go/jtip/src/runtime/stack_test.go:157 +0x25\r\ntesting.tRunner(0x10d77b60, 0x710f10)\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:455 +0x8f\r\ncreated by testing.RunTests\r\n\tD:/opt/usr/src/go/jtip/src/testing/testing.go:560 +0x6e9\r\n```\r\n",
+	"user": {
+		"login": "0x6a67",
+		"id": 5486670,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-07-28T14:15:15Z",
+	"updated_at": "2015-07-29T01:18:07Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

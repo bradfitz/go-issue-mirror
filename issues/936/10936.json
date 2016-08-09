@@ -1,0 +1,21 @@
+{
+	"id": 79585626,
+	"number": 10936,
+	"state": "open",
+	"title": "cmd/compile: some large-temp-heap-allocations need to be moved before escape analysis",
+	"body": "This follows https://golang.org/cl/10268/ and includes more convoluted (harder to trigger, harder to fix) versions of the problems addressed there.  \"The problem\" is that any time a stack allocation of pointer-containing data is converted to a heap allocation (this happens if the stack allocation is very large), the pointers stored in that data must be noted as escaping to heap.  This works fine if the stack-to-heap conversion takes place before escape analysis, but not-fine if it occurs after escape analysis.  In most cases conversion occurs during typechecking (before escape analysis) but in some cases walk (after escape analysis) performs transformations that are then type-checked.  From josharian's comments on the CL above:\r\n\r\n----\r\nHere are some large (but not arbitrarily large) temps introduced during walk. Don't know whether they are of concern.  \r\nUp to 1024 bytes in convT2E (walk.go:1064)  \r\nUp to 2048 bytes in OMAKEMAP (walk.go:1441)  \r\nUp to 128 bytes in OSTRARRAYRUNE (walk.go:1559)  \r\nHere are what look to me like arbitrarily large temps introduced during walk, although I might be wrong:\r\n\r\nIn ascompatet in walk.go:1758. See also the todo at order.go:30. Code to reproduce:  \r\n```\r\npackage p\r\nfunc g() ([10000]byte, error) {\r\n\tswitch { // prevent inlining\r\n\t}\r\n\tvar x [10000]byte\r\n\treturn x, nil\r\n}\r\nfunc f() {\r\n\tvar e interface{}\r\n\tvar err error\r\n\te, err = g()\r\n\t_, _ = e, err\r\n}\r\n```\r\nNote that f uses 20048 bytes of stack.  \r\nreorder3save, at walk.go:2461. Code to reproduce:\r\n```\r\npackage p\r\nfunc g() [10000]byte {\r\n\tswitch {\r\n\t} // prevent inlining\r\n\tvar x [10000]byte\r\n\treturn x\r\n}\r\nfunc f() {\r\n\tvar m map[[10000]byte]bool\r\n\tm[g()] = true\r\n}\r\n```\r\nNote that f uses 20016 bytes of stack.",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-05-22T19:51:36Z",
+	"updated_at": "2015-11-04T17:38:55Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

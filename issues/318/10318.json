@@ -1,0 +1,21 @@
+{
+	"id": 65970808,
+	"number": 10318,
+	"state": "open",
+	"title": "debug/dwarf: No method to lookup type by type signature",
+	"body": "The dwarf package internally has support for finding type entries by type signature, but it does not expose this to users of the dwarf package. (*Data).Type takes an \"info\" offset of a type entry and understands internally how to follow AttrType fields within that type that reference other types by signature. But AttrType can also be used on program entities to reference the type of that entity (e.g., the type of a variable), and any occurrence of AttrType can be either an \"info\" offset, which can be resolved by the package user; or a type signature, which cannot currently be resolved by the package user.\r\n\r\nIn practice this often isn't an issue because compilers that emit type signatures typically do so for typedef'd types (since there's little value in doing this for a single instance type), so the AttrType of the program entity will be an \"info\" offset of the typedef and that, in turn, will reference the type signature. However, compilers are free to do what they want and may emit type signatures in program entities, making the current API fragile. There's also no way for a caller to do its own decoding of the type structure if it references types by signature.\r\n\r\nConsider adding an API to fetch a type by its signature. This could be accomplished by simply exposing (*Data).sigToType, but this puts the burden of distinguishing \"info\" offests and type signatures on the user. We could instead add a variant of (*Data).Type that takes a Val (really an interface{}) and does the appropriate kind of lookup.\r\n\r\nOrthogonally, this new method could return either a dwarf.Type or a dwarf.Entry. Returning dwarf.Type forces the user to accept the dwarf package's decoding of the type structure. On the other hand, a method to resolve a type offset or signature into an Entry and another method to decode an Entry into a Type would be more flexible and would expose the ability to read the types section without forcing the caller to use dwarf.Type.\r\n\r\nSee related discussion at https://go-review.googlesource.com/#/c/7280/",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-04-02T17:15:10Z",
+	"updated_at": "2015-06-29T04:31:11Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

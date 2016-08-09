@@ -1,0 +1,12 @@
+{
+	"id": 66068575,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eOh wow, it's been right there... First I was looking in the wrong file (should be\nuipc_syscalls.c, not kpi_socket.c), but even there accept_nocancel() simply ignores\nerror result from soacceptlock(). There might not even be any races, ECONNABORTED simply\ngets ignored and never propagates to the caller. :-/ It is feasible to convert such\n\"successes\" when Addr.Len is 0 to ECONNABORTED? Preliminary patch is something like this:\n\ndiff -r 5e806355a9e1 src/pkg/syscall/syscall_bsd.go\n--- a/src/pkg/syscall/syscall_bsd.go    Thu Jun 14 12:50:42 2012 +1000\n+++ b/src/pkg/syscall/syscall_bsd.go    Wed Jul 25 01:25:41 2012 +0400\n@@ -304,6 +304,14 @@\n        if err != nil {\n                return\n        }\n+       if rsa.Addr.Len == 0 \u0026\u0026 rsa.Addr.Family == AF_UNSPEC {\n+               // Workaround for Darwin: xnu ignores errors from\n+               // soacceptlock, so ECONNABORTED is not returned\n+               // from accept syscall. Turn it into a correct\n+               // error here.\n+               Close(nfd)\n+               return 0, nil, ECONNABORTED\n+       }\n        sa, err = anyToSockaddr(\u0026rsa)\n        if err != nil {\n                Close(nfd)\n\nI'm not sure if this is entirely correct though.\u003c/pre\u003e",
+	"user": {
+		"login": "snaury",
+		"id": 53117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-07-24T21:26:20Z",
+	"updated_at": "2014-12-08T10:20:20Z"
+}

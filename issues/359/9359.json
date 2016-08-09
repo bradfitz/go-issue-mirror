@@ -1,0 +1,33 @@
+{
+	"id": 52186941,
+	"number": 9359,
+	"state": "closed",
+	"title": "cmd/ld: race enabled binaries are too large",
+	"body": "on linux/amd64, `go test -c fmt` produces a binary of 3847664 bytes, however,\r\n`go test -c -race fmt` produces a binary of 14653432 bytes, almost 10MB larger!\r\n\r\nThis issue also affects the 1.4 release.\r\n\r\nThe problem is that this symbol:\r\n`0000000000c09bc0 0000000000982648 d runtime/race(.bss)`\r\nwhich should be put into the bss section, actually consumes space in the binary.\r\n\r\nYou can also see the problem in the program headers:\r\n```\r\nProgram Headers:\r\n  Type           Offset             VirtAddr           PhysAddr\r\n                 FileSiz            MemSiz              Flags  Align\r\n  PHDR           0x0000000000000040 0x0000000000400040 0x0000000000400040\r\n                 0x00000000000001f8 0x00000000000001f8  R      1000\r\n  INTERP         0x0000000000000be4 0x0000000000400be4 0x0000000000400be4\r\n                 0x000000000000001c 0x000000000000001c  R      1\r\n      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]\r\n  LOAD           0x0000000000000040 0x0000000000400040 0x0000000000400040\r\n                 0x0000000000458630 0x0000000000458630  R E    1000\r\n  LOAD           0x0000000000459000 0x0000000000859000 0x0000000000859000\r\n                 0x00000000003991d8 0x00000000003991d8  R      1000\r\n  LOAD           0x00000000007f3000 0x0000000000bf3000 0x0000000000bf3000\r\n                 0x00000000009a2fa0 0x00000000009bffe8  RW     1000\r\n  DYNAMIC        0x00000000007f3140 0x0000000000bf3140 0x0000000000bf3140\r\n                 0x0000000000000140 0x0000000000000140  RW     8\r\n  TLS            0x0000000000000000 0x0000000000000000 0x0000000000000000\r\n                 0x0000000000000000 0x0000000000000010  R      8\r\n  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000\r\n                 0x0000000000000000 0x0000000000000000  RW     8\r\n  LOOS+5041580   0x0000000000000000 0x0000000000000000 0x0000000000000000\r\n                 0x0000000000000000 0x0000000000000000         8\r\n```\r\n\r\nThe file size and mem size for the RW section is almost identical.\r\n\r\nThe race runtime syso file is correct, our linker somehow failed to put the bss in real bss.\r\n```\r\n   text    data     bss     dec     hex filename\r\n 159066     484 9971272 10130822         9a9586 src/runtime/race/race_linux_amd64.syso\r\n```\r\n\r\nShould we also fix this for 1.4.1? Every race enabled binary is 10MB larger than it should be right now.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-26T01:06:08Z",
+	"created_at": "2014-12-17T00:33:46Z",
+	"updated_at": "2016-06-25T01:56:41Z",
+	"milestone": {
+		"id": 906464,
+		"number": 3,
+		"title": "Go1.4.1"
+	}
+}

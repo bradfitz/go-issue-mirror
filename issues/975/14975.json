@@ -1,0 +1,17 @@
+{
+	"id": 143664297,
+	"number": 14975,
+	"state": "closed",
+	"title": "Reverse proxy with gzip generates unexpected EOFs when reading body.",
+	"body": "I'm trying to gzip the response from an API server that uses reverse proxies to send requests to a number of other servers.  However, whenever I try to gzip the results, reading the body generates io.ErrUnexpectedEOF.  I suspect there's a bug in how ReverseProxy handles the gzip writer.\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6 darwin/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\ndarwin amd64 (OS X 10.11.3)\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nDemo code:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"compress/gzip\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n\t\"net/http\"\r\n\t\"net/http/httputil\"\r\n\t\"net/url\"\r\n\t\"strings\"\r\n\t\"time\"\r\n)\r\n\r\n// Gzip from https://gist.github.com/the42/1956518\r\ntype gzipResponseWriter struct {\r\n\tio.Writer\r\n\thttp.ResponseWriter\r\n}\r\n\r\nfunc (w gzipResponseWriter) Write(b []byte) (int, error) {\r\n\treturn w.Writer.Write(b)\r\n}\r\n\r\nfunc makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {\r\n\treturn func(w http.ResponseWriter, r *http.Request) {\r\n\t\tif !strings.Contains(r.Header.Get(\"Accept-Encoding\"), \"gzip\") {\r\n\t\t\tfn(w, r)\r\n\t\t\treturn\r\n\t\t}\r\n\t\tw.Header().Set(\"Content-Encoding\", \"gzip\")\r\n\t\tgz := gzip.NewWriter(w)\r\n\t\tdefer gz.Close()\r\n\t\tgzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}\r\n\t\tfn(gzr, r)\r\n\t}\r\n}\r\n\r\n// Handler that does not set a content length, so, golang uses chunking.\r\nfunc handler(w http.ResponseWriter, r *http.Request) {\r\n\tmessage := \"Hello, world!\"\r\n\tw.Header().Set(\"Content-Type\", \"text/plain\")\r\n\tw.Write([]byte(message))\r\n}\r\n\r\n// Constructs a reverse proxy to the given port.\r\nfunc reverseProxy(port string) func(http.ResponseWriter, *http.Request) {\r\n\turl, err := url.Parse(\"http://127.0.0.1\" + port)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\treturn httputil.NewSingleHostReverseProxy(url).ServeHTTP\r\n}\r\n\r\n// Gets the content from the given server, then returns the error from reading the body.\r\nfunc get(server http.Server) error {\r\n\tresp, err := http.Get(\"http://127.0.0.1\" + server.Addr)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer resp.Body.Close()\r\n\t_, err = ioutil.ReadAll(resp.Body)\r\n\treturn err\r\n}\r\n\r\nfunc main() {\r\n\tserver := http.Server{\r\n\t\tAddr:    \":2000\",\r\n\t\tHandler: http.HandlerFunc(handler),\r\n\t}\r\n\tgo server.ListenAndServe()\r\n\r\n\tproxyServer := http.Server{\r\n\t\tAddr:    \":4000\",\r\n\t\tHandler: makeGzipHandler(reverseProxy(server.Addr)),\r\n\t}\r\n\tgo proxyServer.ListenAndServe()\r\n\r\n\ttime.Sleep(10 * time.Millisecond)\r\n\r\n\tfmt.Printf(\"Server err: %v\\n\", get(server))\r\n\tfmt.Printf(\"Proxy server err: %v\\n\", get(proxyServer))\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\nNo errors.\r\n\r\n5. What did you see instead?\r\nError when reading proxied response.\r\n\r\n",
+	"user": {
+		"login": "optimality",
+		"id": 1971981,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-04-02T13:03:37Z",
+	"created_at": "2016-03-26T05:11:36Z",
+	"updated_at": "2016-05-09T00:09:05Z"
+}

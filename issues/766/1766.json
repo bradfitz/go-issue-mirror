@@ -1,0 +1,32 @@
+{
+	"id": 51278273,
+	"number": 1766,
+	"state": "open",
+	"title": "cmd/compile: optimizations to generated code on amd64",
+	"body": "by **umbricola**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. tar xf umbricola-go-defect-report-addloop1.tar\n2. ./umbricola-go-defect-report-addloop1/addloop1_run.sh\n\nWhat is the expected output?\nTiming statistics similar to those below but with the modular and monolithic Go versions\nhaving the same speed.\n\nWhat do you see instead?\nC version:\n-1243309312\n        0.50 real         0.50 user         0.00 sys\nModular Go version:\n-1243309312\n        0.86 real         0.85 user         0.00 sys\nMonolithic Go version:\n-1243309312\n        3.02 real         3.01 user         0.00 sys\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g/6l\n\nWhich operating system are you using?\nMac OS X 10.5.8\n\nWhich revision are you using?  (hg identify)\n9266c53a8fc0 tip\n\nPlease provide any additional information below.\nThe shell script compiles and measures the running time of three programs that each\ncompute and print the sum of the integers from\n0 to 10^9 - 1 reduced modulo 2^32 (i.e., they accumulate the sum into an int and it\noverwraps a lot).  The measurements I quoted above were run on my Mac laptop with a 2.0\nGHz Core 2 (65 nm process) CPU.\n\nThe first program is a 386 binary compiled from C99 source addloop1_c.c with gcc -O3. \nIt runs the 10^9 loop iterations in 0.50 s, i.e., one iteration per clock, which is the\nbest result I would realistically expect from a compiler.  The generated code is quite\nnatural: an add, an inc, and a cmp/jne pair eligible for macrofusion, which fit nicely\non execution ports 0, 1, and 5.\n\nThe second program is an x86-64 binary compiled with 6g/6l from Go sources\naddloop1_sum.go and addloop1_modular.go.  The former contains the arithmetic loop as an\nexported function that the main function in the latter file calls out to.  This version\ndeserves to be a little slower than the first program just because it's an x86-64 binary\nrunning on a chip that can't do macrofusion in 64-bit mode.  Theoretically I'd expect\n3/4 iterations per cycle, thus about 0.50 s * 4/3 = 0.67 s running time.  The observed\n0.86 s suggests that Go is generating worse code than gcc here, but the speed is still\nreasonable.  Unfortunately, I don't know a way to disassemble the code in a 6l binary,\nso I don't know what the loop looks like.\n\nThe third program is another x86-64 binary compiled with 6g/6l.  This time there is only\none Go source file addloop1_monolithic.go, in which the main() function contains the\narithmetic loop.  Because we didn't change the loop, just inlined it in the main\nfunction, I'd expect to see the same 0.86 s timing again.  Instead I got 3.02 s --- much\nworse!  I can't guess how that happened, but I'm sure it's not the behavior you want.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1766/0/umbricola-go-defect-report-addloop1.tar\"\u003eumbricola-go-defect-report-addloop1.tar\u003c/a\u003e (10240 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"created_at": "2011-05-02T04:36:50Z",
+	"updated_at": "2015-06-08T06:38:46Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

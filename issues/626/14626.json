@@ -1,0 +1,23 @@
+{
+	"id": 138290400,
+	"number": 14626,
+	"state": "closed",
+	"title": "os/user: implement basic cgo-free Current user function",
+	"body": "`os/user.Current` returns a (*User, error). User is:\r\n\r\n```go\r\ntype User struct {\r\n        Uid      string // user id\r\n        Gid      string // primary group id\r\n        Username string\r\n        Name     string\r\n        HomeDir  string\r\n}\r\n```\r\n\r\nWhen the binary is built without cgo, `os/user.Current` returns an error.\r\n\r\nThis bites people often (most recently: #14625) and is confusing. I propose that in cgo-free builds, we make Current work using:\r\n\r\n```go\r\nuser := \u0026User{\r\n   Uid: strconv.Itoa(os.Getuid()),\r\n   Gid: strconv.Itoa(os.Getgid()),\r\n   Username: os.Getenv(\"USER\"),  // or USERNAME on Windows\r\n   HomeDir: os.Getenv(\"HOME\"),   // or HOMEDRIVE+HOMEDIR on windows\r\n}\r\n```\r\n\r\nand only if either Username or HomeDir are empty do we return an error.\r\n\r\nI think we can ignore the User.Name field.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-03-07T20:22:54Z",
+	"created_at": "2016-03-03T20:36:33Z",
+	"updated_at": "2016-03-07T20:22:54Z"
+}

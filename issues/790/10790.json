@@ -1,0 +1,27 @@
+{
+	"id": 75621852,
+	"number": 10790,
+	"state": "open",
+	"title": "x/image/webp: excessive memory consumption",
+	"body": "The following program allocates 3GB+ while input data is 36 bytes and image size is small.\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"golang.org/x/image/webp\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := \"RIFF0000WEBPVP8 00\\xef\\xbf\\xbd\\x01\\x00\\x14\\x00\\x00\\xb24\\n\\x9d\\x01*\\x96\\x00g\\x00\"\r\n\tcfg, err := webp.DecodeConfig(strings.NewReader(data))\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tif cfg.Width*cfg.Height \u003e 1e6 {\r\n\t\treturn\r\n\t}\r\n\tif _, err := webp.Decode(strings.NewReader(data)); err != nil {\r\n\t\treturn\r\n\t}\r\n}\r\n```\r\nwith ulimit -v 1000000 it crashes as:\r\n```\r\nfatal error: runtime: out of memory\r\n\r\ngoroutine 1 [running]:\r\nruntime.systemstack_switch()\r\n\tsrc/runtime/asm_amd64.s:216 fp=0xc20803f918 sp=0xc20803f910\r\nruntime.mallocgc(0xbfef3020, 0x4ad900, 0x1, 0xd)\r\n\tsrc/runtime/malloc.go:629 +0x925 fp=0xc20803f9e8 sp=0xc20803f918\r\nruntime.newarray(0x4ad900, 0xbfef3020, 0x0)\r\n\tsrc/runtime/malloc.go:745 +0xcc fp=0xc20803fa28 sp=0xc20803f9e8\r\nruntime.makeslice(0x4a5340, 0xbfef3020, 0xbfef3020, 0x0, 0x0, 0x0)\r\n\tsrc/runtime/slice.go:32 +0x168 fp=0xc20803fa78 sp=0xc20803fa28\r\ngolang.org/x/image/vp8.(*Decoder).parseOtherPartitions(0xc20806e000, 0x0, 0x0)\r\n\tsrc/golang.org/x/image/vp8/decode.go:273 +0x5e fp=0xc20803fb70 sp=0xc20803fa78\r\ngolang.org/x/image/vp8.(*Decoder).parseOtherHeaders(0xc20806e000, 0x0, 0x0)\r\n\tsrc/golang.org/x/image/vp8/decode.go:311 +0x1f0 fp=0xc20803fc28 sp=0xc20803fb70\r\ngolang.org/x/image/vp8.(*Decoder).DecodeFrame(0xc20806e000, 0xd08010600, 0x0, 0x0)\r\n\tsrc/golang.org/x/image/vp8/decode.go:338 +0x4e fp=0xc20803fca8 sp=0xc20803fc28\r\ngolang.org/x/image/webp.decode(0x7f541f68b1c0, 0xc208016420, 0x401f00, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)\r\n\tsrc/golang.org/x/image/webp/decode.go:96 +0x8d5 fp=0xc20803fe58 sp=0xc20803fca8\r\ngolang.org/x/image/webp.Decode(0x7f541f68b1c0, 0xc208016420, 0x0, 0x0, 0x0, 0x0)\r\n\tsrc/golang.org/x/image/webp/decode.go:259 +0x55 fp=0xc20803feb8 sp=0xc20803fe58\r\nmain.main()\r\n\twebp.go:19 +0x233 fp=0xc20803ff90 sp=0xc20803feb8\r\n```\r\nThe allocation request is for 0xbfef3020 (3220123680) bytes.\r\n\r\non commit c5f9292598396797bde21d35a38a3da25f561f81",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2015-05-12T14:26:29Z",
+	"updated_at": "2015-06-03T04:49:22Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

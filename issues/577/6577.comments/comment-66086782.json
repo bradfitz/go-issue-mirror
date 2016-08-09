@@ -1,0 +1,12 @@
+{
+	"id": 66086782,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7 by **kentquirk**:\n\n\u003cpre\u003eI have the same problem.\n\nIf I put this in my main:\n    log.Printf(\"Token text for INCLUDE == %s\", yyTokname(INCLUDE));\n\nWhat I expect to get is:\n2014/06/13 15:13:37 Token text for INCLUDE == INCLUDE\n\nWhat I actually get is:\n2014/06/13 15:13:37 Token text for INCLUDE == tok-57346\n\n In the generated .go file, this function is the problem:\n\nfunc yyTokname(c int) string {\n\t// 4 is TOKSTART above\n\tif c \u0026gt;= 4 \u0026\u0026 c-4 \u0026lt; len(yyToknames) {\n\t\tif yyToknames[c-4] != \"\" {\n\t\t\treturn yyToknames[c-4]\n\t\t}\n\t}\n\treturn __yyfmt__.Sprintf(\"tok-%v\", c)\n}\n\nThe template in \u003ca href=\"https://code.google.com/p/go/source/browse/src/cmd/yacc/yacc.go#3255\"\u003ehttps://code.google.com/p/go/source/browse/src/cmd/yacc/yacc.go#3255\u003c/a\u003e\ncontains the comment above that TOKSTART is 4. But the base of the token values is not\n4, but some large number (in my case, 57346). \n\nHere's a proposed fix (is there a formal way to submit code fixes?):\nInsert before \u003ca href=\"https://code.google.com/p/go/source/browse/src/cmd/yacc/yacc.go#509\"\u003ehttps://code.google.com/p/go/source/browse/src/cmd/yacc/yacc.go#509\u003c/a\u003e :\n\t\t\tfmt.Fprintf(ftable, \"const _TOKNAME = %v\\n\", tokset[TOKSTART].value)\n\nModify the template at line 3256 as follows:\nfunc $$Tokname(c int) string {\n\tif c \u0026gt;= _TOKSTART \u0026\u0026 c-_TOKSTART \u0026lt; len($$Toknames) {\n\t\tif $$Toknames[c-_TOKSTART] != \"\" {\n\t\t\treturn $$Toknames[c-_TOKSTART]\n\t\t}\n\t}\n\treturn __yyfmt__.Sprintf(\"tok-%v\", c)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-13T19:42:57Z",
+	"updated_at": "2014-12-22T06:29:31Z"
+}

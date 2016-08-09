@@ -1,0 +1,12 @@
+{
+	"id": 66091555,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6 by **fuzxxl**:\n\n\u003cpre\u003eCyclical references come up when trying to securely encapsulate a C.malloc'ed struct in\na way that guarantees the following things:\n\n1. The encapsulated struct is automatically free'd (e.g. by a finalizer) once every\nreferences to it from the Go side are gone.\n2. It's impossible for the user of the encapsulation to hold a reference to an\nencapsulation after the encapsulated struct is free'd.\n3. It is impossible to cause an accidential memory leak.\n\nA trivial way to wrap a malloc'd struct is to provide a Go struct that free's the C\nstruct once it becomes unreachable:\n\n    type Foo struct {\n        cptr *C.struct_foo\n    }\n\n    runtime.SetFinalizer(someFoo, func (f *Foo) { C.free(unsafe.Pointer(f) })\n\nThis may create a pointer into nowehere when the user of the wrapper accidentially or\npurposefully copies a struct Foo – the copy still holds a reference to the C struct\nwhich get's free'd once the original struct becomes unreachable (which might happen\nwhile the copy is still in use).\n\nA solution to this issue is to add a pointer to Foo that points to the one \"original\"\nstruct which carries the finalizer:\n\n    type Foo struct {\n        cptr *C.struct_foo\n        singleton *Foo\n    }\n\n    runtime.SetFinalizer(\u0026someFoo, func (f *Foo) { C.free(unsafe.Pointer(f) })\n    someFoo.singleton = \u0026someFoo\n\nThis doesn't work because of issue #7358 (this issue): the singleton Foo points to\nitself which prevents the finalizer from running.\n\nIt is possible to work around this by creating more levels of abstraction / data /\ngarbage, but such workarounds are not elegant and I would rather avoid using them: The\nuser is not supposed to copy a struct, the pattern described above is just a safety\nmeasure in case he does anyway which comes at (almost neglibe) the cost of one extra\nword of data. Allocating extra structures to avoid forming reference cycles is possible\nbut would make extra allocations of much larger size neccessary.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-20T21:21:51Z",
+	"updated_at": "2014-12-08T10:40:56Z"
+}

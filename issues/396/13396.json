@@ -1,0 +1,17 @@
+{
+	"id": 118814040,
+	"number": 13396,
+	"state": "closed",
+	"title": "path/filepath: Match incorrectly reports a pattern as malformed",
+	"body": "```\r\n$ go version\r\ngo version go1.5.1 linux/amd64\r\n```\r\n\r\nMatch doesn't accept a hyphen inside a character class except when it is a part of a range, e.g. `[0-5]` or when it is escaped `[\\-]`.  A hyphen at the beginning or the end of the character class should ideally work without escaping.\r\n\r\n\r\n``` shell\r\n$ cd $(mktemp -d)\r\n$ touch foo.bar\r\n$ touch foo-bar\r\n$ touch foobar\r\n$ ls -l\r\ntotal 0\r\n-rw-rw-r-- 1 mohit mohit 0 Nov 25 10:05 foobar\r\n-rw-rw-r-- 1 mohit mohit 0 Nov 25 10:05 foo-bar\r\n-rw-rw-r-- 1 mohit mohit 0 Nov 25 10:05 foo.bar\r\n```\r\n\r\nTest program:\r\n\r\n``` go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main() {\r\n\tm, e := filepath.Glob(`foo*[.-]*`)\r\n\tif e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tfor _, v := range m {\r\n\t\tfmt.Printf(\"%v\\n\", v)\r\n\t}\r\n}\r\n```\r\n\r\nExecuting it results in:\r\n\r\n```\r\npanic: syntax error in pattern\r\n\r\ngoroutine 1 [running]:\r\nmain.main()\r\n\t/tmp/tmp.ijbcwjChbR/z.go:11 +0xa1\r\nexit status 2\r\n```\r\n\r\nThe same `glob` pattern yields results in the shell:\r\n\r\n``` shell\r\n$ ls -l -- foo[.-]*\r\n-rw-rw-r-- 1 mohit mohit 0 Nov 25 10:05 foo-bar\r\n-rw-rw-r-- 1 mohit mohit 0 Nov 25 10:05 foo.bar\r\n```\r\n\r\nSimilar globs appear to work in other languages too:\r\n\r\n``` python\r\n\u003e\u003e\u003e from glob import glob\r\n\u003e\u003e\u003e glob(\"foo[.-]*\")\r\n['foo.bar', 'foo-bar']\r\n\u003e\u003e\u003e \r\n```\r\n\r\n\r\n``` d\r\nimport std.path;\r\n\r\nvoid main()\r\n{\r\n\tassert(globMatch(\"foo-bar\", `foo[-]*`) == true);\r\n\tassert(globMatch(\"foo.bar-baz\", `foo[-.]*`) == true);\r\n}\r\n```\r\n",
+	"user": {
+		"login": "0xmohit",
+		"id": 8176079,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-11-25T17:00:50Z",
+	"created_at": "2015-11-25T11:12:08Z",
+	"updated_at": "2015-11-26T03:20:28Z"
+}

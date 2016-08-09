@@ -1,0 +1,33 @@
+{
+	"id": 86744256,
+	"number": 11134,
+	"state": "closed",
+	"title": "encoding/asn1: Unmarshal accepts negative dates",
+	"body": "The following program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/asn1\"\r\n\t\"time\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"\\x18\\x0f00000100000000Z\")\r\n\tvar v time.Time\r\n\t_, err := asn1.Unmarshal(data, \u0026v)\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tfmt.Printf(\"%v\\n\",v)\r\n\t_, err = asn1.Marshal(v)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n```\r\npanics with:\r\n```\r\n-0001-12-31 00:00:00 +0000 UTC\r\npanic: asn1: structure error: cannot represent time as GeneralizedTime\r\n```\r\n\r\nThe value is successfully unmarshalled, but can't be marshalled. I am not sure who exactly is wrong here. This happens because of \"date normalization\" in time package, it converts day 0 to the last day of the previous month. ASN.1 (ISO 8601) does not define \"date normalization\", if I understand correctly, assuming that dates and times are valid as is.\r\n\r\nI think we should not do time/date normalization, because it is asking for troubles security-wise.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-06-29T02:50:58Z",
+	"created_at": "2015-06-09T21:40:30Z",
+	"updated_at": "2016-06-28T21:53:39Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

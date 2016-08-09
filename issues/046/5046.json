@@ -1,0 +1,28 @@
+{
+	"id": 51283039,
+	"number": 5046,
+	"state": "closed",
+	"title": "database/sql: must call (*driver.Stmt).Close before correspondent (*driver.Conn).Close",
+	"body": "\u003cpre\u003eRecently, my code.google.com/p/odbc driver started crashing with \u0026quot;fatal error:\nmalloc/free - deadlock\u0026quot;. It looks like memory corruption. There is plenty of room\nfor that in my package :-), but I cannot find any suspects. On the other hand, I can see\nthat my driver connection and correspondent statements are closed out of order -\nconnection first, followed by statement:\n\n...\nCALLERS: runtime.goexit /root/go/root/src/pkg/runtime/proc.c:1214\nCALLERS: testing.tRunner /root/go/root/src/pkg/testing/testing.go:346\nCALLERS: code.google.com/p/odbc_test.TestALEX\n/root/go/path/mine/src/code.google.com/p/odbc/mssql_test.go:832\nCALLERS: code.google.com/p/odbc_test.func·010\n/root/go/path/mine/src/code.google.com/p/odbc/mssql_test.go:767\nCALLERS: database/sql.(*DB).Close /root/go/root/src/pkg/database/sql/sql.go:284\nCALLERS: code.google.com/p/odbc.(*Conn).Close\n/root/go/path/mine/src/code.google.com/p/odbc/conn.go:45\nCALLERS: code.google.com/p/odbc.releaseHandle\n/root/go/path/mine/src/code.google.com/p/odbc/handle.go:36\nreleaseHandle: ht=2 h=822679440\nSYSCALL_S: SQLFreeHandle(handleType=2, handle=822679440) ...\nSYSCALL_E: SQLFreeHandle(handleType=2, handle=822679440) (ret=0)\nreleaseHandle(after): ret=0\nCALLERS: runtime.goexit /root/go/root/src/pkg/runtime/proc.c:1214\nCALLERS: code.google.com/p/odbc_test.func·011\n/root/go/path/mine/src/code.google.com/p/odbc/mssql_test.go:795\nCALLERS: database/sql.(*Stmt).Close /root/go/root/src/pkg/database/sql/sql.go:1031\nCALLERS: database/sql.(*DB).removeDep /root/go/root/src/pkg/database/sql/sql.go:252\nCALLERS: database/sql.(*Stmt).finalClose /root/go/root/src/pkg/database/sql/sql.go:1036\nCALLERS: database/sql.(*DB).noteUnusedDriverStatement\n/root/go/root/src/pkg/database/sql/sql.go:362\nCALLERS: code.google.com/p/odbc.(*Stmt).Close\n/root/go/path/mine/src/code.google.com/p/odbc/stmt.go:40\nCALLERS: code.google.com/p/odbc.(*ODBCStmt).closeByStmt\n/root/go/path/mine/src/code.google.com/p/odbc/odbcstmt.go:62\nCALLERS: code.google.com/p/odbc.(*ODBCStmt).releaseHandle\n/root/go/path/mine/src/code.google.com/p/odbc/odbcstmt.go:89\nCALLERS: code.google.com/p/odbc.releaseHandle\n/root/go/path/mine/src/code.google.com/p/odbc/handle.go:36\nreleaseHandle: ht=3 h=822679936\nSYSCALL_S: SQLFreeHandle(handleType=3, handle=822679936) ...\nfatal error: malloc/free - deadlock\n[signal 0xc0000005 code=0x1 addr=0x2f0 pc=0x419cd8]\n...\n\nThis is a no no (from \u003ca href=\"http://goo.gl/O7mYb)\"\u003ehttp://goo.gl/O7mYb)\u003c/a\u003e: \u0026quot;... After freeing the connection, it\nis an application programming error to use the connection's handle in a call to an ODBC\nfunction; doing so has undefined but probably fatal consequences ...\u0026quot;. Clear enough\n:-).\n\nIf database/sql package cannot provide such guarantee, perhaps, it needs to be\ndocumented as such, so that all driver writers can take care of it in their code.\n\nIt is hard for me to provide simple test case - I need my database to demonstrate.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:26:59Z",
+	"created_at": "2013-03-14T04:25:04Z",
+	"updated_at": "2016-06-24T22:35:35Z"
+}

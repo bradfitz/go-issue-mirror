@@ -1,0 +1,12 @@
+{
+	"id": 66096132,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe clearest way to say it would be.\nC (not go) code on windows amd64 expects much larger os (not go) stacks.\n\nIf there was a way to increase the os thread's stack size after it is created in windows\nI would not have filed this bug.\n\nDoubling the current stack reservation on windows amd64 fixes my problem, it may not fix\nother stack hungry c/cgo code.\n\nTo fix other c stack (not go stack) hungry code I was recommending a function that\nstarted a new os thread with a much larger (and user defined) os stack size than the\ndefault, and then locking down the goroutine in the same way as a normal\nruntime.LockOSThread() to that thread.  This would keep the amount of reserved memory\nlow for randomly created threads, while enabling the use of stack hungry c code inside\nof that locked goroutine.\n\nShort fix for me is\n\npkg/runtime/os_windows.c    runtime·newosproc\nthandle = runtime·stdcall(runtime·CreateThread, 6,\n                nil, (uintptr)0x20000, runtime·tstart_stdcall, mp,\n                STACK_SIZE_PARAM_IS_A_RESERVATION, nil);\n\nChange 0x20000 (128KB) to 0x40000 (256KB) == real problem with a mainstream opengl\ndriver running a necessary and basic initialization operation goes away.\n\nThis would affect every os thread created, so having a runtime.LockSizedOSThread() would\ncreate a way to have small (0x20000) default stacks for normal threads and have\ntroublesome c/cgo code running locked in a thread with a larger os stack.\u003c/pre\u003e",
+	"user": {
+		"login": "bryanturley",
+		"id": 1634211,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-18T19:57:31Z",
+	"updated_at": "2014-12-08T10:45:42Z"
+}

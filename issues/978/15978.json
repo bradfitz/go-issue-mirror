@@ -1,0 +1,29 @@
+{
+	"id": 158751592,
+	"number": 15978,
+	"state": "open",
+	"title": "syscall: panic within syscall_windows.go Readlink",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 windows/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nWindows Server 2016 TP5, amd64\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nBuilt a version of go-swagger, and run it Panic's when whilst compiling a swagger.json.\r\n\r\nI believe the issue is in the following switch statement within syscall_windows.go Readlink() : \r\n\r\nswitch rdb.ReparseTag {\r\n\tcase IO_REPARSE_TAG_SYMLINK:\r\n\t\tdata := (*symbolicLinkReparseBuffer)(unsafe.Pointer(\u0026rdb.reparseBuffer))\r\n\t\tp := (*[0xffff]uint16)(unsafe.Pointer(\u0026data.PathBuffer[0]))\r\n\t\ts = UTF16ToString(p[data.PrintNameOffset/2 : (data.PrintNameLength-data.PrintNameOffset)/2])\r\n\tcase _IO_REPARSE_TAG_MOUNT_POINT:\r\n\t\tdata := (*mountPointReparseBuffer)(unsafe.Pointer(\u0026rdb.reparseBuffer))\r\n\t\tp := (*[0xffff]uint16)(unsafe.Pointer(\u0026data.PathBuffer[0]))\r\n\t\ts = UTF16ToString(p[data.PrintNameOffset/2 : (data.PrintNameLength-data.PrintNameOffset)/2])\r\n\r\nPer Microsoft documentation at https://msdn.microsoft.com/en-us/library/ff552012.aspx \r\nThe PrintNameLength field should be interpreted as a length field, so the slice should change the subtraction to addition, as in : \r\n\r\ns = UTF16ToString(p[data.PrintNameOffset/2 : (data.PrintNameLength + data.PrintNameOffset)/2])\r\n\r\nI have no idea why I may be getting a non-zero PrintNameOffset result, but if data.PrintNameOffset \u003e data.PrintNameLength then it definitely seems to be possible to run into problems.\r\n\r\nAlso note that \r\n\r\n\tMAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024\r\n\r\nSo the following cast : (*[0xffff]uint16) seems to be risky, since that will exceed the size of the buffer that was allocated.\r\n\r\nHere is a portion of the call stack:\r\n\r\ngoroutine 27 [running]:\r\npanic(0xb20740, 0xc08202c010)\r\n        c:/go/src/runtime/panic.go:481 +0x3f4\r\nsyscall.Readlink(0xc0829632f0, 0x8, 0xc08213eb00, 0x80, 0x80, 0x0, 0x0, 0x0)\r\n        c:/go/src/syscall/syscall_windows.go:1031 +0x4e9\r\nos.Readlink(0xc0829632f0, 0x8, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/os/file_posix.go:21 +0xc4\r\npath/filepath.walkLink(0xc0829632f0, 0x8, 0xc0827dbb20, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink.go:47 +0x20c\r\npath/filepath.walkLinks(0xc0821181e0, 0x8, 0xc0827dbb20, 0x0, 0x0\r\n, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink.go:77 +0x422\r\npath/filepath.walkLinks(0xc0821181e0, 0x9, 0xc0827dbb20, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink.go:68 +0x219\r\npath/filepath.walkLinks(0xc0821181e0, 0xb, 0xc0827dbb20, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink.go:73 +0x2df\r\npath/filepath.walkSymlinks(0xc0821181e0, 0xb, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink.go:98 +0xae\r\npath/filepath.evalSymlinks(0xc0821181e0, 0xb, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/symlink_windows.go:50 +0x5d\r\npath/filepath.EvalSymlinks(0xc0821181e0, 0xb, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/path/filepath/path.go:227 +0x4a\r\ngo/build.(*Context).hasSubdir(0x1059340, 0xc0821181e0, 0xb, 0xbf8f20, 0x1, 0x0, 0x0, 0xc082963200)\r\n        c:/go/src/go/build/build.go:145 +0x102\r\ngo/build.(*Context).Import.func3(0xc0821181e0, 0xb, 0x0, 0x0)\r\n        c:/go/src/go/build/build.go:578 +0xb0\r\ngo/build.(*Context).Import(0x1059340, 0xc082594d21, 0x1c, 0xbf8f20, 0x1, 0x0, 0x5e0114, 0x0, 0x0)\r\n        c:/go/src/go/build/build.go:608 +0x6842\r\ngo/build.Import(0xc082594d21, 0x1c, 0xbf8f20, 0x1, 0x0, 0xc082594d20, 0x0, 0x0)\r\n        c:/go/src/go/build/build.go:1096 +0x72\r\ngithub.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports.importPathToNameGoPath(0xc082594d21, 0x1c, 0xbf8f20, 0x1, 0x0, 0x0)\r\n        c:/users/nkaethler/s/p4/dev/src/chroma/go/src/github.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports/fix.go:168 +0x64\r\ngithub.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports.fixImports.func1(0x17c5428, 0xc082954cf0, 0x0, 0x0)\r\n        c:/users/nkaethler/s/p4/dev/src/chroma/go/src/github.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports/fix.go:74 +0x29f\r\ngithub.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports.visitFn.Visit(0xc0829554d0, 0x17c5428, 0xc082954cf0, 0x0, 0x0)\r\n        c:/users/nkaethler/s/p4/dev/src/chroma/go/src/github.com/go-swagger/go-swagger/vendor/golang.org/x/tools/imports/fix.go:409 +0x43\r\n4. What did you expect to see?\r\n\r\n\r\n5. What did you see instead?\r\n\r\n\r\n",
+	"user": {
+		"login": "nkaethler",
+		"id": 16143726,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 36,
+	"created_at": "2016-06-06T19:10:17Z",
+	"updated_at": "2016-08-01T01:27:43Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

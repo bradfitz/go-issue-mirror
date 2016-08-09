@@ -1,0 +1,12 @@
+{
+	"id": 161123540,
+	"body": "/cc @alexbrainman \r\n\r\nI guess this is the newLookupPort path?\r\n\r\n```go\r\nfunc newLookupPort(network, service string) (int, error) {\r\n        acquireThread()\r\n        defer releaseThread()\r\n        var stype int32\r\n        switch network {\r\n        case \"tcp4\", \"tcp6\":\r\n                stype = syscall.SOCK_STREAM\r\n        case \"udp4\", \"udp6\":\r\n                stype = syscall.SOCK_DGRAM\r\n        }\r\n        hints := syscall.AddrinfoW{\r\n                Family:   syscall.AF_UNSPEC,\r\n                Socktype: stype,\r\n                Protocol: syscall.IPPROTO_IP,\r\n        }\r\n        var result *syscall.AddrinfoW\r\n        e := syscall.GetAddrInfoW(nil, syscall.StringToUTF16Ptr(service), \u0026hints, \u0026result)\r\n        if e != nil {\r\n                return 0, \u0026DNSError{Err: os.NewSyscallError(\"getaddrinfow\", e).Error(), Name: network + \"/\" + service}\r\n        }\r\n        defer syscall.FreeAddrInfoW(result)\r\n        if result == nil {\r\n                return 0, \u0026DNSError{Err: syscall.EINVAL.Error(), Name: network + \"/\" + service}\r\n        }\r\n        addr := unsafe.Pointer(result.Addr)\r\n        switch result.Family {\r\n        case syscall.AF_INET:\r\n                a := (*syscall.RawSockaddrInet4)(addr)\r\n                return int(syscall.Ntohs(a.Port)), nil\r\n        case syscall.AF_INET6:\r\n                a := (*syscall.RawSockaddrInet6)(addr)\r\n                return int(syscall.Ntohs(a.Port)), nil\r\n        }\r\n        return 0, \u0026DNSError{Err: syscall.EINVAL.Error(), Name: network + \"/\" + service}\r\n}\r\n```\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-01T22:55:55Z",
+	"updated_at": "2015-12-01T22:55:55Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 199705828,
+	"body": "This is not a bug, IMO. f is not live by the time the loop starts, and it\nis collected, triggering the finalisers.\n\nOn Tue, 22 Mar 2016, 19:47 Mikio Hara, \u003cnotifications@github.com\u003e wrote:\n\n\u003e Please answer these questions before submitting your issue. Thanks!\n\u003e\n\u003e    1.\n\u003e\n\u003e    What version of Go are you using (go version)?\n\u003e    tip through go1.4\n\u003e    2.\n\u003e\n\u003e    What operating system and processor architecture are you using (go env\n\u003e    )?\n\u003e    {dragonfly,freebsd,linux,openbsd,netbsd}/amd64\n\u003e    3.\n\u003e\n\u003e    What did you do?\n\u003e    ran the following snippet:\n\u003e\n\u003e package main\n\u003e\n\u003e import (\n\u003e         \"fmt\"\n\u003e         \"net\"\n\u003e         \"runtime\"\n\u003e         \"syscall\"\n\u003e )\n\u003e\n\u003e func main() {\n\u003e         c, err := net.ListenPacket(\"udp4\", \"0.0.0.0:0\")\n\u003e         if err != nil {\n\u003e                 fmt.Println(err)\n\u003e                 return\n\u003e         }\n\u003e         f, err := c.(*net.UDPConn).File()\n\u003e         c.Close()\n\u003e         if err != nil {\n\u003e                 fmt.Println(err)\n\u003e                 return\n\u003e         }\n\u003e         //defer f.Close()\n\u003e         s := int(f.Fd())\n\u003e         for i := 0; ; i++ {\n\u003e                 soerr, err := syscall.GetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_ERROR)\n\u003e                 if err != nil {\n\u003e                         fmt.Println(err)\n\u003e                         return\n\u003e                 }\n\u003e                 fmt.Println(i, soerr)\n\u003e                 runtime.GC()\n\u003e         }\n\u003e }\n\u003e\n\u003e\n\u003e    1.\n\u003e\n\u003e    What did you expect to see?\n\u003e    no error output\n\u003e    2.\n\u003e\n\u003e    What did you see instead?\n\u003e\n\u003e 0 0\n\u003e 1 0\n\u003e [...]\n\u003e bad file descriptor\n\u003e\n\u003e —\n\u003e You are receiving this because you are subscribed to this thread.\n\u003e Reply to this email directly or view it on GitHub\n\u003e \u003chttps://github.com/golang/go/issues/14910\u003e\n\u003e\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-22T08:54:20Z",
+	"updated_at": "2016-03-22T08:54:20Z"
+}

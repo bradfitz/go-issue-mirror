@@ -1,0 +1,22 @@
+{
+	"id": 51281224,
+	"number": 3836,
+	"state": "closed",
+	"title": "syscall interface missing GetsockoptUcred",
+	"body": "by **andreas@ionisiert.de**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nGo doesn't have a generic getsockopt(2) interface where I can pass\npointer an length. Instead it only has interfaces for certain data\nstructures in syscall/syscall_linux.go and friends. Thus I can only\nget socket options if there is such a function for the data structure\nthat getsockopt should fill. This one was forgotten:\n\ndiff -r 2ccfd4b451d3 src/pkg/syscall/syscall_linux.go\n--- a/src/pkg/syscall/syscall_linux.go  Thu Apr 26 12:50:14 2012 -0700\n+++ b/src/pkg/syscall/syscall_linux.go  Tue Jul 17 09:07:34 2012 +0200\n@@ -473,6 +473,13 @@\n        return \u0026amp;value, err\n }\n \n+func GetsockoptUcred(fd, level, opt int) (*Ucred, error) {\n+       var value Ucred\n+       vallen := _Socklen(SizeofUcred)\n+       err := getsockopt(fd, level, opt, uintptr(unsafe.Pointer(\u0026amp;value)),\n\u0026amp;vallen)\n+       return \u0026amp;value, err\n+}\n+\n func SetsockoptInt(fd, level, opt int, value int) (err error) {\n        var n = int32(value)\n        return setsockopt(fd, level, opt, uintptr(unsafe.Pointer(\u0026amp;n)), 4)\n\nIt is required for code like this:\n        ucred, uerr := syscall.GetsockoptUcred(cfd, syscall.SOL_SOCKET, syscall.SO_PEERCRED)\n\nIn theory it is possible to get UnixCredentials also from Recvmsg, in practice it works\nmuch easier with Getsockopt.\n\nSame change need to be done for all operating systems I guess.\n\nWould it be better to also have a generic byte[] Getsockopt, so people\ncan build use getsockopt with other data structures as well, without hacking go library\nor reimplementing the system call?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:16Z",
+	"created_at": "2012-07-17T07:10:45Z",
+	"updated_at": "2016-06-24T22:21:42Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 112682716,
+	"body": "@aclements  thanks for the hint of RawSyscall usage, copied to google group.\r\n\r\nTo be clear, change the code  to make sure it's using in Go program to setup affinity mask for a outside/standalone process(no write in Go).\r\n\r\n```\r\n// pinToCPU pin the pid to CPU index,\r\n// usually, pid is a outside/standalone process(no write in Go) \r\nfunc pinToCPU(pid int, cpu uint) error {\r\n\tconst __NR_sched_setaffinity = 203\r\n\tvar mask [1024 / 64]uint8\r\n\truntime.LockOSThread()\r\n\tdefer runtime.UnlockOSThread()\r\n\tmask[cpu/64] |= 1 \u003c\u003c (cpu % 64)\r\n\t_, _, errno := syscall.RawSyscall(__NR_sched_setaffinity, uintptr(pid), uintptr(len(mask)*8), uintptr(unsafe.Pointer(\u0026mask)))\r\n\tif errno != 0 {\r\n\t\treturn errno\r\n\t}\r\n\treturn nil\r\n}\r\n```\r\n\r\n",
+	"user": {
+		"login": "wheelcomplex",
+		"id": 1411633,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-17T07:03:13Z",
+	"updated_at": "2015-06-17T07:03:13Z"
+}

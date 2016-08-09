@@ -1,0 +1,27 @@
+{
+	"id": 62197372,
+	"number": 10180,
+	"state": "open",
+	"title": "cmd/link: better support for non-4K page size systems",
+	"body": "At least three problems here:\r\n`1`. cmd/ld INITRND needs to be at least as large as the page size, otherwise\r\nwe might trigger kernel bugs. See https://groups.google.com/forum/#!topic/golang-nuts/29RraQ-t3gc\r\nfor a case.\r\n\r\nHowever, just using a larger INITRND value will make the binary bigger because\r\nof the zero padding between segments.\r\n\r\nI think we can have a way to have a much larger INITRND without increasing\r\nthe size of the binary by leaving a VM hole between the segments.\r\n(e.g. text segment ends at `N*INITRND + x`, then we make the next segment's\r\nload address start at `(N+1)*INITRND + x + 1`, so there is no hole in the file, but\r\ndifferent segments end up on different pages (if `INITRND \u003e= page size`).\r\n\r\n`2`. _PhysPageSize in runtime needs to be a variable and auto detected\r\nat process start up. This might incur a performance overhead, but as the\r\nproliferation of non-4K page size systems (power64, arm, arm64), we should\r\nmake the change to continue the Go tradition that it just works without extra\r\ntuning. At least, we should make cmd/dist detect page size and tune the\r\nconst in runtime.\r\n\r\n`3`. syscall.Getpagesize should return the value in the runtime. Right now,\r\nit's hardcoded on all systems.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"created_at": "2015-03-16T20:15:49Z",
+	"updated_at": "2016-07-19T20:22:32Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

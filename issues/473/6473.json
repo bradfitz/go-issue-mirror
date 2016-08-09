@@ -1,0 +1,22 @@
+{
+	"id": 51285239,
+	"number": 6473,
+	"state": "closed",
+	"title": "cmd/cgo: Opaque pointers handled incorrectly",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nThis code:\n\n#ifdef __cplusplus\nclass Test1 {};\nclass Test2 {};\nclass Test3 {};\n#else\ntypedef struct Test1 Test1;\ntypedef void Test2;\ntypedef int Test3;\n#endif\n\nShould generate Go types and use them in functions.\n\nWhat is the expected output?\n\n_cgo_gotypes.go:\n\n// ...\ntype _Ctype_void [0]byte\ntype _Ctype_int int32\ntype _Ctype_Test1 _Ctype_void\ntype _Ctype_Test2 _Ctype_void\ntype _Ctype_Test3 _Ctype_int\n\n\nfunc _Cfunc_TestFunc1(*_Ctype_Test1) _Ctype_void\nfunc _Cfunc_TestFunc2(*_Ctype_Test2) _Ctype_void\nfunc _Cfunc_TestFunc3(*_Ctype_Test3) _Ctype_void\n\nWhat do you see instead?\n\n_cgo_gotypes.go:\n\n// ...\ntype _Ctype_Test2 _Ctype_void\ntype _Ctype_Test3 _Ctype_int\ntype _Ctype_int int32\ntype _Ctype_void [0]byte\n\nfunc _Cfunc_TestFunc1(*[0]byte) _Ctype_void\nfunc _Cfunc_TestFunc2(unsafe.Pointer) _Ctype_void\nfunc _Cfunc_TestFunc3(*_Ctype_Test3) _Ctype_void\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngc default\ng++ 4.8 (GNU) OR clang++\n\nWhich operating system are you using?\n\nOS X 10.8.5\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +f4d1cb8d9a91 Thu Sep 19 22:34:33 2013 +1000 darwin/amd64\n\nPlease provide any additional information below.\n\nRun it like this:\n\nCXX=g++-4.8 go tool cgo -- cgotest.go\nCXX=clang++ go tool cgo -- cgotest.go\n\nTest case attached.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6473/0/cgotest.zip\"\u003ecgotest.zip\u003c/a\u003e (7656 bytes)",
+	"user": {
+		"login": "lukescott",
+		"id": 486224,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:35:45Z",
+	"created_at": "2013-09-24T18:56:05Z",
+	"updated_at": "2016-06-25T01:19:37Z"
+}

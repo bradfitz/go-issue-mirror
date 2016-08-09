@@ -1,0 +1,21 @@
+{
+	"id": 115188745,
+	"number": 13155,
+	"state": "open",
+	"title": "os/exec: CombinedOutput hangs when exec'd task forks a \"daemon\"",
+	"body": "Consider https://gist.github.com/felixge/452a5a192e217a2a51c0\r\n\r\nI get a similar stack trace:\r\n\r\n```\r\ngoroutine 1 [chan receive]:\r\nos/exec.(*Cmd).Wait(0xc82008a000, 0x0, 0x0)\r\n\t/usr/lib/go/src/os/exec/exec.go:385 +0x2c9\r\nos/exec.(*Cmd).Run(0xc82008a000, 0x0, 0x0)\r\n\t/usr/lib/go/src/os/exec/exec.go:258 +0x64\r\nos/exec.(*Cmd).CombinedOutput(0xc82008a000, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/os/exec/exec.go:424 +0x310\r\nmain.main()\r\n\t/home/tycho/bug.go:22 +0x130\r\n\r\ngoroutine 6 [syscall]:\r\nsyscall.Syscall(0x0, 0x4, 0xc820090000, 0x200, 0x0, 0x0, 0x40eea9)\r\n\t/usr/lib/go/src/syscall/asm_linux_amd64.s:18 +0x5\r\nsyscall.read(0x4, 0xc820090000, 0x200, 0x200, 0x40f078, 0x0, 0x0)\r\n\t/usr/lib/go/src/syscall/zsyscall_linux_amd64.go:783 +0x5f\r\nsyscall.Read(0x4, 0xc820090000, 0x200, 0x200, 0xc82002e4e8, 0x0, 0x0)\r\n\t/usr/lib/go/src/syscall/syscall_unix.go:160 +0x4d\r\nos.(*File).read(0xc820030038, 0xc820090000, 0x200, 0x200, 0xc820090000, 0x0, 0x0)\r\n\t/usr/lib/go/src/os/file_unix.go:211 +0x53\r\nos.(*File).Read(0xc820030038, 0xc820090000, 0x200, 0x200, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/os/file.go:95 +0x8a\r\nbytes.(*Buffer).ReadFrom(0xc82001a150, 0x7fa3eff92210, 0xc820030038, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/bytes/buffer.go:173 +0x23f\r\nio.copyBuffer(0x7fa3eff921c0, 0xc82001a150, 0x7fa3eff92210, 0xc820030038, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/io/io.go:375 +0x180\r\nio.Copy(0x7fa3eff921c0, 0xc82001a150, 0x7fa3eff92210, 0xc820030038, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/io/io.go:351 +0x64\r\nos/exec.(*Cmd).writerDescriptor.func1(0x0, 0x0)\r\n\t/usr/lib/go/src/os/exec/exec.go:232 +0x8b\r\nos/exec.(*Cmd).Start.func1(0xc82008a000, 0xc82000e300)\r\n\t/usr/lib/go/src/os/exec/exec.go:340 +0x1d\r\ncreated by os/exec.(*Cmd).Start\r\n\t/usr/lib/go/src/os/exec/exec.go:341 +0x96d\r\n```\r\n\r\nwhich for me is roughly: https://github.com/golang/go/blob/c4fa25f4fc8f4419d0b0707bcdae9199a745face/src/os/exec/exec.go#L340\r\n\r\nBased on a cursory glance through the code, it seems like what is happening is that the std{in,out,err} reading/writing goroutines are blocking on reading the stdin of the process, which isn't closed when the  child exits, because the grandchild shares the same fds (and doesn't close them). Wait() attempts to address this with a call to `closeDescriptors`, but it is *after* a blocking wait on the goroutines exiting, so it doesn't work either.\r\n\r\nThe behavior I'd expect is that CombinedOutput() reports exactly what the child task printed, and returns when it exits. At least in the example above, I think it can be resolved by closing the stdin fd for the child once the child exits (but before waiting on the goroutines). However, I haven't tried it and I can imagine other cases where it would still hang.",
+	"user": {
+		"login": "tych0",
+		"id": 785111,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-11-05T01:23:17Z",
+	"updated_at": "2016-07-13T23:08:28Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

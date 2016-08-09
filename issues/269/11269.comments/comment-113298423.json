@@ -1,0 +1,12 @@
+{
+	"id": 113298423,
+	"body": "In this case the WriteHeader is being called explicitly in `serveContent` *prior* to the check for `if !w.WroteHeader` at the server level. A package user is always going to be \"doubling up\" with serveContent in this case.\r\n\r\nThe use-case (for context) is serving static files to respond to HTTP 50x's or HTTP 404's when using Go as a web server without a reverse proxy like nginx in front.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"os\"\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main() {\r\n\t// e.g. /Users/you/example.com/\r\n\tstatic := os.Getenv(\"STATIC_DIR\")\r\n\r\n\t// Set this to 200, 500, 404, etc - same result - multiple WriteHeader\r\n\t// calls.\r\n\thttp.Handle(\"/\", serveErrorPage(500, static))\r\n\thttp.ListenAndServe(\":8000\", nil)\r\n}\r\n\r\nfunc serveErrorPage(code int, dir string) http.Handler {\r\n\tfn := func(w http.ResponseWriter, r *http.Request) {\r\n\t\t// Call duplicated by src/net/http/fs.go#L254\r\n\t\tw.WriteHeader(code)\r\n\t\tpath := filepath.Join(dir, r.URL.Path)\r\n\t\tlog.Println(path)\r\n\t\thttp.ServeFile(w, r, path)\r\n\t}\r\n\r\n\treturn http.HandlerFunc(fn)\r\n}\r\n```\r\n\r\nA fairly contrived/minimal example but should demonstrate the issue. Set `STATIC_DIR=/some/dir/` to a directory containing something simple (a HTML or text file) and send it a request.\r\n\r\n",
+	"user": {
+		"login": "elithrar",
+		"id": 18544,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-18T21:46:45Z",
+	"updated_at": "2015-06-18T21:51:36Z"
+}

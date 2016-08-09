@@ -1,0 +1,12 @@
+{
+	"id": 148487329,
+	"body": "Hi Daniel. I don't think it's the scanstack in newstack that's the problem. Based on the \"copystack\" state of goroutine 870933, the huge distance between where we found the stack barrier and where we were expecting to find it, and the location of the recursive \"missed stack barrier\" panic while backtracing for the first panic, I think goroutine 870933 is in copystack trying to grow its stack, it has adjusted the stack barriers for its new stack, but not yet switched to the new stack, and a SIGPROF came in on its thread. The SIGPROF is scanning the old stack, but expecting the adjusted stack barrier locations.\r\n\r\nI'm still thinking about how to fix this. Unfortunately we can't just throw the cas lock around copystack because the SIGPROF will self-deadlock. We may just have to ignore a SIGPROF that comes in while the stack is inconsistent (we can probably narrow the window of time during which that's the case).\r\n\r\nHow easily can you reproduce this?",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-15T18:53:48Z",
+	"updated_at": "2015-10-15T18:53:48Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 192851243,
+	"body": "Having looked at this a bit more i would argue the following:\r\n\r\nReturning a badVerb error string for any integer and %q or %c is a bug in my opinion since the documentation defines these verbs are ok for any integer. I also dont see any other case in fmt where badVerb triggers bases on value and not based on type.\r\n\r\nIf however \"the character represented by the corresponding Unicode code point\" means if there exist no character for the Unicode code point it should be an error then the current behavior of returning  utf8.RuneError for other invalid runes below utf8.MaxRune is a bug. Not returning an Error however is explicitly documented in the code as \"// If the character is not valid Unicode, it will print '\\ufffd'.\".\r\n\r\nEither way it seems inconsistent with the documentation to me.\r\n\r\nMy proposed resolution would therefore be to return utf8.RuneError (escaped for %q) for any invalid rune regardless of the integer type or if its \u003e utf8.MaxRune.\r\n\r\nThis should make it also easier to check for an invalid Unicode code point since instead of checking for an error string and utf8.RuneError one can now only check for the later. The character for RuneError would be RuneError before and after the change.\r\n\r\nAlso this behavior can be implemented solely in the fmtC (better renamed and moved to fmt_c) and fmt_qc functions with no range checks outside these functions.",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-06T09:35:23Z",
+	"updated_at": "2016-03-06T09:38:53Z"
+}

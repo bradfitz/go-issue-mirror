@@ -1,0 +1,12 @@
+{
+	"id": 97538799,
+	"body": "Here is my stab at a faster `tSpecialTagEnd`:\r\n\r\n```\r\nfunc tSpecialTagEnd(c context, s []byte) (context, int) {\r\n\tif c.element != elementNone {\r\n\t\tmarker := []byte(specialTagEndMarkers[c.element])\r\n\t\tn := bytes.IndexByte(s, '\u003c')\r\n\t\tfor i := 0; n != -1 \u0026\u0026 i != -1; i = bytes.IndexByte(s[n:], '\u003c') {\r\n\t\t\tn += i\r\n\t\t\tif n+len(marker) \u003e len(s) {\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t\tnext := bytes.ToLower(s[n : n+len(marker)])\r\n\t\t\tif bytes.Equal(next, marker) {\r\n\t\t\t\treturn context{}, n\r\n\t\t\t}\r\n\t\t\tn++\r\n\t\t}\r\n\t}\r\n\treturn c, len(s)\r\n}\r\n```\r\n\r\nThis takes advantage of the fact that each marker starts with `\u003c`, which does not need lowercasing. I think `bytes.IndexByte` is fast.\r\n\r\nThis dropped the same benchmark from 35s down to 0.45s.",
+	"user": {
+		"login": "chowey",
+		"id": 991221,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-29T18:53:03Z",
+	"updated_at": "2015-04-29T18:53:03Z"
+}

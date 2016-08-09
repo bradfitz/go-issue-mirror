@@ -1,0 +1,21 @@
+{
+	"id": 51284821,
+	"number": 6198,
+	"state": "open",
+	"title": "cmd/link: OSX internal linker generates invalid App store executable",
+	"body": "by **rustf3**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n   \u0026gt; go build hello  (hello world will do)\n   \u0026gt; otool -l hello | grep LC_  (compare this output with valid output below)\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_UNIXTHREAD\n      cmd LC_SYMTAB\n      cmd LC_DYSYMTAB\n      cmd LC_LOAD_DYLINKER\n\nThe OSX executable produced is fine except that it will be rejected if submitted to the\nMac App Store.  The error that comes back after submitting the app is:\n\n    \u0026quot;Missing DWARF data - Your app does not include DWARF data with architecture information in\n     Contents/MacOS/Bampf . In your Xcode build settings, ensure that the debug information is set\n     to \u0026quot;DWARF with dSYM\u0026quot; and that the list of valid architectures does not include PPC.\u0026quot; \n\nWhat is the expected output?\n    A workaround is to use the external linker as follows:\n   \u0026gt; go build -ldflags \u0026quot;-linkmode=external\u0026quot; hello.go \n   \u0026gt; otool -l hello | grep LC_\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_SEGMENT_64\n      cmd LC_DYLD_INFO_ONLY\n      cmd LC_SYMTAB\n      cmd LC_DYSYMTAB\n      cmd LC_LOAD_DYLINKER\n      cmd LC_UUID                               \u0026lt;-- needed for Mac App Store?\n      cmd LC_VERSION_MIN_MACOSX\n      cmd LC_SOURCE_VERSION\n      cmd LC_MAIN\n      cmd LC_LOAD_DYLIB\n      cmd LC_FUNCTION_STARTS\n      cmd LC_DATA_IN_CODE\n      cmd LC_DYLIB_CODE_SIGN_DRS\n\nWhat do you see instead?\n   The golang internal linker produces OSX executables that can be packaged signed, and self distributed.  Ideally it would also produce OSX executables that could be submitted to the App store by creating output similar to the native OSX gcc/ld.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n  6g\n\nWhich operating system are you using?\n  OS X 10.8.4 (12E55)\n\nWhich version are you using?  (run 'go version')\n   go version go1.1.2 darwin/amd64 (also happens with go1.1.1)\n\nPlease provide any additional information below.\n   This problem appears similar in nature to \u003ca href=\"https://golang.org/issue/5238\"\u003ehttps://golang.org/issue/5238\u003c/a\u003e where the external linker was used to produce system specific fields in the binary.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2013-08-20T19:33:54Z",
+	"updated_at": "2015-06-08T06:25:52Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

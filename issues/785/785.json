@@ -1,0 +1,28 @@
+{
+	"id": 51276938,
+	"number": 785,
+	"state": "closed",
+	"title": "mark - world not stopped while calling C functions",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nWe have a program with a few goroutines that are all calling some C \nfunctions via Cgo. After running for a few minutes, the program dies with:\n\nthrow: mark - world not stopped\n\nRight now the problem is very hard to reproduce. It seems very timing \ndependent.\n\nThe goroutines are typically sitting in chanrecv-\u0026gt;gosched, cgocall-\n\u0026gt;entersyscall and cgocall-\u0026gt;exitsyscall and Go code calling runtime.mal-\n\u0026gt;mal-\u0026gt;mallocgc-\u0026gt;gosched.\n\nThe throw is triggered because gp != g. Both gp and g have valid values \npointing to goroutines created in newproc1.\n\nRight now I would suspect the some of the bookkeeping dealing with \ngoroutines and Cgo calls are assigning the wrong state to some of the \ngoroutines.\n\nWhat is the expected output? What do you see instead?\n\nA typical stack:\n\npanic PC=0x2b0ef4f41cd8\nthrow+0x3e /home/alberts/go/src/pkg/runtime/runtime.c:73\n        throw(0xffffffff, 0x46a2b6)\nmark+0x12a /home/alberts/go/src/pkg/runtime/mgc0.c:153\n        mark()\ngc+0x1ff /home/alberts/go/src/pkg/runtime/mgc0.c:320\n        gc(0x436410, 0x2b0e00000020)\nmallocgc+0x1ca /home/alberts/go/src/pkg/runtime/malloc.c:95\n        mallocgc(0x2aaa00000000, 0x0, 0x0, 0x0, 0x2b0ef4f41db8, ...)\nmal+0x36 /home/alberts/go/src/pkg/runtime/malloc.c:236\n        mal(0x20, 0x100000000)\nruntime.mal+0x1b /home/alberts/go/src/pkg/runtime/runtime1.c:3\n        runtime.mal(0x20, 0x280200000006, 0x4162e3, 0x2aaa00000020)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 5 [3]:\nruntime.entersyscall+0x50 /home/alberts/go/src/pkg/runtime/proc.c:563\n        runtime.entersyscall()\ncgocall+0x66 /home/alberts/go/src/pkg/runtime/cgocall.c:38\n        cgocall(0x2b0ef35dc430, 0x2b0ef4e8b1d8, 0x1bfaf12c8, 0x40647f)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 4 [1]:\ngosched+0x4e /home/alberts/go/src/pkg/runtime/proc.c:542\n        gosched()\nmallocgc+0x322 /home/alberts/go/src/pkg/runtime/malloc.c:34\n        mallocgc(0x2b0ef4f3b8a0, 0x0, 0xaf021780763dbd00, 0x2000000000, \n0x432a6e, ...)\nmal+0x36 /home/alberts/go/src/pkg/runtime/malloc.c:236\n        mal(0x20, 0x100000000)\nruntime.mal+0x1b /home/alberts/go/src/pkg/runtime/runtime1.c:3\n        runtime.mal(0x20, 0x280200000006, 0x4162e3, 0x2aaa00000020)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 3 [1]:\ngosched+0x4e /home/alberts/go/src/pkg/runtime/proc.c:542\n        gosched()\nsemsleep2+0x16 /home/alberts/go/src/pkg/runtime/sema.c:94\n        semsleep2()\nsemacquire+0x9c /home/alberts/go/src/pkg/runtime/sema.c:123\n        semacquire(0x2b0ef4e8c008, 0x2b0ef4e8c008)\ngc+0xab /home/alberts/go/src/pkg/runtime/mgc0.c:313\n        gc(0x436410, 0x2b0e00000020)\nmallocgc+0x1ca /home/alberts/go/src/pkg/runtime/malloc.c:95\n        mallocgc(0x2aaa00000000, 0x0, 0x0, 0x0, 0x2b0ef4e8c0b8, ...)\nmal+0x36 /home/alberts/go/src/pkg/runtime/malloc.c:236\n        mal(0x20, 0x100000000)\nruntime.mal+0x1b /home/alberts/go/src/pkg/runtime/runtime1.c:3\n        runtime.mal(0x20, 0x280200000006, 0x4162e3, 0x2b0e00000020)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 2 [4]:\ngosched+0x4e /home/alberts/go/src/pkg/runtime/proc.c:542\n        gosched()\nchanrecv+0x3e6 /home/alberts/go/src/pkg/runtime/chan.c:330\n        chanrecv(0x2b0ef4ea6a10, 0x2b0ef4f3b960, 0x5, 0x2b0ef4ea8000, \n0x2b0ef4e8d220, ...)\nruntime.chanrecv1+0x41 /home/alberts/go/src/pkg/runtime/chan.c:432\n        runtime.chanrecv1(0x2b0ef4ea69c0, 0x2b0ef4e8d268)\n\u0026lt;our go functions\u0026gt;\ntesting.tRunner+0x22 /home/alberts/go/src/pkg/testing/testing.go:132\n        testing.tRunner(0x2b0ef4e83360, 0x0, 0x4013d1, 0x2b0ef4e83360)\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 1 [4]:\ngosched+0x4e /home/alberts/go/src/pkg/runtime/proc.c:542\n        gosched()\nchanrecv+0x3e6 /home/alberts/go/src/pkg/runtime/chan.c:330\n        chanrecv(0x2b0ef4ea6bf0, 0x2b0ef4e83320, 0x2b0e00000010, \n0xa0000000a, 0x8, ...)\nruntime.chanrecv1+0x41 /home/alberts/go/src/pkg/runtime/chan.c:432\n        runtime.chanrecv1(0x2b0ef4ea6ba0, 0x2b0ef4e89048)\n\u0026lt;our go functions\nmainstart+0xf /home/alberts/go/src/pkg/runtime/amd64/asm.s:60\n        mainstart()\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\nWhat is your $GOOS?  $GOARCH?\n\nGOARCH=\u0026quot;amd64\u0026quot;\nGOOS=\u0026quot;linux\u0026quot;\n\nGOMAXPROCS doesn't seem to matter.\n\nWhich revision are you using?  (hg identify)\n\nrelease.2010-05-04\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"closed_at": "2014-12-08T10:05:51Z",
+	"created_at": "2010-05-17T14:00:12Z",
+	"updated_at": "2016-06-24T19:16:01Z"
+}

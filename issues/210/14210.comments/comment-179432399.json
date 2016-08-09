@@ -1,0 +1,12 @@
+{
+	"id": 179432399,
+	"body": "That is the way the current implementation works, a consequence of the way that cgo rewrites calls to C functions.  We can try to do better for 1.7, but we aren't going to change this for 1.6.\r\n\r\nTo be clear, what is happening is that the expression `\u0026buf.Bytes()[0]` is too complex for cgo to pull apart, so the pointer that cgo is checking is not just the slice returned by `buf.Bytes()` but the entire object that buf.Bytes() points to.  As it happens, that object is buf itself, because the slice is actually a pointer into an internal array.  And that object has internal pointers, because of the slice.  So it's kind of circular and unfortunate.\r\n\r\nIf the slice didn't point back into buf, then it would work.  For example, this variant works.\r\n\r\n    package main\r\n\r\n    //#include \u003cunistd.h\u003e\r\n    import \"C\"\r\n\r\n    import (\r\n\t    \"bytes\"\r\n\t    \"os\"\r\n\t    \"strings\"\r\n\t    \"unsafe\"\r\n    )\r\n\r\n    // This functions panics with\r\n    // panic: runtime error: cgo argument has Go pointer to Go pointer\r\n    func crash() {\r\n\t    var buf bytes.Buffer\r\n\t    buf.Write([]byte(\"Hello, cgo!\\n\"))\r\n\t    buf.WriteString(strings.Repeat(\"x\", 64) + \"\\n\")\r\n\t    C.write(1, unsafe.Pointer(\u0026buf.Bytes()[0]), C.size_t(buf.Len()))\r\n    }\r\n\r\n    // This function works as expected.\r\n    func ok() {\r\n\t    var buf bytes.Buffer\r\n\t    buf.Write([]byte(\"Hello, cgo!\\n\"))\r\n\t    slice := buf.Bytes()\r\n\t    C.write(1, unsafe.Pointer(\u0026slice[0]), C.size_t(len(slice)))\r\n    }\r\n\r\n    func main() {\r\n\t    if len(os.Args) \u003e= 2 \u0026\u0026 os.Args[1] == \"crash\" {\r\n\t\t    crash()\r\n\t    } else {\r\n\t\t    ok()\r\n\t    }\r\n    }\r\n",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-03T20:00:40Z",
+	"updated_at": "2016-02-03T20:01:39Z"
+}

@@ -1,0 +1,31 @@
+{
+	"id": 51281250,
+	"number": 3852,
+	"state": "closed",
+	"title": "spec: evaluation order in assignments return statements",
+	"body": "\u003cpre\u003eThe spec is unclear - or at best vague - about the details of evaluation order in return\nstatements. Consider the following example:\n\nfunc f() (int, string) {\n\ta := 7\n\treturn a, func() string { a = 42; return \u0026quot;foo\u0026quot; }()\n}\n\nShould the result be (7, \u0026quot;foo\u0026quot;) or (42, \u0026quot;foo\u0026quot;) ? With the current\nimplementation (gc), it's the latter.\n\nArguably - and I think that's the current implementation - a return statement with\nresults is like an assignment to the \u0026quot;return variables\u0026quot; of the function; so\nthe code below is equivalent to the example above:\n\nfunc f() (int, string) {\n\ta := 7\n\tx, y := a, func() string { a = 42; return \u0026quot;foo\u0026quot; }()\n\treturn x, y\n}\n\nThus, the rules of assignment apply which leave the evaluation order of a and the\nfunction unspecified ( \u003ca href=\"http://golang.org/ref/spec#Order_of_evaluation\"\u003ehttp://golang.org/ref/spec#Order_of_evaluation\u003c/a\u003e ) . Thus, the\nvariable 'a' might be evaluated before the function, and so the result might be (7,\n\u0026quot;foo\u0026quot;). The assignment is done \u0026quot;in parallel\u0026quot; so that part is\nunambiguous.\n\nI think the spec should say explicitly that a return statement of the form\n\nreturn x1, x2, ... xn\n\nis evaluated like\n\nt1, t2, ... tn := x1, x2, ... xn\nreturn t1, t2, ... tn\n\nand then the problem is reduced to the problem of assignments (and we probably don't\nwant to change evaluation order there). Thus, the result of the function f() is not\nspecified, but at least the fact that it is not specified is specified.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:20:21Z",
+	"created_at": "2012-07-23T03:33:17Z",
+	"updated_at": "2016-06-24T22:21:53Z"
+}

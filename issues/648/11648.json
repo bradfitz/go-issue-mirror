@@ -1,0 +1,33 @@
+{
+	"id": 94189639,
+	"number": 11648,
+	"state": "closed",
+	"title": "image/color: YcCbCr conversion to RGBA bug",
+	"body": "The image attached is decoded to color.YCbCr, if you do image encoding directly on it, ie, png.Encode(out, img) then it will generate the correct output, however, if you loop through it and use RGBA() to build the image, it will give you a garbled output as shown below.\r\n\r\nThe regression happened after this commit:\r\n```\r\nAuthor: Nigel Tao \u003cnigeltao@golang.org\u003e  2015-03-25 18:47:24\r\nCommitter: Nigel Tao \u003cnigeltao@golang.org\u003e  2015-03-26 18:30:55\r\nParent: b5c3a9e572a1257c0db47d74b45f8e03f2f91f27 (image: add image.CMYK and color.CMYK types.)\r\nChild:  0def13ac3f5a5e9f8e5540d3f5469cd469bddfad (image/color: have CMYK.RGBA work in 16-bit color, per the Color interface.)\r\nBranches: master, remotes/origin/dev.ssa, remotes/origin/master\r\nFollows: go1.4beta1\r\nPrecedes: go1.5beta1\r\n\r\n    image/color: have YCbCr.RGBA work in 16-bit color, per the Color\r\n    interface.\r\n    \r\n    Change-Id: Ie025753df08ae93e7a5095a3426aff15fa2016fd\r\n    Reviewed-on: https://go-review.googlesource.com/8073\r\n    Reviewed-by: Rob Pike \u003cr@golang.org\u003e\r\n```\r\n\r\nI tried reverting the RGBA() code for YCbCr code to the original one and that works fine\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"image\"\r\n\t\"image/color\"\r\n\t_ \"image/jpeg\"\r\n\t\"image/png\"\r\n\t\"log\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tr, err := os.Open(\"start_screen.jpg\")\r\n\tcheck(err)\r\n\tdefer r.Close()\r\n\r\n\timg, _, err := image.Decode(r)\r\n\tcheck(err)\r\n\r\n\tb := img.Bounds()\r\n\trgba := image.NewRGBA(b)\r\n\tfor y := b.Min.Y; y \u003c b.Max.Y; y++ {\r\n\t\tfor x := b.Min.X; x \u003c b.Max.X; x++ {\r\n\t\t\tr32, g32, b32, a32 := img.At(x, y).RGBA()\r\n\t\t\tc := color.RGBA{uint8(r32), uint8(g32), uint8(b32), uint8(a32)}\r\n\t\t\trgba.SetRGBA(x, y, c)\r\n\t\t}\r\n\t}\r\n\r\n\tw, err := os.Create(\"test.png\")\r\n\tcheck(err)\r\n\tdefer w.Close()\r\n\r\n\terr = png.Encode(w, rgba)\r\n\tcheck(err)\r\n}\r\n\r\nfunc check(err error) {\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n}\r\n```\r\n\r\n![start_screen](https://cloud.githubusercontent.com/assets/11146006/8610461/4f328002-2680-11e5-8616-c525bf19aff7.jpg)\r\n![test](https://cloud.githubusercontent.com/assets/11146006/8610497/bdafda2a-2680-11e5-97ff-22c4d79762ca.png)\r\n\r\n",
+	"user": {
+		"login": "qeedquan",
+		"id": 11146006,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-07-10T05:44:03Z",
+	"created_at": "2015-07-10T01:24:37Z",
+	"updated_at": "2016-07-11T22:38:37Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 128051265,
+	"number": 14064,
+	"state": "closed",
+	"title": "sync: potential race when using cond.Broadcast",
+	"body": "Copied from a posting to golang-nuts by Wedson Almeida Filho.  I (Ian) don't think there is a problem with `cond.Signal`, but there does seem to be a problem with `cond.Broadcast`.\r\n\r\nI'm under the impression that the current implementation of condition variables in Go is incorrect and can lead to deadlocks.\r\n\r\n`cond.Wait` does the following:\r\n1. [Atomically] increments the waiter count\r\n2. Releases the mutex\r\n3. Waits on the semaphore\r\n4. Re-acquires mutex\r\n\r\nIt looks like it's possible for one thread to \"steal\" a signal/broadcast intended to another one if it loses the CPU between steps 2 \u0026 3 above. For example, the following sequence seems problematic:\r\n\r\n1. Thread A: calls `cond.Wait`, loses CPU between step 2 \u0026 3 above. (Preempted by the kernel scheduler.)\r\n2. Thread B: calls `cond.Signal` or `cond.Broadcast`; semaphore gets incremented to 1.\r\n3. Thread C: calls `cond.Wait`, the wait on the semaphore is immediately satisfied by the count stored by the previous step.\r\n4. Thread A: regains CPU, sleeps on the semaphore. It never gets the notification sent by thread B.\r\n\r\nA more concrete example might be a [simplified] consumer/producer implementation (I'm only keeping track of a count):\r\n\r\n    func produce() {\r\n      m.Lock()\r\n      while (count == max) {\r\n        cond.Wait()\r\n      }\r\n    \r\n      count++\r\n      if count == 1 {\r\n        cond.Broadcast()\r\n      }\r\n      m.Unlock()\r\n    }\r\n    \r\n    func consume() {\r\n      m.Lock()\r\n      while (count == 0) {\r\n        cond.Wait()\r\n      }\r\n    \r\n      count--\r\n      if count == max-1 {\r\n        cond.Broadcast()\r\n      }\r\n      m.Unlock()\r\n    }\r\n\r\nFor the code above, suppose `count == 0`. The following sequence is possible:\r\n1. goroutine A calls `consume`, which will call `cond.Wait`; suppose it loses the CPU between steps 2 \u0026 3.\r\n2. goroutine B calls `produce`, which will call `cond.Broadcast`, which will cause the semaphore to go to 1.\r\n3. goroutine B calls `produce` repeatedly, until count reaches the max.\r\n4. goroutine B will itself call `cond.Wait`, which will be satisfied immediately.\r\n5. goroutine B will call `cond.Wait` again, and sleep.\r\n6. goroutine A regains the CPU, and sleeps on the semaphore as well.\r\n\r\nThe threads are now deadlocked. Granted that it's a race condition that is hard to hit, it looks like a correctness issue.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-03-15T22:01:55Z",
+	"created_at": "2016-01-22T00:09:38Z",
+	"updated_at": "2016-03-15T22:01:55Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

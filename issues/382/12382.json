@@ -1,0 +1,21 @@
+{
+	"id": 103744781,
+	"number": 12382,
+	"state": "open",
+	"title": "database/sql: add support for returning multiple result sets",
+	"body": "Many databases support returning multiple result sets. RDBMS that support this include MySQL, Postgresql, MS SQL Server, Oracle.\r\n\r\nAn example query that demonstrates this is:\r\n```\r\nselect * from app.Users;\r\nselect * from app.Dancers;\r\n```\r\nThe above would be expected to return two data sets, each with their own arity.\r\n\r\nThe above example is simple to see the effects, but is not motivating. A more motivating example usually includes some degree of procedural logic where multiple arities should be preserved and returned separately.\r\nExample (1) Select data to form a matrix on the client:\r\n```\r\n\t// Get Sample data rows.\r\n\t// Get SampleResultValue rows.\r\n\t// Get distinct list of Locus used data rows.\r\n\tsql.WriteString(`\r\n\tdeclare @Sample table (ID bigint);\r\n\tdeclare @Locus table (ID bigint);\r\n\r\n\tinsert into @Sample\r\n\tselect s.ID\r\n\tfrom\r\n\t\tdata.Sample s\r\n\t\tjoin data.OrganizationLOB ol on ol.ID = s.OrganizationLOB\r\n\twhere\r\n\t\ts.ID in (select ID from @SampleSelect)\r\n\t\tand s.Deleted = 0\r\n\t;\r\n\r\n\tselect\r\n\t\ts.ID,\r\n\t\tls.SampleIdentifier,\r\n\t\tls.ExternalIdentifier,\r\n\t\ts.Outcome,\r\n\t\ts.DateCollected\r\n\tfrom\r\n\t\tdata.Sample s\r\n\t\tjoin datav.LabelSample ls on ls.Sample = s.ID\r\n\twhere\r\n\t\ts.ID in (select ID from @Sample)\r\n\r\n\tselect\r\n\t\tsrv.Sample, srv.Value, srv.Interpretation, ResultValueType = rvt.ID\r\n\tfrom\r\n\t\tdata.SampleResultValue srv\r\n\t\tjoin data.ResultValueType rvt on rvt.ID = srv.ResultValueType\r\n\twhere\r\n\t\tsrv.Sample in (select ID from @Sample)\r\n\t;\r\n\r\n\tselect\r\n\t\trvt.ID, Name = l.Name + ' ' + rft.Name\r\n\tfrom\r\n\t\tdata.ResultValueType rvt\r\n\t\tjoin enum.ResultFieldType rft on rft.ID = rvt.FieldType\r\n\t\tjoin data.Locus l on l.ID = rvt.Locus\r\n\twhere\r\n\t\trvt.ID in (\r\n\t\t\tselect distinct\r\n\t\t\t\tsrv.ResultValueType\r\n\t\t\tfrom\r\n\t\t\t\tdata.SampleResultValue srv\r\n\t\t\twhere\r\n\t\t\t\tsrv.Sample in (select ID from @Sample)\r\n\t\t)\r\n\torder by\r\n\t\trvt.SortOrder\r\n\t;\r\n\t`)\r\n```\r\n\r\nExample (2) make an update, but return the updated data to the client so it can update its UI.\r\n```\r\n\tres, err := Query(db.Conn, \u0026rdb.Command{\r\n\t\tConverter: conv,\r\n\t\tSql: `\r\ninsert into data.SamplePanel (\r\n\tSample, Panel,\r\n\tDateDue,\r\n\tOrderGroup,\r\n\tDeleted, TimeCreated, AccountCreated, TimeUpdated, AccountUpdated\r\n\t)\r\noutput ` + listColumns(db, \"inserted.\", \"data.SamplePanel\") + `\r\nselect\r\n\ts.ID, sgp.Panel,\r\n\tdata.WorkDayAdd(s.DateReceived, data.OrganizationPanelTAT(@Today, ol.Organization, sgp.Panel)),\r\n\t1,\r\n\t0, @Now, @Account, @Now, @Account\r\nfrom\r\n\tdata.SampleGroupPanel sgp\r\n\tjoin data.Sample s on s.SampleGroup = sgp.SampleGroup\r\n\tjoin data.OrganizationLOB ol on ol.ID = s.OrganizationLOB\r\nwhere\r\n\ts.ID = @Sample\r\n;\r\n\r\n--See also PostUpdate\r\ninsert into data.SampleLocus (\r\n\tSample, Locus,\r\n\tTimeCreated, AccountCreated, TimeUpdated, AccountUpdated\r\n\t)\r\noutput ` + listColumns(db, \"inserted.\", \"data.SampleLocus\") + `\r\nselect distinct\r\n\t@Sample, pl.Locus,\r\n\t@Now, @Account, @Now, @Account\r\nfrom\r\n\tdata.PanelLocus pl\r\n\tjoin data.SamplePanel sp on sp.Panel = pl.Panel\r\nwhere\r\n\tsp.Sample = @Sample\r\n;\r\n\r\nselect\r\n\ts.ID, s.Price\r\nfrom\r\n\tdatav.Sample s\r\nwhere\r\n\ts.ID = @Sample\r\n;\r\n\t`,\r\n\t},\r\n\t\trdb.Param{Name: \"Sample\", Type: rdb.Integer, Value: sample},\r\n\t\trdb.Param{Name: \"Account\", Type: rdb.Integer, Value: userInfo.ID},\r\n\t\trdb.Param{Name: \"Now\", Type: rdb.Time, Value: time.Now().UTC()},\r\n\t\trdb.Param{Name: \"Today\", Type: rdb.TypeDate, Value: time.Now()},\r\n\t)\r\n```\r\n\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2015-08-28T15:56:50Z",
+	"updated_at": "2016-05-09T09:54:16Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

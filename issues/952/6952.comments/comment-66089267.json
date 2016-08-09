@@ -1,0 +1,12 @@
+{
+	"id": 66089267,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eLooking into this some more, that check was added in b489ac3f2e3e as part of the\nnetbsd/arm work\n\nGLOBL runtime·goarm(SB), $4\n\nTEXT runtime·asminit(SB),7,$0-0\n        // disable runfast (flush-to-zero) mode of vfp if runtime.goarm \u0026gt; 5\n        MOVW runtime·goarm(SB), R11\n        CMP $5, R11\n        BLE 4(PC)\n        WORD $0xeef1ba10        // vmrs r11, fpscr\n        BIC $(1\u0026lt;\u0026lt;24), R11\n        WORD $0xeee1ba10        // vmsr fpscr, r11\n        RET\n\nruntime.goarm remained defined as a word (albeit set as a uint8 in 5l)  until\n59ac8ae2bf33 which unified the definition of runtime.goarm to be a uint8. I should have\npicked up this error at the time, but I did not. Also, the arm5 builder was having a lot\nof problems at the time so we didn't see the failure there either.\n\nThe build prior to this change failed because the build ran overtime (possibly due to\nswapping)\n\n\u003ca href=\"http://build.golang.org/log/54affd91a0e0f18f4f4886e7978ffd3fd7c022f1\"\u003ehttp://build.golang.org/log/54affd91a0e0f18f4f4886e7978ffd3fd7c022f1\u003c/a\u003e\n\nthe build after shows the failure we see now\n\n\u003ca href=\"http://build.golang.org/log/99a93b5715c6684fedcbe556cef3e2180a17f3a9\"\u003ehttp://build.golang.org/log/99a93b5715c6684fedcbe556cef3e2180a17f3a9\u003c/a\u003e\n\nThis patch fixes the alignment issue by loading runtime.goarm as a byte\n\n\u003ca href=\"https://golang.org/cl/46240043/\"\u003ehttps://golang.org/cl/46240043/\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-28T21:14:54Z",
+	"updated_at": "2014-12-22T06:30:43Z"
+}

@@ -1,0 +1,30 @@
+{
+	"id": 51281543,
+	"number": 4035,
+	"state": "closed",
+	"title": "cmd/8g: stops optimizing when having too many temporaries",
+	"body": "\u003cpre\u003ecrypto/md5 package triggers the issue. The stack frame for the block() function is 2.8kB\nlarge, due to the creation of ~700 temporaries for arithmetic expression evaluation.\n\nPossible fixes are:\n- increase the number of variables taken into account (the size of Bits)\n- reuse some of the temporaries so that there are less of them.\n\nThe attached (ugly) patch adds a cache of created temporaries (for reuse), and reduces\ncrypto/md5.block to ~400 bytes of stack and increases performance a lot (on a Core 2\nQuad, GOARCH=386)\nfor crypto/md5 (and crypto/aes, crypto/sha1).\n\nbenchmark              old ns/op    new ns/op    delta\nBenchmarkMD5Hash1K         15573         7754  -50.21%\nBenchmarkMD5Hash8K        122938        60843  -50.51%\nBenchmarkEncrypt            1381         1152  -16.58%\nBenchmarkDecrypt            1383         1148  -16.99%\nBenchmarkExpand             2867         1518  -47.05%\nBenchmarkSHA1Hash1K        23395        21830   -6.69%\nBenchmarkSHA1Hash8K       186759       174278   -6.68%\n\nbenchmark               old MB/s     new MB/s  speedup\nBenchmarkMD5Hash1K         65.75       132.06    2.01x\nBenchmarkMD5Hash8K         66.63       134.64    2.02x\nBenchmarkEncrypt           11.58        13.88    1.20x\nBenchmarkDecrypt           11.56        13.93    1.21x\nBenchmarkSHA1Hash1K        43.77        46.91    1.07x\nBenchmarkSHA1Hash8K        43.86        47.01    1.07x\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4035/0/patch\"\u003epatch\u003c/a\u003e (1581 bytes)",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:21:24Z",
+	"created_at": "2012-09-02T21:03:51Z",
+	"updated_at": "2016-06-24T22:24:05Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

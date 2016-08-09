@@ -1,0 +1,27 @@
+{
+	"id": 92502240,
+	"number": 11503,
+	"state": "closed",
+	"title": "x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.nextSubpacket() (slice bounds out of range)",
+	"body": "The following program panics:\r\n\r\n```Go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/hex\"\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"os\"\r\n\r\n\t\"golang.org/x/crypto/openpgp\"\r\n)\r\n\r\n// An empty Keyring\r\ntype emptyKR struct {\r\n}\r\n\r\nfunc (kr emptyKR) KeysById(id uint64) []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nfunc (kr emptyKR) DecryptionKeys() []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nfunc (kr emptyKR) KeysByIdUsage(uint64, byte) []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nvar data = \"8c040402000aa430aa8228b9248b01fc899a91197130303030\"\r\n\r\nfunc main() {\r\n\tbuf, err := hex.DecodeString(data)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tmd, err := openpgp.ReadMessage(bytes.NewBuffer(buf), emptyKR{},\r\n\t\tfunc([]openpgp.Key, bool) ([]byte, error) {\r\n\t\t\treturn []byte(\"insecure\"), nil\r\n\t\t}, nil)\r\n\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\t_, err = io.Copy(os.Stdout, md.UnverifiedBody)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tif md.SignatureError != nil {\r\n\t\tlog.Fatalln(\"integrity check failed\")\r\n\t}\r\n}\r\n```\r\n\r\nwith the trace:\r\n\r\n```\r\npanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 1 [running]:\r\ngolang.org/x/crypto/openpgp/packet.nextSubpacket(0xc208068001, 0x4, 0x5ff, 0x2, 0xc2080202c0, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/opaque.go:145 +0x1ff\r\ngolang.org/x/crypto/openpgp/packet.OpaqueSubpackets(0xc208068000, 0x5, 0x600, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/opaque.go:98 +0x93\r\ngolang.org/x/crypto/openpgp/packet.(*UserAttribute).parse(0xc2080202a0, 0x7eff58289bc0, 0xc208020280, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/userattribute.go:63 +0xa6\r\ngolang.org/x/crypto/openpgp/packet.Read(0x7eff58289d38, 0xc20800a4b0, 0x7eff58289d60, 0xc2080202a0, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/packet.go:375 +0x152\r\ngolang.org/x/crypto/openpgp/packet.(*Reader).Next(0xc20803c480, 0x0, 0x0, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/reader.go:37 +0x10c\r\ngolang.org/x/crypto/openpgp.readSignedMessage(0xc20803c480, 0xc208060000, 0x7eff58289b88, 0x68c0a8, 0xc208060000, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/read.go:234 +0xc4\r\ngolang.org/x/crypto/openpgp.ReadMessage(0x7eff58289b60, 0xc2080120e0, 0x7eff58289b88, 0x68c0a8, 0x5f08c0, 0x0, 0xc208060000, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/read.go:217 +0xd90\r\nmain.main()\r\n\t/home/marebri/devel/lab/go/crypto/openpgp/issues/075301e76/main.go:40 +0x285\r\n\r\ngoroutine 2 [runnable]:\r\nruntime.forcegchelper()\r\n\t/opt/go/src/runtime/proc.go:90\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 3 [runnable]:\r\nruntime.bgsweep()\r\n\t/opt/go/src/runtime/mgc0.go:82\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 4 [runnable]:\r\nruntime.runfinq()\r\n\t/opt/go/src/runtime/malloc.go:712\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n```\r\n\r\nFound using gofuzz. You may assign this issue to me.",
+	"user": {
+		"login": "marete",
+		"id": 2327361,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-07-27T22:29:43Z",
+	"created_at": "2015-07-01T22:52:23Z",
+	"updated_at": "2016-08-05T16:10:03Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

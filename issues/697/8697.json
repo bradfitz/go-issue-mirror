@@ -1,0 +1,27 @@
+{
+	"id": 51288568,
+	"number": 8697,
+	"state": "closed",
+	"title": "html: EscapeString could be made faster using a strings.Replacer  ",
+	"body": "\u003cpre\u003eConsider the following benchmark:\n\npackage escaping\n\nimport (\n        \u0026quot;html\u0026quot;\n        \u0026quot;strings\u0026quot;\n        \u0026quot;testing\u0026quot;\n)\n\nconst noHTMLString = `Can you hear the people sing, singing the song of\nangry men. It is the music of a people who will not be slaves again.`\nconst withHTMLString = `We're going to demand \u0026lt;strong\u0026gt;one million\ndollars\u0026lt;/strong\u0026gt; or we're going to threaten Earth with a \u0026quot;Laser\u0026quot;.`\n\nvar escaper = strings.NewReplacer(\n        `\u0026amp;`, \u0026quot;\u0026amp;amp;\u0026quot;,\n        `'`, \u0026quot;\u0026amp;#39;\u0026quot;,\n        `\u0026lt;`, \u0026quot;\u0026amp;lt;\u0026quot;,\n        `\u0026gt;`, \u0026quot;\u0026amp;gt;\u0026quot;,\n        `\u0026quot;`, \u0026quot;\u0026amp;#34;\u0026quot;,\n)\n\nfunc BenchmarkHtml_EscapeString_nochanges(b *testing.B) {\n        for i := 0; i \u0026lt; b.N; i++ {\n                html.EscapeString(noHTMLString)\n        }\n}\n\nfunc BenchmarkStrings_Replacer_nochanges(b *testing.B) {\n        for i := 0; i \u0026lt; b.N; i++ {\n                escaper.Replace(noHTMLString)\n        }\n}\n\nfunc BenchmarkHtml_EscapeString_changes(b *testing.B) {\n        for i := 0; i \u0026lt; b.N; i++ {\n                html.EscapeString(withHTMLString)\n        }\n}\n\nfunc BenchmarkStrings_Replacer_changes(b *testing.B) {\n        for i := 0; i \u0026lt; b.N; i++ {\n                escaper.Replace(withHTMLString)\n        }\n}\n\nThe performance is as follows:\n\nBenchmarkHtml_EscapeString_nochanges      500000              3912 ns/op\nBenchmarkStrings_Replacer_nochanges      5000000               368 ns/op\nBenchmarkHtml_EscapeString_changes        500000              4597 ns/op\nBenchmarkStrings_Replacer_changes        1000000              1360 ns/op\n\n\nI've written \u003ca href=\"https://golang.org/cl/141930043/\"\u003ehttps://golang.org/cl/141930043/\u003c/a\u003e to change html.EscapeString so\nthat it uses a replacer internally, but it needs to wait until Go 1.5 development opens.\u003c/pre\u003e",
+	"user": {
+		"login": "kbloom",
+		"id": 56285,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-05-08T19:12:14Z",
+	"created_at": "2014-09-10T17:51:07Z",
+	"updated_at": "2016-06-25T01:41:11Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

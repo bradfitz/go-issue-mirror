@@ -1,0 +1,30 @@
+{
+	"id": 51284097,
+	"number": 5729,
+	"state": "closed",
+	"title": "cmd/compile: compute booleans without jumps",
+	"body": "by **martisch@uos.de**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\ntake:\n\u003ca href=\"http://play.golang.org/p/y2nj-Icl-j\"\u003ehttp://play.golang.org/p/y2nj-Icl-j\u003c/a\u003e\n\nbench and notice the difference between an int that gets xor with 1 and a bool that gets\nflipped\n\ngo test bench=\u0026quot;.*\u0026quot;\nBenchmarkBoolFlip\t2000000000\t         1.93 ns/op\nBenchmarkBoolFlipManual\t2000000000\t         1.92 ns/op\nBenchmarkBoolXor\t2000000000\t         0.85 ns/op\n\nThis might be only a very minor performance improvement as such but it also has the side\neffect to not require and use resources of the branch predictor.\n\nWhat is the expected output?\n\nwould think flag=!flag gets compiled to (gcc for C does this too):\n0013 (boolxor.go:8) XORQ    $1,AX\n\nWhat do you see instead?\n\n0013 (boolxor.go:8) JMP     ,16\n0014 (boolxor.go:8) MOVQ    $1,AX\n0015 (boolxor.go:8) JMP     ,9\n0016 (boolxor.go:8) CMPB    AX,$0\n0017 (boolxor.go:8) JEQ     ,14\n0018 (boolxor.go:8) MOVQ    $0,AX\n\nif jumps need to be done: reordering and eliminating the first jump just makes a nearly\nunnoticeable improvement of 1ns in the bench on average (see FlipManual). \n0034 (boolxor.go:15) CMPB    AX,$0\n0035 (boolxor.go:15) JEQ     ,38\n0036 (boolxor.go:16) MOVQ    $0,AX\n0037 (boolxor.go:15) JMP     ,30\n0038 (boolxor.go:18) MOVQ    $1,AX\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nMac OS X 10.8.4\nDarwin 12.4.0 Darwin Kernel Version 12.4.0: Wed May  1 17:57:12 PDT 2013;\nroot:xnu-2050.24.15~1/RELEASE_X86_64 x86_64\n\nWhich version are you using?  (run 'go version')\ngo version devel +27baf5978be6 Tue Jun 18 15:26:15 2013 +1000 darwin/amd64\n\nNotes:\nIf you think such minor code generation issues (few jumps to much here and there,\nboolean expression simplifications) are better left to be done faster by gccgo and not\nbe special cased by normal go compiler please let me know.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		},
+		{
+			"name": "Started"
+		}
+	],
+	"comments": 17,
+	"closed_at": "2016-02-26T16:16:14Z",
+	"created_at": "2013-06-18T11:52:15Z",
+	"updated_at": "2016-02-26T16:49:04Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

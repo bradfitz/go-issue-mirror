@@ -1,0 +1,17 @@
+{
+	"id": 142932293,
+	"number": 14927,
+	"state": "closed",
+	"title": "net/http: Keepalive connections are not terminated when server returns.",
+	"body": "### 1. What version of Go are you using?\r\n\r\n`go version go1.6 windows/amd64` and `go version go1.5.3 windows/amd64`.\r\n\r\n### 2. What operating system and processor architecture are you using?\r\n```\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=c:\\gopath\r\nset GORACE=\r\nset GOROOT=c:\\go\r\nset GOTOOLDIR=c:\\go\\pkg\\tool\\windows_amd64\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n### 3. What did you do?\r\n[Playground Reproduction](http://play.golang.org/p/Wj1uMDdsWi) (must be run locally)\r\n\r\nThe application creates an HTTP server in a separate goroutine. \r\n\r\nThis server is then shut down. Everything should be unreferenced by this point.  Another server is created in a new goroutine.\r\n\r\nIt seems that unless there is data written to the ResponseWriter, the *old* handler functions are used, even for the new server, which has a separate http.ServeMux and http.Server. \r\n\r\nIt does not matter even if there is minutes between the old server being stopped and the new one being created.\r\n\r\nThis is not a client specific issue, just so you do not spend time investigating that. This also happens with a browser, which is how the issue was discovered.\r\n\r\n### 4. What did you expect to see?\r\n\r\n```\r\n2016/03/23 11:51:18 Starting server on localhost:56000\r\n2016/03/23 11:51:18 1 server should give redirect to: http://google.com\r\n2016/03/23 11:51:19 1 Redirect to http://google.com\r\n2016/03/23 11:51:19 1 Closing auth server\r\n2016/03/23 11:51:19 1 Closed server\r\n2016/03/23 11:51:19 --- SERVER 1 STOPPED\r\n2016/03/23 11:51:20 Starting server on localhost:56000\r\n2016/03/23 11:51:20 2 server should give redirect to: http://yahoo.com\r\n2016/03/23 11:51:20 2 Redirect to http://yahoo.com\r\n2016/03/23 11:51:20 2 Redirect to http://yahoo.com\r\n2016/03/23 11:51:20 2 Write destination: http://yahoo.com\r\n2016/03/23 11:51:21 2 Redirect to http://yahoo.com\r\n```\r\nAfter server \"1\" is stopped, there should be no logging lines prefixed with \"1\", and the handler should always print \"yahoo.com\".\r\n\r\n### 5. What did you see instead?\r\n\r\n```\r\n2016/03/23 11:51:18 Starting server on localhost:56000\r\n2016/03/23 11:51:18 1 server should give redirect to: http://google.com\r\n2016/03/23 11:51:19 1 Redirect to http://google.com\r\n2016/03/23 11:51:19 1 Closing auth server\r\n2016/03/23 11:51:19 1 Closed server\r\n2016/03/23 11:51:19 --- SERVER 1 STOPPED\r\n2016/03/23 11:51:20 Starting server on localhost:56000\r\n2016/03/23 11:51:20 2 server should give redirect to: http://yahoo.com\r\n2016/03/23 11:51:20 1 Redirect to http://google.com\r\n2016/03/23 11:51:20 1 Redirect to http://google.com\r\n2016/03/23 11:51:20 1 Write destination: http://google.com\r\n2016/03/23 11:51:21 2 Redirect to http://yahoo.com\r\n```\r\n\r\nSince everything is created \"cleanly\" in the goroutine AFAICT, there should not be any was for server \"1\" handler functions to be used.",
+	"user": {
+		"login": "klauspost",
+		"id": 5663952,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-03-26T10:39:11Z",
+	"created_at": "2016-03-23T11:19:20Z",
+	"updated_at": "2016-03-26T10:39:11Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51281138,
+	"number": 3777,
+	"state": "closed",
+	"title": "database/sql reuses bad connections +patch",
+	"body": "\u003cpre\u003eWhat is the expected output?\ndatabase/sql should drop the connection if the driver returns a driver.ErrBadConn.\n\nWhat do you see instead?\nConnections for which a driver.ErrBadConn was returned are reused and not dropped.\n\nWhich version are you using?\ngo 1.0.2\n\n\nFor example take a look on the debug log created by my test scenario, where i added some\ndebug output to my MySQL-driver.\nI use a MySQL-Connection which has a wait_timeout of 10s, so after 10s without a command\nthe connection is closed by the MySQL-Server. The number at the end of the message shows\nwhich connection (starting with 1) was used.\n\nWhen the first statement is prepared, a new connection is opened, since no free\nconnection is available here:\n[MySQL] 2012/06/25 18:48:56 Open new Connection 1\n[MySQL] 2012/06/25 18:48:56 Prepare on Connection 1\n\nNow, when i try to prepare a second statement, the connection is already closed, which\ncauses a \u0026quot;Broken Pipe\u0026quot; error. The driver returns a driver.ErrBadConn here.\ndatabase/sql now should try a different connection. Since there is only one (which\nshould now be dropped) a new connection should be opened. But instead database/sql tries\nto use the same connection 10 times:\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n[MySQL] 2012/06/25 18:49:13 Prepare on Connection 1\n[MySQL] 2012/06/25 18:49:13 Report bad Connection 1\n\n\nI tracked the bug down to the deferred call of sql.putConn(). At the time the deferred\nstatement is registered, the second parameter, err, is always nil. As a result putConn\nis always called with err being nil, which is why bad connections are not dropped.\n\nThe bug can be fixed by using a pointer to err as the second parameter instead. I\nattached a DIFF-File which includes the changes made to database/sql/sql.go in order to\nfix the bug.\n\n\nSame example scenario as above with the fixed sql.go:\n[MySQL] 2012/06/25 19:16:52 Open new Connection 1\n[MySQL] 2012/06/25 19:16:52 Prepare on Connection 1\n[MySQL] 2012/06/25 19:17:09 Prepare on Connection 1\n[MySQL] 2012/06/25 19:17:09 Report bad Connection 1\n[MySQL] 2012/06/25 19:17:09 Open new Connection 2\n[MySQL] 2012/06/25 19:17:09 Prepare on Connection 2\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3777/0/sql.go.diff\"\u003esql.go.diff\u003c/a\u003e (1278 bytes)",
+	"user": {
+		"login": "julienschmidt",
+		"id": 944947,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:19:57Z",
+	"created_at": "2012-06-25T17:21:14Z",
+	"updated_at": "2016-06-24T22:20:55Z"
+}

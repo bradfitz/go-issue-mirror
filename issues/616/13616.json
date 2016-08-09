@@ -1,0 +1,26 @@
+{
+	"id": 122142745,
+	"number": 13616,
+	"state": "open",
+	"title": "cmd/internal/obj: -trimpath help text is misleading",
+	"body": "Tested with Go 1.5.2.\r\n\r\nThe -trimpath option is documented as follows:\r\n\r\n```\r\n$ go tool asm -help 2\u003e\u00261|grep -A1 trimpath\r\n  -trimpath string\r\n    \tremove prefix from recorded source file paths\r\n...\r\n$ go tool compile -help|grep -A1 trimpath\r\n  -trimpath prefix\r\n    \tremove prefix from recorded source file paths\r\n```\r\n\r\nHowever, it would appear that it mistakenly removes the leading '/' from the resulting path:\r\n```\r\n$ export PROTO_DIR=/builds/go-proto-area\r\n$ cd $(PROTO_DIR)/usr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish\r\n$ go install -asmflags -trimpath=$PROTO_DIR -gcflags -trimpath=$PROTO_DIR\r\n$ strings ../../../../../pkg/solaris_amd64/golang.org/x/crypto/blowfish.a | grep 'lib\\/'\r\nxusr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish/block.go\r\nxusr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish/block.go\r\n...\r\n```\r\n\r\nIf I add a terminating slash, then it fails to trim entirely:\r\n```\r\n$ export PROTO_DIR=/builds/go-proto-area/\r\n$ cd $(PROTO_DIR)/usr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish\r\n$ go install -asmflags -trimpath=$PROTO_DIR -gcflags -trimpath=$PROTO_DIR\r\n$ strings ../../../../../pkg/solaris_amd64/golang.org/x/crypto/blowfish.a | grep 'lib\\/'\r\n/builds/go-proto-area/usr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish/block.go\r\n/builds/go-proto-area/usr/lib/gocode/1.5/src/golang.org/x/crypto/blowfish/block.go\r\n...\r\n```\r\n\r\nThis appears to be due to a off-by-one error (or bad assumption) made in src/cmd/internal/obj/obj.go in setFile():\r\n\r\n```\r\n        // Remove leading TrimPathPrefix, or else rewrite $GOROOT to $GOROOT_FINAL.\r\n        if h.TrimPathPrefix != \"\" \u0026\u0026 hasPathPrefix(abs, h.TrimPathPrefix) {\r\n                if abs == h.TrimPathPrefix {\r\n                        abs = \"\"\r\n                } else {\r\n                        abs = abs[len(h.TrimPathPrefix)+1:]\r\n                }\r\n```\r\n\r\n",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 7,
+	"created_at": "2015-12-14T22:08:43Z",
+	"updated_at": "2015-12-16T02:24:13Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

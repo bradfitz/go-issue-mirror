@@ -1,0 +1,17 @@
+{
+	"id": 121009828,
+	"number": 13534,
+	"state": "closed",
+	"title": "Returning pointer to struct allows returns for structs that don't implement the required interface type in method signature",
+	"body": "I've believe I've uncovered what is, at best, confusing behaviour in the way structs are associated with interfaces, and at worst, a bug that can hide other issues.\r\n\r\nTake the following example go program:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"github.com/davecgh/go-spew/spew\"\r\n\r\ntype BarInterface interface {\r\n\tBar() string\r\n}\r\n\r\ntype Foo struct{}\r\n\r\n// Incorrect pointer receiver, doesn't actually implement BarInterface correctly.\r\nfunc (f *Foo) Bar() string {\r\n\treturn \"bar\"\r\n}\r\n\r\nfunc foo() BarInterface {\r\n\tf := \u0026Foo{}\r\n\t// I'm returning a *Foo instead of Foo, and method signature says return is BarInterface (and Foo doesn't implement BarInterface)\r\n\treturn f\r\n}\r\n\r\nfunc main() {\r\n\tf := foo() // Returns BarInterface\r\n\tspew.Dump(f) // (*main.Foo)\r\n}\r\n```\r\n\r\nI don't expect this to compile because I'm returning a pointer to a struct, instead of a value in the return of `foo()`. In any case, this works and spew prints out correctly that `f` is `*main.Foo`.\r\n\r\nHowever if I were to try do a type assertion (such as `t, ok := f.(BarInterface)` I get a compile error because of the pointer receiver on the implementation of `Bar()`. From this it seems that there's actually two issues with the return call in `Foo()`:\r\n\r\n- It's returning a pointer instead of a value, which doesn't match the method signature.\r\n- The struct doesn't actually correctly implement the interface and should error on that return line (and in-fact does error if I dereference `f` in the return).\r\n\r\nWould appreciate an explanation if this is intended behaviour (even better if it's documented somewhere I haven't found yet). Otherwise I believe this to be a bug.\r\n\r\n\u003e What version of Go are you using (go version)?\r\n\r\nI've tried this on 1.5.1 and 1.5.2 (same result).\r\n\r\n\u003e What operating system and processor architecture are you using?\r\n\r\nOSX El Capitan. x86_64.\r\n\r\n\u003e What did you do?\r\n\r\nReturned a pointer to a struct instead of the value. Struct doesn't correctly implement the interface that's declared as the return type for that method.\r\n\r\nWhat did you expect to see?\r\n\r\nCompile errors.\r\n\r\nWhat did you see instead?\r\n\r\nNo compile errors, and a return value that doesn't match the method signature.",
+	"user": {
+		"login": "stuarthicks",
+		"id": 868156,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-12-08T14:21:56Z",
+	"created_at": "2015-12-08T13:48:20Z",
+	"updated_at": "2015-12-08T15:22:51Z"
+}

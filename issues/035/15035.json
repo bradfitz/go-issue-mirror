@@ -1,0 +1,22 @@
+{
+	"id": 144779942,
+	"number": 15035,
+	"state": "closed",
+	"title": "net: Dialer{DualStack: true}.Dial(\"tcp\", \"DNS reg-name\") mishandles and cancels the winner connection",
+	"body": "The following snippet fails mostly with tip:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tc, err := (\u0026net.Dialer{DualStack: true}).Dial(\"tcp\", \"golang.org:80\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tdefer c.Close()\r\n\ttime.Sleep(3 * time.Second)\r\n\treq := []byte(\"GET /robots.txt HTTP/1.0\\r\\nHost: golang.org\\r\\n\\r\\n\")\r\n\tif _, err := c.Write(req); err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlog.Println(\"done\")\r\n}\r\n\r\n# go run snippet.go\r\nwrite tcp 192.168.86.22:32962-\u003e216.58.197.209:80: i/o timeout\r\n```\r\n\r\nA quick look: It seems like dialParallel in dial.go cancels all racers, not only losers but a winner connection. This issue occurs only on tip (Go 1.7 devel).\r\n```\r\nfunc dialParallel(ctx *dialContext, ...) {\r\n        cancel := make(chan struct{})\r\n(snip)\r\n        for !primaryResult.done || !fallbackResult.done {\r\n                select {\r\n                 case res := \u003c-results:\r\n(snip)\r\n                        // On success, cancel the other racer (if one exists.)\r\n                        if res.error == nil \u0026\u0026 cancel != nil {\r\n                                close(cancel)\r\n                                cancel = nil\r\n                        }\r\n```\r\n/CC @pmarks-net ",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-04-05T05:12:44Z",
+	"created_at": "2016-03-31T03:36:06Z",
+	"updated_at": "2016-04-05T05:12:44Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

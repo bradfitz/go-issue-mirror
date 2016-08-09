@@ -1,0 +1,12 @@
+{
+	"id": 176568303,
+	"body": "Please try applying this diff to cmd/go and rebuild cmd/go:\r\n\r\n\tdiff --git a/src/cmd/go/pkg.go b/src/cmd/go/pkg.go\r\n\tindex 5ecfcb8..85f2a50 100644\r\n\t--- a/src/cmd/go/pkg.go\r\n\t+++ b/src/cmd/go/pkg.go\r\n\t@@ -406,8 +406,20 @@ func vendoredImportPath(parent *Package, path string) (found string) {\r\n\t \tif parent == nil || parent.Root == \"\" {\r\n\t \t\treturn path\r\n\t \t}\r\n\t+\t// go/build decided that hasSubdir(parent.Root, parent.Dir) is true,\r\n\t+\t// and that computation applies EvalSymlinks to both before\r\n\t+\t// doing the string comparison.\r\n\t+\t// Do the same here so that the strings match up below.\r\n\t+\t// See golang.org/issue/14054.\r\n\t \tdir := filepath.Clean(parent.Dir)\r\n\t-\troot := filepath.Join(parent.Root, \"src\")\r\n\t+\tif p, err := filepath.EvalSymlinks(dir); err == nil {\r\n\t+\t\tdir = p\r\n\t+\t}\r\n\t+\troot := parent.Root\r\n\t+\tif p, err := filepath.EvalSymlinks(root); err == nil {\r\n\t+\t\troot = p\r\n\t+\t}\r\n\t+\troot = filepath.Join(root, \"src\")\r\n\t \tif !hasFilePathPrefix(dir, root) || len(dir) \u003c= len(root) || dir[len(root)] != filepath.Separator {\r\n\t \t\tfatalf(\"invalid vendoredImportPath: dir=%q root=%q separator=%q\", dir, root, string(filepath.Separator))\r\n\t \t}\r\n\r\nIf it fixes your problem (it seems to on my machine) I will work up a test case and try to get it into the final release. Thanks.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-29T04:26:59Z",
+	"updated_at": "2016-01-29T04:26:59Z"
+}

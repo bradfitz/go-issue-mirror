@@ -1,0 +1,12 @@
+{
+	"id": 66054525,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eTo Bond.Dmi...@gmail.com:\n\nThank you for good bug report. There are 2 issues here:\n\n1) time.Sleep function that you use in your program is very inefficient. It occupy 1\nwhole os thread, so if you have 100 goroutines, each waiting in time.Sleep, this will\noccupy 100 os threads. Os threads are precious commodity, and time.Sleep function could\nbe implemented in a different way, where it won't use that many threads. That what Russ\nproposes to do.\n\n2) when go runtime running out of os threads (fails to start new thread), it should die\nimmediately. At this moment it just continue on siletly. This change\n\u003ca href=\"http://golang.org/cl/4182047/\"\u003ehttp://golang.org/cl/4182047/\u003c/a\u003e should fix that issue.\n\nThe fact that your program stops at about 800 time.Sleeping goroutines sounds right to\nme, because each os thread uses part of virtual address space (manly for its stack, from\nsrc/cmd/ld/pe.c set(SizeOfStackReserve, 0x00200000)). Go runtime doesn't need os thread\nstacks to be very deep, so, perhaps, we should look to adjust thread parameters so we\ncan start more threads if we need to. But that is unrelated to your problem.\n\nTo Russ:\n\n\u003e Comment 6 by project member rsc@golang.org, Today (7 hours ago) via email\n\u003e Owner: alex.brainmain@gmail.com\n\u003e Summary: detect failed thread creation on Windows\n\nDo you want me to change \u003ca href=\"http://golang.org/cl/4182047/\"\u003ehttp://golang.org/cl/4182047/\u003c/a\u003e description?\n\n\u003e Please add fixes \u003ca href=\"https://golang.org/issue/1495\"\u003eissue #1495\u003c/a\u003e.\n\nDo you want me to add this comment to \u003ca href=\"http://golang.org/cl/4182047/?\"\u003ehttp://golang.org/cl/4182047/?\u003c/a\u003e\nBut \u003ca href=\"http://golang.org/cl/4182047/\"\u003ehttp://golang.org/cl/4182047/\u003c/a\u003e will not fix current issue. We still need to\nredo time.Sleep.\n\n\u003e Eventually by having one goroutine in charge of all\n\u003e sleeping, just as we have one goroutine in charge of\n\u003e all network I/O.\n\nCool.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-12T01:11:43Z",
+	"updated_at": "2014-12-08T10:08:36Z"
+}

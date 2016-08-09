@@ -1,0 +1,27 @@
+{
+	"id": 75291094,
+	"number": 10783,
+	"state": "closed",
+	"title": "runtime: program with -buildmode=c-archive hangs when c side crashes. (darwin/amd64)",
+	"body": "Expectation: the program would crash.\r\n\r\nObservation: When c-side crashes, the program hangs indefinitely.\r\n\r\nReproduction:\r\n\r\nRan misc/cgo/testcarchive/test.bash with the following modified main.c\r\n\u003cpre\u003e\r\ndiff --git a/misc/cgo/testcarchive/main.c b/misc/cgo/testcarchive/main.c\r\nindex cc3170d..2dfdbae 100644\r\n--- a/misc/cgo/testcarchive/main.c\r\n+++ b/misc/cgo/testcarchive/main.c\r\n@@ -8,6 +8,11 @@\r\n #include \"p.h\"\r\n #include \"libgo.h\"\r\n \r\n+void causeCrash() {\r\n+       int *i = NULL;\r\n+       printf(\"%d\", *i + 10);\r\n+}\r\n+\r\n int main(void) {\r\n        int32_t res;\r\n \r\n@@ -27,6 +32,8 @@ int main(void) {\r\n                return 2;\r\n        }\r\n \r\n+       causeCrash();\r\n+\r\n        CheckArgs();\r\n \r\n        fprintf(stderr, \"PASS\\n\");\r\n\u003c/pre\u003e\r\n\r\n\u003cpre\u003e\r\n$ lldb ./testp arg1 arg2\r\n(lldb) target create \"./testp\"\r\nCurrent executable set to './testp' (x86_64).\r\n(lldb) settings set -- target.run-args  \"arg1\" \"arg2\"\r\n(lldb) run\r\nProcess 29934 launched: './testp' (x86_64)\r\nProcess 29934 stopped\r\n* thread #1: tid = 0x29bb8e, 0x000000010000111b testp`causeCrash + 27, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)\r\n    frame #0: 0x000000010000111b testp`causeCrash + 27\r\ntestp`causeCrash + 27:\r\n-\u003e 0x10000111b:  movl   (%rax), %ecx\r\n   0x10000111d:  addl   $0xa, %ecx\r\n   0x100001123:  movl   %ecx, %esi\r\n   0x100001125:  movb   $0x0, %al\r\n(lldb)  \r\n\u003c/pre\u003e",
+	"user": {
+		"login": "hyangah",
+		"id": 4999471,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-07-21T02:58:17Z",
+	"created_at": "2015-05-11T17:09:39Z",
+	"updated_at": "2016-07-20T14:27:22Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

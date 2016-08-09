@@ -1,0 +1,27 @@
+{
+	"id": 51285391,
+	"number": 6574,
+	"state": "closed",
+	"title": "net/http: requests with \"Transfer-Encoding: chunked\" body may buffer small chunks",
+	"body": "\u003cpre\u003eHello,\n\nI am attempting to implement a client for a http fanout service in go. The utility\nestablishes an http connection and makes a POST request with a \u0026quot;Transfer-Encoding:\nchunked\u0026quot; body, then reads data from stdin and writes them as individual chunks to\nthe request body.\n\nI have noticed that small chunks are buffered instead of flushed to the wire\nimmediately. This seems to happen because the io.Reader initialized in the Request.Body\nis wrapped in a bufio.Reader when building the persistent connection:\n\u003ca href=\"http://golang.org/src/pkg/net/http/transport.go#L509\"\u003ehttp://golang.org/src/pkg/net/http/transport.go#L509\u003c/a\u003e\n\nThe bufio.Reader is initialized with the default buffer size (defaultBufSize = 4096) so\nchunks smaller than this size are buffered internally before sent to the wire. In my\nopinion these chunks should be flushed to the wire no matter the size.\n\nWhat steps will reproduce the problem?\n1. run ngrep to sniff the TCP packets sent to port 8080: \u0026quot;ngrep -W byline -d lo0\nport 8080\u0026quot;\n2. start a basic web server on port 8080: \u0026quot;{ sleep 5 ; echo -ne \u0026quot;HTTP/1.1 200\nOK\\r\\nContent-Length: 0\\r\\n\\r\\n\u0026quot; ; } | nc -l 8080\u0026quot;\n3. run \u003ca href=\"http://play.golang.org/p/CZaWdr4oft\"\u003ehttp://play.golang.org/p/CZaWdr4oft\u003c/a\u003e\n\nWhat is the expected output?\n\nThe expected output from ngrep should have 3 separate TCP packets sent from the go\nprocess to the server:\n\nngrep -W byline -d lo0 port 8080\ninterface: lo0 (127.0.0.0/255.0.0.0)\nfilter: (ip) and ( port 8080 )\n#####\nT 127.0.0.1:52415 -\u0026gt; 127.0.0.1:8080 [AP]\nPOST / HTTP/1.1.\nHost: 127.0.0.1:8080.\nUser-Agent: Go 1.1 package http.\nTransfer-Encoding: chunked.\nAccept-Encoding: gzip.\n.\nb.\nFirst Chunk\n#\nT 127.0.0.1:52415 -\u0026gt; 127.0.0.1:8080 [AP]\n.\nc.\nSecond Chunk\n#\nT 127.0.0.1:52415 -\u0026gt; 127.0.0.1:8080 [AP]\n.\n0.\n.\n\n####\nT 127.0.0.1:8080 -\u0026gt; 127.0.0.1:52415 [AP]\nHTTP/1.1 200 OK.\nContent-Length: 0.\n.\n\n######\n\nWhat do you see instead?\n\nThe output from ngrep only contains a single TCP packet from the go process to the\nserver:\n\nngrep -W byline -d lo0 port 8080\ninterface: lo0 (127.0.0.0/255.0.0.0)\nfilter: (ip) and ( port 8080 )\n#####\nT 127.0.0.1:52641 -\u0026gt; 127.0.0.1:8080 [AP]\nPOST / HTTP/1.1.\nHost: 127.0.0.1:8080.\nUser-Agent: Go 1.1 package http.\nTransfer-Encoding: chunked.\nAccept-Encoding: gzip.\n.\nb.\nFirst Chunk.\nc.\nSecond Chunk.\n0.\n.\n\n##\nT 127.0.0.1:8080 -\u0026gt; 127.0.0.1:52641 [AP]\nHTTP/1.1 200 OK.\nContent-Length: 0.\n.\n\n######\n\nWhich operating system are you using?\n\nOSX\n\nWhich version are you using?  (run 'go version')\n\ngo version go1.1.2 darwin/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "benburkert",
+		"id": 77,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2015-05-14T00:29:35Z",
+	"created_at": "2013-10-12T20:36:54Z",
+	"updated_at": "2016-06-25T01:20:35Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

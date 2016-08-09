@@ -1,0 +1,12 @@
+{
+	"id": 225900970,
+	"body": "If you have time to debug:\r\n- What happens if you use (1\u003c\u003c15)? (1\u003c\u003c14)+1?\r\n- Can you figure out the default socket send buffer size on your machine, and if it's lower than 64KB, report what happens when you raise that size to 64KB or higher? (see [here](http://stackoverflow.com/questions/28785626/what-is-the-size-of-a-socket-send-buffer-in-windows) or [here](http://stackoverflow.com/questions/18985816/change-default-socket-buffer-size-under-windows))\r\n- Can you get tcpdumps of (1\u003c\u003c14) and (1\u003c\u003c16)?\r\n- Does Windows have an equivalent of strace?\r\n- Do you have any firewall or antivirus programs running, and if so, what happens if they are disabled?\r\n\r\nNote that the benchmark [code](https://tip.golang.org/src/crypto/tls/tls_test.go#L506) alternates conn.Write with conn.Read. When bufsize=1\u003c\u003c14, each conn.Write call translates to a single TLS record (the max record size is 1\u003c\u003c14). Each TLS record is written with a single netFD.Write call, which translates to one WSASend syscall. When bufsize=1\u003c\u003c16, there are four TLS records (and four netFD.Writes / WSASends) per conn.Write.\r\n\r\nIn the 1\u003c\u003c16 case, I'd guess that the 2nd, 3rd, or 4th WSASend call is being delayed for some unknown reason. Perhaps that this is a weird interaction with TCP_NODELAY and/or TCP flow control.",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-14T14:34:47Z",
+	"updated_at": "2016-06-14T14:34:47Z"
+}

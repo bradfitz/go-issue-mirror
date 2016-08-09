@@ -1,0 +1,33 @@
+{
+	"id": 56305308,
+	"number": 9757,
+	"state": "closed",
+	"title": "crypto/tls: advertise full SHA suite in SignatureHashAlgorithm",
+	"body": "A simple Go client connecting to a server via TLS1.2 advertises supported algorithms as the equivalent of `openssl s_client -sigalgs RSA+SHA256:ECDSA+SHA256:RSA+SHA1:ECDSA+SHA1 -tls1_2`, while it should be capable of more.  An excerpt of the `ClientHello` sent from the client is below:\r\n\r\n![screen shot 2015-02-02 at 10 28 59 am](https://cloud.githubusercontent.com/assets/54688/6010591/a79c3fb2-ab01-11e4-980e-5692c9797dfd.png)\r\n\r\nThe server (a web load balancing appliance), which has an RSA+SHA256 certificate and a bundled RSA+SHA384 intermediary perhaps reasonably responds with an `alert(40)` (`handshake_failure`), whilst internally logging _\"[h]andshake failure selecting certificate for foo.example.com: Certificate chain uses algorithms not supported by client\"_.  On the face of what's presented by the client, this is true.\r\n\r\nI believe this is the same issue [previously reported by Michael Daffin on the golang-nuts mailing list](https://groups.google.com/d/msg/golang-nuts/ltbUyLa14RE/3Yd-T5jKKKYJ).  In that case, connecting to the specified server using a simulated string of\r\n\r\n```\r\n# \"OpenSSL 1.0.2 22 Jan 2015\" for `-sigalgs` support\r\n$ openssl s_client \\\r\n    -sigalgs RSA+SHA384:RSA+SHA256 \\\r\n    -cipher AES256-SHA \\\r\n    -tls1_2 \\\r\n    -servername foo.example.com \\\r\n    -connect foo.example.com:443 -showcerts\r\n```\r\n\r\nyields success.\r\n\r\nI believe the GoLang TLS library should advertise the full SHA suite it supports in the SignatureHashAlgorithm.\r\n",
+	"user": {
+		"login": "medina",
+		"id": 54688,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-04-30T03:48:13Z",
+	"created_at": "2015-02-02T22:45:47Z",
+	"updated_at": "2016-06-25T01:59:54Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

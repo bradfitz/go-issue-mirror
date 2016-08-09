@@ -1,0 +1,12 @@
+{
+	"id": 202623252,
+	"body": "Ah, I see what is happening.  Small repro:\r\n```\r\nfunc f(i int) uint16 {\r\n\tvar b [128]byte\r\n\tx := b[i:]\r\n\treturn uint16(x[121]) | uint16(x[122])\u003c\u003c8\r\n}\r\n```\r\nWe're trying to generate `MOVWLZX ·buf+121(CX), CX` but that seems disallowed, although we could in principle assemble such a thing.  The printer assumes and prints a base register of SP when it sees a stack local name, which is why the error is not obvious.\r\nOne fix is to disable rewrites that allow non-SP bases in memory loads/stores with symbolic offsets.\r\nAnother fix would be to allow instructions like the one above.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-28T23:22:10Z",
+	"updated_at": "2016-03-28T23:23:42Z"
+}

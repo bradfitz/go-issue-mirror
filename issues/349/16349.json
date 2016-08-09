@@ -1,0 +1,28 @@
+{
+	"id": 165361296,
+	"number": 16349,
+	"state": "closed",
+	"title": "runtime/pprof: debug=1 output includes 0x0 line in each block",
+	"body": "In go1.7rc1, there's an extra line of output in each block of comments in debug=1 profiles. It has address `0x0`, and does not include a function name. It seems to correspond to the `runtime.goexit` frame. I don't know that this is hurting anything (the data lines seem to be valid and unchanged, it's just a difference in the comments), though I also don't know the extent to which tools in the wild make use of those comment lines.\r\n\r\n---\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\nI see this behavior in go1.7rc1, and not in go1.6.2.\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux/amd64\r\n\r\n3. What did you do?\r\n\r\nI visually scanned a /debug/pprof/goroutine?debug=1 profile.\r\n\r\n4. What did you expect to see?\r\n\r\nI'd expect each non-comment profile line to end with an address in runtime.goexit. I'd expect to not see an associated line in the following comments.\r\n\r\n5. What did you see instead?\r\n\r\nThe goroutine profile has each stack starting at an address in runtime.goexit. In go1.6.2, this stack frame doesn't get an associated comment in debug=1 profiles. In go1.7rc1, it gets a comment for the frame, showing address `0x0` and no associated symbol name.\r\n\r\ngo1.6.2:\r\n```\r\n6 @ 0x439737 0x4490c9 0x4485fc 0x5e1c6b 0x46d681\r\n#\t0x5e1c6b\tnet/http.(*persistConn).writeLoop+0x49b\t/usr/local/go/src/net/http/transport.go:1277\r\n```\r\n\r\nand from `go tool objdump`:\r\n\r\n```\r\nTEXT runtime.goexit(SB) /usr/local/go/src/runtime/asm_amd64.s\r\n\tasm_amd64.s:1998\t0x46d680\t90\t\tNOPL\r\n\tasm_amd64.s:1999\t0x46d681\te8fa1efdff\tCALL runtime.goexit1(SB)\r\n\tasm_amd64.s:2001\t0x46d686\t90\t\tNOPL\r\n```\r\n\r\ngo1.7rc1:\r\n\r\n```\r\n4 @ 0x43316a 0x442685 0x44148c 0x59211d 0x463b81\r\n#\t0x59211c\tnet/http.(*persistConn).writeLoop+0x3bc\t/usr/local/go/src/net/http/transport.go:1594\r\n#\t0x0\r\n```\r\n\r\nand from `go tool objdump`:\r\n```\r\nTEXT runtime.goexit(SB) /usr/local/go/src/runtime/asm_amd64.s\r\n\tasm_amd64.s:2086\t0x463b80\t90\t\tNOPL\r\n\tasm_amd64.s:2087\t0x463b81\te8ca4dfdff\tCALL runtime.goexit1(SB)\r\n\tasm_amd64.s:2089\t0x463b86\t90\t\tNOPL\r\n```\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-07-13T21:52:36Z",
+	"created_at": "2016-07-13T16:13:23Z",
+	"updated_at": "2016-07-13T21:52:36Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

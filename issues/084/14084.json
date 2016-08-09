@@ -1,0 +1,28 @@
+{
+	"id": 128414607,
+	"number": 14084,
+	"state": "closed",
+	"title": "net/http: http2 Transport retains Request.Body after request is complete, not GCed",
+	"body": "I believe there's some kind of memory leak when using the following Client. `b []byte` below is typically 16KB at a time, and is never GC'd after having entered this section of code. Memory use climbs proportional to the number of requests sent on the client. I've ruled out the calling code. It didn't occur before I switched to h2 from HTTP/1.1. I assume some kind of h2 session-related item isn't being cleaned-up due to my unusual configuration.\r\n```\r\nClient: \u0026http.Client{\r\n\t\t\t\tTransport: \u0026http2.Transport{\r\n\t\t\t\t\tTLSClientConfig: \u0026tls.Config{\r\n\t\t\t\t\t\tInsecureSkipVerify: true,\r\n\t\t\t\t\t\tNextProtos:         []string{\"h2\"},\r\n\t\t\t\t\t},\r\n\t\t\t\t},\r\n\t\t\t},\r\n\r\n...\r\n\r\n\treq, err := http.NewRequest(\"PATCH\", me.url, bytes.NewReader(b))\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\treq.Header.Set(\"Content-Range\", fmt.Sprintf(\"bytes=%d-\", me.off))\r\n\treq.ContentLength = int64(len(b))\r\n\tresp, err := me.fs.Client.Do(req)\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tresp.Body.Close()\r\n```",
+	"user": {
+		"login": "anacrolix",
+		"id": 988750,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"closed_at": "2016-02-01T23:06:15Z",
+	"created_at": "2016-01-24T18:09:20Z",
+	"updated_at": "2016-02-01T23:06:15Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

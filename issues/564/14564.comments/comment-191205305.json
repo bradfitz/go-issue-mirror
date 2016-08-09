@@ -1,0 +1,12 @@
+{
+	"id": 191205305,
+	"body": "Adding another cse/zcse pair costs 3-6% in compile time (consistency checks disabled).  Adding a second opt pass *after* cse is negligible in cost and resolves the issue:\r\n\r\n```\r\n        {name: \"generic cse\", fn: cse},\r\n+       {name: \"opt second pass\", fn: opt},\r\n        {name: \"phiopt\", fn: phi opt},\r\n\r\nname       old time/op     new time/op     delta\r\nTemplate       293ms ± 2%      295ms ± 2%    ~             (p=0.421 n=5+5)\r\nGoTypes        1.09s ± 1%      1.10s ± 2%    ~             (p=0.841 n=5+5)\r\nCompiler       4.79s ± 1%      4.83s ± 1%    ~             (p=0.151 n=5+5)\r\nMakeBash       35.8s ± 2%      36.3s ± 1%    ~             (p=0.222 n=5+5)\r\n\r\n# file difference\r\n/home/todd/Projects/gn/bin/go 11942904\r\n/home/todd/Projects/go/bin/go 11942600 [-304 bytes]\r\n\r\n# section differences\r\nread-only data = -25 bytes (-0.001476%)\r\nglobal text (code) = -240 bytes (-0.006249%)\r\nTotal difference -265 bytes (-0.004533%)\r\n```\r\n\r\n\r\n```\r\ng_ssa \u003cnil\u003e\r\n  b1:\r\n    v1 = InitMem \u003cmem\u003e\r\n    v27 = Arg \u003c*uint8\u003e {a} [0] : a[*uint8]\r\n    v7 = Arg \u003cint\u003e {b} [0] : b[int]\r\n    v26 = Arg \u003cint\u003e {a} [8] : a+8[int]\r\n    v16 = LoadReg \u003cint\u003e v7 : CX\r\n    v46 = LoadReg \u003cint\u003e v26 : AX\r\n    v45 = CMPQ \u003cflags\u003e v16 v46\r\n    ULT v45 -\u003e b7 b3 (likely)\r\n  b7: \u003c- b1\r\n    v50 = LoadReg \u003c*uint8\u003e v27 : DX\r\n    v15 = MOVQloadidx8 \u003cint\u003e [0] v50 v16 v1 : AX\r\n    v36 = ADDQconst \u003cint\u003e [2] v15 : AX\r\n    v44 = MOVQstoreidx8 \u003cmem\u003e [0] v50 v16 v36 v1\r\n    Ret v44\r\n  b3: \u003c- b1\r\n    v11 = CALLstatic \u003cmem\u003e {runtime.panicindex} [0] v1\r\n    Exit v11\r\n```\r\n\r\nThere's a long standing TODO about splitting the required and optimizing rules.  What are your thoughts on doing that split and adding the second optimization rule pass after cse?\r\n",
+	"user": {
+		"login": "tzneal",
+		"id": 64753,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-02T11:48:53Z",
+	"updated_at": "2016-03-02T11:48:53Z"
+}

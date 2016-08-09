@@ -1,0 +1,12 @@
+{
+	"id": 160265825,
+	"body": "That does not do what the linked code does. We want to return whether there is an i,j and x,y such that a[i + j\\*stride] and b[x + y\\*stride] address the same variable when the indices are constrained such that they index a subset of the possible blocks that may be described with the given stride over the slices. However it does suggest a possible solution.\r\n\r\n```\r\n// offset returns the number of float64 values b[0] is after a[0].\r\nfunc offset(a, b []float64) int {\r\n\ta0 := unsafe.Pointer(\u0026a[0])\r\n\tb0 := unsafe.Pointer(\u0026b[0])\r\n\r\n\tif a0 == b0 {\r\n\t\treturn 0\r\n\t}\r\n\tif uintptr(a0) \u003c uintptr(b0) {\r\n\t\treturn int((uintptr(b0) - uintptr(a0)) / unsafe.Sizeof(float64(0)))\r\n\t}\r\n\treturn -int((uintptr(a0) - uintptr(b0)) / unsafe.Sizeof(float64(0)))\r\n}\r\n```\r\n\r\nand the family friendly version (this one is more tenuous since it depends on values passed back from a reflect call):\r\n\r\n```\r\n// offset returns the number of float64 values b[0] is after a[0].\r\nfunc offset(a, b []float64) int {\r\n\tva0 := reflect.ValueOf(a).Index(0)\r\n\tvb0 := reflect.ValueOf(b).Index(0)\r\n\r\n\tif va0.UnsafeAddr() == vb0.UnsafeAddr() {\r\n\t\treturn 0\r\n\t}\r\n\tif vb0.UnsafeAddr() \u003c va0.UnsafeAddr() {\r\n\t\treturn int((vb0.UnsafeAddr() - va0.UnsafeAddr()) / sizeOfFloat64)\r\n\t}\r\n\treturn -int((va0.UnsafeAddr() - vb0.UnsafeAddr()) / sizeOfFloat64)\r\n}\r\n```\r\n\r\nThese are then used in the functions also linked above.\r\n\r\nNote that it is OK for our use case for the offset to be used after a possible GC move since if a and b are part of the same allocation they move together and so the offset remains valid, and if they are not, an offset cannot become indicative of an overlap. The potential race in the sign condition is troubling though.",
+	"user": {
+		"login": "kortschak",
+		"id": 275221,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-28T09:17:18Z",
+	"updated_at": "2015-11-28T10:59:58Z"
+}

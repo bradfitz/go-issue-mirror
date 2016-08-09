@@ -1,0 +1,12 @@
+{
+	"id": 66095422,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eThe defer statement evalutes fn and args \"now\" and then executes an actual fn(args) call\n\"later\". There is no problem with having a nil fn in Go until you call it. Since the\ncall happens \"later\", the panic does not happen until \"later\". I think this is all\nimplied by the current spec but I think it is also fine to say explicitly.\n\nI think calling a nil func is roughly analogous to deferring an execution that\ndereferences a nil argument:\n\n    func printptrvalue(y *int) { println(*y) }\n\n    var x *int\n    defer printptrvalue(x)\n\nx is not dereferenced until \"later\". There is no reason the panic should happen \"now\".\nEven if the compiler can see that it will panic at execution, the semantics are that the\nexecution happens \"later\", not \"now\".\n\nMy reading of the CL is that it reiterates that the panic for deferring a nil func call\nhappens \"later\". I agree with that.\n\nI have also checked that all versions of Go I can run on my laptop match this behavior\n(really, they'd have to go out of their way not to):\n\ng% cat /tmp/x.go\npackage main\n\nimport \"os\"\n\nfunc main() {\n\tvar f func()\n\tdefer f()\n\tos.Exit(0)\n}\ng% go1.1 run /tmp/x.go\ng% go1.2 run /tmp/x.go\ng% go1.3 run /tmp/x.go\ng% go run /tmp/x.go\ng% \n\nThis issue was filed as collateral damage from \u003ca href=\"https://golang.org/issue/8047\"\u003eissue #8047\u003c/a\u003e, which was that the stack\ncopier didn't work correctly with deferred nil functions. That bug was introduced and\nfixed during the 1.3 cycle, so deferred nils have worked in all released copies of Go.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-19T19:51:40Z",
+	"updated_at": "2014-12-08T10:44:58Z"
+}

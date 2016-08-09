@@ -1,0 +1,12 @@
+{
+	"id": 66051681,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eAlso, note: runs fine with GC turned off. \n\ne.g.:\nGCGO=off ./test\n-----------------------------------------------------------------------\n\nGiven that clue I've tracked down an error source to a file 'runtime/mcache.c',\n'ReleaseN' function.\nSlightly modified version of this function (notice inserted printf statements):\n\n-----------------------------------------------------------------------\n// Take n elements off l and return them to the central free list.\nstatic void\nReleaseN(MCache *c, MCacheList *l, int32 n, int32 sizeclass)\n{\n\tMLink *first, **lp;\n\tint32 i;\n\n\t// Cut off first n elements.\n\tfirst = l-\u0026gt;list;\n\tlp = \u0026l-\u0026gt;list;\n\tprintf(\"list: %d (sizeclass: %d, size: %d)\\n\", n, sizeclass, class_to_size[sizeclass]);\n\tfor(i=0; i\u0026lt;n; i++) {\n\t\tprintf(\"lp: %d: %p, %p\\n\", i, lp, \u0026(*lp)-\u0026gt;next);\n\t\tlp = \u0026(*lp)-\u0026gt;next;\n\t}\n\tl-\u0026gt;list = *lp;\n\t*lp = nil;\n\tl-\u0026gt;nlist -= n;\n\tif(l-\u0026gt;nlist \u0026lt; l-\u0026gt;nlistmin)\n\t\tl-\u0026gt;nlistmin = l-\u0026gt;nlist;\n\tc-\u0026gt;size -= n*class_to_size[sizeclass];\n\n\t// Return them to central free list.\n\tMCentral_FreeList(\u0026mheap.central[sizeclass], n, first);\n}\n-----------------------------------------------------------------------\n\nPrints this (almost each time, when error happens):\nlist: 215 (sizeclass: 1, size: 8)\nlp: 0: 0xb76fd344, 0xb75fd8c0\nlp: 1: 0xb75fd8c0, 0x0\n\n-----------------------------------------------------------------------\nIt says number of objects to remove from the list == 215, but third object is a null\npointer. Obviously a null pointer deref. Happens _always_ with sizeclass == 1 which has\nsize == 8.\nContinuing bug hunting process.. Knowing what is wrong now need to figure out why..\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-06-27T21:08:11Z",
+	"updated_at": "2014-12-22T05:52:17Z"
+}

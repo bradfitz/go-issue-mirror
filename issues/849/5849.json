@@ -1,0 +1,28 @@
+{
+	"id": 51284288,
+	"number": 5849,
+	"state": "closed",
+	"title": "go/types: incorrect type reported for untyped constant in conversion",
+	"body": "by **rocky.bernstein**:\n\n\u003cpre\u003eIn the ssa interpreter strconv.Atoi(\u0026quot;3\u0026quot;) fails to convert number 3. It looks\nlike there is an error in computing a uint64(1 \u0026lt;\u0026lt; uint(bitSize-1)) when bitSize is\npreviously computed to be 64. \n\nNarrowing the failure, consider \u003ca href=\"http://play.golang.org/p/XRhYNPxmrH\"\u003ehttp://play.golang.org/p/XRhYNPxmrH\u003c/a\u003e\n\nRunning: \n    ./ssadump -build=F  ~/go/src/github.com/rocky/ssa-interp/example/shift_bug.go\n\nproduces:\n\n    # Name: main.main\n    # Location:     /home/rocky/go/src/github.com/rocky/ssa-interp/example/shift_bug.go:5:6\n    func main():\n    .0.entry:                                                                   P:0 S:2\n    \tt0 = 64:int - 1:int                                                     int\n    \tt1 = convert uint \u0026lt;- int (t0)                                          uint\n    \tt2 = convert uint64 \u0026lt;- uint (t1)                                     uint64\n    \tt3 = 1:untyped integer \u0026lt;\u0026lt; t2                                untyped integer\n    \tt4 = convert uint64 \u0026lt;- untyped integer (t3)                          uint64\n    \tt5 = t4 == 0:uint64                                                   \n...\n\nRunning the above in the interpreter, t4 comes is 0 when it should be\n9223372036854775808.\n\nI'm not sure what the proper fix is but I'm guessing that t3 should be\n\u0026quot;unit64\u0026quot;, or \u0026quot;untyped integer\u0026quot; should be able to accomodate 64 bits. \n\n- - - \n\nPlug for the ssa debugger \u003ca href=\"https://github.com/rocky/ssa-interp\"\u003ehttps://github.com/rocky/ssa-interp\u003c/a\u003e that helped me track this\ndown. In order to see just a disassembly of main.main rather than get everything (at\n20,715 lines) one can just run gub.sh and type \u0026quot;disasm\u0026quot;. I was also able to\nstep int strconv.Atoi to see where things were going wrong and even display the\nerroneous value.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"closed_at": "2014-12-08T10:32:09Z",
+	"created_at": "2013-07-08T02:27:05Z",
+	"updated_at": "2016-06-24T22:51:31Z"
+}

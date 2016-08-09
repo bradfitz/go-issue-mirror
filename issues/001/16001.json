@@ -1,0 +1,21 @@
+{
+	"id": 159059505,
+	"number": 16001,
+	"state": "open",
+	"title": "cmd/compile: escape analysis of interface calls to unexported method names",
+	"body": "Consider this Go source:\r\n\r\n    package p\r\n    \r\n    import \"fmt\"\r\n    \r\n    type A int\r\n    func (A) f(x *int) { fmt.Println(\"A\", *x) }\r\n    \r\n    type B int\r\n    func (B) f(x *int) { fmt.Println(\"B\", *x) }\r\n    func (B) g() {}\r\n    \r\n    type Fer interface { f(x *int); g() }\r\n    \r\n    func H(f Fer) {\r\n    \ti := 42\r\n    \tf.f(\u0026i)\r\n    }\r\n\r\nAt the f.f(\u0026i) call site in H, we can't be sure exactly what method will be called.  However, since it's an unexported method name, it must be implemented by a method in the same package.  Consequently, if we know that all candidate methods in the package are non-escaping (such as A.f and B.f are), we can still be sure that f.f(\u0026i) is a non-escaping call.\r\n\r\nNote that we still have to consider A.f even though A itself doesn't implement Fer, because a downstream package could do something like:\r\n\r\n    package q\r\n\r\n    import \"p\"\r\n\r\n    type X struct { p.B }\r\n    type Y struct { p.A; X }\r\n\r\n    func Z() {\r\n        p.H(Y{})\r\n    }\r\n\r\nThere are probably refinements that could avoid this though.\r\n\r\nI happened to notice this because of package net's \"exchange\" function, which calls the unexported TCPConn.dnsRoundTrip or UDPConn.dnsRoundTrip methods.  I haven't investigated how common this situation is though.\r\n\r\n/cc @dr2chase @alandonovan ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-08T01:18:16Z",
+	"updated_at": "2016-06-08T01:18:16Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

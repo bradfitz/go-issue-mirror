@@ -1,0 +1,12 @@
+{
+	"id": 196470030,
+	"body": "\r\nIt looks like spaces are getting replaced with underscores in `go list`, but the test does not account for this behavior:\r\n\r\nThe expected output was:\r\n\r\n```\r\n(_/C_/Users/Christopher Nelson/t/src/cmd/go/testdata/shadow/root1/src/math) (C:\\Users\\Christopher Nelson\\t\\src\\math)\r\n```\r\n\r\nActual output was:\r\n\r\n```\r\n(_/C_/Users/Christopher_Nelson/t/src/cmd/go/testdata/shadow/root1/src/math) (C:\\Users\\Christopher Nelson\\t\\src\\math)\r\n```\r\n\r\nIt turns out that this behavior in go list is generic:\r\n\r\n```\r\nC:\\test with spaces\\another test with spaces\u003e\"c:\\Users\\Christopher Nelson\\t\\bin\\go\" list -f \"({{.ImportPath}}) ({{.ConflictDir}})\" ./shadow/root1/src/math (_/C_/test_with_spaces/another_test_with_spaces/shadow/root1/src/math) ()\r\n``` \r\n\r\nThe test in `src/cmd/go/go_test.go:1873` is:\r\n\r\n```\r\npwdForwardSlash = strings.Replace(pwdForwardSlash, \":\", \"_\", -1)\r\n```\r\n\r\nI added \r\n\r\n```\r\npwdForwardSlash = strings.Replace(pwdForwardSlash, \" \", \"_\", -1)\r\n```\r\n\r\nand it seems to solve the problem. I don't know whether the test is wrong, or whether go list is wrong (although I suspect it is the test.) Of course, this simple change might not be a complete enough fix. Someone who knows what should happen ought to look at this and decide what to do. \r\n\r\n",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-14T18:54:59Z",
+	"updated_at": "2016-03-14T18:54:59Z"
+}

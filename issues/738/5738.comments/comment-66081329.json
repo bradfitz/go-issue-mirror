@@ -1,0 +1,12 @@
+{
+	"id": 66081329,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eChanged summary.\n\nThe bug is that the HTTP client (type *http.Transport) gets an HTTP response from the\nserver saying \"Content-Length: 400000\" and then proceeds to get reads:\n\n2013/06/21 10:58:46 Read = 633, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:47 Read = 8192, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:47 Read = 8192, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:47 Read = 8192, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:47 Read = 8192, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:48 Read = 8192, \u0026lt;nil\u0026gt;\n2013/06/21 10:58:48 Read = 8192, \u0026lt;nil\u0026gt;\n\nWe then kill the server, which closes the TCP connection, and the client receives:\n\n2013/06/21 10:58:52 Read = 0, EOF\n\nBut because we're not de-chunking, we see (0, EOF) from the TCPConn and we assume that's\njust the end of the body and pass that through.\n\nWe already do count to make sure we don't over-read past the declared Content-Length\n(with an io.LimitReader), but don't count that we under-read.\n\nWe should return an io.ErrUnexpectedEOF when we see EOF from the server and we haven't\ngotten all the bytes.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-06-21T18:03:11Z",
+	"updated_at": "2014-12-22T06:26:12Z"
+}

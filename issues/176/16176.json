@@ -1,0 +1,22 @@
+{
+	"id": 162214512,
+	"number": 16176,
+	"state": "closed",
+	"title": "go/constant: MakeFromLiteral with 0 mantissa and large exponent hangs",
+	"body": "See https://play.golang.org/p/lKi0ESs-FE for an example.\r\n\r\nPassing a sting representation of a float value with a mantissa of zero and a huge exponent will result in `constant.MakeFromLiteral` hanging. The reason for this is that a 0 mantissa is special-cased during `big.Float` parsing, but not during `big.Rat` parsing. This means that a value like `0e9999999999` will parse successfully in `big.Float.SetString`, but will hang in `big.Rat.SetString`. This discrepancy becomes an issue in [`makeFloatFromLiteral`](https://github.com/golang/go/blob/86235d5dd7b2dbbe3ec94f48276af96c7ed78a5a/src/go/constant/value.go#L250), where the `big.Float` will report an exponent of `0`, so `big.Rat.SetString` will be used and will subsequently hang.\r\n\r\nThe solution to this problem is to special-case a zero mantissa during `big.Rat` parsing as well, so that neither `big.Rat` nor `big.Float` will hang when parsing a value with a `0` mantissa but a large exponent. The fix is underway in https://go-review.googlesource.com/#/c/24430/.\r\n\r\nThis was discovered using go-fuzz on CockroachDB:\r\nhttps://github.com/cockroachdb/go-fuzz/blob/master/examples/parser/main.go. @dvyukov ",
+	"user": {
+		"login": "nvanbenschoten",
+		"id": 5438456,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-06-24T20:51:46Z",
+	"created_at": "2016-06-24T19:27:04Z",
+	"updated_at": "2016-06-24T20:51:46Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51276522,
+	"number": 465,
+	"state": "closed",
+	"title": "4gb seg fixup, message rush in /var/log/messages(Xen/domU)",
+	"body": "by **kuwana@kumama.org**:\n\n\u003cpre\u003e- What steps will reproduce the problem?\n\n1. simply run the program compiled by go compiler.\n2. kernel message rush occur as below.\n\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\nprintk: 20 messages suppressed.\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:08081e2e\nprintk: 37 messages suppressed.\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:08081e2e\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:08081e2e\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\n4gb seg fixup, process httpserv (pid 10578), cs:ip 73:080876b8\n\n\n- What is the expected output? What do you see instead?\n\nno message from kernel\n\n\n- What is your $GOOS?  $GOARCH?\n\nexport GOOS=\u0026quot;linux\u0026quot;\nexport GOARCH=\u0026quot;386\u0026quot;\n\n\n- Which revision are you using?  (hg identify)\n\n16355a0398ab+ tip\n\n\n- Please provide any additional information below.\n\n$ uname -a\nLinux mail 2.6.18-6-xen-686 #1 SMP Mon Oct 13 20:36:55 UTC 2008 i686 GNU/Linux\n\n$ cat /etc/debian_version\n4.0\n\n\n- Xen specific information -\u0026gt;\n\u003ca href=\"http://wiki.xensource.com/xenwiki/XenFaq#head-e05786f1e0d6a833bc146a6096cab2d96f2b30ae\"\u003ehttp://wiki.xensource.com/xenwiki/XenFaq#head-e05786f1e0d6a833bc146a6096cab2d96f2b30ae\u003c/a\u003e\n\u0026quot;6.4. How do I fix the 4gb seg fixup messages in my syslog?\u0026quot;\n\nIn Xen DomU(32bit/x86) \u0026quot;C\u0026quot; programs should compile with\n-mno-tls-direct-seg-refs option\nand In asm %gs register should access negative offset.\n\nfor example -\u0026gt;\n\ndiff -r 16355a0398ab src/libcgo/linux_386.c\n--- a/src/libcgo/linux_386.c    Fri Dec 25 08:24:00 2009 +1100\n+++ b/src/libcgo/linux_386.c    Sat Dec 26 09:22:23 2009 +0900\n@@ -47,8 +47,10 @@\n         * for the two words g and m at %gs:-8 and %gs:-4.\n         */\n        asm volatile (\n-               \u0026quot;movl %0, %%gs:-8\\n\u0026quot;    // MOVL g, -8(GS)\n-               \u0026quot;movl %1, %%gs:-4\\n\u0026quot;    // MOVL m, -4(GS)\n+               \u0026quot;movl %%gs:0, %%ecx\\n\u0026quot;  // should save ecx but assume not used.\n+               \u0026quot;movl %0, -8(%%ecx)\\n\u0026quot;  // MOVL g, -8(GS)\n+               \u0026quot;movl %1, -4(%%ecx)\\n\u0026quot;  // MOVL m, -4(GS)\n                :: \u0026quot;r\u0026quot;(ts.g), \u0026quot;r\u0026quot;(ts.m)\n        );\n\nI've done this, but still got \u0026quot;4gb seg fixup\u0026quot;.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:04:42Z",
+	"created_at": "2009-12-26T00:27:21Z",
+	"updated_at": "2016-06-24T19:10:59Z"
+}

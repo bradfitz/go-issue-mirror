@@ -1,0 +1,12 @@
+{
+	"id": 66098683,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4 by **mike0berg**:\n\n\u003cpre\u003eI think I traced the problem to its origin and it has nothing to do with rewriting\nlinker in go. \n\nAs far as I could see there is a bug in lib9 in implementation of removeall() function\n(file tempdir_windows.c). Windows calls FindFirstFileW/FindNextFileW do not return full\nfile path in cFileName member of WIN32_FIND_DATAW structure, only the last part of it -\nbase name. As the result strrchr(q, '\\\\') always returns NULL pointer and removeall()\ncalls itself recursively with directory name \".\" until stack is exhausted completely.\nNothing gets removed.\n\nEven after this is fixed temporary directory is not removed because go.o never closed \nby linker and Windows does not allow removal of opened file (file is locked).\n\nThis could be easily confirmed by looking at user's temporary directory.\n\nPlease, find attached a simple patch to correct both of those problems - I think this\nissue could be closed now.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8723/4/go_131_windows.patch\"\u003ego_131_windows.patch\u003c/a\u003e (954 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-17T23:54:48Z",
+	"updated_at": "2014-12-08T10:48:20Z"
+}

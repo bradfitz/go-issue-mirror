@@ -1,0 +1,27 @@
+{
+	"id": 90558204,
+	"number": 11374,
+	"state": "closed",
+	"title": "proposal: cmd/link: handle code relocations more like an ELF linker",
+	"body": "(I was half-tempted to call this proposal \"stop pretending linking on RISC is easy\").\r\n\r\nArchitectures with fixed width instructions have the inherent issue that a 32-bit (or 64-bit!)  displacement cannot be stuffed into a 32-bit instruction, so an address needs to be spread across several instructions, and in turn this requires a sequence of relocations, each updating a part of an instruction. This leads to relocations that are inherently processor specific.\r\n\r\nThe way the Go toolchain handles this currently is a bit wacky, IMO. We have processor-specific relocations such as R_ADDRARM64 that relocate a specific pair of instructions that load an address into a register, which leads to such nastiness as having to care about target endianness when relocating the instructions. (In addition we have the grottiness that the value being relocated is encded, along with the addend, to archreloc in r.Add, i.e. #10050, but that could be killed separately).\r\n\r\nI think there would be a net reduction in headaches if cmd/internal/obj generated relocations that touched a single instruction, like an ELF linker does. I've implemented this for arm64 at https://github.com/mwhudson/go/commit/d6c0d0fd0e5df8ad392bed3d1de2afc7a03f2571 and I think this is a lot cleaner.\r\n\r\nIntel doesn't have this problem nearly so much, because generally speaking you can just stuff an offset into the instruction stream, but I think handling the TLS relocations in archreloc would be cleaner.\r\n\r\nObviously this is only something for Go 1.6 but as I'm starting to look into porting -buildmode=shared to other architectures, I'd like to get agreement on the basic approach before I start building my house of cards on it.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-04-25T23:58:55Z",
+	"created_at": "2015-06-24T04:04:13Z",
+	"updated_at": "2016-04-25T23:58:55Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

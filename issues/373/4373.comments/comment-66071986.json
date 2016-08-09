@@ -1,0 +1,12 @@
+{
+	"id": 66071986,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003e+bradfitz, because of his comment, \u003ca href=\"https://golang.org/issue/4369?c=3\"\u003ehttps://golang.org/issue/4369?c=3\u003c/a\u003e\n\nI'd prefer to do 1, relying on errClosing is buggy, for the following:\n\n* most times the errClosing is wrapped in an net.OpError, so a test like err ==\nErrClosing wouldn't work as expected. I'm sure there are situations where the error is\nwrapped more than once. I suspect the OP didn't consider that.\n* as an implementer of net.Conn implementations in things like the ssh package I\nwouldn't like the additional burdon of having to return net.ErrClosing according to an\nadditional requirement of the net.Conn interface. I'm not even sure that I could detect\nconcurrent closes on a ssh channel muxed over an unknown net.Conn. Even if the original\nErrClosing was detected and retained, it would be very heavily wrapped, which speaks to\nmy previous point\n* such a change to the net.Conn interface may make existing net.Conn implementations\nbroken according to the Go 1.x contract.\n* Would this change bubble down to io.Reader/Writers ? It is easy to construct a struct\nlike\n\nc := net.Dial(...)\nv := struct { io.Reader; io.Writer; io.Closer }{ c, c, c }\n\nWould there be an implied requirement to return a known ErrClosing when reading from an\nio.Reader whose direct implementation was closed concurrently?\n\nFullung talked about not wanting to ignore errors from Close. I agree with this\nsentiment, but wonder if the requirement could be restated as, \"I would like to be able\nto distinguish between expected and unexpected errors from Close\". For the former they\ncould be safely ignored, the latter might mean a trip through os.Exit(). At the moment\nerrClosing, being unexported, makes it hard to tell if it is in the expected, or\nunexpected class. I believe this is the core issue, and possibly what bradfitz was\nsuggesting when he suggested replacing errClosing with io.EOF.\n\nAt the risk of appearing obstructionist, and considering the number of lines spilt in\nthis CL vs the size of the original request, I'd like to hear from the OP about their\nspecific requirements.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-27T21:12:35Z",
+	"updated_at": "2014-12-08T10:23:13Z"
+}

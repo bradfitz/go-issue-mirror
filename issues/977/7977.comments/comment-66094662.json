@@ -1,0 +1,12 @@
+{
+	"id": 66094662,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eon linux, cas32 is always using kernel provided routine, so no problem there.\n\nfor cas64, we have a three way choice:\n1. for modern ones (\u003e=3.1), cas64 will be handled by the kernel provided routine,\n2. if we are running on ARMv6 or above on older kernels, we will use the generic\nLDREX/STREX\nbased implementation, and we need DMB in this case, at least in theory.\n3. if we are running on ARMv5E on older kernel, use lock-based cas64 emulation from\nruntime.\nin that case, the memory barrier should be provided by the mutex?\n\non ARMv5E, cp15 isn't supported, but I don't think ARMv5 supports MP either.\n\non ARMv6+, cp15 is supported, and depending on the kernel SMP configuration, dmb in the\nkernel provided cas64 primitive will either be replaced with a simple compiler memory\nbarrier\n(asm (::\"memory\")), or it the real cp15 mcr instruction. So for SMP configurations,\nchoice 1 and 2\nshouldn't have any performance differences.\n\nUsing DMB definitely have adverse performance impact on non-SMP ARMv6+ CPUs, but I guess\nwe can't do any better (actually i think whether the lack of DMB is a problem or not\ndepends on\nthe implementation of the cpu)\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-13T08:01:17Z",
+	"updated_at": "2014-12-08T10:44:11Z"
+}

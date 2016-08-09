@@ -1,0 +1,25 @@
+{
+	"id": 51283024,
+	"number": 5038,
+	"state": "closed",
+	"title": "net: LookupCNAME returns 'no such host' for a target that doesn't exist, instead of the target's name",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Set up the first two CNAMES in dns, one that points to a valid A record, and one that\npoints to a missing hostname.\n\n$ host -t CNAME defined.0xkarl.com\ndefined.0xkarl.com is an alias for www.0xkarl.com.\n\n$ host -t CNAME undefined.0xkarl.com\nundefined.0xkarl.com is an alias for stillundefined.0xkarl.com.\n\n$ host www.0xkarl.com\nwww.0xkarl.com has address 69.64.236.169\n$ host stillundefined.0xkarl.com\nHost stillundefined.0xkarl.com not found: 3(NXDOMAIN)\n\n2. Compile and run \u003ca href=\"http://play.golang.org/p/BLtnb_hXh9\"\u003ehttp://play.golang.org/p/BLtnb_hXh9\u003c/a\u003e\n\nWhat is the expected output?\nCNAME for defined.0xkarl.com is: www.0xkarl.com.\nCNAME for undefined.0xkarl.com is: stillundefined.0xkarl.com.\n\nWhat do you see instead?\n\nCNAME for defined.0xkarl.com is:www.0xkarl.com.\nError looking up undefined.0xkarl.com: lookup undefined.0xkarl.com: no such host\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nLinux 3.8.2 \n\nWhich version are you using?  (run 'go version')\n\ngo version devel +2bd4d868a758 Wed Mar 13 02:40:56 2013 +0800 linux/amd64\n\nPlease provide any additional information below.\n\nI do expect LookupHost or LookupIP to return \u0026quot;no such host\u0026quot; in this situation,\nand they do, since they resolve all the way to the end, but by calling LookupCNAME I'm\ntrying to get the CNAME itself, which is in DNS, so I don't want it to resolve all the\nway to the end and fail, I just want the first CNAME.\n\nIf I modify lookup_unix.go to always call goLookupCNAME instead of cgoLookupCNAME, I get\nthe output I'd expect:\n\ndiff -r 2bd4d868a758 src/pkg/net/lookup_unix.go\n--- a/src/pkg/net/lookup_unix.go        Wed Mar 13 02:40:56 2013 +0800\n+++ b/src/pkg/net/lookup_unix.go        Tue Mar 12 15:43:05 2013 -0700\n@@ -77,10 +77,10 @@\n }\n \n func lookupCNAME(name string) (cname string, err error) {\n-       cname, err, ok := cgoLookupCNAME(name)\n-       if !ok {\n-               cname, err = goLookupCNAME(name)\n-       }\n+       //      cname, err, ok := cgoLookupCNAME(name)\n+       //      if !ok {\n+       cname, err = goLookupCNAME(name)\n+       //      }\n        return\n }\n\nCNAME for defined.0xkarl.com is:www.0xkarl.com.\nCNAME for undefined.0xkarl.com is:stillundefined.0xkarl.com.\u003c/pre\u003e",
+	"user": {
+		"login": "Frumious",
+		"id": 1620064,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:26:54Z",
+	"created_at": "2013-03-12T22:48:59Z",
+	"updated_at": "2016-06-24T22:35:31Z"
+}

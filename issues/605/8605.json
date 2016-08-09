@@ -1,0 +1,32 @@
+{
+	"id": 51288436,
+	"number": 8605,
+	"state": "open",
+	"title": "cmd/compile: confusing and inconsistent error messages for syntactically incorrect method expressions",
+	"body": "\u003cpre\u003eThe following program:\n\n\u003ca href=\"http://play.golang.org/p/2qX3CIh_Cx\"\u003ehttp://play.golang.org/p/2qX3CIh_Cx\u003c/a\u003e\n\ncompiles with a confusing error:\n\nmain.main: call to external function go.(*struct { main.T }).main.m\nmain.main: undefined: go.(*struct { main.T }).main.m\n\nPer the spec ( \u003ca href=\"http://tip.golang.org/ref/spec#Method_expressions\"\u003ehttp://tip.golang.org/ref/spec#Method_expressions\u003c/a\u003e ), method expressions\nmust have a (possibly parenthesized) named (or pointer to named) type. The error message\nis (at the very least) confusing.\n\nFor reference, gccgo produces for this case:\n\nx.go:8:14: error: method expression requires named type or pointer to named type\n  (*struct{T}).m(nil)\n\nThat said, the following (equally syntactically incorrect) program compiles and runs w/o\nproblems using gc:\n\n\u003ca href=\"http://play.golang.org/p/qpAtL6sEVW\"\u003ehttp://play.golang.org/p/qpAtL6sEVW\u003c/a\u003e\n\nFor reference, gccgo produces for this case:\n\nx.go:8:15: error: method expression requires named type or pointer to named type\n  (struct{ T }).m(struct{ T }{42})\n\ngo/types (arguably incorrectly) accepts both programs w/o complaints.\n\nI see 2 possible solutions:\n\n1) Let's fix gc and go/types to make it spec compliant.\n\n2) Relax the spec and adjust gccgo and the one case in cmd/gc.\n\nI am in favor of 2) for the following reasons:\n\n- A method expression T.m is essentially a syntactic construct: It can always be\nrewritten to m' where m is roughly defined as:\n\nfunc m'(x T, args m_params) {\n   x.m(args)\n}\n\nIf m exists for T, m' can always be written independent of the syntactic form of T, for\ninstance:\n\n\u003ca href=\"http://play.golang.org/p/kflAOxp2Gr\"\u003ehttp://play.golang.org/p/kflAOxp2Gr\u003c/a\u003e\n\nfor our first example.\n\n- It already appears to work in 1/2 of the cases for cmd/gc.\n- It's more general and simplifies the spec.\n- It's backward compatible.\n- It doesn't require a 2nd syntax check (of technically a selector expression) after the\ntype checker has determined that x in x.m is a type (rather than a value). This ought to\nsimplify the implementation slightly.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "paranoiacblack",
+		"id": 1035296,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2014-08-28T00:04:50Z",
+	"updated_at": "2016-05-18T22:50:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

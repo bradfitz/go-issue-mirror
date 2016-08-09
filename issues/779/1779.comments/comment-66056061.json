@@ -1,0 +1,12 @@
+{
+	"id": 66056061,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12:\n\n\u003cpre\u003eAlso, I'm not sure what you mean by \"invariant is broken\". Go on Windows allocates\nadditional 2KiB of stack space below a normal stack boundary and Go would not go there\nvoluntarily (instead of using those 2KiB it would split additional stack, because it is\nreserved for Windows). Now, while Go wouldn't go there, Windows might, that's what it's\nfor, after all. And Go shouldn't fail just because it found itself where it wouldn't go\nvoluntarily, but where it happened to be because of a SEH. There was no stack overflow\nin your example, runtime was erroneously thinking there was.\n\nBasically, before my patch, the comparison that is shown in your panic was like this:\n\np-512 \u0026lt; p (where 512 is an approximation)\n\nBut after my patch, 2KiB of stack space that weren't accounted for are accounted now, so\ncomparison should be:\n\np-512 \u0026lt; p-2048\n\nWhich obviously shouldn't panic. But instead, your new message still shows that there's\napproximately ~256 bytes difference, which doesn't make sense since you didn't change\nyour array size.\n\nThis leads me to believe that either there's something wrong with your compiler (do you\nhave some changes of your own? Judging by 8440+ in your version number), or there's\nsomething else entirely.\n\nCan you please tell me what host OS you compile Go and your test program on? Also, which\nversion of Windows are you testing on? Also, if you make sure that you compile the\nlatest Go and there's still an error, can you please send me an exact panic message and\nan archived executable that generates it to me by email? I'd like to take a look what's\ngoing on in there.\u003c/pre\u003e",
+	"user": {
+		"login": "snaury",
+		"id": 53117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-17T16:40:24Z",
+	"updated_at": "2014-12-22T05:55:47Z"
+}

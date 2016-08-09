@@ -1,0 +1,21 @@
+{
+	"id": 127794890,
+	"number": 14045,
+	"state": "open",
+	"title": "runtime: reclaim memory used by huge array that is no longer referenced",
+	"body": "Consider the following program that I run with Go 1.5.2 on 64-bit Fedora Linux:\r\n```\r\npackage main\r\nimport \"fmt\"\r\nfunc main() {\r\n\ta := make([]byte, 185 * 1024 * 1024)\r\n\tfor i := 0; i \u003c len(a); i += 4096 {\r\n\t\ta[i] = 'x'\r\n\t}\r\n\tfmt.Printf(\"%c\\n\", a[0])\r\n}\r\n```\r\nIt allocates 185MB byte array and then forces OS to commit memory to it via touching all the pages. This programs runs OK and prints expected `x` even if I restrict the size of available virtual memory per process to 200MB using ulimit:\r\n```\r\n~/s\u003e ulimit -S -v 204800\r\n~/s\u003e go run test.go\r\nx\r\n```\r\n\r\nNow consider its modification like:\r\n```\r\npackage main\r\nimport \"fmt\"\r\nfunc main() {\r\n\ta := make([]byte, 85 * 1024 * 1024)\r\n\ta = nil\r\n\ta = make([]byte, 150 * 1024 * 1024)\r\n\tfor i := 0; i \u003c len(a); i += 4096 {\r\n\t\ta[i] = 'x'\r\n\t}\r\n\tfmt.Printf(\"%c\\n\", a[0])\r\n}\r\n```\r\nIt allocates first 85MB, then clears the reference to the slice, and then allocates 150MB. This time under the same 200MB limit as set with ulimit it fails:\r\n```\r\n~/s\u003e go run test.go\r\nfatal error: runtime: out of memory\r\n```\r\n\r\nThe same failure happens even with the explicit GC call after a = nil:\r\n```\r\npackage main\r\nimport \"fmt\"\r\nimport \"runtime\"\r\nfunc main() {\r\n\ta := make([]byte, 85 * 1024 * 1024)\r\n\ta = nil\r\n\truntime.GC()\r\n\ta = make([]byte, 150 * 1024 * 1024)\r\n\tfor i := 0; i \u003c len(a); i += 4096 {\r\n\t\ta[i] = 'x'\r\n\t}\r\n\tfmt.Printf(\"%c\\n\", a[0])\r\n}\r\n```\r\n\r\nIs it just a runtime bug?  If not, how can I force the runtime to release a large allocation?",
+	"user": {
+		"login": "ibukanov",
+		"id": 2381216,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-01-20T22:03:39Z",
+	"updated_at": "2016-05-18T01:28:58Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

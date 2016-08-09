@@ -1,0 +1,28 @@
+{
+	"id": 153245534,
+	"number": 15556,
+	"state": "closed",
+	"title": "Shared library behavior in forked (not forking) processes",
+	"body": "Issue #15538 established that a process which has loaded a Go shared library (and therefore, instantiated the Go runtime) cannot call `fork()` and make use of Go code in child processes.\r\n\r\nI tested the inverse; forking multiple processes and then loading a Go library in each child via `dlopen()`. I expected this to work but unfortunately I hit similar behaviors to the other issue; semaphore errors, file descriptor errors, dead locks, etc.\r\n\r\nTo reproduce the issue:\r\n* write a Go shared library which exports symbols to C and calls multithreaded functions like `net.Dial`\r\n* write a C program which forks more than once\r\n* in each child process, call `dlopen` to load the Go library\r\n* call a multithreaded function in the Go library\r\n\r\nThe first child to make use of the Go library should succeed. Subsequent calls should behave undefined. Symptoms differ between OS.\r\n\r\nConfirmed on Go v1.5.4 and v1.6.2 on Red Hat 7.2 and OS X 10.11.4 x86_64.\r\n\r\nExample code to reproduce this issue is available on gist:https://gist.github.com/cavaliercoder/68bb2ee0d673cb3d585199fe189fb171\r\n",
+	"user": {
+		"login": "cavaliercoder",
+		"id": 7133556,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-05T17:59:41Z",
+	"created_at": "2016-05-05T14:37:05Z",
+	"updated_at": "2016-05-07T08:45:11Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

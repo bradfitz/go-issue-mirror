@@ -1,0 +1,28 @@
+{
+	"id": 161774836,
+	"number": 16154,
+	"state": "closed",
+	"title": "cmd/pprof: weblist is unusable on Go1.7",
+	"body": "Using 4764d6fd6e64d9d40e7131a3bf4ea0eb1507ef1f\r\n\r\nUsing the `weblist` command in pprof now generates an unreasonably large html file. In `Go1.6` this generates a 209KB html file, while `HEAD` generates a 450MB html file for even a simple benchmark. On larger benchmarks (which are far more common), this crashes the system by using up all system memory.\r\n\r\nCurrent behavior:\r\n```\r\n$ go.dev test -c foo_test.go\r\n$ ./foo.test -test.bench . -test.cpuprofile /tmp/cpu.out\r\n$ go.dev tool pprof ./foo.test /tmp/cpu.out\r\n(pprof) weblist # Stalls for several seconds... the output html file is 450MB\r\n```\r\n\r\nWanted behavior:\r\n```\r\n$ go1.6 test -c foo_test.go\r\n$ ./foo.test -test.bench . -test.cpuprofile /tmp/cpu.out\r\n$ go1.6 tool pprof ./foo.test /tmp/cpu.out\r\n(pprof) weblist # Immediately launches browser with html file that is 209KB\r\n```\r\n\r\nContents of foo_test.go (could be anything):\r\n```\r\npackage foo\r\n\r\nimport (\r\n    \"bufio\"\r\n    \"io\"\r\n    \"strings\"\r\n    \"testing\"\r\n)\r\n\r\nfunc BenchmarkFoo(b *testing.B) {\r\n    s := strings.Repeat(\"Hello, world!\", 100000)\r\n\r\n    b.SetBytes(int64(len(s)))\r\n    for i := 0; i \u003c b.N; i++ {\r\n        var r io.ByteReader\r\n        r = bufio.NewReader(strings.NewReader(s))\r\n        for {\r\n            _, err := r.ReadByte()\r\n            if err != nil {\r\n                if err == io.EOF {\r\n                    break\r\n                }\r\n                b.Fatal(err)\r\n            }\r\n        }\r\n    }\r\n}\r\n```",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-06-24T22:52:54Z",
+	"created_at": "2016-06-22T20:13:42Z",
+	"updated_at": "2016-06-24T22:52:54Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

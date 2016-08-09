@@ -1,0 +1,22 @@
+{
+	"id": 51288038,
+	"number": 8331,
+	"state": "closed",
+	"title": "cmd/gc: division by a power of 2 is inefficient",
+	"body": "\u003cpre\u003eThe Go Programming Language Specification\n\nArithmetic operators\n\nIf the dividend is non-negative and the divisor is a constant power of 2, the division\nmay be replaced by a right shift, and computing the remainder may be replaced by a\nbitwise AND operation.\n\nTherefore, the following shift and division functions should provide equivalent\nperformance:\n\npackage division\n\nfunc shift(bits int) int {\n\treturn (bits + (8 - 1)) \u0026gt;\u0026gt; 3\n}\n\nfunc division(bits int) int {\n\treturn (bits + (8 - 1)) / 8\n}\n\nHowever, the performance is significantly different.\n\npackage division\n\nimport \u0026quot;testing\u0026quot;\n\nconst n = 42\n\nfunc BenchmarkShift(b *testing.B) {\n\tbytes := shift(n)\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tbytes = shift(n)\n\t}\n\t_ = bytes\n}\n\nfunc BenchmarkDivision(b *testing.B) {\n\tbytes := division(n)\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tbytes = division(n)\n\t}\n\t_ = bytes\n}\n\n$ go version\ngo version devel +1a9d124153b9 Sat Jul 05 08:48:46 2014 +0400 linux/amd64\n$ go test -bench=.\ntesting: warning: no tests to run\nPASS\nBenchmarkShift\t1000000000\t         2.52 ns/op\nBenchmarkDivision\t300000000\t         4.41 ns/op\nok  \tit/division\t4.556s\n\nThe performance is probably not the same because the generated p-code is significantly\ndifferent.\n\n$ go tool 6g -S division.go \u0026gt; division.S\n\n\u0026quot;\u0026quot;.shift t=1 size=32 value=0 args=0x10 locals=0\n\t000000 00000 (division.go:3)\tTEXT\t\u0026quot;\u0026quot;.shift+0(SB),4,$0-16\n\t000000 00000 (division.go:3)\tNOP\t,\n\t000000 00000 (division.go:3)\tNOP\t,\n\t000000 00000 (division.go:3)\tFUNCDATA\t$2,gclocals·9308e7ef08d2cc2f72ae1228688dacf9+0(SB)\n\t000000 00000 (division.go:3)\tFUNCDATA\t$3,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\n\t000000 00000 (division.go:4)\tMOVQ\t\u0026quot;\u0026quot;.bits+8(FP),BX\n\t0x0005 00005 (division.go:4)\tADDQ\t$7,BX\n\t0x0009 00009 (division.go:4)\tSARQ\t$3,BX\n\t0x000d 00013 (division.go:4)\tMOVQ\tBX,\u0026quot;\u0026quot;.~r1+16(FP)\n\t0x0012 00018 (division.go:4)\tRET\t,\n\u0026quot;\u0026quot;.division t=1 size=48 value=0 args=0x10 locals=0x8\n\t000000 00000 (division.go:7)\tTEXT\t\u0026quot;\u0026quot;.division+0(SB),4,$8-16\n\t000000 00000 (division.go:7)\tSUBQ\t$8,SP\n\t0x0004 00004 (division.go:7)\tFUNCDATA\t$2,gclocals·9308e7ef08d2cc2f72ae1228688dacf9+0(SB)\n\t0x0004 00004 (division.go:7)\tFUNCDATA\t$3,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\n\t0x0004 00004 (division.go:8)\tMOVQ\t\u0026quot;\u0026quot;.bits+16(FP),AX\n\t0x0009 00009 (division.go:8)\tADDQ\t$7,AX\n\t0x000d 00013 (division.go:8)\tMOVQ\tAX,BX\n\t0x0010 00016 (division.go:8)\tSARQ\t$63,BX\n\t0x0014 00020 (division.go:8)\tSHRQ\t$61,BX\n\t0x0018 00024 (division.go:8)\tADDQ\tAX,BX\n\t0x001b 00027 (division.go:8)\tSARQ\t$3,BX\n\t0x001f 00031 (division.go:8)\tMOVQ\tBX,\u0026quot;\u0026quot;.~r1+24(FP)\n\t0x0024 00036 (division.go:8)\tADDQ\t$8,SP\n\t0x0028 00040 (division.go:8)\tRET\t,\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8331/0/division.go\"\u003edivision.go\u003c/a\u003e (139 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8331/0/division_test.go\"\u003edivision_test.go\u003c/a\u003e (296 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8331/0/division.S\"\u003edivision.S\u003c/a\u003e (3078 bytes)",
+	"user": {
+		"login": "peterGo",
+		"id": 4561296,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:46:17Z",
+	"created_at": "2014-07-06T13:08:09Z",
+	"updated_at": "2016-06-25T01:37:39Z"
+}

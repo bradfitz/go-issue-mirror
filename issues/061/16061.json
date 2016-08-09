@@ -1,0 +1,32 @@
+{
+	"id": 160181356,
+	"number": 16061,
+	"state": "open",
+	"title": "cmd/compile: SSA runtime performance regression on function with multiple idiv instructions",
+	"body": "```\r\n$ gotip version\r\ngo version devel +53242e4 Tue Jun 14 05:17:57 2016 +0000 linux/amd64\r\n```\r\n\r\ncode:\r\n\r\n```go\r\npackage foo\r\n\r\nimport \"testing\"\r\n\r\nfunc maxRem(a int32) int32 {\r\n\tmaxR := int32(0)\r\n\tm := a * a\r\n\tr1, r2 := a+1, a-1\r\n\tfor n := int32(1); n \u003c= a*a; n++ {\r\n\t\tr1 = (r1 * (a + 1)) % m\r\n\t\tr2 = (r2 * (a - 1)) % m\r\n\t\tif r := (r1 + r2) % m; maxR \u003c r {\r\n\t\t\tmaxR = r\r\n\t\t}\r\n\t}\r\n\treturn maxR\r\n}\r\n\r\nvar sink int32\r\n\r\nfunc BenchmarkMaxRem(b *testing.B) {\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tsink = maxRem(100)\r\n\t}\r\n}\r\n```\r\n\r\ngo1.6 vs tip:\r\n\r\n```\r\nname      old time/op  new time/op  delta\r\nMaxRem-4   116µs ± 1%   134µs ± 2%  +15.48%  (p=0.000 n=8+8)\r\n```\r\n\r\nsame function with `int64` is also slower, by `~5%`.",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-06-14T13:28:57Z",
+	"updated_at": "2016-06-14T14:58:03Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

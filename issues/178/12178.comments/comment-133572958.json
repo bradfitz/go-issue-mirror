@@ -1,0 +1,12 @@
+{
+	"id": 133572958,
+	"body": "For the record, the test does not actually pass with mapfile example I showed earlier; I failed to remove the \"skip\" for LinkExternal on Solaris from note_test.go after doing a \"git sync\".  While the mapfile gets us halfway there, the previous mapfile doesn't ensure that a PT_NOTE segment is created.\r\n\r\nAnyway, short of changing Go to use something other than a SHT_NOTE section to record the buildid, the only other option I can see is to use a mapfile whenever linking the executables to leave space for a PT_NOTE header, ensure that the .note.go.buildid section stays within the first 16K of the binary, and ensure that the .note.go.buildid section is allocable:\r\n```\r\n$ cat /tmp/note.mapfile\r\n$mapfile_version 2\r\n\r\nPHDR_ADD_NULL = 1;\r\n\r\nLOAD_SEGMENT text {\r\n        ASSIGN_SECTION {\r\n                IS_NAME = .note.go.buildid;\r\n        };\r\n        OS_ORDER = .note.go.buildid;\r\n};\r\n\r\n$ elfdump /tmp/gotest963298988/hello.exe\r\n...\r\nProgram Header[4]:\r\n    p_vaddr:      0                   p_flags:    0\r\n    p_paddr:      0                   p_type:     [ PT_NULL ]\r\n    p_filesz:     0                   p_memsz:    0\r\n    p_offset:     0                   p_align:    0\r\n...\r\nSection Header[1]:  sh_name: .note.go.buildid\r\n    sh_addr:      0x400200            sh_flags:   [ SHF_ALLOC ]\r\n    sh_size:      0x28                sh_type:    [ SHT_NOTE ]\r\n    sh_offset:    0x200               sh_entsize: 0\r\n    sh_link:      0                   sh_info:    0\r\n    sh_addralign: 0x20              \r\n...\r\n```\r\n\r\nThen, to leverage the above, Go would have to either transform the PT_NULL header into a PT_NOTE header itself or use an 'elfedit' script to do the same.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-21T21:48:36Z",
+	"updated_at": "2015-08-21T21:48:36Z"
+}

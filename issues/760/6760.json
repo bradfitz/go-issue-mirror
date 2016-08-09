@@ -1,0 +1,27 @@
+{
+	"id": 51285680,
+	"number": 6760,
+	"state": "closed",
+	"title": "encoding/gob: Go 1.2 cannot decode Go 1.1 gobs containing net.IP",
+	"body": "\u003cpre\u003eIn Go 1.2, encoding/gob respects the new encoding.TextMarshaler and\nencoding.TextUnmarshaler methods, and net.IP adds those methods.\n\nUnfortunately, this means that the gob encoding of a net.IP changes from Go 1.1 to Go\n1.2. That by itself might be okay: I don't believe people expect that Go 1.1 will be\nable to read Go 1.2 gobs.\n\nHowever, gob is also a bit picky about the decoding: if the type has a TextUnmarshaler,\ngob expects to get the TextMarshaler version of the encoding and does not accept an\nencoding of the underlying data. \n\nA Go 1.1 gob encoding of a net.IP will send the gob encoding of a standard []byte. Go\n1.2 gob will refuse to decode that form.\n\nThe only other type we have added a MarshalText or MarshalBinary method to is time.Time.\nBut time.Time already had a GobEncode and GobDecode methods, so its behavior with gob\ndoes not change. It appears that net.IP is the only affected type in the standard\nlibrary.\n\nPossibilities:\n\n1. Do nothing; allow Go 1.1 and Go 1.2 to be mutually unintelligible in gob when there\nis a net.IP involved.\n\n2. Change gob to accept the concrete data representation during decode, so that Go 1.1\ncan talk to Go 1.2 but not vice versa.\n\n3. Change gob to ignore MarshalText/UnmarshalText, allowing only\nMarshalBinary/UnmarshalBinary.\n\n4. Remove net.IP's MarshalText/UnmarshalText methods, breaking encoding/json's support\nfor net.IP (new in Go 1.2).\n\n5. Replace net.IP's MarshalText/UnmarshalText methods with MarshalJSON/UnmarshalJSON, so\nthat we keep encoding/json working well for Go 1.2. (Of course, the new generic methods\nwere designed explicitly to avoid making package net mention JSON, so it is a bit of a\nshame not to use them.)\n\nI am leaning toward 5, which seems like the most limited change.\n\nRob, what do you think?\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:37:33Z",
+	"created_at": "2013-11-13T17:34:37Z",
+	"updated_at": "2016-06-25T01:22:16Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

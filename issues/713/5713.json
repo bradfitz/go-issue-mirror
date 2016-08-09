@@ -1,0 +1,27 @@
+{
+	"id": 51284075,
+	"number": 5713,
+	"state": "closed",
+	"title": "cmd/compile: insert new nil checks",
+	"body": "\u003cpre\u003eparent: 17086:2879112bff3d tip, linux/amd64\n\nThe program is:\n\npackage main\n\ntype Foo struct {\n\tlen int\n\tbuf [1\u0026lt;\u0026lt;20]interface{}\n}\n\nvar foo = new(Foo)\n\nfunc main() {\n\tprintln(bar(0))\n}\n\nfunc bar(x int) *interface{} {\n\tif x \u0026gt;= foo.len {\n\t\treturn nil\n\t}\n\treturn \u0026amp;foo.buf[x]\n}\n\nThe generated code is:\n\n        return \u0026amp;foo.buf[x]\n  400c75:       48 89 cb                mov    %rcx,%rbx\n  400c78:       f6 03 00                testb  $0x0,(%rbx)\n  400c7b:       48 8d 6b 08             lea    0x8(%rbx),%rbp\n  400c7f:       48 89 c3                mov    %rax,%rbx\n  400c82:       f6 45 00 00             testb  $0x0,0x0(%rbp)\n  400c86:       48 81 fb 00 00 10 00    cmp    $0x100000,%rbx\n  400c8d:       73 0d                   jae    400c9c \u0026lt;main.bar+0x5c\u0026gt;\n  400c8f:       48 6b db 10             imul   $0x10,%rbx,%rbx\n  400c93:       48 01 dd                add    %rbx,%rbp\n  400c96:       48 89 6c 24 10          mov    %rbp,0x10(%rsp)\n  400c9b:       c3                      retq   \n\nThere are two 'testb $0x0, addr' checks. The second one is unnecessary, because it is\nthe same object. It basically checks:\ntestb  $0x0,(%rbx)\nand:\ntestb  $0x0,8(%rbx)\n\nThe second check causes 5.8x slowdown for my program, because it causes false sharing --\neach element of the array is accessed by a single goroutine, and the testb check\naccesses the data owned by a different goroutine.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-05-25T21:05:47Z",
+	"created_at": "2013-06-15T16:20:32Z",
+	"updated_at": "2016-05-25T21:05:47Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 52504978,
+	"number": 9400,
+	"state": "closed",
+	"title": "runtime: C.setuid/C.setgid smashes Go stack",
+	"body": "For #3871 we change the runtime not to register a signal handler for SIGSETXID, so that we don't overwrite libpthread's handler, which would cause C.setuid and C.setgid to hang. We now let libpthread's handler run when that signal comes in.\r\n\r\nUnfortunately, libpthread's handler does not have SA_ONSTACK set, so when SIGSETXID does come in, it runs on Go's stack. There may well not be enough room for this, causing the OS to write beyond the bottom of Go's stack, scribbling over adjacent memory. On linux/power64, this happens reliably in the misc/cgo/test call to C.setgid (the power64 signal information pushed onto the stack is a couple kilobytes).\r\n\r\nThe fix is to introduce a new bit in the signal handler table (_SigSetStack) and then set it for signals 32 and 33 (SIGCANCEL and SIGSETXID). The signal initialization would see _SigSetStack and call sigaction to load the handler info, set SA_ONSTACK, and write the handler info back. That is, it's leaving the handler in place, just forcing it to run on the signal stack, where there will be enough room.\r\n\r\nIt's unclear to me how much of a problem this is on linux/amd64, linux/386, and linux/arm as well. I'm sure the same thing happens there, the only question is quite how large the amount of data being scribbled is.\r\n\r\nThe bug has existed since #3871 was fixed, which happened on 2012-07-27 (and then was in Go 1.1 released on 2013-05-13). Since the bug has existed for so long with no one complaining, it's probably not worth putting in a point release, but we should fix it for Go 1.5 (and we have to fix it for power64 to pass all.bash).\r\n\r\n@ianlancetaylor @aclements",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-30T23:51:26Z",
+	"created_at": "2014-12-19T17:00:45Z",
+	"updated_at": "2016-06-02T14:00:36Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

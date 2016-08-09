@@ -1,0 +1,12 @@
+{
+	"id": 66081118,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI found another potentially problematic case related to this issue: when \".PY\" is in\n%PATHEXT%, exec.Command (exec.LookPath) finds .PY files on %PATH%, but exec.Start cannot\nexecute them. While the docs don't explicitly guarantee that this should work, it seems\na reasonable assumption (cmd/go seems to assume this for example).\n\nTo summarize the symptoms:\n(S1) exec.Start doesn't work with program paths found by exec.LookPath with non-standard\nfile extensions (e.g. .PY)\n(S2) When invoking batch files with exec.Start, the first cmd.exe found in cwd / PATH is\nused instead of %ComSpec%\n\nMy analysis:\nGo on Windows uses the CreateProcess API [0] to invoke programs (via\nsyscall.StartProcess [1]). The behavior of CreateProcess for each file type seems to be:\n- binary files: works\n- batch files: the docs state that the command interpreter with /C should be specified,\nbut it seems to include a workaround to add cmd /C for batch files, so that it doesn't\nfail even when the caller omits the command interpreter. Unfortunately this workaround\nuses cmd instead of %ComSpec%, hence (S2)\n- other files: (e.g. .PY) fails, hence (S1)\n\n[0] \u003ca href=\"http://msdn.microsoft.com/en-us/library/windows/desktop/ms682425.aspx\"\u003ehttp://msdn.microsoft.com/en-us/library/windows/desktop/ms682425.aspx\u003c/a\u003e\n[1] \u003ca href=\"http://tip.golang.org/src/pkg/syscall/exec_windows.go#L330\"\u003ehttp://tip.golang.org/src/pkg/syscall/exec_windows.go#L330\u003c/a\u003e\n\nThe solution that I believe should work in general is to prepend %ComSpec% /C when\ninvoking \"non-binary\" files, either in syscall.StartProcess, or in os/exec (Start or\nmaybe Command). Although I'm not quite sure how to decide whether the command is an\nexecutable binary.\n\nDo you think this is a reasonable approach to pursue? I have to add that I don't\nnormally program a lot on Windows, so I may be missing other important factors.\u003c/pre\u003e",
+	"user": {
+		"login": "speter",
+		"id": 450945,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-06-23T07:00:50Z",
+	"updated_at": "2014-12-08T10:31:14Z"
+}

@@ -1,0 +1,30 @@
+{
+	"id": 115096706,
+	"number": 13146,
+	"state": "closed",
+	"title": "net: dragonfly broken by Listen after close on same addr",
+	"body": "I seem to have broken the dragonfly builder after:\r\n\r\nsyscall: allow nacl's fake network code to Listen twice on the same address\r\nhttps://go-review.googlesource.com/16650 (rev 8ee90fad1)\r\n\r\n... which added a test to the net package, which dragonfly can't pass.\r\n\r\nFailure is: \r\n\r\nhttp://build.golang.org/log/732b7056b17948b06073dbe399de931765307152\r\n```\r\n--- FAIL: TestListenCloseListen (0.00s)\r\n\tnet_test.go:283: failed on try 1/10: listen tcp 127.0.0.1:52085: bind: address already in use\r\n\tnet_test.go:283: failed on try 2/10: listen tcp 127.0.0.1:52093: bind: address already in use\r\n\tnet_test.go:283: failed on try 3/10: listen tcp 127.0.0.1:52101: bind: address already in use\r\n\tnet_test.go:283: failed on try 4/10: listen tcp 127.0.0.1:52109: bind: address already in use\r\n\tnet_test.go:283: failed on try 5/10: listen tcp 127.0.0.1:52117: bind: address already in use\r\nFAIL\r\nFAIL\tnet\t4.894s\r\n```\r\n\r\nI see a recent failure: http://build.golang.org/log/c6e3c951e0398d21ff52b932bc261ab70003120b\r\n```\r\n--- FAIL: TestServerConnState (1.02s)\r\n\tserve_test.go:3041: Unexpected events.\r\n\t\tGot log: Conn 1: new active idle active closed \r\n\t\tConn 2: new active idle active \r\n\t\tConn 3: new active hijacked \r\n\t\tConn 4: new active hijacked \r\n\t\tConn 5: new closed \r\n\t\tConn 6: new active closed \r\n\t\tConn 7: new active idle closed \r\n\t\t\r\n\t\t   Want: Conn 1: new active idle active closed \r\n\t\tConn 2: new active idle active closed \r\n\t\tConn 3: new active hijacked \r\n\t\tConn 4: new active hijacked \r\n\t\tConn 5: new closed \r\n\t\tConn 6: new active closed \r\n\t\tConn 7: new active idle closed \r\n\t\t\r\nFAIL\r\nFAIL\tnet/http\t20.463s\r\n```\r\n\r\n... which suggests the net package, poller, or runtime are processing networking events in a different order than all the other platforms.\r\n\r\nWe also don't have a new-style builder for dragonfly, so people without dragonfly can't use gomote or trybots to debug.\r\n\r\nI think a Dragonfly person needs to help.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "OS-Dragonfly"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2016-02-10T00:31:57Z",
+	"created_at": "2015-11-04T16:51:09Z",
+	"updated_at": "2016-02-18T17:00:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

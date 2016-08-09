@@ -1,0 +1,28 @@
+{
+	"id": 51279061,
+	"number": 2328,
+	"state": "closed",
+	"title": "database/sql: doesn't support output bool or float types",
+	"body": "by **jbarham**:\n\n\u003cpre\u003eThe exp/sql documentation mentions support for bool and float values, but the conversion\nfunction used by Scan doesn't support bool or float destination values.  The patch below\nadds support for bool, float32 and float64 output types.\n\njbarham@ubuntu:~/go/src/pkg/exp/sql$ hg diff \ndiff -r 978acc122f2e src/pkg/exp/sql/convert.go\n--- a/src/pkg/exp/sql/convert.go\tThu Sep 29 21:31:41 2011 -0700\n+++ b/src/pkg/exp/sql/convert.go\tMon Oct 03 22:04:32 2011 +1100\n@@ -66,6 +66,15 @@\n \t}\n \n \tswitch dv.Kind() {\n+\tcase reflect.Bool:\n+\t\tif s, ok := asString(src); ok {\n+\t\t\ttf, err := strconv.Atob(s)\n+\t\t\tif err != nil {\n+\t\t\t\treturn fmt.Errorf(\u0026quot;converting string %q to a %s: %v\u0026quot;, s, dv.Kind(), err)\n+\t\t\t}\n+\t\t\tdv.SetBool(tf)\n+\t\t\treturn nil\n+\t\t}\n \tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n \t\tif s, ok := asString(src); ok {\n \t\t\ti64, err := strconv.Atoi64(s)\n@@ -90,6 +99,18 @@\n \t\t\tdv.SetUint(u64)\n \t\t\treturn nil\n \t\t}\n+\tcase reflect.Float32, reflect.Float64:\n+\t\tif s, ok := asString(src); ok {\n+\t\t\tf64, err := strconv.Atof64(s)\n+\t\t\tif err != nil {\n+\t\t\t\treturn fmt.Errorf(\u0026quot;converting string %q to a %s: %v\u0026quot;, s, dv.Kind(), err)\n+\t\t\t}\n+\t\t\tif dv.OverflowFloat(f64) {\n+\t\t\t\treturn fmt.Errorf(\u0026quot;string %q overflows %s\u0026quot;, s, dv.Kind())\n+\t\t\t}\n+\t\t\tdv.SetFloat(f64)\n+\t\t\treturn nil\n+\t\t}\n \t}\n \n \treturn fmt.Errorf(\u0026quot;unsupported driver -\u0026gt; Scan pair: %T -\u0026gt; %T\u0026quot;, src, dest)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:12:32Z",
+	"created_at": "2011-10-03T11:10:51Z",
+	"updated_at": "2016-06-24T19:35:38Z"
+}

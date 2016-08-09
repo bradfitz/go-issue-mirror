@@ -1,0 +1,12 @@
+{
+	"id": 66094430,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThe reason why the idiomatic code is slower is that the temporary is bigger and can't be\nregister-allocated.\n\n  a,b = b,a\n\ncompiles to\n\n  tmp = b\n  b = a\n  a = tmp\n\nIf tmp is one word in size, it can be allocated to a register.  This happens for the\nunrolled code.\n\nIf tmp is large, it becomes a stack variable.  There are then 3 mem-\u003emem copies.\n\nI don't see any obvious answer here.  Just unrolling as the example shows seems tricky. \nThe unrolled version is basically trading code size for some performance improvement. \nIt is great if it is the hot code, not so good if there are 100s of these in cold code.\n\nWe could implement a swap in assembly which did not need the temporary.  It's a slippery\nslope, though - how about a,b,c = b,c,a?  We'd have to decide which cases to handle and\nwhich ones to leave as is.\n\nThe performance penalty is not that large (about 25% slower), and you don't see\nlarge-object swaps that often (you're much better off swapping pointers to those objects\nif you can arrange it).\n\nShort answer: maybe.  I'd like to be more convinced that it would be worth it.  A\nreal-world example, perhaps?\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-04T04:59:41Z",
+	"updated_at": "2014-12-08T10:43:56Z"
+}

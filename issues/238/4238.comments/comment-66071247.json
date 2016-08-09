@@ -1,0 +1,12 @@
+{
+	"id": 66071247,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003e- x := \u0026*p\n\nThis never fails. The \u0026 operator computes the address of an expression. Computing the\naddress of an expression does not require evaluating it, so *p is never evaluated in\nthis case. \u0026*p is always just 'p'.\n\n- x := \u0026p.Field\n\nThis usually does not fail, for the same reason. However, there is a wrinkle. If you had\nvar p = (*T)(nil) for\n\ntype T struct {\n    F0 byte\n    F1 byte\n    F2 byte\n    ...\n    F1000000 byte\n}\n\nthen it is fine to make \u0026p.F2 be pointer value 2, since dereferencing it later will\ncrash. However, as the field offsets get bigger, eventually you cross into actual memory\nvalues, and you cannot let them through. So right now once you get that far (in the gc\ncompiler I believe the limit is F4096) x := \u0026p.F4096 will panic rather than return a\npointer you could use without causing a trap. It would be unfortunate to need to talk\nabout this in the spec.\n\nIf we want to avoid the panic, the only other option is to reuse another pointer, like 0\nor 1, but that would produce the perhaps odd result that \u0026p.F1 == \u0026p.F4096 or maybe\n\u0026p.F0 == \u0026p.F4096 or \u0026p.F4096 == nil. On the other hand it might already be considered\nodd that \u0026p.F0 == nil.\n\nThe same is true for array types, of course.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-10-21T16:40:48Z",
+	"updated_at": "2014-12-08T10:22:34Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51287885,
+	"number": 8232,
+	"state": "closed",
+	"title": "regexp: individual regexp scales poorly under highly concurrent use",
+	"body": "\u003cpre\u003eversion: go1.3rc2\n\nWhen matching against a regexp that's shared between goroutines, the program spends most\nof its time waiting for the locks here:\n\n68 @ 0x413579 0x4135fb 0x424eae 0x425080 0x496096 0x449dd7 0x4474fe 0x44df9e 0x400c6c\n0x413810\n#\t0x425080\tsync.runtime_Semacquire+0x30\t\t\t/go/gc/src/pkg/runtime/sema.goc:199\n#\t0x496096\tsync.(*Mutex).Lock+0xd6\t\t\t\t/go/gc/src/pkg/sync/mutex.go:66\n#\t0x449dd7\tregexp.(*Regexp).get+0x37\t\t\t/go/gc/src/pkg/regexp/regexp.go:192\n#\t0x4474fe\tregexp.(*Regexp).doExecute+0x5e\t\t\t/go/gc/src/pkg/regexp/exec.go:423\n#\t0x44df9e\tregexp.(*Regexp).FindStringSubmatch+0x9e\t/go/gc/src/pkg/regexp/regexp.go:883\n#\t0x400c6c\tmain.match+0x6c\t\t\t\t\texperimental/users/jrockway/regex.go:24\n\n56 @ 0x413579 0x4135fb 0x424eae 0x425080 0x496096 0x449f2a 0x4477a4 0x44df9e 0x400c6c\n0x413810\n#\t0x425080\tsync.runtime_Semacquire+0x30\t\t\t/go/gc/src/pkg/runtime/sema.goc:199\n#\t0x496096\tsync.(*Mutex).Lock+0xd6\t\t\t\t/go/gc/src/pkg/sync/mutex.go:66\n#\t0x449f2a\tregexp.(*Regexp).put+0x3a\t\t\t/go/gc/src/pkg/regexp/regexp.go:210\n#\t0x4477a4\tregexp.(*Regexp).doExecute+0x304\t\t/go/gc/src/pkg/regexp/exec.go:450\n#\t0x44df9e\tregexp.(*Regexp).FindStringSubmatch+0x9e\t/go/gc/src/pkg/regexp/regexp.go:883\n#\t0x400c6c\tmain.match+0x6c\t\t\t\t\texperimental/users/jrockway/regex.go:24\n\nWith GOMAXPROCS=32 on a 32 core machine, we end up only using about 700% CPU according\nto /usr/bin/time.\n\nIf we give each goroutine its own copy of the regexp (created in the goroutine with\nregexp.MustCompile), then we use 2500% CPU.  This is much more reasonable.\n\nWhile my actual problem occurs in a process that is reading data from the network, the\nattached test case reproduces the issue rather well.\n\n(Note: time CPU timing is done with the profile printer code commented out.  The test\ncase is compiled with optimization on.)\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8232/0/regex.go\"\u003eregex.go\u003c/a\u003e (878 bytes)",
+	"user": {
+		"login": "jrockway",
+		"id": 2367,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"closed_at": "2015-11-25T17:27:32Z",
+	"created_at": "2014-06-18T17:42:07Z",
+	"updated_at": "2015-11-25T17:27:32Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

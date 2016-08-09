@@ -1,0 +1,21 @@
+{
+	"id": 51288309,
+	"number": 8516,
+	"state": "open",
+	"title": "net: document and check LookupCNAME on non-CNAME hosts",
+	"body": "\u003cpre\u003eLookupCNAME does not have clear behavior what it does when the DNS query succeeds and\nthere isn't a CNAME record.\n\nComment says that:\n\n// LookupCNAME returns the canonical DNS host for the given name.\n// Callers that do not care about the canonical name can call\n// LookupHost or LookupIP directly; both take care of resolving\n// the canonical name as part of the lookup.\n\nSo, just to clarify does it need to do:\n\n1. return \u0026quot;\u0026quot;, nil\n2. return \u0026quot;\u0026quot;, errors.New(\u0026quot;CNAME not found\u0026quot;)\n3. return fqdn(name), nil\n\nGiven the comment, the approach 3. seems to be the correct one, because CNAME declares\nalias names, and the canonical name for X, if there are no CNAME records, is X itself.\nOf course some code could rely on returning \u0026quot;\u0026quot; and error.\n\nOf course the code doesn't seem to be doing that - In Windows it's doing 2. in Linux 3.\n\nAlso, when researching this I noticed in dnsclient_unix.go at line 432, \n\n\u0026gt; func goLookupCNAME(name string) (cname string, err error) {\n\u0026gt;\t_, rr, err := lookup(name, dnsTypeCNAME)\n\u0026gt;\tif err != nil {\n\u0026gt;\t\treturn\n\u0026gt; \t}\n\u0026gt; \tcname = rr[0].(*dnsRR_CNAME).Cname\n\u0026gt; \treturn\n\u0026gt; }\n\nIt looks like it might blow up when len(rr) == 0.\u003c/pre\u003e",
+	"user": {
+		"login": "egonelbre",
+		"id": 192964,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2014-08-12T06:05:39Z",
+	"updated_at": "2016-05-18T00:51:24Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

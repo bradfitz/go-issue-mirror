@@ -1,0 +1,12 @@
+{
+	"id": 99652041,
+	"body": "Actually, the syscall package already tries hard to avoid a NULL *void:\r\n\r\n```\r\n// Single-word zero for use when we need a valid pointer to 0 bytes.                                                \r\n// See mksyscall.pl.                                                                                                \r\nvar _zero uintptr\r\n\r\nfunc sendto(s int, buf []byte, flags int, to unsafe.Pointer, addrlen _Socklen) (err error) {\r\n        var _p0 unsafe.Pointer\r\n        if len(buf) \u003e 0 {\r\n                _p0 = unsafe.Pointer(\u0026buf[0])\r\n        } else {\r\n                _p0 = unsafe.Pointer(\u0026_zero)\r\n        }\r\n        _, _, e1 := Syscall6(SYS_SENDTO, uintptr(s), uintptr(_p0), uintptr(len(buf)), uintptr(flags), uintptr(to), uintptr(addrlen))\r\n        if e1 != 0 {\r\n                err = errnoErr(e1)\r\n        }\r\n        return\r\n}\r\n```\r\n\r\n... yet \u0026_zero (which should be non-nil) ends up as zero according to the strace.\r\n\r\nIs Syscall6 doing the right thing?\r\n\r\nThis machine FWIW has 4 of these:\r\n\r\n```\r\n# cat /proc/cpuinfo \r\nprocessor       : 0\r\nmodel name      : ARMv7 Processor rev 2 (v7l)\r\nBogoMIPS        : 1332.01\r\nFeatures        : half thumb fastmult vfp edsp thumbee vfpv3 tls idiva idivt vfpd32 lpae \r\nCPU implementer : 0x56\r\nCPU architecture: 7\r\nCPU variant     : 0x2\r\nCPU part        : 0x584\r\nCPU revision    : 2\r\n```\r\n\r\n/cc @minux @ianlancetaylor @rsc @davecheney @josharian ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-07T00:00:21Z",
+	"updated_at": "2015-05-07T00:00:21Z"
+}

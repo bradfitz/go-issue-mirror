@@ -1,0 +1,12 @@
+{
+	"id": 222112960,
+	"body": "Let me clarify a bit more what's happening at client side:\r\n\r\n- testclient is run with GOGC=off just to make sure that the delay is not related to client GC\r\n- server is started with GOGC=100 and GODEBUG=gctrace=1.\r\n- when server starts up, it reads 1 million \"objects\" from a SQLITE db into 5 distinct maps\r\n (map[[20]byte]FullCode)\r\nOne map is \"global\" with all codes, the other maps are a subset (distinct by Type)\r\n\r\nobjects are structured extactly like this:\r\n\r\ntype FullCode struct {\r\n\tType     int\r\n\tCode     string\r\n\tStatus   int\r\n\tChildren map[[20]byte]FullCode\r\n}\r\n\r\nafter startup, my server now performs a manual GC\r\n\r\nfunc timeGC() time.Duration {\r\n\tstart := time.Now()\r\n\truntime.GC()\r\n\treturn time.Since(start)\r\n}\r\n\r\nAt this stage, testclient program starts and begins sending UDP requests to the server.\r\nafter a few seconds I can see that cilent detects RTT \u003e 200ms and exactly at the same time the server prints out a GC trace line.\r\n\r\nThe trace line I am talking about is this\r\n\r\ngc 18 @126.525s 0%: 0+525+0.53 ms clock, 0+0/525/3.0+2.1 ms cpu, 283-\u003e283-\u003e283 MB, 566 MB goal, 4 P\r\n\r\nI can record a video and upload it to youtube to better explain the situation if it's ok for you\r\n",
+	"user": {
+		"login": "genez",
+		"id": 324113,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-27T10:24:09Z",
+	"updated_at": "2016-05-27T10:24:09Z"
+}

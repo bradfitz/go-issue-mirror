@@ -1,0 +1,27 @@
+{
+	"id": 51281398,
+	"number": 3942,
+	"state": "closed",
+	"title": "encoding/json: do not read beyond } in object",
+	"body": "by **dave@natulte.net**:\n\n\u003cpre\u003eReproduced on encoding/json at tip.\n\n\u003ca href=\"http://play.golang.org/p/cXQdZ0SUvD\"\u003ehttp://play.golang.org/p/cXQdZ0SUvD\u003c/a\u003e tries to decode a simple array passed over a\nnet.Conn. This program simulates a client connecting to a server, giving it a json\narray, and then waiting for a response without sending further data.\n\nThis code causes json.Decoder to deadlock the program. Although it's successfully\ndecoded a complete array, it tries to read one past the end delimiter, causing another\nRead() that will never be fulfilled.\n\nAdding a space after the array closing bracket makes json.Decoder return as expected, as\nit had no need to issue any more Reads to see the following byte.\n\nThis attempt to read one more byte may be a requirement of the JSON spec (which I'm not\nintimate with), or it may be an off-by-one error in the decoder.\n\nThe documentation of the decoder states: \u0026quot;The decoder introduces its own buffering\nand may read data from r beyond the JSON values requested.\u0026quot;\n\nI first read that to mean \u0026quot;Don't use the underlying io.Reader and expect to see the\nbytes following the object you just decoded\u0026quot;, which is fine and a common caveat of\nsuch decoders. However, I really should have read it as \u0026quot;make sure you have some\ndata or an EOF after your object, or the decoder may lock up.\u0026quot;\n\nIf that is the desired behavior, a more strongly worded warning in the docs would be\nnice. If that's not desired, well, it's a bug :-).\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g.\n\nWhich operating system are you using?\n\nlinux.\n\nWhich version are you using?  (run 'go version')\n\n1.0.2, but behavior confirmed in tip's encoding/json.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:54Z",
+	"created_at": "2012-08-11T05:30:14Z",
+	"updated_at": "2016-06-24T22:22:57Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

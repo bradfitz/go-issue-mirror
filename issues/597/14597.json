@@ -1,0 +1,23 @@
+{
+	"id": 137886619,
+	"number": 14597,
+	"state": "closed",
+	"title": "cmd/compile/internal/ssa: regalloc handles arguments poorly",
+	"body": "compiling this function with SSA\r\n```\r\nfunc bcopy(dst []byte, src []byte) {\r\n\tfor i := 0; i \u003c len(src); i++ {\r\n\t\tdst[i] = src[i]\r\n\t}\r\n}\r\n```\r\nproduces this output after regalloc\r\n```\r\nbcopy \u003cnil\u003e\r\n  b1:\r\n    v1 = InitMem \u003cmem\u003e\r\n    v19 = Arg \u003c*uint8\u003e {dst} [0] : dst[*uint8]\r\n    v32 = Arg \u003cint\u003e {dst} [8] : dst+8[int]\r\n    v39 = Arg \u003c*uint8\u003e {src} [0] : src[*uint8]\r\n    v34 = Arg \u003cint\u003e {src} [8] : src+8[int]\r\n    v37 = MOVQconst \u003cint\u003e [0] : AX\r\n    Plain -\u003e b2\r\n  b2: \u003c- b1 b4\r\n    v33 = Phi \u003cmem\u003e v1 v28\r\n    v9 = Phi \u003cint\u003e v37 v31 : AX\r\n    v36 = LoadReg \u003cint\u003e v34 : CX\r\n    v5 = CMPQ \u003cflags\u003e v9 v36\r\n    LT v5 -\u003e b3 b5 (likely)\r\n  b3: \u003c- b2\r\n    ULT v5 -\u003e b6 b8 (likely)\r\n  b6: \u003c- b3\r\n    v24 = LoadReg \u003c*uint8\u003e v39 : DX\r\n    v20 = MOVBloadidx1 \u003cbyte\u003e [0] v24 v9 v33 : BX\r\n    v26 = LoadReg \u003cint\u003e v32 : BP\r\n    v12 = CMPQ \u003cflags\u003e v9 v26\r\n    ULT v12 -\u003e b4 b9 (likely)\r\n  b4: \u003c- b6\r\n    v25 = LoadReg \u003c*uint8\u003e v19 : SI\r\n    v28 = MOVBstoreidx1 \u003cmem\u003e [0] v25 v9 v20 v33\r\n    v31 = ADDQconst \u003cint\u003e [1] v9 : AX\r\n    Plain -\u003e b2\r\n  b9: \u003c- b6\r\n    Plain -\u003e b7\r\n  b7: \u003c- b8 b9\r\n    v16 = CALLstatic \u003cmem\u003e {runtime.panicindex} [0] v33\r\n    Exit v16\r\n  b8: \u003c- b3\r\n    Plain -\u003e b7\r\n  b5: \u003c- b2\r\n    Ret v33\r\n```\r\nv34(len(src)) and v39(ptr(src)) both get loaded inside the loop body, even though their assigned registers are free for the entire function. I suspect it's because Arg values are handled as pre-spilled.",
+	"user": {
+		"login": "DanielMorsing",
+		"id": 545573,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-04-01T04:29:11Z",
+	"created_at": "2016-03-02T14:23:40Z",
+	"updated_at": "2016-04-01T04:29:11Z"
+}

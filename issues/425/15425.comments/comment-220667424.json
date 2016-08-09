@@ -1,0 +1,12 @@
+{
+	"id": 220667424,
+	"body": "I have a fix,\r\n\r\n```patch\r\ndiff --git a/http2/server.go b/http2/server.go\r\nindex 57c8276..4e07a20 100644\r\n--- a/http2/server.go\r\n+++ b/http2/server.go\r\n@@ -1833,7 +1833,7 @@ type requestBody struct {\r\n \r\n func (b *requestBody) Close() error {\r\n        if b.pipe != nil {\r\n-               b.pipe.CloseWithError(errClosedBody)\r\n+               b.pipe.BreakWithError(errClosedBody)\r\n        }\r\n        b.closed = true\r\n        return nil\r\n```\r\n\r\n... but I notice that while it fixes it, the Transport is observed to be leaking goroutines, blocked on flow control tokens from the server, even after the stream is dead:\r\n\r\n```\r\ngoroutine 14449 [semacquire]:\r\nsync.runtime_notifyListWait(0xc42001a750, 0x3)\r\n        /home/bradfitz/go/src/runtime/sema.go:267 +0x113\r\nsync.(*Cond).Wait(0xc42001a740)\r\n        /home/bradfitz/go/src/sync/cond.go:57 +0x72\r\ngolang.org/x/net/http2.(*clientStream).awaitFlowControl(0xc42008a640, 0x1, 0x0, 0x0, 0x0)\r\n        /home/bradfitz/src/golang.org/x/net/http2/transport.go:953 +0x112\r\ngolang.org/x/net/http2.(*clientStream).writeRequestBody(0xc42008a640, 0x7b2aa0, 0xc420106480, 0x7fe9ad959000, 0xc42000db20, 0x0, 0x0)\r\n        /home/bradfitz/src/golang.org/x/net/http2/transport.go:868 +0x22b\r\ngolang.org/x/net/http2.(*Transport).getBodyWriterState.func1()\r\n        /home/bradfitz/src/golang.org/x/net/http2/transport.go:1759 +0x97\r\ncreated by golang.org/x/net/http2.bodyWriterState.scheduleBodyWrite\r\n        /home/bradfitz/src/golang.org/x/net/http2/transport.go:1806 +0x7b\r\n```\r\n\r\nSo I need to fix that first, and also add a test.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-20T17:25:11Z",
+	"updated_at": "2016-05-20T17:25:11Z"
+}

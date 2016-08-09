@@ -1,0 +1,22 @@
+{
+	"id": 125143568,
+	"number": 13838,
+	"state": "closed",
+	"title": "runtime: Go programs should be able to drop capabilities",
+	"body": "In issue #1435 it has been suggested to use capabilities as a workaround to achieve security. To make this workaround viable, internal threads created by the Go runtime before main() even starts need to drop all capabilities, because the user thread running main() is not permitted to do that.\r\n\r\nIn addition there should probably be a mask in the runtime package that determines which capabilities are preserved when the Go runtime creates new threads. And for convenience there should be a function to drop capabilities in the current thread (although this can be done with cgo and is therefore secondary)\r\nThe idea is to make the following work\r\n\r\n```\r\nfunc main() {\r\n    runtime.LockOSThread() // stay on this thread to make sure we don't lose capabilities\r\n    runtime.SetInheritedCapabilities(0) // all threads created from now on will drop ALL capabilities\r\n \r\n   // Do privileged stuff such as chroot or bind to privileged port\r\n   // This may start new Goroutines and thereby new threads, but due to\r\n   // runtime.SetInheritedCapabilities(0) these threads will drop all capabilities immediately,\r\n   // so no privileged threads will be created\r\n\r\n  runtime.DropAllCapabilities()  // convenience function. Could be done with C.capset(...)\r\n\r\n  // At this point no privileged threads exist anymore\r\n  runtime.UnlockOSThread() // now it doesn't matter on which thread we execute\r\n }\r\n```",
+	"user": {
+		"login": "mbenkmann",
+		"id": 6864958,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-01-06T14:50:44Z",
+	"created_at": "2016-01-06T09:46:01Z",
+	"updated_at": "2016-01-06T15:07:10Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

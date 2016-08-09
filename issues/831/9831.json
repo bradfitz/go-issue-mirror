@@ -1,0 +1,28 @@
+{
+	"id": 57215126,
+	"number": 9831,
+	"state": "closed",
+	"title": "crypto/tls: cannot send TLS_FALLBACK_SCSV",
+	"body": "version: go1.4.1\r\n\r\nBecause the ClientHello's cipher suites are constructed in `tls.Conn.clientHandshake()` (crypto/tls/handshake_client.go:31) from the `cipherSuites` slice defined at crypto/tls/cipher_suites.go:69, which doesn't contain an entry for TLS_FALLBACK_SCSV, it's impossible for the package to send the SCSV.\r\n\r\nThe relevant code is as follows:\r\n\r\n```go\r\n65\t\tpossibleCipherSuites := c.config.cipherSuites()\r\n66\t\thello.cipherSuites = make([]uint16, 0, len(possibleCipherSuites))\r\n67\t\r\n68\tNextCipherSuite:\r\n69\t\tfor _, suiteId := range possibleCipherSuites {\r\n70\t\t\tfor _, suite := range cipherSuites {\r\n71\t\t\t\tif suite.id != suiteId {\r\n72\t\t\t\t\tcontinue\r\n73\t\t\t\t}\r\n74\t\t\t\t// Don't advertise TLS 1.2-only cipher suites unless\r\n75\t\t\t\t// we're attempting TLS 1.2.\r\n76\t\t\t\tif hello.vers \u003c VersionTLS12 \u0026\u0026 suite.flags\u0026suiteTLS12 != 0 {\r\n77\t\t\t\t\tcontinue\r\n78\t\t\t\t}\r\n79\t\t\t\thello.cipherSuites = append(hello.cipherSuites, suiteId)\r\n80\t\t\t\tcontinue NextCipherSuite\r\n81\t\t\t}\r\n82\t\t}\r\n```\r\n\r\nSince TLS_FALLBACK_SCSV is not in `cipherSuites`, line 72 above will skip over any entries of TLS_FALLBACK_SCSV in the tls.Config. The following patch would resolve the issue:\r\n\r\n```diff\r\n--- a/src/crypto/tls/handshake_client.go\r\n+++ b/src/crypto/tls/handshake_client.go\r\n@@ -67,6 +67,10 @@ func (c *Conn) clientHandshake() error {\r\n \r\n NextCipherSuite:\r\n        for _, suiteId := range possibleCipherSuites {\r\n+               if suiteId == TLS_FALLBACK_SCSV {\r\n+                       hello.cipherSuites = append(hello.cipherSuites, suiteId)\r\n+                       continue\r\n+               }\r\n                for _, suite := range cipherSuites {\r\n                        if suite.id != suiteId {\r\n                                continue\r\n```",
+	"user": {
+		"login": "SlyMarbo",
+		"id": 1591618,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-08-30T17:58:38Z",
+	"created_at": "2015-02-10T18:28:31Z",
+	"updated_at": "2015-08-30T17:58:38Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

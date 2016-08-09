@@ -1,0 +1,32 @@
+{
+	"id": 127543466,
+	"number": 14022,
+	"state": "open",
+	"title": "crypto/x509: FreeBSD CA roots order fix",
+	"body": "In Go 1.5, the CA root certificate store search order was changed for BSD systems:\r\n\r\n- Go 1.4 programs would look for `/etc/ssl/cert.pem` before trying `/usr/local/share/certs/ca-root-nss.crt`. ([source](https://github.com/golang/go/blob/release-branch.go1.4/src/crypto/x509/root_unix.go#L16))\r\n- Go 1.5 programs will try `/usr/local/share/certs/ca-root-nss.crt` first, before looking for `/etc/ssl/cert.pem`. ([source](https://github.com/golang/go/blob/release-branch.go1.5/src/crypto/x509/root_bsd.go#L11))\r\n\r\nLooking at FreeBSD itself, libfetch (used by FreeBSD core) appears to try the SSL_CA_CERT_FILE environment variable first, then `/usr/local/etc/ssl/cert.pem`, then `/etc/ssl/cert.pem`. ([source](https://svnweb.freebsd.org/base/head/lib/libfetch/common.c?view=markup\u0026pathrev=294326#l691)) This might be considered the canonical way to determine the location for the trust store on FreeBSD.\r\n\r\nIn FreeBSD, the location `/usr/local/share/certs/ca-root-nss.crt` is not special or blessed, but it's an implementation detail of the ca_root_nss package (Root certificate bundle from the Mozilla Project). Almost all users will have this package installed, and due to the ca_root_nss package's ETCSYMLINK option, their `/etc/ssl/cert.pem` will be symlinked, in which case the lookup order does not matter.\r\n\r\nMy issue with Go 1.5 happens because I deploy my own trust store to `/etc/ssl/cert.pem`.\r\n\r\nIf the ca_root_nss package happens to be installed, Go 1.5 picks up the ca_root_nss package's file `/usr/local/share/certs/ca-root-nss.crt` and no longer looks at the global `/etc/ssl/cert.pem`.\r\n\r\nMy build boxes have the Mozilla roots ca_root_nss package installed (to incorporate a modified version of it in our own trust store). On these machines, Go 1.5 programs prefer `ca-root-nss.crt` and use only the Mozilla roots, failing to verify servers using the global roots.\r\n\r\nDue to fate, the search order in Go 1.4 ([source](https://github.com/golang/go/blob/release-branch.go1.4/src/crypto/x509/root_unix.go#L16)) seems to have been more correct, as `/etc/ssl/cert.pem` was tried first, even if it was marked only as for OpenBSD.\r\n\r\nHowever, since most people will just plainly use the Mozilla CA roots as their global roots file, this issue is probably rare.\r\n\r\nI would recommend to duplicate the search order of FreeBSD's libfetch ([source](https://svnweb.freebsd.org/base/head/lib/libfetch/common.c?view=markup\u0026pathrev=294326#l691)) in /src/crypto/x509/root_bsd.go.\r\n\r\nThe current list is:\r\n\r\n\tvar certFiles = []string{\r\n\t\t\"/usr/local/share/certs/ca-root-nss.crt\", // FreeBSD/DragonFly\r\n\t\t\"/etc/ssl/cert.pem\",                      // OpenBSD\r\n\t\t\"/etc/openssl/certs/ca-certificates.crt\", // NetBSD\r\n\t}\r\n\r\nTo prefer the system roots and mimic the behavior of libfetch, while keeping compatibility with the other OSes, the entries could become:\r\n\r\n\tvar certFiles = []string{\r\n\t\t\"/usr/local/etc/ssl/cert.pem\",            // FreeBSD\r\n\t\t\"/etc/ssl/cert.pem\",                      // FreeBSD/OpenBSD\r\n\t\t\"/usr/local/share/certs/ca-root-nss.crt\", // DragonFly\r\n\t\t\"/etc/openssl/certs/ca-certificates.crt\", // NetBSD\r\n\t}\r\n\r\nGo version: `go version go1.5.3 freebsd/amd64`",
+	"user": {
+		"login": "lifeforms",
+		"id": 3464056,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-FreeBSD"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-01-19T21:31:48Z",
+	"updated_at": "2016-05-18T00:15:31Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

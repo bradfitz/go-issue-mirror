@@ -1,0 +1,22 @@
+{
+	"id": 51279177,
+	"number": 2418,
+	"state": "closed",
+	"title": "6l doesn't understood MOVQ XMM_REG, XMM_REG",
+	"body": "by **ziutek@Lnet.pl**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Write test function in AMD64 assembler that contains such instruction:\n\nTEXT ·Test(SB), 7, $0\n    MOVQ X1, X3\n    RET\n\n2. Use 6a to compile it - there is no errors.\n\n3. Use 6l to link it with some code that calls Test function.\n\nWhat is the expected output?\nIt should link without errors.\n\nWhat do you see instead?\nmypkg.Test: doasm: notfound from=35 to=37 (2) MOVQ    X1,X3\n\nWhich operating system are you using?\nLinux\n\nWhich revision are you using?  (hg identify)\nweekly.2011-11-02\n\nI tried fix 6l and it seems that my fix works:\n\nAssembler code:\n PSRLQ   $63, X2\n MOVQ    X1, X3\n PADDQ   X2, X3\n\nGdb disassemble:\n 0x00000000004190f5 \u0026lt;+42\u0026gt;:    psrlq  $0x3f,%xmm2\n 0x00000000004190fa \u0026lt;+47\u0026gt;:    movq   %xmm1,%xmm3\n 0x00000000004190fe \u0026lt;+51\u0026gt;:    paddq  %xmm2,%xmm3\n\nBut I don't understood 6l code enough to be sure that my small changes didn't broke 6l:\n\ndiff -r 19bc41642ed8 -r e2a0695fd6e6 src/cmd/6l/l.h\n--- a/src/cmd/6l/l.h\tWed Nov 02 17:11:40 2011 +1100\n+++ b/src/cmd/6l/l.h\tWed Nov 02 23:59:20 2011 +0100\n@@ -163,7 +163,7 @@\n \tshort\tas;\n \tuchar*\tytab;\n \tuchar\tprefix;\n-\tuchar\top[20];\n+\tuchar\top[22];\n };\n struct\tMovtab\n {\ndiff -r 19bc41642ed8 -r e2a0695fd6e6 src/cmd/6l/optab.c\n--- a/src/cmd/6l/optab.c\tWed Nov 02 17:11:40 2011 +1100\n+++ b/src/cmd/6l/optab.c\tWed Nov 02 23:59:20 2011 +0100\n@@ -200,10 +200,11 @@\n \tYmm,\tYmr,\tZm_r_xm,\t1,\t// MMX MOVD\n \tYmr,\tYmm,\tZr_m_xm,\t1,\t// MMX MOVD\n \tYxr,\tYmr,\tZm_r_xm_nr,\t2,\t// MOVDQ2Q\n-\tYxr,\tYm,\tZr_m_xm_nr,\t2,\t// MOVQ xmm store\n+\tYxm,\tYxr,\tZm_r_xm_nr,\t2, // MOVQ xmm1/m64 -\u0026gt; xmm2\n+\tYxr,\tYxm,\tZr_m_xm_nr,\t2, // MOVQ xmm1 -\u0026gt; xmm2/m64\n \tYml,\tYxr,\tZm_r_xm,\t2,\t// MOVD xmm load\n \tYxr,\tYml,\tZr_m_xm,\t2,\t// MOVD xmm store\n-\tYiauto,\tYrl,\tZaut_r,\t2,\t// built-in LEAQ\n+\t//Yiauto,\tYrl,\tZaut_r,\t2,\t// built-in LEAQ - there is no ops for this entry ?!\n \t0\n };\n uchar\tym_rl[] =\n@@ -862,7 +863,7 @@\n \t{ AMOVNTPD,\tyxr_ml,\tPe, 0x2b },\n \t{ AMOVNTPS,\tyxr_ml,\tPm, 0x2b },\n \t{ AMOVNTQ,\tymr_ml,\tPm, 0xe7 },\n-\t{ AMOVQ,\tymovq,\tPw,\n0x89,0x8b,0x31,0xc7,(00),0xb8,0xc7,(00),0x6f,0x7f,0x6e,0x7e,Pf2,0xd6,Pe,0xd6,Pe,0x6e,Pe,0x7e\n},\n+\t{ AMOVQ,\tymovq,\tPw, 0x89, 0x8b, 0x31, 0xc7,(00), 0xb8, 0xc7,(00), 0x6f, 0x7f, 0x6e,\n0x7e, Pf2,0xd6, Pf3,0x7e, Pe,0xd6, Pe,0x6e, Pe,0x7e },\n \t{ AMOVQOZX,\tymrxr,\tPf3, 0xd6,0x7e },\n \t{ AMOVSB,\tynone,\tPb, 0xa4 },\n \t{ AMOVSD,\tyxmov,\tPf2, 0x10,0x11 },\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:12:54Z",
+	"created_at": "2011-11-02T23:32:51Z",
+	"updated_at": "2016-06-24T21:20:04Z"
+}

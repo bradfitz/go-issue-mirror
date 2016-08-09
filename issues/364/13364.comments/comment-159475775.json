@@ -1,0 +1,12 @@
+{
+	"id": 159475775,
+	"body": "When we had bug #13146 I used retrybuilds to redo several of the most recent builds.  Each one failed with this build ID issue.  The place where this error first starts is the oldest version where I retried the build, not the commit where it was first could happen.\r\n\r\nThe machine where this testing is done is running DragonFly-master, and was updated at the time the fix for bug #13146 was applied, which [brought in gold as the default linker](http://lists.dragonflybsd.org/pipermail/commits/2015-November/458732.html).\r\n\r\nRunning the same test as @kaey fails on the build machine.  Setting LDVER=ld.bfd, which sets the default linker back to ld and re-running the test succeeds.  So, each of those failed tests is running with gold as the default linker, and that's the cause for the failure rather than an individual commit.\r\n\r\nThe readelf output between the old linker and the gold linker on a super-basic hello.c program on DragonFly is almost exactly the same, except the gold linker also outputs this:\r\n\r\n    Displaying notes found at file offset 0x00000b04 with length 0x0000001c:\r\n      Owner                 Data size Description\r\n      GNU                  0x00000009 NT_GNU_GOLD_VERSION (gold version)\r\n        Version: gold 1.11\r\n\r\nI thought it might be similar to #12178 but the offset only puts it past the first 512 bytes, and I think anywhere in the first 16K is OK - unless the gold output is the issue.  I am not familiar with this.  \r\n\r\nRunning \r\n    go build -ldflags -buildid=TestNoteReading-Build-ID  -o hellotest.exe hello.go\r\n    readelf -n hellotest.exe\r\n\r\nGives identical results with ld or gold :\r\n\r\n    Displaying notes found at file offset 0x00000fd8 with length 0x00000028:\r\n      Owner                 Data size Description\r\n      Go                   0x00000018 Unknown note type: (0x00000004)\r\n\r\n",
+	"user": {
+		"login": "fupjack",
+		"id": 1825141,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-25T03:19:33Z",
+	"updated_at": "2015-11-25T03:21:05Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 51286440,
+	"number": 7263,
+	"state": "open",
+	"title": "io: Add MultiReadSeeker ",
+	"body": "\u003cpre\u003eThe io package provides MultiReader which is useful e.g. when static file size is\nlimited like on AppEngine but there's no ReadSeeker equivalent when random access is\nneeded.\n\nI have created this simple implementation:\n\n\u003ca href=\"http://play.golang.org/p/BNL9QCnUHB\"\u003ehttp://play.golang.org/p/BNL9QCnUHB\u003c/a\u003e\n\nwhich I use for MaxMind binary database (which is bigger than 32MB and whose reading\nrequires random access) on the AppEngine. Before proceeding further, my question is - is\nthere an interest for having something like this in go standard library? If so, I can\nmodify the code as a patch against go and add some unit tests.\n\nAbout the implementation: the core of it is a doubleReadSeeker which is ReadSeeker\ncomposed of two ReadSeekers and based on the offset reads from the first or the second\nfile. For MultiReadSeeker a tree is made out of these doubleReadSeekers which allows\narbitrary number of ReadSeekers (which are the leaves of the tree). This means log(N)\n(where N is the number of ReadSeekers in MultiReadSeeker) steps are needed to access the\nReadSeeker at the bottom of the tree\n\nI've tried to make the implementation as efficient as possible and avoid any extra Reads\nor Seeks of the \u0026quot;real\u0026quot; ReadSeekers which may require IO operations and can be\nslow:\n\nMultiReadSeeker performs N+1 \u0026quot;real\u0026quot; Seek operations\n\nRead performs 1 \u0026quot;real\u0026quot; Read operation, unless it reads from the border of two\nReadSeekers in which case it's 2 Reads and 1 Seek (can be actually more if this happens\nat multiple levels of the tree)\n\nSeek performs 1 \u0026quot;real\u0026quot; Seek operation\n\nWhat's your opinion on having something like this in go standard library?\u003c/pre\u003e",
+	"user": {
+		"login": "techee",
+		"id": 713965,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2014-02-05T12:24:08Z",
+	"updated_at": "2016-04-04T18:00:47Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

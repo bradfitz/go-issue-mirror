@@ -1,0 +1,12 @@
+{
+	"id": 209076799,
+	"body": "@ianlancetaylor Sorry for the bump, would appreciate your help in getting this through. \r\n\r\nThe test looks like this : \r\n```go\r\n\r\nvar ptr *nonPtrImpl\r\nptr = nil\r\n...\r\nstmt.Exec(ptr, ...) == _, \"\" // used to panic\r\n```\r\n\r\nAnd the fix ([line for context](https://github.com/golang/go/blob/master/src/database/sql/convert.go#L49)) looks like this:\r\n```go\r\nif svi, ok := arg.(driver.Valuer); ok {\r\n svk := reflect.TypeOf(svi).Kind()\r\n  canCheckNil := svk == reflect.Interface || svk == reflect.Ptr\r\n  if canCheckNil \u0026\u0026 reflect.ValueOf(arg).IsNil() {\r\n    arg = svi // new code\r\n  } else {\r\n    ...\r\n    arg = svi.Value() // where panic was happening\r\n  }\r\n  // convert arg\r\n```\r\n\r\nAll the tests passed with all.bash. Does this look ok to you? May I submit for review?\r\n",
+	"user": {
+		"login": "ConnorFoody",
+		"id": 1727309,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-12T19:51:22Z",
+	"updated_at": "2016-04-12T21:04:54Z"
+}

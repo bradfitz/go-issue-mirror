@@ -1,0 +1,12 @@
+{
+	"id": 214936381,
+	"body": "Minimized repro case:\r\n\r\n    package p\r\n    \r\n    var A, B interface{}\r\n    \r\n    func F() {\r\n        A = New()\r\n        B = New()\r\n    }\r\n    \r\n    type S struct {\r\n        x uint32\r\n    }\r\n    \r\n    func New() *S {\r\n        return \u0026S{0}\r\n    }\r\n\r\nCompile with `go tool compile -S -ssa=0 repro.go` and see:\r\n\r\n        0x0017 00023 (repro.go:6)       LEAQ    type.\"\".S(SB), BX\r\n        0x001e 00030 (repro.go:6)       MOVQ    BX, (SP)\r\n        0x0022 00034 (repro.go:6)       PCDATA  $0, $0\r\n        0x0022 00034 (repro.go:6)       CALL    runtime.newobject(SB)\r\n        0x0027 00039 (repro.go:6)       MOVQ    8(SP), CX\r\n        0x002c 00044 (repro.go:7)       NOP\r\n        0x002c 00044 (repro.go:7)       MOVL    $0, (CX)\r\n        0x0032 00050 (repro.go:6)       LEAQ    type.*\"\".S(SB), BX\r\n        0x0039 00057 (repro.go:6)       MOVQ    BX, \"\".autotmp_6+16(SP)\r\n        0x003e 00062 (repro.go:6)       MOVQ    BX, \"\".A(SB)\r\n        0x0045 00069 (repro.go:6)       MOVQ    CX, \"\".autotmp_6+24(SP)\r\n        0x004a 00074 (repro.go:6)       CMPB    runtime.writeBarrier(SB), $0\r\n        0x0051 00081 (repro.go:6)       JNE     $0, 185\r\n        0x0053 00083 (repro.go:6)       MOVQ    CX, \"\".A+8(SB)\r\n        0x005a 00090 (repro.go:6)       NOP\r\n\r\nThe lines with `repro.go:7` should say `repro.go:6`.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-27T01:15:13Z",
+	"updated_at": "2016-04-27T01:15:32Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 164233054,
+	"body": "For streaming service, for example, to send a video packet to RTMP(over TCP) client, the video maybe:\r\n```\r\nvideo=make([]byte, 156 * 1024)\r\n```\r\n\r\nThen we need to add some small header every some video bytes, for instance, 10k:\r\n```\r\nh0=make([]byte, 12)\r\np0 = video[0:10240]\r\n\r\nh1=make([]byte, 5)\r\np1=video(10240:20480)\r\n\r\n......\r\n\r\n// util the hN and pN\r\nhN=make([]byte, 5)\r\npN=video(x:)\r\n```\r\n\r\nRIght now, we send data in a very very slow way:\r\n```\r\n// merge all to a big buffer\r\nbigBuffer = bytes.Buffer{}\r\nfor b in (h0, p0, h1, p1, ..., hN, pN) {\r\n    bigBuffer.Write(b)\r\n}\r\n\r\n// send in a syscall\r\nnetFD.Write(bigBuffer)\r\n```\r\n\r\nBecause the syscall is expensive than copy buffer:\r\n```\r\n// very very slow for too many syscall\r\nfor b in (h0, p0, h1, p1, ..., hN, pN) {\r\n    netFD.Write(b)\r\n}\r\n```\r\n\r\nWhen golang support writev, we can send in a syscall and without copy to a big buffer.\r\n```\r\n// high effiency writev for stream server.\r\nWrite(h0, p0, h1, p1, ......, hN, pN)\r\n```\r\n\r\n",
+	"user": {
+		"login": "winlinvip",
+		"id": 2777660,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-13T06:45:56Z",
+	"updated_at": "2015-12-14T02:55:39Z"
+}

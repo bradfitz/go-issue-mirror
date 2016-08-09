@@ -1,0 +1,22 @@
+{
+	"id": 120272529,
+	"number": 13470,
+	"state": "closed",
+	"title": "cmd/link: segfault with statically linked binaries on linux",
+	"body": "Discovered with @tschottdorf.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"net\"\r\n\t\"os/user\"\r\n\r\n\t\"C\"\r\n)\r\n\r\nfunc main() {\r\n\tfor i := 0; i \u003c 1000; i++ {\r\n\t\t_, _ = net.Dial(\"tcp\", \"localhost:1337\")\r\n\t\t_, _ = user.Current()\r\n\t}\r\n}\r\n```\r\n\r\nNote the \"C\" import is required, otherwise the go tool does not build a real static binary.\r\n\r\n```\r\n$ go run -ldflags '-extldflags \"-static\"' main.go\r\nfatal error: unexpected signal during runtime execution\r\n[signal 0xb code=0x1 addr=0xe5 pc=0x7fec267f8a5c]\r\n\r\nruntime stack:\r\nruntime.throw(0x660380, 0x2a)\r\n\t/usr/local/go/src/runtime/panic.go:527 +0x90\r\nruntime.sigpanic()\r\n\t/usr/local/go/src/runtime/sigpanic_unix.go:12 +0x5a\r\n\r\ngoroutine 1 [syscall, locked to thread]:\r\nruntime.cgocall(0x402620, 0xc82004bd30, 0xc800000000)\r\n\t/usr/local/go/src/runtime/cgocall.go:120 +0x11b fp=0xc82004bce0 sp=0xc82004bcb0\r\nos/user._Cfunc_mygetpwuid_r(0x0, 0xc8200172c0, 0x7fec180008c0, 0x400, 0xc82002a0b0, 0x0)\r\n\t??:0 +0x39 fp=0xc82004bd30 sp=0xc82004bce0\r\nos/user.lookupUnix(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/go/src/os/user/lookup_unix.go:99 +0x723 fp=0xc82004bea0 sp=0xc82004bd30\r\nos/user.current(0x0, 0x0, 0x0)\r\n\t/usr/local/go/src/os/user/lookup_unix.go:39 +0x42 fp=0xc82004bee0 sp=0xc82004bea0\r\nos/user.Current(0x62eba8, 0x0, 0x0)\r\n\t/usr/local/go/src/os/user/lookup.go:9 +0x24 fp=0xc82004bf00 sp=0xc82004bee0\r\nmain.main()\r\n\t/go/src/github.com/cockroachdb/cgo_static_boom/main.go:13 +0x55 fp=0xc82004bf50 sp=0xc82004bf00\r\nruntime.main()\r\n\t/usr/local/go/src/runtime/proc.go:111 +0x2b0 fp=0xc82004bfa0 sp=0xc82004bf50\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc82004bfa8 sp=0xc82004bfa0\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1\r\nexit status 2\r\n```\r\n\r\nThis was discovered in a docker image based on [golang](https://hub.docker.com/_/golang/):1.5.1, but also tested against `go1.5.2` and 606d9a7e (tip at the time of writing), both built from source in the container. The segfault reproduces in all three. The docker image was running in a virtualbox VM.\r\n\r\nOutput of `go env`:\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```",
+	"user": {
+		"login": "tamird",
+		"id": 1535036,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 24,
+	"closed_at": "2015-12-07T18:51:26Z",
+	"created_at": "2015-12-03T21:20:36Z",
+	"updated_at": "2015-12-07T18:51:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

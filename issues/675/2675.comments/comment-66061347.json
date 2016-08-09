@@ -1,0 +1,12 @@
+{
+	"id": 66061347,
+	"body": "\u003ca id=\"c17\"\u003e\u003c/a\u003eComment 17:\n\n\u003cpre\u003eThe core you posted is dying in nextgandunlock after a call to notesleep returns:\n\n\nnextgandunlock+0x15e 0x08055a62\tMOVL\tGS:fffffffc,AX\nnextgandunlock+0x165 0x08055a69\tADDL\t$84,AX\nnextgandunlock+0x16a 0x08055a6e\tMOVL\tAX,0(SP)\nnextgandunlock+0x16d 0x08055a71\tCALL\truntime.notesleep(SB)\nnextgandunlock+0x172 0x08055a76\tMOVL\tGS:fffffffc,AX         \u0026lt;\u0026lt;\u0026lt;\u0026lt;\u0026lt;\nnextgandunlock+0x179 0x08055a7d\tMOVL\t74(AX),AX\nnextgandunlock+0x17c 0x08055a80\tCMPL\tAX,$0\n\nThis strongly suggests that the thread-local storage is being reset or otherwise\nmishandled.  The fault is _reading_ the thread-local storage word, not _using_ it.  So\nit is like our thread-local storage disappeared completely!  Does FreeBSD have cgo?  I\nwonder if it is messing things up.  TLS mishaps causing g not to point at a G structure\nwould explain the throw(\"entersyscall\") and the runtime split stack overflow failures\ntoo.\n\nMaybe it would make sense to try to use thr_new's tls_base instead of doing it ourselves\nin the new threads.  Note that for bizarre ELF reasons, tls_base points _after_ the tls\nsection.  So you'd want to try making m-\u0026gt;tls be an array of void*, then set tls[0] =\ng and tls[1] = m and then use \u0026tls[2] as tls_base in the thr_new parameters.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-23T06:31:39Z",
+	"updated_at": "2014-12-22T06:07:25Z"
+}

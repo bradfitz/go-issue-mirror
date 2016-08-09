@@ -1,0 +1,27 @@
+{
+	"id": 51281502,
+	"number": 4006,
+	"state": "closed",
+	"title": "cmd/ld: Go fails to compile on Fedora 17 ARM",
+	"body": "\u003cpre\u003eI've run into a link error building cgo-enabled Go on linux/arm,\nspecifically Fedora 17.\n\nYou can get the environment here:\n\n\u003ca href=\"http://fedoraproject.org/wiki/Architectures/ARM/Versatile_Express\"\u003ehttp://fedoraproject.org/wiki/Architectures/ARM/Versatile_Express\u003c/a\u003e\n\nspecifically:\n\n\u003ca href=\"http://download.fedoraproject.org/pub/fedora-secondary/releases/17/Images/armhfp/Fedora-17-armhfp-vexpress-mmcblk0.img.xz\"\u003ehttp://download.fedoraproject.org/pub/fedora-secondary/releases/17/Images/armhfp/Fedora-17-armhfp-vexpress-mmcblk0.img.xz\u003c/a\u003e\n\n\u003ca href=\"http://download.fedoraproject.org/pub/fedora-secondary/releases/17/Images/armhfp/Fedora-17-armhfp-vexpress-mmcblk0-kernel.tar.xz\"\u003ehttp://download.fedoraproject.org/pub/fedora-secondary/releases/17/Images/armhfp/Fedora-17-armhfp-vexpress-mmcblk0-kernel.tar.xz\u003c/a\u003e\n\nDecompress with xz.\n\nFind the kernel and initramfs in the kernel.tar if you want.\n\nNow do something like:\n\nqemu-system-arm -machine vexpress-a9 -m 1024 -net nic -net user\n-append \u0026quot;rw root=/dev/mmcblk0p2 rootwait physmap.enabled=0\nplymouth.enable=0 selinux=0\u0026quot; -kernel vmlinuz -initrd initramfs.img -sd mmcblk0.img\n\nI'm actually testing with Qemu 1.2.0rc0 on Windows here. Quite sweet.\n\nLog in as root:fedoraarm\n\nyum install gcc make bison ed mercurial\n\nclone go tip\n\nexport GOROOT=whatever\ncd $GOROOT/src\n./make.bash\n\nFor reference, versions are:\n\n# rpm -q binutils gcc glibc\nbinutils-2.22.52.0.1-10.fc17.armv7hl\ngcc-4.7.0-5.fc17.armv7hl\nglibc-2.15-56.fc17.armv7hl\n\nThe build error I get is:\n\n# cmd/go\ngo/pkg/linux_arm/net.a(_all.o): unknown relocation type 29; compiled\nwithout -fpic?\ngo/pkg/linux_arm/net.a(_all.o): unknown relocation type 29; compiled\nwithout -fpic?\ngo/pkg/linux_arm/runtime/cgo.a(_all.o): unknown relocation type 29;\ncompiled without -fpic?\ngo/pkg/linux_arm/runtime/cgo.a(_all.o): unknown relocation type 29;\ncompiled without -fpic?\ngo/pkg/linux_arm/runtime/cgo.a(_all.o): unknown relocation type 29;\ncompiled without -fpic?\ngo/pkg/linux_arm/net.a(_all.o)(.text): unexpected relocation type 285\ngo/pkg/linux_arm/net.a(_all.o)(.text): unexpected relocation type 285\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unexpected relocation type 285\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unexpected relocation type 285\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unexpected relocation type 285\ngo/pkg/linux_arm/net.a(_all.o)(.text): unhandled relocation for\n__errno_location (type 25 rtype 48)\ngo/pkg/linux_arm/net.a(_all.o)(.text): unhandled relocation for\ngetaddrinfo (type 25 rtype 48)\ngo/pkg/linux_arm/net.a(_all.o)(.text): unhandled relocation for\ngai_strerror (type 25 rtype 48)\ngo/pkg/linux_arm/net.a(_all.o)(.text): unhandled relocation for\ngetaddrinfo (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_attr_init (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_attr_getstacksize (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_attr_destroy (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor free (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_attr_init (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_attr_getstacksize (type 25 rtype 48)\ngo/pkg/linux_arm/runtime/cgo.a(_all.o)(.text): unhandled relocation\nfor pthread_create (type 25 rtype 48)\ntoo many errors\n\nI understand I can work around this with CGO_ENABLED=0, but I got the\nidea from \u003ca href=\"https://golang.org/issue/1880\"\u003eissue #1880\u003c/a\u003e that this should work?\n\n\u003ca href=\"https://golang.org/issue/1880\"\u003ehttps://golang.org/issue/1880\u003c/a\u003e\n\nYou can check build logs for the Fedora ARM packages here if their configuration is\nimportant:\n\n\u003ca href=\"http://arm.koji.fedoraproject.org/koji/packageinfo?packageID=2095\"\u003ehttp://arm.koji.fedoraproject.org/koji/packageinfo?packageID=2095\u003c/a\u003e\n\u003ca href=\"http://arm.koji.fedoraproject.org/koji/packageinfo?packageID=702\"\u003ehttp://arm.koji.fedoraproject.org/koji/packageinfo?packageID=702\u003c/a\u003e\n\nClick on a fc17 version of a package, then \u0026quot;build logs\u0026quot; and then build.log.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:21:14Z",
+	"created_at": "2012-08-25T08:45:39Z",
+	"updated_at": "2016-06-24T22:23:45Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

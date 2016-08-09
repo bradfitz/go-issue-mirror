@@ -1,0 +1,27 @@
+{
+	"id": 87128036,
+	"number": 11155,
+	"state": "open",
+	"title": "syscall: forkAndExecInChild assumes clone doesn't block, but it sometimes does",
+	"body": "syscall.forkAndExecInChild [uses](https://github.com/golang/go/blob/go1.4.2/src/syscall/exec_linux.go#L85) RawSyscall6 to call clone. This means the goroutine doesn't give up its scheduler slot, making the assumption that clone can't block. But in the case of a program with open files on a fuse file system, clone may block indefinitely. So if the program execs GOMAXPROCS times in parallel, it may lock up and fail to schedule any other runnable goroutines. If the fuse file system is unresponsive or if the fuse server is the same process as has the files open, the program will never make progress.\r\n\r\nHere is an example of the kernel stack for a thread that is blocking in sys_clone on behalf of an os/exec.Cmd on Linux 3.19.0-16-generic (Ubuntu 15.04):\r\n\r\n    [\u003cffffffff812e708d\u003e] __fuse_request_send+0xcd/0x290\r\n    [\u003cffffffff812e7262\u003e] fuse_request_send+0x12/0x20\r\n    [\u003cffffffff812f0d6d\u003e] fuse_flush+0x12d/0x170\r\n    [\u003cffffffff811f0ac3\u003e] filp_close+0x33/0x80\r\n    [\u003cffffffff81212168\u003e] put_files_struct+0x78/0xd0\r\n    [\u003cffffffff8121226b\u003e] exit_files+0x4b/0x60\r\n    [\u003cffffffff810736c4\u003e] copy_process.part.27+0x8e4/0x1b10\r\n    [\u003cffffffff81074aa1\u003e] do_fork+0xd1/0x350\r\n    [\u003cffffffff81074da6\u003e] SyS_clone+0x16/0x20\r\n    [\u003cffffffff817c9699\u003e] stub_clone+0x69/0x90\r\n    [\u003cffffffffffffffff\u003e] 0xffffffffffffffff\r\n\r\nI previously filed #10202 about a similar issue with syscall.Dup2, which Ian fixed in 28074d5baad961f931df9895c57a82d164641f06. Can a similar fix be made here? I know there are tricky issues with the fork lock, but I don't pretend to be familiar enough to say.",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 18,
+	"created_at": "2015-06-10T22:22:14Z",
+	"updated_at": "2015-12-05T04:45:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 90504335,
+	"body": "This may be obvious to people more familiar with these libraries, but the variable use check here comes from golang.org/x/tools/go/types. Here's a debugging session with a breakpoint in golang.org/x/tools/go/types/stmt.go:\r\n\r\n```\r\n$ cat loader.go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\r\n\t\"golang.org/x/tools/go/loader\"\r\n)\r\n\r\nfunc main() {\r\n\tvar conf loader.Config\r\n\tconf.CreateFromFilenames(\"main\", \"small.go\")\r\n\t_, err := conf.Load()\r\n\tfmt.Println(err)\r\n}\r\n```\r\n```\r\n$ godebug run -instrument=golang.org/x/tools/go/types loader.go\r\n-\u003e check.softErrorf(v.pos, \"%s declared but not used\", v.name)\r\n(godebug) list\r\n\r\n    func (check *Checker) usage(scope *Scope) {\r\n    \tfor _, obj := range scope.elems {\r\n    \t\tif v, _ := obj.(*Var); v != nil \u0026\u0026 !v.used {\r\n    \t\t\tgodebug.SetTrace()\r\n--\u003e \t\t\tcheck.softErrorf(v.pos, \"%s declared but not used\", v.name)\r\n    \t\t}\r\n    \t}\r\n    \tfor _, scope := range scope.children {\r\n    \t\tcheck.usage(scope)\r\n\r\n(godebug) next\r\nsmall.go:7:6: touchedInClosure declared but not used\r\n-\u003e for _, obj := range scope.elems {\r\n(godebug) continue\r\ncouldn't load packages due to errors: main\r\n```\r\n\r\nCompare with running the file directly:\r\n```\r\n$ go run loader.go\r\nsmall.go:7:6: touchedInClosure declared but not used\r\ncouldn't load packages due to errors: main\r\n```",
+	"user": {
+		"login": "jeremyschlatter",
+		"id": 5741620,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-07T10:45:03Z",
+	"updated_at": "2015-04-07T10:45:03Z"
+}

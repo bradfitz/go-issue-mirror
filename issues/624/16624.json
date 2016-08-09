@@ -1,0 +1,27 @@
+{
+	"id": 169749949,
+	"number": 16624,
+	"state": "open",
+	"title": "cmd/cover: incomplete coverage when using goto",
+	"body": "In `go version go1.6.3 linux/amd64`, the following code produces an incomplete cover profile.\r\n\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/cbandy/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n```\r\n$ cat -n main.go \r\n     1  package main\r\n     2\r\n     3  func test(s string) (result int) {\r\n     4          if s == \"\" {\r\n     5                  goto One\r\n     6          }\r\n     7          goto Two\r\n     8\r\n     9  One:\r\n    10          result = 1\r\n    11          return\r\n    12\r\n    13  Two:\r\n    14          result = 2\r\n    15          return\r\n    16  }\r\n```\r\n\r\n```\r\n$ cat main_test.go \r\npackage main\r\n\r\nimport \"testing\"\r\n\r\nfunc Test(t *testing.T) {\r\n        if x := test(\"\"); x != 1 {\r\n                t.Errorf(\"Expected 1, got %v\", x)\r\n        }\r\n        if x := test(\"a\"); x != 2 {\r\n                t.Errorf(\"Expected 2, got %v\", x)\r\n        }\r\n}\r\n```\r\n\r\nBoth `1` and `2` are successfully returned, so I expected to see 100% coverage. However, neither the labels nor `return` statements are accounted for:\r\n\r\n```\r\n$ go test -coverprofile coverage.out\r\nPASS\r\ncoverage: 42.9% of statements\r\nok      cover   0.003s\r\n```\r\n\r\n```\r\n$ cat coverage.out\r\nmode: set\r\ncover/main.go:3.34,4.13 1 1\r\ncover/main.go:7.2,7.10 1 1\r\ncover/main.go:9.1,15.8 4 0\r\ncover/main.go:4.13,5.11 1 1\r\n```",
+	"user": {
+		"login": "cbandy",
+		"id": 106560,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-08-06T14:54:16Z",
+	"updated_at": "2016-08-08T19:36:13Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

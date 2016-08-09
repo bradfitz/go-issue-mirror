@@ -1,0 +1,26 @@
+{
+	"id": 148380616,
+	"number": 15300,
+	"state": "open",
+	"title": "cmd/compile: combine extension with register loads and stores on amd64",
+	"body": "Extending a register load or store currently generates suboptimal code with the SSA backend. In some cases, this is a regression from the old backend. For example:\r\n\r\n`func load8(i uint8) uint64 { return uint64(i) }`\r\n\r\nGenerates:\r\n\r\n```\r\n\"\".load8 t=1 size=16 args=0x10 locals=0x0\r\n\t0x0000 00000 (extend.go:3)\tTEXT\t\"\".load8(SB), $0-16\r\n\t0x0000 00000 (extend.go:3)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0000 00000 (extend.go:3)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0000 00000 (extend.go:3)\tMOVBLZX\t\"\".i+8(FP), AX\r\n\t0x0005 00005 (extend.go:3)\tMOVBQZX\tAL, AX\r\n\t0x0008 00008 (extend.go:3)\tMOVQ\tAX, \"\".~r1+16(FP)\r\n\t0x000d 00013 (extend.go:3)\tRET\r\n```\r\n\r\nThe old back end generates:\r\n\r\n```\r\n\"\".load8 t=1 size=16 args=0x10 locals=0x0\r\n\t0x0000 00000 (extend.go:3)\tTEXT\t\"\".load8(SB), $0-16\r\n\t0x0000 00000 (extend.go:3)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0000 00000 (extend.go:3)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0000 00000 (extend.go:3)\tMOVBQZX\t\"\".i+8(FP), BX\r\n\t0x0005 00005 (extend.go:3)\tMOVQ\tBX, \"\".~r1+16(FP)\r\n\t0x000a 00010 (extend.go:3)\tRET\r\n```\r\n\r\nI tried fixing this in CL 21838, but the fix was partial and probably not in the right place.\r\n\r\nIt's hard to do this as part of the arch-specific rewrite rules, because (a) you lose the type extension work that the ssa conversion did for you and have to recreate it later and (b) you don't know where all the register loads and stores will be, because regalloc hasn't run.\r\n\r\nHowever, it's hard to do this as part of converting final SSA to instructions (genvalue), since that's really geared to handle one value at a time, in isolation.\r\n\r\nTeaching regalloc to combine these MOVs seems arch-specific and would further complicate already complicated machinery. Maybe the thing to do is to add an arch-specific rewrite pass after regalloc (\"peep\"?), using hand-written rewrite rules. Input requested.\r\n\r\nRelated, for those extension MOVs that remain, we should test whether CWB and friends are desirable--they are shorter, but are register-restricted and the internet disagrees about whether they are as fast.\r\n\r\nHere are some test cases:\r\n\r\n```go\r\npackage x\r\n\r\nfunc load8(i uint8) uint64   { return uint64(i) }\r\nfunc load32(i uint32) uint64 { return uint64(i) }\r\n\r\nfunc store8(i uint64) uint64  { return uint64(uint8(i)) }\r\nfunc store32(i uint64) uint64 { return uint64(uint32(i)) }\r\n\r\nvar p *int\r\n\r\nfunc load8spill(i uint8) uint64 {\r\n\ti++            // use i\r\n\tprint(i)       // spill i\r\n\tj := uint64(i) // use and extend i\r\n\treturn j\r\n}\r\n\r\nfunc load32spill(i uint32) uint64 {\r\n\ti++            // use i\r\n\tprint(i)       // spill i\r\n\tj := uint64(i) // use and extend i\r\n\treturn j\r\n}\r\n\r\nfunc store8spill(i uint64) uint64 {\r\n\tj := uint8(i)    // convert\r\n\tprint(j)         // spill\r\n\treturn uint64(j) // use\r\n}\r\n\r\nfunc store32spill(i uint64) uint64 {\r\n\tj := uint32(i)   // convert\r\n\tprint(j)         // spill\r\n\treturn uint64(j) // use\r\n}\r\n```\r\n\r\ncc @randall77 \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-04-14T14:32:15Z",
+	"updated_at": "2016-05-02T23:22:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

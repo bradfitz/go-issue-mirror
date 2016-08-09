@@ -1,0 +1,12 @@
+{
+	"id": 66066193,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eThe DWARF format uses 1-indexed array indices, so it cannot\ndistinguish between a 0-length array and a 1-length array.\nInstead we try to tell them apart using the offset and size\ninformation associated with the struct field and the surrounding\nstruct.  It is clearly not working in this case.\n\nIf you would like to try to fix this, the relevant code is in\nsrc/pkg/debug/dwarf/type.go:\n\n\n\t\tif t.Kind != \"union\" {\n\t\t\tb, ok := e.Val(AttrByteSize).(int64)\n\t\t\tif ok \u0026\u0026 b*8 == lastFieldBitOffset {\n\t\t\t\t// Final field must be zero width.  Fix array length.\n\t\t\t\tzeroArray(lastFieldType)\n\t\t\t}\n\t\t}\n\nThe question is why that's not firing for the field in question,\nassuming it is at the end of the array.  If it is in the middle of\nthe array then the relevant code is a few lines up:\n\n\t\t\t\tif bito == lastFieldBitOffset \u0026\u0026 t.Kind != \"union\" {\n\t\t\t\t\t// Last field was zero width.  Fix array length.\n\t\t\t\t\t// (DWARF writes out 0-length arrays as if they were 1-length arrays.)\n\t\t\t\t\tzeroArray(lastFieldType)\n\t\t\t\t}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-10T19:40:52Z",
+	"updated_at": "2014-12-08T10:18:19Z"
+}

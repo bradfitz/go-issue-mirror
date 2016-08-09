@@ -1,0 +1,17 @@
+{
+	"id": 141192692,
+	"number": 14835,
+	"state": "closed",
+	"title": "runtime: Should respect/understand the process limit when managing threads",
+	"body": "Currently if the go runtime tries to create a new system thread and is unable\r\nto do so, it will fail with an error like;\r\n```\r\n18:22:18.752169 [go test -timeout 600s -v -race ./common/paniccatcher] was slow: 3m11.377s\r\nruntime/cgo: pthread_create failed: Resource temporarily unavailable\r\nSIGABRT: abort\r\nPC=0x7f54695bdcc9\r\n```\r\n\r\nOne reason for this occurring is the system have a low \"process limit\". For a\r\nlong time it was fairly common for systems to allow 10k or more, but with\r\nsystemd and Linux 4.3 the default limit can be as little as 512.\r\n\r\nMost of the code which calls pthread_create in src/runtime/cgo seems to do\r\nsomething like;\r\n```\r\n\terr = pthread_create(\u0026p, \u0026attr, threadentry, ts);\r\n\r\n\tpthread_sigmask(SIG_SETMASK, \u0026oset, nil);\r\n\r\n\tif (err != 0) {\r\n\t\tfprintf(stderr, \"runtime/cgo: pthread_create failed: %s\\n\", strerror(err));\r\n\t\tabort();\r\n\t}\r\n```\r\nThis actually seems reasonable as recovering from thread creation is pretty\r\nhard. As well, creating more then your system's process limit does feel like a\r\n\"just don't do that\" type things.\r\n\r\nHowever, from what I can see goroutine scheduler will create up to\r\nsched.maxmcount threads and this is set to be initialized to 10k in proc.go at\r\nline 425 (https://github.com/golang/go/blob/master/src/runtime/proc.go#L425).\r\n\r\nLinux provides an API for getting the current thread limit, the getrlimit call\r\nwith RLIMIT_NPROC (see http://man7.org/linux/man-pages/man2/setrlimit.2.html)\r\nwhich already seems to be exposed to Go code as syscall.Getrlimit but it is\r\nmissing the RLIMIT_NPROC constant needed to get the information.\r\n\r\nThis is similar to idea of respecting memlimit see\r\nhttps://github.com/golang/go/blob/master/src/runtime/os1_linux.go#L270 and\r\nprobably related to https://github.com/golang/go/issues/5049",
+	"user": {
+		"login": "mithro",
+		"id": 21212,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-03-18T03:15:59Z",
+	"created_at": "2016-03-16T07:10:49Z",
+	"updated_at": "2016-03-18T03:15:59Z"
+}

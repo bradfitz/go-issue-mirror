@@ -1,0 +1,28 @@
+{
+	"id": 159529999,
+	"number": 16026,
+	"state": "closed",
+	"title": "cmd/compile: possible liveness bug",
+	"body": "```\r\ntype T [10]*int\r\nfunc f(t T) {\r\n\tg = t\r\n}\r\nvar g T\r\n```\r\ncompiles to roughly:\r\n```\r\nautotmp_0 = t (using duffcopy)\r\nif writebarriers_enabled {\r\n    typedmemmove(\u0026g, \u0026autotmp_0)\r\n} else {\r\n    g = autotmp_0 (using duffcopy)\r\n}\r\n```\r\nProblem: ```autotmp_0``` is not considered live at `typedmemmove`.  The fact that `typedmemmove` (and callees) are marked as nosplit saves us, but I can't yet convince myself that there won't be other cases like this but without nosplit saving us.\r\n```\r\n$ go tool compile -live ~/go/tmp4.go\r\n/usr/local/google/home/khr/go/tmp4.go:8: live at entry to f: t\r\n/usr/local/google/home/khr/go/tmp4.go:9: live at call to typedmemmove: t   \u003c- missing autotmp_0\r\n```\r\n\r\n(Another less serious issue is that autotmp_0 is unnecessary in this example, but compilers; go figure.)\r\n\r\nFound using CL https://go-review.googlesource.com/23924 \r\n\r\n@aclements ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-06-16T15:08:01Z",
+	"created_at": "2016-06-09T23:21:14Z",
+	"updated_at": "2016-06-16T15:08:01Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

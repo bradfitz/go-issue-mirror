@@ -1,0 +1,12 @@
+{
+	"id": 66061195,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12:\n\n\u003cpre\u003eGetting somewhere.\n\nIt looks like we are not checking errors in TestRoundTripGzip. That is why you are\ngetting \"panic: runtime error: invalid memory address ...\". Please, change the program\nto NOT IGNORE ERRORS. Here is my diff:\n\ndiff -r 1107a7d3cb07 src/pkg/net/http/transport_test.go\n--- a/src/pkg/net/http/transport_test.go\tFri Jan 27 17:51:53 2012 +1100\n+++ b/src/pkg/net/http/transport_test.go\tTue Feb 07 16:53:50 2012 +1100\n@@ -441,7 +441,10 @@\n \t\t}\n \t\tif accept == \"gzip\" {\n \t\t\trw.Header().Set(\"Content-Encoding\", \"gzip\")\n-\t\t\tgz, _ := gzip.NewWriter(rw)\n+\t\t\tgz, e := gzip.NewWriter(rw)\n+\t\t\tif e != nil {\n+\t\t\t\tt.Error(e)\n+\t\t\t}\n \t\t\tgz.Write([]byte(responseBody))\n \t\t\tgz.Close()\n \t\t} else {\n@@ -453,14 +456,20 @@\n \n \tfor i, test := range roundTripTests {\n \t\t// Test basic request (no accept-encoding)\n-\t\treq, _ := NewRequest(\"GET\", fmt.Sprintf(\"%s/?testnum=%d\u0026expect_accept=%s\", ts.URL, i,\ntest.expectAccept), nil)\n+\t\treq, e := NewRequest(\"GET\", fmt.Sprintf(\"%s/?testnum=%d\u0026expect_accept=%s\", ts.URL, i,\ntest.expectAccept), nil)\n+\t\tif e != nil {\n+\t\t\tt.Error(e)\n+\t\t}\n \t\tif test.accept != \"\" {\n \t\t\treq.Header.Set(\"Accept-Encoding\", test.accept)\n \t\t}\n \t\tres, err := DefaultTransport.RoundTrip(req)\n \t\tvar body []byte\n \t\tif test.compressed {\n-\t\t\tgzip, _ := gzip.NewReader(res.Body)\n+\t\t\tgzip, e := gzip.NewReader(res.Body)\n+\t\t\tif e != nil {\n+\t\t\t\tt.Error(e)\n+\t\t\t}\n \t\t\tbody, err = ioutil.ReadAll(gzip)\n \t\t\tres.Body.Close()\n \t\t} else {\n\nand tell us what it prints. Thank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-07T06:00:33Z",
+	"updated_at": "2014-12-08T10:14:07Z"
+}

@@ -1,0 +1,32 @@
+{
+	"id": 103885545,
+	"number": 12397,
+	"state": "open",
+	"title": "cmd/compile: Escape analysis and liveness analysis do not interact well",
+	"body": "I'm writing some recursive code, and have been very careful to avoid allocations by being very nice to the escape analysis routines. However, I have some dead code in the source for debugging, whose body does cause escaping values if used (`fmt` and `panic` in my original code). The presence of the body of the debugging code, *even though it is dead and removed by liveness analysis* causes the escape analysis pass to consider the state to escape, forcing a heap allocation.\r\n\r\nHere's a simplified example:\r\n\r\n```\r\npackage recursiveescapebug\r\n\r\nconst debugMode = false\r\n\r\nfunc A() int {\r\n        b := 0\r\n        B(\u0026b, 5)\r\n        return b\r\n}\r\n\r\nfunc B(state *int, recursions int) {\r\n        switch recursions {\r\n        case 0:\r\n        default:\r\n                *state++\r\n\r\n                if debugMode {\r\n                        // this is dead code, removed by the optimizer.\r\n                        // however, its presence causes the compiler to consider B's state argument to escape.\r\n                        panic(state)\r\n                }\r\n\r\n                B(state, recursions-1)\r\n        }\r\n}\r\n```\r\n\r\nWhen compiling this:\r\n\r\n```\r\n$ go build -gcflags='-live -m'\r\n# _/home/username/testthing\r\n./recursiveescapebug.go:11: leaking param: state\r\n./recursiveescapebug.go:6: moved to heap: b\r\n./recursiveescapebug.go:7: \u0026b escapes to heap\r\n./recursiveescapebug.go:7: live at call to B: \u0026b\r\n./recursiveescapebug.go:11: live at entry to B: state\r\n./recursiveescapebug.go:23: live at call to B: state\r\n```\r\n\r\nWithout the dead debug code in the source code, I see the escape analysis properly determines that state does not escape.\r\n\r\nHappens with Go 1.5 and on a development version as of `efeeee38` on x86_64/linux, but is likely not related to versions or platforms.",
+	"user": {
+		"login": "encryptio",
+		"id": 67937,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-08-29T21:53:28Z",
+	"updated_at": "2015-08-30T03:40:08Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

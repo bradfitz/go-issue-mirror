@@ -1,0 +1,28 @@
+{
+	"id": 51276276,
+	"number": 277,
+	"state": "closed",
+	"title": "Segfault when writing to a TCPCon",
+	"body": "by **myspot40**:\n\n\u003cpre\u003eI somehow managed to trigger a segfault with Go code.  From what I\nunderstand, this should not happen at all.  A friend and I are trying to\nmake a rudimentary IRC server in Go, and I was testing NICK and PRIVMSG\nwhen this occured.  I telneted to localhost at port 6667 in two terminals\nwhile running this server.  First I entered PASS into both terminals, it is\nignored by the server correctly.  Then I entered 'NICK foo' in one terminal\nand 'NICK bar' in another.  After getting sidetracked, I forgot I nicked\nthe connections, and ran both commands again, except this time 'NICK foo'\nwas in the second terminal while 'NICK bar' was in the first.  I then tried\nto send a PRIVMSG from foo to bar, and generated the segfault.\n\nHere is the full output while I ran the server:\n\n$ ./GoGet    \n2009/11/19 20:48:25 STARTING SERVER...\n2009/11/19 20:48:29 Connection accepted:127.0.0.1:53787\n2009/11/19 20:48:36 foo HAS REGISTERED A NICK\n\u0026amp;{foo ����\u0006  []}\n\u0026amp;{foo NICK  [bar]}\n2009/11/19 20:48:47 bar HAS REGISTERED A NICK\n\u0026amp;{bar PRIVMSG  [foo :hi]}\nSIGSEGV: segmentation violation\nFaulting address: 0x28\nPC=0x400b1c\n\nmain·sendMessage+0xa4 /home/me/Code/Go/GoGet/src/main.go:44\n\tmain·sendMessage(0x0, 0x0, 0x0, 0x0, 0x0, ...)\nmain·parseLine+0x1d1 /home/me/Code/Go/GoGet/src/main.go:55\n\tmain·parseLine(0x413b50c0, 0x7fb6, 0x13, 0x7fb6, 0x4131f420, ...)\nmain·handleConnection+0x22a /home/me/Code/Go/GoGet/src/main.go:73\n\tmain·handleConnection(0x4131f420, 0x7fb6)\ngoexit /home/me/go/src/pkg/runtime/proc.c:135\n\tgoexit()\n0x7fb64131f420 unknown pc\n\ngoroutine 3:\ngosched+0x34 /home/me/go/src/pkg/runtime/proc.c:516\n\tgosched()\nchanrecv+0x130 /home/me/go/src/pkg/runtime/chan.c:345\n\tchanrecv(0x4131d4b0, 0x7fb6, 0x41356088, 0x7fb6, 0x0, ...)\nruntime·chanrecv1+0x50 /home/me/go/src/pkg/runtime/chan.c:415\n\truntime·chanrecv1(0x4131d4b0, 0x7fb6)\nnet·*pollServer·WaitRead+0x49 /home/me/go/src/pkg/net/fd.go:278\n\tnet·*pollServer·WaitRead(0x4131c340, 0x7fb6, 0x413523f0, 0x7fb6)\nnet·*netFD·accept+0x2af /home/me/go/src/pkg/net/fd.go:424\n\tnet·*netFD·accept(0x413523f0, 0x7fb6, 0x40bd8d, 0x0, 0x413525a0, ...)\nnet·*TCPListener·AcceptTCP+0x5a /home/me/go/src/pkg/net/tcpsock.go:253\n\tnet·*TCPListener·AcceptTCP(0x41316a10, 0x7fb6, 0x0, 0x0, 0x0, ...)\nnet·*TCPListener·Accept+0x34 /home/me/go/src/pkg/net/tcpsock.go:263\n\tnet·*TCPListener·Accept(0x41316a10, 0x7fb6, 0x0, 0x0, 0x0, ...)\nmain·getConnections+0x1c /home/me/Code/Go/GoGet/src/main.go:20\n\tmain·getConnections(0x41316a10, 0x7fb6, 0x4131d550, 0x7fb6)\ngoexit /home/me/go/src/pkg/runtime/proc.c:135\n\tgoexit()\n0x7fb641316a10 unknown pc\n\ngoroutine 2:\nruntime·entersyscall+0x50 /home/me/go/src/pkg/runtime/proc.c:540\n\truntime·entersyscall()\nsyscall·Syscall6+0x5 /home/me/go/src/pkg/syscall/asm_linux_amd64.s:41\n\tsyscall·Syscall6()\nsyscall·EpollWait+0x84 /home/me/go/src/pkg/syscall/zsyscall_linux_amd64.go:132\n\tsyscall·EpollWait(0x6, 0x7fb6, 0x4138a580, 0x7fb6, 0x1, ...)\nnet·*pollster·WaitFD+0xb5 /home/me/go/src/pkg/net/fd_linux.go:116\n\tnet·*pollster·WaitFD(0x4134ea80, 0x7fb6, 0x0, 0x0, 0x72, ...)\nnet·*pollServer·Run+0x9e /home/me/go/src/pkg/net/fd.go:237\n\tnet·*pollServer·Run(0x4131c340, 0x7fb6)\ngoexit /home/me/go/src/pkg/runtime/proc.c:135\n\tgoexit()\n0x7fb64131c340 unknown pc\n\ngoroutine 1:\ngosched+0x34 /home/me/go/src/pkg/runtime/proc.c:516\n\tgosched()\nchanrecv+0x318 /home/me/go/src/pkg/runtime/chan.c:319\n\tchanrecv(0x4131d550, 0x7fb6, 0x41353f38, 0x7fb6, 0x0, ...)\nruntime·chanrecv1+0x50 /home/me/go/src/pkg/runtime/chan.c:415\n\truntime·chanrecv1(0x4131d550, 0x7fb6)\nmain·main+0xe6 /home/me/Code/Go/GoGet/src/main.go:88\n\tmain·main()\nmainstart+0xf /home/me/go/src/pkg/runtime/amd64/asm.s:55\n\tmainstart()\ngoexit /home/me/go/src/pkg/runtime/proc.c:135\n\tgoexit()\nrax     0xe\nrbx     0x0\nrcx     0xd\nrdx     0x7fb64138a780\nrdi     0x7fb6413a2e78\nrsi     0x7fb6413a2e80\nrbp     0x0\nrsp     0x7fb6413a2e60\nr8      0x7fb64138a790\nr9      0x7fb6413a2d40\nr10     0x79\nr11     0x246\nr12     0x2\nr13     0x7fff35e60c10\nr14     0x486980\nr15     0x7fb641397090\nrip     0x400b1c\nrflags  0x10202\ncs      0x33\nfs      0x0\ngs      0x0\nzsh: trace trap  ./GoGet\n\nAttached are the two source files I have.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/277/0/irc.go\"\u003eirc.go\u003c/a\u003e (2433 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/277/0/main.go\"\u003emain.go\u003c/a\u003e (2115 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:03:56Z",
+	"created_at": "2009-11-20T02:14:31Z",
+	"updated_at": "2016-06-24T19:07:46Z"
+}

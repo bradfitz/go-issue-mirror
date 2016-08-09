@@ -1,0 +1,27 @@
+{
+	"id": 51281891,
+	"number": 4268,
+	"state": "closed",
+	"title": "os/signal: No way to re-enable default handlers",
+	"body": "by **jacobsa@google.com**:\n\n\u003cpre\u003e(Note: I am not an old hand with signals, and may be missing something obvious\nhere. Please be gentle.)\n\nAs I understand it, if I say\n\n    c := make(chan os.Signal)\n    signal.Notify(c, os.Interrupt)\n\nthen I have forever disabled the default SIGINT handler, even if I close the\nchannel and never touch it. It would be nice if there were a way to declare to\nthe signal package that I no longer am interested in a signal, similar to\ncalling signal(3) with SIG_DFL.\n\nI came across this issue when using this package for reading passwords without\nechoing:\n\n    \u003ca href=\"http://code.google.com/p/gopass/source/browse/gopass.go\"\u003ehttp://code.google.com/p/gopass/source/browse/gopass.go\u003c/a\u003e\n\n(Admittedly this package's implementation is hacky. I couldn't find a better\nway to do this though. Calling getpass(3) using cgo screwed up signal handling\neven worse, as far as I can tell.)\n\nThe package installs a temporary SIGINT handler that turns terminal echoing\nback on before exiting when a signal is received. It returns from this handler\nwhen it's done reading a password though, and the net effect is that after\ncalling GetPass once, SIGINT never again works except while calling GetPass\nanother time.\n\nIf I control all of the code in my program then I can keep my signal handler\nrunning and emulating the default handler. But this is a bit annoying, and I\ncan't think of any way for a library developer to do it correctly. (If the\nlibrary developer chooses to do this, she may interfere with some other\nlibrary developer who is intentionally trying to suppress SIGINT, for\nexample.)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:22:42Z",
+	"created_at": "2012-10-20T10:37:31Z",
+	"updated_at": "2016-06-24T22:26:49Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

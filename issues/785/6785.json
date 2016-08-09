@@ -1,0 +1,29 @@
+{
+	"id": 51285721,
+	"number": 6785,
+	"state": "open",
+	"title": "net/http: Transport needs a limit on total connections (per host)",
+	"body": "\u003cpre\u003e(go1.2rc4)\n\nWe're working on a reverse HTTP proxy that does some \u0026quot;stuff\u0026quot; (that's not\nrelevant) and proxies towards one or more backend HTTP servers. During testing I ran\ninto connection failures apparently due to running out of file descriptors. In narrowing\nthis down I reduced the problem to;\n\nThe \u0026quot;null\u0026quot; reverse proxy (doing nothing but proxying, using the\nhttputil.ReverseProxy):\n\n\u003ca href=\"http://play.golang.org/p/p1g4bpTZ_g\"\u003ehttp://play.golang.org/p/p1g4bpTZ_g\u003c/a\u003e\n\nA trivial HTTP server acting as the backend behind the above proxy; it simply counts the\nnumber of connections and responds successfully:\n\n\u003ca href=\"http://play.golang.org/p/F7W-vbXEUt\"\u003ehttp://play.golang.org/p/F7W-vbXEUt\u003c/a\u003e\n\nRunning both of these, I have the proxy on :8080 forwarding to the server at :8090. To\ntest it, I use wrk (\u003ca href=\"https://github.com/wg/wrk)\"\u003ehttps://github.com/wg/wrk)\u003c/a\u003e;\n\njb@jborg-mbp:~ $ wrk -c 1 -t 1 \u003ca href=\"http://localhost:8080/\"\u003ehttp://localhost:8080/\u003c/a\u003e\n...\n\nGranted, this isn't a super realistic reproduction of the real world since the latency\non localhost is minimal. I can't prove the same thing _can't_ happen in production\nthough.\n\nUsing one connection (-c 1) up to about three, this works perfectly. The server side\nsees a bunch of requests over one to three connections, i.e. the number of backend\nconnections from the proxy matches the number of incoming connections. At around -c 4\nand upwards, it blows up. The proxy doesn't manage to recycle connections quickly enough\nand starts doing regular Dial:s at a rate of thousands per second, resulting in\n\n...\n2013/11/18 20:18:21 http: proxy error: dial tcp 127.0.0.1:8090: can't assign requested\naddress\n2013/11/18 20:18:21 http: proxy error: dial tcp 127.0.0.1:8090: can't assign requested\naddress\n2013/11/18 20:18:21 http: proxy error: dial tcp 127.0.0.1:8090: can't assign requested\naddress\n2013/11/18 20:18:21 http: proxy error: dial tcp 127.0.0.1:8090: can't assign requested\naddress\n...\n\nfrom the proxy code and of course HTTP errors as seen by wrk. \n\nMy theory, after going through the http.Transport, is that when the number of requests/s\nto the proxy goes up, the small amount of bookkeeping that is required to recycle a\nconnection (putIdleConn etc) starts taking just long enough that the next request in the\npipeline gets in before a connection is idle. The Transport starts Dial:ing, adding more\nconnections to take care of, and it explodes chaotically. I would prefer if it blocked\nand awaited an idle connection instead of Dial:ing at some point.\n\nLine 92, \u0026quot;// TODO: tunable on global max cached connections\u0026quot; seems relevant,\nalthough in my case the tunable should probably be max connections per host instead of\nglobally.\n\nI'll probably take a stab at implementing something like that to fix this (i.e.\nrewriting Transport to limit connections), since I couldn't figure out a way around it\nby just using the available API:s. Unless I seem to have misunderstood something\nobvious...\n\n//jb\u003c/pre\u003e",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LongTerm"
+		},
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 29,
+	"created_at": "2013-11-18T19:40:31Z",
+	"updated_at": "2016-07-07T14:37:20Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

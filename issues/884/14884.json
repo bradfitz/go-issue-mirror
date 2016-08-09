@@ -1,0 +1,25 @@
+{
+	"id": 142156098,
+	"number": 14884,
+	"state": "open",
+	"title": "image: remove bounds check in \"At\" and \"Set\" methods, with re slice",
+	"body": "1. What version of Go are you using (`go version`)?\r\n1.6\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux amd64\r\n\r\nI just saw this https://go-review.googlesource.com/#/c/20654/\r\n\r\nCould we rewrite\r\n```go\r\nfunc (p *RGBA64) RGBA64At(x, y int) color.RGBA64 {\r\n\tif !(Point{x, y}.In(p.Rect)) {\r\n\t\treturn color.RGBA64{}\r\n\t}\r\n\ti := p.PixOffset(x, y)\r\n\treturn color.RGBA64{\r\n\t\tuint16(p.Pix[i+0])\u003c\u003c8 | uint16(p.Pix[i+1]),\r\n\t\tuint16(p.Pix[i+2])\u003c\u003c8 | uint16(p.Pix[i+3]),\r\n\t\tuint16(p.Pix[i+4])\u003c\u003c8 | uint16(p.Pix[i+5]),\r\n\t\tuint16(p.Pix[i+6])\u003c\u003c8 | uint16(p.Pix[i+7]),\r\n\t}\r\n}\r\n```\r\n\r\nto\r\n\r\n```go\r\nfunc (p *RGBA64) RGBA64At(x, y int) color.RGBA64 {\r\n\tif !(Point{x, y}.In(p.Rect)) {\r\n\t\treturn color.RGBA64{}\r\n\t}\r\n\ti := p.PixOffset(x, y)\r\n\ts := p.Pix[i:i+8]\r\n\treturn color.RGBA64{\r\n\t\tuint16(s[0])\u003c\u003c8 | uint16(s[1]),\r\n\t\tuint16(s[2])\u003c\u003c8 | uint16(s[3]),\r\n\t\tuint16(s[4])\u003c\u003c8 | uint16(s[5]),\r\n\t\tuint16(s[6])\u003c\u003c8 | uint16(s[7]),\r\n\t}\r\n}\r\n```\r\n\r\nI did some benchmarks on my package https://github.com/pierrre/imageserver/tree/master/image/internal (that borrows code from `image`).\r\nAnd I see interesting results.",
+	"user": {
+		"login": "pierrre",
+		"id": 131535,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-03-20T11:58:53Z",
+	"updated_at": "2016-03-21T20:44:06Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

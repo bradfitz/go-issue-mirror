@@ -1,0 +1,27 @@
+{
+	"id": 51282900,
+	"number": 4964,
+	"state": "closed",
+	"title": "cmd/gc: escape analysis bug",
+	"body": "\u003cpre\u003e1. What is a short input program that triggers the error?\n\nCompile and run two files a.go and b.go:\n\n//line a.go:1\npackage a\n\nvar global, global2 *int\n\ntype T struct {\n\tPointer *int\n}\n\nfunc dontinline() {}\n\nfunc Store(t *T) {\n\tglobal = t.Pointer\n\tdontinline()\n}\n\nfunc Store2(t *T) {\n\tglobal2 = t.Pointer\n\tdontinline()\n}\n\nfunc Get() *int {\n\treturn global\n}\n\n//line b.go:1\npackage main\n\nimport \u0026quot;./a\u0026quot;\n\nfunc F() {\n\t// store 1 in a.global\n\tx, y := 1, 2\n\tt := a.T{Pointer: \u0026amp;x}\n\ta.Store(\u0026amp;t)\n\t_ = y\n}\n\nfunc G() {\n\t// store 4 in a.global2\n\tx, y := 3, 4\n\tt := a.T{Pointer: \u0026amp;y}\n\ta.Store2(\u0026amp;t)\n\t_ = x\n}\n\nfunc main() {\n\tF()\n\tG()\n\tp := a.Get()\n\tn := *p\n\tif n != 1 {\n\t\tprintln(n, \u0026quot;!= 1\u0026quot;)\n\t\tpanic(\u0026quot;n != 1\u0026quot;)\n\t}\n}\n\n2. What is the program output?\n\nExpected to run without errors.\n\nInstead:\n\n3 != 1\npanic: n != 1\n\ngoroutine 1 [running]:\nmain.main()\n\t/home/remy/travail/go/src/testesc2/b.go:28 +0x9e\n\ngoroutine 2 [syscall]:\ncreated by runtime.main\n\t/usr/lib/go/src/pkg/runtime/proc.c:221\n\n3. What version of the compiler are you using?  (Run it with the -V flag.)\n\nIssue exists with both go1.0.3 and tip.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:26:26Z",
+	"created_at": "2013-03-02T15:00:50Z",
+	"updated_at": "2016-06-24T22:34:42Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

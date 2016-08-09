@@ -1,0 +1,28 @@
+{
+	"id": 122172457,
+	"number": 13621,
+	"state": "closed",
+	"title": "net/http: more Method==\"\" vs Method==\"GET\" inconsistency",
+	"body": "These diffs look like they might be needed. I looked at code mentioning the string `\"GET\"`.\n\n```\ndiff --git a/src/net/http/client.go b/src/net/http/client.go\nindex c3f849e..3472cd4 100644\n--- a/src/net/http/client.go\n+++ b/src/net/http/client.go\n@@ -179,10 +179,11 @@ func (c *Client) send(req *Request) (*Response, error) {\n //\n // Generally Get, Post, or PostForm will be used instead of Do.\n func (c *Client) Do(req *Request) (resp *Response, err error) {\n-\tif req.Method == \"\" || req.Method == \"GET\" || req.Method == \"HEAD\" {\n+\tmethod := valueOrDefault(req.Method, \"GET\")\n+\tif method == \"GET\" || method == \"HEAD\" {\n \t\treturn c.doFollowingRedirects(req, shouldRedirectGet)\n \t}\n-\tif req.Method == \"POST\" || req.Method == \"PUT\" {\n+\tif method == \"POST\" || method == \"PUT\" {\n \t\treturn c.doFollowingRedirects(req, shouldRedirectPost)\n \t}\n \treturn c.send(req)\ndiff --git a/src/net/http/request.go b/src/net/http/request.go\nindex 9f74042..cb62ab9 100644\n--- a/src/net/http/request.go\n+++ b/src/net/http/request.go\n@@ -1054,9 +1054,11 @@ func (r *Request) closeBody() {\n }\n \n func (r *Request) isReplayable() bool {\n-\treturn r.Body == nil \u0026\u0026\n-\t\t(r.Method == \"GET\" ||\n-\t\t\tr.Method == \"HEAD\" ||\n-\t\t\tr.Method == \"OPTIONS\" ||\n-\t\t\tr.Method == \"TRACE\")\n+\tif r.Body == nil {\n+\t\tswitch valueOrDefault(r.Method, \"GET\") {\n+\t\tcase \"GET\", \"HEAD\", \"OPTIONS\", \"TRACE\":\n+\t\t\treturn true\n+\t\t}\n+\t}\n+\treturn false\n }\ndiff --git a/src/net/http/transfer.go b/src/net/http/transfer.go\nindex 38b6f67..720c58c 100644\n--- a/src/net/http/transfer.go\n+++ b/src/net/http/transfer.go\n@@ -56,7 +56,7 @@ func newTransferWriter(r interface{}) (t *transferWriter, err error) {\n \t\tif rr.ContentLength != 0 \u0026\u0026 rr.Body == nil {\n \t\t\treturn nil, fmt.Errorf(\"http: Request.ContentLength=%d with nil Body\", rr.ContentLength)\n \t\t}\n-\t\tt.Method = rr.Method\n+\t\tt.Method = valueOrDefault(rr.Method, \"GET\")\n \t\tt.Body = rr.Body\n \t\tt.BodyCloser = rr.Body\n \t\tt.ContentLength = rr.ContentLength\n```\n\nBrad, can you look and pick up the ones that are real bugs, if any? Thanks.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-17T20:22:11Z",
+	"created_at": "2015-12-15T01:40:21Z",
+	"updated_at": "2015-12-17T20:22:11Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

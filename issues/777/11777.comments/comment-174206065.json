@@ -1,0 +1,12 @@
+{
+	"id": 174206065,
+	"body": "\u003e Doing string(byteSlice) == str is inefficient as it copies the slice first into a new string\r\n\r\nI don't believe this is true. If you disassemble\r\n```\r\nvar bs []byte = []byte{104, 97, 108, 108, 111}\r\n\r\nfunc main() {\r\n\tx := string(bs) == \"hello\"\r\n\tprintln(x)\r\n}\r\n```\r\n\r\nyou'll see that `string(bs)` is compiled to a call to `runtime.slicebytetostringtmp`, which, as you can see, does not copy the data:\r\n\r\n```\r\nfunc slicebytetostringtmp(b []byte) string {\r\n\t// Return a \"string\" referring to the actual []byte bytes.\r\n\t// This is only for use by internal compiler optimizations\r\n\t// that know that the string form will be discarded before\r\n\t// the calling goroutine could possibly modify the original\r\n\t// slice or synchronize with another goroutine.\r\n\t// First such case is a m[string(k)] lookup where\r\n\t// m is a string-keyed map and k is a []byte.\r\n\t// Second such case is \"\u003c\"+string(b)+\"\u003e\" concatenation where b is []byte.\r\n\t// Third such case is string(b)==\"foo\" comparison where b is []byte.\r\n\r\n\tif raceenabled \u0026\u0026 len(b) \u003e 0 {\r\n\t\tracereadrangepc(unsafe.Pointer(\u0026b[0]),\r\n\t\t\tuintptr(len(b)),\r\n\t\t\tgetcallerpc(unsafe.Pointer(\u0026b)),\r\n\t\t\tfuncPC(slicebytetostringtmp))\r\n\t}\r\n\tif msanenabled \u0026\u0026 len(b) \u003e 0 {\r\n\t\tmsanread(unsafe.Pointer(\u0026b[0]), uintptr(len(b)))\r\n\t}\r\n\treturn *(*string)(unsafe.Pointer(\u0026b))\r\n}\r\n```\r\n\r\nBenchmarking also shows that there's almost no difference between the cast and a call to `bytes.Equal`. On tip:\r\n```\r\nvar res bool\r\n\r\nfunc BenchmarkStrCast(b *testing.B) {\r\n\ts1 := strings.Repeat(\"a\", 1000)\r\n\tb2 := []byte(strings.Repeat(\"a\", 999) + \"b\")\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tres = string(b2) == s1\r\n\t}\r\n}\r\n\r\nfunc BenchmarkBytesCmp(b *testing.B) {\r\n\tb1 := []byte(strings.Repeat(\"a\", 1000))\r\n\tb2 := []byte(strings.Repeat(\"a\", 999) + \"b\")\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tres = bytes.Equal(b1, b2)\r\n\t}\r\n}\r\n```\r\n\r\ngives\r\n```\r\nBenchmarkStrCast-4 \t50000000\t        28.5 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkBytesCmp-4\t50000000\t        27.1 ns/op\t       0 B/op\t       0 allocs/op\r\n\r\n```",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-23T17:32:04Z",
+	"updated_at": "2016-01-23T17:32:04Z"
+}

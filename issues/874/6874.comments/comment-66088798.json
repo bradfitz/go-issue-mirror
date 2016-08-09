@@ -1,0 +1,12 @@
+{
+	"id": 66088798,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eI think I have an idea what is going wrong. Applying this diff\n\ndiff -r d2e78612ed03 src/pkg/time/internal_test.go\n--- a/src/pkg/time/internal_test.go     Fri Jan 31 17:43:46 2014 +1100\n+++ b/src/pkg/time/internal_test.go     Sat Feb 01 13:44:06 2014 +1100\n@@ -70,6 +70,10 @@\n        // any more timers (they might hang due to the same bug we're\n        // now testing).\n        stop := Now().Add(timeout)\n+       var count int\n+       defer func() {\n+               print(\"count \"); println(count)\n+       }()\n        for {\n                select {\n                case \u0026lt;-t.C:\n@@ -78,6 +82,7 @@\n                        if Now().After(stop) {\n                                return errors.New(\"runtime timer stuck: overflow in addtimer\")\n                        }\n+                       count++\n                        runtime.Gosched()\n                }\n        }\n\nThen observing the value of count\n\ndeadwood(~/go/src/pkg/time) % while ./time.test ; do true ; done\ncount 19\nPASS\ncount 18\nPASS\ncount 18\nPASS\n\nWe see that runtime.Gosched() does not yield to the timer goroutine immediately. However\n18 iterations of the loop is sufficient to get the timer goroutine on the scheduler and\nsend the value down t.C.\n\nHowever if the machine is loaded, as it will be by default when go test -short std runs,\nthe results become unpredictable.\n\n^Cdeadwood(~/go/src/pkg/time) % while ./time.test ; do true ; done\ncount 614\nPASS\ncount 1\nPASS\ncount 860\nPASS\ncount 343\nPASS\ncount 2\n\nI don't believe runtime.Gosched is yielding to the waiting goroutine.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-01T03:54:30Z",
+	"updated_at": "2014-12-22T06:30:24Z"
+}

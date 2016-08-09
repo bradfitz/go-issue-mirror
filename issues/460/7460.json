@@ -1,0 +1,30 @@
+{
+	"id": 51286742,
+	"number": 7460,
+	"state": "closed",
+	"title": "runtime/race: false positive in reflect during net/rpc test",
+	"body": "\u003cpre\u003eSee \u003ca href=\"http://build.golang.org/log/b2cd252bfeae7df4a89e41af488bffd8104f3228\"\u003ehttp://build.golang.org/log/b2cd252bfeae7df4a89e41af488bffd8104f3228\u003c/a\u003e for an example.\n\nIt says that the race is on the writes to e.word, but e.word is writing to the local\nvariable i, which is on the stack. 'go build -gcflags -m reflect' confirms this:\n\n./value.go:128: packEface \u0026amp;i does not escape\n\nHere is the race report:\n\nWARNING: DATA RACE\nWrite by goroutine 16:\n  reflect.packEface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:153 +0x27d\n  reflect.valueInterface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:1081 +0x28c\n  reflect.Value.Interface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:1051 +0x7b\n  net/rpc.(*service).call()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/net/rpc/server.go:389 +0x3dc\n\nPrevious write by goroutine 62:\n  reflect.packEface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:153 +0x27d\n  reflect.valueInterface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:1081 +0x28c\n  reflect.Value.Interface()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/reflect/value.go:1051 +0x7b\n  net/rpc.(*service).call()\n      /Users/builder/workspace/darwin-amd64-race-cheney-2b66d388d1af/go/src/pkg/net/rpc/server.go:389 +0x3dc\n\nThis seems like a bug in the race detector. Why is it reporting a race on a stack\nvariable?\nIs it that the two goroutines ran one after the other and wrote to the same location?\nThat's a little surprising to show up as a false positive.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:41:29Z",
+	"created_at": "2014-03-04T05:22:46Z",
+	"updated_at": "2016-06-25T01:28:59Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

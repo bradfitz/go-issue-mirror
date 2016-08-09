@@ -1,0 +1,22 @@
+{
+	"id": 71724982,
+	"number": 10600,
+	"state": "closed",
+	"title": "runtime: sysmon can invoke write barriers without a P",
+	"body": "sysmon runs without a P (that is, getg().m.p.ptr() == nil), but I believe it can invoke write barriers in certain unlikely (but possible) scenarios. If this happens, the write barrier will panic with \"writebarrierptr_nostore1 called with mp.p == nil\".\r\n\r\nThe common paths are all free of write barriers (sysmon itself, retake, and most of the functions called directly by them), but there are calls to record trace events, which are known to have write barriers when the trace buffer fills up, and other complex things like netpoll and checkdead that may not have write barriers but it's not at all obvious to me.\r\n\r\nI don't know what the answer to this is. Possibly sysmon needs something like we were considering for the GC: a special P that is dedicated to sysmon and doesn't count against GOMAXPROCS. It would also need modifications to at least its lengthy usleep calls, which wouldn't be interruptable by STW (but it doesn't matter right now since there's no P to stop anyway).\r\n\r\nThe most recent specific instance of this I can find was on netbsd-386-minux in commit 41dbcc1:\r\n  http://build.golang.org/log/c5098592bfbca60c15071fdf60427372c480a396\r\nThis specific one has long since been fixed, but shows evidence of sysmon running without a P.\r\n\r\n@dvyukov @RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-11-19T21:17:44Z",
+	"created_at": "2015-04-28T22:29:00Z",
+	"updated_at": "2015-11-19T21:17:44Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

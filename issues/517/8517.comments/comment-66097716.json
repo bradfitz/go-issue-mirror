@@ -1,0 +1,12 @@
+{
+	"id": 66097716,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eAlex, I think the issue is here:\n\n// Called to initialize a new m (including the bootstrap m).\n// Called on the new thread, can not allocate memory.\nvoid\nruntime·minit(void)\n{\n\tvoid *thandle;\n\n\t// -1 = current process, -2 = current thread\n\truntime·stdcall(runtime·DuplicateHandle, 7,\n\t\t(uintptr)-1, (uintptr)-2, (uintptr)-1, \u0026thandle,\n\t\t(uintptr)0, (uintptr)0, (uintptr)DUPLICATE_SAME_ACCESS);\n\truntime·atomicstorep(\u0026g-\u003em-\u003ethread, thandle);\n}\n\n// Called from dropm to undo the effect of an minit.\nvoid\nruntime·unminit(void)\n{\n}\n\nWe leak the thread handle during each C-\u003eGo callback on external thread.\nWe need to close the handle. We can't keep it for later as, I think, extram's are reused\nacross different threads.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-08-12T08:53:12Z",
+	"updated_at": "2014-12-08T10:47:17Z"
+}

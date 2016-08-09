@@ -1,0 +1,30 @@
+{
+	"id": 167523952,
+	"number": 16497,
+	"state": "open",
+	"title": "encoding/xml: Panic when unmarshaling specially crafted structs",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n`go version devel +67f799c Tue Jul 26 00:18:42 2016 +0000 linux/amd64`\r\n\r\nBut it also affects the version of 1.6 on the playground at the moment.\r\n\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/home/sam/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/sam\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/sam/src/go\"\r\nGOTOOLDIR=\"/home/sam/src/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build800221808=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nWhen attempting to unmarshal XML into a struct that is composed of another struct that has an XMLName field that has a field number greater than or equal to the number of fields in the original struct, `finfo.Value` panics because reflect tries to get the value of the field in the parent struct at the location of `XMLName` in the child struct (which has a field index that is out of bounds when applied to the parent struct).\r\n\r\nFor example, this contrived example panics:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/xml\"\r\n)\r\n\r\ntype IQ struct {\r\n\tType    string   `xml:\"type,attr\"`\r\n\tXMLName xml.Name `xml:\"iq\"`\r\n}\r\n\r\nfunc main() {\r\n\tresp := struct {\r\n\t\tIQ\r\n\t}{}\r\n\txml.Unmarshal([]byte(`\u003ciq/\u003e`), \u0026resp)\r\n}\r\n```\r\n\r\n([Playground](https://play.golang.org/p/XY2iCSSduO))\r\n\r\nbut if we move the fields around:\r\n\r\n```go\r\ntype IQ struct {\r\n\tXMLName xml.Name `xml:\"iq\"`\r\n\tType    string   `xml:\"type,attr\"`\r\n}\r\n```\r\n\r\nit works ([Playground](https://play.golang.org/p/EUMfU7TFyi))",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-07-26T05:28:54Z",
+	"updated_at": "2016-07-27T02:23:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

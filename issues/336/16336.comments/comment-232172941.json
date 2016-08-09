@@ -1,0 +1,12 @@
+{
+	"id": 232172941,
+	"body": "Hello @leonklingele, I just took out the length check out in crypto/hmac and it seems it suffers when the lengths are unequal due to that obligatory function overhead of invoking `subtle.ConstantTimeCompare`. See the diffs below\r\n### Benchmark results\r\n```shell\r\nname                      old time/op    new time/op    delta\r\nHMACSHA256_1K-4             4.26µs ± 0%    4.22µs ± 0%   ~     (p=1.000 n=1+1)\r\nHMACSHA256_32-4             1.11µs ± 0%    1.09µs ± 0%   ~     (p=1.000 n=1+1)\r\nHMACEqualEqualLength-4      14.4ns ± 0%    13.5ns ± 0%   ~     (p=1.000 n=1+1)\r\nHMACEqualUnequalLength-4    3.41ns ± 0%    6.38ns ± 0%   ~     (p=1.000 n=1+1)\r\n\r\nname                      old speed      new speed      delta\r\nHMACSHA256_1K-4            241MB/s ± 0%   242MB/s ± 0%   ~     (p=1.000 n=1+1)\r\nHMACSHA256_32-4           28.7MB/s ± 0%  29.3MB/s ± 0%   ~     (p=1.000 n=1+1)\r\n```\r\n\r\n#### Diffs\r\n```diff\r\ndiff --git a/src/crypto/hmac/hmac.go b/src/crypto/hmac/hmac.go\r\nindex a748107..9ef9c44 100644\r\n--- a/src/crypto/hmac/hmac.go\r\n+++ b/src/crypto/hmac/hmac.go\r\n@@ -94,5 +94,5 @@ func Equal(mac1, mac2 []byte) bool {\r\n \t// We don't have to be constant time if the lengths of the MACs are\r\n \t// different as that suggests that a completely different hash function\r\n \t// was used.\r\n-\treturn len(mac1) == len(mac2) \u0026\u0026 subtle.ConstantTimeCompare(mac1, mac2) == 1\r\n+\treturn subtle.ConstantTimeCompare(mac1, mac2) == 1\r\n }\r\n```\r\n\r\n```diff\r\ndiff --git a/src/crypto/hmac/hmac_test.go b/src/crypto/hmac/hmac_test.go\r\nindex aac9aa9..c2ae170 100644\r\n--- a/src/crypto/hmac/hmac_test.go\r\n+++ b/src/crypto/hmac/hmac_test.go\r\n@@ -594,3 +594,19 @@ func BenchmarkHMACSHA256_32(b *testing.B) {\r\n \t\tbuf[0] = mac[0]\r\n \t}\r\n }\r\n+\r\n+func BenchmarkHMACEqualEqualLength(b *testing.B) {\r\n+\tbs1 := []byte(\"testing1\")\r\n+\tbs2 := []byte(\"tested1a\")\r\n+\tfor i := 0; i \u003c b.N; i++ {\r\n+\t\t_ = Equal(bs1, bs2)\r\n+\t}\r\n+}\r\n+\r\n+func BenchmarkHMACEqualUnequalLength(b *testing.B) {\r\n+\tbs1 := []byte(\"testing1\")\r\n+\tbs2 := []byte(\"tested1\")\r\n+\tfor i := 0; i \u003c b.N; i++ {\r\n+\t\t_ = Equal(bs1, bs2)\r\n+\t}\r\n+}\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-12T20:38:15Z",
+	"updated_at": "2016-07-12T20:38:15Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51279760,
+	"number": 2830,
+	"state": "closed",
+	"title": "net: SO_REUSEADDR, PORT wild use for active open socket breaks websocket app on openbsd",
+	"body": "\u003cpre\u003e-- from code review 5574063: net: disable SO_REUSEADDR and SO_REUSEPORT on openbsd\n(\u003ca href=\"https://golang.org/issue/5574063\"\u003eissue #5574063\u003c/a\u003e) on golang-dev\n\nSorry, I should have been more specific here. The problem is not due\nto use of SO_REUSEADDR on the listening socket - the issue is that we\nare setting it on all sockets. As a result, the client performs a\nconnect() which results in the allocation of a randomised port number\n- since SO_REUSEADDR/SO_REUSEPORT are enabled the port number is\npermitted to already be in use and the normal duplication checks are\nnot performed. We then attempt to establish a TCP connection using\nthis already in use port number, which fails:\n\n 19425 test.out CALL  socket(PF_INET,SOCK_STREAM,IPPROTO_IP)\n 19425 test.out RET   socket 10/0xa\n 19425 test.out CALL  fcntl(0xa,F_SETFD,FD_CLOEXEC)\n 19425 test.out RET   fcntl 0\n 19425 test.out CALL  setsockopt(0xa,SOL_SOCKET,SO_REUSEADDR,0xf84019ea00,0x4)\n 19425 test.out RET   setsockopt 0\n 19425 test.out CALL  setsockopt(0xa,SOL_SOCKET,SO_REUSEPORT,0xf84019ea08,0x4)\n 19425 test.out RET   setsockopt 0\n 19425 test.out CALL  setsockopt(0xa,SOL_SOCKET,SO_BROADCAST,0xf84019ea10,0x4)\n 19425 test.out RET   setsockopt 0\n 19425 test.out CALL  fcntl(0xa,F_GETFL,0)\n 19425 test.out RET   fcntl 2\n 19425 test.out CALL  fcntl(0xa,F_SETFL,0x6\u0026lt;O_RDWR|O_NONBLOCK\u0026gt;)\n 19425 test.out RET   fcntl 0\n 19425 test.out CALL  connect(0xa,0xf840186768,0x10)\n 19425 test.out STRU  struct sockaddr { AF_INET, 127.0.0.1:43658 }\n 19425 test.out RET   connect -1 errno 48 Address already in use\n\nThe other (and probably better) solution is to only set\nSO_REUSEADDR/SO_REUSEPORT on sockets that will be listening, probably\nvia the addition of a func setDefaultListenSockopts(fd *netFD) that\nwould be called from ListenTCP() et al.\u003c/pre\u003e",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:14:58Z",
+	"created_at": "2012-02-02T03:10:24Z",
+	"updated_at": "2016-06-24T21:25:03Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

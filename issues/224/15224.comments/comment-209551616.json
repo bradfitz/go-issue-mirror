@@ -1,0 +1,12 @@
+{
+	"id": 209551616,
+	"body": "Looking at `net/fd_unix.go`,\r\n\r\n```go\r\nfunc (fd *netFD) Read(p []byte) (n int, err error) {\r\n        if err := fd.readLock(); err != nil {\r\n                return 0, err\r\n        }\r\n        defer fd.readUnlock()\r\n        if err := fd.pd.prepareRead(); err != nil {\r\n                return 0, err\r\n        }\r\n        for {\r\n                n, err = syscall.Read(fd.sysfd, p)\r\n                if err != nil {\r\n                        n = 0\r\n                        if err == syscall.EAGAIN {\r\n                                if err = fd.pd.waitRead(); err == nil {\r\n                                        continue\r\n                                }\r\n                        }\r\n                }\r\n                err = fd.eofError(n, err)\r\n                break\r\n        }\r\n        if _, ok := err.(syscall.Errno); ok {\r\n                err = os.NewSyscallError(\"read\", err)\r\n        }\r\n        return\r\n}\r\n```\r\n\r\nPerhaps we could guarantee the behavior of a `net.TCPConn.Read(nil)`, and lock in the behavior that it goes all the way to a `syscall.Read` and no fast path does a `len(p) == 0` check?\r\n\r\nThen the question is what the various kernels do with a zero byte `read` system call on a TCP socket do. Maybe they return something useful?\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-13T17:18:26Z",
+	"updated_at": "2016-04-13T17:18:26Z"
+}

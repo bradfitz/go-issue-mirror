@@ -1,0 +1,28 @@
+{
+	"id": 51278109,
+	"number": 1644,
+	"state": "closed",
+	"title": "Sleep should not use one thread per running call",
+	"body": "\u003cpre\u003eWhen there are many goroutines that are likely to block on syscalls new OS threads are\nspawned uncontrollably, which can lead to whole program going down if new thread cannot\nbe created anymore. For example, on Mac OS X 10.6 go fails to create 132nd thread. There\nneeds to be a way to limit maximum number of OS threads that go can create to doesn't\nget out of control.\n\nThe attached patch introduces GOMAXTHREADS environment variable that limits maximum\nnumber of threads. The minimum OS threads that simple go programs need appears to be 2\n(that's why this minimum is hardcoded), to successfully complete the test suite\nGOMAXTHREADS needs to be at least 3. If not specified or 0 (default) then the behavior\ndoesn't change and means \u0026quot;unlimited\u0026quot;.\n\nThe patch is very simple and not very efficient. For example it drains sched queue and\nif there are many scheduled goroutines, but small number of OS threads, constant\nrescheduling is likely a performance problem, but I just didn't want to change existing\nfunctions too much, and it's more proof of concept.\n\nThere's also a problem when runtime·iscgo is true it leads to runtime·throw(\u0026quot;all\ngoroutines are asleep - deadlock!\u0026quot;), I don't know why, so when runtime·iscgo is\ntrue my patch simply uses unlimited number of OS threads.\n\nA program that can illustrate the problem is very simple:\n\npackage main\n\nimport (\n    \u0026quot;fmt\u0026quot;\n    \u0026quot;time\u0026quot;\n)\n\nfunc main() {\n  for i := 0; i \u0026lt; 256; i++ {\n    go func(i int) {\n      fmt.Printf(\u0026quot;Sleeping in %d\\n\u0026quot;, i)\n      time.Sleep(60*1e9)\n    }(i)\n    \u0026lt;- time.After(100*1e6)\n  }\n}\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1644/0/go-maxthreads.diff\"\u003ego-maxthreads.diff\u003c/a\u003e (2231 bytes)",
+	"user": {
+		"login": "snaury",
+		"id": 53117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:09:14Z",
+	"created_at": "2011-03-27T16:44:30Z",
+	"updated_at": "2016-06-24T19:26:56Z"
+}

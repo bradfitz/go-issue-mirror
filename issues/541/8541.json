@@ -1,0 +1,27 @@
+{
+	"id": 51288347,
+	"number": 8541,
+	"state": "closed",
+	"title": "encoding/asn1: UTF8String being unmarshalled as PrintableString and failing",
+	"body": "\u003cpre\u003e\u0026gt; What does 'go version' print?\n\ngo version go1.3 linux/amd64\n\n\u0026gt; What steps reproduce the problem?\n\nAttempt to unmarshal a string with non-PrintableString characters in a field with a\ncontext-specific tag and no EXPLICIT: \u003ca href=\"http://play.golang.org/p/5bGjMTiq93\"\u003ehttp://play.golang.org/p/5bGjMTiq93\u003c/a\u003e\n\n\u0026gt; What happened?\n\nThe Broken case returns an error.\n\n\u0026gt; What should have happened instead?\n\nBoth cases should work. Most unexpected, note that the \u0026quot;utf8\u0026quot; parameter has no\neffect when \u0026quot;tag:1\u0026quot; is present. Adding \u0026quot;explicit\u0026quot; makes Broken work.\n\nLooking at the marshalling output, the Works does properly produce a UTF8String.\n\nI think the problem is that the switch in\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/encoding/asn1/asn1.go?name=go1.3.1#798\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/encoding/asn1/asn1.go?name=go1.3.1#798\u003c/a\u003e\nis seeing tagPrintableString because\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/encoding/asn1/asn1.go?name=go1.3.1#643\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/encoding/asn1/asn1.go?name=go1.3.1#643\u003c/a\u003e\ndoesn't match in the case of non-universal tags. I see no reference to param.stringType\nin the unmarshaller, which is an indication this code does not handle the (non-explicit)\ncontext-specific tags case.\n\nI propose the following patch, falling back to using param.stringType if the on-wire tag\ndoesn't provide a clue.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8541/0/asn1printablestring.diff\"\u003easn1printablestring.diff\u003c/a\u003e (1451 bytes)",
+	"user": {
+		"login": "tommie",
+		"id": 216382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:47:28Z",
+	"created_at": "2014-08-16T20:37:55Z",
+	"updated_at": "2016-06-25T01:39:42Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

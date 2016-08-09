@@ -1,0 +1,12 @@
+{
+	"id": 112946231,
+	"body": "I mean the following situation.\r\n\r\nAssuming that GC thread can see invalid spans for some pointers.\r\n\r\nGC does the following check:\r\n\r\nif s == nil || pageID(k) \u003c s.start || p \u003e= s.limit || s.state != mSpanInUse {\r\n\r\nYour explanation assumes that this check can yield only true for invalid spans. And this is indeed OK as of now (GC will ignore the pointer, later the pointer will be picked up from write buffer and scanned).\r\n\r\nMy concern is the case when this check yields _false_ for invalid spans (assuming that an invalid span can have unpredictable values, why not?). And this case looks very-very bad to me, because the invalid span can have a wrong sizeclass, which in turn will lead to incorrect inference of object base and size, which I presume can lead to bad things (I have not looked at the latest code, so I can't say what exactly are that bad things).\r\n\r\nMy question is: are you sure that the check cannot yield false for invalid spans?\r\nI don't see any obvious reason for that.\r\n\r\nI don't know yet whether a barrier at the end of malloc fixes it or not. For now I am just trying to understand the problems that we are trying to solve.\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-17T20:49:54Z",
+	"updated_at": "2015-06-17T20:49:54Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51278079,
+	"number": 1626,
+	"state": "closed",
+	"title": "encoding/gob: nil interface passed to userType",
+	"body": "\u003cpre\u003eThis line in type.go:\n\n\ttInterface = bootstrapType(\u0026quot;interface\u0026quot;, interface{}(nil), 8)\n\npasses a nil to bootstrapType, which calls reflect.NewValue,\nwhich returns a nil reflect.Type.  This manages to pass all the\nway through validUserType without causing a crash, because the\ntype assertion comma-ok form simply fails if an interface is nil.\nSo the code ends up filling in userTypeCache[nil] with apparently\nno ill effect.\n\nStill it's probably not the intent.  One way to address this would\nbe to pass pointers to bootstrapType:\n\n\nvar (\n\t// Primordial types, needed during initialization.\n\ttBool      = bootstrapType(\u0026quot;bool\u0026quot;, new(bool), 1)\n\ttInt       = bootstrapType(\u0026quot;int\u0026quot;, new(int), 2)\n\ttUint      = bootstrapType(\u0026quot;uint\u0026quot;, new(uint), 3)\n\ttFloat     = bootstrapType(\u0026quot;float\u0026quot;, new(float64), 4)\n\ttBytes     = bootstrapType(\u0026quot;bytes\u0026quot;, new([]byte), 5)\n\ttString    = bootstrapType(\u0026quot;string\u0026quot;, new(string), 6)\n\ttComplex   = bootstrapType(\u0026quot;complex\u0026quot;, new(complex128), 7)\n\ttInterface = bootstrapType(\u0026quot;interface\u0026quot;, new(interface{}), 8)\n\t// Reserve some Ids for compatible expansion\n\ttReserved7 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r7 int }), 9)\n\ttReserved6 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r6 int }), 10)\n\ttReserved5 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r5 int }), 11)\n\ttReserved4 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r4 int }), 12)\n\ttReserved3 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r3 int }), 13)\n\ttReserved2 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r2 int }), 14)\n\ttReserved1 = bootstrapType(\u0026quot;_reserved1\u0026quot;, new(struct{ r1 int }), 15)\n)\n\nand then the first line of bootstrapType would be\n\n\trt := reflect.Typeof(e).(*reflect.PtrType).Elem()\n\nI tried this and it still passes the unit tests but I don't know\nif there is some subtle effect that is not being caught.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:09:09Z",
+	"created_at": "2011-03-19T03:05:04Z",
+	"updated_at": "2016-06-24T19:26:44Z"
+}

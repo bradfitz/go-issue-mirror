@@ -1,0 +1,36 @@
+{
+	"id": 51283894,
+	"number": 5605,
+	"state": "closed",
+	"title": "syscall: invalid computation of next available file descriptor in exec_plan9.go",
+	"body": "by **lucio.dere**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nThis is build time problem: the test sequence fails irregularly with a bad file\ndescriptor for the fork/exec operation.\n\nWhat is the expected output?\n\nSuccessful loading of one or more test programs.\n\nWhat do you see instead?\n\nAn error report on failure to load because of an invalid file descriptor.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\nThe Go build suite, in this case for the 386 architecture.\n\nWhich operating system are you using?\n\nPlan 9.\n\nWhich version are you using?  (run 'go version')\n\n\u0026quot;tip\u0026quot;\n\nDetails:\n\nThe current code in the module from around line 186 has been declared\nflawed in that it seems to handle some conditions incorrectly.\n\nI'd like to propose the following correction - based on the assumption\nthat the comment is correct:\n\n        // Guard against side effects of shuffling fds below.\n        // Make sure that nextfd is beyond any currently open files so\n        // that we can't run the risk of overwriting any of them.\n        nextfd = len(attr.Files)\n        fd := make([]int, nextfd)\n        for i, ufd := range attr.Files {\n                if nextfd \u0026lt; int(ufd) {\n                        nextfd = int(ufd) + 1\n                }\n                fd[i] = int(ufd)\n        }\n        fd = append(fd, nextfd)\n\nI'm busy with a complicated code synchronisation problem right now, so\nI can't test my proposal immediately.  Anybody is welcome to address\nthe problem in my stead.\n\nLucio.\n\nPS: Actually, I think the above can be programmed more defensively,\nwithout making any assumptions about the relationship between the\nnumber of fds and their values.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Plan9"
+		},
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"closed_at": "2016-05-05T21:58:30Z",
+	"created_at": "2013-05-31T14:53:46Z",
+	"updated_at": "2016-05-05T21:58:30Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

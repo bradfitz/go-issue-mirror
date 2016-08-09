@@ -1,0 +1,28 @@
+{
+	"id": 103778192,
+	"number": 12387,
+	"state": "closed",
+	"title": "x/net/trace: Example has errors",
+	"body": "```go\r\n        // A Fetcher fetches URL paths for a single domain.\r\n\ttype Fetcher struct {\r\n\t\tdomain string\r\n\t\tevents *trace.EventLog\r\n\t}\r\n```\r\n\r\nThat `*` was not meant to be there, pointers to interfaces are rare.\r\n\r\n```go\r\nfunc (f *Fetcher) Fetch(path string) (string, error) {\r\n\tresp, err := http.Get(\"http://\" + domain + \"/\" + path)\r\n```\r\n\r\n`undefined: domain`, should be `f.domain`\r\n\r\n```go\r\nfunc (f *Fetcher) Fetch(path string) (string, error) {\r\n...\r\n\tif err != nil {\r\n\t\tf.events.Errorf(\"Get(%q) = %v\", path, err)\r\n\t\treturn\r\n\t}\r\n```\r\n\r\nNeeds to be `return \"\", err`\r\n\r\n```go\r\n\tf.events.Printf(\"Get(%q) = %s\", path, resp.Code)\r\n```\r\n\r\nIt's spelled `StatusCode`, but `resp.Status` is probably best for that.\r\n\r\nAlso needs to return something, or have `...` there.\r\n\r\nSame missing return in `Fetcher.Close`, add a `return nil`.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsymonds",
+		"id": 31506,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-29T23:03:26Z",
+	"created_at": "2015-08-28T19:10:23Z",
+	"updated_at": "2015-08-29T23:03:26Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

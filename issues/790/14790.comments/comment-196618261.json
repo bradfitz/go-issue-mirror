@@ -1,0 +1,12 @@
+{
+	"id": 196618261,
+	"body": "@alexbrainman Thanks. Indeed, it seems that for some reason we are sleeping for a tick instead of scheduling a ready goroutine in some code path.\r\n\r\nI played around with the runtime a bit, and I observed that if I removed the usleep in sysmon(), the performance got significantly (100x?) better. Of course, the usleep in sysmon() is there for a reason, so this is not a fix, but it might help with the investigation. I don't fully understand what sysmon's role is, but I think it's responsible for deciding that the syscall is going to take a while and that another goroutine should be scheduled to run.\r\n\r\nIf that's the case, I guess the problem here is that the syscall is blocked until the goroutine gets to run, but the runtime has no way of knowing that and has to apply this (problematic) heuristic. Perhaps there should be a way to annotate a syscall as blocking, in which case the runtime could immediately schedule another goroutine instead of waiting.\r\n\r\nBut again, I don't really understand the scheduler yet, so I may be off base.",
+	"user": {
+		"login": "jstarks",
+		"id": 9548354,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-15T02:19:08Z",
+	"updated_at": "2016-03-15T02:19:08Z"
+}

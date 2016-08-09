@@ -1,0 +1,12 @@
+{
+	"id": 226440873,
+	"body": "@davecheney \r\n\r\n```php\r\n\tfunc (this *instance) pushMultiMsg(pushList) {\r\n\t\tdefer func() {\r\n\t\t\tthis.model.Close()\r\n\t\t\tif err := recover(); err != nil {\r\n\t\t\t\tlogs.Logger.Critical(err)\r\n\t\t\t}\r\n\t\t}()\r\n\t\t\r\n\t\tpushChans := make(chan bool, 10000)\r\n\t\t\r\n\t\tfor {\r\n\t\t\t//get userId from redis list\r\n\t\t\tuserId := this.model.PopList(pushList)\r\n\t\t\t\r\n\t\t\tif userId == \"\" {\r\n\t\t\t\t// task finish\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t\tpushChans \u003c- true\r\n\t\t\tgo this.concurrentPush(userId)\r\n\t\t}\r\n\t\twaitchan(pushChans)\r\n\t}\r\n\t\r\n\tfunc (this *instance) concurrentPush(userId) {\r\n\t\tclient := \u0026http.Client{}\r\n\t\treq, err := http.NewRequest(\"POST\", 'http://localhost/send', bytes.NewReader(data))\r\n\t\treq.Close = true\r\n\t\treq.Header.Set(\"Content-Type\", \"application/json; charset=utf-8\")\r\n\t\tresp, err := client.Do(req)\r\n\t\tdefer resp.Body.Close()\r\n\t\t\r\n\t\tbody, err := ioutil.ReadAll(resp.Body)\r\n\t\tif err != nil {\r\n\t\t\treturn \r\n\t\t}\r\n\t\t.....\r\n\t}\r\n\t\r\n\tfunc waitchan(pushChans chan bool) {\r\n\t\tfor len(pushChans) \u003e 0 {\r\n\t\t\ttime.Sleep(time.Millisecond * 500)\r\n\t\t}\r\n\t}\r\n```\r\n\r\nRedis infrastructure:\r\n```php\r\nLVS----twemproxy----REDIS\r\n```\r\n\r\nRedis list key structure: \r\n```php\r\npush_list:abc\r\n```\r\n\r\nMy program logic flow:\r\n```php\r\na) get userId from redis list [500000 msg data in list]\r\n\r\nb) use a new goroutine for post data to URL [total 10000 goroutine]\r\n```\r\n\r\n\r\n",
+	"user": {
+		"login": "woria",
+		"id": 19969140,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-16T09:55:53Z",
+	"updated_at": "2016-06-16T09:55:53Z"
+}

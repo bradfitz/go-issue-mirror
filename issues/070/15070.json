@@ -1,0 +1,28 @@
+{
+	"id": 145323724,
+	"number": 15070,
+	"state": "closed",
+	"title": "compress/gzip: Reader incorrectly performs FHCRC check",
+	"body": "Using `go1.6`\r\n\r\n[Example code](https://play.golang.org/p/zrIWo7axXG):\r\n```go\r\nb, _ := hex.DecodeString(\"\" +\r\n\t\"1f8b081200096e8800ff48656c6c6f00\" + // GZIP header\r\n\t\"99d6\" + // header.FHCRC (should cover entire header)\r\n\t\"010000ffff0000000000000000\", // GZIP data\r\n)\r\n\r\nr, err := gzip.NewReader(bytes.NewReader(b))\r\nif err != nil {\r\n\tpanic(err)\r\n}\r\n_ = r\r\n```\r\nThis currently errors with `gzip.ErrHeader`, but should in fact create a gzip.Reader without issue.\r\n\r\nCurrently, Go only performs the CRC over the first 10 bytes of the header. However, RFC 1952, section 3.2.3 says:\r\n\u003e If FHCRC is set, a CRC16 for the gzip header is present, immediately before the compressed data. The CRC16 consists of the two least significant bytes of the CRC32 for **all bytes of the gzip header** up to and not including the CRC16.\r\n\r\nInstead, we should compute the CRC over the whole header.\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-14T23:46:17Z",
+	"created_at": "2016-04-02T01:45:40Z",
+	"updated_at": "2016-04-14T23:46:17Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

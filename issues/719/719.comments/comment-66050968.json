@@ -1,0 +1,12 @@
+{
+	"id": 66050968,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1 by **kkowalczyk**:\n\n\u003cpre\u003eI don't think your expectations are correct because the runtime representation of your\ndata (Bigram type and a \nhash mapping uint to it) is much more expensive than text file, even if we take\nduplicate digrams into account.\n\nFor example, to represent 'this is it', you need 2 Bigram structures + space for hash\ntable. In text, it's just 10 \nbytes.\n\nOn my machine (using 6g i.e. 64-bit), unsafe.Sizeof(Bigram) is 40 bytes, so just to keep\n2 Bigram structures we \nneed 80 bytes. That is just 2 pointers to string objects and uint per Bigram.\n\nString object must be allocated as well. Assuming the most optimistic allocator (no\nper-object overhead, 8-\nbyte alignment), any string less than 8 bytes will take at least 8 bytes, so it's at\nleast 40+2*8 = 56 bytes per \nBigram object.\n\nWith just that we have 10x blowup (112 bytes vs 10 bytes) and I'm making very optimistic\nassumptions about \nhow data is allocated and not counting memory used for the T map.\n\nAlso, asking for memory stats without first forcing GC is probably not very informative\nsince it counts memory \nthat might not be used anymore but hasn't been recycled by GC yet.\n\nAlso, there's much more space efficient representation for calculating frequency of\nbigrams.\n\nBasically, map a string that is word1 + space + word2 (word1 = key, word2 = value in\nyour Bigram structure) \nto an unique, monotonically increasing integer (starting with 0) i.e. wordToArrayIndex\n:= map[uint] string\nUse that integer as an index into a frequency array.\n\nUsing one string that represents bigram (2 words) is more efficient than 2 strings and\nyou can always recover \nthe words from and you'll be able to take advantage of built-in hashing for map instead\nof implementing your \nown.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-05-11T20:21:46Z",
+	"updated_at": "2014-12-08T10:05:37Z"
+}

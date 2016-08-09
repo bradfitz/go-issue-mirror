@@ -1,0 +1,21 @@
+{
+	"id": 51286859,
+	"number": 7545,
+	"state": "open",
+	"title": "cmd/compile: Optimization of array indexing",
+	"body": "by **nicolas.riesco**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat does 'go version' print?\ngo version devel +08dcdcdb757b Thu Mar 13 14:04:29 2014 -0700 linux/amd64\n\nWhat steps reproduce the problem?\nI'm attaching a file with benchmarks to illustrate how the optimization can be achieved.\nIn few words, I'm proposing that loops as this one:\n\n\tfor j := range s {\n\t\ts[j].X, s[j].Y, s[j].Z = 1, 2, 3\n\t}\n\ncould be optimised by the compiler and implemented as:\n\n\tfor j := range s {\n\t\tp := \u0026amp;s[j]\n\t\tp.X, p.Y, p.Z = 1, 2, 3\n\t}\n\nWhat happened?\n\nThe unoptimised benchmarks:\n\n\tBenchmarkLoop       10000        182743 ns/op\n\tBenchmarkLoopLen       10000        170704 ns/op\n\tBenchmarkLoopRange       10000        170395 ns/op\n\nrun slower than the optimised ones:\n\n\tBenchmarkLoopPointer       10000        136950 ns/op\n\tBenchmarkLoopPointerRange       10000        111240 ns/op      \n\nWhat should have happened instead?\n\n\n\nPlease provide any additional information below.\n\nThis optimization is more important that removing bound checks. I've run the benchmarks\nwith and without bound checks and the effect of this optimization is still important:\n\n$ go test -bench=.  loops_test.go\ntesting: warning: no tests to run\nPASS\nBenchmarkLoop       10000        182743 ns/op\nBenchmarkLoopPointer       10000        136950 ns/op\nBenchmarkLoopLen       10000        170704 ns/op\nBenchmarkLoopRange       10000        170395 ns/op\nBenchmarkLoopPointerRange       10000        111240 ns/op\nok      command-line-arguments    7.802s\n\n$ go test -bench=. -gcflags=-B loops_test.go\ntesting: warning: no tests to run\nPASS\nBenchmarkLoop       10000        151952 ns/op\nBenchmarkLoopPointer       10000        123730 ns/op\nBenchmarkLoopLen       10000        134355 ns/op\nBenchmarkLoopRange       10000        134049 ns/op\nBenchmarkLoopPointerRange       10000        110534 ns/op\nok      command-line-arguments    6.620s\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7545/0/loops_test.go\"\u003eloops_test.go\u003c/a\u003e (4393 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2014-03-14T18:20:18Z",
+	"updated_at": "2015-06-08T06:21:42Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

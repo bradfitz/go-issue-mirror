@@ -1,0 +1,32 @@
+{
+	"id": 51287801,
+	"number": 8178,
+	"state": "open",
+	"title": "go/types: maintain \"owner\" information for interface methods and struct fields",
+	"body": "\u003cpre\u003eHi Robert,\n\nin our indexer for Go, when we load (from export data) a package that defines types such\nas the following:\n\n    type T struct { X int }\n    type U T\n    type S U\n\nthere is nothing in the go/types API that allows the client to determine that although\nthe *types.Var for X is a member of S, T and U, it was originally declared beneath T. \n(Underlying() returns the same struct type for S, T and U.)\n\nAn analogous situation holds for interface methods:\n\n   type Closer interface { func Close() error }\n   type WriterCloser interface { Writer; Closer }\n\ni.e. there is no record of the fact that the Close() method was originally declared\nbeneath Closer, not WriterCloser.\n\nThe indexer needs this information because it must invent a globally unique stable name\nfor T.X that relates its definition in this package to its uses in other packages. \nRight now, it picks---consistently but arbitrarily---the lexicographically least name\nfrom the set {S.X, T.X, U.X}, i.e. S.X.  So long as all invocations of go/types use\nexport data that includes S, then all will use the same least name S.X.  However, if the\npackage was loaded from partial export data that does not include the least name, the\nresult is a dangling link.\n\nWhat the indexer needs is that go/types expose some information about the field X that\nallows us to come up with a stable name for it each time we encounter it across\ndifferent invocations of the type checker.  Associating X with its \u0026quot;true\u0026quot;\nowner (T.X) is the most logical approach and will doubtless have benefits for other\napplications, but any stable name could work (e.g. the least name, or some fingerprint).\n\nSo: how should we do this?\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2014-06-10T22:00:31Z",
+	"updated_at": "2015-07-31T17:34:20Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

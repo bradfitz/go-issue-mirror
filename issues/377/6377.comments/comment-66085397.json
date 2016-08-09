@@ -1,0 +1,12 @@
+{
+	"id": 66085397,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7 by **ledangster**:\n\n\u003cpre\u003eaicomman...@gmail.com ... returning nil, nil will not be sufficient as there's seems to\nremain the frame payload which hasn't been skipped, so per my previous message, the\nPongFrame needs to be discarded the similar to PingFrame:\n\ndiff -r 93f5aef8cb25 websocket/hybi.go\n--- a/websocket/hybi.go\tWed Jan 29 10:23:52 2014 +0900\n+++ b/websocket/hybi.go\tWed Feb 26 10:00:05 2014 -0800\n@@ -288,20 +288,21 @@\n \t\thandler.payloadType = frame.PayloadType()\n \tcase CloseFrame:\n \t\treturn nil, io.EOF\n-\tcase PingFrame:\n+\tcase PingFrame, PongFrame:\n \t\tpingMsg := make([]byte, maxControlFramePayloadLength)\n \t\tn, err := io.ReadFull(frame, pingMsg)\n \t\tif err != nil \u0026\u0026 err != io.ErrUnexpectedEOF {\n \t\t\treturn nil, err\n \t\t}\n \t\tio.Copy(ioutil.Discard, frame)\n+\t\tif frame.PayloadType() == PongFrame {\n+\t\t\treturn nil, ErrNotImplemented\n+\t\t}\n \t\tn, err = handler.WritePong(pingMsg[:n])\n \t\tif err != nil {\n \t\t\treturn nil, err\n \t\t}\n \t\treturn nil, nil\n-\tcase PongFrame:\n-\t\treturn nil, ErrNotImplemented\n \t}\n \treturn frame, nil\n }\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-26T18:16:54Z",
+	"updated_at": "2014-12-08T10:35:06Z"
+}

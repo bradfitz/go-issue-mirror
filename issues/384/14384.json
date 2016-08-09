@@ -1,0 +1,22 @@
+{
+	"id": 134631239,
+	"number": 14384,
+	"state": "closed",
+	"title": "runtime·callCgoMmap calls mmap function with misaligned stack",
+	"body": "```\r\n#0  _dl_lookup_symbol_x (undef_name=0xc5f760 \"mmap\", undef_map=0x7ffff7ffe128, ref=ref@entry=0x7fffffffdd20, symbol_scope=0x7ffff7ffe480, version=0x7ffff7fe9108,\r\n    type_class=type_class@entry=1, flags=1, skip_map=0x0) at dl-lookup.c:809\r\n#1  0x00007ffff7de6ea4 in _dl_fixup (l=\u003coptimized out\u003e, reloc_arg=\u003coptimized out\u003e) at ../elf/dl-runtime.c:111\r\n#2  0x00007ffff7def2af in _dl_runtime_resolve_sse () at ../sysdeps/x86_64/dl-trampoline.h:112\r\n#3  0x0000000000829a9c in x_cgo_mmap ()\r\n#4  0x0000000000000000 in ?? ()\r\n.\r\n.\r\n.\r\nrdi            0xc5f760 12973920\r\nrbp            0x7fffffffdcf8   0x7fffffffdcf8\r\nrsp            0x7fffffffdc08   0x7fffffffdc08\r\nr8             0x7ffff7fe9108   140737354043656\r\nr9             0x1      1\r\nr10            0x7ffff7ffe128   140737354129704\r\n.\r\n.\r\n.\r\n   0x00007ffff7de1bd3 \u003c+115\u003e:   addq   $0x1,0x21bd9d(%rip)        # 0x7ffff7ffd978 \u003c_rtld_local+2424\u003e\r\n   0x00007ffff7de1bdb \u003c+123\u003e:   test   %r12,%r12\r\n   0x00007ffff7de1bde \u003c+126\u003e:   mov    %rax,-0xa0(%rbp)\r\n=\u003e 0x00007ffff7de1be5 \u003c+133\u003e:   movaps %xmm0,-0x90(%rbp)\r\n   0x00007ffff7de1bec \u003c+140\u003e:   je     0x7ffff7de1bfb \u003c_dl_lookup_symbol_x+155\u003e\r\n   0x00007ffff7de1bee \u003c+142\u003e:   testl  $0xfffffffa,0x10(%rbp)\r\n```\r\nThe misaligned stack origin is in runtime·callCgoMmap from runtime/sys_linux_amd64.s .\r\n\r\nI observed this behavior with go1.6-rc1 and latest glibc built by latest gcc6  RHBZ https://bugzilla.redhat.com/show_bug.cgi?id=1304591, and I'm not sure that the issue is fixed(correct stack alignment as required by The GNU/Linux x86_64 ABI is guaranteed for the mmap call). But I haven't been able to reproduce it with relased go1.6.  \r\nThere were similar issue for Darwin https://github.com/golang/go/commit/2d916bec968212c69dcff1da4c85943c529a11b5 and Win64 https://github.com/golang/go/issues/8174 .",
+	"user": {
+		"login": "jcajka",
+		"id": 7558856,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-02-20T06:10:28Z",
+	"created_at": "2016-02-18T16:39:07Z",
+	"updated_at": "2016-04-19T23:13:50Z",
+	"milestone": {
+		"id": 1688612,
+		"number": 37,
+		"title": "Go1.6.2"
+	}
+}

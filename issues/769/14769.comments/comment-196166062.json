@@ -1,0 +1,12 @@
+{
+	"id": 196166062,
+	"body": "No, I don't think Russ' article means the deferred functions\nare called after the deferring function returns.\n\nThe deferred functions are tail called by runtime.deferreturn,\nwhich manipulates the return PC so that when the deferred\nfunction returns, it will call the runtime.deferreturn function\nagain, but all these magic happens before the deferring func\nreturns. That is, before the RET instruction of the deferring\nfunction. To put it another way, the rewinding of the call\ninstruction is for the runtime.deferreturn function call, not\nthe call instruction that calls the deferring instruction which\nstill is inside the deferring function.\n\nAs I argued above, there is no way to know if the deferred\nfunctions are called before or after executing the deferring\nfunctions' RET instruction in pure Go.\n\nFor example, another way to implement the defer mechanism\nis to manipulate the return PC of the deferring function to\npoint to runtime.deferproc, and save the original return PC\nin another place for all functions that calls defer. In this\nalternative implementation, the deferred functions will be\ncalled after the deferring function's RET instruction has\nbeen executed.\n\nAs long as the deferred functions are called after the\nreturned values are updated and before the next instruction\nin the calling function executes, it doesn't matter whether\nit's before the return of the deferring function or after.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-14T06:34:15Z",
+	"updated_at": "2016-03-14T06:34:15Z"
+}

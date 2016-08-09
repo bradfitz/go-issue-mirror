@@ -1,0 +1,28 @@
+{
+	"id": 66247605,
+	"number": 10342,
+	"state": "closed",
+	"title": "net/http/httputil: NewSingleHostReverseProxy fails to transparently send requests",
+	"body": "I seems that NewSingleHostReverseProxy does not work, at least not how I would expected it to.\r\nThe program below demonstrates the correct and incorrect behavior.\r\nThe problem is that the director function do not reset the Host field of the request received by the proxy.\r\nThis is ok if the server is used as a real proxy:\r\n\r\n     curl -x http://localhost:8000/ http://golang.org/\r\n\r\nworks perfectly well.\r\nHowever it was my understanding that the goal of NewSingleHostReverseProxy was to transparently proxy requests to a given http server:\r\n\r\n     curl http://localhost:8000/\r\n\r\nwon't work as localhost:8000 is sent as the Host header of the request to the proxied server.\r\n\r\n\tpackage main\r\n\r\n\timport (\r\n\t\t\"fmt\"\r\n\t\t\"net/http\"\r\n\t\t\"net/http/httputil\"\r\n\t\t\"net/url\"\r\n\t\t\"strings\"\r\n\t)\r\n\r\n\tfunc singleJoiningSlash(a, b string) string {\r\n\t\taslash := strings.HasSuffix(a, \"/\")\r\n\t\tbslash := strings.HasPrefix(b, \"/\")\r\n\t\tswitch {\r\n\t\tcase aslash \u0026\u0026 bslash:\r\n\t\t\treturn a + b[1:]\r\n\t\tcase !aslash \u0026\u0026 !bslash:\r\n\t\t\treturn a + \"/\" + b\r\n\t\t}\r\n\t\treturn a + b\r\n\t}\r\n\r\n\tfunc NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {\r\n\t\ttargetQuery := target.RawQuery\r\n\t\tdirector := func(req *http.Request) {\r\n\t\t\treq.URL.Scheme = target.Scheme\r\n\t\t\treq.URL.Host = target.Host\r\n\t\t\treq.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)\r\n\t\t\tfmt.Println(req.Host)\r\n\t\t\t// this fixes the bug\r\n\t\t\treq.Host = \"\"\r\n\t\t\t// --\r\n\t\t\tif targetQuery == \"\" || req.URL.RawQuery == \"\" {\r\n\t\t\t\treq.URL.RawQuery = targetQuery + req.URL.RawQuery\r\n\t\t\t} else {\r\n\t\t\t\treq.URL.RawQuery = targetQuery + \"\u0026\" + req.URL.RawQuery\r\n\t\t\t}\r\n\t\t}\r\n\t\treturn \u0026httputil.ReverseProxy{Director: director}\r\n\t}\r\n\r\n\tfunc main() {\r\n\t\turl, _ := url.Parse(\"http://golang.org/\")\r\n\r\n\t\tgo func() {\r\n\t\t\thttp.ListenAndServe(\":8001\", NewSingleHostReverseProxy(url))\r\n\t\t}()\r\n\t\thttp.ListenAndServe(\":8000\", httputil.NewSingleHostReverseProxy(url))\r\n\r\n\t}",
+	"user": {
+		"login": "gwik",
+		"id": 11162,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-10-08T23:16:02Z",
+	"created_at": "2015-04-03T23:27:45Z",
+	"updated_at": "2015-10-08T23:16:02Z"
+}

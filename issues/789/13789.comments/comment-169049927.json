@@ -1,0 +1,12 @@
+{
+	"id": 169049927,
+	"body": "@ianlancetaylor Yes, definitely. If I change the `echo \"ok\"` to eg `echo \"HI THERE\"` I see `HI THERE` in the cleanup function instead of `ok`. Since this bug doesn't trigger unless testcarchive fails, I'm assuming that it's something that happens to the bash process when it's left running after the `go tool dist test` process exits. Some testing suggests that test.bash is not executing anything past the `echo \"ok\"` in this case. Maybe it's getting an EPIPE on the write and things are becoming tangled?\r\n\r\nIn fact yes. I've finally managed to capture a strace, and what appears to happen is this:\r\n\r\n1. bash tries to write the `echo \"ok\"` to stdout in the main process. It gets a SIGPIPE and this immediately triggers `cleanup()` being called. However, this write to stdout appears to be flagged as incomplete and pending.\r\n2. in `cleanup()`, bash forks to run `$(...)` in a child. This child appears to inherit the incomplete and needs-to-be-flushed stdout write, because at the end (after running `go` and just before it exits) the child does `write(1, \"ok\\n\", 3)`. This succeeds since the child's fd 1 is now connected to the main bash as part of a pipe.\r\n3. the main process reads `/some/path\\n` and `ok\\n` from the pipe for `$(...)` (in two separate reads).\r\n4. the main process sets up to write to my logfile from my addition of `echo \u003e\u003e/tmp/logfile xxx $(go env GOROOT)` in `cleanup()`. Just before it makes the fd for /tmp/logfile into fd 1 temporarily, it also tries `write(1, \"ok\\n\", 3)`; however, as fd 1 is still connected to the (closed) stdout pipe, this gets EPIPE. No further SIGPIPE is generated, presumably because it's been masked at this point.\r\n\r\nAfter 4 nothing attempts any further `write(1, \"ok\\n\", 3)` calls, presumably because the pending buffer has been flushed (via an error) even in the main process. One sign that this theory is correct is that if you do two `$(...)` invocations before doing any writes to stdout in the main process, you get the extra `ok` in each of them, which is exactly what you'd expect if children are inheriting an unflushed buffer and then each of them flushes it.\r\n\r\nIf it helps, I've had this happen on Bash 4.3.42 (Fedora 22 and 23 builds) and Bash 4.3.11 (Ubuntu 14.04 LTS), all on 64-bit Linux.",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-05T16:24:08Z",
+	"updated_at": "2016-01-05T16:24:08Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51276377,
+	"number": 354,
+	"state": "closed",
+	"title": "Erratum: Language Specification: Assignments",
+	"body": "\u003cpre\u003eErratum\nThe Go Programming Language Specification\nStatements\nAssignments\n\n\u0026quot;An assignment operation x op= y where op is a binary arithmetic operation \nis equivalent to x = x op y but evaluates x only once.\u0026quot;\n\nIn fact, x op= y is equivalent to x = x op (y); note the parentheses \nsurrounding y. The parentheses surrounding the y term are needed to \nguarantee the proper order of evaluation for the equivalent form when y is \nreplaced by another expression.\n\nThe issue will be familiar to C programmers:\n\nSome care has to be taken with parentheses to make sure the order of \nevaluation is preserved; consider what happens when the macro\n\n    #define square(x) x * x    /* WRONG */\n\nis invoked as square(z + 1).\n    \n[4.11.2 Macro Substitution, The C Programming Language, 2e, K\u0026amp;R, p90]\n\nThese are the assignment results we get in Go by substituting v + w for y:\n\nLet x = 3, v = 5, w = 7, y = v + w = 12\n1.  x *= y           = 36\n2.  x *= v + w       = 36\n3.  x  = x * y       = 36\n4.  x  = x * v + w   = 22\n5.  x  = x * (v + w) = 36\n\nIf we substitute the expression v + w for y, the results for the \nequivalent are not equivalent (statement 4) unless we parenthesise v + w  \n(statement 5), and by implication, y; i.e x op= y is equivalent to x = x \nop (y), not x = x op y.\n\nThe following Go code illustrates the problem.\n\npackage main\nimport \u0026quot;fmt\u0026quot;;\nfunc main ()\n{\n    x:= 3; x1:= x; x2 := x; x3 := x; x4 := x; x5 := x;\n    v:= 5; w:= 7; y:= v + w;\n    x1 *= y;\n    x2 *= v + w;\n    x3 = x3 * y;\n    x4 = x4 * v + w;\n    x5 = x5 * (v + w);\n    fmt.Printf(\u0026quot;Let x = %d, v = %d, w = %d, y = v + w = %d\\n\u0026quot;, x, v, w, y);\n    fmt.Printf(\u0026quot;1.  x *= y          = %d\\n\u0026quot;, x1);\n    fmt.Printf(\u0026quot;2.  x *= v + w      = %d\\n\u0026quot;, x2);\n    fmt.Printf(\u0026quot;3.  x = x * y       = %d\\n\u0026quot;, x3);\n    fmt.Printf(\u0026quot;4.  x = x * v + w   = %d\\n\u0026quot;, x4);\n    fmt.Printf(\u0026quot;5.  x = x * (v + w) = %d\\n\u0026quot;, x5);\n}\u003c/pre\u003e",
+	"user": {
+		"login": "peterGo",
+		"id": 4561296,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:04:15Z",
+	"created_at": "2009-11-28T20:37:22Z",
+	"updated_at": "2016-06-24T19:08:42Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 230350254,
+	"body": "My understanding of the proposal is to define methods on concrete types by defining them on interfaces that the types satisfies. In the example below method Println is defined for stringer extending the method set of type A satisfying stringer. The intention seems to be to save work if a method can be implemented using other functions of a type. \r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"strconv\"\r\n)\r\n\r\ntype A int\r\n\r\nfunc (a A) String() string {\r\n        return strconv.Itoa(int(a))\r\n}\r\n\r\ntype stringer interface {\r\n        String() string\r\n}\r\n\r\nfunc (s stringer) Println() {\r\n        fmt.Println(s.String())\r\n}\r\n\r\nfunc main() {\r\n        a := A(1).\r\n        a.Println()\r\n}\r\n```\r\n\r\nIt doesn't compile because an interface type cannot be a receiver. On top `a.Println()` would also not work, because it is not clear how the compiler chooses the particular interface type with Println as method if there are several interfaces satisfied by A supporting a Println method. The alternative `stringer(A).Println()` would solve this issue, but it doesn't extend the method set of type A which appears to be the intention.  But the method could be provided explicitly in a single line of code calling the general implementation of the interface as in  the code below, which compiles and works.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"strconv\"\r\n)\r\n\r\ntype A int\r\n\r\nfunc (a A) String() string {\r\n\treturn strconv.Itoa(int(a))\r\n}\r\n\r\ntype stringer interface {\r\n\tString() string\r\n}\r\n\r\nfunc pr(s stringer) {\r\n\tfmt.Println(s.String())\r\n}\r\n\r\nfunc (a A) Println() { pr(a) }\r\n\r\nfunc main() {\r\n\ta := A(1)\r\n\ta.Println()\r\n}\r\n```",
+	"user": {
+		"login": "ulikunitz",
+		"id": 8460565,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-04T20:24:33Z",
+	"updated_at": "2016-07-04T20:24:33Z"
+}

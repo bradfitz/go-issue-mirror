@@ -1,0 +1,33 @@
+{
+	"id": 51281258,
+	"number": 3857,
+	"state": "closed",
+	"title": "database/sql: deadlock with simultaneous queries",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. apply this diff to the go tree (hg id is ddaabb722563+)\n\ndiff -r ddaabb722563 src/pkg/database/sql/sql_test.go\n--- a/src/pkg/database/sql/sql_test.go\tSun Jul 22 16:35:53 2012 -0700\n+++ b/src/pkg/database/sql/sql_test.go\tTue Jul 24 17:33:24 2012 +1000\n@@ -415,6 +415,29 @@\n \t}\n }\n \n+func TestSimultaneousQueries(t *testing.T) {\n+\tdb := newTestDB(t, \u0026quot;people\u0026quot;)\n+\tdefer closeDB(t, db)\n+\n+\ttx, err := db.Begin()\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer tx.Rollback()\n+\n+\tr1, err := tx.Query(\u0026quot;SELECT|people|name|\u0026quot;)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer r1.Close()\n+\n+\tr2, err := tx.Query(\u0026quot;SELECT|people|name|\u0026quot;)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer r2.Close()\n+}\n+\n // Tests fix for \u003ca href=\"https://golang.org/issue/2788\"\u003eissue #2788\u003c/a\u003e, that we bind nil to a []byte if the\n // value in the column is sql null\n func TestNullByteSlice(t *testing.T) {\n\n2. run \u0026quot;go test -v -run=Sim\u0026quot; command\n\nWhat is the expected output?\n\nTest should PASS\n\nWhat do you see instead?\n\nthrow: all goroutines are asleep - deadlock!\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x8048c00, 0x81f2c00, 0x17, 0x17, 0xb76cbe01, ...)\n\t/root/go/root/src/pkg/testing/testing.go:356 +0x72e\ntesting.Main(0x8048c00, 0x81f2c00, 0x17, 0x17, 0x81f61c0, ...)\n\t/root/go/root/src/pkg/testing/testing.go:291 +0x5d\nmain.main()\n\t/tmp/go-build698477669/database/sql/_test/_testmain.go:87 +0x51\n\ngoroutine 2 [syscall]:\ncreated by runtime.main\n\t/root/go/root/src/pkg/runtime/proc.c:220\n\ngoroutine 3 [semacquire]:\nsync.runtime_Semacquire(0x18725cb8, 0x1)\n\t/root/go/root/src/pkg/runtime/zsema_linux_386.c:146 +0x29\nsync.(*Mutex).Lock(0x18725cb4, 0x806eb09)\n\t/root/go/root/src/pkg/sync/mutex.go:60 +0xb8\ndatabase/sql.(*Tx).grabConn(0x18725ca0, 0x18700a40, 0x18701960)\n\t/root/go/root/src/pkg/database/sql/sql.go:478 +0x53\ndatabase/sql.(*Tx).Prepare(0x18725ca0, 0x8136ea8, 0x13, 0x0, 0x0, ...)\n\t/root/go/root/src/pkg/database/sql/sql.go:524 +0x39\ndatabase/sql.(*Tx).Query(0x18725ca0, 0x8136ea8, 0x13, 0x0, 0x0, ...)\n\t/root/go/root/src/pkg/database/sql/sql.go:623 +0x5a\ndatabase/sql.TestSimultaneousQueries(0x18700900, 0xe)\n\t/root/go/root/src/pkg/database/sql/sql_test.go:434 +0x1f2\ntesting.tRunner(0x18700900, 0x81f2cb4, 0x0)\n\t/root/go/root/src/pkg/testing/testing.go:279 +0x71\ncreated by testing.RunTests\n\t/root/go/root/src/pkg/testing/testing.go:355 +0x711\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 25,
+	"closed_at": "2014-12-08T10:20:22Z",
+	"created_at": "2012-07-24T07:40:51Z",
+	"updated_at": "2016-06-24T22:21:57Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

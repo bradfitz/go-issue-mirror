@@ -1,0 +1,21 @@
+{
+	"id": 106320712,
+	"number": 12611,
+	"state": "open",
+	"title": "encoding/xml: XML CDATA section could be joined together with regular characters",
+	"body": "go version go1.5 darwin/amd64\r\n\r\nOne thing I stumbled across yesterday (not a real bug, but a minor nuisance from a user's perspective perhaps): \r\n\r\n````\r\npackage main\r\n\r\nimport (\r\n    \"encoding/xml\"\r\n    \"fmt\"\r\n    \"strings\"\r\n)\r\n\r\nfunc main() {\r\n    src := `\u003croot\u003ea\u003c![CDATA[b]]\u003ec\u003c/root\u003e`\r\n    r := strings.NewReader(src)\r\n\r\n    dec := xml.NewDecoder(r)\r\n    for {\r\n        tok, err := dec.Token()\r\n        if err != nil {\r\n            fmt.Println(err)\r\n            break\r\n        }\r\n        fmt.Printf(\"%#v\\n\", tok)\r\n    }\r\n}\r\n````\r\ngives\r\n\r\n````\r\nxml.StartElement{Name:xml.Name{Space:\"\", Local:\"root\"}, Attr:[]xml.Attr{}}\r\nxml.CharData{0x61}\r\nxml.CharData{0x62}\r\nxml.CharData{0x63}\r\nxml.EndElement{Name:xml.Name{Space:\"\", Local:\"root\"}}\r\nEOF\r\n````\r\n\r\nI would expect one `xml.CharData{}` token instead:\r\n\r\n````\r\nxml.StartElement{Name:xml.Name{Space:\"\", Local:\"root\"}, Attr:[]xml.Attr{}}\r\nxml.CharData{0x61, 0x62, 0x63}\r\nxml.EndElement{Name:xml.Name{Space:\"\", Local:\"root\"}}\r\nEOF\r\n````\r\n\r\nWhile I understand the source of the three tokens, I would expect one as the user (= me) is unable to distinguish between a CDATA node and a regular text node.\r\n\r\n",
+	"user": {
+		"login": "pgundlach",
+		"id": 209434,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-09-14T11:14:15Z",
+	"updated_at": "2015-09-14T15:37:08Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

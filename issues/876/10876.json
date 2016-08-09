@@ -1,0 +1,33 @@
+{
+	"id": 76947674,
+	"number": 10876,
+	"state": "closed",
+	"title": "net/http: HTTP Server messed up pipelined HTTP requests after POST request",
+	"body": "By default, Go's HTTP server (from package net/http) supports HTTP/1.1 pipelined requests (Connection: keep-alive) and will dispatch each request to a new handler Go-routine (before encountering any POST requests).\r\n\r\nHowever, after the first POST request encountered in a pipeline, the Go HTTP server failed to parse the following requests, either GET or POST, and will reply with a \"400 Bad Request\".\r\n\r\nA simple demo for this misbehavior: (assume we already launched the server on port 8080)\r\n```\r\nprintf \"\\\r\nPOST / HTTP/1.1\\r\\n\\\r\nHost: localhost\\r\\n\\\r\nConnection: keep-alive\\r\\n\\\r\nContent-Type: application/x-www-form-urlencoded\\r\\n\\\r\nContent-Length: 7\\r\\n\\\r\n\\r\\n\\\r\nA=a\u0026B=b\\r\\n\\\r\n\\r\\n\\\r\nGET / HTTP/1.1\\r\\n\\\r\nHost: localhost\\r\\n\\\r\nConnection: keep-alive\\r\\n\\\r\n\\r\\n\\\r\nGET / HTTP/1.1\\r\\n\\\r\nHost: localhost\\r\\n\\\r\nConnection: keep-alive\\r\\n\\\r\n\\r\\n\\\r\n\" | nc localhost 8080\r\n```\r\n\r\nVersion\u0026architecture:I observed this phenomenon on \"go version go1.4.2 windows/amd64\"; the architecture shouldn't be important though. Similar behavior appears in Mac version also. This should be a package's bug.\r\n\r\nExpected result: Other traditional HTTP servers (including Nginx/Apache, and default server in Node.js) all handled this correctly. The expected result should be three consecutive \"HTTP/1.1 200 OK\"s (with contents respectively).\r\n\r\nObserved result: using the example minimal net/http server as seen in go ducument's \"Writing Web Applications\", the response to above pipelined requests is:\r\n```\r\nHTTP/1.1 200 OK\r\nDate: Sat, 16 May 2015 05:09:19 GMT\r\nContent-Length: 18\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nHi there, I love !HTTP/1.1 400 Bad Request\r\n\r\n(close: No error)\r\n```",
+	"user": {
+		"login": "chenxiaoqino",
+		"id": 1829214,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-06-25T22:31:40Z",
+	"created_at": "2015-05-16T05:13:30Z",
+	"updated_at": "2016-06-25T02:08:59Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

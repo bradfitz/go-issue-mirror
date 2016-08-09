@@ -1,0 +1,25 @@
+{
+	"id": 51287970,
+	"number": 8282,
+	"state": "closed",
+	"title": "go.exp/fsnotify: data race",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3 darwin/amd64\nMac OS X 10.9.3\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. \u003ca href=\"http://play.golang.org/p/8WDnSAxoK2\"\u003ehttp://play.golang.org/p/8WDnSAxoK2\u003c/a\u003e\n2. run the code with -race to watch a FILE\n3. sed -i '' -e 's,A,B,g' FILE # \u0026quot;sed -i\u0026quot; removes the FILE, then creates a new\nwith that name\n\nWhat happened?\n==================\nWARNING: DATA RACE\nWrite by main goroutine:\n  code.google.com/p/go.exp/fsnotify.(*Watcher).removeWatch()\n      ~/.gvm/pkgsets/go1.3/fswatch/src/code.google.com/p/go.exp/fsnotify/fsnotify_bsd.go:245 +0x3bf\n  code.google.com/p/go.exp/fsnotify.(*Watcher).Close()\n      ~/.gvm/pkgsets/go1.3/fswatch/src/code.google.com/p/go.exp/fsnotify/fsnotify_bsd.go:124 +0x22f\n  main.main()\n      ~/watch.go:18 +0x10d\n\nPrevious read by goroutine 5:\n  code.google.com/p/go.exp/fsnotify.(*Watcher).removeWatch()\n      ~/.gvm/pkgsets/go1.3/fswatch/src/code.google.com/p/go.exp/fsnotify/fsnotify_bsd.go:250 +0x641\n  code.google.com/p/go.exp/fsnotify.(*Watcher).readEvents()\n      ~/.gvm/pkgsets/go1.3/fswatch/src/code.google.com/p/go.exp/fsnotify/fsnotify_bsd.go:379 +0xc0d\n\nGoroutine 5 (running) created at:\n  code.google.com/p/go.exp/fsnotify.NewWatcher()\n      ~/.gvm/pkgsets/go1.3/fswatch/src/code.google.com/p/go.exp/fsnotify/fsnotify_bsd.go:102 +0x3d6\n  main.main()\n      ~/watch.go:9 +0x30\n==================\nFound 1 data race(s)\nexit status 66\n\nfsnotify correctly detects the deletion event, then the readEvents() goroutine and\nClose() race for Watcher.watches\n\nWhat should have happened instead?\nMy use case is to watch a file that may be deleted and recreated, thus\nI have to wait for an event and immediately Close() the watcher and make a new one.\nThat would be a shame to time.Sleep or something.\n\nPlease provide any additional information below.\ngithub.com/howeyc/fsnotify races exactly the same\u003c/pre\u003e",
+	"user": {
+		"login": "ostness",
+		"id": 148718,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T15:46:53Z",
+	"created_at": "2014-06-24T20:48:05Z",
+	"updated_at": "2016-06-25T01:37:10Z"
+}

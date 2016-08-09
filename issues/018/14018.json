@@ -1,0 +1,26 @@
+{
+	"id": 127493858,
+	"number": 14018,
+	"state": "open",
+	"title": "cmd/compile: Need better type propagation",
+	"body": "When this code is compiled with `-m`, several heap allocations can be seen because `hash.Hash64` is an interface type and it's not possible (in general) to know how the parameters to its methods are treated:\r\n```\r\npackage foo\r\n\r\nimport (\r\n\t\"hash\"\r\n\t\"hash/fnv\"\r\n)\r\n\r\nfunc harsh(fieldVals []interface{}) uint64 {\r\n\tif len(fieldVals) == 0 {\r\n\t\t// Avoid allocating the hasher if there are no fieldVals\r\n\t\treturn 0\r\n\t}\r\n\r\n\th := fnv.New64a() // .(*fnv.Sum64a)\r\n\r\n\tfor _, v := range fieldVals {\r\n\t\tswitch v := v.(type) {\r\n\t\tcase string:\r\n\t\t\th.Write([]byte(v))\r\n\t\tcase int, int32:\r\n\t\t\tvi, ok := v.(int32)\r\n\t\t\tif !ok {\r\n\t\t\t\tvi = int32(v.(int))\r\n\t\t\t}\r\n\t\t\tb := [4]byte{}\r\n\t\t\tfor i := 0; i \u003c 4; i++ {\r\n\t\t\t\tb[i] = byte(vi \u0026 0xFF)\r\n\t\t\t\tvi \u003e\u003e= 8\r\n\t\t\t}\r\n\t\t\th.Write(b[:])\r\n\t\tcase bool:\r\n\t\t\tif v {\r\n\t\t\t\th.Write([]byte{1})\r\n\t\t\t} else {\r\n\t\t\t\th.Write([]byte{0})\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\treturn h.Sum64()\r\n}\r\n```\r\nIf the package-private type actually allocated by `fnv.New64a` is exposed and cast to (see the commented out `.(*fnv.Sum64a)` ), it becomes possible to see which functions are actually called and either inline them or determine that they do not leak their parameters, and heap allocations are avoided.  This type information is available and can be propagated forward in tandem with the declared type, and used to better escape-analyze interface method calls (that are really monomorphic).  Right now inlining can reveal it, ideally the summary information can include more precise information about returned types if there is any to be had.\r\n\r\n\r\n",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-01-19T17:10:43Z",
+	"updated_at": "2016-01-21T17:48:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

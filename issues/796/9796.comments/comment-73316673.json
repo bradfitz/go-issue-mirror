@@ -1,0 +1,12 @@
+{
+	"id": 73316673,
+	"body": "Doing the analysis from Go 1.4.  Here's the point where the sharing happens:\r\n\r\n1.  The call to getTypeInfo (https://golang.org/src/encoding/xml/marshal.go#L409), which returns global state in typeinfo.go (https://golang.org/src/encoding/xml/typeinfo.go#L44)\r\n2.  The passing of finfo.parents (https://golang.org/src/encoding/xml/marshal.go#L821)\r\n3.  The slice in parentStack.trim() (https://golang.org/src/encoding/xml/marshal.go#L897)\r\n\r\nUltimately, the shared value flows into parentStack.stack, and there's both reads and writes going on.  The read from parentStack.trim:\r\n\r\n    s.stack = parents[:split]\r\n\r\nand the write from parentStack.push\r\n\r\n    s.stack = append(s.stack, parents...)\r\n\r\nTechnically, I would guess that the append should logically be a no-op on the underlying array, because the parents that got split off should be the ones that are being appended back on, but that's something the data race detector can't possibly know.",
+	"user": {
+		"login": "dannyyoo",
+		"id": 7536863,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-06T21:34:40Z",
+	"updated_at": "2015-02-06T21:37:52Z"
+}

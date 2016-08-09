@@ -1,0 +1,17 @@
+{
+	"id": 141075015,
+	"number": 14830,
+	"state": "closed",
+	"title": "fmt: printing of types inconsistent for byte and uint8 with %#v",
+	"body": "go1.4, go1.6, tip\r\n( note that with the recent changes i made to fmt i was careful to not change the behavior but leave the issue open)\r\n\r\nhttps://play.golang.org/p/TrmwckEwqu\r\n\r\n```\r\n          %T | reflect Type | %#V\r\n       uint8 |        uint8 | 0x0\r\n       uint8 |        uint8 | 0x0\r\n     []uint8 |      []uint8 | []byte{}\r\n     []uint8 |      []uint8 | []byte{}\r\n      main.S |       main.S | main.S{in:[]uint8{}}\r\n      main.S |       main.S | main.S{in:[]uint8{}}\r\n    [3]uint8 |     [3]uint8 | [3]uint8{0x0, 0x0, 0x0}\r\n    [3]uint8 |     [3]uint8 | [3]uint8{0x0, 0x0, 0x0}\r\n```\r\n\r\ni would expect uint8 to be consistent everywhere in agreement with %T  and especially for []uint8.\r\n\r\ni would argue it should and could be changed to always print uint8 because:\r\n- there are no issues that reflect package treats byte as uint8 in type strings (its only an alias anyway)\r\n- there is no way i know of to differentiate byte from uint8 with the reflect package or at all during runtime so a fix to differentiate the cases seems impossible\r\n- most cases already print uint8 types even if its specified as []byte inside e.g. a struct\r\n- %T and %#v are inconsistent for the type specification currently\r\n- there will be no extra code needed for %v,%d,%b bytes formatting vs normal array,slice formatting so it also automatically agrees e.g. what to print for nil slices.\r\n- if the behavior is changed to print []byte as []uint8 no test in std lib besides fmt_test breaks (those were mostly only added after go1.6)\r\n- there is precedent for fixes after go1 that made %T and %v consistent and not print byte type #4685 but uint8 is still shown as byte\r\n- the language spec defines \"byte alias for uint8\" not uint8 as alias for byte",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-03-20T06:26:04Z",
+	"created_at": "2016-03-15T19:25:58Z",
+	"updated_at": "2016-03-20T06:26:04Z"
+}

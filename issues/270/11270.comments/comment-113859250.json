@@ -1,0 +1,12 @@
+{
+	"id": 113859250,
+	"body": "Thinking about this some more, I'm a bit uneasy about the need for the operations involving the TLS variable to use a scratch register (or two, in some cases, one of which must be R0 on ARM).  I think on RISC (well, ARM \u0026 ARM64, not sure about POWER details but they're probably similar?) platforms the assembly should be something like this:\r\n\r\n```\r\nGLOBL runtime·tlsg+0(SB), TLSBSS, $8\r\n....\r\n        MOVQ TLS, R0\r\n        MOVQ runtime.tlsg(SB), R1\r\n        MOVQ R1(R0), R2\r\n```\r\n\r\nThis is more or less the platform assembly for LE TLS access. Open questions: 1) do we make people spell \"MOVQ TLS, R0\" in the platform-specific way (e.g. MRS TPIDR_EL0, R0 on arm64) 2) For IE model code, does one translate the above assembly into IE model in cmd/internal/obj (easy, but magical) or do we have #ifdefs in the .s files (a bit easier to understand, I suspect).\r\n\r\nI'd like to clean up the intel stuff a bit (particularly, the current IE model stuff is a bit magical, my fault), but that seems less urgent.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-21T03:05:40Z",
+	"updated_at": "2015-06-21T03:05:40Z"
+}

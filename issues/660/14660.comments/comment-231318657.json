@@ -1,0 +1,12 @@
+{
+	"id": 231318657,
+	"body": "Hello!!\r\nI have a question about sharing values between middlewares.\r\n\r\nI think we'll be able to share values  between middlewares in the following code by go 1.7.\r\n\r\n```go\r\nfunc (a *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n        user := GetUserFromRequestCookie(r)\r\n        ctx := r.Context()\r\n        ctx = context.WithValue(ctx, \"user\", user)\r\n\r\n        r = r.WithContext(ctx)\r\n\r\n        a.next.ServeHTTP(w, r) // next handler is ArticleHandle\r\n}\r\n\r\nfunc (a *ArticleHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n    ctx := r.Context() \r\n    user := ctx.Value(\"user\").(*User)\r\n}\r\n```\r\n\r\nBut `r.WithContext(ctx)` exec shallow copy for goroutine. I need not shallow copy for only sharing values.  It is slow. right? I want to set context to Request. But now it cannot.\r\n\r\n```go\r\nfunc (a *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n        user := UserFromSession(r)\r\n        ctx := r.Context()\r\n        ctx = context.WithValue(ctx, \"user\", user)\r\n\r\n        // r = r.WithContext(ctx)\r\n        r.SetContext(ctx)\r\n\r\n        a.next.ServeHTTP(w, r)\r\n}\r\n\r\nfunc (a *ArticleHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n    ctx := r.Context() \r\n    user := ctx.Value(\"user\").(*User)\r\n}\r\n```\r\n\r\nPlease tell me best way sharing values between middlewares using only net/http and context. I think we should not implement context wrapper like 3rd party framework impl for only sharing values.",
+	"user": {
+		"login": "sona-tar",
+		"id": 1586910,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-08T09:41:26Z",
+	"updated_at": "2016-07-08T09:41:40Z"
+}

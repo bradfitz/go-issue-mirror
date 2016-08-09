@@ -1,0 +1,12 @@
+{
+	"id": 66054456,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eI looked into this.  I think this is expected behavior.\nThere will always be a few extra threads because you've got different goroutines running\nsystem calls, and the runtime creates new threads as necessary to avoid blocking the\nentire program just because a few goroutines are executing system calls.\n\nYou can profile where the threads are coming from by running this variant of your\nprogram:\n\n\npackage main\n\nimport (\n\t\"log\"\n\t\"net/http\"\n\t_ \"net/http/pprof\"\n)\n\nfunc handler(wr http.ResponseWriter, req *http.Request) {\n\twr.Write([]byte(\"Ok!\\n\"))\n}\n\nfunc main() {\n\thttp.HandleFunc(\"/\", handler)\n\terr := http.ListenAndServe(\":8080\", nil)\n\tif err != nil {\n\t\tlog.Fatalln(\"ListenAndServe:\", err)\n\t}\n}\n\nafter sieging it, run\n\ngo tool pprof \u003ca href=\"http://localhost:8081/debug/pprof/thread\"\u003ehttp://localhost:8081/debug/pprof/thread\u003c/a\u003e\n\nand at the (pprof) prompt, run web.  It will show the call stacks\nthat led to the creation of new threads.  Especially if you see\nthe thread count growing without bound, this will help you figure\nout why (and that would be a bug; please report it).  But 8 threads\nseems fine.\u003c/pre\u003e\n\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-12T22:33:26Z",
+	"updated_at": "2014-12-08T10:08:32Z"
+}

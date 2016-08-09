@@ -1,0 +1,27 @@
+{
+	"id": 51289197,
+	"number": 9179,
+	"state": "closed",
+	"title": "reflect: argument pointer map incorrect for reflect case",
+	"body": "\u003cpre\u003eRun this program under go 1.4 rc1\n\npackage main\n\nimport (\n\t\u0026quot;reflect\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n)\n\ntype wrapper struct {\n\tf reflect.Value\n}\n\nfunc f(a, b, c, d, e string) {\n\truntime.GC()\n}\n\nfunc (w *wrapper) call(in []reflect.Value) []reflect.Value {\n\treturn w.f.Call(in)\n}\n\nfunc main() {\n\tv := reflect.ValueOf(f)\n\tw := wrapper{v}\n\tf2 := reflect.MakeFunc(v.Type(), w.call).Interface().(func(string,string,string,string,string))\n\tf2(\u0026quot;four\u0026quot;, \u0026quot;five5\u0026quot;, \u0026quot;six666\u0026quot;, \u0026quot;seven77\u0026quot;, \u0026quot;eight888\u0026quot;)\n}\n\nmacpro:src khr$ ../bin/go run ~/go/bug.go\nruntime: garbage collector found invalid heap pointer *(0x20812fec8+0x8)=0x4 s=nil\nfatal error: invalid heap pointer\n\nruntime stack:\nruntime.throw(0xc9b43)\n\t/Users/khr/sandbox/go-ro5/src/runtime/panic.go:491 +0xad fp=0x7fff5fbff520 sp=0x7fff5fbff4f0\nscanblock(0x20812fec8, 0x28, 0x2081000c0)\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:378 +0x551 fp=0x7fff5fbff660 sp=0x7fff5fbff520\nscanframe(0x7fff5fbff768, 0x0, 0x1)\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:740 +0x1c2 fp=0x7fff5fbff6d0 sp=0x7fff5fbff660\nruntime.gentraceback(0x33680, 0x20812f7d8, 0x0, 0x2080f6120, 0x0, 0x0, 0x7fffffff,\n0x7fff5fbff818, 0x0, 0x0, ...)\n\t/Users/khr/sandbox/go-ro5/src/runtime/traceback.go:311 +0x7a8 fp=0x7fff5fbff7c0 sp=0x7fff5fbff6d0\nscanstack(0x2080f6120)\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:777 +0x21c fp=0x7fff5fbff830 sp=0x7fff5fbff7c0\nmarkroot(0x208106000, 0x5)\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:553 +0xe7 fp=0x7fff5fbff890 sp=0x7fff5fbff830\nruntime.parfordo(0x208106000)\n\t/Users/khr/sandbox/go-ro5/src/runtime/parfor.c:76 +0xb2 fp=0x7fff5fbff910 sp=0x7fff5fbff890\ngc(0x7fff5fbffa48)\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:1439 +0x25e fp=0x7fff5fbffa28 sp=0x7fff5fbff910\nruntime.gc_m()\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:1368 +0xe0 fp=0x7fff5fbffa60 sp=0x7fff5fbffa28\nruntime.onM(0xcb630)\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:257 +0x68 fp=0x7fff5fbffa68 sp=0x7fff5fbffa60\nruntime.mstart()\n\t/Users/khr/sandbox/go-ro5/src/runtime/proc.c:786 fp=0x7fff5fbffa70 sp=0x7fff5fbffa68\n\ngoroutine 1 [garbage collection]:\nruntime.switchtoM()\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:198 fp=0x20812f7e0 sp=0x20812f7d8\nruntime.gogc(0x2)\n\t/Users/khr/sandbox/go-ro5/src/runtime/malloc.go:469 +0x1cf fp=0x20812f818 sp=0x20812f7e0\nruntime.GC()\n\t/Users/khr/sandbox/go-ro5/src/runtime/malloc.go:488 +0x26 fp=0x20812f828 sp=0x20812f818\nmain.f(0x80a70, 0x4, 0x809b0, 0x5, 0x82430, 0x6, 0x823b0, 0x7, 0x84c70, 0x8)\n\t/Users/khr/go/bug.go:13 +0x1b fp=0x20812f830 sp=0x20812f828\nruntime.call128(0x97de0, 0x208132050, 0x5000000050)\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:404 +0x54 fp=0x20812f8b8 sp=0x20812f830\nreflect.Value.call(0x6baa0, 0x97de0, 0x13, 0x7f290, 0x4, 0x208138000, 0x5, 0x5, 0x0,\n0x0, ...)\n\t/Users/khr/sandbox/go-ro5/src/reflect/value.go:419 +0x10e5 fp=0x20812fbd0 sp=0x20812f8b8\nreflect.Value.Call(0x6baa0, 0x97de0, 0x13, 0x208138000, 0x5, 0x5, 0x0, 0x0, 0x0)\n\t/Users/khr/sandbox/go-ro5/src/reflect/value.go:296 +0xbc fp=0x20812fc30 sp=0x20812fbd0\nmain.(*wrapper).call(0x208114020, 0x208138000, 0x5, 0x5, 0x0, 0x0, 0x0)\n\t/Users/khr/go/bug.go:17 +0x76 fp=0x20812fc80 sp=0x20812fc30\nmain.*wrapper.(main.call)·fm(0x208138000, 0x5, 0x5, 0x0, 0x0, 0x0)\n\t/Users/khr/go/bug.go:23 +0x60 fp=0x20812fcc0 sp=0x20812fc80\nreflect.callReflect(0x208114080, 0x20812fec8)\n\t/Users/khr/sandbox/go-ro5/src/reflect/value.go:482 +0x345 fp=0x20812feb0 sp=0x20812fcc0\nreflect.makeFuncStub(0x80a70, 0x4, 0x809b0, 0x5, 0x82430, 0x6, 0x823b0, 0x7, 0x84c70,\n0x8, ...)\n\t/Users/khr/sandbox/go-ro5/src/reflect/asm_amd64.s:17 +0x36 fp=0x20812fec8 sp=0x20812feb0\nmain.main()\n\t/Users/khr/go/bug.go:24 +0x28a fp=0x20812ff98 sp=0x20812fec8\nruntime.main()\n\t/Users/khr/sandbox/go-ro5/src/runtime/proc.go:63 +0xf3 fp=0x20812ffe0 sp=0x20812ff98\nruntime.goexit()\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:2232 +0x1 fp=0x20812ffe8 sp=0x20812ffe0\n\ngoroutine 2 [runnable]:\nruntime.forcegchelper()\n\t/Users/khr/sandbox/go-ro5/src/runtime/proc.go:90 fp=0x2081107e0 sp=0x2081107d8\nruntime.goexit()\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:2232 +0x1 fp=0x2081107e8 sp=0x2081107e0\ncreated by runtime.init·4\n\t/Users/khr/sandbox/go-ro5/src/runtime/proc.go:87 +0x25\n\ngoroutine 3 [runnable]:\nruntime.bgsweep()\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.go:82 fp=0x208113fe0 sp=0x208113fd8\nruntime.goexit()\n\t/Users/khr/sandbox/go-ro5/src/runtime/asm_amd64.s:2232 +0x1 fp=0x208113fe8 sp=0x208113fe0\ncreated by gc\n\t/Users/khr/sandbox/go-ro5/src/runtime/mgc0.c:1383\nexit status 2\n\nThe map for scanning main's outarg section is wrong.  It thinks there should be a\npointer at offset 8, but there isn't.\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:50:07Z",
+	"created_at": "2014-11-27T21:18:09Z",
+	"updated_at": "2016-06-25T01:45:05Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

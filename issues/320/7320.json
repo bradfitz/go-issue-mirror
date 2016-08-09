@@ -1,0 +1,27 @@
+{
+	"id": 51286527,
+	"number": 7320,
+	"state": "open",
+	"title": "cmd/compile: top-level var does not respect , rule",
+	"body": "\u003cpre\u003eThe following program fails with gc but succeeds with 'ssadump -run', because gc is\ncomputing the initialization order incorrectly.\n\n---------------\n\npackage main\n\n// The package-level var initialization dependency graph contains the           \n// following edges:                                                             \n//      order     -\u0026gt; makeOrder                                                  \n//      makeOrder -\u0026gt; b                                                          \n//      makeOrder -\u0026gt; a                                                          \n// Since a and b are incomparable in this partial order, we initialize          \n// them in lexical order, a before b.  The total order of                       \n// initialization is thus: [a, b, order].                                       \n//                                                                              \n// ssadump -run succeeds but go run fails.                                      \n//                                                                              \n// Interestingly, reversing the order of {b, a} in makeOrder (and {1,           \n// 0} in the assertion) causes it to succeed with both tools, meaning           \n// that gc uses the lexical order of the references within makeOrder,           \n// not the lexical order of the declarations of a and b, to resolve             \n// incomparability.                                                             \n\nvar counter int\n\nfunc next() int {\n        c := counter\n        counter++\n        return c\n}\n\nfunc makeOrder() [2]int {\n        return [2]int{b, a}\n}\n\nvar order = makeOrder()\n\nfunc main() {\n        if order != [2]int{1, 0} {\n                panic(order) // gc panics (got {0, 1})                          \n        }\n}\n\nvar a, b = next(), next() // 0, 1                                               \n\n---------------\n\n\n(Again I feel a vague sense of deja vu, but couldn't find a duplicate report.)\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"created_at": "2014-02-13T14:55:48Z",
+	"updated_at": "2015-12-05T05:37:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

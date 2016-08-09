@@ -1,0 +1,27 @@
+{
+	"id": 51283752,
+	"number": 5519,
+	"state": "closed",
+	"title": "runtime/pprof: hangs when using pprof on a CPU-intensive program on OS X",
+	"body": "by **akalin**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Download aks_debug.go from \u003ca href=\"http://play.golang.org/p/SUNgPMcfIM\"\u003ehttp://play.golang.org/p/SUNgPMcfIM\u003c/a\u003e or\n\u003ca href=\"https://github.com/akalin/aks-go/blob/debug/aks_debug.go\"\u003ehttps://github.com/akalin/aks-go/blob/debug/aks_debug.go\u003c/a\u003e\n2. build (tested with go 1.1):\n\ngo build aks_debug.go\n\n3. the most reliable way to repro would be to run:\n\nfor i in $(seq 1 300); do (env GOGCTRACE=1 ./aks_debug \u0026gt;\u0026amp;/tmp/aks_debug.$i\n\u0026amp;); done\n\nYou'd expect all programs to terminate, but chances are, when your computer settles\ndown, there will be one or two\naks_debug processes still hanging around. Check with ps. For example:\n\n  PID TTY           TIME CMD\n23780 ttys000    0:00.01 -bash\n23826 ttys000    0:00.00 tmux att\n26765 ttys001    0:02.11 -bash\n27792 ttys001    0:02.04 ./aks_debug\n27904 ttys001    0:02.09 ./aks_debug\n17273 ttys002    0:00.04 -bash\n 6770 ttys003    0:00.83 -bash\n\nCheck which output files correspond to those processes:\n$ lsof /tmp/aks_debug.*\nCOMMAND     PID   USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME\naks_debug 27792 akalin    1w   REG    1,4     2404 9553026\n/private/tmp/aks_debug.5\naks_debug 27792 akalin    2w   REG    1,4     2404 9553026\n/private/tmp/aks_debug.5\naks_debug 27904 akalin    1w   REG    1,4     2404 9553082\n/private/tmp/aks_debug.61\naks_debug 27904 akalin    2w   REG    1,4     2404 9553082\n/private/tmp/aks_debug.61\n\nThen send a SIGQUIT to one of those to get the output:\n\nkill -s SIGQUIT 27792\nless /tmp/aks_debug.5\n\nFor example, I get the below log output. Looks like it's stuck on a\nwrite syscall for the pprof output?\n\nLet me know if I can do anything more.\n\n-- START aks_debug.5 --\n\ngc1(1): 0+0+0 ms, 0 -\u0026gt; 0 MB 20 -\u0026gt; 22 (23-1) objects, 0(0) handoff, 0(0) steal, 0\n/0/0 yields\n2013/05/14 02:33:47 0: multiplying...\n2013/05/14 02:33:47 0: multiplying done; shifting...\n2013/05/14 02:33:47 0: not shifting\n2013/05/14 02:33:47 1: multiplying...\n2013/05/14 02:33:47 1: multiplying done; shifting...\n2013/05/14 02:33:47 1: not shifting\n2013/05/14 02:33:47 2: multiplying...\n2013/05/14 02:33:47 2: multiplying done; shifting...\n2013/05/14 02:33:47 2: not shifting\n2013/05/14 02:33:47 3: multiplying...\n2013/05/14 02:33:47 3: multiplying done; shifting...\n2013/05/14 02:33:47 3: not shifting\n2013/05/14 02:33:47 4: multiplying...\n2013/05/14 02:33:47 4: multiplying done; shifting...\n2013/05/14 02:33:47 4: not shifting\n2013/05/14 02:33:47 5: multiplying...\n2013/05/14 02:33:47 5: multiplying done; shifting...\n2013/05/14 02:33:47 5: not shifting\n2013/05/14 02:33:47 6: multiplying...\n2013/05/14 02:33:47 6: multiplying done; shifting...\n2013/05/14 02:33:47 6: not shifting\n2013/05/14 02:33:47 7: multiplying...\n2013/05/14 02:33:47 7: multiplying done; shifting...\n2013/05/14 02:33:47 7: not shifting\n2013/05/14 02:33:47 8: multiplying...\n2013/05/14 02:33:47 8: multiplying done; shifting...\n2013/05/14 02:33:47 8: not shifting\n2013/05/14 02:33:47 9: multiplying...\ngc2(1): 0+0+0 ms, 0 -\u0026gt; 0 MB 206 -\u0026gt; 144 (229-85) objects, 0(0) handoff, 0(0) stea\nl, 0/0/0 yields\n2013/05/14 02:33:47 9: multiplying done; shifting...\n2013/05/14 02:33:47 9: not shifting\n2013/05/14 02:33:47 10: multiplying...\n2013/05/14 02:33:47 10: multiplying done; shifting...\n2013/05/14 02:33:47 10: not shifting\n2013/05/14 02:33:47 11: multiplying...\ngc3(1): 0+0+0 ms, 1 -\u0026gt; 1 MB 154 -\u0026gt; 144 (240-96) objects, 0(0) handoff, 0(0) stea\nl, 0/0/0 yields\n2013/05/14 02:33:47 11: multiplying done; shifting...\n2013/05/14 02:33:47 11: not shifting\n2013/05/14 02:33:47 12: multiplying...\ngc4(1): 0+0+0 ms, 2 -\u0026gt; 2 MB 150 -\u0026gt; 145 (247-102) objects, 0(0) handoff, 0(0) ste\nal, 0/0/0 yields\n2013/05/14 02:33:48 12: multiplying done; shifting...\n2013/05/14 02:33:48 12: not shifting\n2013/05/14 02:33:48 13: multiplying...\ngc5(1): 0+0+0 ms, 4 -\u0026gt; 3 MB 150 -\u0026gt; 145 (253-108) objects, 0(0)\nhandoff, 0(0) steal, 0/0/0 yields\n2013/05/14 02:34:00 13: multiplying done; shifting...\n2013/05/14 02:34:00 13: not shifting\n2013/05/14 02:34:00 14: multiplying...\ngc6(1): 0+0+0 ms, 7 -\u0026gt; 6 MB 149 -\u0026gt; 144 (258-114) objects, 0(0) handoff, 0(0) ste\nal, 0/0/0 yields\nSIGQUIT: quit\nPC=0x229fb\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\nWhatever go build on go 1.1 on x86 OS X uses.\n\nWhich operating system are you using?\n\nOS X\n\nWhich version are you using?  (run 'go version')\n\ngo 1.1 (homebrew)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 23,
+	"closed_at": "2014-12-08T10:29:57Z",
+	"created_at": "2013-05-20T18:24:17Z",
+	"updated_at": "2016-06-24T22:40:39Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

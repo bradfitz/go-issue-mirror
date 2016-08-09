@@ -1,0 +1,16 @@
+{
+	"id": 217706809,
+	"body": "Simpler reproducer for posterity in case the patch I mailed won't be merged\r\n\r\n```\r\npackage p\r\n\r\nfunc f() int {\r\n\tvar a int\r\n\tswitch a {\r\n\tcase 0:\r\n\t\treturn func() int { return 1 }()\r\n\t\tfallthrough\r\n\tdefault:\r\n\t}\r\n\treturn 0\r\n}\r\n```\r\n\r\nanything that creates an `autotmp_` in the return line goes. gc compiles\r\n```\r\ncase 0:\r\n\t\treturn func() int { return 1 }()\r\n\t\tfallthrough\r\n```\r\nas\r\n```\r\nautotmp_0 = (func literal)(); return autotmp_0; fallthrough; \u003cnode VARKILL\u003e\r\n```\r\n\r\nThe problem is that the `casebody` function in swt.go, which replaces Op in `OXFALL` nodes (not-yet-processed fallthrough) with `OFALL` (processed fallthrough), assumes that the node with the `fallthrough` statement will always be the last one. In this case, this is false: the last node is the `OVARKILL` one. For this reason the `OXFALL` node won't be marked as `OFALL`, and the `fallthrough` on the second line ends up being reported as spurious. \r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-05-08T09:53:03Z",
+	"updated_at": "2016-05-08T09:54:11Z"
+}

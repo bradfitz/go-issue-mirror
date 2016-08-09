@@ -1,0 +1,33 @@
+{
+	"id": 138033401,
+	"number": 14609,
+	"state": "closed",
+	"title": "cmd/go: behavior when using relative dirs for package names is underspecified",
+	"body": "This is using Go 1.6, but I don't think the behavior has changed recently.\r\n\r\n`go build` (and probably other go commands) normally take Go package names (that is, relative to some GOPATH component) but, as special cases, also take relative and absolute directories.\r\n\r\n`go help packages` says this:\r\n\r\n\u003e An import path that is a rooted path or that begins with\r\na . or .. element is interpreted as a file system path and\r\ndenotes the package in that directory.\r\n\r\nHowever, this does not fully describe the go tool's behavior when given relative paths such as `.` or `./hello`. I haven't looked into the code, but it seems like the tool tries to resolve such paths relative to GOPATH and does different things depending on what it finds.\r\n\r\nHere are two examples.\r\n\r\nFirst, there is a very different error given depending on whether the given path is inside a GOPATH or not:\r\n\r\n```\r\n$ pwd\r\n/tmp/build\r\n$ ls\r\n$ mkdir -p a/src b/src\r\n$ cd a/src/\r\n$ GOPATH=/asdf go build ./hello\r\ncan't load package: package ./hello: open /tmp/build/a/src/hello: no such file or directory\r\n$ GOPATH=/tmp/build/a go build ./hello                                                                                                                                                                                              \r\ncan't load package: package hello: cannot find package \"hello\" in any of:\r\n        /home/caleb/apps/go/src/hello (from $GOROOT)\r\n        /tmp/build/a/src/hello (from $GOPATH)\r\n\r\n```\r\n\r\nThere are actual behavior differences as well, though. For instance, you can build a package given a non-existent relative path if the resolved package name does exist in some other GOPATH component (or GOROOT, for that matter):\r\n\r\n```\r\n$ # continuing from above...\r\n$ cd /tmp/build/b/src/\r\n$ mkdir hello\r\n$ cat \u003e hello/hello.go\r\npackage main\r\nfunc main() { println(\"hello\") }\r\n$ cd /tmp/build/a/src/\r\n$ ls\r\n$ GOPATH=/asdf go build ./hello\r\ncan't load package: package ./hello: open /tmp/build/a/src/hello: no such file or directory\r\n$ GOPATH=/tmp/build/a:/tmp/build/b go build ./hello\r\n$ ./hello\r\nhello\r\n```\r\n\r\nThat seems to directly contradict \"interpreted as a file system path\" in the `go help packages` output.",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-05-17T23:58:04Z",
+	"created_at": "2016-03-03T00:15:12Z",
+	"updated_at": "2016-05-17T23:58:04Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

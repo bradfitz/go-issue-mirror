@@ -1,0 +1,33 @@
+{
+	"id": 139074857,
+	"number": 14689,
+	"state": "open",
+	"title": "doc: runtime/pprof: block profiler documentation needs some love",
+	"body": "Reading https://golang.org/pkg/runtime/pprof/ does not make clear how to use the blocking profiler in an application.\r\n\r\nThe blog post at http://blog.golang.org/profiling-go-programs (2011) finishes with:\r\n\r\n\u003e The goroutine blocking profile will be explained in a future post. Stay tuned.\r\n\r\nBut I cannot find any follow up.\r\n\r\nIn a post [to the mailing list](https://groups.google.com/d/topic/golang-nuts/QqZedWrqgOc/discussion) someone said that Brad mentioned it [briefly in a talk](https://github.com/bradfitz/talk-yapc-asia-2015/blob/master/talk.md), but he only mentions `go test -blockprofile`, and I'm not running tests.\r\n\r\nI have used several search engines to look for materials but they all point at runtime/pprof and other not-useful-to-me blog posts. Getting creative, I just thought I would dive in and try to use it:\r\n\r\n```go\r\n\tf, err := os.Create(\"block.pprof\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tp := pprof.Lookup(\"block\")\r\n\tdefer func() {\r\n\t\terr := p.WriteTo(f, 0)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalf(\"Error writing block profile: %v\", err)\r\n\t\t}\r\n\t}()\r\n```\r\n\r\nWhich results in a file with contents which don't look useful:\r\n\r\n```\r\n--- contention:\r\ncycles/second=2494323129\r\n```\r\n\r\nFinally, I [searched github for \"pprof lookup block\"](https://github.com/search?l=go\u0026q=pprof+lookup+block\u0026type=Code\u0026utf8=%E2%9C%93). This appears to show some examples of its use and reveals the function [`runtime.SetBlockProfile`](https://golang.org/pkg/runtime/#SetBlockProfileRate). However, this function is also quite confusingly documented.\r\n\r\n\u003e `func SetBlockProfileRate(rate int)`\r\n\u003e\r\n\u003e SetBlockProfileRate controls the fraction of goroutine blocking events that are reported in the blocking profile. The profiler aims to sample an average of one blocking event per rate nanoseconds spent blocked.\r\n\u003e\r\n\u003e To include every blocking event in the profile, pass rate = 1. To turn off profiling entirely, pass rate \u003c= 0.\r\n\r\nIs `rate` really a fraction, between 0 and 1? If so, since it is an `int`, it would seem my options are to either pass it 0 or 1, but the suggestion that it is a fraction seems contradictory. Is it necessary to call this function to start the profiler?\r\n\r\nTo conclude, the documentation at `runtime/pprof` really needs to make it clear how to use the block profiler. Some facts which are still not clear to me, even after reading code found elsewhere:\r\n\r\n* What kind of questions can be answered with a block profile?\r\n - Will it help me identify contention on a channel write?\r\n - Will it tell me where in my program is contending?\r\n* How do I use the block profiler in my application?\r\n* Is there something one must do to start the block profiler?\r\n* How often can one write a block profile? Once at the end of a running program?\r\n* Why is there not a `StartBlockProfiler` function?\r\n* How does one interpret the results of a block profile?\r\n\r\nP.S. I did eventually find [Debugging performance issues in Go programs](https://software.intel.com/en-us/blogs/2014/05/10/debugging-performance-issues-in-go-programs), which answers some of these questions. But unfortunately it was not easy to find for some reason.",
+	"user": {
+		"login": "pwaller",
+		"id": 438648,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-03-07T19:46:48Z",
+	"updated_at": "2016-06-27T22:16:42Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	},
+	"reactions": {
+		"total_count": 4,
+		"+1": 4
+	}
+}

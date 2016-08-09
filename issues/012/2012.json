@@ -1,0 +1,28 @@
+{
+	"id": 51278611,
+	"number": 2012,
+	"state": "closed",
+	"title": "http.ReverseProxy should sometimes flush eagerly",
+	"body": "by **trevor.strohman**:\n\n\u003cpre\u003ehttp.ReverseProxy buffers writes (because\nof NewReadWriter in http/server.go).  This can break server-push\napplications where the client is expected to read pieces of the\nresponse as they arrive.\n\nCurrently ReverseProxy.ServeHTTP does this:\n  if res.Body != nil {\n    io.Copy(rw, res.Body)\n  }\nthe buffering is built into the rw.  To add flushing you'd need something like:\n  for {\n    nr, err := res.Body.Read(buf)\n    if err != nil { return err }\n    rw.Write(buf[0:nr])\n    rw.(http.Flusher).Flush()\n  }\n\nBrad remarks that buffering is usually good so this hurts the common case, and perhaps\nthis should be an parameter setting, or perhaps the Copy function itself could be a\nparameter.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:10:56Z",
+	"created_at": "2011-06-27T23:57:46Z",
+	"updated_at": "2016-06-24T19:31:34Z"
+}

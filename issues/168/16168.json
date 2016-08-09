@@ -1,0 +1,21 @@
+{
+	"id": 161991084,
+	"number": 16168,
+	"state": "open",
+	"title": "x/net/http2: server should use weights and dependencies when scheduling frame writes",
+	"body": "As of version 51, Chrome has started using HTTP/2 dependencies to express an ordering for its requests. I'm not sure about other browsers, but I'm sure they will start using dependencies soon if they're not already. I have direct evidence that this improves pageload performance. Unfortunately my example is not easy to make public, but the gist is:\r\n\r\n1. Chrome downloads HTML for a page and makes a bunch of H2 requests for subresources (CSS, JS, etc).\r\n2. Chrome needs to evaluate these in a specific order, so it forms a linear sequence of dependencies that are communicated directly to the server. The server is expected to deliver subresources in this order.\r\n3. Eventually, Chrome runs some JS code that imports two other CSS files. These CSS files are needed immediately to start rendering the page -- they are more important than any requests currently in flight. Chrome expresses this importance using stream dependencies.\r\n\r\nGo's HTTP/2 server currently does not respect stream dependencies. In fact, frame writes are scheduled in a mostly random order, even though the priority tree is being maintained:\r\nhttps://github.com/golang/net/blob/master/http2/server.go#L457\r\nhttps://github.com/golang/net/blob/master/http2/writesched.go#L133\r\n\r\nThis causes problems in both step 2 (where resources are delivered in a random rather than sequential order) and step 3 (where the immediacy of the new requests is not respected).\r\n\r\nAt first glance, fixing this seems easy. The difficulty comes from the following scenario: Suppose the server needs to schedule two streams, A and B, where A is the stream parent of B. Suppose the server has data for B _right now_. Should it eagerly write the available data for B, or should it wait for data on A? This is complicated by the fact that the kernel's TCP send buffer is usually larger than the TCP congestion window, meaning the server can buffer multiple RTTs worth of data for B, then slowly flush that buffer even when data for A has become available. This problem has been seen in practice. There's a long (but interesting) discussion here:\r\nhttps://insouciant.org/tech/prioritization-only-works-when-theres-pending-data-to-prioritize/\r\n\r\nI'm going to do some reading about what other servers do in this scenario, and experiment with a prototype implementation, then report back. We may want to do a simple implementation first that ignores the above problem, then come up with something more complex later. I need this feature for some experiments that I'm doing, so I'll end up implementing a fix of some sort unless someone else has code ready-to-go. Feel free to assign this bug to me.\r\n\r\nNote: A related problem is that Go's H2 client currently has no API for expressing stream dependencies to the server, however this bug is entirely about server-side scheduling.\r\n\r\n/cc @bradfitz ",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"created_at": "2016-06-23T18:28:20Z",
+	"updated_at": "2016-08-02T02:00:29Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51276740,
+	"number": 637,
+	"state": "closed",
+	"title": "timeout_test.go can dereference a nil fd",
+	"body": "by **scotts@google.com**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n\n1.  call Dial with anything that will return an error.\nIn particular, a Debian system with ipv6 minimally configured,\nbut not actually routable.\n\nWhat is the expected output? \n\n--- FAIL: net.TestTimeoutUDP\n\tdial udp 127.0.0.1:53 failed: dial udp 127.0.0.1:53: network is \nunreachable\n\tdial udp 127.0.0.1:53 failed: dial udp 127.0.0.1:53: network is \nunreachable\n--- FAIL: net.TestTimeoutTCP\n\tdial tcp 74.125.19.99:80 failed: dial tcp 74.125.19.99:80: network is \nunreachable\nFAIL\n\nWhat do you see instead?\n\nSIGSEGV: segmentation violation\nFaulting address: 0x14\nPC=0x80624c8\n\nnet.testTimeout+0x7c /home/scott/go/src/pkg/net/timeout_test.go:15\n\tnet.testTimeout(0xb775c190, 0x808b164, 0x3, 0x808be64, 0xc, ...)\nnet.TestTimeoutUDP+0x45 \n/home/scott/go/src/pkg/net/timeout_test.go:43\n\tnet.TestTimeoutUDP(0xb775c190, 0x0)\ntesting.tRunner+0x2c /home/scott/go/src/pkg/testing/testing.go:132\n\ttesting.tRunner(0xb775c190, 0x80b8f3c, 0x0)\ngoexit /home/scott/go/src/pkg/runtime/proc.c:140\n\tgoexit()\n0xb775c190 unknown pc\n\n...\n\n\nWhat is your $GOOS?  $GOARCH?\n\nGOARCH=386\nGOOS=linux\n\nWhich revision are you using?  (hg identify)\n\n55fce9d5068a tip\n\nPlease provide any additional information below.\n\n\ndiff -r 55fce9d5068a src/pkg/net/timeout_test.go\n--- a/src/pkg/net/timeout_test.go\tWed Mar 03 18:43:36 2010 +1100\n+++ b/src/pkg/net/timeout_test.go\tWed Mar 03 02:42:45 2010 -0800\n@@ -12,10 +12,11 @@\n \n func testTimeout(t *testing.T, network, addr string, readFrom bool) {\n \tfd, err := Dial(network, \u0026quot;\u0026quot;, addr)\n-\tdefer fd.Close()\n \tif err != nil {\n \t\tt.Errorf(\u0026quot;dial %s %s failed: %v\u0026quot;, network, addr, err)\n+\t\treturn;\n \t}\n+\tdefer fd.Close()\n \tt0 := time.Nanoseconds()\n \tfd.SetReadTimeout(1e8) // 100ms\n \tvar b [100]byte\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:05:21Z",
+	"created_at": "2010-03-03T10:45:23Z",
+	"updated_at": "2016-06-24T19:14:10Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 111498795,
+	"number": 12942,
+	"state": "open",
+	"title": "cmd/link: DWARF line tables seem to be off by 1 instruction",
+	"body": "go version go1.5.1 darwin/amd64\r\n\r\nI was noticing that values printed in the debugger often seem to be uninitialized when stepping past a line that initializes them. It appears that the DWARF line tables are advancing the line number one instruction too early. For example, with this go code\r\n```go\r\n23 func main() {\r\n24 \tlf, err := os.OpenFile(\"test\", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)\r\n25 \tif err != nil {\r\n26 \t\tlog.Fatalf(\"error opening file: %v\", err)\r\n27 \t}\r\n28 ....\r\n```\r\n\r\ndwarfdump shows this for the line table:\r\n```\r\n0x000063e4: DW_LNE_set_address( 0x0000000004002e90 )\r\n0x000063ef: DW_LNS_advance_line( 22 )\r\n0x000063f1: address += 0,  line += 0\r\n            0x0000000004002e90      1     23      0 is_stmt\r\n\r\n0x000063f2: DW_LNS_advance_pc( 100 )\r\n0x000063f4: address += 0,  line += 1\r\n            0x0000000004002ef4      1     24      0 is_stmt\r\n\r\n0x000063f5: DW_LNS_advance_pc( 70 )\r\n0x000063f7: address += 0,  line += 1\r\n            0x0000000004002f3a      1     25      0 is_stmt\r\n```\r\n\r\nIt shows line 25 starting at 0x4002f3a. However, from the disassembly this appears to be the last instruction of line 24. Line 25 starts at 0x4002f42:\r\n```assembly\r\ntest`main.main:\r\n    0x4002e90 \u003c+0\u003e:    movq   %gs:0x8a0, %rcx\r\n    0x4002e99 \u003c+9\u003e:    leaq   -0x160(%rsp), %rax\r\n    0x4002ea1 \u003c+17\u003e:   cmpq   0x10(%rcx), %rax\r\n    0x4002ea5 \u003c+21\u003e:   jbe    0x4003d32                 ; \u003c+3746\u003e at test.go:23\r\n    0x4002eab \u003c+27\u003e:   subq   $0x1e0, %rsp\r\n    0x4002eb2 \u003c+34\u003e:   xorl   %eax, %eax\r\n    0x4002eb4 \u003c+36\u003e:   movq   %rax, 0x1c0(%rsp)\r\n    0x4002ebc \u003c+44\u003e:   movq   %rax, 0x1c8(%rsp)\r\n    0x4002ec4 \u003c+52\u003e:   movq   %rax, 0x1d0(%rsp)\r\n    0x4002ecc \u003c+60\u003e:   movq   %rax, 0x1d8(%rsp)\r\n    0x4002ed4 \u003c+68\u003e:   movq   %rax, 0x170(%rsp)\r\n    0x4002edc \u003c+76\u003e:   movq   %rax, 0x178(%rsp)\r\n    0x4002ee4 \u003c+84\u003e:   movq   %rax, 0x130(%rsp)\r\n    0x4002eec \u003c+92\u003e:   movq   %rax, 0x138(%rsp)\r\n    0x4002ef4 \u003c+100\u003e:  leaq   0x3b6865(%rip), %rbx      ; go.string.* + 93856\r\n    0x4002efb \u003c+107\u003e:  movq   %rbx, (%rsp)\r\n    0x4002eff \u003c+111\u003e:  movq   $0xb, 0x8(%rsp)\r\n    0x4002f08 \u003c+120\u003e:  movq   $0x20a, 0x10(%rsp)\r\n    0x4002f11 \u003c+129\u003e:  movl   $0x1b6, 0x18(%rsp)\r\n    0x4002f19 \u003c+137\u003e:  callq  0x40b8cb0                 ; os.OpenFile at file_unix.go:85\r\n    0x4002f1e \u003c+142\u003e:  movq   0x20(%rsp), %rbx\r\n    0x4002f23 \u003c+147\u003e:  movq   %rbx, 0x70(%rsp)\r\n    0x4002f28 \u003c+152\u003e:  movq   0x28(%rsp), %rcx\r\n    0x4002f2d \u003c+157\u003e:  movq   0x30(%rsp), %rdx\r\n    0x4002f32 \u003c+162\u003e:  movq   %rdx, 0xe8(%rsp)\r\n-\u003e  0x4002f3a \u003c+170\u003e:  movq   %rcx, 0xe0(%rsp)\r\n    0x4002f42 \u003c+178\u003e:  cmpq   $0x0, %rcx\r\n```\r\n\r\n",
+	"user": {
+		"login": "ribrdb",
+		"id": 72241,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-10-14T21:37:38Z",
+	"updated_at": "2015-11-05T02:33:10Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

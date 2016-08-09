@@ -1,0 +1,12 @@
+{
+	"id": 66100191,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eCould this be solved by adding a mutex?\n\ndiff -r 59dbd878547f src/net/http/server.go\n--- a/src/net/http/server.go\tTue Nov 25 08:42:00 2014 +0100\n+++ b/src/net/http/server.go\tWed Nov 26 10:44:33 2014 +0100\n@@ -306,6 +306,7 @@\n \tcw chunkWriter\n \tsw *switchWriter // of the bufio.Writer, for return to putBufioWriter\n \n+\thmu sync.Mutex\n \t// handlerHeader is the Header that Handlers get access to,\n \t// which may be retained and mutated even after WriteHeader.\n \t// handlerHeader is copied into cw.header at WriteHeader\n@@ -606,6 +607,8 @@\n }\n \n func (w *response) Header() Header {\n+\tw.hmu.Lock()\n+\tdefer w.hmu.Unlock()\n \tif w.cw.header == nil \u0026\u0026 w.wroteHeader \u0026\u0026 !w.cw.wroteHeader {\n \t\t// Accessing the header between logically writing it\n \t\t// and physically writing it means we need to allocate\n@@ -640,7 +643,9 @@\n \tw.status = code\n \n \tif w.calledHeader \u0026\u0026 w.cw.header == nil {\n+\t\tw.hmu.Lock()\n \t\tw.cw.header = w.handlerHeader.clone()\n+\t\tw.hmu.Unlock()\n \t}\n \n \tif cl := w.handlerHeader.get(\"Content-Length\"); cl != \"\" {\u003c/pre\u003e",
+	"user": {
+		"login": "wongak",
+		"id": 105424,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-11-26T09:46:16Z",
+	"updated_at": "2014-12-08T10:50:02Z"
+}

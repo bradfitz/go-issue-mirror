@@ -1,0 +1,12 @@
+{
+	"id": 114493137,
+	"body": "I tried to detect \"time goes backwards\" with something like this:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"runtime\"\r\n\t\"time\"\r\n)\r\n\r\nconst timeoutSecond = 100\r\n\r\nfunc nanotime() int64 {\r\n\t// return time.Now().UnixNano()\r\n\t// return runtime.Unixnano()\r\n\treturn runtime.Nanotime() // exported runtime·nanotime\r\n}\r\n\r\nfunc main() {\r\n\truntime.GOMAXPROCS(8)\r\n\r\n\tlog.Print(\"Start Check\")\r\n\tmax := nanotime()\r\n\tstart := time.Now()\r\n\r\n\ttimeout := time.After(time.Second * timeoutSecond)\r\n\tfor {\r\n\t\tselect {\r\n\t\tcase \u003c-timeout:\r\n\t\t\tlog.Print(\"timeout, no backwards time detected\")\r\n\t\t\treturn\r\n\t\tdefault:\r\n\t\t\tnext := nanotime()\r\n\t\t\tif next \u003c max {\r\n\t\t\t\tlog.Printf(\"backwards detected: duration %v\", time.Now().Sub(start))\r\n\t\t\t\treturn\r\n\t\t\t}\r\n\t\t\tmax = next\r\n\t\t}\r\n\t}\r\n}\r\n```\r\nOutput:\r\n```\r\n2015/06/23 05:58:56 Start Check\r\n2015/06/23 06:00:36 timeout, no backwards time detected\r\n2015/06/23 06:00:36 Max Diff: 29296900\r\n```\r\n\r\nBut I was unable to detect time going backwards, regardless of how I got \"time\".\r\n\r\nIs there a better way to do this? I'm sure I'm missing something.\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-23T13:02:31Z",
+	"updated_at": "2015-06-23T13:02:31Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51286858,
+	"number": 7544,
+	"state": "closed",
+	"title": "runtime: spans corruption",
+	"body": "\u003cpre\u003eparent: 19465:08dcdcdb757b tip\n\ngo test -run=none -bench=.* -cpu=4 compress/flate\nepisodically crashes with:\n\nMHeap_FreeLocked - span 0x7f4e8d505980 ptr 0xc2082d2000 state 1 ref 0 sweepgen 118/118\nfatal error: MHeap_FreeLocked - invalid free\n\nruntime stack:\nruntime.throw(0x67b7c7)\n\tsrc/pkg/runtime/panic.c:519 +0x69\nMHeap_FreeLocked(0x691140, 0x7f4e8d505980)\n\tsrc/pkg/runtime/mheap.c:409 +0x91\nruntime.MHeap_Free(0x691140, 0x7f4e8d505980, 0x0)\n\tsrc/pkg/runtime/mheap.c:394 +0xa5\nMCentral_ReturnToHeap(0x69d5d0, 0x7f4e8d505980)\n\tsrc/pkg/runtime/mcentral.c:306 +0xe7\nruntime.MCentral_UncacheSpan(0x69d5d0, 0x7f4e8d505980)\n\tsrc/pkg/runtime/mcentral.c:127 +0x97\nruntime.MCache_ReleaseAll(0x7f4e8d500000)\n\tsrc/pkg/runtime/mcache.c:120 +0x68\nflushallmcaches()\n\tsrc/pkg/runtime/mgc0.c:2095 +0x5c\nmarkroot(0xc20800e900, 0x4)\n\tsrc/pkg/runtime/mgc0.c:1326 +0x21b\nruntime.parfordo(0xc20800e900)\n\tsrc/pkg/runtime/parfor.c:103 +0x128\nruntime.gchelper()\n\tsrc/pkg/runtime/mgc0.c:2059 +0x2f\nstopm()\n\tsrc/pkg/runtime/proc.c:960 +0x111\nfindrunnable()\n\tsrc/pkg/runtime/proc.c:1263 +0x42d\nschedule()\n\tsrc/pkg/runtime/proc.c:1346 +0xe3\npark0(0xc2080025a0)\n\tsrc/pkg/runtime/proc.c:1411 +0xfe\nruntime.mcall(0x41bd37)\n\tsrc/pkg/runtime/asm_amd64.s:181 +0x4b\n\n\n\nfatal error: MHeap_AllocLocked - MSpan not free\n\nruntime stack:\nruntime.throw(0x67b700)\n\tsrc/pkg/runtime/panic.c:519 +0x69\nMHeap_AllocLocked(0x691140, 0x1, 0x32)\n\tsrc/pkg/runtime/mheap.c:231 +0xbf\nruntime.MHeap_Alloc(0x691140, 0x1, 0x10000000032)\n\tsrc/pkg/runtime/mheap.c:178 +0x7b\nMCentral_Grow(0x69d5d0)\n\tsrc/pkg/runtime/mcentral.c:265 +0x89\nruntime.MCentral_CacheSpan(0x69d5d0)\n\tsrc/pkg/runtime/mcentral.c:84 +0x14b\nruntime.MCache_Refill(0x7f8012295000, 0xc200000032)\n\tsrc/pkg/runtime/mcache.c:78 +0x119\nruntime.mallocgc(0x2000, 0x0, 0x1e)\n\tsrc/pkg/runtime/malloc.goc:151 +0x2fc\nruntime.stackalloc(0xc208002c60, 0x2000)\n\tsrc/pkg/runtime/stack.c:128 +0xc5\ncopystack(0xc208002c60, 0xc, 0x2000)\n\tsrc/pkg/runtime/stack.c:522 +0xb0\nruntime.newstack()\n\tsrc/pkg/runtime/stack.c:667 +0x3c8\nruntime.morestack()\n\tsrc/pkg/runtime/asm_amd64.s:228 +0x61\n\n\n\nfatal error: empty span\n\ngoroutine 29 [running]:\nruntime.throw(0x678fa0)\n\tsrc/pkg/runtime/panic.c:519 +0x69 fp=0xc208349c60\nruntime.MCentral_CacheSpan(0x69c708)\n\tsrc/pkg/runtime/mcentral.c:94 +0x216 fp=0xc208349c90\nruntime.MCache_Refill(0x7f204c91b000, 0xc200000027)\n\tsrc/pkg/runtime/mcache.c:78 +0x119 fp=0xc208349cc0\nruntime.mallocgc(0xa00, 0x504500, 0x1)\n\tsrc/pkg/runtime/malloc.goc:151 +0x2fc fp=0xc208349d28\nruntime.new(0x504500, 0xc2083e6400)\n\tsrc/pkg/runtime/malloc.goc:815 +0x32 fp=0xc208349d48\ncompress/flate.NewReader(0x7f204c92b970, 0xc2080223c0, 0x0, 0x0)\n\tsrc/pkg/compress/flate/inflate.go:686 +0x61 fp=0xc208349d78\ncompress/flate.benchmarkDecode(0xc2083e1a00, 0x1, 0xffffffffffffffff, 0x2710)\n\tsrc/pkg/compress/flate/reader_test.go:67 +0x669 fp=0xc208349ee8\ncompress/flate.BenchmarkDecodeTwainDefault1e4(0xc2083e1a00)\n\tsrc/pkg/compress/flate/reader_test.go:91 +0x42 fp=0xc208349f10\ntesting.(*B).runN(0xc2083e1a00, 0x3e8)\n\tsrc/pkg/testing/benchmark.go:124 +0x94 fp=0xc208349f20\ntesting.(*B).launch(0xc2083e1a00)\n\tsrc/pkg/testing/benchmark.go:214 +0x16c fp=0xc208349fa0\nruntime.goexit()\n\tsrc/pkg/runtime/proc.c:1446 fp=0xc208349fa8\ncreated by testing.(*B).run\n\tsrc/pkg/testing/benchmark.go:177 +0x40\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:41:56Z",
+	"created_at": "2014-03-14T11:20:26Z",
+	"updated_at": "2016-06-25T01:29:51Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 216582409,
+	"body": "Possible fix is trivial:\r\n\r\n```\r\ndiff --git i/src/net/http/httputil/reverseproxy.go w/src/net/http/httputil/reverseproxy.go\r\nindex 44d15ff..8c471a9 100644\r\n--- i/src/net/http/httputil/reverseproxy.go\r\n+++ w/src/net/http/httputil/reverseproxy.go\r\n@@ -90,6 +90,11 @@ func NewSingleHostReverseProxy(target *url.URL) *ReverseProxy {\r\n \t\t} else {\r\n \t\t\treq.URL.RawQuery = targetQuery + \"\u0026\" + req.URL.RawQuery\r\n \t\t}\r\n+\t\tif _, ok := req.Header[\"User-Agent\"]; !ok {\r\n+\t\t\t// explicitly disable User-Agent so it's not set to\r\n+\t\t\t// default value\r\n+\t\t\treq.Header.Set(\"User-Agent\", \"\")\r\n+\t\t}\r\n \t}\r\n \treturn \u0026ReverseProxy{Director: director}\r\n }\r\ndiff --git i/src/net/http/httputil/reverseproxy_test.go w/src/net/http/httputil/reverseproxy_test.go\r\nindex e9c0658..1065561 100644\r\n--- i/src/net/http/httputil/reverseproxy_test.go\r\n+++ w/src/net/http/httputil/reverseproxy_test.go\r\n@@ -41,6 +41,9 @@ func TestReverseProxy(t *testing.T) {\r\n \t\tif len(r.TransferEncoding) \u003e 0 {\r\n \t\t\tt.Errorf(\"backend got unexpected TransferEncoding: %v\", r.TransferEncoding)\r\n \t\t}\r\n+\t\tif c := r.Header.Get(\"User-Agent\"); c != \"\" {\r\n+\t\t\tt.Errorf(\"handler got User-Agent header value %q\", c)\r\n+\t\t}\r\n \t\tif r.Header.Get(\"X-Forwarded-For\") == \"\" {\r\n \t\t\tt.Errorf(\"didn't get X-Forwarded-For header\")\r\n \t\t}\r\n@@ -80,6 +83,7 @@ func TestReverseProxy(t *testing.T) {\r\n \r\n \tgetReq, _ := http.NewRequest(\"GET\", frontend.URL, nil)\r\n \tgetReq.Host = \"some-name\"\r\n+\tgetReq.Header.Set(\"User-Agent\", \"\")\r\n \tgetReq.Header.Set(\"Connection\", \"close\")\r\n \tgetReq.Header.Set(\"Proxy-Connection\", \"should be deleted\")\r\n \tgetReq.Header.Set(\"Upgrade\", \"foo\")\r\n```\r\n\r\nPlease let me know if this change makes sense, I can proceed with CL then.",
+	"user": {
+		"login": "artyom",
+		"id": 68182,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-03T16:17:47Z",
+	"updated_at": "2016-05-03T16:17:47Z"
+}

@@ -1,0 +1,16 @@
+{
+	"id": 229453783,
+	"body": "It's kind of convoluted, but it _is_ dealing with esoteric one-offs in the language spec vs implementation: https://play.golang.org/p/YlrMrkvY60\r\n\r\nFirst, by spec `var a A = c` should work. The two parameters are identical types (one is named, the other is unnamed, they have the same methods, with the same signatures, and the types of `fmt.Stringer` and `interface{ String() string}` are identical.\r\n\r\nInstead we get:\r\n  `prog.go:33: cannot use c (type *C) as type A in assignment:\r\n\t*C does not implement A (wrong type for F method)\r\n\t\thave F(interface { String() string })\r\n\t\twant F(fmt.Stringer)`\r\n\r\nThe proposal here is that `a = b` should also work, instead we get:\r\n  `prog.go:34: cannot use b (type *B) as type A in assignment:\r\n\t*B does not implement A (wrong type for F method)\r\n\t\thave F(Stringer)\r\n\t\twant F(fmt.Stringer)`\r\n\r\nBut if the first worked, we could just replace all Context functions with literal interfaces… but the later allows us to avoid having to copy-paste types all over the place, when the two interfaces are for all intents and purposes semantically and syntactically identical. (They all accept the same arguments to each method the exact same way, and treat their arguments the exact same way.)\r\n\r\nThis expands the power of interfaces, because interfaces are intended to be semantically flexible, and fulfilled simply by implementing the same receiver methods.",
+	"user": {
+		"login": "puellanivis",
+		"id": 10839126,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 5,
+		"+1": 5
+	},
+	"created_at": "2016-06-29T18:56:19Z",
+	"updated_at": "2016-06-29T18:59:25Z"
+}

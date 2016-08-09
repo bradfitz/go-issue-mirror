@@ -1,0 +1,21 @@
+{
+	"id": 51286218,
+	"number": 7121,
+	"state": "open",
+	"title": "net/http: Request.Body locking should be interruptable on Close",
+	"body": "\u003cpre\u003eThe fix to \u003ca href=\"https://golang.org/issue/6995\"\u003eissue #6995\u003c/a\u003e made me realize that the new locking introduced in revision\n00cce3a34d7eSimilar is too coarse.\n\nIt's now possible for a goroutine outside of the main server handler goroutine to be\nblocked in a Request.Body.Read (a transfer.go *body.Read) indefinitely, holding the\n*body mutex.\n\nThat mutex then prevents the server code from closing that body when the handler\ncompletes.\n\nSimilar to how an io.Pipe's PipeReader.Read will be interrupted when the pipe is closed,\nI think the http server's Request.Body.Read needs to be interruptable.  Perhaps it\nshould just use io.Pipe somewhere.\n\n\nExample test showing the problem:\n\n// Test that a hanging Request.Body.Read from another goroutine can't\n// cause the Handler goroutine's Request.Body.Close to block.\n// See golang.org/issue/7121\nfunc TestRequestBodyCloseDoesntBlock(t *testing.T) {\n        if testing.Short() {\n                t.Skip(\u0026quot;skipping in -short mode\u0026quot;)\n        }\n        defer afterTest(t)\n\n        readErrCh := make(chan error, 1)\n        errCh := make(chan error, 2)\n\n        server := httptest.NewServer(HandlerFunc(func(rw ResponseWriter, req *Request) {\n                go func(body io.Reader) {\n\t\t\t_, err := body.Read(make([]byte, 100))\n                        readErrCh \u0026lt;- err\n\t        }(req.Body)\n\t\ttime.Sleep(500 * time.Millisecond)\n        }))\n        defer server.Close()\n\n\tcloseConn := make(chan bool)\n        defer close(closeConn)\n        go func() {\n                conn, err := net.Dial(\u0026quot;tcp\u0026quot;, server.Listener.Addr().String())\n                if err != nil {\n\t\t\terrCh \u0026lt;- err\n                        return\n\t        }\n                defer conn.Close()\n\t\t_, err = conn.Write([]byte(\u0026quot;POST / HTTP/1.1\\r\\nConnection: close\\r\\nHost: foo\\r\\nContent-Length: 100000\\r\\n\\r\\n\u0026quot;))\n                if err != nil {\n                        errCh \u0026lt;- err\n                        return\n\t\t}\n                // And now just block, making the server block on our\n                // 100000 bytes of body that will never arrive.\n                \u0026lt;-closeConn\n        }()\n        select {\n\tcase err := \u0026lt;-readErrCh:\n                t.Logf(\u0026quot;Read error = %v\u0026quot;, err)\n        case err := \u0026lt;-errCh:\n                t.Error(err)\n\tcase \u0026lt;-time.After(5 * time.Second):\n                t.Error(\u0026quot;timeout\u0026quot;)\n        }\n}\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-01-14T00:25:54Z",
+	"updated_at": "2015-04-14T19:45:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

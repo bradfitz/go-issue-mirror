@@ -1,0 +1,27 @@
+{
+	"id": 93932327,
+	"number": 11635,
+	"state": "closed",
+	"title": "proposal: spec: permit type assertion to nil",
+	"body": "Currently we permit a nil case in a type switch.  This case matches if the value being switched on is a nil interface value.  However, we do not permit nil in a type assertion.  This is inconsistent.\r\n\r\nI propose that we remove this inconsistency, and permit writing x.(nil).  In the normal case, this is an expression that will evaluate to nil if x == nil, and will otherwise cause a run-time panic.  In the special case of an assignment or initialization that uses the ,ok form, as in v, ok = x.(nil), it will set v to nil and set ok to true if x == nil, false otherwise.\r\n\r\nOther than greater consistency, this may seem to be a completely useless change.  However, it does have a benefit for quickly written Go commands: it permits writing code like\r\n```\r\n    f, err := os.Open(\"file\")\r\n    err.(nil)\r\n```\r\nIn this case, the expression statement err.(nil) will panic if err  != nil.  This is not suitable for a library function but may be fine in a main function.  It is particularly useful for a one-off program where you want to check the error but don't need real error reporting.  Similarly, one can write\r\n```\r\n    f.Close().(nil)\r\n```\r\nto panic if the Close method fails.\r\n\r\nImplementing this will require adding a sentence to the spec in the Type Assertions section: \"If T is the predeclared identifier nil, x.(T) asserts that x is a nil interface value.\"  It will require modifying the compilers and go/types, and writing test cases.\r\n\r\nThe change is fully backward compatible and fairly minor.  It could be added to Go 1.6.\r\n\r\nDisadvantages: 1) slightly greater language complexity, modified somewhat by greater consistency between type assertions and type switches; 2) err.(nil) is cryptic for people new to Go and unfamiliar with type assertion syntax; 3) benefit is small and arguably non-existent.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2015-10-30T16:51:06Z",
+	"created_at": "2015-07-09T02:04:48Z",
+	"updated_at": "2015-10-30T16:51:06Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

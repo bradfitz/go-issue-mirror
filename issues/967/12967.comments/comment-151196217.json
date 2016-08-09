@@ -1,0 +1,12 @@
+{
+	"id": 151196217,
+	"body": "I thought of one problem with shrinking stacks during concurrent stack scan. If the goroutine is blocked in a channel operation or select, there are pointers in to that G's stack from runtime structures and updating these pointers during shrinking could race with another G completing that channel operation or select. This isn't an issue for stack growing because that's always done synchronously.\r\n\r\nI can think of a few solutions:\r\n\r\n1) We could not shrink the stack concurrently. This would be unfortunate, since goroutines are often blocked on channels for a long time.\r\n\r\n2) The stack shrinking code could detect this condition and lock the appropriate channels while shrinking to prevent a channel operation from completing during the shrink. This might not be so hard: we could add the *hchan to the sudog and then walk the g.waiting list in shrinkstack. We'd probably want to rearrange copystack a bit so we didn't have to keep these channels locked for the whole copystack. This has the downside of blocking all other operations on these channels even if the G being shrunk is way back in the channel's queue.\r\n\r\n3) Channel operations could detect this condition and wait for the stack shrink to finish or just requeue the waiting G (which doesn't help if this is the only G waiting on the channel). Channel operations would also have to block a stack shrink from starting during the operation. This has the advantage of only blocking operations that actually deal with the G being shrunk. We could probably do this by synchronizing on the G's status. Introduce a new status for \"in a channel op\" and make the channel completion put the G in to this status. If the G is in _Gcopystack, that will spin until the copy stack is done. If it's not in _Gcopystack, that will cause a copystack to spin during the channel op completion until it can put it in to _Gcopystack.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-26T16:25:12Z",
+	"updated_at": "2015-10-26T16:25:12Z"
+}

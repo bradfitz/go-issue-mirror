@@ -1,0 +1,12 @@
+{
+	"id": 66072268,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eOkay, I spent too much time debugging this today.  Here's what I now know:\n\n* OS X vs Linux doesn't matter\n* the /get goroutine never finishes because the io.Copy never finishes because the\nnet.Conn never becomes writable.\n* when the client disconnects, the server never closes its connection, since it's\nblocked on the write.  This bug explains the file descriptor leak in Dustin's stress\ntest from \u003ca href=\"https://golang.org/issue/4191\"\u003eissue #4191\u003c/a\u003e\n* after reading the GET request's headers, we never do another Read on the net.Conn, so\nwe never know the client disconnected.\n* keeping a goroutine always reading from the net.Conn, preemptively reading the\nupcoming request would be one way to fix this (related to pipeling and CloseNotifier in\n\u003ca href=\"https://golang.org/issue/2510\"\u003eissue #2510\u003c/a\u003e), but I also wondering whether the pollserver should be telling us, if we're\nwaiting for writability, that the client is now gone.\n\nI'll be looking at the poll server now and testing some behavior before I do a\nconcurrent reader fix for this.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-21T03:17:47Z",
+	"updated_at": "2014-12-08T10:23:26Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 89097978,
+	"number": 11262,
+	"state": "closed",
+	"title": "runtime/pprof: syscall exit trace processing is buggy",
+	"body": "When tracing is enabled, the trace begins with a sequence of GoCreate/GoWaiting/GoInSyscall events describing the state of all the extant goroutines. This is done with the world stopped. \n\nOn system call exit, we wait until the world has started again to write the GoSysExit event.\n\nThe trace reader requires that the GoSysExit event be preceded by an event putting the goroutine into the system call. During ordinary execution that event is the GoSysCall event; at the beginning of a trace that is the GoInSyscall event.\n\nAs written, the trace has this property.\n\nHowever, the tracer reader overwrites the time stamp on the GoSysExit event with the time stamp of the actual return from the system call, recorded in the trace file as ev.Args[1]. The actual system call exit can happen concurrently with the generation of the initial trace events, and in real time before the writing of the corresponding goroutine's GoInSyscall event. The entries are ordered correctly by recorded time stamp, but then when the reader smashes the GoSysExit event's recorded time stamp with this earlier time stamp and sorts the entries, it ends up with the GoSysExit before the GoInSyscall.\n\nThis makes the log reader unhappy, which makes many of the trace tests flaky.\n\nCL https://go-review.googlesource.com/11180 works around this by making the error message about bad syscall exits contain the text 'SKIP TEST' and then if the test gets an error with that text, it calls t.Skip instead of t.Fatal.\n\nBut this needs a proper fix for the release: presumably the same problem makes the traces unusable in real life should this occur.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-06-18T14:00:13Z",
+	"created_at": "2015-06-17T19:00:08Z",
+	"updated_at": "2016-06-25T02:11:24Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

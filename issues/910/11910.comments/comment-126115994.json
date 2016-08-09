@@ -1,0 +1,12 @@
+{
+	"id": 126115994,
+	"body": "Thanks for digging into it.  What if we change it to\r\n\r\n```\r\nfunc f(n int) {\r\n\tif n \u003e 0 {\r\n\t\tf(n - 1)\r\n\t}\r\n\tvar f struct {\r\n\t\tx uintptr\r\n\t}\r\n\r\n\t// We want to force an illegal instruction, to get a crash\r\n\t// at a PC value != 0.\r\n\t// Not all systems make the data section non-executable.\r\n\till := make([]byte, 64)\r\n\tswitch runtime.GOARCH {\r\n\tcase \"386\", \"amd64\":\r\n\t\tbinary.LittleEndian.PutUint16(ill, 0x0b0f) // ud2\r\n\tcase \"arm\":\r\n\t\tbinary.LittleEndian.PutUint32(ill, 0xe7f000f0) // no name, but permanently undefined\r\n\tcase \"arm64\":\r\n\t\tbinary.LittleEndian.PutUint32(ill, 0xd4207d00) // brk #1000\r\n\tcase \"ppc64\":\r\n\t\tbinary.BigEndian.PutUint32(ill, 0x7fe00008) // trap\r\n\tcase \"ppc64le\":\r\n\t\tbinary.LittleEndian.PutUint32(ill, 0x7fe00008) // trap\r\n\tdefault:\r\n\t\t// Just leave it as 0 and hope for the best.\t\r\n\t}\r\n\r\n\tf.x = uintptr(unsafe.Pointer(\u0026ill[0]))\r\n\tfn := *(*func())(unsafe.Pointer(\u0026f))\r\n\tfn()\r\n}\r\n```\r\n\r\n?  Perhaps that will give more consistent results.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-29T22:30:22Z",
+	"updated_at": "2015-07-30T07:10:57Z"
+}

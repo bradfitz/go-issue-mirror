@@ -1,0 +1,28 @@
+{
+	"id": 51276613,
+	"number": 537,
+	"state": "closed",
+	"title": "zlib inflater only checks CRC on flate inflater EOF, not on Close()",
+	"body": "by **quaggy**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Use a zlib.NewInflater() to read inflated data off a Reader\n2. Close() the inflater\n3. Try to read additional data off the Reader, after the zlib stream, but the Adler-32\nchecksum on the end of the zlib stream hasn't been read off the \nReader.\n\nzlibInflateBug.go demonstrates the problem.\n\nExpected: Closing the inflater reads and checks the checksum.\n\nWhat is the expected output?\n\nFile: aaaaaaaa789cda0d0480000000ffff075202edcccccccc\nRead header: aaaaaaaa\nRead inflated data: bbbbbbbb\nRead trailer: cccccccc\nUnread data: (should be no unread data)\n\nWhat do you see instead?\n\nFile: aaaaaaaa789cda0d0480000000ffff075202edcccccccc\nRead header: aaaaaaaa\nRead inflated data: bbbbbbbb\nRead trailer: 075202ed\nUnread data: cccccccc (should be no unread data)\n\nWhat is your $GOOS?  $GOARCH?\n\ndarwin amd64\n\nWhich revision are you using?  (hg identify)\n\n7df3be16abbf tip\n\nPlease provide any additional information below.\n\nAt the moment, the zlib inflater will only check the CRC when the \nunderlying flate inflater returns an os.EOF. If the application doing the \ndecompression knows exactly how many bytes to inflate, then the os.EOF \nis never hit, and the CRC is never performed, despite exactly the data \nbeing fully inflated, and the inflater being closed. \n\nPS: I am aware that the zlib inflater \u0026quot;buffers input and may read more data \nthan necessary from r\u0026quot; and am avoiding automatic wrapping with a \nbufio.Buffer, by passing in a bufio.Buffer.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/537/0/zlibInflateBug.go\"\u003ezlibInflateBug.go\u003c/a\u003e (826 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:04:57Z",
+	"created_at": "2010-01-17T00:19:14Z",
+	"updated_at": "2016-06-24T19:12:56Z"
+}

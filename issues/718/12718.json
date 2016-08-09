@@ -1,0 +1,27 @@
+{
+	"id": 107794838,
+	"number": 12718,
+	"state": "open",
+	"title": "x/mobile: App exits with Segmentation Fault",
+	"body": "Ok, I have experienced this issue in two different ways.\r\n\r\nThe first way is with the `basic` example application. If I resize the window vertically to 0px height, I get the following error on the terminal.\r\n\r\n```bash\r\n$ go install golang.org/x/mobile/example/basic \u0026\u0026 basic\r\nSegmentation fault: 11\r\n```\r\n\r\nThe second one is a bit more complicated. It involves a massive amount of manual window resizing until the application crashes. Additionally, it involves a framework of mine that is not much concurrency-friendly. Then again, I am doing all of the calls from the app event lifecycle loop and never spawn any go routines so I should be all right. \r\n\r\n```bash\r\nfatal error: unexpected signal during runtime execution\r\n[signal 0xb code=0x1 addr=0xf60 pc=0xcc88f75]\r\n\r\nruntime stack:\r\nruntime.throw(0x421d500, 0x2a)\r\n\t/usr/local/go/src/runtime/panic.go:527 +0x90\r\nruntime.sigpanic()\r\n\t/usr/local/go/src/runtime/sigpanic_unix.go:12 +0x5a\r\n\r\ngoroutine 7 [syscall, locked to thread]:\r\nruntime.cgocall(0x40035c0, 0xc820231c30, 0xc800000000)\r\n\t/usr/local/go/src/runtime/cgocall.go:120 +0x11b fp=0xc820231bf8 sp=0xc820231bc8\r\ngolang.org/x/mobile/gl._Cfunc_process(0xa)\r\n\t??:0 +0x31 fp=0xc820231c30 sp=0xc820231bf8\r\ngolang.org/x/mobile/gl.DoWork()\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/gl/work.go:108 +0x2be fp=0xc820231e50 sp=0xc820231c30\r\ngolang.org/x/mobile/app.loop(0x4737450)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/darwin_amd64.go:85 +0x10b fp=0xc820231fa8 sp=0xc820231e50\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc820231fb0 sp=0xc820231fa8\r\ncreated by golang.org/x/mobile/app.startloop\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/darwin_amd64.go:116 +0x35\r\n\r\ngoroutine 1 [syscall, locked to thread]:\r\ngolang.org/x/mobile/app._Cfunc_runApp()\r\n\tgolang.org/x/mobile/app/_obj/_cgo_gotypes.go:212 +0x31\r\ngolang.org/x/mobile/app.main(0x4233fd8)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/darwin_amd64.go:65 +0x18a\r\ngolang.org/x/mobile/app.Main(0x4233fd8)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/app.go:21 +0x21\r\nmain.main()\r\n\t\t\t\t\t\t\t\t\t\t......................................\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1\r\n\r\ngoroutine 5 [select]:\r\ngolang.org/x/mobile/app.pump.func1(0xc820030070, 0xc820016240)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/app.go:146 +0x527\r\ncreated by golang.org/x/mobile/app.pump\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/app.go:175 +0x96\r\n\r\ngoroutine 6 [chan receive]:\r\ngolang.org/x/mobile/gl.enqueue(0x80, 0x0, 0x1, 0xc8200b8e80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/gl/work.go:63 +0xc0\r\ngolang.org/x/mobile/gl.UniformMatrix4fv(0x0, 0xc8200b8e80, 0x10, 0x10)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/gl/gl.go:2025 +0x9f\r\ngithub.com/momchil-atanasov/go-whiskey-android/gles/client.(*uniformClient).BindFloat4x4Uniform(0x43091e0, 0x41afbc0, 0xc8202600e0, 0xc8200b8e80, 0x10, 0x10, 0x0, 0x0)\r\n\t/Users/momchil/Workspace/Go/src/github.com/momchil-atanasov/go-whiskey-android/gles/client/uniform.go:63 +0x85\r\ngithub.com/momchil-atanasov/go-whiskey-android/gles/uniform.(*float4x4Uniform).Bind(0xc8200b8e80, 0xe724000, 0x43091e0, 0x41afbc0, 0xc8202600e0)\r\n\t/Users/momchil/Workspace/Go/src/github.com/momchil-atanasov/go-whiskey-android/gles/uniform/uniform.go:103 +0x75\r\n\t\t\t\t\t\t\t\t\t\t......................................\r\ngolang.org/x/mobile/app.main.func1(0x4233fd8)\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/darwin_amd64.go:60 +0x6f\r\ncreated by golang.org/x/mobile/app.main\r\n\t/Users/momchil/Workspace/Go/src/golang.org/x/mobile/app/darwin_amd64.go:63 +0x185\r\n\r\ngoroutine 18 [syscall, 1 minutes, locked to thread]:\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1\r\n```\r\n\r\nNote: I have deleted parts of the stack trace and replaced with `....................`.\r\n\r\nWhat I noticed is that in all attempts, it always crashes when doing a call to `gl.UniformMatrix4fv`.\r\n\r\nI spent a considerable amount of time trying to reproduce it with the `basic` example but failed. In my scenario I am allocating a considerable amount more memory (textures, shaders, matrices) which could have some effect.\r\n\r\nIf the stack trace doesn't give you any ideas as to what it might be, you can leave it for now. It is a pain to reproduce it with my app and it seems impossible to do with the `basic` one.",
+	"user": {
+		"login": "momchil-atanasov",
+		"id": 7446489,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 24,
+	"created_at": "2015-09-22T20:27:29Z",
+	"updated_at": "2015-10-06T17:02:39Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

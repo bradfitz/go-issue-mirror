@@ -1,0 +1,12 @@
+{
+	"id": 66076049,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eThe TestGoroutinesRunning test could be smarter and parse out each goroutine and discard\nones that are innocuous, such as those in syscall.EpollWait from newPollServer.  That's\none per CPU or whatever, and shouldn't count.\n\nThe ones that bother me are these 4:\n\n\t\tgoroutine 2109 [chan receive]:\n\t\tnet.(*pollServer).WaitWrite(0xc200695180, 0xc2006ad410, 0xc20009b420, 0x73)\n\t\t\t/build/go.tip/go/src/pkg/net/fd_poll_unix.go:260 +0x63\n\t\tnet.(*netFD).connect(0xc2006ad410, 0xc200695120, 0xc2003e33a0, 0x0, 0x0, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/fd_unix.go:99 +0x15f\n\t\tnet.socket(0x712400, 0x3, 0x2, 0x1, 0x0, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/sock_posix.go:55 +0x301\n\t\tnet.internetSocket(0x712400, 0x3, 0x0, 0x0, 0xc20017c3c0, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/ipsock_posix.go:146 +0x423\n\t\tnet.dialTCP(0x712400, 0x3, 0x0, 0xc2006d2ae0, 0x0, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/tcpsock_posix.go:153 +0x111\n\t\tnet.dial(0x712400, 0x3, 0xc2006d2a27, 0xf, 0x0, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/dial.go:214 +0x3cc\n\t\tnet.DialOpt(0xc2006d2a27, 0xf, 0x7fa69ea7ada8, 0x1, 0x1, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/dial.go:204 +0x1ff\n\t\tnet.Dial(0x712400, 0x3, 0xc2006d2a27, 0xf, 0xc2000a0820, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/dial.go:189 +0xd4\n\t\tnet/http.(*Transport).dial(0xc2008c4080, 0x712400, 0x3, 0xc2006d2a27, 0xf, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/http/transport.go:384 +0xd2\n\t\tnet/http.(*Transport).dialConn(0xc2008c4080, 0xc2006d2ab0, 0xc2003e0e88, 0xc200b20280, 0xc2008c1840, ...)\n\t\t\t/build/go.tip/go/src/pkg/net/http/transport.go:427 +0x6c\n\t\tnet/http.func·014()\n\t\t\t/build/go.tip/go/src/pkg/net/http/transport.go:402 +0x3c\n\t\tcreated by net/http.(*Transport).getConn\n\nWhy is something stuck in a dial?\n\nWe should modify checkLeakedTransports to look for that stack trace earlier, and find\nwhich test is responsible, rather than only detecting that at the very end.\n\nWe should also rename checkLeakedTransports because it does a lot more now.  Maybe just\npostTest.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-12T19:49:04Z",
+	"updated_at": "2014-12-08T10:26:46Z"
+}

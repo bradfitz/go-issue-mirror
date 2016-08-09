@@ -1,0 +1,12 @@
+{
+	"id": 66066197,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThe same code works fine on linux, so I suspect LLVM.\n\nHere is a short repro:\n\npackage p\n\n/*\nstruct s {\n        int a;\n        int b;\n};\n\nstruct flex {\n        long a;\n        int b;\n        struct s c[];\n};\n*/\nimport \"C\"\n\ntype (\n        Flex C.struct_flex\n)\n\n\nHere is the progress so far on my debugging:\n\ndebug/dwarf sees the struct as follows:\n[flex] []dwarf.Field{dwarf.Field{Attr:dwarf.AttrSibling, Val:0x15c},\ndwarf.Field{Attr:dwarf.AttrName, Val:\"flex\"}, dwarf.Field{Attr:dwarf.AttrByteSize,\nVal:16}, dwarf.Field{Attr:dwarf.AttrDeclFile, Val:2},\ndwarf.Field{Attr:dwarf.AttrDeclLine, Val:8}}\n[flex] BitO 0, Field \u0026dwarf.StructField{Name:\"a\", Type:(*dwarf.IntType)(0x42323780),\nByteOffset:0, ByteSize:0, BitOffset:0, BitSize:0}\n[flex] BitO 8, Field \u0026dwarf.StructField{Name:\"b\", Type:(*dwarf.IntType)(0x42323900),\nByteOffset:8, ByteSize:0, BitOffset:0, BitSize:0}\n[flex] BitO 12, Field \u0026dwarf.StructField{Name:\"c\", Type:(*dwarf.ArrayType)(0x4231a640),\nByteOffset:12, ByteSize:0, BitOffset:0, BitSize:0}\n[flex] LastBitO 12, AttrByteSize 16\n\ncgo sees:\n[flex] [0] a long int 8 (off=8)\n[flex] [1] b int 4 (off=12)\n[flex] [2] c typeof(struct s[1]) 8 (off=20)\n\nThe error is:\niso.go:18:7: struct flex size calculation error off=20 bytesize=16\n\nIf I add or remove fields from the struct, the error will sometimes go away.  It appears\nas if LLVM is setting the struct size in DWARF to be word-aligned.\n\nThe only fix I can come up with is to always set the length of a terminal array to zero,\nbut this seems like it would have complications.\u003c/pre\u003e",
+	"user": {
+		"login": "kylelemons",
+		"id": 322213,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-11T03:56:28Z",
+	"updated_at": "2014-12-08T10:18:19Z"
+}

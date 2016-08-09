@@ -1,0 +1,12 @@
+{
+	"id": 179080076,
+	"body": "This works for the UNIX implementation of `netFD`, so anything but Windows and Plan9.  This kludge does **not** set the flag before the `listen()` system call is issued, unfortunately.  It worked for me to set `IP_TOS`, but if `SO_REUSEPORT` needs to be set before calling `listen()` then I'm sorry for the noise.\r\n\r\nExact sequence of events that happen when using my kludge to set the TOS to `40` (as per `strace` on Linux):\r\n```\r\nsocket(PF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 10\r\nsetsockopt(10, SOL_SOCKET, SO_BROADCAST, [1], 4) = 0\r\nsetsockopt(10, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0\r\nbind(10, {sa_family=AF_INET, sin_port=htons(6042), sin_addr=inet_addr(\"127.0.0.1\")}, 16) = 0\r\nlisten(10, 128)                   = 0        // \u003c-------------\r\nepoll_ctl(8, EPOLL_CTL_ADD, 10, {...}) = 0\r\ngetsockname(10, {sa_family=AF_INET, sin_port=htons(6042), sin_addr=inet_addr(\"127.0.0.1\")}, [16]) = 0\r\nsetsockopt(10, SOL_IP, IP_TOS, [40], 4) = 0  // \u003c-------------\r\n// ...\r\naccept4(10, 0x18fa6ca8, [112], SOCK_CLOEXEC|SOCK_NONBLOCK) = -1 EAGAIN (Resource temporarily unavailable)\r\n```",
+	"user": {
+		"login": "tsuna",
+		"id": 128281,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-03T08:09:32Z",
+	"updated_at": "2016-02-03T08:09:32Z"
+}

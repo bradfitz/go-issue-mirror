@@ -1,0 +1,21 @@
+{
+	"id": 141395327,
+	"number": 14840,
+	"state": "open",
+	"title": "cmd/link: dead code elimination for side-effect free functions",
+	"body": "Currently if we compile a Go program like:\r\n\r\n    package main\r\n    type dead int\r\n    func newDead() *dead { return new(dead) }\r\n    var x = newDead()\r\n    func main() {}\r\n\r\nthe linker can't dead code eliminate `x` or `dead`.  This is because the \"x = newDead()\" initialization is compiled to an implicit init function, which causes the linker to pull in `x` and `newDead`.\r\n\r\n(See https://golang.org/cl/20765 for a real world example.)\r\n\r\nIn general, just because `x` is otherwise unused, the linker can't get rid of the `newDead()` call because it might have side-effects.  However, it should be possible for the compiler to help identify functions that are side-effect free, which could in turn let the linker be more aggressive about dead code elimination.\r\n\r\nWe would probably also need to tweak how cmd/compile generates package initializer functions for the linker to be able to eliminate individual initializers.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-03-16T20:36:38Z",
+	"updated_at": "2016-03-21T13:49:51Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

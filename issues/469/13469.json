@@ -1,0 +1,17 @@
+{
+	"id": 120258013,
+	"number": 13469,
+	"state": "closed",
+	"title": "cmd/compile: bad variable misuse in order.go",
+	"body": "orderstmt's OSELECT case reuses t as a temporary \\*NodeList even though it's still live and used for the poptemp call later:\r\n\r\n    func orderstmt(n *Node, order *Order) {\r\n        ...\r\n        switch n.Op {\r\n        ...\r\n        case OSELECT:\r\n            t := marktemp(order)\r\n            ...\r\n                    case OSELRECV, OSELRECV2:\r\n                        if r.Colas {\r\n                            t = r.Ninit\r\n            ...\r\n            poptemp(t, order)\r\n        ...\r\n    }\r\n\r\nIn practice, this currently seems to work out okay because we don't allow inlining of functions with select statements, so marktemp(order) will always return nil, and the r.Colas branch will set t back to nil (or else we'll hit the `Yyerror(\"ninit on select recv\")` error and fail anyway).\r\n\r\nIf I comment out OSELECT in inl.go:ishairy, then I notice this program causes marktemp(order) to return non-nil but then t is changed to nil before the poptemp(t, order) call:\r\n\r\n    package repro\r\n\r\n    func f() int\r\n    func g(int, int) int\r\n    func h(ch chan int) int {\r\n        select {\r\n        case x := \u003c-ch:\r\n            return x\r\n        }\r\n    }\r\n\r\n    func repro() {\r\n        g(f(), h(nil))\r\n    }\r\n",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-12-03T21:29:43Z",
+	"created_at": "2015-12-03T20:05:38Z",
+	"updated_at": "2015-12-03T21:29:43Z"
+}

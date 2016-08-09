@@ -1,0 +1,12 @@
+{
+	"id": 146945815,
+	"body": "@mdempsky Can you explain to me why this matters for go/types, i.e., why it should be the same as what gc provides (independent of issue #9401)? This is the unsafe package, and also we don't guarantee compatibility.\r\n\r\nThe go/types size computation also differs in other ways: For a struct, it always computes the minimal size (never with padding). If padding is needed for alignment if the struct is used in an array, or as a field in another struct, that padding is added then. This can save significant amount of space. For instance, in this program:\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"unsafe\"\r\n)\r\n\r\ntype T1 struct {\r\n    a float64\r\n    b byte\r\n}\r\n\r\ntype T2 struct {\r\n    a T1\r\n    b byte\r\n}\r\n\r\nfunc main() {\r\n    var t1 T1\r\n    println(unsafe.Sizeof(t1)) // gc: 16\r\n    var t2 T2\r\n    println(unsafe.Sizeof(t2)) // gc: 24\r\n}\r\n```\r\ngc returns 16 for the size of T1 even though it truly only needs 9 bytes. As a result, the size of T2 is 24 bytes even though it would be fine with just 10 bytes (and it would not violate any alignment issues). It's easy to construct types that use much more space in gc than would be necessary (w/o violating alignment) if those were used as elements of an array.\r\n\r\nOr in other words, the Sizeof computation by go/types always returns the minimum actual space required. If there's implementation requirements (alignment, GC) that require padding, that needs to be added separately.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-09T17:49:13Z",
+	"updated_at": "2015-10-09T17:50:08Z"
+}

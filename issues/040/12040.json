@@ -1,0 +1,22 @@
+{
+	"id": 99271112,
+	"number": 12040,
+	"state": "closed",
+	"title": "runtime: proportional sweep is over-aggressive",
+	"body": "Commit fc9ca85 fixed a problem where proportional sweep was under-aggressive, but did so by making it somewhat over-aggressive. In particular, the sweep ratio is computed as pages to sweep per heap byte allocated. As of fc9ca85, sweeping is performed before allocating a span by charging for the entire size of the span requested, rather than the number of bytes actually available for allocation from the returned span. That is, if the returned span is 8K, but already has 6K in use, the mutator is charged for 8K of heap allocation even though it can only allocate 2K more from the span. This effect is more amplified by fragmented heaps.\r\n\r\nOne way to fix this would be to reimburse the mutator for the in-use bytes of the span ultimately returned to it. It's important to do the sweep before the span is allocated to avoid going in to debt, but this means we don't know what span is going to be returned to the mutator, so it's difficult to do the charge correctly up front. However, it's easy to charge the worst case (which is what we do now) and then return some credit.\r\n\r\nAlternatively, the sweep ratio could be in different units, such as pages to sweep per page allocated, but I believe this is difficult to calculate at the beginning of concurrent sweep.\r\n\r\n@RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-11-11T15:21:49Z",
+	"created_at": "2015-08-05T18:44:23Z",
+	"updated_at": "2015-11-11T15:21:49Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

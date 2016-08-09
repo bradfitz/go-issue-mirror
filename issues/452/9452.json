@@ -1,0 +1,22 @@
+{
+	"id": 52944533,
+	"number": 9452,
+	"state": "closed",
+	"title": "crypto/ecdsa: uses unsafe nonces",
+	"body": "As the comment in [ecdsa.go](https://github.com/golang/go/blob/master/src/crypto/ecdsa/ecdsa.go#L121) notes, the security of the private key depends on the rand.Reader outputting key-quality bits.\r\n\r\nThis is an unsafe assumption. @agl fixed this in OpenSSL a few years back: [Add secure DSA nonce flag](https://github.com/openssl/openssl/commit/8a99cb29d1f0013243a532bccc1dc70ed678eebe) and [Make `safe' (EC)DSA nonces the default](https://github.com/openssl/openssl/commit/190c615d4398cc6c8b61eb7881d7409314529a75).\r\n\r\n--\r\n\r\nI have a couple of different patches I've applied to Go (for various applications) to fix this. I'm happy to submit one via codereview, but first wanted some feedback on the preferred approach:\r\n\r\nLevel of determinism:\r\n  - Deterministic ECDSA signatures\r\n  - Randomized ECDSA signatures that are IND-CPA up to the entropy provided by the rand.Reader\r\n\r\nChoice of PRF; I'd prefer a PRF with 32-byte security strength and a proof of indifferentiability from a random oracle:\r\n    - AES-256-CTR(Chop256(MAC-SHA-512(private_key, entropy || hash))), where MAC is H2, HMAC, or Envelope MAC\r\n    - SHAKE256(private_key || entropy || hash)\r\n\r\nAlso, it seems rather undesirable to ever draw more than curvebitlen / 2 bits of entropy from the source.\r\n\r\nI'm not as clear on the security story for the OpenSSL or [RFC 6979](https://tools.ietf.org/html/rfc6979) constructions, though I see no practical problems with them.",
+	"user": {
+		"login": "coruus",
+		"id": 972974,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-01-26T22:03:10Z",
+	"created_at": "2014-12-27T00:54:59Z",
+	"updated_at": "2016-06-25T01:57:21Z"
+}

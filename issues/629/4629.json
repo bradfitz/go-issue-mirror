@@ -1,0 +1,27 @@
+{
+	"id": 51282407,
+	"number": 4629,
+	"state": "closed",
+	"title": "cmd/6c: Optimizer doesn't recognize rotate expressions",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile C code with \u0026quot;rotate\u0026quot; expressions using 6c.\n\nWhat is the expected output?\nCode using RO[LR][BLWQ] instructions as appropriate.\n\nWhat do you see instead?\nCode using sequences of \u0026quot;shift\u0026quot; and \u0026quot;or\u0026quot; instructions.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6c\n\nWhich operating system are you using?\nlinux\n\nWhich version are you using?  (run 'go version')\ngo version devel +8906cf341c9b Mon Jan 07 19:36:38 2013 +1100 linux/amd64\n\n\nPlease provide any additional information below.\nRotations are common in cryptography, so it would be nice if they could be handled more\nefficiently.  E.g., see\n\u003ca href=\"https://groups.google.com/d/msg/golang-dev/R2O25Xz11zU/92mOve0eGy4J\"\u003ehttps://groups.google.com/d/msg/golang-dev/R2O25Xz11zU/92mOve0eGy4J\u003c/a\u003e for a hash function\nbenchmark that improves considerably if 6c emitted ROLQ instructions.\n\n$ cat rotate.c\nunsigned int\nrotate(unsigned int x)\n{\n\tx = (x \u0026lt;\u0026lt; 3) | (x \u0026gt;\u0026gt; (sizeof(x) * 8 - 3));\n\treturn x;\n}\n\n$ go tool 6c -S rotate.c\n(rotate.c:2)\tTEXT\trotate+0(SB),$0-8\n(rotate.c:2)\tMOVL\tx+0(FP),!!DX\n(rotate.c:4)\tMOVL\tDX,!!AX\n(rotate.c:4)\tSALL\t$3,!!AX\n(rotate.c:4)\tMOVL\tDX,!!CX\n(rotate.c:4)\tSHRL\t$29,!!CX\n(rotate.c:4)\tORL\tCX,!!AX\n(rotate.c:5)\tRET\t,!!\n(rotate.c:5)\tRET\t,!!\n(rotate.c:5)\tEND\t,!!\n\nIdeally this would compile to just:\n(rotate.c:2)\tTEXT\trotate+0(SB),$0-8\n(rotate.c:2)\tMOVL\tx+0(FP),!!AX\n(rotate.c:4)\tROLL\t$3,!!AX\n(rotate.c:5)\tRET\t,!!\n(rotate.c:5)\tEND\t,!!\n\n(Similar optimizations could be added to 8c and 5c too.)\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:24:34Z",
+	"created_at": "2013-01-08T01:22:50Z",
+	"updated_at": "2016-06-24T22:30:54Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

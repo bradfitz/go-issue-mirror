@@ -1,0 +1,21 @@
+{
+	"id": 124482523,
+	"number": 13793,
+	"state": "open",
+	"title": "cmd/compile: Incorrect conversion to string",
+	"body": "In the following program:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tconst A = 0xfffffffffffffffff // error\r\n\t// const A = 0x8000000000000000 // error\r\n\t// const A = 0x7fffffffffffffff // ok\r\n\ta := string(A)\r\n\tfor i, r := range a {\r\n\t\tfmt.Printf(\"%d: %x\\n\", i, r)\r\n\t}\r\n}\r\n```\r\n\r\nThe compiler issues error message `overflow in int -\u003e string`.\r\n\r\nForm the Go Spec https://golang.org/ref/spec#Conversions\r\n\r\n\u003e A constant value x can be converted to type T in any of these cases:\r\n\u003e * x is an integer constant and T is a string type. The same rule as for non-constant x applies in this case.\r\n\r\n...\r\n\r\n\u003e A non-constant value x can be converted to type T in any of these cases:\r\n\u003e * x is an integer or a slice of bytes or runes and T is a string type.\r\n\r\n...\r\n\r\n\u003e Conversions to and from a string type\r\n\u003e 1. Converting a signed or unsigned integer value to a string type yields a string containing the UTF-8\r\n\u003e representation of the integer. Values outside the range of valid Unicode code points are converted to\r\n\u003e  \"\\uFFFD\".\r\n\r\nAccording to the above, the conversion should succeed, with the resulting string containing the UTF-8 encoding of `0xfffd`. \r\n\r\n`gccgo` does not issue an error and behaves as in the spec.\r\n",
+	"user": {
+		"login": "momchil-velikov",
+		"id": 5541560,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-12-31T16:02:04Z",
+	"updated_at": "2016-07-24T08:14:06Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

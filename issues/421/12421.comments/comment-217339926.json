@@ -1,0 +1,12 @@
+{
+	"id": 217339926,
+	"body": "Fixing this seems easy, but we need a Decider to pick the right fix.\r\n\r\nThe only restrictions on domain names imposed by DNS are: labels must be 1 to 63 bytes, and total name length (including label length bytes and terminating zero byte) must be \u003c= 255 bytes (or 256 for mDNS).  When comparing names for equality, labels are compared ASCII case-insensitively, but otherwise they can contain arbitrary byte values.  For example, running `host '!!!.google.com'` and `dig '!!!.google.com'` both end up dispatching DNS queries for \"!!!.google.com\" over the network.\r\n\r\nBeyond that, it's not uncommon for DNS utilities to support escape sequences: `host '\\033\\033\\033.google.com'` and `dig '\\033\\033\\033.google.com'` both work the same as using `'!!!.google.com'`.  (Most programs use 3-byte decimal escape sequences like Go; djbdns uses variable-length octal escape sequences like C.)\r\n\r\nOn the other hand, RFC 952 restricts domain names to match the grammar:\r\n\r\n      \u003chname\u003e ::= \u003cname\u003e*[\".\"\u003cname\u003e]\r\n      \u003cname\u003e  ::= \u003clet\u003e[*[\u003clet-or-digit-or-hyphen\u003e]\u003clet-or-digit\u003e]\r\n\r\nRFC 1123 relaxes the initial `\u003clet\u003e` to `\u003clet-or-digit\u003e`.  This relaxed form is also what's specified for use in URIs by RFC 3986.  RFC 5321 imposes the same restriction on email address domains.  (Off hand, I'm not sure how strictly these rules are enforced in practice.)\r\n\r\nmDNS relaxes the rules for .local names to allow UTF-8 in RFC 6762 section 16.\r\n\r\nI'd rather have more time to think about the best solution for Go. Punting to 1.8.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-06T03:28:47Z",
+	"updated_at": "2016-05-06T03:28:47Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 135472049,
+	"number": 14467,
+	"state": "open",
+	"title": "encoding/xml: `,innerxml` makes light of namespaces.",
+	"body": "See [the example](http://play.golang.org/p/KjOhmzacUc). The result is obviously not what we wish. We have no way we can obtain and recover the context, namely the prefix-namespace correspondence, where the fragment is extracted. I found xml.go naively accumulating input stream in `saved` while `,innerxml` is effective. The best solution is like the below:\r\n\r\n    buffer := new(bytes.Buffer)\r\n    encoder := xml.NewEncoder(buffer)\r\n \r\n    // ...\r\n   \r\n    for {\r\n      token, err := Token()\r\n      // ...\r\n      encoder.EncodeToken(token)\r\n    }\r\n\r\n    // ...\r\n\r\n    encoder.Flush()\r\n    saveXMLData = buffer.Bytes()\r\n\r\nNamespace-aware `,innerxml` is rather expensive, so we may as well have a new flag. Millions of extensible guys are eager for a politic decision.",
+	"user": {
+		"login": "HinataYanagi",
+		"id": 17247187,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-02-22T16:45:34Z",
+	"updated_at": "2016-04-10T10:20:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

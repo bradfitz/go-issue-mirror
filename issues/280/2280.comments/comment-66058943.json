@@ -1,0 +1,12 @@
+{
+	"id": 66058943,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eAdding dependency on \u003ca href=\"https://golang.org/issue/4081\"\u003eissue #4081\u003c/a\u003e.\n\nAnd, adding to this bug the example I've given a few people now of when this is useful:\n\ntype T struct {\n   once  sync.Once // guards setup of state\n   state interface{}\n}\n\nfunc (t *T) initState() {\n   t.state = ....\n}\n\nfunc (t *T) someMethod() {\n   t.once.Do(t.initState)   // because Do requires type \"func()\"\n   // use t.state\n}\n\nCurrently we have to either do:\n\n t.once.Do(func() { t.initState() })\n\n... which generates garbage each time, or give up on the zero value of T and instead\nmake a constructor:\n\nfunc NewT() *T {\n   t := new(T)\n   t.initFunc = func() { t.initState }\n   return t\n}\n\nfunc (t *T) someMethod() {\n   t.once.Do(t.initFunc)\n   ...\n}\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-01-15T19:42:41Z",
+	"updated_at": "2014-12-08T10:12:17Z"
+}

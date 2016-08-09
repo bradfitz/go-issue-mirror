@@ -1,0 +1,33 @@
+{
+	"id": 51283627,
+	"number": 5437,
+	"state": "closed",
+	"title": "cmd/vet: report useless == nil comparisons",
+	"body": "\u003cpre\u003eThis isn't a bug per se, but it's a bug pattern that tools could help with.\n\nGiven this code\n\ntype T struct {\n     F *int\n}\n\nLet's say you change this exported field F into a private field f plus an exported\naccessor, like so:\n\ntype T struct {\n    f *int\n}\nfunc (t *T) F() *int { return t.f }\n\nNow you have to rename all references to T.F into T.F().  Mostly you can rely on\ncompiler errors to help you find what you need to change... but not always.  Consider:\n\n  if t.F == nil { ... }\n\nThanks to the new feature whereby t.f evaluates to a method closure, this statement is\nstill valid after the change, but is now a provably false condition, so the statement\nhas no effect.  This is not what the user intended.\n\nIt seems to me that a comparison of f==nil, where f is the name of a method or function,\nor an expression that creates a bound function, is almost surely a mistake.\n\nWe could make it a compiler error, or we could make go vet report it.\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:29:26Z",
+	"created_at": "2013-05-09T22:46:22Z",
+	"updated_at": "2016-06-24T22:39:44Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

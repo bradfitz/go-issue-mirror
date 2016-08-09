@@ -1,0 +1,12 @@
+{
+	"id": 71466410,
+	"body": "It's indeed tricky: it only happens when archive/tar omits the ustar version (instead of setting it to '00'); this is triggered by \"big\" user ids (10000000)\r\n\r\ncf. http://play.golang.org/p/pTFShmA0bZ\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/tar\"\r\n\t\"log\"\r\n\t\"os\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc main() {\r\n\t// Create a buffer to write our archive to.\r\n\tbuf, _ := os.Create(\"broken.tar\")\r\n\r\n\t// Create a new tar archive.\r\n\ttw := tar.NewWriter(buf)\r\n\r\n\t// Add some files to the archive.\r\n\tvar files = []struct {\r\n\t\tName, Body string\r\n\t}{\r\n\t\t{\"shortname.txt\", \"short file content\"},\r\n\t\t{\"path/to/\" + strings.Repeat(\"readme/\", 15) + \"readme.txt\", \"This archive contains some text files.\"},\r\n\t\t{\"b/shortname.txt\", \"short file content\"},\r\n\t}\r\n\tfor _, file := range files {\r\n\t\thdr := \u0026tar.Header{\r\n\t\t\tName:       file.Name,\r\n\t\t\tUid:        1000000000,\r\n\t\t\tUname:      \"root\",\r\n\t\t\tGname:      \"root\",\r\n\t\t\tLinkname:   \".\",\r\n\t\t\tMode:       0660,\r\n\t\t\tSize:       int64(len(file.Body)),\r\n\t\t}\r\n\t\tif err := tw.WriteHeader(hdr); err != nil {\r\n\t\t\tlog.Fatalln(err)\r\n\t\t}\r\n\t\tif _, err := tw.Write([]byte(file.Body)); err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t\t}\r\n\t}\r\n\t// Make sure to check the error on Close.\r\n\tif err := tw.Close(); err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\tbuf.Close()\r\n}\r\n```",
+	"user": {
+		"login": "lyonel",
+		"id": 741087,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-26T14:17:12Z",
+	"updated_at": "2015-01-26T14:17:12Z"
+}

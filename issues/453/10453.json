@@ -1,0 +1,33 @@
+{
+	"id": 68406448,
+	"number": 10453,
+	"state": "closed",
+	"title": "cmd/cgo: incomplete Clang detection",
+	"body": "When cgo invokes Clang, it needs to set `-ferror-limit=0` in order to see a complete set of error messages (rather than a truncated list of 20). This works whenever cgo can tell that it's using Clang rather than GCC, but the detection logic is incomplete on modern versions of FreeBSD.\r\n\r\nThe current check, located at [line 765 of `cmd/cgo/gcc.go`](/golang/go/blob/master/src/cmd/cgo/gcc.go#L765), tests:\r\n\r\n```go\r\nif strings.Contains(c[0], \"clang\") {\r\n```\r\n\r\nbut on FreeBSD, `/usr/bin/cc` is Clang. We could detect this with OS-specific checks, such as:\r\n\r\n```go\r\nif strings.Contains(c[0], \"clang\") || runtime.GOOS == \"freebsd\" {\r\n```\r\n\r\nbut I'm not sure how to distinguish an older-but-still-supported version of FreeBSD (where `/usr/bin/cc` is GCC) with a simple string comparison. A more general approach would be to invoke `cc --version` to see what comes back:\r\n\r\n```go\r\nfunc ccIsClang(cc string) bool {\r\n\tif strings.Contains(cc, \"clang\") {\r\n\t\treturn true\r\n\t}\r\n\tout, _ := exec.Command(cc, \"--version\").Output()\r\n\treturn strings.Contains(string(out), \"clang\")\r\n}\r\n```\r\n\r\nThis is a more heavyweight approach, but given that we're going to execute the C compiler anyway, maybe the performance cost is worth the increase in robustness? The extra exec could be guarded with some `runtime.GOOS == \"freebsd\"` logic, but as Clang gets adopted in more and more places, it might make sense to just Do The Right Thing rather than rely on heuristics.",
+	"user": {
+		"login": "trombonehero",
+		"id": 85833,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-04-18T01:12:14Z",
+	"created_at": "2015-04-14T15:14:31Z",
+	"updated_at": "2016-06-25T02:05:40Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"id": 133584443,
+	"number": 14329,
+	"state": "closed",
+	"title": "Custom error handler for httputil.ReverseProxy",
+	"body": "Current implementation of `httputil.ReverseProxy` is pretty handy and useful, \r\nhowever there's one small issue with error handling: there's no easy way to \r\noverride or customize error response.\r\n\r\nHere's the current [error handling code](https://github.com/golang/go/blob/master/src/net/http/httputil/reverseproxy.go#L211-L215):\r\n\r\n```go\r\nres, err := transport.RoundTrip(outreq)\r\nif err != nil {\r\n  p.logf(\"http: proxy error: %v\", err)\r\n  rw.WriteHeader(http.StatusInternalServerError)\r\n  return\r\n}\r\n```\r\n\r\nPerhaps having a error handler func on `ReverseProxy` struct might be a good idea:\r\n\r\n```go\r\ntype ReverseProxy struct {\r\n  // ... existing code ...\r\n\r\n  // Handler function that will be invoked when proxy request fails due to \r\n  // various reasons (timeout, connection refused, etc)\r\n  ErrorHandler func(error, http.ResponseWriter,*http.Request)\r\n}\r\n```\r\n\r\nIf `ErrorHandler` is not provided proxy will keep the existing behavior, otherwise\r\nit'll pass error handling to our custom function.\r\n\r\nExample:\r\n\r\n```go\r\nproxy := httputil.NewSingleHostReverseProxy(target)\r\nproxy.ErrorHandler = func(err error, w http.ResponseWriter, r *http.Request) {\r\n  // check error type and do something\r\n  // ....\r\n  // respond with some other status code\r\n  w.WriteHeader(http.StatusServiceUnavailable)\r\n}\r\n```\r\n\r\nAny thoughts?",
+	"user": {
+		"login": "sosedoff",
+		"id": 71051,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-10T00:01:45Z",
+	"created_at": "2016-02-14T21:47:17Z",
+	"updated_at": "2016-04-10T00:01:45Z"
+}

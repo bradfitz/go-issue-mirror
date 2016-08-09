@@ -1,0 +1,27 @@
+{
+	"id": 51285186,
+	"number": 6440,
+	"state": "closed",
+	"title": "sync/atomic: generalCAS64 broken",
+	"body": "\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Save \u003ca href=\"http://play.golang.org/p/lqkYmdbrx2\"\u003ehttp://play.golang.org/p/lqkYmdbrx2\u003c/a\u003e as hellonet.go\n2. GOARM=5 CGO_ENABLED=0 go build hellonet.go (cross compilation or compiling directly\non target makes no difference)\n4. ./hellonet\n5. Connect to the target's tcpsocket 6060 any way you want\n\nWhat is the expected output?\n\nSomething like an immediate print of \u0026quot;2013/09/21 12:10:11 \u0026amp;{{0x102500f0}}\u0026quot;\nand hellonet exiting as soon as a client connects.\n\nWhat do you see instead?\n\nThe client connects to the socket and absolutely nothing happens. I've gotten SIGSEGVs a\ncouple of times but don't know how long that took as I left it running while I did\nsomething else:\n\nSIGSEGV: segmentation violation\nPC=0x20870\n\nscaninterfacedata(0x2, 0x40050f60, 0x1)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:1351 +0x48\nscanbitvector(0x40050f60, 0x131070, 0x198901)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:1384 +0x118\naddframeroots(0xbe910a60, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:1420 +0x1c0\nruntime.gentraceback(0x1d034, 0x40050df4, 0x16708, 0x105010a0, 0x0, ...)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/traceback_arm.c:132 +0x408\naddstackroots(0x105010a0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:1475 +0xcc\naddroots()\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:1556 +0x1f8\ngc(0x40161fb0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:2098 +0x19c\nmgc(0x10501820)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:2049 +0x30\nruntime.mcall(0x1e6e90)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/asm_arm.s:165 +0x38\n\ngoroutine 3 [garbage collection]:\nruntime.gc(0x1)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mgc0.c:2020 +0x1a0 fp=0x40161fb8\nforcegchelper(0x4005ff9c)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mheap.c:385 +0x2c fp=0x40161fc0\nruntime.goexit()\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/proc.c:1386 fp=0x40161fc0\ncreated by runtime.MHeap_Scavenger\n\t/Users/quarnster/code/3rdparty/go/src/pkg/runtime/mheap.c:439\n\ngoroutine 1 [runnable]:\nsync/atomic.loadUint64(0x1054b080, 0x0, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/sync/atomic/64bit_arm.go:10 +0x84\nnet.(*fdMutex).RWLock(0x1054b080, 0x1e6901, 0x4000d100)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/net/fd_mutex.go:121 +0xb8\nnet.(*netFD).readLock(0x1054b080, 0x0, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/net/fd_unix.go:122 +0x4c\nnet.(*netFD).accept(0x1054b080, 0x12bdc4, 0x0, 0x0, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/net/fd_unix.go:368 +0x6c\nnet.(*TCPListener).AcceptTCP(0x10500170, 0x10543008, 0x0, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/net/tcpsock_posix.go:233 +0x70\nnet.(*TCPListener).Accept(0x10500170, 0x0, 0x0, 0x0, 0x0)\n\t/Users/quarnster/code/3rdparty/go/src/pkg/net/tcpsock_posix.go:243 +0x4c\nmain.main()\n\t/Users/quarnster/code/go/hellonet.go:14 +0x154\n\ntrap    0xe\nerror   0x5\noldmask 0x0\nr0      0xbe9109d0\nr1      0xe59fb030\nr2      0x412\nr3      0x40cac\nr4      0x40050f60\nr5      0x1\nr6      0x412\nr7      0x28\nr8      0x16708\nr9      0x1e89c0\nr10     0x1e6e78\nfp      0x1e6e6c\nip      0x1d034\nsp      0xbe9109cc\nlr      0x209fc\npc      0x20870\ncpsr    0x60000010\nfault   0xe59fb030\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n5g, either on the native linux/armv5tel or cross building.\n\nWhich operating system are you using?\n\nLinux/armv5tel 2.6.32.12 synology_88f6281_411j\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +125bf33c1905 Sat Sep 21 17:53:44 2013 +1000 linux/arm.\n\nThe same test works just fine with hg tag go1.1.2.\u003c/pre\u003e",
+	"user": {
+		"login": "quarnster",
+		"id": 1230389,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 20,
+	"closed_at": "2014-12-08T10:35:32Z",
+	"created_at": "2013-09-21T12:38:03Z",
+	"updated_at": "2016-06-25T01:19:15Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

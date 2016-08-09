@@ -1,0 +1,12 @@
+{
+	"id": 124165328,
+	"body": "If I remember correctly, this should be okay for x86, even though there may be a performance penalty for unaligned reads, it is (I'm guessing) probably faster than 8 calls to MOVB. I can't say the same for other architectures like ARM and PowerPC.\r\n\r\nAlso, when I think about it, I think fixing this issue implies that #5364 is also fixed too. The only way that a wide integer load/store can be used is if the compiler can reason that the load/store will not go out of bounds. Furthermore, it also means that some changes would need to be made in regular Go code to take advantage of this as well. The code presented above would need to be rewritten as:\r\n```go\r\nfunc (littleEndian) PutUint64(b []byte, v int64) {\r\n    b[7] = byte(v \u003e\u003e 56)\r\n    b[6] = byte(v \u003e\u003e 48)\r\n    b[5] = byte(v \u003e\u003e 40)\r\n    b[4] = byte(v \u003e\u003e 32)\r\n    b[3] = byte(v \u003e\u003e 24)\r\n    b[2] = byte(v \u003e\u003e 16)\r\n    b[1] = byte(v \u003e\u003e 8)\r\n    b[0] = byte(v)\r\n}\r\n```\r\nSince the highest index is accessed first, a single bounds checked can be used. If it passes, it can proceed to use the wide integer store. Do note that this code is not functionally equivalent to the original. If a panic occurs, the input slice will not hold a partial result.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-23T16:48:30Z",
+	"updated_at": "2015-07-23T17:29:46Z"
+}

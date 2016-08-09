@@ -1,0 +1,12 @@
+{
+	"id": 66091171,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003e@czarek.tomczak\n\n\u003e ... I have lots of free memory on XP, more than 3 GB. ...\n\nWe are not talking about your memory here - we are talking about your \"virtual address\nspace\". You use 32bit OS, so each process gets only 2GB of \"virtual address space\". Go\nruntime needs about 770MB block of continuous memory to run. It is trying to reserve\nthat and fails on your system. I suspect, your process loads many DLLs that are loaded\nin such way that there is no free block big enough to suit Go runtime. You need to\nunderstand what these DLLs are and why you're different from many other users.\n\nHere\n\ndiff --git a/src/pkg/runtime/mem_windows.c b/src/pkg/runtime/mem_windows.c\n--- a/src/pkg/runtime/mem_windows.c\n+++ b/src/pkg/runtime/mem_windows.c\n@@ -70,7 +70,16 @@\n \t\treturn v;\n \t\n \t// Next let the kernel choose the address.\n-\treturn runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_READWRITE);\n+\textern void *runtime·Sleep;\n+\truntime·printf(\"reserving %d MB\\n\", n / (1024 * 1024));\n+\tvoid *v2;\n+\tv2 = runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_READWRITE);\n+\tif(v2 == nil) {\n+\t\truntime·printf(\"VirtualAlloc failed with errno=%d)\\n\", runtime·getlasterror());\n+\t\truntime·stdcall(runtime·Sleep, 1, (uintptr)600000);\n+\t\treturn v2;\n+\t}\n+\treturn v2;\n }\n \n void\n\nis a diff, that will print your error message. It will also sleep for 10 minutes before\nexiting. So you can fire vmmap and check process virtual address map.\n\nPlease, let us know what you find. Thank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-10T06:17:01Z",
+	"updated_at": "2014-12-08T10:40:33Z"
+}

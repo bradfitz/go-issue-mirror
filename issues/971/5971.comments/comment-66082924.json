@@ -1,0 +1,12 @@
+{
+	"id": 66082924,
+	"body": "\u003ca id=\"c14\"\u003e\u003c/a\u003eComment 14:\n\n\u003cpre\u003eI've got to the bottom of this.\n\nWindows is so carried away watching how 2 goroutines enthusiastically exchange with\nnetwork packets, so it rejects to schedule timer thread for 2+ seconds. It's not that\nthe thread can not exitsyscall, it's not scheduled on CPU at all.\n\nThere are 4 preconditions:\n1. Goroutines do heavy IO.\n2. Dynamic priority boosting is turned on.\n3. Server version of windows.\n4. Windows is configured to do server-type scheduling.\n\nWhen I turn off dynamic priority boosting, delay drops from 2+ seconds (thread\nstarvation prevention threshold) to 400ms (4 100ms quantums). If reconfigure scheduler\nto do client-type scheduling, the delay further drops to 60ms (4 15ms quantums).\n\nWe can not change scheduler type in Go process, because it's system-wide setting.\nHowever, we can change dynamic priority boosting, 400ms delay should be enough for this\ntest to pass. If not, we can make the timeout on windows somewhat longer. This should\nnot be a problem in real applications, because they usually do not consume 100% CPU\n(it's mostly possible only on localhost); the problem is also tolerated by multicore\nsystems; and the timeout does not fire iff the application is doing useful work, in\nwhich case delayed timeout is most likely not a problem (you want timeout iff there is\nno data on the connection).\n\nThe fix is coming.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-03T10:07:40Z",
+	"updated_at": "2014-12-08T10:32:50Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 111909300,
+	"body": "Background: this is using [github.com/jacobsa/fuse](http://godoc.org/github.com/jacobsa/fuse), which wraps [bazil.org/fuse](http://godoc.org/bazil.org/fuse), which reads requests from /dev/fuse directly.\r\n\r\nIn the SIGQUIT output above, there are several file systems active. Each one is sitting in a call to syscall.Read, like [goroutine 2574](https://gist.github.com/jacobsa/bc7fd7c94586336b9f2f#file-gistfile1-txt-L882-L898). Compare that to [goroutine 2479](https://gist.github.com/jacobsa/bc7fd7c94586336b9f2f#file-gistfile1-txt-L900-L916), who is also in syscall.Read, but whose state is `runnable`. I believe this is a case where /dev/fuse has delivered a request that `sys_clone` is waiting for, but Go has not allowed the syscall.Read thread to proceed running due to some limit on parallelism. Hence the clone never gets served. But I'm not an expert on Go scheduling; I could definitely be wrong in the details there.\r\n\r\nIn other words, \"there should always be another thread available to serve the FUSE request\" is violated because while there is such a thread, Go is not running it.\r\n\r\nMy confusion remains: that example shows GOMAXPROCS=4 and many runnable goroutines, but only two running. Any idea what is going on there?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-15T03:20:02Z",
+	"updated_at": "2015-06-15T03:20:02Z"
+}

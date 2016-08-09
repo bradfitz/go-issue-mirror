@@ -1,0 +1,22 @@
+{
+	"id": 97186238,
+	"number": 11863,
+	"state": "closed",
+	"title": "runtime: SIGPROF during stack barrier install can panic",
+	"body": "The following sequence of events can lead to an out-of-bounds access attempt in the runtime:\r\n\r\n1. A SIGPROF comes in on a thread while the G on that thread is in _Gsyscall. The sigprof handler calls gentraceback, which saves a local copy of the G's stkbar slice. Currently the G has no stack barriers, so this slice is empty.\r\n2. On another thread, the GC concurrently scans the stack of the goroutine being profiled (it considers it stopped because it's in _Gsyscall) and installs stack barriers.\r\n3. Back on the sigprof thread, gentraceback comes across a stack barrier in the stack and attempts to look it up in its (zero length) copy of G's old stkbar slice and attempts an out-of-bounds access.\r\n\r\nBecause of the particularly prickly context, this double faults and turns into a \"panic: fatal error: malloc deadlock\".\r\n\r\nI can reproduce this ~1 in 10 runs by applying https://go-review.googlesource.com/12674 and running\r\n\r\n    cd $GOROOT/src/runtime/pprof\r\n    go test -c\r\n    stress ./pprof.test -test.v -test.short\r\n\r\nThis should have nothing to do with CL 12647, but applying the CL makes it easy to reproduce (presumably because of some effect on timings).\r\n\r\nI'm not sure what the solution to this is. We already have a few cases where we just give up when we're walking the stack for a profile. We could do that here, too, if gentraceback encounters a stack barrier it wasn't expecting. Alternatively, we could make sigprof pickier about Gs in _Gsyscall, though I'm not sure how exactly.\r\n\r\n@rsc @RLH @ianlancetaylor @dvyukov ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-10-14T14:50:47Z",
+	"created_at": "2015-07-25T03:29:02Z",
+	"updated_at": "2015-11-19T19:00:22Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

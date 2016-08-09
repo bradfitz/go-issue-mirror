@@ -1,0 +1,21 @@
+{
+	"id": 106567343,
+	"number": 12624,
+	"state": "open",
+	"title": "encoding/xml: brittle support for matching a namespace by identifier or url",
+	"body": "The issue is that I believe a struct tag's namespace should be matchable by the xmlns identifier or url. \r\n\r\nTo shed some light on the issue, consider a RSS feed parser thats deals with namespaces from a variety of definitions. I could expect a few different kinds of xmlns definitions for the same type of structure. ie. consider mRSS feeds in the wild that use the \"media\" namespace, you will find:\r\n\r\n1. Xmlns wasn't defined, but the namespace was used (ie. for mRSS with media namespace)\r\n2. Xmlns was defined as `xmlns:media=\"http://search.yahoo.com/mrss/\"`\r\n3. Xmlns was defined as `xmlns:media=\"http://search.yahoo.com/mrss\"`\r\n\r\nI noticed that encoding/xml would track the xmlns' in a map to the url, and would match the struct tags to the url. The issue of course here is with 2 and 3, where the difference between a \"/\" would throw off the parser. \r\n\r\nI wrote a fix (including tests) using Go 1.5.1's encoding/xml code: https://github.com/pkieltyka/xml/commit/7ad1fab466ec10f0fe7e47a36050b1956ac8bedb \r\n\r\nConsider a partial parser for the media rss module:\r\n\r\n```go\r\ntype Media struct {\r\n  Title Title `xml:\"media title\"`\r\n  Description Description `xml:\"media description\"`\r\n  Thumbnails []Thumbnail `xml:\"media thumbnail\"`\r\n  Contents []Content `xml:\"media content\"`\r\n  MediaGroups []Group `xml:\"media group\"`\r\n}\r\n```\r\n\r\nNotice the using the namespace prefix in the struct tag instead of the ns url. But, if xmlns:media=\"URL\" was defined in the original document, the parser would expect to match it by the URL, but IMO, it should check both the prefix and url of the namespace. I'm reporting this issue and will submit the fix separately, thanks for the consideration.",
+	"user": {
+		"login": "pkieltyka",
+		"id": 18831,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-09-15T14:24:38Z",
+	"updated_at": "2015-09-16T00:06:54Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

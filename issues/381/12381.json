@@ -1,0 +1,21 @@
+{
+	"id": 103741958,
+	"number": 12381,
+	"state": "open",
+	"title": "database/sql: add support for named input parameters",
+	"body": "Named input parameters are supported by a number of larger database servers and simulated in some database clients for protocol's that only support positional arguments.\r\nTDS is MS SQL Server's wire protocol and directly supports named parameters.\r\nPostgres' v3 wire protocol doesn't support named parameters but some clients simulate it through replacement.\r\n\r\nIn SQL this may look like:\r\n```\r\nselect d.Name, d.Age\r\nfrom app.Dancer as d\r\nwhere d.ID = :DancerID;\r\n```\r\nor \r\n```\r\nselect d.Name, d.Age\r\nfrom app.Dancer as d\r\nwhere d.ID = @DancerID;\r\n```\r\n\r\nIn small to medium cases positional placeholders work fine. In larger tables positional indexes become hard to use, bug prone, and possibly impossible to use.\r\n\r\nOne of my clients uses JDE, their table structure can be viewed here: http://www.jdetables.com/\r\nYes, it is bad, but I've gotta deal with it. I have another client that uses a similarly \"enterprise\" solution that has huge wide tables. Now try to imagine updating or inserting into those tables, or executing proc with 30-50 parameters. Named parameters gives me a chance to not get an index off by one.\r\n\r\nThe other area where I keenly feel the need for named parameters is when I dynamically assemble SQL, but still want to pass in input parameters so I don't need to manually escape everything. Two examples:\r\n1) When creating a specific RPC for a search or filter I often need to filter in particular cases. There are two ways to do this:\r\na.\r\n```\r\nselect * from data.Account as a\r\nwhere\r\n  (len(:InputValue) \u003c\u003e 0 and :InputValue like a.Name)\r\n  or (len(:inputValue = 0 and a.Name = 'BOB')\r\n```\r\nI use this method often. However sometimes in complex cases performance can drop off due when it chooses the wrong query plan. When that starts to happen I do the next option:\r\nb.\r\n```\r\nsql := \u0026bytes.Buffer{}\r\nsql.WriteString(`select * from data.Account as a where 1=1 `)\r\nif len(inputValue) != 0 {\r\n  sql.WriteString(` and :InputValue like a.Name `)\r\n} else {\r\n  sql.WriteString(` and a.Name = 'BOB' `)\r\n}\r\n```\r\nWhen you start to construct the SQL, it becomes harder to determine the positions all the parameters should be in and makes the code more complex, though not impossible if you push input parameter values into an array as you push sql fragments in.\r\n\r\n2) While truly it is a variant of 1b, when creating a more generic application framework the work-around presented in there becomes more difficult. I sometimes define both the name of the parameter I want to pass in, tie it to the client, and if present construct SQL to the desired effect. I realize that is vague, but I don't have a ready open source solution I can show.\r\n\r\n\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-08-28T15:40:22Z",
+	"updated_at": "2015-08-31T18:24:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

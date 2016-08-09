@@ -1,0 +1,12 @@
+{
+	"id": 66076470,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI can still reproduce.  You just need to set the number high enough for the ulimit.\n\nante:src $ hg diff\ndiff -r ccdacf6833dc src/pkg/os/exec/exec.go\n--- a/src/pkg/os/exec/exec.go\tSat Mar 23 02:17:01 2013 +1100\n+++ b/src/pkg/os/exec/exec.go\tFri Mar 22 08:32:50 2013 -0700\n@@ -235,8 +235,8 @@\n // Start starts the specified command but does not wait for it to complete.\n func (c *Cmd) Start() error {\n \tif c.err != nil {\n-\t\tc.closeDescriptors(c.closeAfterStart)\n-\t\tc.closeDescriptors(c.closeAfterWait)\n+\t\t//c.closeDescriptors(c.closeAfterStart)\n+\t\t//c.closeDescriptors(c.closeAfterWait)\n \t\treturn c.err\n \t}\n \tif c.Process != nil {\ndiff -r ccdacf6833dc src/pkg/os/exec/exec_test.go\n--- a/src/pkg/os/exec/exec_test.go\tSat Mar 23 02:17:01 2013 +1100\n+++ b/src/pkg/os/exec/exec_test.go\tFri Mar 22 08:32:50 2013 -0700\n@@ -154,7 +154,7 @@\n // \u003ca href=\"https://golang.org/issue/5071\"\u003eissue #5071\u003c/a\u003e\n func TestPipeLookPathLeak(t *testing.T) {\n \tfd0 := numOpenFDS(t)\n-\tfor i := 0; i \u0026lt; 4; i++ {\n+\tfor i := 0; i \u0026lt; 2000; i++ {\n \t\tcmd := Command(\"something-that-does-not-exist-binary\")\n \t\tcmd.StdoutPipe()\n \t\tcmd.StderrPipe()\n\nante:src $ hg id\nccdacf6833dc+ tip\n\n$ go test -v os/exec\n\nInterestingly, I see three outcomes:\n\n1) sometimes it passes.\n2) sometimes it fails with two goroutines racing on stdout with garbled output (like in\nmy original report above), and \n3) sometimes it's only one goroutine looping the errors:\n\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\nepollwait failed with 9\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-22T15:35:05Z",
+	"updated_at": "2014-12-22T06:23:26Z"
+}

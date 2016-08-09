@@ -1,0 +1,17 @@
+{
+	"id": 145830762,
+	"number": 15118,
+	"state": "closed",
+	"title": "cmd/vet: atomic mistakes check seems confused about scope",
+	"body": "\u003e What version of Go are you using (`go version`)?\r\n\r\ngo 1.6\r\n\r\n\u003e What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux/amd64\r\n\r\n\u003e What did you do?\r\n\u003e If possible, provide a recipe for reproducing the error.\r\n\u003e A complete runnable program is good.\r\n\u003e A link on play.golang.org is best.\r\n\r\nConsider a program like the following ([play.golang.org link](http://play.golang.org/p/f6Mb_0aUml)):\r\n\r\n``` go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"sync/atomic\"\r\n)\r\n\r\nfunc main() {\r\n\tvar c int64\r\n\tfor i := 0; i \u003c 10; i++ {\r\n\t\tgo func() {\r\n\t\t\tfor {\r\n\t\t\t\tc := atomic.AddInt64(\u0026c, 1)\r\n\t\t\t\tif c%10000000 == 0 {\r\n\t\t\t\t\tfmt.Println(c)\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}()\r\n\t}\r\n\tselect {}\r\n}\r\n```\r\n\r\n\u003e What did you expect to see?\r\n\r\nSince the `c` in the inner function is a different `c` from the outer atomic counter, I expected vet to not complain.\r\n\r\n\u003e What did you see instead?\r\n\r\n`go vet` gives the following output:\r\n\r\n    test.go:13: direct assignment to atomic value",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-06T16:38:48Z",
+	"created_at": "2016-04-04T23:16:40Z",
+	"updated_at": "2016-04-06T16:38:48Z"
+}

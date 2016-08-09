@@ -1,0 +1,12 @@
+{
+	"id": 184849802,
+	"body": "On Tue, Feb 16, 2016 at 8:27 PM, Russ Cox \u003cnotifications@github.com\u003e wrote:\n\n\u003e OK, I guess it comes down to this:\n\u003e\n\u003e Suppose that, inside a directory \"foo\", you do golint ../foo. A file path\n\u003e will be printed as \"../foo/bar.go\"\n\u003e\n\u003e That is, all the paths are prefixed with \"..\", since this is how I\n\u003e specified the import paths on the command line.\n\u003e\n\u003e ...\n\u003e\n\u003e Using shortPath in the previous example, golint would print \"bar.go\", and\n\u003e not \"../foo/bar.go\"\n\u003e\n\u003e That's right, that's how the go command works today:\n\u003e\n\u003e $ cd $GOROOT/src/io/ioutil\n\u003e $ echo broken \u003ebad.go\n\u003e $ go build ../ioutil\n\u003e can't load package: package io/ioutil:\n\u003e bad.go:1:1: expected 'package', found 'IDENT' broken\n\u003e $\n\u003e\n\u003e The error message refers to bad.go, not ../ioutil/bad.go.\n\u003e\n\u003e Now I understand what you want from the go command, but I don't see a good\n\u003e way to get it to you.\n\u003e\nIn my working patch, I added a new Path (or RawPath or RawImportPath)\nfields to the Package struct. Path contains the original \"import path\"\nas specified by the user.\nThe only issue is that, using your example:\n\n$ cd $GOROOT/src/io/ioutil\n$ go list ../ioutil\n\nshould print ioutil, not ../ioutil\n\n\u003e The fact is, the model you're asking for is contrary to how the go command\n\u003e thinks about import paths, about packages, and about files. It could go out\n\u003e of its way to do something it doesn't need, for clients that want to be\n\u003e different, but the tool ecosystem would be more consistent if clients\n\u003e followed the go command's lead.\n\u003e\n\u003e I don't think it's worth adding complexity to the go command just to allow\n\u003e golint to (continue to?) print file names in an idiosyncratic way.\n\u003e\n\nI agree.\nI still prefer the golint idiosyncratic way of printing file names, but it\nis more important to have a standard.\n\nI found this issue only because I was trying to do the \"right\" thing in my\ntool, and golint seemed the standard when reporting full source file paths.\nBy the way, golint not only reports file paths differently from go command,\nbut it also interprets command line arguments differently.\n",
+	"user": {
+		"login": "perillo",
+		"id": 6217088,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-16T19:47:41Z",
+	"updated_at": "2016-02-16T19:47:41Z"
+}

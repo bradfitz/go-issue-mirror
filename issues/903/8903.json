@@ -1,0 +1,26 @@
+{
+	"id": 51288849,
+	"number": 8903,
+	"state": "open",
+	"title": "runtime: make chan-based generators faster",
+	"body": "\u003cpre\u003eIn some cases parallelism is not needed/desirable -- fine-grained chan-based\ngenerators/iterators, or \u0026quot;coroutine-like\u0026quot; approach when you have several\nindependent stacks and manually switch between them.\nSync channels substantially limit parallelism, to the point where pipeline-like\nparallelization does not work. But they do not eliminate it entirely, as after an\noperation both producer and consumer are runnable. Current implementation handles this\n\u0026quot;contact bounce\u0026quot; under-parallelization very inefficiently -- goroutines are\nconstantly scheduled and de-scheduled, threads are constantly parked and unparked, work\nmigrate between threads, etc.\n\nThe idea is to limit parallelism on sync channels even more aggressively. So that\nfine-grained communication over sync channels can be very efficient. But w/o eliminating\nconcurrency nor affecting semantics.\n\nImplementation:\n1. Each P has an additional local work queue, let's call it Domain. Work form Domain\ncan't be stolen by other P's. Domain is has maximum size of 4 goroutines.\n2. When a goroutine unblocks another goroutine on a sync chan, it adds the other\ngoroutine to own Domain (Domain of the current P) instead of putting it to the normal\nwork queue. This effectively limits parallelism. We can use Domains in other situations,\nbut this is outside of context of this bug.\n3. When a goroutine blocks, P schedules one of the goroutines from Domain (if it's not\nempty). In some circumstances (e.g. a goroutine is preempted due to time slice\nexhaustion, or blocks in syscall) P can decide to just move all goroutines in the Domain\nto normal work queue.\nThen, *before* a goroutine blocks on a sync chan it saves Hchan and elem pointers in G\nand switches to another goroutine in Domain *once*. Or if it sees that a goroutine in\nthe Domain want to accomplish a pairing operation on the same chan, it executes the\noperation with that other goroutine.\n\nThis allows to implement tight communication over sync channels with the cost of just\nseveral function calls and w/o several degradation with GOMAXPROCS\u0026gt;1. Communication\ndomains form and break up dynamically. Program semantics are not affected.\n\nHere is a prototype implementation:\n\u003ca href=\"https://golang.org/cl/74180043/\"\u003ehttps://golang.org/cl/74180043/\u003c/a\u003e\n\nI've benchmarked it on a real application where chan-based generators were abounded due\nto forementioned reasons:\n\u003ca href=\"https://groups.google.com/d/msg/golang-dev/0IElw_BbTrk/cGHMdNoHGQEJ\"\u003ehttps://groups.google.com/d/msg/golang-dev/0IElw_BbTrk/cGHMdNoHGQEJ\u003c/a\u003e\nThe change provides 17.5x speedup (and it's not the limit as runtime.switchto can be\nsignificantly more efficient).\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 0,
+	"created_at": "2014-10-07T15:07:30Z",
+	"updated_at": "2015-04-14T19:45:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

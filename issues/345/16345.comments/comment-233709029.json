@@ -1,0 +1,12 @@
+{
+	"id": 233709029,
+	"body": "I did some digging!\r\n\r\nBefore https://golang.org/cl/8945 the only way to use the Go's resolver (for most platforms, not just darwin) was to build with netgo (and/or without cgo?). This caused the [stubs to return false for completed](https://github.com/golang/go/blob/c23122808577dca6315f3fc3b6cc4ef67e877080/src/net/cgo_stub.go#L24) and triggered [use of the Go resolver](https://github.com/golang/go/blob/c23122808577dca6315f3fc3b6cc4ef67e877080/src/net/lookup_unix.go#L61-L64).\r\n\r\nI discovered along the way that android is also currently [summarily excluded](https://github.com/golang/go/blob/1d2ca9e30c22bc9e8cd0b21dff58367443696c91/src/net/conf.go#L131) from using Go's resolver due to #10714, though it's done per request instead of per-conf-setup like darwin. In [the CL for that](https://golang.org/cl/9793), @minux [called for the same to be done for iOS](https://go-review.googlesource.com/#/c/9793/2/src/net/conf.go@88) and then subsequently found the exclusion for darwin.\r\n\r\nAll unix platforms except for darwin and android now use Go's resolver unless weirdness is detected along [here](https://github.com/golang/go/blob/1d2ca9e30c22bc9e8cd0b21dff58367443696c91/src/net/conf.go#L45) or [here](https://github.com/golang/go/blob/1d2ca9e30c22bc9e8cd0b21dff58367443696c91/src/net/conf.go#L121). I think we could gain more consistency across platforms if darwin were to join in with necessary safety checks.\r\n\r\nRe #12524, that could be something we detect and fall back to cgo for initially. Once there is support for it in the Go resolver the check could be removed and Go's resolver could be used in that case.\r\n\r\nAt the very least if we decide not to pursue this it would be good to update the comment around the darwin exclusion to explain it's due to more than possible firewall warnings.",
+	"user": {
+		"login": "dpiddy",
+		"id": 2182,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-19T17:38:41Z",
+	"updated_at": "2016-07-19T17:46:54Z"
+}

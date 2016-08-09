@@ -1,0 +1,12 @@
+{
+	"id": 67922147,
+	"body": "@davecheney A simple type-assertion doesn't work - while most of the errors in the \"net\" package implement a Temporary() method, url.Error - the one returned most of the type by (http.Client).Get - does not. In order to unpack the errors correctly, you need to know about both url.Error (for its Err field) and net.Error (for the Temporary method). And neither of those is prominently mentioned in the net/http docs.\r\n\r\n@minux I tend to agree, but getting to that state would require being much more careful about which errors to retry. (For example: the spurious io.EOF errors would need to be fixed, and some more syscall errors - EPIPE in particular - would probably need to be marked Temporary.) Documenting and fixing the errors seems like a prerequisite for retrying them.\r\n\r\n@bradfitz Yes, that's basically what I'm doing - but I'm not retrying most of the HTTP status codes, because most of them indicate permanent errors for typical HTTP usage. And note that there's a bit more subtlety to it if you want to handle the Retry-After header correctly.\r\n\r\nThe problem is, there is a class of net errors that are *not* temporary - why else would there be a Temporary method on net.Error? - and it seems wrong to retry in those cases. (For example, what if the URL I passed in was not even syntactically valid?)",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-23T04:58:30Z",
+	"updated_at": "2014-12-23T04:58:30Z"
+}

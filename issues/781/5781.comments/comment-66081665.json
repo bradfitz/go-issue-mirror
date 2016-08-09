@@ -1,0 +1,12 @@
+{
+	"id": 66081665,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eI don't see the error in go/types. Type-checking the following program succeeds w/o\nerrors:\n\npackage main\n\nimport \"fmt\"\n\ntype T struct{}\nfunc (T) f() {}\n\nfunc main() {\n\tvar f func(T) = T.f\n}\n\n\nType-checking the following program in test-mode (which supports the trace() built-in):\n\npackage main\n\nimport \"fmt\"\n\ntype T struct{}\nfunc (T) f() {}\nfunc (T) g(x int) {}\nfunc (T) h(x int) string { return \"\" }\n\nfunc main() {\n\t_ = trace(T.f)\n\t_ = trace(T.g)\n\t_ = trace(T.h)\n}\n\nprints:\n\ntestdata/test.go:11:12: T.f (value of type func(main.T))\ntestdata/test.go:12:12: T.g (value of type func(main.T, x int))\ntestdata/test.go:13:12: T.h (value of type func(main.T, x int) string)\n\nwhich are the correct function types.\n\n\nFinally, running \u003ca href=\"http://play.golang.org/p/54NGGhJyQ4\"\u003ehttp://play.golang.org/p/54NGGhJyQ4\u003c/a\u003e (explicitly - it does not run in\nthe playground) produces:\n\n6:8: struct{}\n7:14: int\n7:1: func(x int)\n7:7: main.T\n9:1: func()\n10:7: main.T\n10:7: func(main.T, x int)\n11:2: func(main.T, x int)\n11:2: func(main.T, x int)\n11:4: main.T\n11:4: main.T\n11:9: int\n11:2: ()\n12:2: func(format·3 string, a·4 ...interface{}) (n·1 int, err·2 error)\n12:2: func(format·3 string, a·4 ...interface{}) (n·1 int, err·2 error)\n12:13: string\n12:21: func(main.T, x int)\n12:2: (n·1 int, err·2 error)\n\nConfirming that the correct types are reported back via the Context.Expr callback.\n\nCould this be a bug in the ssa package?\u003c/pre\u003e\n\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-06-26T00:07:27Z",
+	"updated_at": "2014-12-08T10:31:43Z"
+}

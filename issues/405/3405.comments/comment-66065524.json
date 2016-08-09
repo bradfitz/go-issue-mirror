@@ -1,0 +1,12 @@
+{
+	"id": 66065524,
+	"body": "\u003ca id=\"c21\"\u003e\u003c/a\u003eComment 21:\n\n\u003cpre\u003eThanks for looking at this.\n\nThere are two different issues to discuss: the API, and the implementation.  The API\ndoesn't belong in the runtime package.  In the old days it would have been put in the\nsyscall package, but since we've frozen the syscall package it should now go into the\ngo.sys package.  It does sound like the implementation needs to involve the runtime\npackage, but that should happen behind the scenes--programs should call something in\ngo.sys, not something in runtime.\n\nIn go.sys I think it's fine to have an interface that is specific to the Linux kernel. \nWe already have examples of that in syscall--e.g., the Cloneflags field in SysProcAttr. \nI don't think we should aim for a system-independent interface to system call blocking;\nI think there will be too much variance between systems.\n\nThe case of SYS_CLONE is an interesting one.  I don't think the Go runtime can function\nwithout the ability to clone a new thread.  You suggest creating some new threads ahead\nof time, but it would not be hard for a program to run out of threads.  Every blocking\nfile access call uses up a thread.  That is independent of GOMAXPROCS, which controls\nthe number of running threads, not the total number of threads.  I think that at least\ninitially we should fail the seccomp call if SYS_CLONE is not permitted.  We can see if\nanybody sees this as a problem--it allows an evil program to fork-bomb the system but it\ndoesn't open any other holes that I can see.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-08T15:41:16Z",
+	"updated_at": "2014-12-08T10:17:46Z"
+}

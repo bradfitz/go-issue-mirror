@@ -1,0 +1,22 @@
+{
+	"id": 51285060,
+	"number": 6354,
+	"state": "closed",
+	"title": "net/smtp Auth error ignore",
+	"body": "by **bolin.huang**:\n\n\u003cpre\u003eI notice (maybe a bug) in $GOROOT/src/pkg/net/smtp/smtp.go. When smtp authentication\nfailed, an error of type textproto.Error will not return to the caller. Just see the\nfollowing code:\n\n169 func (c *Client) Auth(a Auth) error {\n170     if err := c.hello(); err != nil {\n171         return err\n172     }\n173     encoding := base64.StdEncoding\n174     mech, resp, err := a.Start(\u0026amp;ServerInfo{c.serverName, c.tls, c.auth})\n175     if err != nil {\n176         c.Quit()\n177         return err\n178     }\n179     resp64 := make([]byte, encoding.EncodedLen(len(resp)))\n180     encoding.Encode(resp64, resp)\n181     code, msg64, err := c.cmd(0, \u0026quot;AUTH %s %s\u0026quot;, mech, resp64)\n182     for err == nil {\n183         var msg []byte\n184         switch code {\n185         case 334:\n186             msg, err = encoding.DecodeString(msg64)\n187         case 235:\n188             // the last message isn't base64 because it isn't a challenge\n189             msg = []byte(msg64)\n--------------------------- Here ------------------------\n190         default:\n191             err = \u0026amp;textproto.Error{Code: code, Msg: msg64}\n192         }\n193         resp, err = a.Next(msg, code == 334)\n---------------------------------------------------------\n194         if err != nil {\n195             // abort the AUTH\n196             c.cmd(501, \u0026quot;*\u0026quot;)\n197             c.Quit()\n198             break\n199         }\n200         if resp == nil {\n201             break\n202         }\n203         resp64 = make([]byte, encoding.EncodedLen(len(resp)))\n204         encoding.Encode(resp64, resp)\n205         code, msg64, err = c.cmd(0, string(resp64))\n206     }\n207     return err\n208 }\n\nOn line 191, when authentication unsuccessful(in this case the reply code is 535),\ntextproto.Error will generate but the following code will replace the err, and the error\nmessage will not transfer to a.Next(). So I spent a lot time to debug but found no error\nmessage return, but the error just happen.\n\nI notice this problem because I use smtp to send email with wrong password, but I just\nget another error(unable to relay). So I suppose it will return back\n\u0026quot;Authentication unsuccessful\u0026quot; instead of \u0026quot;unable to relay\u0026quot;. \n\nWhich version are you using?  (run 'go version')\ngo version go1.1.2 darwin/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:34:59Z",
+	"created_at": "2013-09-10T08:59:36Z",
+	"updated_at": "2016-06-25T01:18:25Z"
+}

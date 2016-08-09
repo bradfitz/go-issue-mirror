@@ -1,0 +1,27 @@
+{
+	"id": 94734976,
+	"number": 11694,
+	"state": "closed",
+	"title": "runtime: sporadic huge GC pause",
+	"body": "This simple \"single list\" garbage producer sometimes encounts huge pauses:\r\n\r\n````go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n\t\"flag\"\r\n)\r\n\r\ntype list struct {\r\n\tnext *list\r\n}\r\n\r\nfunc dojob(N int) {\r\n\tvar prev, cur time.Time\r\n\tvar first, last *list\r\n\tvar n int\r\n\tprev = time.Now()\r\n\tfor {\r\n\t\tvar nuo list;\r\n\t\tif last != nil {\r\n\t\t\tlast.next = \u0026nuo\r\n\t\t}\r\n\t\tif first == nil {\r\n\t\t\tfirst = \u0026nuo\r\n\t\t}\r\n\t\tlast = \u0026nuo\r\n\t\tn++\r\n\t\tif n \u003e= N {\r\n\t\t\tfirst = first.next\r\n\t\t\tn--\r\n\t\t}\r\n\t\tcur = time.Now()\r\n\t\tdiff := cur.Sub(prev)\r\n\t\tif diff \u003e 10*time.Millisecond {\r\n\t\t\tfmt.Printf(\"%fms\\n\", diff.Seconds() *1000)\r\n\t\t}\r\n\t\tprev = cur\r\n\t}\r\n}\r\n\r\nvar N = flag.Int(\"N\", 10, \"num in list\")\r\n\r\nfunc main() {\r\n\tflag.Parse()\r\n\tdojob(*N)\r\n}\r\n````\r\n````\r\n$ go version\r\ngo version devel +ca6ba49 Mon Jul 13 06:40:00 2015 +0000 linux/amd64\r\n$ go run gc.go -N 10000000\r\n10.942411ms\r\n483.928657ms\r\n50.785114ms\r\n435.676484ms\r\n413.611303ms\r\n^Cexit status 2\r\n$ go run gc.go -N 10000000\r\n^Cexit status 2\r\n$ go run gc.go -N 10000000\r\n381.920956ms\r\n11.483340ms\r\n385.989617ms\r\n````",
+	"user": {
+		"login": "funny-falcon",
+		"id": 249427,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 25,
+	"closed_at": "2015-07-27T20:00:42Z",
+	"created_at": "2015-07-13T14:30:44Z",
+	"updated_at": "2016-08-05T16:10:29Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

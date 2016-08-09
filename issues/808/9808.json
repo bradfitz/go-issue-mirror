@@ -1,0 +1,33 @@
+{
+	"id": 56958796,
+	"number": 9808,
+	"state": "closed",
+	"title": "crypto/tls: ECDHE-RSA-AES256-GCM-SHA384 fails with \"input must be hashed message\"",
+	"body": "Hi,\r\n\r\nGiven this client:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n)\r\n\r\nfunc main() {\r\n\tcert, err := tls.LoadX509KeyPair(\"client.crt\", \"client.key\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\ttlsConf := \u0026tls.Config{\r\n\t\tCertificates: []tls.Certificate{cert},\r\n\t\tInsecureSkipVerify: true,\r\n\t}\r\n\tc, err := tls.Dial(\"tcp\", \"localhost:4433\", tlsConf)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\t_, err = c.Write([]byte(\"foo\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tc.Close()\r\n}\r\n```\r\n\r\nand this command line to run a server:\r\n\r\n```\r\nopenssl s_server -serverpref -cipher 'ECDHE-RSA-AES256-GCM-SHA384 ECDHE-RSA-AES128-GCM-SHA256' -Verify 1\r\n```\r\n\r\nthe test program fails with:\r\n```\r\n% go run ~/test.go\r\npanic: tls: failed to sign handshake with client certificate: crypto/rsa: input must be hashed message\r\n```\r\n\r\nThis only happens if -serverpref is used.  This problem appears to have been introduced by commit f1d669aee994b28e1afcfe974680565932d25b70, and comes from src/crypto/rsa/pkcs1v15.go, line 275 (in HEAD):\r\n\r\n```\r\n    if inLen != hashLen {\r\n        return 0, nil, errors.New(\"crypto/rsa: input must be hashed message\")\r\n    }\r\n```\r\n\r\n`openssl s_client` appears to have no issues connecting so I'm guessing this is a problem on Go's end.",
+	"user": {
+		"login": "johto",
+		"id": 951744,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-03-16T23:39:13Z",
+	"created_at": "2015-02-08T17:11:07Z",
+	"updated_at": "2016-06-25T02:00:20Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

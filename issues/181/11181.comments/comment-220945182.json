@@ -1,0 +1,12 @@
+{
+	"id": 220945182,
+	"body": "It makes sense that runtime is linear in _**n**_, but only for a fixed regexp size **_m_**.\r\n\r\nWe must also interpret it as \"worst case upper bound is linear\", and this isn't a promise that average case will grow linearly.\r\n\r\nI ran a simulation with pattern \"|A+{_**m**_}\", with various values of _**n**_ from 1 to 1000, and _**m**_ from 1 to 1000, here the result  (high durations in red) :\r\n\r\n![regexp_not_linear_plot](https://cloud.githubusercontent.com/assets/13508141/15467802/a95bb5e8-20e0-11e6-973a-c2f801ad9acd.png)\r\n\r\nThis shows that the worst case is obtained with _**n**_ = _**m**_ - 1\r\n\r\nWe can't write pattern \"|A+{_**m**_}\" with _**m**_ \u003e 1000, however it must be equivalent (iiuc) to expanded pattern \"|(A+A+A+ ... A+)\" with _**m**_ repetitions of A+ .\r\n\r\nSo I ran a second simulation with _**n**_ = _**m**_ - 1 , with various values of _**m**_ from 1 to 2000 :\r\n\r\n`re = regexp.MustCompilePOSIX(\"|(\" + strings.Repeat(\"A+\", m) + \")\")\r\nre.FindAllString(strings.Repeat(\"A\", m-1), -1)\r\n`\r\n\r\nand plotted the runtime on Y axis :\r\n\r\n![regex_time_curves](https://cloud.githubusercontent.com/assets/13508141/15468113/9f5a85b8-20e2-11e6-8335-057ce28f5af0.png)\r\n\r\n\r\nAccording to the \"linear in _**m**_ and linear in _**n**_\" promise, we should have worst time proportional to _**m**_^2 .\r\n\r\nUnfortunatly, the results (for this particular pattern and input string) clearly indicate that worst time is proportional to _**m**_^3 .",
+	"user": {
+		"login": "Deleplace",
+		"id": 13508141,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-23T10:35:05Z",
+	"updated_at": "2016-05-23T10:35:05Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51276583,
+	"number": 515,
+	"state": "closed",
+	"title": "asn1 fails to marshal structures with multiple members (patch included)",
+	"body": "\u003cpre\u003easn1 marshalling uses the forkableWriter, but unfortunately the\ncurrent code fails for any structures with more than one members.\n\nTo reproduce\ntype Foo struct { a,b int } \nasn1.Marshal(os.Stdout, Foo{1,2})\nonly marshals the last field of Foo.\n\nThe following patch fixes this:\n\ndiff -r e73e37a4a6da src/pkg/asn1/marshal.go\n--- a/src/pkg/asn1/marshal.go\tSat Jan 09 09:47:45 2010 -0800\n+++ b/src/pkg/asn1/marshal.go\tMon Jan 11 14:49:11 2010 +0200\n@@ -29,6 +29,7 @@\n }\n \n func (f *forkableWriter) fork() (pre, post *forkableWriter) {\n+\tfor f.post != nil { f = f.post }\n \tf.pre = newForkableWriter()\n \tf.post = newForkableWriter()\n \treturn f.pre, f.post\n@@ -61,7 +62,7 @@\n \t\t}\n \t}\n \n-\tif f.pre != nil {\n+\tif f.post != nil {\n \t\tnn, err = f.post.writeTo(out)\n \t\tn += nn\n \t}\u003c/pre\u003e",
+	"user": {
+		"login": "taruti",
+		"id": 42174,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:04:53Z",
+	"created_at": "2010-01-11T13:04:52Z",
+	"updated_at": "2016-06-24T19:12:40Z"
+}

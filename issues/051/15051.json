@@ -1,0 +1,28 @@
+{
+	"id": 144991766,
+	"number": 15051,
+	"state": "closed",
+	"title": "gccgo: runtime: runtime_stoptheworld deadlock on ppc64le",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n  go version go1.4.2 gccgo (GCC) 5.3.0 linux/ppc64le\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n  ppc64le\r\n  linux\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n  Unfortunately haven't been able to come up with a simple repro, but core dump and binary are provided (all of the interesting source information is within gccgo's libgo c implementation).\r\n\r\n4. What did you expect to see?\r\n\r\n  Something other than a hard deadlock across all threads.  If this is an application derived deadlock, perhaps deadlock detection triggering.\r\n\r\n5. What did you see instead?\r\n\r\n  All threads stuck in runtime_futexsleep without a timeout.\r\n\r\n  One thread is in runtime_stoptheworld, all other threads are blocked.  On inspection, the stoptheworld thread is waiting because one of the outstanding P's is still in Psyscall (runtime_sched.stop_wait == 1).  Values for that P:\r\n\r\n  ```\r\n  (gdb) p runtime_allp[1][0]\r\n  $1 = {{key = 0}, id = 1, status = 2, link = 0x0, schedtick = 88, syscalltick = 10, m = 0x0, mcache = 0x3fff90df0898,\r\n    deferpool = 0x0, goidcache = 37, goidcacheend = 49, runqhead = 21, runqtail = 21, runq = {0xc2094b0000, 0xc2094b0000,\r\n      0xc20a10ba00, 0xc20a10c700, 0xc20a10d400, 0xc2094b0000, 0xc20a10e100, 0xc20a10e100, 0xc20a10e100, 0xc20bd8a000,\r\n      0xc20bd8ad00, 0xc20bd8ba00, 0xc2094b0000, 0xc20d592700, 0xc2094b0000, 0xc2094b0000, 0xc2094b0000, 0xc20d590000,\r\n      0xc20bd82d00, 0xc20d594e00, 0xc20b526100, 0x0 \u003crepeats 235 times\u003e}, gfree = 0x0, gfreecnt = 0,\r\n    pad = '\\000' \u003crepeats 63 times\u003e}\r\n  ```\r\n\r\n  All of the other P's are in status 3, I.e. Pgcstop\r\n\r\n  I'm partly suspicious of the doentersyscall() edge, which seems to do a non-atomic load of runtime_sched.gcwaiting, which feels like it could race with the gc'ing thread:\r\n\r\n  ```\r\n  // doentersyscall()\r\n  ...\r\n        runtime_atomicstore(\u0026m-\u003ep-\u003estatus, Psyscall);\r\n        if(runtime_sched.gcwaiting) {\r\n                runtime_lock(\u0026runtime_sched);\r\n                if (runtime_sched.stopwait \u003e 0 \u0026\u0026 runtime_cas(\u0026m-\u003ep-\u003estatus, Psyscall, Pgcstop)) {\r\n                        if(--runtime_sched.stopwait == 0)\r\n                                runtime_notewakeup(\u0026runtime_sched.stopnote);\r\n                }\r\n                runtime_unlock(\u0026runtime_sched);\r\n        }\r\n  ...\r\n```\r\n\r\nCoredump with binary and goroutine stack output:\r\nhttps://www.dropbox.com/s/3lht3xs4fgi7fub/hang_info.tgz?dl=0",
+	"user": {
+		"login": "hanumantmk",
+		"id": 150922,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-04-02T00:46:57Z",
+	"created_at": "2016-03-31T19:13:53Z",
+	"updated_at": "2016-04-02T00:48:22Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

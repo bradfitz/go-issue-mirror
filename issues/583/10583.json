@@ -1,0 +1,33 @@
+{
+	"id": 71306177,
+	"number": 10583,
+	"state": "closed",
+	"title": "crypto/x509: ParsePKIXPublicKey ignores tail of ASN.1 encoding",
+	"body": "We probably need to fix ParsePKIXPublicKey not to ignore the remainder of the DER encoding.\n\n@agl, please speak up if you think the code is correct as is. Otherwise we'll take care of it. Thanks.\n \n---------- Forwarded message ----------\nFrom: \u003cjabczynskimichal@gmail.com\u003e\nDate: Fri, Apr 24, 2015 at 3:36 PM\nSubject: [golang-dev] proposal: ASN1 (un)marshalling from Reader/Writer\nTo: golang-dev@googlegroups.com\n\nHi golang-dev,\n\n...\n\nIn crypto/x509/x509.go, we have the following code:\n\n\t// ParsePKIXPublicKey parses a DER encoded public key. These values are\n\t// typically found in PEM blocks with \"BEGIN PUBLIC KEY\".\n\tfunc ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {\n\t\tvar pki publicKeyInfo\n\t\tif _, err = asn1.Unmarshal(derBytes, \u0026pki); err != nil {\n\t\t\treturn\n\t\t}\n\t\talgo := getPublicKeyAlgorithmFromOID(pki.Algorithm.Algorithm)\n\t\tif algo == UnknownPublicKeyAlgorithm {\n\t\t\treturn nil, errors.New(\"x509: unknown public key algorithm\")\n\t\t}\n\t\treturn parsePublicKey(algo, \u0026pki)\n\t}\n\nNotice that the rest value is ignored when parsing the public key. If key validity is checked using a hash function, a malicious entity could add bytes after the public key, changing its hash value without altering the key itself. This is unacceptable in x509 implementation.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-04-30T03:51:13Z",
+	"created_at": "2015-04-27T14:51:22Z",
+	"updated_at": "2016-06-25T02:06:35Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"id": 157700504,
+	"number": 15903,
+	"state": "open",
+	"title": "runtime: checkmark doesn't follow one-word objects with finalizers",
+	"body": "Oh, checkmark. For one-word pointer objects, we store the checkmark in the type bit. That means that, at the beginning of checkmark, the type bits of all one-word objects are set to \"scalar\", even though they're all pointers. For most objects this is fine, since we'll \"mark\" them before scanning them, which will set one-word objects to \"pointer\". However, for objects with finalizers, we scan the object without marking it. If the object isn't otherwise reachable, nothing will have set its checkmark, so scanobject will see it as a \"scalar\" word and not follow it.\r\n\r\nThis is such an obscure combination of circumstances that I'm not worried about fixing it for now. But there are a few ways to fix it. We could teach scanobject that one word objects are always a pointer, though that would potentially slow down an extremely hot code path for almost no gain. We could put the checkmark in the live/dead bit now that it's free. Or we could pull the checkmark out of the heap bitmap entirely (I already have a CL to do this locally).\r\n\r\n/cc @RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-05-31T15:28:02Z",
+	"updated_at": "2016-05-31T15:28:02Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

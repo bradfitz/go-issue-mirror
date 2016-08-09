@@ -1,0 +1,22 @@
+{
+	"id": 51279457,
+	"number": 2610,
+	"state": "closed",
+	"title": "ForkExec breaks when syscall.SysProcAttr{Setctty:true} is set",
+	"body": "by **swhite@ngmoco.com**:\n\n\u003cpre\u003eI've tried lots of different ways to try and make this work but I think the fd's are\ngetting screwed up in the ForkExec code\n\nWhat steps will reproduce the problem?\n1. run attached file (ForkExec run with attr := syscall.ProcAttr{Sys:\n\u0026amp;syscall.SysProcAttr{Setctty:true}})\n2. setctty is run on the wrong/bad file descriptors\n\n\nWhat is the expected output?\nI expect the fork to succeed and the child process to have it's controlling terminal set\nto the same terminal as where the program was run (maintain foreground in bash after the\nparent exits)\n\nWhat do you see instead?\nfork fails with bad file descriptor\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux, Mac OS X\n\nWhich revision are you using?  (hg identify)\nc1702f36df03 (release-branch.r60) release/release.r60.3\n\nPlease provide any additional information below.\n\nThis is certainly due to the fd manipulation starting around\n\u003ca href=\"http://golang.org/src/pkg/syscall/exec_unix.go?s=8625:9011#L193\"\u003ehttp://golang.org/src/pkg/syscall/exec_unix.go?s=8625:9011#L193\u003c/a\u003e\nComments about exactly what each of these fd manipulations is supposed accomplish would\nreally help developers such as myself determine if there are bugs/implementation details\naround what we are trying to do in our code.\n\nIn my actual code I am attempting to keep open a socket listener and when I put it in\nthe syscall.ProcAttr.Files slice I get err: operation not supported on socket\n\nI have tried adding 0,1,2 fd's to the syscall.ProcAttr.Files and I get err: operation\nnot permitted\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2610/0/fork_you.go\"\u003efork_you.go\u003c/a\u003e (309 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:13:54Z",
+	"created_at": "2011-12-23T01:19:09Z",
+	"updated_at": "2016-06-24T21:22:22Z"
+}

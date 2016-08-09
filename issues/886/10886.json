@@ -1,0 +1,28 @@
+{
+	"id": 77298511,
+	"number": 10886,
+	"state": "closed",
+	"title": "database/sql: Exec() never returns when IP is not reachable and maxOpenConns is reached",
+	"body": "With go1.4.2, maxOpenConn set to 2, and an unreachable IP:\r\n    - two Exec() returns an error\r\n    - but the third Exec() never returns\r\n\r\n```go\r\nimport \"database/sql\"\r\nimport _ \"github.com/go-sql-driver/mysql\"\r\n...\r\ndb := sql.Open(\"mysql\", \"root:password@tcp(1.2.3.4:3306)/mysql?timeout=15s\")\r\ndb.SetMaxOpenConn(2)\r\ndb.SetMaxIdleConns(0)\r\nfor i := 0; i \u003c 3; i++ {\r\ngo func() {\r\n_, err := db.Exec(\"SELECT SLEEP(5)\")\r\n  if err != nil {\r\n    log.Println(err)\r\n  }\r\n  log.Println(\"Done\")\r\n  }\r\n}\r\n...\r\n```\r\n\r\nAdding a call to db.maybeOpenNewConnections() after database/sql/sql.go:667 seems to fix this issue. But I'm not sure whether this is the correct fix or not.  Please help.  Thanks.\r\n\r\n```\r\n664 ci, err := db.driver.Open(db.dsn)\r\n665 if err != nil {\r\n666 db.mu.Lock()\r\n667 db.numOpen-- // correct for earlier optimism\r\n       db.maybeOpenNewConnections()\r\n668 db.mu.Unlock()\r\n669 return nil, err\r\n670 }\r\n```",
+	"user": {
+		"login": "joew1",
+		"id": 12461704,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-10-16T15:18:16Z",
+	"created_at": "2015-05-17T12:21:42Z",
+	"updated_at": "2015-10-16T15:18:16Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

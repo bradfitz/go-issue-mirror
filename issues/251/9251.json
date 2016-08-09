@@ -1,0 +1,28 @@
+{
+	"id": 51640517,
+	"number": 9251,
+	"state": "closed",
+	"title": "x/mobile/bind/java: buffer overflow in the Java/Go parameter serialization",
+	"body": "* What version of Go are you using (go version)?\r\n  * 1.4 RC (release-branch.go1.4); latest https://godoc.org/golang.org/x/mobile \r\n* What operating system and processor architecture are you using?\r\n  * darwin/amd64 targetting android/arm\r\n* What did you do?\r\n  * Passed a 300 character string parameter from Java to Go.\r\n* What did you expect to see?\r\n  * The Go function receive the parameter correctly.\r\n* What did you see instead?\r\n  * Heap corruption is reported and the Android process crashes.\r\n\r\nThere appears to be a bug in the buffer resize logic in `mem_write` in `mobile/bind/java/seq_android.c`? The buffer is resized to at most 2x its previous capacity, even if the new data to be appended is much longer. Ultimately the data is written to the buffer even though the buffer is too small, and the heap is corrupted and the program crashes. In the case of a serialized string parameter, `mem_write` is called from `Java_go_Seq_writeUTF16` which is also the function that actually writes to the undersized buffer.\r\n\r\nTo reproduce, pass a long string to Go code using the bind parameter serialization mechanism. For a function that takes a single string, the default buffer size of a `Seq` is 64 bytes, and `mem_write` will at most double it to 128 bytes, and each character requires 2 bytes, and there's a 4 byte length prefix, so any string over ~62 characters will corrupt the heap (but only significantly longer strings will crash the program consistently, a 300 character string in my test case).\r\n\r\nIn the `gobind` generated Java code, immediately after the `_in.writeUTF16(s)`, for example, you can call `Seq.log()` to log the buffer state and observe that the `len` \u003e `cap`. At some random point after the buffer overflow, Android logcat displays \"heap corruption detected by dlmalloc\" and the process terminates. \r\n\r\nThis is the current resize logic (https://github.com/golang/mobile/blob/551dbd1f07f5826104e50893b453bcf6273fbeaa/bind/java/seq_android.c#L81):\r\n```\r\n...\r\n    if (m-\u003eoff+size \u003e m-\u003ecap) {\r\n        m = mem_resize(m, 2*m-\u003ecap);\r\n    }\r\n    uint8_t *res = m-\u003ebuf+m-\u003eoff;\r\n    m-\u003eoff += size;\r\n    m-\u003elen += size;\r\n    return res;\r\n```\r\nThis seems to fix it (with this change the `Seq.log()` output looks correct and the process doesn't crash):\r\n```\r\n...\r\n    if (m-\u003eoff+size \u003e m-\u003ecap) {\r\n        uint32_t cap = 2*m-\u003ecap;\r\n        if (cap \u003c m-\u003eoff+size) {\r\n            cap = m-\u003eoff+size;\r\n        }\r\n        m = mem_resize(m, cap);\r\n    }\r\n    uint8_t *res = m-\u003ebuf+m-\u003eoff;\r\n    m-\u003eoff += size;\r\n    m-\u003elen += size;\r\n    return res;\r\n```",
+	"user": {
+		"login": "rod-hynes",
+		"id": 488643,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-11T17:54:12Z",
+	"created_at": "2014-12-11T03:06:53Z",
+	"updated_at": "2016-08-05T16:08:40Z"
+}

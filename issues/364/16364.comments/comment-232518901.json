@@ -1,0 +1,12 @@
+{
+	"id": 232518901,
+	"body": "Sorry, Ian, I am not really sure about why memory writes would not be seen by a reader side, but maybe you are right that it can be possible if there are no memory barriers when working with a loosely-ordered channel.\r\n\r\nThe simplest implementation of loosely-ordered channel is just a sharded one, basically. So you still need to take a mutex when trying to read or write to each shard in this case so all the memory guarantees are the same as for a mutex or a channel.\r\n\r\nThe only downside of sharded channel is that if distribution is not even enough then some shards would not have any entries while others could have too many. So if that happens you might just try to \"steal\" entries from other shards (e.g. take random shard and try to get entries from there). If you did not manage to find any entries for reasonable amount of tries (e.g. 3 tries) then you could force shards rebalancing (take a mutex per each shard and then shuffle elements around).\r\n\r\nAll of that will work well if you have a huge stream of events which, in my opinion, is not uncommon to try to process in go.",
+	"user": {
+		"login": "YuriyNasretdinov",
+		"id": 575929,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-13T23:45:42Z",
+	"updated_at": "2016-07-13T23:46:42Z"
+}

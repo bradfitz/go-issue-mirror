@@ -1,0 +1,28 @@
+{
+	"id": 118140412,
+	"number": 13346,
+	"state": "closed",
+	"title": "cmd/internal/obj: pcsp table entries wrong at CALL morestack",
+	"body": "On 386, amd64, arm, and arm64, stacksplit appends a \"CALL morestack; JMP f(SB)\" call sequence to the end of f, but the pcsp table entries at the end of f default to f's full frame size rather than 0.\r\n\r\nI think this can cause a problem in the following situation on x86:\r\n\r\n  1. The user sets a breakpoint on the \"JMP f(SB)\" instruction.\r\n  2. That causes rewindmorestack to not rewind the PC, so gp.sched.pc will continue to correspond to the bad pcsp entry.\r\n  3. Within copystack, the call to gentraceback(^uintptr(0), ^uintptr(0), 0, gp, ...) will use gp.sched.pc and gp.sched.sp to walk the stack.\r\n  4. But because of the bad pcsp entry, it'll misinterpret the stack frames.\r\n\r\nI briefly explored three ways to fix this and measured the file size impact on cmd/gofmt on linux/amd64:\r\n\r\n       text\t   data\t    bss\t    dec\t    hex\tfilename\r\n    2687573\t  74416\t 129816\t2891805\t 2c201d\tgofmt.before\r\n    2688597\t  74416\t 129816\t2892829\t 2c241d\tgofmt.after1\r\n    2686430\t  74416\t 129816\t2890662\t 2c1ba6\tgofmt.after2\r\n    2684162\t  74416\t 129816\t2888394\t 2c12ca\tgofmt.after3\r\n\r\ngofmt.after1 is leaving the generated instruction sequence alone, but setting Spadj accordingly so extra pcsp table entries will be generated for the morestack calls.\r\n\r\ngofmt.after2 is to insert the \"CALL morestack; JMP f(SB)\" call sequence after the last RET instruction in a function, so that it gets to share a pcsp table entry with the RET instruction.  (And for functions with no RET instructions, to continue appending to the end like in gofmt.after1.)\r\n\r\ngofmt.after3 is the same as gofmt.after2, except inserting after the *first* RET instruction.  The additional text savings are from more opportunities to use the 2-byte near-JMP instruction encoding for \"JMP f(SB)\" instead of the 5-byte encoding.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-01-05T01:48:51Z",
+	"created_at": "2015-11-20T22:30:24Z",
+	"updated_at": "2016-01-05T01:48:51Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

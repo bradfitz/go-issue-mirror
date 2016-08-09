@@ -1,0 +1,12 @@
+{
+	"id": 232996848,
+	"body": "By 'out of scope for Go 1.x', do you mean that it would break the Go 1 compatibility guarantee, or just that it can't make it into Go 1.7 because it's past the freeze? What I'm thinking of wouldn't break the guarantee, and I certainly don't expect changes now to make it into Go 1.7.\r\n\r\nTo clarify, I'm picturing a new function, probably in the `httptest` package, with a signature along the following lines:\r\n\r\n    func PipeNetwork(addr string, next func(net, addr string) (net.Conn, error)) (net.Listener, func(net, addr string) (net.Conn, error))\r\n\r\nIt would be used like this:\r\n\r\n    lis, dial := PipeNetwork(DefaultRemoteAddr, net.Dial)\r\n\r\n    s := httptest.NewUnstartedServer(someHandler)\r\n    s.Listener = lis\r\n    s.Start()\r\n\r\n    c := \u0026http.Client{Transport: \u0026http.Transport{Dial: dial}}\r\n\r\nBasically, calls to `dial` where the `addr` parameter matched the `addr` parameter given to `PipeNetwork` would use `net.Pipe` and connect to the returned `net.Listener`, while other addresses would be passed through to the provided `next` function.",
+	"user": {
+		"login": "DeedleFake",
+		"id": 326750,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-15T16:14:01Z",
+	"updated_at": "2016-07-15T16:14:47Z"
+}

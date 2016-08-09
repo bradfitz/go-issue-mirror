@@ -1,0 +1,27 @@
+{
+	"id": 51285456,
+	"number": 6619,
+	"state": "closed",
+	"title": "runtime: reflect.methodValueCall cannot be unwound",
+	"body": "\u003cpre\u003eI am encountering the following error during continuous loops of all.bash with GOGC set\nto either 0 or 1.  This happens on a clean checkout and has been reproduced on Keith's\nmachine as well.\n\nThis might be related to 5954 though the tack trace is always different.  The test that\nis failing may have been one that was recently added.\n\nHere is a representative stack trace\n\nruntime: unknown argument frame size for reflect.methodValueCall called from 0x425822\n[runtime.call16]\nfatal error: invalid stack\n\nruntime stack:\nruntime.throw(0x9b03e6)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/panic.c:464 +0x69\nruntime.gentraceback(0x41173e, 0x7f8bb3801600, 0x0, 0xc21024e000, 0x0, ...)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/traceback_x86.c:132 +0x71e\naddstackroots(0xc21024e000)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/mgc0.c:1775 +0x155\naddroots()\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/mgc0.c:1857 +0x204\ngc(0x7f8bb3801628)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/mgc0.c:2405 +0x18b\nmgc(0xc21024e000)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/mgc0.c:2356 +0x2e\nruntime.mcall(0x42543d)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/asm_amd64.s:178 +0x4b\n\ngoroutine 40 [garbage collection]:\nruntime.gc(0x0)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/mgc0.c:2327 +0x19e fp=0x7f8bb3801638\nruntime.mallocgc(0x1000, 0x567961, 0x0)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/malloc.goc:148 +0x2a2 fp=0x7f8bb38016a8\ncnew(0x567960, 0x3, 0x1)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/malloc.goc:726 +0xc1 fp=0x7f8bb38016c8\nruntime.cnewarray(0x567960, 0x3)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/malloc.goc:739 +0x3a fp=0x7f8bb38016e8\nmakeslice1(0x55cbe0, 0x3, 0x3, 0x7f8bb3801748)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/slice.c:57 +0x4d fp=0x7f8bb3801700\nruntime.makeslice(0x55cbe0, 0x3, 0x3, 0x8, 0x3, ...)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/slice.c:38 +0x98 fp=0x7f8bb3801730\nreflect.callMethod(0xc2152a9000, 0x7f8bb38017e8)\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/value.go:670 +0xe0 fp=0x7f8bb38017d0\nruntime: unknown argument frame size for reflect.methodValueCall called from 0x425822\n[runtime.call16]\nreflect.methodValueCall()\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/asm_amd64.s:26 +0x24 fp=0x7f8bb38017e8\nruntime.call16(0xc2152a9000, 0xc2152aa000)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/asm_amd64.s:338 +0x32 fp=0x7f8bb3801800\nreflect.Value.call(0x57ac40, 0xc2152a9000, 0x130, 0x5c6960, 0x4, ...)\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/value.go:474 +0x113d fp=0x7f8bb3801ab8\nreflect.Value.Call(0x57ac40, 0xc2152a9000, 0x130, 0x7f8bb3801d38, 0x1, ...)\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/value.go:345 +0xac fp=0x7f8bb3801b30\nreflect_test.TestMethodValue(0xc2152a5000)\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/all_test.go:1592 +0x431 fp=0x7f8bb3801f48\ntesting.tRunner(0xc2152a5000, 0x9b46e8)\n        /usr/local/google/home/cshapiro/go/src/pkg/testing/testing.go:389 +0xa9 fp=0x7f8bb3801f90\nruntime.goexit()\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/proc.c:1396 fp=0x7f8bb3801f98\ncreated by testing.RunTests\n        /usr/local/google/home/cshapiro/go/src/pkg/testing/testing.go:469 +0x9a2\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x61be88, 0x9b43a0, 0x52, 0x52, 0x1)\n        /usr/local/google/home/cshapiro/go/src/pkg/testing/testing.go:470 +0x9c5\ntesting.Main(0x61be88, 0x9b43a0, 0x52, 0x52, 0x9af400, ...)\n        /usr/local/google/home/cshapiro/go/src/pkg/testing/testing.go:401 +0x84\nmain.main()\n        reflect/_test/_testmain.go:223 +0x9c\n\ngoroutine 35 [sleep]:\ntime.Sleep(0x3b9aca00)\n        /usr/local/google/home/cshapiro/go/src/pkg/runtime/time.goc:31 +0x31\nreflect_test.selectWatcher()\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/all_test.go:1350 +0x2e\ncreated by reflect_test.func·003\n        /usr/local/google/home/cshapiro/go/src/pkg/reflect/all_test.go:1080 +0x21\nFAIL    reflect 68.298s\u003c/pre\u003e",
+	"user": {
+		"login": "lexprfuncall",
+		"id": 5360361,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:36:39Z",
+	"created_at": "2013-10-18T23:52:31Z",
+	"updated_at": "2016-06-25T01:20:58Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

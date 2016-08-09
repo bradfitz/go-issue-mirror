@@ -1,0 +1,12 @@
+{
+	"id": 73610098,
+	"body": "Ok, I ran a `git bisect` and traced the data-race detection regression down to ff979626fc14eb0debcce44494ca114879de618d, whose commit message says:\r\n\r\n```\r\nAuthor: Russ Cox \u003crsc@golang.org\u003e\r\nDate:   Mon Dec 29 16:26:25 2014 -0500\r\n\r\n    cmd/gc: add write barrier for append(slice, slice...)\r\n    \r\n    Found with GODEBUG=wbshadow=2 mode.\r\n    Eventually that will run automatically, but right now\r\n    it still detects other missing write barriers.\r\n    \r\n    Change-Id: I5624b509a36650bce6834cf394b9da163abbf8c0\r\n    Reviewed-on: https://go-review.googlesource.com/2310\r\n    Reviewed-by: Rick Hudson \u003crlh@golang.org\u003e\r\n```\r\n\r\nOk, this sounds very related to the problem at hand.  I don't quite understand the comment in the commit log though.\r\n\r\n\r\nLet me try `\"GODEBUG=wbshadow=2\"` on ff979626fc14eb0debcce44494ca114879de618d and see if we can detect the data race then...\r\n\r\n```\r\ndannyyoo@melchior:~/work/go/src$ GODEBUG=wbshadow=2 ../bin/go run -race ~/tmp/xml-data-race.go\r\nfatal error: cannot map shadow heap\r\n\r\nruntime stack:\r\nruntime.throw(0x8cf370, 0x16)\r\n\t/usr/local/google/home/dannyyoo/work/go/src/runtime/panic.go:508 +0x98\r\nruntime.wbshadowinit()\r\n\t/usr/local/google/home/dannyyoo/work/go/src/runtime/malloc1.go:240 +0x87\r\nruntime.schedinit()\r\n\t/usr/local/google/home/dannyyoo/work/go/src/runtime/proc1.go:125 +0x6f\r\nruntime.rt0_go(0x7fff6676a338, 0x4, 0x7fff6676a338, 0x0, 0x7f33c7edb30a, 0x4, 0x7fff6676c541, 0x7fff6676c54b, 0x7fff6676c54f, 0x7fff6676c555, ...)\r\n\t/usr/local/google/home/dannyyoo/work/go/src/runtime/asm_amd64.s:96 +0x116\r\ndannyyoo@melchior:~/work/go/src$ ../bin/go run -race ~/tmp/xml-data-race.go\r\ndannyyoo@melchior:~/work/go/src$\r\n```\r\n\r\nI don't understand what's going on.  This seems very tied to the garbage collector.\r\n\r\n\r\nCan we notify @rsc about this to ask what the right behavior is supposed to be here?",
+	"user": {
+		"login": "dannyyoo",
+		"id": 7536863,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-09T23:02:52Z",
+	"updated_at": "2015-02-09T23:03:24Z"
+}

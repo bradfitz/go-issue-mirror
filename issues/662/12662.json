@@ -1,0 +1,22 @@
+{
+	"id": 106971327,
+	"number": 12662,
+	"state": "closed",
+	"title": "mime/multipart: problem parsing for certain attachment lengths",
+	"body": "The problem seems to arise when we include a file (as the last element of a multipart-form) whose length makes the final peeking buffer finish with --DELIMITER- (for example, a file with 4031 A's). \r\n\r\nI've tried this using go1.5, go1.5.1 and devel. It should affect all architectures.\r\n\r\nI've located the problem in function func (mr *Reader) peekBufferSeparatorIndex(peek []byte) (idx int, isEnd bool). This function does the following check:\r\n\r\n\tif len(peek) \u003e 1 \u0026\u0026 peek[0] == '-' \u0026\u0026 peek[1] == '-' {\r\n\t\treturn idx, true\r\n\t}\r\n\tpeek = skipLWSPChar(peek)\r\n\t// Don't have a complete line after the peek.\r\n\tif bytes.IndexByte(peek, '\\n') == -1 {\r\n\t\treturn -1, false\r\n\t}\r\n\r\nFor the input mentioned, the function returns -1 and ends up consuming the first dash of the delimiter string when reading the content of the file. I've tried a fix for this adding the following condition:\r\n\r\n\tif len(peek) == 0 || len(peek) == 1 \u0026\u0026 peek[0] == '-' {\r\n\t\treturn idx, false\r\n\t}\r\n\tif len(peek) \u003e 1 \u0026\u0026 peek[0] == '-' \u0026\u0026 peek[1] == '-' {\r\n\t\treturn idx, true\r\n\t}\r\n\tpeek = skipLWSPChar(peek)\r\n\t// Don't have a complete line after the peek.\r\n\tif bytes.IndexByte(peek, '\\n') == -1 {\r\n\t\treturn -1, false\r\n\t}\r\n\r\nWith the change the problem doesn't arise anymore and all tests included in the mime/multipart package pass. I'll work on a CL for this fix.\r\n\r\nBest Regards,\r\nFrancisco Claude.\r\n\r\n",
+	"user": {
+		"login": "fclaude",
+		"id": 447408,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-09-24T09:01:25Z",
+	"created_at": "2015-09-17T12:18:44Z",
+	"updated_at": "2015-11-16T23:00:36Z",
+	"milestone": {
+		"id": 1295987,
+		"number": 27,
+		"title": "Go1.5.2"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 177375839,
+	"body": "How could you estimate the size for reserved memory?\n\nPlease note that OOM can happen:\n1. on any goroutine\n2. on multiple goroutines concurrently\n\n1 implies that unless you control every function call in your\nprogram, it's unlikely having reserved memory will help in\nevery possible OOM case. Even worse, if the OOM handler\nis not last deferred function at all times, it's possible that\nOOM panic occurs and a later deferred cleanup function\nallocate more memory than is available, and then the\nprogram crashes. so deferring a OOM handler won't work\nin all cases.\n\nOr perhaps the program can register a global OOM handler,\nbut that won't work either, because there is no way the\nglobal handler can release the problematic memory allocation\nthat triggered the OOM panic.\n\nAlso note that you can't control every possible case, for\nexample, the runtime goroutine might allocate memory,\nand what if that triggers the OOM?\n\n2 implies that it's very hard to generally estimate the\nmemory required for OOM recovery. Unless you always\nonly run only one goroutine, but that's not what typical\nGo programs are written. And I don't think we should\nadd a mechanism that can only be reliably used for\nsingle goroutine programs.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-31T03:41:05Z",
+	"updated_at": "2016-01-31T03:41:05Z"
+}

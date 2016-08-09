@@ -1,0 +1,12 @@
+{
+	"id": 228154274,
+	"body": "I have found 2 problems with the golang processing for elf sections that are related to my change.  It's taken me a while to debug it because I'm not familiar with it yet.\r\n\r\nWhen multiple text sections are created then the syms for the functions found in the sections other than the first will have their Value set to the offset relative to the start of the section they are in.  So if there is a function in the second text section, its Value is set to the offset from the start of that section and since the shndx is set correctly, the linker relocates it according to its containing section correctly.\r\n\r\nHowever I have found at least 2 other places where golang's elf processing assumes that the Value in a sym is relative to the start of the first text section and that causes errors.  In the first case, there is a structure being created into rodata _somewhere_ (not documented, not named the same as where it is used at least not that I could find) for the ifn and tfn fields of the method structure in runtime/type.go, for some of the go.itab functions and probably others.  These values were filled in incorrectly for functions in text sections other than the first text section.  If someone could point me to where the method's fields are being filled into the rodata section then I can try to find a way to make that work.\r\n\r\nThe other problem occurs when generating the findfunctab because the code assumes that all the function syms have Value fields that are ascending, and again if there are multiple text sections the functions in the second text section will have offsets relative to the start of the second text section.  As a result the functab is not correct and look up fails.  I think I have some ideas on how to make that one work.",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-23T19:12:34Z",
+	"updated_at": "2016-06-23T19:12:34Z"
+}

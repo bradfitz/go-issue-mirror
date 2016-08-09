@@ -1,0 +1,28 @@
+{
+	"id": 54082059,
+	"number": 9570,
+	"state": "closed",
+	"title": "go/types: missing \"unused var\" error due to incorrect scope computation",
+	"body": "% cat a.go\r\npackage main\r\n\r\ntype I interface {\r\n        f() chan int\r\n}\r\n\r\nfunc f(i I) {\r\n        select {\r\n        case \u003c-chan int(nil):\r\n                var i I // unused, but no error\r\n        case \u003c-i.f():  // delete this case, and you'll see the error\r\n        }\r\n}\r\n% gotype a.go \u0026\u0026 echo PASS\r\nPASS\r\n\r\nThe real problem here is not the failure to report an error, but a mistake in the scope calculation.\r\nI think go/types is treating the reference to i in the second case as if it is within the scope of the 'var i I' declaration, in other words, it's resolving to the wrong i.\r\n\r\nI think this explains SSA bug #9569 too.\r\n",
+	"user": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-01-13T23:28:33Z",
+	"created_at": "2015-01-12T17:30:13Z",
+	"updated_at": "2016-06-25T01:58:20Z"
+}

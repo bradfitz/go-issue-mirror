@@ -1,0 +1,12 @@
+{
+	"id": 66092607,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eI am struggling with another issue I discovered here. There is a small difference in the\nway exec.Command and cmd.Cmd{Path: ...} behave. This test will demonstrate:\n\ndiff --git a/src/pkg/os/exec/exec_test.go b/src/pkg/os/exec/exec_test.go\n--- a/src/pkg/os/exec/exec_test.go\n+++ b/src/pkg/os/exec/exec_test.go\n@@ -687,3 +687,51 @@\n \t\tos.Exit(2)\n \t}\n }\n+\n+func runCommand(t *testing.T, name string) string {\n+\tcmd := exec.Command(name)\n+\tout, err := cmd.CombinedOutput()\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\treturn string(out)\n+}\n+\n+func runNewCmd(t *testing.T, name string) string {\n+\tcmd := exec.Cmd{Path: name}\n+\tout, err := cmd.CombinedOutput()\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\treturn string(out)\n+}\n+\n+func TestALEX(t *testing.T) {\n+\ttmp, err := ioutil.TempDir(\"\", \"TestALEX\")\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer os.RemoveAll(tmp)\n+\n+\terr = os.Symlink(\"/bin/echo\", filepath.Join(tmp, \"date\"))\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\n+\twd, err := os.Getwd()\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\n+\terr = os.Chdir(tmp)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer os.Chdir(wd)\n+\n+\toutCommand := runCommand(t, \"date\")\n+\toutNewCmd := runNewCmd(t, \"date\")\n+\tif outCommand != outNewCmd {\n+\t\tt.Fatalf(\"outCommand(%q) and outNewCmd(%q) are different\", outCommand, outNewCmd)\n+\t}\n+}\n\nThe test outputs:\n\n# go test -run=ALEX\n--- FAIL: TestALEX (0.00 seconds)\n        exec_test.go:735: outCommand(\"Fri Mar 28 12:09:19 EST 2014\\n\") and outNewCmd(\"\\n\") are different\nFAIL\nexit status 1\nFAIL    os/exec 0.005s\n#\n\nIs that something you consider broken? If so, how should it be fixed? Thank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-28T01:12:52Z",
+	"updated_at": "2014-12-08T10:42:04Z"
+}

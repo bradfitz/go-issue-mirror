@@ -1,0 +1,12 @@
+{
+	"id": 66059179,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI do not what your problem is. But before we do anything else, maybe you can tell us why\nthis error is happening. If you could change your $GOROOT/src/pkg/runtime/windows/mem.c\nfile like this:\n\ndiff -r 6aa111bd2d11 src/pkg/runtime/windows/mem.c\n--- a/src/pkg/runtime/windows/mem.c\tTue Oct 04 15:07:28 2011 +1100\n+++ b/src/pkg/runtime/windows/mem.c\tWed Oct 05 14:21:57 2011 +1100\n@@ -55,7 +55,12 @@\n \t\treturn v;\n \t\n \t// Next let the kernel choose the address.\n-\treturn runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_EXECUTE_READWRITE);\n+\tv = runtime·stdcall(runtime·VirtualAlloc, 4, nil, n, (uintptr)MEM_RESERVE,\n(uintptr)PAGE_EXECUTE_READWRITE);\n+\tif(v == nil) {\n+\t\truntime·printf(\"VirtualAlloc failed with errno=%d\\n\", runtime·getlasterror());\n+\t\truntime·throw(\"VirtualAlloc\");\n+\t}\n+\treturn v;\n }\n \n void\n\nThen you would need to rebuild \"runtime\" package, like\n\ncd $GOROOT/src/pkg/runtime\nmake clean install\n\nThen re-run your program and tell us what errno VirtualAlloc function returns. Thank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-10-05T03:28:14Z",
+	"updated_at": "2014-12-08T10:12:29Z"
+}

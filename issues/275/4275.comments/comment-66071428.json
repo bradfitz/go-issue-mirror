@@ -1,0 +1,12 @@
+{
+	"id": 66071428,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eCan we remove the goid entirely?\n\nFor the race detector I want to add an additional pointer to race detector context to\nthe G struct. Using goid's is inconvenient and slow. Currently there is a 10^6 limit on\ntotal number of goroutines under the race detector, this is needed for fast direct\nmapping between goid's and internal contexts, but I've seen a test that creates more\ngoroutines.\nIf we add the explicit race context pointer to G, then the race detector does not care\nabout goid's as well.\n\nFor the scheduler patch (\u003ca href=\"https://golang.org/cl/6441097)\"\u003ehttps://golang.org/cl/6441097)\u003c/a\u003e I had to effectively\nremove goid's. The single atomic increment on shared var can severe impact scalability.\nThis will limit the rate at which goroutines can be created (otherwise they can be\nallocated from local cache, scheduled on local queue and then deallocated to local\ncache).\nI've started with using G pointer as identifier in crash dumps, and then switched to\n\"persistent\" goid's. That is, an unique goid is assigned to G struct when it's first\nallocated and then it's not updated when G is reused.\n\nSo I would prefer to:\n1. Add explicit race context to G.\n2. Switch to \"persistent\" goid's. They should not overflow.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-10-24T16:29:10Z",
+	"updated_at": "2014-12-08T10:22:43Z"
+}

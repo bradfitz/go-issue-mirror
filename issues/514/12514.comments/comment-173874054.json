@@ -1,0 +1,16 @@
+{
+	"id": 173874054,
+	"body": "just for your reference/information:\r\nI stepped onto the same problem DoraemonYu reported in its initial bug report the day before yesterday:\r\naudio example app crashing on an arm based emulator and on a Samsung Galaxy Tab E Wifi + the following message in the log:\r\nI/GoLog   ( 9589): al: cannot load libopenal.so\r\nexamining the apk using `aapt l audio.apk` showed libopenal.so being placed into `lib/arm/libopenal.so` in the apk, whereas libaudio.so was placed into `lib/armeabi-v7a/libaudio.so`. I think the problem with this was not, that libopenal.so was then installed in a different place on the devices but rather that it was not installed at all. Modifying some code in `golang.org/x/mobile/cmd/gomobile/build_androidapp.go`, I could force-move libopenal.so into `lib/armeabi-v7a` as well, which made the two .so-files install in the same place on the device. The app work perfectly then. I planned to file an issue about this but noticed that the commit at [https://github.com/golang/mobile/commit/e7f16ac590465f5cefa43feb920df4cbfc1c0e6a] was checked in just a few hours ago and contained modifications of the code that I also worked on. Updating to the recent code from the repository thus fixed the problem for me.\r\n\r\nSo basically, the original loading strategy you mentioned in the comment above [https://github.com/golang/go/issues/12514#issuecomment-140202336] might well be correct, as long as you can make sure that libaudio.so and libopenal.so end up in the same directory in the apk (and then, consequently, on the device). I think the code commit mentioned above does just that, so might close this issue as well. On the contrary, using System.loadLibrary might lead to other issues, like having to make sure that nativeLibraryPath/Directory contains the correct values or mistakenly loading an incompatible library version from another place, isn't it?\r\n\r\nRegards,\r\ndamti\r\n\r\n",
+	"user": {
+		"login": "damti",
+		"id": 9138206,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-01-22T10:37:46Z",
+	"updated_at": "2016-01-22T10:37:46Z"
+}

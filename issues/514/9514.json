@@ -1,0 +1,27 @@
+{
+	"id": 53494089,
+	"number": 9514,
+	"state": "closed",
+	"title": "misc/swig/stdio: broken under swig 3.0.4",
+	"body": "I wasted a ton of time debugging this for my POC implementation in #9410, and\r\nit turns out the test is broken (or swig itself is broken).\r\n\r\nThe relevant section of the test:\r\n```\r\nfunc TestRead(t *testing.T) {\r\n        f := Fopen(\"file_test.go\", \"r\")\r\n        if f == nil {\r\n                t.Fatal(\"fopen failed\")\r\n        }  \r\n```\r\nIt makes the assumption that if the file is not found, f should be nil. This is\r\na reasonable assumption if we know that fopen returns a *FILE.\r\n\r\nHowever, swig 3.0.4 makes Fopen function return an interface called FILE\r\n(probably to make sure to not store C pointer as Go pointers):\r\n```\r\ntype SwigcptrFILE uintptr\r\ntype FILE interface {\r\n        Swigcptr() uintptr;\r\n}\r\nfunc (p SwigcptrFILE) Swigcptr() uintptr {\r\n        return uintptr(p)\r\n}\r\n```\r\n\r\nAnd here is the implementation for Fopen and the wrapper for fopen:\r\n```\r\nfunc Fopen(arg1 string, arg2 string) (_swig_ret FILE) {\r\n        if Swig_escape_always_false {\r\n                Swig_escape_val = arg1\r\n        }\r\n        if Swig_escape_always_false {\r\n                Swig_escape_val = arg2\r\n        }\r\n        return _swig_wrap_fopen(arg1, arg2)\r\n}\r\n\r\nfunc _swig_wrap_fopen(base string, _ string) (_ SwigcptrFILE) {\r\n        _swig_p := uintptr(unsafe.Pointer(\u0026base))\r\n        _cgo_runtime_cgocall(_wrap_fopen, _swig_p)\r\n        return\r\n}\r\n```\r\n\r\nSo the FILE interface returned from Fopen will never be nil, this is\r\nthe classic error documented at http://golang.org/doc/faq#nil_error\r\n\r\nI believe swig is at fault here, but perhaps the test is making too\r\nmuch assumption about the type of FILE.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-01-07T23:27:09Z",
+	"created_at": "2015-01-06T08:57:04Z",
+	"updated_at": "2016-06-25T01:57:51Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

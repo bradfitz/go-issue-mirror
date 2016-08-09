@@ -1,0 +1,33 @@
+{
+	"id": 51282741,
+	"number": 4860,
+	"state": "closed",
+	"title": "net/http: fix, test, document requesting and serving %2F in paths",
+	"body": "\u003cpre\u003e$ cat slash.go\npackage main\n\nimport (\n        \u0026quot;log\u0026quot;\n        \u0026quot;net/http\u0026quot;\n        \u0026quot;net/http/httptest\u0026quot;\n)\n\nfunc main() {\n        ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n                log.Printf(\u0026quot;Got request for %q\u0026quot;, r.RequestURI)\n        }))\n        defer ts.Close()\n        req, _ := http.NewRequest(\u0026quot;GET\u0026quot;, ts.URL, nil)\n\n        // Try setting Opaque to just a path.\n\n        req.URL.Opaque = \u0026quot;/%2F/%2F/%2F/\u0026quot;\n        log.Printf(\u0026quot;1. Request URL String = %q\u0026quot;, req.URL)\n        _, err := http.DefaultClient.Do(req)\n        if err != nil {\n                log.Fatalf(\u0026quot;Do: %v\u0026quot;, err)\n        }\n\n        println(\u0026quot;\u0026quot;)\n\n        // Try setting Opaque to just //host/path, so it'll String-ify\n        // to a valid full URL (as required for App Engine's urlfetch)\n\n        req.URL.Opaque = \u0026quot;//why-hello-there/%2F/%2F/%2F/\u0026quot;\n        log.Printf(\u0026quot;2. Request URL String = %q\u0026quot;, req.URL)\n        _, err = http.DefaultClient.Do(req)\n        if err != nil {\n                log.Fatalf(\u0026quot;Do: %v\u0026quot;, err)\n        }\n}\n\n\n$ go run slash.go\n1. Request URL String = \u0026quot;http:/%2F/%2F/%2F/\u0026quot;\nGot request for \u0026quot;/%2F/%2F/%2F/\u0026quot;\n                                                                                                                      \n2. Request URL String = \u0026quot;\u003ca href=\"http://why-hello-there/%2F/%2F/%2F/\u0026quot\"\u003ehttp://why-hello-there/%2F/%2F/%2F/\u0026quot\u003c/a\u003e;\nGot request for \u0026quot;//why-hello-there/%2F/%2F/%2F/\u0026quot;\n\n\nThe 1st works on for client \u0026amp; server with Go's *http.Transport.  (but stringifies\npoorly, which means it doesn't work on App Engine).\n\nThe 2nd stringifies correctly (so it'll work with App Engine's urlfetch), but it doesn't\nsend the correct HTTP request with *http.Transport (it should include the scheme, if the\nOpaque starts with \u0026quot;//\u0026quot;)\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:25:52Z",
+	"created_at": "2013-02-20T23:13:15Z",
+	"updated_at": "2016-06-24T22:33:30Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

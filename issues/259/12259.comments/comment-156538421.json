@@ -1,0 +1,12 @@
+{
+	"id": 156538421,
+	"body": "The fact that -s helps does not imply that the problem is the DWARF combining code, as implied by the current issue title. It could be that clang++ is slow to generate the debug info during host link on the Mac, or it could be that dsymutil, used to pull it out, is slow. We need to understand which one.\n\nI can't reproduce this on my Mac, because I don't have pkg-config. Can you try applying this diff:\n\n\tdiff --git a/src/cmd/link/internal/ld/lib.go b/src/cmd/link/internal/ld/lib.go\n\tindex e1be263..cda7cf0 100644\n\t--- a/src/cmd/link/internal/ld/lib.go\n\t+++ b/src/cmd/link/internal/ld/lib.go\n\t@@ -1164,6 +1164,7 @@ func hostlink() {\n\t \t}\n\t \n\t \tif Debug['s'] == 0 \u0026\u0026 debug_s == 0 \u0026\u0026 HEADTYPE == obj.Hdarwin {\n\t+\t\treturn\n\t \t\t// Skip combining dwarf on arm.\n\t \t\tif Thearch.Thechar != '5' \u0026\u0026 Thearch.Thechar != '7' {\n\t \t\t\tdsym := fmt.Sprintf(\"%s/go.dwarf\", tmpdir)\n\t@@ -1175,6 +1176,7 @@ func hostlink() {\n\t \t\t\tif _, err := os.Stat(dsym); os.IsNotExist(err) {\n\t \t\t\t\treturn\n\t \t\t\t}\n\t+\t\t\treturn\n\t \t\t\t// For os.Rename to work reliably, must be in same directory as outfile.\n\t \t\t\tcombinedOutput := outfile + \"~\"\n\t \t\t\tif err := machoCombineDwarf(outfile, dsym, combinedOutput); err != nil {\n\nThen rebuild with make.bash and then see what that does to the timings. \nAre they better?\nIf so, remove the first new return (but leave the second) and try again.\nAre they still better?\n\nThanks.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-13T19:42:42Z",
+	"updated_at": "2015-11-13T19:42:42Z"
+}

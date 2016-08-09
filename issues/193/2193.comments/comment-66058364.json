@@ -1,0 +1,12 @@
+{
+	"id": 66058364,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1 by **webmaster@webmaster.ms**:\n\n\u003cpre\u003eReal world example:\n\nWith this code I can open only 400 files and get panic on 401th.\n\n\ntype Handle struct {\n h uintptr\n // hold callbacks (if any have been used in Open) to prevent them\nGC'ed  (current Go does not collect them yet)\n readcb, writecb, seekcb, closecb, sizecb uintptr\n}\n\n// r must be io.ReadSeeker for reading file\nfunc TIFFClientOpen(r interface{}, mode string) (handle *Handle) {\n handle = new(Handle)\n\n handle.readcb = syscall.NewCallback(\n   func (cd uintptr, buf unsafe.Pointer, size uintptr) uintptr {\n     //println(\"onread\", cd, buf, size)\n     n, _ := r.(io.Reader).Read( (*[0x7FFFFFFF]byte)(buf)[:size] )\n     return uintptr(n)\n   })\n handle.writecb = syscall.NewCallback(\n   func (cd uintptr, buf unsafe.Pointer, size uintptr) uintptr {\n     //println(\"onwrite\", cd, buf, size)\n     n, _ := r.(io.Writer).Write( (*[0x7FFFFFFF]byte)(buf)[:size] )\n     return uintptr(n)\n   })\n handle.seekcb = syscall.NewCallback(\n   func (cd uintptr, offset uint64, whence int) uint64 {\n     //println(\"onseek\", cd, offset, whence)\n     n, _ := r.(io.Seeker).Seek(int64(offset), whence)\n     return uint64(n)\n   })\n handle.closecb = syscall.NewCallback(\n   func (cd uintptr) uintptr {\n     //println(\"onclose\", cd)\n     r.(io.Closer).Close()\n     return uintptr(0)\n   })\n handle.sizecb = syscall.NewCallback(\n   func (cd uintptr) uint64 {\n     //println(\"onsize\", cd)\n     n, _ := r.(io.Seeker).Seek(0, 2)\n     r.(io.Seeker).Seek(n, 0)\n     return uint64(n)\n   })\n handle.h, _, _ = syscall.Syscall12(procTIFFClientOpen.Addr(), 10,\n             uintptr(unsafe.Pointer(syscall.StringBytePtr(\"\"))),\n             uintptr(unsafe.Pointer(syscall.StringBytePtr(mode))),\n             0, handle.readcb, handle.writecb, handle.seekcb,\n             handle.closecb, handle.sizecb, 0, 0, 0, 0)\n if handle.h == 0 {\n   return nil\n }\n runtime.SetFinalizer(handle, TIFFClose)\n return handle\n}\n\nfunc TIFFClose(handle *Handle) {\n  syscall.Syscall(procTIFFClose.Addr(), 1, handle.h, 0, 0)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-08-27T15:16:06Z",
+	"updated_at": "2014-12-08T10:11:47Z"
+}

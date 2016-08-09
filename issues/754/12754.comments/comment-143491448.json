@@ -1,0 +1,12 @@
+{
+	"id": 143491448,
+	"body": "\u003e  @ianlancetaylor You need to discuss implementation. Quite apart from whether this change is desirable or not, it is difficult to implement.\r\n\r\n\r\n\u003e @minux It's easy to implement if we explicitly label implemented interface\r\nfor each type, but that's not how Go works.\r\n\u003e \r\n\u003e You need to consider how to generate wrapper functions for yet\r\n\u003e unknown interface methods.\r\n\r\n## A Naive Implementation\r\n\r\nA naive and trivial implementation is to do this the same way we would as software engineers, an adapter pattern. We might write an adapter this way in go:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\ntype SomeReader struct {\r\n}\r\n\r\nfunc (sr *SomeReader) Read(p []byte) (n int, err *ErrorSomeReader) {\r\n\treturn 0, \u0026ErrorSomeReader{}\r\n}\r\n\r\ntype ErrorSomeReader struct {\r\n}\r\n\r\nfunc (esr *ErrorSomeReader) Error() string {\r\n\treturn \"SomeReaderError\"\r\n}\r\n\r\ntype SomeReaderAdapter struct {\r\n\tSomeReader *SomeReader\r\n}\r\n\r\nfunc (sra SomeReaderAdapter) Read(p []byte) (n int, err error) {\r\n\treturn sra.SomeReader.Read(p)\r\n}\r\n\r\nfunc main() {\r\n\tsr := \u0026SomeReader{}\r\n\t_, err := ioutil.ReadAll(SomeReaderAdapter{sr})\r\n\tfmt.Println(\"Error\", err)\r\n}\r\n```\r\n\r\nIf instead the compiler generated the adapting types for us a lot of \"boiler plate\" for this would simply disappear. Technically the act of generating these adapters isn't that difficult. Finding a truly efficient implementation may be. \r\n\r\nDetecting when to generate these is very close to the same problem as detecting when to  \"cast\" or \"create\" an interface for an object. \r\n\r\n\u003e @bradfitz Changing the type system is out of scope for Go 1, and we're not accepting proposals for a hypothetical Go 2 yet.\r\n\r\nAnother way to view this is not a fundamental change to the type system, but the automated generation of adapters. And as I mentioned, this _does not_ break compatibility with Go1 code (unlike most Go2 suggestions). I of course realize that it is a larger change then Go1 has done to date, and could be treated simply \"too large\".",
+	"user": {
+		"login": "rfliam",
+		"id": 718129,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-26T20:06:50Z",
+	"updated_at": "2015-09-26T20:09:35Z"
+}

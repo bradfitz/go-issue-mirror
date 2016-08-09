@@ -1,0 +1,22 @@
+{
+	"id": 160238581,
+	"number": 16065,
+	"state": "closed",
+	"title": "x/sys/unix: go get golang.org/x/sys/unix (still) broken on arm64",
+	"body": "Thanks for the ppoll fix! Unfortunately: \r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo 1.6.1\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"arm64\"\r\nGOHOSTARCH=\"arm64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nCGO_ENABLED=\"1\"\r\n\r\n3. What did you do?\r\ngo get golang.org/x/sys/unix\r\n\r\n\r\n4. What did you expect to see?\r\nSuccessful completion\r\n\r\n5. What did you see instead?\r\n\r\n`# golang.org/x/sys/unix`\r\n`src/golang.org/x/sys/unix/syscall_linux_arm64.go:185: cannot use new(*Timespec) (type **Timespec) as type *Timespec in assignment`\r\n`src/golang.org/x/sys/unix/syscall_linux_arm64.go:186: cannot use timeout * 1e+06 (type int) as type int64 in argument to NsecToTimespec`\r\n\r\nI can get it to build with the following patch:\r\n\r\n`diff --git a/unix/syscall_linux_arm64.go b/unix/syscall_linux_arm64.go`\r\n`index 4211cf6..4b6ff2a 100644`\r\n`--- a/unix/syscall_linux_arm64.go`\r\n`+++ b/unix/syscall_linux_arm64.go`\r\n`@@ -182,8 +182,8 @@ const (`\r\n` func Poll(fds []PollFd, timeout int) (n int, err error) {`\r\n`        var ts *Timespec`\r\n`        if timeout \u003e= 0 {`\r\n`-               ts = new(*Timespec)`\r\n`-               *ts = NsecToTimespec(timeout * 1e6)`\r\n`+               ts = new(Timespec)`\r\n`+               *ts = NsecToTimespec(int64(timeout) * 1e6)`\r\n`        }`\r\n`        if len(fds) == 0 {`\r\n`                return ppoll(nil, 0, ts, nil)`\r\n\r\nDoes the gopherbot not do compile tests for each GOARCH?",
+	"user": {
+		"login": "Jagmn",
+		"id": 12895953,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-06-15T01:27:14Z",
+	"created_at": "2016-06-14T17:29:08Z",
+	"updated_at": "2016-06-15T01:27:14Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 173066080,
+	"body": "I may know how this is happening. In the gcMarkDone case of the mark worker, the worker disassociates with the P and makes itself preemptible, and then later attempts to reassociate with the P. If the scheduler moved the worker to a different P while it was preemptible (and a new worker hasn't been started for the original P), then as soon as the worker reassociates with the original P, the scheduler on that P can run the worker. It may do so *before* the worker has fully parked itself, at which point the worker G is effectively running on two Ms simultaneously.\r\n\r\nThe sequence of steps is something like:\r\n\r\n1. The worker on P1/M1 makes itself preemptible and enters gcMarkDone.\r\n2. The scheduler moves the worker to P2/M2.\r\n3. On P2, the worker reassociates itself as the worker for P1.\r\n4. On P2, the worker calls gopark, which calls park_m, which cas's the G's status to _Gwaiting.\r\n5. On P1, the scheduler selects the worker to run, cas's its status from _Gwaiting to _Grunnable, calls execute, which cas's its status from _Grunnable to _Grunning, and begins executing at whatever point in the worker was left in the sched buffer (which should be wherever it got preempted during gcMarkDone).\r\n6. On P2, park_m calls dropg, which clears the worker G's m.\r\n7. On P1, the worker crashes at whatever next touches the m.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-20T02:45:02Z",
+	"updated_at": "2016-01-20T02:45:02Z"
+}

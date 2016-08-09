@@ -1,0 +1,21 @@
+{
+	"id": 161036394,
+	"number": 16109,
+	"state": "open",
+	"title": "x/net/bpf: NegateA is not implemented for VM",
+	"body": "Using this as a tracking issue to see if it's feasible to allow `bpf.NegateA` to be processed by the `bpf.VM` type.\r\n\r\nMy research thus far shows that the BPF VM treats any negative result as \"return all bytes\".\r\n\r\nHere's the test I'm writing:\r\n\r\n```go\r\nfunc TestVMNegateA(t *testing.T) {\r\n        vm, done, err := testVM(t, []bpf.Instruction{\r\n                bpf.LoadAbsolute{\r\n                        Off:  8,\r\n                        Size: 1,\r\n                },\r\n                bpf.NegateA{},\r\n                bpf.RetA{},\r\n        })\r\n        if err != nil {\r\n                t.Fatalf(\"failed to load BPF program: %v\", err)\r\n        }\r\n        defer done()\r\n\r\n        out, err := vm.Run([]byte{\r\n                0xff, 0xff, 0xff, 0xff,\r\n                0xff, 0xff, 0xff, 0xff,\r\n                1, 2, 3, 4, 5,\r\n        })\r\n        if err != nil {\r\n                t.Fatalf(\"unexpected error while running program: %v\", err)\r\n        }\r\n        if want, got := 5, out; want != got {\r\n                t.Fatalf(\"unexpected number of output bytes:\\n- want: %d\\n-  got: %d\",\r\n                        want, got)\r\n        }\r\n}\r\n```\r\n\r\nAnd the results using the current VM:\r\n\r\n```\r\n$ go test -v -run=TestVMNegateA .\r\n=== RUN   TestVMNegateA\r\n--- FAIL: TestVMNegateA (0.00s)\r\n        vm_bpf_test.go:120: output byte count does not match:\r\n                - go: 0\r\n                - os: 5\r\n        vm_bpf_test.go:124: Go BPF and OS BPF packet outputs do not match\r\nFAIL\r\nexit status 1\r\nFAIL    golang.org/x/net/bpf    0.002s\r\n```\r\n\r\nSame logic seems to apply when subtraction brings the register results below zero.  Will keep working on this and try to submit a CL to enable this functionality in the near future.\r\n\r\n/cc @danderson",
+	"user": {
+		"login": "mdlayher",
+		"id": 1926905,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-18T18:05:56Z",
+	"updated_at": "2016-06-20T16:49:47Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

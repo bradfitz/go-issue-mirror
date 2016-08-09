@@ -1,0 +1,22 @@
+{
+	"id": 51287720,
+	"number": 8129,
+	"state": "closed",
+	"title": "go routine in for range got confused with the variable inside for",
+	"body": "by **sarun101**:\n\n\u003cpre\u003ego version: go1.2rc3\n\nPlease see:\n\u003ca href=\"http://play.golang.org/p/rrQV5C60h2\"\u003ehttp://play.golang.org/p/rrQV5C60h2\u003c/a\u003e\n\nIt's from go tour #73\n\u003ca href=\"http://tour.golang.org/#73\"\u003ehttp://tour.golang.org/#73\u003c/a\u003e\nI tried to modify Crawl function to crawl URLs in parallel.\nI just add a little tweak from the original one around here:\n\n    waiter:=make(chan bool); waitcount:=0\n    for _, u := range urls {\n        go func(){\n            Crawl(u, depth-1, fetcher)\n            waiter\u0026lt;-true //finished\n        }()\n        waitcount++\n    }\n    for ;waitcount\u0026gt;0;waitcount-- {;\u0026lt;-waiter;}\n\nIt doesn't go as expected.\nI try to find the cause. It seem to be a race condition in go routine.\nVariable \u0026quot;u\u0026quot; was accessed in the routine after first round of for was finished\nso the first url was skipped.\n\nThis can be fixed by declare new buffer variable inside for\nIn another word: copy the data to new chunk of memory:\n\n    for _, u := range urls {\n        ubuff:=u\n        go func(){\n            Crawl(ubuff, depth-1, fetcher)\n            waiter\u0026lt;-true //finished\n        }()\n        waitcount++\n    }\n\nbut in real world usage people sure to overlook the race condition like this one.\n\nSince I'm very new to golang I'm not quite sure this is actually a bug or a feature (to\nsave memory)\nIf this is a bug it would be difficult to solve one since the compiler have to check on\nvarious independent go routine. If this is a feature I apologize for reporting a fake\nbug.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:45:05Z",
+	"created_at": "2014-05-31T19:51:32Z",
+	"updated_at": "2016-06-25T01:35:39Z"
+}

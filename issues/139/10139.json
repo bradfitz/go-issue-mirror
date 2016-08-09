@@ -1,0 +1,33 @@
+{
+	"id": 60739384,
+	"number": 10139,
+	"state": "closed",
+	"title": "runtime: deadly signal received on foreign threads does not crash the process",
+	"body": "Instead, our sigtramp will simply return without modifying the ucontext, and\r\nthen the faulty code will trigger the same fault again, .....\r\n\r\nhttp://play.golang.org/p/L1WXDwUFTf\r\n```\r\npackage main\r\n/*\r\n#include \u003csignal.h\u003e\r\n#include \u003cpthread.h\u003e\r\n#include \u003cstdio.h\u003e\r\n\r\nstatic void *thread1(void *p) {\r\n        (void)p;\r\n        printf(\"0\\n\");\r\n        int *q = NULL;\r\n        printf(\"1\\n\");\r\n        printf(\"*nil=%d\\n\", *q);\r\n        return NULL;\r\n}\r\nvoid test5337() {\r\n        setbuf(stdout, NULL);\r\n        pthread_t tid;\r\n        pthread_create(\u0026tid, 0, thread1, NULL);\r\n        //pthread_join(tid, 0);\r\n        printf(\"2\\n\");\r\n}\r\n*/\r\nimport \"C\"\r\nimport \"time\"\r\n\r\nfunc main() {\r\n        C.test5337()\r\n        time.Sleep(5 * time.Second)\r\n        println(\"DONE\")\r\n}\r\n```\r\n\r\nIf you run the program, I'd expect to see something like SIGSEGV received\r\non foreign thread, and then the process should exit (crash).\r\n\r\nHowever, what you will actually see is that the process will print DONE\r\nafter 5 seconds and exit normally. But if you run the program under gdb,\r\nyou will see that thread is triggering SIGSEGV again and again.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-07-22T20:26:46Z",
+	"created_at": "2015-03-11T22:17:51Z",
+	"updated_at": "2016-08-05T16:09:17Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

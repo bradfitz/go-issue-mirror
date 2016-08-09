@@ -1,0 +1,12 @@
+{
+	"id": 150966920,
+	"body": "fatal error: unexpected signal during runtime execution\n[signal 0xb code=0x80 addr=0x0 pc=0x40f024]\n\nThe code is interesting. Normally, it should 0x1 (SEGV_MAPERR).\n(The other possibilities are 2 for SEGV_ACCERR, and 3 for\nSEGV_BNDERR)\n\ncode 0x80 just signifies that it's coming from kernel, but doesn't\ngive a reason for the signal.\n\nAnd looking at the code:\n609             if v.ptr() == nil {\n610                 systemstack(func() {\n611                     mCache_Refill(c, int32(sizeclass))\n612                 })\n613                 shouldhelpgc = true\n614                 s = c.alloc[sizeclass]\n615                 v = s.freelist\n616             }\n617             s.freelist = v.ptr().next\n\nv.ptr() shouldn't be nil at line 617 unless someone else is also\nmodifying it. (but it's from gomcache, nobody else should be\nmodifying it concurrently.\n\nCould you tell us more about the program? Does it use cgo or\nunsafe? Have you tried to run it with race detector enabled?\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-25T20:35:41Z",
+	"updated_at": "2015-10-25T20:35:41Z"
+}

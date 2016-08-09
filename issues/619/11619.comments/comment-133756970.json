@@ -1,0 +1,12 @@
+{
+	"id": 133756970,
+	"body": "I'd have to agree here. I mean, after some browsing through the code it becomes a bit clearer what it does and how it works, however, it still looks a bit complicated to comprehend.\r\n\r\nWhat was the reason to have stages and have positive and negative passes through them? Why wasn't the Android model of having two callbacks per stage (e.g. `onResume`, `onPause`; btw, [documentation](https://github.com/golang/mobile/blob/master/event/lifecycle/lifecycle.go#L107) references `onFreeze` where it should be `onPause`) used? Those could have been implemented as Events as well, if callbacks were not desired (e.g. `lifecycle.ResumeEvent` and `lifecycle.PauseEvent` respectively).\r\n\r\nFrom the documentation, it does not become apparent also that all the events occur on the OpenGL thread. My initial assumption was that only events in the `paint` package would occur on the GL thread but a look at the source code (and example) showed me differently.\r\n\r\nAdditionally, it seems that the `pump` method in `app` can grow indefinitely [https://github.com/golang/mobile/blob/master/app/app.go#L150](https://github.com/golang/mobile/blob/master/app/app.go#L150) leading to new allocations. Since events are passed as `interface{}` types, they might lead to allocations as well. Hence, GC. Haven't tested this, so feel free to negate me on this one. I know Java Android uses some type of pool pattern to prevent Event allocation and GC.\r\n\r\nFinally, the [basic](https://github.com/golang/mobile/blob/master/example/basic/main.go#L64) example uses the `lifecycle.StageVisible` Event (which maps to `onStart` and `onStop` callbacks) to perform OpenGL resource initialization and destruction. However, in Java Android those should occur in the `onResume` and `onPause` callbacks. (Actually, they don't even occur there, rather the Canvas is notified of the state change there which triggers the onInit calls to the Canvas on the GL thread. There is no way to be notified of OpenGL destruction in Java). Was this on purpose or was it an oversight?\r\n\r\n\r\n",
+	"user": {
+		"login": "momchil-atanasov",
+		"id": 7446489,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-22T21:45:56Z",
+	"updated_at": "2015-08-22T21:45:56Z"
+}

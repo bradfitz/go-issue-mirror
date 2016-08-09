@@ -1,0 +1,12 @@
+{
+	"id": 195059467,
+	"body": "This is unrelated to either #11419 or #14718.  It should be fixable.\r\n\r\nWe inline the easy part of append in the compiler.  `a = append(a, b)` compiles to something like:\r\n```\r\nif len(a) == cap(a) {\r\n  a = ...some runtime call...\r\n}\r\na[len(a)] = b\r\nlen(a)++\r\n```\r\nThe branch is predicted not taken (and will never be taken in this case), so the grow path is out-of-line.\r\n\r\nThe inner loop of BenchmarkFoo is:\r\n```\r\n\t0x006b 00107 (/home/khr/go/issue14758.go:12)\tCMPQ\tBP, AX\r\n\t0x006e 00110 (/home/khr/go/issue14758.go:12)\tJCC\t$0, 173\r\n\t0x0070 00112 (/home/khr/go/issue14758.go:12)\tMOVB\tBPB, (BX)(BP*1)\r\n\t0x0074 00116 (/home/khr/go/issue14758.go:11)\tINCQ\tBP\r\n\t0x0077 00119 (/home/khr/go/issue14758.go:11)\tCMPQ\tBP, $1000\r\n\t0x007e 00126 (/home/khr/go/issue14758.go:11)\tJLT\t$0, 107\r\n```\r\nThe inner loop of BenchmarkBar is:\r\n```\r\n\t0x0083 00131 (/home/khr/go/issue14758.go:26)\tLEAQ\t1(BP), SI\r\n\t0x0087 00135 (/home/khr/go/issue14758.go:26)\tMOVQ\tSI, \"\".autotmp_0012+72(SP)\r\n\t0x008c 00140 (/home/khr/go/issue14758.go:26)\tCMPQ\tSI, AX\r\n\t0x008f 00143 (/home/khr/go/issue14758.go:26)\tJGT\t$0, 191\r\n\t0x0091 00145 (/home/khr/go/issue14758.go:26)\tMOVB\t$0, (DX)(BP*1)\r\n\t0x0095 00149 (/home/khr/go/issue14758.go:26)\tMOVQ\tSI, BP\r\n\t0x0098 00152 (/home/khr/go/issue14758.go:20)\tMOVQ\tBP, \"\".autotmp_0011+80(SP)\r\n\t0x009d 00157 (/home/khr/go/issue14758.go:25)\tCMPQ\tBP, $1000\r\n\t0x00a4 00164 (/home/khr/go/issue14758.go:25)\tJLT\t$0, 131\r\n```\r\nI suspect that most of the time is lost with the extra writes to those autotmp variables.  We might be able to lift those writes to after the loop, or get rid of them altogether.  David was thinking about this at some point.\r\n\r\n@dr2chase ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-10T21:35:44Z",
+	"updated_at": "2016-03-10T21:35:44Z"
+}

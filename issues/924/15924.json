@@ -1,0 +1,21 @@
+{
+	"id": 158019131,
+	"number": 15924,
+	"state": "open",
+	"title": "reflect: StructOf doesn't generate wrapper methods for embedded fields",
+	"body": "```\r\n% go version\r\ngo version devel +bbd1dcd Wed Jun 1 21:32:46 2016 +0000 linux/amd64\r\n% cat ~/a.go\r\npackage main\r\n\r\nimport (\r\n        \"bytes\"\r\n        \"io\"\r\n        \"reflect\"\r\n        \"sync\"\r\n)\r\n\r\nfunc main() {\r\n        t := reflect.StructOf([]reflect.StructField{\r\n                {Type: reflect.TypeOf(sync.Mutex{}), Anonymous: true},\r\n                {Type: reflect.TypeOf(bytes.Buffer{}), Anonymous: true},\r\n        })\r\n        x := reflect.New(t).Interface()\r\n        _ = x.(io.Writer)\r\n}\r\n\r\n% go run ~/a.go\r\npanic: interface conversion: *truct { sync.Mutex; bytes.Buffer } is not io.Writer: missing method Write\r\n```\r\n\r\nI expected that x would have generated wrapper methods for Mutex.Lock, etc.\r\n\r\nInterestingly, adding this declaration inside func main (not at package level):\r\n```\r\nvar _ interface{} = new(struct {\r\n      sync.Mutex\r\n      bytes.Buffer\r\n})\r\n```\r\ncauses the program to succeed.  Presumably it causes the compiler to generate the correct type information, which `reflect.StructOf` then finds.",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-06-01T22:14:33Z",
+	"updated_at": "2016-07-27T13:46:05Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

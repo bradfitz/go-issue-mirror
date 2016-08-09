@@ -1,0 +1,22 @@
+{
+	"id": 51281786,
+	"number": 4195,
+	"state": "closed",
+	"title": "net: setting read deadline affects write deadline, and vice verse (on windows)",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nrun this on windows:\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nconst (\n\treadTimeout  = time.Second\n\twriteTimeout = 2 * time.Second\n\tdelta        = 300 * time.Millisecond\n)\n\nfunc checkTimeout(command string, start time.Time, timeoutShould time.Duration) {\n\ttimeoutIs := time.Now().Sub(start)\n\td := timeoutShould - timeoutIs\n\tif d \u0026lt; -delta || delta \u0026lt; d {\n\t\tlog.Fatalf(\u0026quot;%s TIMEOUT TEST FAILED: is=%v should=%v\\n\u0026quot;, command, timeoutIs, timeoutShould)\n\t}\n}\n\nfunc main() {\n\tln, err := net.Listen(\u0026quot;tcp\u0026quot;, \u0026quot;127.0.0.1:0\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;ListenTCP on :0: %v\u0026quot;, err)\n\t}\n\n\tgo func() {\n\t\tc, err := ln.Accept()\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\u0026quot;Accept: %v\u0026quot;, err)\n\t\t}\n\t\tdefer c.Close()\n\n\t\tselect {}\n\t}()\n\n\tc, err := net.Dial(\u0026quot;tcp\u0026quot;, ln.Addr().String())\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Dial: %v\u0026quot;, err)\n\t}\n\tdefer c.Close()\n\n\tstart := time.Now()\n\n\tquit := make(chan bool)\n\n\tgo func() {\n\t\terr := c.SetReadDeadline(start.Add(readTimeout))\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\u0026quot;SetReadDeadline: %v\u0026quot;, err)\n\t\t}\n\n\t\tvar buf [10]byte\n\t\t_, err = c.Read(buf[:])\n\t\tif err == nil {\n\t\t\tlog.Fatalf(\u0026quot;Read should not succeed\u0026quot;)\n\t\t}\n\n\t\tcheckTimeout(\u0026quot;READ\u0026quot;, start, readTimeout)\n\t\tquit \u0026lt;- true\n\t}()\n\n\tgo func() {\n\t\terr := c.SetWriteDeadline(start.Add(writeTimeout))\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\u0026quot;SetWriteDeadline: %v\u0026quot;, err)\n\t\t}\n\n\t\tvar buf [10000]byte\n\t\tfor {\n\t\t\t_, err = c.Write(buf[:])\n\t\t\tif err != nil {\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\tcheckTimeout(\u0026quot;WRITE\u0026quot;, start, writeTimeout)\n\t\tquit \u0026lt;- true\n\t}()\n\n\t\u0026lt;-quit\n\t\u0026lt;-quit\n}\n\nWhat is the expected output?\n\n\u0026lt;nothing\u0026gt;\n\nWhat do you see instead?\n\n2012/10/05 12:46:01 WRITE TIMEOUT TEST FAILED: is=1.0000128s should=2s\n\n\nPlease use labels and text to provide additional information.\n\nOur current windows implementation uses syscall.CancelIo windows api to stop waiting io.\nBut this function cancels *ANY* pending io on that socket, not just particular read or\nwrite. I see no proper solution to that problem in general. But on later versions of\nWindows we could use new syscall.CancelIoEx api, that can selectively cancel particular\nio.\n\nIs it good idia to introduce new complexity (different execution path for different\nversions of os) to solve that problem?\n\nCancelIoEx will also allow us not to switch threads during io with deadline (we have\ndedicated goroutine that is locked to a single thread that starts every io, because\nCancelIo only affects io \u0026quot;started on the same thread\u0026quot;). Also, considering\nthere will be more and more \u0026quot;new\u0026quot; versions of Windows, it will become more\nuseful with time.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2014-12-08T10:22:19Z",
+	"created_at": "2012-10-05T05:38:25Z",
+	"updated_at": "2016-06-24T22:26:02Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 148150565,
+	"number": 15283,
+	"state": "open",
+	"title": "cmd/compile: sync/atomic.SwapPointer arguments escape for the wrong reason",
+	"body": "In the implementation of sync/atomic.SwapPointer (which is in runtime/atomic_pointer.go), there's nothing that causes the \"new\" argument to escape, even though it needs to (because you could be swapping it in to a global). The compiler agrees:\r\n\r\n```\r\n$ go build -gcflags \"-m -m\" -a runtime |\u0026 grep sync_atomic_SwapPointer                                                                     \r\nruntime/atomic_pointer.go:58: sync_atomic_SwapPointer ptr does not escape\r\nruntime/atomic_pointer.go:58: sync_atomic_SwapPointer new does not escape\r\n```\r\n\r\nHowever, you can't actually tickle this. For example, in principle the following program should sneak the address of stack variable y into a global variable:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"sync/atomic\"\r\n\t\"unsafe\"\r\n)\r\n\r\nvar x unsafe.Pointer\r\n\r\nfunc main() {\r\n\tvar y int\r\n\tz := unsafe.Pointer(\u0026y)\r\n\tatomic.SwapPointer(\u0026x, z)\r\n}\r\n```\r\n\r\nBut it doesn't!\r\n\r\n```\r\n$ go build -gcflags \"-m -m\" x.go\r\n# command-line-arguments                        \r\n./aesc.go:13: \u0026x escapes to heap\r\n./aesc.go:13: \tfrom \u0026x (passed to function[unknown]) at ./aesc.go:13\r\n./aesc.go:11: moved to heap: y\r\n./aesc.go:12: \u0026y escapes to heap\r\n./aesc.go:12: \tfrom z (assigned) at ./aesc.go:12\r\n./aesc.go:12: \tfrom z (passed to function[unknown]) at ./aesc.go:12\r\n```\r\n\r\nThis happens to work right now, but for the wrong reason: because SwapPointer is defined in the runtime and we use a \"go:linkname\" comment to expose it from sync/atomic, there's no escape information at all when the test program calls SwapPointer (hence the \"passed to function[unknown]\"), so the compiler conservatively assumes everything escapes. (In fact, the first argument doesn't have to escape and we have annotations in the runtime to that effect, but they never make it through.)\r\n\r\nThis all seems very fragile.\r\n\r\n/cc @dr2chase @randall77 ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-04-13T18:53:19Z",
+	"updated_at": "2016-05-17T23:41:46Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

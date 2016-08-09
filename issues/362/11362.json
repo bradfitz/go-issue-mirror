@@ -1,0 +1,28 @@
+{
+	"id": 90421493,
+	"number": 11362,
+	"state": "closed",
+	"title": "cmd/compile: prints empty canonical import path",
+	"body": "On the following program:\r\n```\r\npackage a\r\nimport _ \"unicode//utf8\"\r\n```\r\n```go tool compile``` prints:\r\n```\r\nnon-canonical import path \"unicode//utf8\" (should be \"\")\r\n```\r\nGo1.4 printed:\r\n```\r\nnon-canonical import path unicode//utf8 (should be unicode/utf8)\r\n```\r\nThe name was lost somewhere during translation. C code contained:\r\n```\r\n\tq = mal(name-\u003elen+1);\r\n\tmemmove(q, name-\u003es, name-\u003elen);\r\n\tq[name-\u003elen] = '\\0';\r\n\tcleanname(q);\r\n\tif(strlen(q) != name-\u003elen || memcmp(q, name-\u003es, name-\u003elen) != 0) {\r\n\t\tyyerror(\"non-canonical import path %Z (should be %s)\", name, q);\r\n\t\treturn 0;\r\n\t}\r\n```\r\nGo code now contains:\r\n```\r\n\tvar q string\r\n\t_ = q\r\n\tif path.Clean(name) != name {\r\n\t\tYyerror(\"non-canonical import path %q (should be %q)\", name, q)\r\n\t\treturn \"\", false\r\n\t}\r\n```\r\ngo version devel +514014c Thu Jun 18 15:54:35 2015 +0200 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-10-08T01:51:40Z",
+	"created_at": "2015-06-23T15:36:49Z",
+	"updated_at": "2015-10-08T01:51:40Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

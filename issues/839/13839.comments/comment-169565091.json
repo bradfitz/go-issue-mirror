@@ -1,0 +1,12 @@
+{
+	"id": 169565091,
+	"body": "Seems it was a race issue.\r\n\r\nMy stress test code is using a client library.\r\nhttps://github.com/go-resty/resty/blob/master/client.go\r\nIn the `execute()` method, which is called concurrently, there were 2 issues:\r\n\r\n```\r\n// RACE 1, writing\r\nif req.proxyURL != nil {\r\n\tc.transport.Proxy = http.ProxyURL(req.proxyURL)\r\n} else if c.proxyURL != nil {\r\n\tc.transport.Proxy = http.ProxyURL(c.proxyURL)\r\n} else {\r\n\tc.transport.Proxy = nil\r\n}\r\n\r\n// RACE 2, writing\r\nc.httpClient.Transport = c.transport\r\n\r\n// RACE reading transport/proxy ?\r\nresp, err := c.httpClient.Do(req.RawRequest)\r\n```\r\n\r\nAfter protecting this whole section with a mutex I cannot reproduce the panic. (There were 2 other race conditions elsewhere as well but I think they were unrelated.)\r\n\r\nA Dial hook is set in the method `SetTimeout`, but I was not calling it. \r\n\r\nIs it possible that the GC can nil things if races occur?\r\n\r\nAnyways, I'll close this issue :+1: ",
+	"user": {
+		"login": "karmeye",
+		"id": 366038,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-07T06:14:02Z",
+	"updated_at": "2016-01-07T06:24:23Z"
+}

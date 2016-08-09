@@ -1,0 +1,12 @@
+{
+	"id": 66066976,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eCL 6213064 doesn't help.\n\nThe problem isn't in the server AFAICS. It's in the client - the client gets an error\nwriting the body and it stops right there. I think it should at least try to read the\nresponse that's waiting to be read.\n\nIf there's no response we then have to decide which of the two errors to return. If we\ndecide that the response-reading error is the one, then the fix is very simple: ignore\nany error when writing the body.\n\nBTW here's an actual piece of working code. Sorry about my dodgy copy and paste above.\n\n\npackage main\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"io\"\n\t\"io/ioutil\"\n\t\"log\"\n\t\"net\"\n\t\"net/http\"\n\t\"strings\"\n)\n\nfunc main() {\n\thttp.HandleFunc(\"/bar\", func(w http.ResponseWriter, r *http.Request) {\n\t\thttp.Error(w, \"the bar is closed\", 404)\n\t})\n\tl, err := net.Listen(\"tcp\", \":8080\")\n\tif err != nil {\n\t\tlog.Fatalf(\"listen: %v\", err)\n\t}\n\tgo http.Serve(l, nil)\n\tpost(strings.NewReader(\"hello\"))\n\tpost(bytes.NewBuffer(make([]byte, 4e6)))\n}\n\nfunc post(r io.Reader) {\n\tresp, err := http.Post(\"\u003ca href=\"http://localhost:8080/bar\"\u003ehttp://localhost:8080/bar\u003c/a\u003e\", \"text/utf8\", r)\n\tfmt.Printf(\"got err: %v\\n\", err)\n\tif resp != nil {\n\t\tdata, err := ioutil.ReadAll(resp.Body)\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tfmt.Printf(\"got body: %q\\n\", data)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-05-23T14:40:15Z",
+	"updated_at": "2014-12-08T10:18:58Z"
+}

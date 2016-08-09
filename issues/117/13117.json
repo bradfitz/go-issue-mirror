@@ -1,0 +1,17 @@
+{
+	"id": 114440933,
+	"number": 13117,
+	"state": "closed",
+	"title": "Golang can not SetReadDeadline, panic",
+	"body": "```\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x48 pc=0x4014e4]\r\n\r\ngoroutine 1 [running]:\r\nmain.main()\r\n\t/opt/go/src/github.com/netroby/tcpheartping/tcpheartping.go:25 +0x4e4\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1696 +0x1\r\n\r\n```\r\n\r\nThe code \r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"bufio\"\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"net\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\targs := os.Args[1:]\r\n\targslen := len(args)\r\n\tif argslen \u003c 2 {\r\n\t\tfmt.Println(\"tcpheartping   127.0.0.1 8080\")\r\n\t\tos.Exit(0)\r\n\t}\r\n\thost := args[0]\r\n\tport := args[1]\r\n\tlongpoll := 1\r\n\tfor longpoll == 1 {\r\n\t\tconn, err := net.DialTimeout(\"tcp\", fmt.Sprintf(\"%s:%s\", host, port), time.Second)\r\n\t\tconn.SetReadDeadline(time.Now().Add(3 * time.Second))\r\n\t\tif err != nil {\r\n\t\t\tfmt.Println(\"Service not available, Try to restart ssh service\")\r\n\t\t\trestartService()\r\n\t\t} else {\r\n\t\t\tfmt.Fprintf(conn, \"GET /\\r\\n\\r\\n\")\r\n\t\t\tstatus, err := bufio.NewReader(conn).ReadString('\\n')\r\n\t\t\tfmt.Println(status)\r\n\t\t\tif err != nil {\r\n\t\t\t\tfmt.Println(err)\r\n\t\t\t\trestartService()\r\n\t\t\t}\r\n\t\t\tfmt.Println(\"ok\")\r\n\t\t}\r\n\t\ttime.Sleep(5 * time.Second)\r\n\t}\r\n}\r\n\r\nfunc restartService() {\r\n\tcmd := exec.Command(\"systemctl\", \"restart\", \"sshpx\")\r\n\tvar out bytes.Buffer\r\n\tcmd.Stdout = \u0026out\r\n\terr := cmd.Run()\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t}\r\n\ttime.Sleep(3 * time.Second) //Sleep 3 seconds for service restart\r\n\tfmt.Printf(\"Finished: %q\\n\", out.String())\r\n\r\n}\r\n\r\n```",
+	"user": {
+		"login": "netroby",
+		"id": 278153,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-10-31T23:56:41Z",
+	"created_at": "2015-10-31T23:49:23Z",
+	"updated_at": "2015-11-01T00:09:09Z"
+}

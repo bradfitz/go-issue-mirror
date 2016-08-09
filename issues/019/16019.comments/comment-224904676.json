@@ -1,0 +1,12 @@
+{
+	"id": 224904676,
+	"body": "\"Possible solution\" I wrote above cause another race.\r\n\r\nIf `dc.finelClose()` is called between `dc.removeOpenStmt()` and `db.noteUnusedDriverStatement()`,\r\nthe `si` can be leaked. (never closed).\r\n\r\nAnother possible solution is:\r\n\r\n```\r\ndiff --git a/src/database/sql/sql.go b/src/database/sql/sql.go\r\nindex e7482a8..ff476bf 100644\r\n--- a/src/database/sql/sql.go\r\n+++ b/src/database/sql/sql.go\r\n@@ -850,11 +850,13 @@ func (db *DB) noteUnusedDriverStatement(c *driverConn, si driver.Stmt) {\r\n        if c.inUse {\r\n                c.onPut = append(c.onPut, func() {\r\n                        si.Close()\r\n+                       c.removeOpenStmt(si)\r\n                })\r\n        } else {\r\n                c.Lock()\r\n                defer c.Unlock()\r\n                if !c.finalClosed {\r\n+                       delete(c.openStmt, si)\r\n                        si.Close()\r\n                }\r\n        }\r\n@@ -1704,7 +1706,6 @@ func (s *Stmt) finalClose() error {\r\n        if s.css != nil {\r\n                for _, v := range s.css {\r\n                        s.db.noteUnusedDriverStatement(v.dc, v.si)\r\n-                       v.dc.removeOpenStmt(v.si)\r\n                }\r\n                s.css = nil\r\n        }\r\n```\r\n\r\n (I haven't tested this because it's midnight in Japan)",
+	"user": {
+		"login": "methane",
+		"id": 199592,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-09T14:05:03Z",
+	"updated_at": "2016-06-09T14:05:03Z"
+}

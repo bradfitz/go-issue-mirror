@@ -1,0 +1,25 @@
+{
+	"id": 168376920,
+	"number": 16539,
+	"state": "open",
+	"title": "proposal: x/tools/cmd/stringer Add a -trimprefix flag",
+	"body": "## Context\r\n\r\nWhen writing constants its common to add a prefix to aid IDE auto-complete and also to explicitly group together common constants (see: [net/http](https://github.com/golang/go/blob/master/src/net/http/status.go), [net/http](https://github.com/golang/go/blob/bfcb5b64062b3bdf367e0888cd42a4a46d37a913/src/net/http/method.go#L10), [crypto/tls](https://github.com/golang/go/blob/1cb3044c9fcd88e1557eca1bf35845a4108bc1db/src/crypto/tls/cipher_suites.go#L268), [net/http/fcgi](https://github.com/golang/go/blob/1cb3044c9fcd88e1557eca1bf35845a4108bc1db/src/net/http/fcgi/fcgi.go#L26) \u0026 [net/interface](https://github.com/golang/go/blob/1d214f7062e80bebb081cdfad2ceda3e5bd0de29/src/net/interface.go#L34)). \r\n\r\n## Problem\r\n\r\n`x/tools/cmd/stringer` generates a `String()` method with only the exact constant name:\r\n\r\n```go\r\n//go:generate stringer -type=Type\r\ntype Type uint8\r\n\r\nconst (\r\n\tTypeUnknown Type = iota\r\n\tTypePayPal\r\n\tTypeAmazon\r\n\tTypeWorldPay\r\n)\r\n```\r\n\r\nWould result in:\r\n```go\r\nfmt.Println(TypeUnknown.String())\r\n// out: TypeUnknown\r\n\r\nfmt.Println(TypePayPal.String())\r\n// out: TypePayPal\r\n```\r\n\r\nWhilst this is desirable for certain situations there are some in which its not:\r\n\r\n- Logging / debugging: Your normally seeing a message in a context so maintaining the prefix is unnecessary and not so 'pretty'\r\n- Encoding for clients: You may want to as in my example above render a 'pretty' version for your consuming clients, having the prefix again isn't so desirable: `\"type\": \"TypePayPal\"` vs `\"type\": \"PayPal\"`\r\n- Encoding for DB: As in my particular case I'd like to store a string instead of integers in my DB. Again having a column of `Types` all prefixed with the same 4 characters is just a waste of space given it would be in context in the column:\r\n\r\n```\r\n| id | type         |\r\n|----|--------------|\r\n| 0  | TypePayPal   |\r\n| 1  | TypeUnknown  |\r\n| 2  | TypeWorldPay |\r\n| 3  | TypeAmazon   |\r\n```\r\n\r\n## Proposal\r\n\r\nAdd an additional flag `-trimprefix=\u003cprefix\u003e` to `x/tools/cmd/stringer`, this will take a user defined prefix and strip it from the generated string, if no argument is passed it assumes the value of `-type`, heres an example with out a value for `-trimprefix`:\r\n\r\n```go\r\n//go:generate stringer -type=Type -trimprefix\r\ntype Type uint8\r\n\r\nconst (\r\n\tTypeUnknown Type = iota\r\n\tTypePayPal\r\n\tTypeAmazon\r\n\tTypeWorldPay\r\n)\r\n```\r\n\r\nWould generate:\r\n```go\r\nfmt.Println(TypeUnknown.String())\r\n// out: Unknown\r\n\r\nfmt.Println(TypePayPal.String())\r\n// out: PayPal\r\n```\r\n\r\n\r\nAnd a contrived example with a value `-trimprefix=Ty`:\r\n\r\n```go\r\n//go:generate stringer -type=Type -trimprefix=Ty\r\ntype Type uint8\r\n\r\nconst (\r\n\tTypeUnknown Type = iota\r\n\tTypePayPal\r\n\tTypeAmazon\r\n\tTypeWorldPay\r\n)\r\n```\r\n\r\nWould generate:\r\n```go\r\nfmt.Println(TypeUnknown.String())\r\n// out: peUnknown\r\n\r\nfmt.Println(TypePayPal.String())\r\n// out: pePayPal\r\n```\r\n\r\nI'd be happy to create a PR with the following feature if its accepted.",
+	"user": {
+		"login": "adrianduke",
+		"id": 711058,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-07-29T17:43:47Z",
+	"updated_at": "2016-07-30T00:25:42Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

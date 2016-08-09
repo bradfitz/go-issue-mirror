@@ -1,0 +1,28 @@
+{
+	"id": 114123534,
+	"number": 13096,
+	"state": "closed",
+	"title": "runtime/race: false positive in race detector",
+	"body": "I'm seeing what appears to be a false positive in the race detector on Linux in the x/net/http2 tests:\r\n\r\n```\r\n=== RUN   TestServerWithCurl_LenientCipherSuites\r\n==================\r\nWARNING: DATA RACE\r\nWrite by goroutine 40:\r\n  sync/atomic.StoreInt32()\r\n      /home/bradfitz/go/src/runtime/race_amd64.s:215 +0xb\r\n  golang.org/x/net/http2.testServerWithCurl.func2()\r\n      /home/bradfitz/src/golang.org/x/net/http2/server_test.go:2228 +0x35\r\n  golang.org/x/net/http2.ConfigureServer.func1()\r\n      /home/bradfitz/src/golang.org/x/net/http2/server.go:191 +0x67\r\n  net/http.(*conn).serve()\r\n      /home/bradfitz/go/src/net/http/server.go:1323 +0xa95\r\n\r\nPrevious write by goroutine 31:\r\n  golang.org/x/net/http2.testServerWithCurl()\r\n      /home/bradfitz/src/golang.org/x/net/http2/server_test.go:2227 +0x343\r\n  golang.org/x/net/http2.TestServerWithCurl_LenientCipherSuites()\r\n      /home/bradfitz/src/golang.org/x/net/http2/server_test.go:2204 +0x33\r\n  testing.tRunner()\r\n      /home/bradfitz/go/src/testing/testing.go:456 +0xdc\r\n\r\nGoroutine 40 (running) created at:\r\n  net/http.(*Server).Serve()\r\n      /home/bradfitz/go/src/net/http/server.go:1930 +0x533\r\n  net/http/httptest.(*Server).goServe.func1()\r\n      /home/bradfitz/go/src/net/http/httptest/server.go:215 +0xac\r\n\r\nGoroutine 31 (running) created at:\r\n  testing.RunTests()\r\n      /home/bradfitz/go/src/testing/testing.go:561 +0xaaf\r\n  testing.(*M).Run()\r\n      /home/bradfitz/go/src/testing/testing.go:494 +0xe4\r\n  main.main()\r\n      golang.org/x/net/http2/_test/_testmain.go:272 +0x210\r\n==================\r\n--- PASS: TestServerWithCurl_LenientCipherSuites (0.78s)\r\n        server_test.go:2230: Running test server for curl to hit at: https://127.0.0.1:37619\r\nPASS\r\n```\r\n\r\nExcept those two write lines, 2227 and 2228 are:\r\n\r\n```go\r\n        var gotConn int32\r\n        testHookOnConn = func() { atomic.StoreInt32(\u0026gotConn, 1) }\r\n```\r\n\r\nIs the implicit zeroing of that variable counting as a write?\r\n\r\nThe only reference to that variable is at the end of the test:\r\n\r\n```go\r\n        if atomic.LoadInt32(\u0026gotConn) == 0 {\r\n                t.Error(\"never saw an http2 connection\")\r\n        }\r\n```\r\n\r\n/cc @randall77 ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-05T04:43:12Z",
+	"created_at": "2015-10-29T19:03:10Z",
+	"updated_at": "2015-12-05T04:43:12Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

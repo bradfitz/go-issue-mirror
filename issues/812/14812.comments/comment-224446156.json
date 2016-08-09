@@ -1,0 +1,12 @@
+{
+	"id": 224446156,
+	"body": "I dug into the trace you posted (thanks!) and took another look at your gctrace. This is pretty clearly an over-assist problem. When the GC is running, the expected 25% of the CPU goes to dedicated GC workers, but nearly all of the rest of the CPU time goes to GC assists triggered by allocation. Hence, when GC is running, even though it's technically concurrent, nearly all of the CPU is being soaked up by GC. You can see this really clearly in the trace:\r\n\r\n![trace-14812](https://cloud.githubusercontent.com/assets/2688315/15877767/f2dc9ee4-2ce3-11e6-8d84-36de10f1a138.png)\r\n\r\nThe GC kicks in in the middle. When the GC isn't running, all of the user goroutine executions are really short and the system keeps up. As soon as GC kicks in, two Ps go to dedicated gcBgMarkWorkers (expected) and everything else turns to a checkerboard of 10–20 ms long user goroutine time slices (not expected). Because of this, the run queue lengths climb rapidly (the second row in the group of three at the top), which is almost certainly what's causing the latency spikes. Right after GC finishes there's a period where the user goroutines are running quickly again but they're packed much more densely as it drains the long run queues and returns to normal.\r\n\r\nI don't yet understand why this is happening. The heap is in steady state, so I would expect it to compute an assist ratio that causes it to finish roughly half way between the trigger and the goal, but it seems to be computing a much higher assist ratio and finishing much earlier.\r\n\r\n@Dieterbe, could you re-run your application with GODEBUG=gctrace=1,gcpacertrace=1 and grab stderr? It would be awesome if you can run with master, since there's more gcpacertrace output than there was in 1.6, but even the 1.6 output would be helpful.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-07T23:38:06Z",
+	"updated_at": "2016-06-07T23:38:06Z"
+}

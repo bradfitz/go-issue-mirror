@@ -1,0 +1,12 @@
+{
+	"id": 224307592,
+	"body": "Attached files are about the bind command and the panic stack trace.\r\n\r\n[gomobile-bind.txt.zip](https://github.com/golang/go/files/302869/gomobile-bind.txt.zip)\r\n[gomobile-panic.txt](https://github.com/golang/go/files/302870/gomobile-panic.txt)\r\n\r\nThe crash occurred in the net module, I debugged for a while and found that it was caused by CompareAndSwapUint64.\r\n\r\nI am pretty sure that the problem is caused by using golang's linux-kernel atomic CAS64(__kuser_cmpxchg64) under a android x86 with ARM translation.\r\n\r\nYou can refer to my \"dirty solution\", I just removed the code for \"__kuser_cmpxchg64\" in  /usr/local/go/src/sync/atomic/asm_linux_arm.s, and force golang to use \"armCompareAndSwapUint64\", then everything works.\r\n\r\nI will try go 1.7 later, but I don't think it works if it still uses the same code for \"__kuser_cmpxchg64\".\r\n\r\nMaybe this problem is not very serious, because seldom people do what I do: unpack the aar and remove everything(x86/x86_64) else besides armeabi-v7a to keep the APK as small as possible :)\r\n",
+	"user": {
+		"login": "wxiaoguang",
+		"id": 2114189,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-07T14:57:33Z",
+	"updated_at": "2016-06-07T14:59:47Z"
+}

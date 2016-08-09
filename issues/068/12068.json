@@ -1,0 +1,33 @@
+{
+	"id": 99680851,
+	"number": 12068,
+	"state": "closed",
+	"title": "runtime: missed write barrier with race detector",
+	"body": "Reported on golang-dev by carl@stripe.com. This program, reduced from a much larger one, crashes due to GC missing objects when run under the race detector. Best suspect is missed write barrier in that mode.\n\n\tGODEBUG=gccheckmark=1 go run -race heavy.go \n\t\n\tpackage main\n\t\n\ttype Interface interface {\n\t\tDummy()\n\t}\n\t\n\ttype Thing1 struct {\n\t\ta, b *int\n\t}\n\t\n\ttype Thing2 struct {\n\t\tThing1\n\t}\n\t\n\tfunc (_ Thing2) Dummy() {}\n\t\n\tfunc NewThing1() Thing1 {\n\t\treturn Thing1{new(int), new(int)}\n\t}\n\t\n\tfunc NewThing2() Interface {\n\t\treturn \u0026Thing2{NewThing1()}\n\t}\n\t\n\tfunc main() {\n\t\tfor i := 0; i \u003c 20; i++ {\n\t\t\tgo func() {\n\t\t\t\tfor {\n\t\t\t\t\tt := NewThing2()\n\t\t\t\t\tt.Dummy()\n\t\t\t\t}\n\t\t\t}()\n\t\t}\n\t\t\u003c-make(chan struct{})\n\t}\n\nDamian Gryski suggests perhaps the bug was introduced on github.com/golang/go/commit/8f34b25318e712a18c3847bb1cc3e8d87076c211.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-08-07T17:56:36Z",
+	"created_at": "2015-08-07T16:18:19Z",
+	"updated_at": "2016-08-08T21:04:11Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

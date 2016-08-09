@@ -1,0 +1,22 @@
+{
+	"id": 73279035,
+	"number": 10696,
+	"state": "closed",
+	"title": "runtime: Accessing nil Func's Entry results in crash",
+	"body": "This small program:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"runtime\"\r\nimport \"fmt\"\r\nimport \"os\"\r\nimport \"strconv\"\r\n\r\nfunc main() {\r\n    if len(os.Args) \u003e 0 {\r\n        i, _ := strconv.ParseInt( os.Args[0], 0, 64)\r\n        pc := uintptr(i)\r\n        fmt.Printf(\"%x\",pc)\r\n        fn := runtime.FuncForPC(pc)\r\n        fmt.Print(fn,\"\\n\\nName: \")\r\n        fmt.Print(fn.Name(),\"\\n\\nEntry: \")\r\n        fmt.Print(fn.Entry(),\"\\n\\n\")\r\n    }\r\n}\r\n```\r\n\r\ncrashes with:\r\n\r\n```\r\n[root@localhost ~]# ./test2 \r\n0\u003cnil\u003e\r\n\r\nName: \r\n\r\nEntry: panic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x4157f5]\r\n\r\ngoroutine 1 [running]:\r\nmain.main()\r\n\t/root/test2.go:16 +0x3c1\r\n\r\ngoroutine 2 [runnable]:\r\nruntime.forcegchelper()\r\n\t/usr/lib/golang/src/runtime/proc.go:90\r\nruntime.goexit()\r\n\t/usr/lib/golang/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 3 [runnable]:\r\nruntime.bgsweep()\r\n\t/usr/lib/golang/src/runtime/mgc0.go:82\r\nruntime.goexit()\r\n\t/usr/lib/golang/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 4 [runnable]:\r\nruntime.runfinq()\r\n\t/usr/lib/golang/src/runtime/malloc.go:712\r\nruntime.goexit()\r\n\t/usr/lib/golang/src/runtime/asm_amd64.s:2232 +0x1\r\n```\r\n\r\nI would expected same behavior of Entry(crashes) and Name(returns nil), ie. if fn is nil, both should crash or return nil. Is this expected ? \r\n\r\nPS: docker relies on nil return in case of Name access. \r\nSee https://bugzilla.redhat.com/show_bug.cgi?id=1212472#c4 or https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66016 \r\n\r\nPlease advise.\r\n\r\nThanks,\r\nJakub\r\n\r\n",
+	"user": {
+		"login": "jcajka",
+		"id": 7558856,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-05-05T16:43:50Z",
+	"created_at": "2015-05-05T10:45:46Z",
+	"updated_at": "2016-06-25T02:07:32Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 126975398,
+	"number": 13978,
+	"state": "closed",
+	"title": "runtime: SIGSEGV while handling SIGSEGV",
+	"body": "It appears that my program is segfaulting (receiving a sigsegv) while handling\r\na sigsegv.\r\n\r\nI was having some GC issues and a coworker recommended trying go1.6beta1 to see\r\nif it would fix the GC issues. It didn't (I've resolved them in other ways) but\r\nit did start causing my program to segfault.\r\n\r\nSadly I can't share the actual binary or core dump but I can share other\r\ninformation which should hopefully assist in tracking it down.\r\n\r\nThe segfault occurs after 12-24 hours of running. The program is network IO\r\nintensive. Taking UDP packets on one side and streaming TCP on the other.\r\n\r\nCC: @rsc and @ianlancetaylor I was told this would be of interest to you two.\r\n\r\n## Version\r\n\r\n```\r\n$ go version\r\ngo version devel +505fa7b Tue Jan 12 17:31:01 2016 +0000 darwin/amd64\r\n```\r\n\r\nI also had this occur with go1.6beta1, I'm attempting beta2 now, but it won't\r\nbe till tomorrow at the earliest that I know.\r\n\r\n\r\n## Do you use cgo or unsafe?\r\n\r\nI don't believe so and no unsafe.\r\n\r\ntarrant@box-name:~$ ldd canal\r\n    not a dynamic executable\r\n\r\n\r\n## GDB StackTrace\r\n\r\n```\r\n#0  0x000000000044930e in runtime.sigtrampgo (sig=11, info=0xc820d3dbb0, ctx=0xc820d3da80) at /usr/local/Cellar/go/HEAD/libexec/src/runtime/signal_sigtramp.go:27\r\n#1  0x0000000000469995 in runtime.sigtramp () at /usr/local/Cellar/go/HEAD/libexec/src/runtime/sys_linux_amd64.s:234\r\n#2  0x00000000004699a0 in runtime.sigtramp () at /usr/local/Cellar/go/HEAD/libexec/src/runtime/sys_linux_amd64.s:235\r\n#3  0x0000000000000001 in ?? ()\r\n#4  0x0000000000000000 in ?? ()\r\n```\r\n\r\n## Go stacktrace\r\n\r\n```\r\nINFO[0000] normal-program logging here\r\nSegmentation fault (core dumped)\r\n```\r\n\r\n## Memory info from gdb:\r\n\r\n```\r\n(gdb) print #2\r\nInvalid character '#' in expression.\r\n(gdb) print g\r\n$1 = (runtime.g *) 0x0\r\n(gdb) print g.m\r\nCannot access memory at address 0x30\r\n```\r\n\r\n## Registers\r\n\r\n```\r\n$ info registers\r\nrax            0xc820001380    859530335104\r\nrbx            0xc820d3da58    859544214104\r\nrcx            0xc820d3da58    859544214104\r\nrdx            0xc820d3da80    859544214144\r\nrsi            0x128    296\r\nrdi            0xc820d3da80    859544214144\r\nrbp            0xc820d3da48    0xc820d3da48\r\nrsp            0xc820d3d9c8    0xc820d3d9c8\r\nr8             0x0    0\r\nr9             0xc820d3dbb0    859544214448\r\nr10            0x20    32\r\nr11            0xc820802024    859538726948\r\nr12            0x0    0\r\nr13            0x2    2\r\nr14            0xa74ec4    10964676\r\nr15            0x1    1\r\nrip            0x44930e    0x44930e \u003cruntime.sigtrampgo+190\u003e\r\neflags         0x10202    [ IF RF ]\r\ncs             0x33    51\r\nss             0x2b    43\r\nds             0x0    0\r\nes             0x0    0\r\nfs             0x0    0\r\ngs             0x0    0\r\n```\r\n\r\n## Object Dump\r\n\r\n```\r\ngo tool objdump -s '^runtime\\.sigtrampgo$'\r\n...\r\n\tsignal_sigtramp.go:22\t0x4492f9\tc3\t\t\tRET\r\n\tsignal_sigtramp.go:26\t0x4492fa\t488d9c2490000000\tLEAQ 0x90(SP), BX\r\n\tsignal_sigtramp.go:26\t0x449302\t4889d9\t\t\tMOVQ BX, CX\r\n\tsignal_sigtramp.go:27\t0x449305\t4889442430\t\tMOVQ AX, 0x30(SP)\r\n\tsignal_sigtramp.go:27\t0x44930a\t4c8b4030\t\tMOVQ 0x30(AX), R8\r\n\tsignal_sigtramp.go:27\t0x44930e\t4d8b4050\t\tMOVQ 0x50(R8), R8\r\n\tsignal_sigtramp.go:27\t0x449312\t498b18\t\t\tMOVQ 0(R8), BX\r\n\tsignal_sigtramp.go:27\t0x449315\t48894c2428\t\tMOVQ CX, 0x28(SP)\r\n\tsignal_sigtramp.go:27\t0x44931a\t4839cb\t\t\tCMPQ CX, BX\r\n\tsignal_sigtramp.go:27\t0x44931d\t7773\t\t\tJA 0x449392\r\n...\r\n```",
+	"user": {
+		"login": "tarrant",
+		"id": 39023,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 44,
+	"closed_at": "2016-01-27T02:14:10Z",
+	"created_at": "2016-01-15T22:54:17Z",
+	"updated_at": "2016-01-28T20:28:50Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

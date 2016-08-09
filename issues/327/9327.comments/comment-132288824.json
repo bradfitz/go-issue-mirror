@@ -1,0 +1,12 @@
+{
+	"id": 132288824,
+	"body": "One obvious missing feature is the TLS handling - linux/386 assumes availability of TLS store to hold g across cgo calls, and the linker's ability to handle TLS relocation for LE mode. But android linker lacks such support.\r\n\r\nAndroid/arm overcomes it by emulating runtime.tlsg as a regular variable. The same trick doesn't seem to work for 386 where the offset is encoded in the instruction when using LE model. \r\n\r\nInstead, @crawshaw and I think the approach darwin/386 is taking (runtime/cgo/gcc_darwin_386.c) may work for android/386 as well - basically we allocate a thread-local storage with a specific key and use a hard-coded offset (cmd/link/internal/ld/sym.go line 145). This is ugly and fragile, but seems promising. Should we take this path?\r\n\r\nIn this mail thread https://groups.google.com/forum/#!topic/golang-nuts/cZPdxDmnuUM @mwhudson  mentioned it may be feasible through IE model support and I guess it may be cleaner. However, not being familiar with the concept yet, I cannot estimate how much work is necessary to implement IE model support  (pointer to the cl that implements IE mode for amd64 would be appreciated) and not yet clear about where to hook into the tls offset info when the linker is not doing most of the magic for me. \r\n\r\n@ianlancetaylor @mwhudson ",
+	"user": {
+		"login": "hyangah",
+		"id": 4999471,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-18T17:29:07Z",
+	"updated_at": "2015-08-18T17:29:07Z"
+}

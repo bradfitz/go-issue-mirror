@@ -1,0 +1,12 @@
+{
+	"id": 125778745,
+	"body": "The suggested changes require a new AST - not entirely different, but capable of associating comments with nodes. I have a prototype but it needs a bit more work. Once I am confident enough that it can work well, I'll send out a proposal.\r\n\r\nComments can appear anywhere between two tokens (actually, from the scanner's point of view, a comment is just a token). Because they can appear anywhere, there's no obvious place to put them in the AST. For instance, an if statement \"if expr /* comment */ { foo() }\" consists of an IfStmt node and several child nodes (expr, then branch). The comment could be anywhere. In this case it could (and probably does) make sense to say that it \"belongs\" to the expr. In other words, the comment is said to be \"associated\" with the expr. If the comment appeared before the \"if\" it might instead be associated with the IfStmt node, etc. This association is not obvious from the grammar or language, and requires a heuristic (which may fail). However, if comments were associated with nodes, moving nodes would ensure the associated comments also move with them. This is currently not the case.\r\n\r\nFor an unmodified AST, all positions (including comment positions) are correct. If the AST is modified, but comment and AST node positions are not updated accordingly, the go/printer will print the comments in the wrong places. This is a common issue with AST manipulation and the major reason why comments should probably be attached to nodes. This was in some sense a design mistake (mea culpa) - the AST package is one of the very first Go packages and I didn't appreciate the need for easy manipulation (nor did I foresee all the AST manipulation tools).\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-28T23:12:48Z",
+	"updated_at": "2015-07-28T23:13:43Z"
+}

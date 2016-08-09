@@ -1,0 +1,12 @@
+{
+	"id": 151661372,
+	"body": "Firstly, a simple program in C can ignore this signal and handle it, so a go program should do this as well. In this case a call to `sigignore(sig uint32) ` does nothing because of the following check:\r\n```go\r\n\tif t.flags\u0026_SigNotify != 0 {\r\n\t\tt.flags \u0026^= _SigHandling\r\n\t\tsetsig(int32(sig), _SIG_IGN, true)\r\n\t}\r\n```\r\nIf we call `Notify()`, it calls `sigenable(sig uint32)`, which contains the same check and does not actually set the handler.\r\nHowever, in `func initsig()` called in `mstart1()`, `SIGTRAP` is assigned the handler `sighandler`. Thus, this handler is called whether we want to ignore the signal or to be notified. The difference is in `func sigsend(s uint32)`, which does the following check:\r\n```go\r\n\tif !sig.inuse || s \u003e= uint32(32*len(sig.wanted)) || sig.wanted[s/32]\u0026bit == 0 {\r\n\t\treturn false\r\n\t}\r\n```\r\n`sig.wanted` is set in `signal_enable()` (which is called by `Notify()`), but `signal_ignore()` resets it. As a result, `sighandler` cannot send a signal and panics.\r\nI think, that the possible solution is to remove the check\r\n```go\r\n\tif t.flags\u0026_SigNotify != 0 {\r\n```\r\nin `sigdisable(), sigenable(), and sigignore()`, because, as I understand, if `_SigNotify` is not set, it does actually mean, that we cannot handle or ignore a signal. In this particular case `SIGTRAP` has the flag `_SigThrow`, which means, that the *default* action is \"Terminate (core dump)\", but we can install own handlers as well.\r\nWith these fixes `sigignore` will actually set `_SIG_IGN` as a handler for such signals.\r\nIf this solution looks logical, I can make a CL.",
+	"user": {
+		"login": "avdva",
+		"id": 12461031,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-27T22:14:55Z",
+	"updated_at": "2015-10-27T22:14:55Z"
+}

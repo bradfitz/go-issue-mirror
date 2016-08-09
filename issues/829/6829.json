@@ -1,0 +1,22 @@
+{
+	"id": 51285790,
+	"number": 6829,
+	"state": "closed",
+	"title": "gccgo: closing a unix socket with a name longer than 26 characters does not delete the socket",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1.  cat topen.go:\n\npackage main\n\nimport (\n\t\u0026quot;flag\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;strconv\u0026quot;\n)\n\nfunc main() {\n\tflag.Parse()\n\ts := flag.Arg(0)\n\ti, err := strconv.Atoi(s)\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(2)\n\t}\n\tsockPath := fmt.Sprintf(\u0026quot;%*s\u0026quot;, i, \u0026quot;a\u0026quot;)\n\tos.RemoveAll(sockPath)\n\tdefer os.RemoveAll(sockPath)\n\n\tlistener, err := net.Listen(\u0026quot;unix\u0026quot;, sockPath)\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(2)\n\t}\n\n\tif _, err = os.Stat(sockPath); err != nil {\n\t\tfmt.Println(\u0026quot;socket not created at all\u0026quot;)\n\t\treturn\n\t}\n\n\tlistener.Close()\n\tif _, err = os.Stat(sockPath); err == nil {\n\t\tfmt.Println(\u0026quot;socket not deleted!!\u0026quot;)\n\t\tos.Exit(1)\n\t} else {\n\t\tfmt.Println(\u0026quot;socket deleted ok\u0026quot;)\n\t}\n}\n\n\n2. go run -compiler gccgo topen.go 27\n\nWhat is the expected output?\n\nsocket deleted ok\n\nWhat do you see instead?\n\nsocket not deleted!!\nexit status 1\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngccgo\n\nWhich operating system are you using?\n\nUbuntu 13.10\n\nWhich version are you using?  (run 'go version')\n\nTip.\n\nPlease provide any additional information below.\n\nThis is pretty wacky!  \u0026quot;go run -compiler gccgo topen.go 26\u0026quot; and \u0026quot;go run\ntopen.go 27\u0026quot; both work as expected.\u003c/pre\u003e",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:37:59Z",
+	"created_at": "2013-11-25T00:53:48Z",
+	"updated_at": "2016-06-25T01:22:54Z"
+}

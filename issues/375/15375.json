@@ -1,0 +1,21 @@
+{
+	"id": 149560385,
+	"number": 15375,
+	"state": "open",
+	"title": "cmd/compile: eliminate all (some?) convT2{I,E} calls",
+	"body": "For pointer-shaped types, convT2{I,E} are already done by the compiler.  We currently call into the runtime only for non-pointer-shaped types.\r\nThere are two cases, where the interface escapes and where it doesn't.\r\n```\r\ntype T struct {\r\n    a, b, c int\r\n}\r\nfunc f(t T) interface{} {\r\n    return t\r\n}\r\nfunc g(t T) {\r\n\th(t)\r\n}\r\n//go:noescape\r\nfunc h(interface{})\r\n```\r\nIn both cases, I think, it would be easier to inline the work that convT2{I,E} does.  f does this:\r\n```\r\nLEAQ\ttype.\"\".T(SB), AX\r\nMOVQ\tAX, (SP)\r\nLEAQ\t\"\".autotmp_0+40(SP), AX\r\nMOVQ\tAX, 8(SP)\r\nMOVQ\t$0, 16(SP)\r\nCALL\truntime.convT2E(SB)\r\nMOVQ\t24(SP), CX\r\nMOVQ\t32(SP), DX\r\n```\r\ninstead it could do:\r\n```\r\nLEAQ\ttype.\"\".T(SB), AX\r\nMOVQ\tAX, (SP)\r\nCALL\truntime.newobject(SB)\r\nMOVQ\t8(SP), DX\r\nMOVQ\t\"\".autotmp_0+40(SP), AX\r\nMOVQ\t\"\".autotmp_0+48(SP), BX\r\nMOVQ\t\"\".autotmp_0+56(SP), CX\r\nMOVQ\tAX, (DX)\r\nMOVQ\tBX, 8(DX)\r\nMOVQ\tCX, 16(DX)\r\nLEAQ\ttype.\"\".T(SB), CX\r\n```\r\n11 instructions instead of 8, but several runtime calls bypassed (convT2E, plus the typedmemmove it calls, and everything that calls, ...).\r\nThe expanded code gets larger if T has a pointer in it.  Maybe we use typedmemmove instead of explicit copy instructions in that case.\r\n\r\n`g` is even easier because there is no runtime call required at all.  Old code:\r\n```\r\nLEAQ\ttype.\"\".T(SB), AX\r\nMOVQ\tAX, (SP)\r\nLEAQ\t\"\".autotmp_2+64(SP), AX\r\nMOVQ\tAX, 8(SP)\r\nLEAQ\t\"\".autotmp_3+40(SP), AX\r\nMOVQ\tAX, 16(SP)\r\nCALL\truntime.convT2E(SB)\r\nMOVQ\t24(SP), CX\r\nMOVQ\t32(SP), DX\r\n```\r\nnew code:\r\n```\r\nMOVQ\t\"\".autotmp_2+64(SP), AX\r\nMOVQ\t\"\".autotmp_2+72(SP), BX\r\nMOVQ\t\"\".autotmp_2+80(SP), CX\r\nMOVQ\tAX, \"\".autotmp_3+40(SP)\r\nMOVQ\tBX, \"\".autotmp_3+48(SP)\r\nMOVQ\tCX, \"\".autotmp_3+56(SP)\r\nLEAQ\ttype.\"\".T(SB), CX\r\nLEAQ\t\"\".autotmp_3+40(SP), DX\r\n```\r\none less instruction, and if we can avoid the copy (if autotmp_2 is never modified after), it could be even better.  And no write barriers are required on the copy even if T has pointers.\r\n\r\nMaybe we do the no-escape optimization first.  It seems like an obvious win.  That would allow removing the third arg to convT2{I,E}.  Then we could think about the escape optimization.\r\n\r\n@walken-google ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-04-19T19:37:36Z",
+	"updated_at": "2016-04-19T19:37:36Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

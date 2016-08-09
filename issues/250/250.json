@@ -1,0 +1,28 @@
+{
+	"id": 51276240,
+	"number": 250,
+	"state": "closed",
+	"title": "runtime crashes",
+	"body": "by **hurtonm**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile and link the below program.\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;;\n        \u0026quot;runtime\u0026quot;\n)\n\nconst GOMAXPROCS = 16;\nconst WORKERS = 128;\n\nfunc worker() chan bool {\n        quit := make(chan bool);\n        go func() {\n                a := make([]byte, 1);\n                a[0] = 1;       // keep 6g happy\n                \u0026lt;-quit;\n        }();\n        return quit\n}\n\nfunc main() {\n        runtime.GOMAXPROCS(GOMAXPROCS);\n\n        var ctrl [WORKERS]chan bool;\n\n        //  create all workers\n        for i := 0; i \u0026lt; WORKERS; i++ { ctrl[i] = worker() }\n\n        // send out 'quit' signal\n        for i := 0; i \u0026lt; WORKERS; i++ { ctrl[i] \u0026lt;- true }\n\n        fmt.Println(\u0026quot;finished\u0026quot;)\n}\n\nWhat is the expected output? What do you see instead?\nThe program should print out the message \u0026quot;finished\u0026quot; on stdout. Instead, the\napplication sometimes crashes and the following trace is produced:\n\nstackalloc: in malloc , size=5120 want 8448throw: stackalloc\n\npanic PC=0x7ff2ead8cfa8\nthrow+0x3e /usr/local/src/go/src/pkg/runtime/runtime.c:74\n        throw(0x457590, 0x0)\nstackalloc+0x10c /usr/local/src/go/src/pkg/runtime/malloc.c:253\n        stackalloc(0x2100, 0x0)\nmalg+0x35 /usr/local/src/go/src/pkg/runtime/proc.c:733\n        malg(0x2000, 0x0)\nmatchmg+0x84 /usr/local/src/go/src/pkg/runtime/proc.c:425\n        matchmg()\nstarttheworld+0x2f /usr/local/src/go/src/pkg/runtime/proc.c:380\n        starttheworld()\ngc+0xf1 /usr/local/src/go/src/pkg/runtime/mgc0.c:235\n        gc(0x0, 0x0)\nmallocgc+0x3f /usr/local/src/go/src/pkg/runtime/malloc.c:64\n        mallocgc(0x1, 0x0)\nmal+0x1b /usr/local/src/go/src/pkg/runtime/malloc.c:219\n        mal(0x1, 0x0)\nruntime·makeslice+0x36 /usr/local/src/go/src/pkg/runtime/slice.c:21\n        runtime·makeslice(0x1, 0x1, 0x1, 0x0, 0x0, ...)\nmain·_f001+0x2a /tmp/xxx.go:14\n        main·_f001(0xead21288, 0x7ff2)\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\ngoroutine 129:\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\ngoroutine 128:\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\ngoroutine 127:\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\ngoroutine 126:\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\n...\n\ngoroutine 2:\ngosched+0x34 /usr/local/src/go/src/pkg/runtime/proc.c:516\n        gosched()\nchanrecv+0x318 /usr/local/src/go/src/pkg/runtime/chan.c:319\n        chanrecv(0xead250a0, 0x7ff2, 0xead500a0, 0x7ff2, 0x0, ...)\nruntime·chanrecv1+0x50 /usr/local/src/go/src/pkg/runtime/chan.c:415\n        runtime·chanrecv1(0xead250a0, 0x7ff2)\nmain·_f001+0x5f /tmp/xxx.go:16\n        main·_f001(0xead21258, 0x7ff2)\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\ngoroutine 1:\ngosched+0x34 /usr/local/src/go/src/pkg/runtime/proc.c:516\n        gosched()\nchansend+0x34c /usr/local/src/go/src/pkg/runtime/chan.c:221\n        chansend(0xead25230, 0x7ff2, 0xead4eb98, 0x7ff2, 0x0, ...)\nruntime·chansend1+0x54 /usr/local/src/go/src/pkg/runtime/chan.c:387\n        runtime·chansend1(0xead25230, 0x7ff2)\nmain·main+0xb0 /tmp/xxx.go:30\n        main·main()\nmainstart+0xf /usr/local/src/go/src/pkg/runtime/amd64/asm.s:55\n        mainstart()\ngoexit /usr/local/src/go/src/pkg/runtime/proc.c:135\n        goexit()\n\n\n\nWhat is your $GOOS?  $GOARCH?\nGOOS=linux\nGOARCH=amd64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\nchangeset:   4015:cb140bac9ab0\ntag:         tip\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Thu Nov 12 14:55:26 2009 -0800\nsummary:     test/run: unset GREP_OPTIONS\n\nPlease provide any additional information below.\nFirst reported by Martin Koistinen (see\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/e088401c188ee376#)\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/e088401c188ee376#)\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:03:50Z",
+	"created_at": "2009-11-17T20:33:06Z",
+	"updated_at": "2016-06-24T19:05:29Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 58622296,
+	"number": 9966,
+	"state": "open",
+	"title": "x/tools/cmd/vet: should warn for single-case select statement without a default case",
+	"body": "After about a day of debugging a problem in which a part of my application suddenly stalled, I came across this piece of code:\r\n\r\n```go\r\nselect {\r\n\tcase ch \u003c- true:\r\n}\r\n```\r\n\r\nwhere ch happened to be an unbuffered channel without a reader.\r\nThis was as expected, but the author had meant the select to make the send non-blocking. Unfortunately, without an empty default, this is a *blocking* channel send. The code should instead have looked like this:\r\n\r\n```go\r\nselect {\r\n\tcase ch \u003c- true:\r\n\tdefault:\r\n}\r\n```\r\n\r\nAfter encountering this, I tried to come up with a use-case for a single-case select statement *without* a default case, but could not come up with one. Any such code fragment would just be a blocking send on a channel followed by other code; there is no need for the select, and it should be removed to avoid confusion. In the common case, the author probably made the same mistake in the above code and simply forgot the default case necessary to make the code non-blocking.\r\n\r\nI initially proposed that go should give a build error when encountering a single-case select without a default on [go-nuts](https://groups.google.com/forum/#!topic/golang-nuts/cHE5m_p9fS8), but valid concerns were quickly raised that this would complicate debugging where you occasionally want to leave the select in place while figuring out which cases to have. Making it a build error would also invalidate `select { }` for infinite blocking which is apparently used occasionally.\r\n\r\nHowever, I still believe this is a confusing, and potentially harmful, pattern, and it seems sensible that `go vet` would warn that this particular construct is unnecessary, and will not be non-blocking.",
+	"user": {
+		"login": "jonhoo",
+		"id": 176295,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 29,
+	"created_at": "2015-02-23T17:51:12Z",
+	"updated_at": "2015-04-14T19:38:03Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

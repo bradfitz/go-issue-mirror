@@ -1,0 +1,27 @@
+{
+	"id": 141948681,
+	"number": 14865,
+	"state": "open",
+	"title": "runtime: x_cgo_init determines stacklo incorrectly for some Solaris versions",
+	"body": "This is basically a continuation of issue #12210.\r\n\r\nAs @rsc guessed, Solaris grows the stack as faults happen.  This behavior is described in section 5.3.5, on page 136 of Mauro, J., \u0026 McDougall, R. (2001). Solaris internals: Core kernel components:\r\n\r\n\u003e The process stack is mapped into the address space with an initial allocation and then grows downward.  The stack, like the heap, grows on demand, but no library grows the stack; instead, a different mechanism triggers this growth.\r\n\u003e\r\n\u003e Initially, a single page is allocated for the stack, and as the process executes and calls functions, it pushes the program counter, arguments, and local variables onto the stack. When the stack grows larger than one page, the process causes a page fault, and the kernel notices that this is a stack segment page fault and grows the stack segment.\r\n\r\nPrior to Solaris 11 (e.g. OpenSolaris and derivatives), when the stack size was set to unlimited, libc_init() (which is responsible for the initialization of the main stack) would set ss_size = 0 and ss_sp = ul_stktop initially and would then update that as stack faults were encountered.\r\n\r\nA simple (naive) test program on a pre-Solaris 11 system:\r\n```\r\n#include \u003cucontext.h\u003e\r\n#include \u003cstdio.h\u003e\r\n#include \u003csys/resource.h\u003e\r\n#include \u003cinttypes.h\u003e\r\n\r\nint main(int argc, char **argv) {\r\n  ucontext_t uc;\r\n  struct rlimit lim;\r\n  stack_t ss;\r\n\r\n  getcontext(\u0026uc);\r\n  printf(\"ss_sp = %p\\n\", uc.uc_stack.ss_sp);\r\n  printf(\"ss_size = %\" PRId64 \"\\n\", uc.uc_stack.ss_size);\r\n\r\n  getrlimit(RLIMIT_STACK, \u0026lim);\r\n  printf(\"RLIMIT_STACK = %\" PRId64 \"\\n\", lim.rlim_cur);\r\n}\r\n```\r\n...produces these results:\r\n```\r\n$ gcc -m64 -o s main.c ; ./s\r\nss_sp = fffffd7fffdfb000\r\nss_size = 8192\r\nRLIMIT_STACK = -3\r\n```\r\n\r\nThere's nothing wrong with the results since posix doesn't require specific behaviors in regards to these values and in fact, getcontext(), et al. are considered obsolete (they were removed from the 2013 version of the posix standard: http://pubs.opengroup.org/onlinepubs/9699919799/xrat/V4_xsh_chap03.html).\r\n\r\nNow, on Solaris 11 and later, the same test program when executed produces different results:\r\n```\r\nss_sp = ffff800000000000\r\nss_size = 1098437885952\r\nRLIMIT_STACK = -3\r\n```\r\n\r\nAs such, for Solaris 11+, the current code in gcc_solaris_amd64.c in `x_cgo_init()` should generally work fine for determining stacklo in the *unlimited* stack size case.\r\n\r\nHowever, for older releases the correct answer is to actually call getrlimit(RLIMIT_STACK, ...) and calculate the low address using rlim_cur (unless it returns -3, RLIM_INFINITY), in which case it can safely assume 2GB.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-03-18T18:48:14Z",
+	"updated_at": "2016-04-09T23:48:54Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

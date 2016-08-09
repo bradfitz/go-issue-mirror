@@ -1,0 +1,12 @@
+{
+	"id": 208167312,
+	"body": "I did a little bit of investigating. Consider the following two programs:\r\n\r\nP_1:\r\n``` \r\npackage p\r\n\r\ntype k [1]m\r\ntype m map[k]int\r\n ```\r\n\r\nOUT_1:\r\n`./p_1.go:4: invalid map key type k`\r\n\r\nThe first line creates a forward declaration for k. The next line sets the value of m to a map with key 'k' and runs checkMapKeyType. It fails properly because [1]map[anything]anything is not a comparison type.\r\n\r\nNow consider the same program with the two lines swapped:\r\n\r\nP_2:\r\n```\r\npackage p\r\n\r\ntype m map[k]int\r\ntype k [1]m\r\n```\r\n\r\nOUT_2:\r\n`./p_2.go:4: internal compiler error: bad type for map key: m`\r\n\r\nThe difference is subtle. The first line creates a forward type for m. The second line creates a forward type for k, and checkMapKeyType([1]m) is called. The entire key [1]m is treated as a forward type instead of as array with an element that's a forward type. Instead of erroring out, checkMapKeyType does nothing and waits for the type [1]m to be fully resolved, which I don't believe will ever happen because of the mutually recursive type definitions. This is eventually caught here: \r\n\r\nhttps://github.com/golang/go/blob/master/src/cmd/compile/internal/gc/reflect.go#L1006",
+	"user": {
+		"login": "tshprecher",
+		"id": 1313797,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-11T05:19:37Z",
+	"updated_at": "2016-04-11T05:19:37Z"
+}

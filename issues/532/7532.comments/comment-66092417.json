@@ -1,0 +1,12 @@
+{
+	"id": 66092417,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **james.chalfant**:\n\n\u003cpre\u003eI believe the problem is in database/sql.go, in here:\n\nfunc (db *DB) conn() (*driverConn, error)\n\nThere's a sequence that runs roughly as follows.\n\n1.) lock mutex, check db.numOpen and db.maxOpen to see if a new connection should be\nopened, unlock mutex\n2.) do work to open a connection\n3.) lock mutex,  update db.numOpen, unlock mutex\n\nIf two goroutines simultaneously get inside conn(), they may both decide to open a\nconnection before either updates numOpen, allowing the number of open connections to\nexceed db.maxOpen. \n\nOne solution could be to increment db.numOpen in step #1 and decrement it if the open\nfails; I've prepared a change that does this and the test case passes. \n\nAnother would be to use db.pendingOpens as maybeOpenNewConnections and openNewConnection\ndo. \n\nIf you agree that this is the root cause and that the suggested fix is appropriate,\nplease let me know and I'll submit a change for review.\n\nThanks, \n-James\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-05T18:51:30Z",
+	"updated_at": "2014-12-08T10:41:51Z"
+}

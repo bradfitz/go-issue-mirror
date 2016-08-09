@@ -1,0 +1,27 @@
+{
+	"id": 51278452,
+	"number": 1894,
+	"state": "closed",
+	"title": "runtime.closure() is being called for function literals that don't need it.",
+	"body": "by **fvbommel**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile this program with -S:\n=====\npackage foo\n\nvar Fn func(y int) int\n\nfunc Foo() {\n\tFn = func(y int) int { return y }\n}\n=====\n2. Observe that Foo() calls runtime.closure\n\nWhat is the expected output?\nFoo() shouldn't need to call runtime.closure() since the function literal doesn't use\nany of the variables of the outer function.\n\nWhat do you see instead?\nFoo() calls runtime.closure(0, _func_001), which unconditionally allocates a closure and\nfills it with \u0026quot;call _func_001 (or movq _func_001, CX; call *CX); add 0, SP;\nret\u0026quot;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nUbuntu 10.10\n\nWhich revision are you using?  (hg identify)\nc98449d685d2 weekly/weekly.2011-05-22\n(But it happens with \u0026quot;7e539bf111cd tip\u0026quot; too)\n\nPlease provide any additional information below.\nAFAICT, there are two ways to fix this:\n1) The compiler could detect this (IIUC, in gc/closure.c:walkclosure()) and just use the\nnested function directly instead of calling runtime.closure in this case.\n\n2) The various runtime.closure() implementations (runtime/*/closure.c could detect this,\nand just \u0026quot;if (siz == 0) return fn;\u0026quot;\n\nIMHO, the first solution is preferable.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:10:25Z",
+	"created_at": "2011-05-28T15:21:03Z",
+	"updated_at": "2016-06-24T19:30:05Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"id": 56265125,
+	"number": 9755,
+	"state": "open",
+	"title": "cmd/compile: don't emit writebarrier for stores to newly allocated objects",
+	"body": "Consider the following code:\r\n\r\nx := \u0026X{\u0026obj, make([]int, n)}\r\n...\r\n\r\nCompiler transforms it to roughly the following code:\r\n\r\ntmp0 := runtime.makeslice(int, n)\r\ntmp1 := runtime.newobject(X)\r\nruntime.writebarrierptr(\u0026tmp1.f0, \u0026obj)\r\nruntime.writebarrierslice(\u0026tmp1.f2, tmp0)\r\n\r\nI suspect that barriers are unnecessary in this case because tmp1 is accessible only through the stack of the current goroutine. So \u0026obj and tmp0 will be found and marked during stack scanning.\r\n\r\nIt seems that a simple approximation of the \"is accessible only through the stack of the current goroutine\" condition is \"we have not yet encountered any calls since allocation of the object\". That is:\r\n\r\ntmp1 := runtime.newobject(X)\r\ntmp1.f0 = ...  // no write barrier\r\ntmp1.f1 = ...  // no write barrier\r\nany function call \r\ntmp1.f0 = ...  // write barrier\r\ntmp1.f2 = ...  // write barrier\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2015-02-02T17:19:45Z",
+	"updated_at": "2015-06-08T06:22:33Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

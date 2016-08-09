@@ -1,0 +1,12 @@
+{
+	"id": 213030749,
+	"body": "Started on this, but haven't gotten it working yet. In case I don't get it done by the 1.7 freeze, here are some notes for future me and other readers.\r\n\r\nPreviously, composite literals stored their elements in Node.List. When there was a key present, the Node.List element is an OKEY, with key in Left and value in Right. Instead, switch to use both List and Rlist; keys are in List, values are in Rlist, and they correspond by index. A nil element in List means no value. Step one is switching to that representation. Step two is changing OARRAYLITs to leave keys nil when the constant they hold corresponds to their index. Possibly, step two-and-a-half is changing OSTRUCTLIT to leave keys nil when the struct field they hold corresponds to their index. Step three is leaving List itself nil when it contains all nils.\r\n\r\nThe only remaining use of OKEY after that would be slices. It might well be more efficient to use a List for that instead of an OKEY. Here's an excerpt from syntax.go:\r\n\r\n```go\r\n\tOSLICE     // Left[Right.Left : Right.Right] (Left is untypechecked or slice; Right.Op==OKEY)\r\n\tOSLICEARR  // Left[Right.Left : Right.Right] (Left is array)\r\n\tOSLICESTR  // Left[Right.Left : Right.Right] (Left is string)\r\n\tOSLICE3    // Left[R.Left : R.R.Left : R.R.R] (R=Right; Left is untypedchecked or slice; R.Op and R.R.Op==OKEY)\r\n\tOSLICE3ARR // Left[R.Left : R.R.Left : R.R.R] (R=Right; Left is array; R.Op and R.R.Op==OKEY)\r\n```\r\n\r\nNote that OSLICE, OSLICEARR, and OSLICESTR could be `Left[List[0]:List[1]]`. OSLICE3 and OSLICE3ARR could be `Left[List[0]:List[1]:List[2]]`. At this point, Node slices are definitely cheaper than Node trees.\r\n\r\nThere are probably other such instances where we could flatten trees into slices.\r\n\r\nAlso, we introduce a bunch of OPAREN nodes just to track line numbers before typechecking; see wrapname in parser.go. I wonder whether there's a cheaper way to accomplish this.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-21T17:36:04Z",
+	"updated_at": "2016-04-21T17:36:04Z"
+}

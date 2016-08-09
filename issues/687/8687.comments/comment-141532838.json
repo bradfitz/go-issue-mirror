@@ -1,0 +1,12 @@
+{
+	"id": 141532838,
+	"body": "\u003e The benchmarks with the lower timer precision are mostly not slower they are just less accurate.\r\n\r\n@randomascii, what do you mean by this? Each benchmark runs in a loop for at least a second and we record the time at the beginning and end. From what I understand, you're saying that the time measurement can be off by 15ms (so the delta could be off by 30ms?), but that's only 3% on the scale of a second.\r\n\r\n\u003e BenchmarkAppendGrowByte-2 runs 368% slower which suggests a benchmark bug. Either the code being tested is waiting (which it should not do) or the code that times is using timeGetTime and is stopping and starting the timer frequently and is therefore hitting aliasing errors.\r\n\r\nBoth the garbage collector and the scheduler do contain wait loops (e.g., https://github.com/golang/go/blob/e95bc5fef7e5e21cfdcae3095fcb8280bc3a72f8/src/runtime/mgcwork.go#L430) that after a few spins will perform several OS yields and eventually fall back to short sleeps (e.g., 100us). The fact that this hits AppendGrowByte only when GOMAXPROCS\u003e1 is telling, since with GOMAXPROCS=1 we should never hit these wait loops. If I'm understanding correctly, these fall backs are much more expensive on Windows than they would seem. Is this right?\r\n\r\nIf building from source, it would be easy to print out the counters from these loops at the end of a GC and see what they look like in these benchmarks. Something like this at the end of func gc in runtime/mgc.go should do it:\r\n\r\n```\r\nfor mp := allm; mp != nil; mp = mp.alllink {\r\n    println(mp.gcstats.nprocyield, mp.gcstats.nosyield, mp.gcstats.nsleep)\r\n}\r\n```\r\n\r\nI'm hoping to eliminate these wait loops (#12041). If this is tied in, that's more impetus to do so.\r\n\r\nAs to your second hypothesis, I don't see timeGetTime anywhere in the Go codebase, so I'm not sure what exactly you're referring to. In the runtime, it looks like we get the time on Windows by reading from some magic address: https://github.com/golang/go/blob/e95bc5fef7e5e21cfdcae3095fcb8280bc3a72f8/src/runtime/os1_windows.go#L318",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-18T18:44:01Z",
+	"updated_at": "2015-09-18T18:44:01Z"
+}

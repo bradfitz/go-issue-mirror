@@ -1,0 +1,27 @@
+{
+	"id": 86709297,
+	"number": 11131,
+	"state": "closed",
+	"title": "cmd/go: Copying of _cgo_install.h causes problems when $WORK and $GOPATH are on different disks.",
+	"body": "NOTE: this problem only occurs when building using -buildmode=c-shared\r\n\r\nHere is my reproducible setup:\r\n\r\nexport TMPDIR=/tmp\r\nexport HOME=/usr/local/google/home/$USER\r\n\r\n$ mkdir -p $HOME/gotest/src/test\r\n$ cat \u003e $HOME/gotest/src/test/test.go\r\npackage main\r\n\r\nimport \"C\"\r\n\r\n//export exportedFunc\r\nfunc exportedFunc() {}\r\n\r\nfunc main() {}\r\n\r\n$ GOPATH=$HOME/gotest go install -buildmode=c-shared test\r\n\r\n$ cat \u003e $HOME/gotest/src/test/test.go\r\npackage main\r\n\r\nimport \"C\"\r\n\r\n//export exportedFunc\r\nfunc exportedFunc() {}\r\n\r\nfunc main() {\r\n}\r\n\r\n$ GOPATH=$HOME/gotest go install -buildmode=c-shared -x test\r\n....\r\ncp $WORK/test/_obj/_cgo_install.h /usr/local/google/home/spetrovic/gotest/pkg/linux_amd64_shared/test.h\r\nbuild output \"/usr/local/google/home/spetrovic/gotest/pkg/linux_amd64_shared/test.h\" already exists and is not an object file\r\n\r\nThe problem is that $WORK and $HOME are on different devices in my setup, and hence the os.Rename() fails to move the file _cgo_install.h with: \"invalid cross-device link\";  cmd/go/build.go then tries to copy the file over, but this code causes it to fail as well:\r\n\r\nif !isObject(dst) {\r\n    return fmt.Errorf(\"build output %q already exists and is not an object file\", dst)\r\n}\r\n\r\nMy question is, what is the purpose of this isObject() check and can we get rid of it?",
+	"user": {
+		"login": "spetrovic77",
+		"id": 5449850,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-06-15T18:30:16Z",
+	"created_at": "2015-06-09T19:31:45Z",
+	"updated_at": "2016-06-25T02:10:42Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

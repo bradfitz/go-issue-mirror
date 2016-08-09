@@ -1,0 +1,22 @@
+{
+	"id": 51278115,
+	"number": 1648,
+	"state": "closed",
+	"title": "sync.Cond.Signal() does not respect wait generations",
+	"body": "\u003cpre\u003e\u0026gt;What steps will reproduce the problem?\nHere is a reproducer:\n\nMutex mtx;\nCond cv;\nint state; // = 0\n\n//thread 0\nmtx.lock();\nwhile (state == 0)\n  cv.wait();\nstate = 2;\ncv.signal();\nmtx.unlock();\n\n//thread 1\nmtx.lock();\nstate = 1;\ncv.signal();\nmtx.unlock();\n\n//thread 2\nfor (;;) {\n  mtx.lock();\n  if (state != 0) {\n    while (state != 2)\n      cv.wait();\n  }\n  mtx.unlock();\n}\n\nSignal from thread 1 must be caught by thread 0, because it's only it that possibly\nwaits on the cv while state==0. However, AFAIS the signal can be caught by thread 2.\n\n\u0026gt;What is the expected output?\nProgram does not deadlock.\n\n\u0026gt;What do you see instead?\nProgram sometimes deadlocks.\n\n\u0026gt;Which compiler are you using (5g, 6g, 8g, gccgo)?\nDoes not have a compiler yet.\n\n\u0026gt;Which operating system are you using?\n-\n\n\u0026gt;Which revision are you using?  (hg identify)\nfad73d342108 tip\n\n\u0026gt;Please provide any additional information below.\nIt's only my mental experiment. Installation and studying of Go will take some time, but\nI don't want the bug to lost.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:09:15Z",
+	"created_at": "2011-03-28T20:09:15Z",
+	"updated_at": "2016-06-24T19:26:59Z"
+}

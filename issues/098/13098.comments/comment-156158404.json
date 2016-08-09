@@ -1,0 +1,12 @@
+{
+	"id": 156158404,
+	"body": "I've found the cause. The byte and object counts are only updated at a GC, though the buckets are created eagerly. Hence, if a GC happens part way through `allocInterleaved`, but then doesn't happen after we start calling `main.alloc`, we'll see the buckets but they won't contain any counts.\r\n\r\nI can reliably reproduce the failure on Linux with `GOGC=10000 go run heapsampling.go`.\r\n\r\nOne possible solution is to call `runtime.GC()` at the top of the test's `getMemProfileRecords`. I've sent https://go-review.googlesource.com/16846 with this fix.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-12T16:34:31Z",
+	"updated_at": "2015-11-12T16:34:31Z"
+}

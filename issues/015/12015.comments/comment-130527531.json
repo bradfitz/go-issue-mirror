@@ -1,0 +1,12 @@
+{
+	"id": 130527531,
+	"body": "@dajoo75 thank you.\r\n\r\nYour syscall.GetTimeZoneInformation seems to return \"Västeuropa, normaltid\" and \"Västeuropa, sommartid\" for your time-zone descriptions. Go struggle to convert these into time-zone. What it does, it looks for appropriate registry key under HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones. Perhaps you can follow code in zoneinfo_windows.go to see where it fails. Just insert some print statements here and there. Something like that:\r\n```\r\ndiff --git a/src/time/zoneinfo_windows.go b/src/time/zoneinfo_windows.go\r\nindex d04ebec..0f1066d 100644\r\n--- a/src/time/zoneinfo_windows.go\r\n+++ b/src/time/zoneinfo_windows.go\r\n@@ -61,6 +61,7 @@ func toEnglishName(stdname, dstname string) (string, error) {\r\n \t}\r\n \tfor _, name := range names {\r\n \t\tmatched, err := matchZoneKey(k, name, stdname, dstname)\r\n+\t\tprintln(\"ALEX3: \", name, matched, err)\r\n \t\tif err == nil \u0026\u0026 matched {\r\n \t\t\treturn name, nil\r\n \t\t}\r\n@@ -83,10 +84,12 @@ func extractCAPS(desc string) string {\r\n func abbrev(z *syscall.Timezoneinformation) (std, dst string) {\r\n \tstdName := syscall.UTF16ToString(z.StandardName[:])\r\n \ta, ok := abbrs[stdName]\r\n+\tprintln(\"ALEX1: \", stdName, ok)\r\n \tif !ok {\r\n \t\tdstName := syscall.UTF16ToString(z.DaylightName[:])\r\n \t\t// Perhaps stdName is not English. Try to convert it.\r\n \t\tenglishName, err := toEnglishName(stdName, dstName)\r\n+\t\tprintln(\"ALEX2: \", englishName, err.Error())\r\n \t\tif err == nil {\r\n \t\t\ta, ok = abbrs[englishName]\r\n \t\t\tif ok {\r\n```\r\n\r\nThen just run\r\n```\r\ngo test -run=TestLocalZoneAbbr time\r\n```\r\ncommand to see what is going on.\r\n\r\nThank you.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-13T04:19:14Z",
+	"updated_at": "2015-08-13T04:19:14Z"
+}

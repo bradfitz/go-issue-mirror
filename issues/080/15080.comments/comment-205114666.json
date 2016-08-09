@@ -1,0 +1,12 @@
+{
+	"id": 205114666,
+	"body": "Dear @ianlancetaylor,\r\n\r\nThank you for correcting me. After some digging I found that many sources in C language mostly uses `RTNLGRP_*` constant variables through `setsocketopt` function. However `RTMGRP_*` constant variables used through socket address structure. Also I suggest to include `RTMGRP_*` constant variables into syscall.go since it is not legacy code or old API, but it is userspace backward compatibility issue according [rtnetlink.h] (https://github.com/torvalds/linux/blob/master/include/uapi/linux/rtnetlink.h#L578) comment in the source.\r\n\r\n```\r\n#ifndef __KERNEL__\r\n/* RTnetlink multicast groups - backwards compatibility for userspace */\r\n#define RTMGRP_LINK\t\t1\r\n#define RTMGRP_NOTIFY\t\t2\r\n#define RTMGRP_NEIGH\t\t4\r\n#define RTMGRP_TC\t\t8\r\n\r\n#define RTMGRP_IPV4_IFADDR\t0x10\r\n#define RTMGRP_IPV4_MROUTE\t0x20\r\n#define RTMGRP_IPV4_ROUTE\t0x40\r\n#define RTMGRP_IPV4_RULE\t0x80\r\n\r\n#define RTMGRP_IPV6_IFADDR\t0x100\r\n#define RTMGRP_IPV6_MROUTE\t0x200\r\n#define RTMGRP_IPV6_ROUTE\t0x400\r\n#define RTMGRP_IPV6_IFINFO\t0x800\r\n\r\n#define RTMGRP_DECnet_IFADDR    0x1000\r\n#define RTMGRP_DECnet_ROUTE     0x4000\r\n\r\n#define RTMGRP_IPV6_PREFIX\t0x20000\r\n#endif\r\n```\r\nMorover as part of your answer `1 \u003c\u003c RTNLGRP_IPV4_IFADDR = 32` is incorrect. While correct value for receiving IPv4 address events is 16. According iproute2 source. In `utils.h` line 175 it should be `1 \u003c\u003c (RTNLGRP_IPV4_IFADDR - 1) = 16`:\r\n```\r\nstatic inline __u32 nl_mgrp(__u32 group)\r\n{\r\n\tif (group \u003e 31 ) {\r\n\t\tfprintf(stderr, \"Use setsockopt for this group %d\\n\", group);\r\n\t\texit(-1);\r\n\t}\r\n\treturn group ? (1 \u003c\u003c (group - 1)) : 0;\r\n}\r\n```\r\n\r\nIf you see other `RTNLGRP_*` flags which is bit value is more than 31 should be used trough `setsockopt`. Does this flags are declared in syscall.go? I could not find it.\r\n\r\nSo I suggest to add `RTMGRP_*` constants to syscall.go or include some explanation about it in go documentation. \r\n\r\nHere is some incorrect codes which people does not knew that it is incorrect.\r\nhttps://github.com/MichielDeMey/home-controller/blob/d26d5f131856db6b34fff3dc2853c0c760c231f8/lib/monitor.go#L27\r\nhttps://github.com/ghedo/moodns/blob/7d6e1117a748a41ca7d8e258603d7c45f01dbee4/src/netlink/netlink_linux.go#L43\r\n\r\n\r\n",
+	"user": {
+		"login": "inoyatov",
+		"id": 7060390,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-04T03:09:47Z",
+	"updated_at": "2016-04-04T03:09:47Z"
+}

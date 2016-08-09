@@ -1,0 +1,26 @@
+{
+	"id": 165756118,
+	"number": 16385,
+	"state": "open",
+	"title": "net/http: unable to use getpeername to authenticate Unix socket requests",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nFedora 24 X86_64\r\n\r\n3. What did you do?\r\nGo doesn't let me access the file descriptor of the connection socket in net.http.HandlerFunc's ServeHTTP() function. While I agree that users should not mess with the file descriptor when it is under control of a HTTP library, it also prevents other use cases. I have written a HTTP server that listens on a Unix domain socket file. Unix sockets are local sockets that have some interesting properties. For example they allow to get the pid, uid, gid and security context (SELinux label) of the peer. This feature can be used for authentication and authorization (GetsockoptUcred #3836, #16374). \r\n\r\nWith Go 1.6 neither http.ResponseWriter nor http.Request have a public field or func that let me access the connection object, file or file descriptor. The connection is contained within the package internal http.conn struct. I also looked into Go 1.7 RC. Request got a context, but I don't see how that might solve the problem at hand.\r\n\r\nSome mailing list posts suggest to use http.Server's ConnState hook to track connections in a map. For IPv4 and IPv6 connection it is possible to map conn.RemoteAddr to conn and then use http.Request.RemoteAddr to retrieve the connection. After all the combination of (src ip, src port, dest ip, dest port) is a unique identifier for TCP over IP. However that is not true for AF_UNIX / SOCK_STREAM. Unix socket's don't implement getpeername(). For a UnixListener the RemoteAddr of a http.Request is always the string '@'. net.Conn and http.Request don't share any other field that could be used as a common identifier.\r\n\r\nEventually I worked around the problem with http.Hijack(). This is a rather ugly solution because I have to roll my own response handling. It also prevents HTTP 1/1 persistent connections. https://github.com/tiran/custodia_goforwarder/blob/master/custodia_goforwarder.go#L95\r\n\r\nPlease provide a better and simpler way to access the file descriptor.",
+	"user": {
+		"login": "tiran",
+		"id": 444071,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsDecision"
+		}
+	],
+	"comments": 5,
+	"created_at": "2016-07-15T10:23:55Z",
+	"updated_at": "2016-07-21T09:28:17Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

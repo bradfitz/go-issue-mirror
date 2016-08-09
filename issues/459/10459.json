@@ -1,0 +1,28 @@
+{
+	"id": 68492592,
+	"number": 10459,
+	"state": "closed",
+	"title": "crypto/x509: Support critical Apple extension for Development and Submission signing",
+	"body": "### What version of Go are you using (go version)?\r\n\r\ngo version devel +eced964 Tue Apr 14 17:19:36 2015 +0000 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using?\r\n\r\ndarwin/amd64\r\n\r\n### What did you do?\r\n\r\nI am using the Azure go-pkcs12 package to load a .p12 file exported from my Mac keychain. The PEM data from this library looks good and is without error, but X509KeyPair fails with:\r\n\r\n\u003e **x509: unhandled critical extension**\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"encoding/pem\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\r\n\t\"github.com/Azure/go-pkcs12\"\r\n)\r\n\r\nfunc main() {\r\n\tp12, err := ioutil.ReadFile(\"Certificates.p12\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tblocks, err := pkcs12.ConvertToPEM(p12, \"password\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tpemData := []byte{}\r\n\tfor _, b := range blocks {\r\n\t\tpemData = append(pemData, pem.EncodeToMemory(b)...)\r\n\t}\r\n\r\n\tlog.Println(string(pemData))\r\n\r\n\t// then use PEM data for tls to construct tls certificate:\r\n\r\n\tcert, err := tls.X509KeyPair(pemData, pemData)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\t_ = cert\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nA valid tls.X509KeyPair without error.\r\n\r\n~~I would like to be able to load .p12 files directly to use with https://github.com/timehop/apns for push notifications. Currently I need to use OpenSSL (bindings) to do the conversion to a format Go understands.~~\r\n\r\n### What did you see instead?\r\n\r\nx509: unhandled critical extension\r\n\r\nThis is failing because there are \"Unknown extensions cause an error if marked as critical.\" ([src](https://github.com/golang/go/blob/master/src/crypto/x509/x509.go#L1074))\r\n\r\nIn this case, the failing extension is `1.2.840.113635.100.6.1.2.0.0` APPLE_EXTENSION_ADC_APPLE_SIGNING which is flagged as critical.\r\n\r\n\r\n",
+	"user": {
+		"login": "nathany",
+		"id": 4566,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2015-04-28T16:33:14Z",
+	"created_at": "2015-04-14T20:47:41Z",
+	"updated_at": "2016-06-25T02:05:42Z"
+}

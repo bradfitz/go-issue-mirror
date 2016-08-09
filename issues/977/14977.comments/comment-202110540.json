@@ -1,0 +1,12 @@
+{
+	"id": 202110540,
+	"body": "I see several problems with this proposal:\n\n1. we don't want to promote sync/atomic, certainly not at\nlanguage level.\n\nPlease note the first statement after the package synopsis\nfor package sync/atomic says:\n\n\"These functions require great care to be used correctly.\nExcept for special, low-level applications, synchronization\nis better done with channels or the facilities of the sync\npackage. Share memory by communicating; don't communicate\nby sharing memory.\"\n\nMaking atomics types easier to use is false sense of\nsimplicity. Their correct use still relies on the fact that\nthe user knows what he/she is doing. As soon as the\nuser introduces two atomic variables with interrelations,\nthe programs becomes very very complicated, and\nthis kind of problems are very hard to find, and there\nare no tools to help the user, short of using a formal\nverifier like SPIN. The race detector won't help here.\n\n2. Go never has any types that have builtin methods.\n\n3. Adding atomic to the type system will complicate\nthe type system a lot.\n\nWhat about \"atomic [1024]byte\" that is impossible to\nimplement? Having atomic keyword in the spec means\nwe must be precise which types can be used with atomic\nand that is architecture or even platform dependent. We\ncertainly don't want to say every platform must implement\n64-bit atomics (actually it's impossible to implement 64-bit\natomics efficiently on certain platforms.)\n\nAlso, we need to be careful what it means to pass atomic\ntypes to functions. For example,\n\nThis is well understood:\nvar x atomic int32\nx++\n\nBut, given these function declarations:\nfunc f1(int32)\nfunc f2(atomic int32)\nfunc f3(*int32)\nfunc f4(*atomic int32)\nfunc f5(atomic *int32)\n\nwhich of the functions could you pass x to?\n\nActually, this form of atomic reminds me of the const modifier\nin C, consider:\natomic int\natomic *int\n*atomic int\n*atomic *int\natomic *atomic *int\natomic **int\natomic **atomic int\n**atomic int\n.....\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-27T17:31:41Z",
+	"updated_at": "2016-03-27T17:31:41Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 160790844,
+	"body": "Even for Go-allocated objects, I'm not sure we want to commit to Base.  Imagine the following scenario.  We allocate objects from a region using a bump pointer and record size\u0026type info in a side buffer. So object start info is encoded in the side buffer, but not in any easily seekable way.  Presumably GC would need to find object starts, but  maybe it only does so in bulk - i.e. a whole region at a time.  To answer an individual Base query would require a scan of the side buffer.\r\n\r\nI'm not saying a GC like that would ever work, but I'm concerned that by adopting Base we'd be preventing any such implementation.\r\n\r\nI'm with Minux that if we're trying to determine overlap, ask the runtime directly.  I think this handles the common case, effectively the stride==1 case.  unsafe.Overlap(p unsafe.Pointer, plen uintptr, q unsafe.Pointer, qlen uintptr) bool?  The nice thing about this function is that the API is GC-agnostic (the implementation would have to understand the GC, of course).\r\n\r\nMaybe we handle stride\u003e1 queries as the stride==1 query above together with the guarantee that uintptr(p)-uintptr(q) is always correct if p and q are in the same allocation?  I'm less sure about whether this makes sense and/or is possible given a moving GC.\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-30T23:07:23Z",
+	"updated_at": "2015-11-30T23:07:23Z"
+}

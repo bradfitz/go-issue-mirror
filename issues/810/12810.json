@@ -1,0 +1,28 @@
+{
+	"id": 109351114,
+	"number": 12810,
+	"state": "closed",
+	"title": "cmd/go: get transport failure unhelpful unless -v is used",
+	"body": "Today, if you execute go get on a package and it fails due to a connection timeout, the resulting error is too literal.\r\n\r\nRecently, I was helping another developer who encountered this failure and was somewhat mystified as to the result:\r\n\r\n```\r\n$ go get golang.org/x/net\r\npackage golang.org/x/net: unrecognized import path \"golang.org/x/net\"\r\n```\r\n\r\nThey could reach other websites, etc. just fine so assumed that somehow Go itself must be broken or they typed the wrong path.  However, when they talked to me, it was clear they were using the correct import path.\r\n\r\nOn a whim, I decided to use '-v' instead to see if that would be more helpful, and of course it became obvious what the likely failure was:\r\n\r\n```\r\n$ go get -v golang.org/x/net\r\nFetching https://golang.org/x/net?go-get=1\r\nhttps fetch failed.\r\nimport \"golang.org/x/net\": https fetch: Get https://golang.org/x/net?go-get=1: dial tcp [2607:f8b0:4003:c08::8d]:443: i/o timeout\r\npackage golang.org/x/net: unrecognized import path \"golang.org/x/net”\r\n```\r\n\r\nIn this particular case, the issue was a misbehaving proxy that for some reason has problems with the forwarding in place, and once they used a different proxy, 'go get' succeeded.\r\n\r\nI would like to suggest that if 'go get' fails due to a transport issue that the related transport errors should be printed; it's less likely to lead to failures that mystify users and generate unnecessary angst.  I don't think it's fair to expect users to intuit that they should run again with '-v' for failures to get the actual errors.  The current failure message, at the very least, can be misleading.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rakyll",
+		"id": 108380,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-10-12T23:59:35Z",
+	"created_at": "2015-10-01T17:58:12Z",
+	"updated_at": "2016-07-13T16:35:46Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51288530,
+	"number": 8672,
+	"state": "closed",
+	"title": "bufio: Scanner and empty final token",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version devel +87b93aeb1822 Fri Sep 05 15:01:09 2014 -0700 darwin/amd64\n\nWhat steps reproduce the problem?\nHere is a minimalist tab-delimited file reader with an empty final token\n\u003ca href=\"http://play.golang.org/p/jl1x-SRQ7S\"\u003ehttp://play.golang.org/p/jl1x-SRQ7S\u003c/a\u003e\n\nWhat happened?\n\nThe ScanField is never called at EOF with an empty data slice so the last token cannot\nbe parsed:\n'a'\t'b'\t'c'\n'd'\t'e'\t\n\nWhat should have happened instead?\n\nThe ScanField should have been called  at EOF with an empty data slice:\n'a'\t'b'\t'c'\n'd'\t'e'\t''\n\nBy looking at the code of bufio.Scanner.Scan :\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=4436:4465#L114\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=4436:4465#L114\u003c/a\u003e\n\t\t\tif s.end \u0026gt; s.start {\n\t\t\t\tadvance, token, err := s.split(s.buf[s.start:s.end], s.err != nil)\nthe split function cannot be called with an empty data slice.\n\nBut all Split implementations are doing the following test:\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L214\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L214\u003c/a\u003e\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L229\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L229\u003c/a\u003e\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L275\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L275\u003c/a\u003e\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L329\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=6903:6981#L329\u003c/a\u003e\n\t\tif atEOF \u0026amp;\u0026amp; len(data) == 0 {\n\t\t\treturn 0, nil, nil\n\t\t}\n\nIt seems that the test 'len(data) == 0' is always false.\n\nDue to the fact that the Split function is never called with an empty data slice,\nthe last empty token cannot be parsed correctly.\n\nA possible (but ugly) workaround is to keep the tab unconsumed.\n\nAnother workaround is to use the encoding.csv package but it doesn't support\ntab-delimited file with double-quote:\nSee \u003ca href=\"https://golang.org/issue/3150\"\u003ehttps://golang.org/issue/3150\u003c/a\u003e\n\nI've also tried to change the line:\n\u003ca href=\"http://golang.org/src/pkg/bufio/scan.go?s=4436:4465#L114\"\u003ehttp://golang.org/src/pkg/bufio/scan.go?s=4436:4465#L114\u003c/a\u003e\n\t\t\tif s.end \u0026gt; s.start {\nto\n\t\t\tif s.end \u0026gt;= s.start {\nBut it breaks all Split implementations.\n\nThanks and regards.\u003c/pre\u003e",
+	"user": {
+		"login": "gwenn",
+		"id": 45554,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:48:06Z",
+	"created_at": "2014-09-06T06:05:42Z",
+	"updated_at": "2016-06-25T01:40:53Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

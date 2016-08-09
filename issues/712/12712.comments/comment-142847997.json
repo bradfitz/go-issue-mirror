@@ -1,0 +1,12 @@
+{
+	"id": 142847997,
+	"body": "I've found the problem. My resolv.conf has a line \"search foo bar\" for 2 subdomains foo and bar. For whatever reason queries to anything.bar are answered with error code 2 SERVFAIL. LookupIP(\"doesnotexist.domain\") apparently uses the search field in resolv.conf and queries \"doesnotexist.domain\", \"doesnotexist.domain.foo\" and \"doesnotexist.domain.bar\" in sequence and reports the LAST ERROR CODE returned, which happens to be SERVFAIL. If the order in resolv.conf is changed to \"search bar foo\", LookupIP reports the NXDOMAIN error (no such host).\r\n\r\nWhile it is apparent that the DNS server is misbehaving, the current LookupIP() implementation is suboptimal, because:\r\n\r\n* the error code returned depends on the ordering in the search line of resolv.conf\r\n* the behaviour of Go 1.5 is different from Go 1.4\r\n* the error code reported does not relate to the actual query, which is not what the programmer expects, especially not in a case where the host queried contains a \".\". I'm not even sure if it is proper to append the search subdomains to names that contain a \".\".\r\n\r\nIn any case, I would change LookupIP() so that if the DNS server returns different error codes for the different queries made due to to \"search\", LookupIP() should always return the error code returned for the query with the actual argument passed to LookupIP(). This is the only query that is guaranteed to happen and therefore the only code that can be expected to be consistent.",
+	"user": {
+		"login": "mbenkmann",
+		"id": 6864958,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-24T08:06:26Z",
+	"updated_at": "2015-09-24T08:06:26Z"
+}

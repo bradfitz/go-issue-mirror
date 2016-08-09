@@ -1,0 +1,12 @@
+{
+	"id": 74193278,
+	"body": "(This came up in a conversation today and I wanted to make sure people don't start off with incorrect assumptions.)\r\n\r\nI want to be really clear on this: there is no such thing as regular file or dir I/O that wouldn't wait for disk on cache miss. I am not talking about serial ports or such here, but files and directories. Regular files are always \"ready\" as far as `select(2)` and friends are concerned, so technically they never \"block\", and \"non-blocking\" is the wrong word. But they may *wait* for actual disk IO to happen, and there is realistically no way to avoid that, in the general case (in POSIX/Linux).\r\n\r\nThe network poller / epoll has nothing to contribute to here. There is no version of `read(2)` and friends where the syscall would return early, without waiting for disk, if there's nothing cached. Go really has very little to do there.\r\n\r\nPeople have been talking about extending Linux to implement non-waiting file IO (e.g. http://lwn.net/Articles/612483/ ) but that's not realistic today.\r\n\r\n\r\nI don't see Go having much choice beyond threads doing syscalls. The real question in my mind is, is there a way to limit syscall concurrency to avoid swamping the CPU/OS with too many threads, while still avoiding deadlocks.\r\n\r\n\r\n\r\nAnd just to minimize chances of confusion, file AIO (\"Async I/O\") is something very different, and not applicable to this conversation. It's a very restrictive API (actually, multiple), bypasses useful features like caching, and doesn't necessarily perform well at all.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-13T02:11:44Z",
+	"updated_at": "2015-02-13T02:17:16Z"
+}

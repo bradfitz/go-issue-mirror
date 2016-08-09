@@ -1,0 +1,27 @@
+{
+	"id": 51288381,
+	"number": 8567,
+	"state": "closed",
+	"title": "liblink: producing broken binary for solaris/amd64",
+	"body": "\u003cpre\u003eGo binaries compiled by the current tip version of Go dump core on OmniOS\n(and thus probably Solaris). This applies both to natively compiled\nbinaries (which stops building Go itself) and binaries cross-compiled\nfrom an am64 Linux machine.\n\nWith 'hg bisect' I have tracked down the exact changeset that seems\nto be the problem. The last working changeset is (as reported by 'go\nversion'):\n\n  go version devel +01dbe00c72b5 Mon Aug 18 21:06:42 2014 -0400 solaris/amd64\n\nThe changeset that introduces the problem is:\n  changeset:   20786:3910cbf15646\n  user:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\n  date:        Mon Aug 18 21:06:56 2014 -0400\n  summary:     liblink: use pc-relative addressing for all memory references in amd64 code\n\nA gdb stack backtrace of the current hg tip (0bb034265faf) reports\nthat the segfault is:\n\n  (gdb) run version\n  Starting program: /export/home/cks/src/go/pkg/tool/solaris_amd64/go_bootstrap version\n  [Thread debugging using libthread_db enabled]\n  [New Thread 1 (LWP 1)]\n  \n  Program received signal SIGSEGV, Segmentation fault.\n  [Switching to Thread 1 (LWP 1)]\n  runtime.asmsysvicall6 ()\n      at /export/home/cks/src/go/src/pkg/runtime/sys_solaris_amd64.s:97\n  97              CALL    AX\n  (gdb) where\n  #0  runtime.asmsysvicall6 ()\n      at /export/home/cks/src/go/src/pkg/runtime/sys_solaris_amd64.s:97\n  #1  0x0000000000469fc1 in runtime.asmcgocall ()\n      at /export/home/cks/src/go/src/pkg/runtime/asm_amd64.s:776\n  #2  0x0000030000000003 in ?? ()\n  #3  0x0000000000000001 in ?? ()\n  #4  0x000000000000002a in ?? ()\n  #5  0x0000030000000003 in ?? ()\n  #6  0x0000000000480b5e in runtime.check ()\n      at /export/home/cks/src/go/src/pkg/runtime/runtime.c:258\n  #7  0x0000000000468605 in _rt0_go ()\n      at /export/home/cks/src/go/src/pkg/runtime/asm_amd64.s:90\n  \n  (gdb) i r\n  rax            0x186800205ba225ff       1758655793464485375\n  rbx            0x7d2a40 8202816\n  rcx            0x0      0\n  rdx            0x0      0\n  rsi            0x0      0\n  rdi            0xf      15\n  rbp            0x7d2a40 0x7d2a40 \u0026lt;runtime.m0\u0026gt;\n  rsp            0xfffffd7fffdffa80       0xfffffd7fffdffa80\n  r8             0x0      0\n  r9             0x0      0\n  r10            0x1      1\n  r11            0x7d2dd0 8203728\n  r12            0x0      0\n  r13            0x0      0\n  r14            0x0      0\n  r15            0x0      0\n  rip            0x4840b5 0x4840b5 \u0026lt;runtime.asmsysvicall6+85\u0026gt;\n  eflags         0x10202  [ IF RF ]\n  cs             0x53     83\n  ss             0x4b     75\n  ds             0x4b     75\n  es             0x4b     75\n  fs             0x0      0\n  gs             0x0      0\n  \nI'd be happy to test patches.\n\nOh, I see that this is already reported in the code review for the\nchange, \u003ca href=\"https://golang.org/cl/125140043\"\u003ehttps://golang.org/cl/125140043\u003c/a\u003e . Still I'll leave\nthis bug here so that anyone else running into it and searching the\nissue tracker can see it. My apologies if this is inappropriate;\nplease feel free to close it etc.\u003c/pre\u003e",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:36Z",
+	"created_at": "2014-08-22T00:27:52Z",
+	"updated_at": "2016-06-25T01:39:58Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

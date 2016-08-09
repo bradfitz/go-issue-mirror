@@ -1,0 +1,27 @@
+{
+	"id": 51278174,
+	"number": 1692,
+	"state": "closed",
+	"title": "net: SO_REUSEADDDR vs UDP vs timeouts",
+	"body": "by **jimenezrick**:\n\n\u003cpre\u003eLooking into src/pkg/net/sock.go (func socket) I see that SO_REUSEADDR \nis set unconditionally to all types of sockets.\n\nAFAIK SO_REUSEADDR makes sense with TCP which it allows to reuse a \nrecently used port but the bind fails when other sockets is listening. \nWith UDP sockets it is not so clear to me if SO_REUSEADDR has any \nadvantage because it allows you to have two different process with the \nsame UDP port open, which could not what you want.\n\nThe important part of the issue is that timeouts with ReadFrom() and WriteTo() \ndon't occur when SO_REUSEADDR is disabled. The ReadFrom() and WriteTo() calls\nblock forever even when I previously used SetTimeout(). \n\n\nUsing Ubuntu 10.04 (amd64) with 6g\nrevision c5c62aeb6267 release.r56/weekly.2011-03-07.1/release.\n\n\nSimple test program to see the issue, comment the call to `setNoReuseAddress()'\nto let the timeout occur:\n\npackage main \nimport ( \n        \u0026quot;fmt\u0026quot; \n        \u0026quot;net\u0026quot; \n        \u0026quot;syscall\u0026quot; \n) \nfunc setNoReuseAddress(conn net.PacketConn) { \n        file, _ := conn.(*net.UDPConn).File() \n        fd := file.Fd() \n        syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 0); \n} \n\nfunc main() { \n        buff := make([]byte, 1024) \n        conn, _ := net.ListenPacket(\u0026quot;udp\u0026quot;, \u0026quot;localhost:10000\u0026quot;) \n        setNoReuseAddress(conn) \n        conn.SetTimeout(500 * 1000 * 1000) \n        _, _, err := conn.ReadFrom(buff) \n        if netErr, ok := err.(net.Error); ok \u0026amp;\u0026amp; netErr.Timeout() { \n                fmt.Println(\u0026quot;Timeout reached\u0026quot;) \n        } \n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2014-12-08T10:09:27Z",
+	"created_at": "2011-04-13T18:37:35Z",
+	"updated_at": "2016-06-24T19:27:31Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

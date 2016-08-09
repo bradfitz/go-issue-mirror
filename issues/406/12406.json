@@ -1,0 +1,26 @@
+{
+	"id": 103937042,
+	"number": 12406,
+	"state": "open",
+	"title": "encoding/xml: support QName values / expose namespace bindings",
+	"body": "It's not uncommon for XML to contain QNames as element and attribute values, e.g.\r\n\r\n```\r\n  \u003cmy-document xmlns:foo=\"http//...\" \u003e\r\n    \u003cmy-element\u003efoo:bar\u003c/my-element\u003e\r\n  \u003c/my-document\u003e\r\n```\r\n\r\nIn order to correctly unmarshal the value, you need to know the namespace bindings in effect for my-element, but Decoder doesn't appear to expose this information.  A simple addition to encoding/xml of:\r\n\r\n```\r\n  func (d *Decoder) NamespaceBindings() map[string]string {\r\n    return d.ns\r\n  }\r\n``` \r\n\r\nallows unmarshallers to access the necessary information, for example, I can now write:\r\n\r\n```\r\n  type QName struct {\r\n    Namespace string\r\n    Local     string\r\n  } \r\n\r\n func (qname *QName) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {\r\n    var s string\r\n    d.DecodeElement(\u0026s, \u0026start)\r\n    i := strings.Index(s, \":\")\r\n    prefix := \"\"\r\n    if i \u003e= 0 {\r\n      prefix = s[:i]\r\n      qname.Namespace = s[i+1:]\r\n    } else {\r\n      qname.Namespace = s\r\n    }\r\n    var ok bool\r\n    qname.Namespace, ok = d.NamespaceBindings()[prefix]\r\n    if !ok {\r\n      return errors.New(\"Unbound namespace prefix: \" + prefix)\r\n    }\r\n    return nil\r\n  }\r\n```\r\n\r\nArguably, something like the above, and a corresponding attribute unmarshaller could be provided on the standard xml.Name.\r\n\r\nMore discussion of this issue here:\r\n\r\nhttps://groups.google.com/forum/#!searchin/golang-nuts/QName/golang-nuts/DexmVLQOJxk/whBaKK9ntHsJ\r\n\r\ngo version go1.5 darwin/amd64\r\n\r\n",
+	"user": {
+		"login": "pdw-mb",
+		"id": 6639960,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 6,
+	"created_at": "2015-08-30T18:08:15Z",
+	"updated_at": "2016-05-18T00:32:08Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

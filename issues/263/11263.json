@@ -1,0 +1,22 @@
+{
+	"id": 89109979,
+	"number": 11263,
+	"state": "closed",
+	"title": "cmd/link: Go referencing C + C referencing Go = duplicate symbols",
+	"body": "In a recent master, combining [the two examples here](https://tip.golang.org/cmd/cgo/) will yield a duplicate symbol error on build. Either example alone works fine.\r\n\r\n```\r\n$ go version\r\ngo version devel +a2aaede Wed Jun 17 14:55:39 2015 +0000 darwin/amd64\r\n```\r\n\r\n```go\r\npackage main\r\n\r\n// typedef int (*intFunc) ();\r\n//\r\n// int\r\n// bridge_int_func(intFunc f)\r\n// {\r\n//\t\treturn f();\r\n// }\r\n//\r\n// int fortytwo()\r\n// {\r\n//\t    return 42;\r\n// }\r\nimport \"C\"\r\nimport \"fmt\"\r\n\r\n//export Hello\r\nfunc Hello() {}\r\n\r\nfunc main() {\r\n\tf := C.intFunc(C.fortytwo)\r\n\tfmt.Println(int(C.bridge_int_func(f)))\r\n\t// Output: 42\r\n}\r\n```\r\n\r\nIncluding the `//export Hello` line yields this error:\r\n\r\n```\r\n$ go build -buildmode=c-archive\r\n# _/Users/shazow/projects/gohttplib\r\nduplicate symbol _bridge_int_func in:\r\n    $WORK/_/Users/shazow/projects/gohttplib/_obj/_cgo_export.o\r\n    $WORK/_/Users/shazow/projects/gohttplib/_obj/gohttplib.cgo2.o\r\nduplicate symbol _fortytwo in:\r\n    $WORK/_/Users/shazow/projects/gohttplib/_obj/_cgo_export.o\r\n    $WORK/_/Users/shazow/projects/gohttplib/_obj/gohttplib.cgo2.o\r\nld: 2 duplicate symbols for architecture x86_64\r\nclang: error: linker command failed with exit code 1 (use -v to see invocation)\r\n```\r\n\r\nDoesn't matter if the `-buildmode=c-archive` flag is included. If the `//export Hello` line is removed, it works fine. If the inline C code is removed, it works fine.\r\n\r\nScenario: I'm trying to pass a callback (function pointer) from C into a Go function and I was trying to use an inline bridge function for calling it.",
+	"user": {
+		"login": "shazow",
+		"id": 6292,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-06-17T23:32:45Z",
+	"created_at": "2015-06-17T19:59:14Z",
+	"updated_at": "2016-06-25T02:11:27Z"
+}

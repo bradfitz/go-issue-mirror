@@ -1,0 +1,27 @@
+{
+	"id": 51284440,
+	"number": 5949,
+	"state": "closed",
+	"title": "syscall: prlimit argument error for Getrlimit and Setrlimit on linux/386",
+	"body": "\u003cpre\u003e$ go version\ngo version devel +5990f8211e89 Wed Jul 24 13:48:04 2013 -0400 linux/386\n\n$ ulimit -Sn\n1024\n$ ulimit -Hn\n4096\n\n$ cat rlimit.go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\tvar rlimit syscall.Rlimit\n\terr := syscall.Getrlimit(syscall.RLIMIT_NOFILE, \u0026amp;rlimit)\n\tif err != nil {\n\t\tfmt.Println(rlimit, err)\n\t\treturn\n\t}\n\tfmt.Println(rlimit)\n\trlimit.Cur = rlimit.Max\n\terr = syscall.Setrlimit(syscall.RLIMIT_NOFILE, \u0026amp;rlimit)\n\tif err != nil {\n\t\tfmt.Println(rlimit, err)\n\t\treturn\n\t}\n\terr = syscall.Getrlimit(syscall.RLIMIT_NOFILE, \u0026amp;rlimit)\n\tif err != nil {\n\t\tfmt.Println(rlimit, err)\n\t\treturn\n\t}\n\tfmt.Println(rlimit)\n}\n\nWant:\n\n$ go run rlimit.go\n{1024 4096}\n{4096 4096}\n\nGot:\n\n$ go run rlimit.go\n{0 0}\n{0 0}\n\nFix:\n\ndiff --git a/src/pkg/syscall/syscall_linux_386.go b/src/pkg/syscall/syscall_linux_386.go\n--- a/src/pkg/syscall/syscall_linux_386.go\n+++ b/src/pkg/syscall/syscall_linux_386.go\n@@ -78,7 +78,7 @@\n const rlimInf64 = ^uint64(0)\n \n func Getrlimit(resource int, rlim *Rlimit) (err error) {\n-\terr = prlimit(0, resource, rlim, nil)\n+\terr = prlimit(0, resource, nil, rlim)\n \tif err != ENOSYS {\n \t\treturn err\n \t}\n@@ -106,7 +106,7 @@\n //sysnb setrlimit(resource int, rlim *rlimit32) (err error) = SYS_SETRLIMIT\n \n func Setrlimit(resource int, rlim *Rlimit) (err error) {\n-\terr = prlimit(0, resource, nil, rlim)\n+\terr = prlimit(0, resource, rlim, nil)\n \tif err != ENOSYS {\n \t\treturn err\n \t}\n\nprlimit:\n\n$ man prlimit\n\n   prlimit()\n       The Linux-specific prlimit() system call combines and extends the func‐\n       tionality  of  setrlimit() and getrlimit().  It can be used to both set\n       and get the resource limits of an arbitrary process.\n\n       The resource argument has the same meaning as for setrlimit() and getr‐\n       limit().\n\n       If  the  new_limit argument is a not NULL, then the rlimit structure to\n       which it points is used to set new values for the soft and hard  limits\n       for resource.  If the old_limit argument is a not NULL, then a success‐\n       ful call to prlimit() places the previous  soft  and  hard  limits  for\n       resource in the rlimit structure pointed to by old_limit.\n\n       The  pid  argument specifies the ID of the process on which the call is\n       to operate.  If pid is 0, then the call applies to the calling process.\n       To  set or get the resources of a process other than itself, the caller\n       must have the CAP_SYS_RESOURCE capability, or the real, effective,  and\n       saved set user IDs of the target process must match the real user ID of\n       the caller and the real, effective, and saved set group IDs of the tar‐\n       get process must match the real group ID of the caller.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5949/0/rlimit.go\"\u003erlimit.go\u003c/a\u003e (494 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5949/0/rlimit.diff\"\u003erlimit.diff\u003c/a\u003e (678 bytes)",
+	"user": {
+		"login": "peterGo",
+		"id": 4561296,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:32:43Z",
+	"created_at": "2013-07-24T18:56:50Z",
+	"updated_at": "2016-06-24T22:52:34Z",
+	"milestone": {
+		"id": 1067201,
+		"number": 13,
+		"title": "Go1.1.2"
+	}
+}

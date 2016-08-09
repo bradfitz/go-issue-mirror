@@ -1,0 +1,22 @@
+{
+	"id": 51280319,
+	"number": 3250,
+	"state": "closed",
+	"title": "runtime/cgo: handle signal on non-Go thread",
+	"body": "\u003cpre\u003eFor some reason certain action in C code forces segfault in Go. It was found in my gtk\nbindings, I have stipped it down to one test file that segfaults on my machine. I did hg\nbisect, the problem appears starting from revision 11922:daf22f371d51 (os/signal:\nselective signal handling).\n\nHere's the source code:\n--------------------------------------------------------------------\npackage main\n\n/*                                                                              \n#include \u0026lt;gtk/gtk.h\u0026gt;                                                            \n                                                                                \n#cgo pkg-config: gtk+-3.0                                                       \n*/\nimport \u0026quot;C\u0026quot;\n\nfunc main() {\n        C.gtk_init(nil, nil)\n        C.gtk_file_chooser_button_new(nil, 0)\n}\n--------------------------------------------------------------------\n\nIt happens on linux 3.2.8 (archlinux distribution), as stated above any go version\nstarting from rev 11922, x86 achitecture, gtk 3.2.3\n\nHere's the backtrace from gdb:\n\n\n(gdb) bt\n#0  runtime.sigtramp (sig=void, info=void, context=void) at\n/home/nsf/go/src/pkg/runtime/sys_linux_386.s:176\n#1  0x0805842b in runtime.sigtramp (sig=void, info=void, context=void) at\n/home/nsf/go/src/pkg/runtime/sys_linux_386.s:195\n#2  0x00000011 in ?? ()\n#3  0xb47fe99c in ?? ()\n#4  0x00000000 in ?? ()\n\nAnd it seems that app creates a bunch of threads (could be related or not):\n(gdb) info threads\n  Id   Target Id         Frame \n* 5    Thread 0xb47ffb40 (LWP 1903) \u0026quot;test\u0026quot; runtime.sigtramp (sig=void,\ninfo=void, context=void)\n    at /home/nsf/go/src/pkg/runtime/sys_linux_386.s:176\n  4    Thread 0xb53e2b40 (LWP 1902) \u0026quot;test\u0026quot; 0xb7fdd424 in __kernel_vsyscall ()\n  3    Thread 0xb5be3b40 (LWP 1901) \u0026quot;test\u0026quot; 0xb7fdd424 in __kernel_vsyscall ()\n  2    Thread 0xb6f48b40 (LWP 1900) \u0026quot;test\u0026quot; 0xb7fdd424 in __kernel_vsyscall ()\n  1    Thread 0xb7089800 (LWP 1897) \u0026quot;test\u0026quot; 0xb747d026 in _int_free () from /lib/libc.so.6\n\n\nIf you guys are totally have no idea what's that, I can also try to dig gtk3 and remove\nit from the test case (reproducing the bug with simple libraries only, like pthreads).\nBut I think it will be quite hard to do.\n\nP.S. The same code in C runs fine:\n---------------------------------------------------------------------\n[nsf @ go-test]$ cat test.c\n#include \u0026lt;gtk/gtk.h\u0026gt;\n\nint main(int argc, char **argv)\n{\n        gtk_init(0, 0);\n        gtk_file_chooser_button_new(0, 0);\n}\n\n[nsf @ go-test]$ gcc -o test test.c `pkg-config --cflags --libs gtk+-3.0`\n[nsf @ go-test]$ ./test\n[nsf @ go-test]$ gdb --quiet ./test\nReading symbols from /home/nsf/tmp/go-test/test...(no debugging symbols found)...done.\n(gdb) run\nStarting program: /home/nsf/tmp/go-test/test \n[Thread debugging using libthread_db enabled]\nUsing host libthread_db library \u0026quot;/lib/libthread_db.so.1\u0026quot;.\n[New Thread 0xb6745b40 (LWP 2034)]\n[New Thread 0xb5dffb40 (LWP 2035)]\n[New Thread 0xb53ffb40 (LWP 2036)]\n[Thread 0xb53ffb40 (LWP 2036) exited]\n[Thread 0xb5dffb40 (LWP 2035) exited]\n[Thread 0xb6745b40 (LWP 2034) exited]\n[Inferior 1 (process 2031) exited with code 0240]\n(gdb) quit\n---------------------------------------------------------------------\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2014-12-08T10:16:53Z",
+	"created_at": "2012-03-08T16:15:17Z",
+	"updated_at": "2016-08-05T16:08:06Z"
+}

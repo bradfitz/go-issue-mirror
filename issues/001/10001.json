@@ -1,0 +1,22 @@
+{
+	"id": 58951287,
+	"number": 10001,
+	"state": "closed",
+	"title": "os: race between os.(*File).Close() and os.(*File).Read()",
+	"body": "Here's is a simple reproduction case operating on a regular file (in this case \"race.go\").  This is with go 1.4.2\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"log\"\r\n    \"os\"\r\n)\r\n\r\nfunc main() {\r\n    f, err := os.Open(\"race.go\")\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    ch := make(chan struct{})\r\n    go func() {\r\n        f.Close()\r\n        close(ch)\r\n    }()\r\n    b := make([]byte, 512)\r\n    n, err := f.Read(b)\r\n    log.Printf(\"Read %v, %s, %v\", n, b[:n], err)\r\n    \u003c-ch\r\n}\r\n```\r\n\r\nIn this case, this would obviously be a silly thing to do because there is also a larger race condition in terms of how much data is actually read from the Read() call.  The real case this came up was with a serial port device (https://github.com/tarm/goserial) where the Read() and Close() might happen in different goroutines because the Read() can take a long time (serial ports can be configured to block forever until the next character).  A syscall.Close() will allow the Read() to return, which is why os.(*File).Close() and Read() are useful to be able to run in different goroutines.\r\n\r\nThe problematic line in file_unix.go:close() is\r\n```\r\n        file.fd = -1 // so it can't be closed again\r\n```\r\n\r\nConceptually, does it make sense that Close() and Read() should be allowed to run at the same time?  The cost of a mutex in Close() is not important, but putting a mutex in Read() might have a performance impact.  Would a fix be appropriate for the std library?  Should I try to work around this in the goserial library by not using os.File?\r\n\r\n```\r\ntarm@linux ~ $ go run -race race.go \r\n2015/02/25 10:55:52 Read 287, package main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tf, err := os.Open(\"race.go\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tch := make(chan struct{})\r\n\tgo func() {\r\n\t\tf.Close()\r\n\t\tclose(ch)\r\n\t}()\r\n\tb := make([]byte, 512)\r\n\tn, err := f.Read(b)\r\n\tlog.Printf(\"Read %v, %s, %v\", n, b[:n], err)\r\n\t\u003c-ch\r\n}, \u003cnil\u003e\r\n==================\r\nWARNING: DATA RACE\r\nWrite by goroutine 5:\r\n  os.(*file).close()\r\n      /home/tarm/gosrc/src/os/file_unix.go:109 +0x1d7\r\n  os.(*File).Close()\r\n      /home/tarm/gosrc/src/os/file_unix.go:98 +0x91\r\n  main.func·001()\r\n      /home/tarm/race.go:15 +0x53\r\n\r\nPrevious read by main goroutine:\r\n  os.(*File).read()\r\n      /home/tarm/gosrc/src/os/file_unix.go:191 +0x5f\r\n  os.(*File).Read()\r\n      /home/tarm/gosrc/src/os/file.go:95 +0xc3\r\n  main.main()\r\n      /home/tarm/race.go:19 +0x32a\r\n\r\nGoroutine 5 (running) created at:\r\n  main.main()\r\n      /home/tarm/race.go:17 +0x29a\r\n==================\r\nFound 1 data race(s)\r\nexit status 66\r\n```",
+	"user": {
+		"login": "tarm",
+		"id": 476641,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-02-26T01:16:32Z",
+	"created_at": "2015-02-25T18:53:06Z",
+	"updated_at": "2016-06-25T02:02:00Z"
+}

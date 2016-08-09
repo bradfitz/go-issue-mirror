@@ -1,0 +1,28 @@
+{
+	"id": 157553250,
+	"number": 15896,
+	"state": "closed",
+	"title": "spec: clarify allowed implementation restrictions for switch statements",
+	"body": "The spec (version January 5, 2016) says in the `Expression switches` section:\r\n\r\n\u003e Implementation restriction: A compiler may disallow multiple case expressions evaluating to the same constant. For instance, the current compilers disallow duplicate integer, floating point, or string constants in case expressions.\r\n\r\nThree questions about this:\r\n\r\n* cmd/compile also disallows duplicate concrete type cases in type switches:\r\n\r\n```go\r\nfunc f(e interface{}) {\r\n\tswitch e.(type) {\r\n\tcase int:\r\n\tcase int:\r\n\t}\r\n}\r\n```\r\n\r\nThis generates the error `duplicate case int in type switch`. But this implementation restriction is not currently allowed by the spec. Should it be? Does it matter?\r\n\r\n* cmd/compile also disallows unreachable type cases in type switches:\r\n\r\n```go\r\nfunc f(e error) {\r\n\tswitch e.(type) {\r\n\tcase int:\r\n\t}\r\n}\r\n```\r\n\r\nThis generates the error `impossible type switch case: e (type error) cannot have dynamic type int (missing Error method)`. But this implementation restriction is not currently allowed by the spec. Should it be? Does it matter?\r\n\r\n* I would like to make cmd/compile disallow duplicate composite literal cases in expression switches, to enable binary search over them (#15164). For example:\r\n\r\n```go\r\ntype A [1]int\r\n\r\nfunc f(x A) {\r\n\tswitch x {\r\n\tcase A([1]int{1}):\r\n\tcase A([1]int{1}):\r\n\t}\r\n}\r\n```\r\n\r\nCurrently, this fails to compile, but it is a bug (#15895). One could argue that such composite literals \"evaluate to the same constant\", but it's not a constant in the sense usually used in the spec.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-05-31T23:54:59Z",
+	"created_at": "2016-05-30T20:28:39Z",
+	"updated_at": "2016-05-31T23:54:59Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

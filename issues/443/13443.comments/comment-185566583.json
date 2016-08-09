@@ -1,0 +1,16 @@
+{
+	"id": 185566583,
+	"body": "Just found this issue. This is a feature I would love to see make it into x/net/http2. I recently needed to do some local testing with HTTP/2 push, so I implemented push using a design that happened to be roughly similar to bradfitz/http2#23, but instead of adding a Push method to the H2 ResponseWriter, I added an H2Stream method to the ResponseWriter that returns a handle that exposes various H2-specific features:\r\n\r\n```go\r\nfunc (*h2responseWriter) H2Stream() H2Stream { ... }\r\n\r\ntype H2Stream struct { ... }\r\n\r\n// Push sends a push promise frame and dispatches a pseudo-request to the Server's handler.\r\n// Note that method must be GET or HEAD according to the spec (see Section 8.2).\r\n// Returns the StreamID of the pushed response.\r\nfunc (H2Stream) Push(method, url string, h http.Header) (uint32, error) { ... }\r\n\r\n// StreamID returns the unique identifier of this stream, per spec Section 5.1.1.\r\nfunc (H2Stream) StreamID() uint32 { ... }\r\n\r\n// Other methods could be added, such as:\r\nfunc (H2Stream) SetPriority(dependency uint32, weight uint8) error { ... }\r\n```\r\n\r\nIf adding a method to the ResponseWriter is too magical, another design is to add an H2-specific handler function to the http2.Server object where the signature is:\r\n\r\n```go\r\npackage http2\r\ntype Server struct {\r\n  ...\r\n  // if not specified, defaults to a wrapper around the http.Server.Handler passed to ConfigureServer\r\n  Handler func(H2Stream, ResponseWriter, *Request)\r\n}\r\n```\r\n\r\nImplementation note: I believe the code at bradfitz/http2#23 misses a subtlety in the spec. Section 5.1.1 says \"The identifier of a newly established stream MUST be numerically greater than all streams that the initiating endpoint has opened or reserved.\" This implies that push promise frames MUST be written to the wire in promised-id-order -- this requires some changes to http2/writesched.go.\r\n\r\nI'm happy to do the leg work of the implementation, if needed, once we reach consensus on a design.\r\n\r\n\u003e Do we want to do anything smart with the headers we send with the push_promise? Things like cookies and which type of element the resource appears in, changes how browsers request it.\r\n\r\nMy opinion is an emphatic no. If the caller does not specify any request headers, the push promise frame should not include any headers (other than the standard psuedo-headers like \":path\", etc.). For example, it's impossible in general to know if the cookies on the initial request apply to the specific path of the url being pushed -- this is something that will be specific to each cookie and each server.",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	},
+	"created_at": "2016-02-18T06:42:13Z",
+	"updated_at": "2016-02-18T06:42:13Z"
+}

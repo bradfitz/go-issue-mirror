@@ -1,0 +1,27 @@
+{
+	"id": 51286554,
+	"number": 7334,
+	"state": "closed",
+	"title": "cmd/gc: invalid race detector rewrite",
+	"body": "\u003cpre\u003eThe liveness analysis is about to get very picky about seeing variables used before they\nare initialized. It has turned up the following problem in the generated race detector\ncode.\n\nWhen I submit the liveness analysis changes, I will disable the race detector test in\nrun.bash, with a link to this issue.\n\npackage main\n\nfunc f(x, y []byte) []byte {\n\treturn append(x, y...)\n}\n\nIf you run go tool 6g -W x.go, the output begins:\n\n---\nbefore f\n.   RETURN l(4) tc(1)\n.   RETURN-list\n.   .   APPEND l(4) tc(1) isddd(1) ARRAY-[]byte\n.   .   APPEND-list\n.   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20) ld(1)\ntc(1) used(1) ARRAY-[]byte\n\n.   .   .   NAME-main.y u(1) a(1) g(3) l(3) x(24+0) class(PPARAM) f(1) esc(no) ld(1)\ntc(1) used(1) ARRAY-[]byte\nafter walk f\n.   RETURN-init\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0000 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) ARRAY-[]byte\n.   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20) ld(1)\ntc(1) used(1) ARRAY-[]byte\n\n.   .   IF-init\n.   .   .   AS u(3) l(4) tc(1)\n.   .   .   .   NAME-main.autotmp_0001 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) int\n.   .   .   .   SUB u(3) l(4) tc(1) int\n.   .   .   .   .   ADD u(3) l(4) tc(1) int\n.   .   .   .   .   .   LEN u(2) l(4) tc(1) int\n.   .   .   .   .   .   .   NAME-main.autotmp_0000 u(1) a(1) l(4) x(0+0) class(PAUTO)\nesc(N) tc(1) used(1) ARRAY-[]byte\n.   .   .   .   .   .   LEN u(2) l(4) tc(1) int\n.   .   .   .   .   .   .   NAME-main.y u(1) a(1) g(3) l(3) x(24+0) class(PPARAM) f(1)\nesc(no) ld(1) tc(1) used(1) ARRAY-[]byte\n.   .   .   .   .   CAP u(2) l(4) tc(1) int\n.   .   .   .   .   .   NAME-main.autotmp_0000 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N)\ntc(1) used(1) ARRAY-[]byte\n---\n\nNote that the very first RETURN-init statement is the assignment of x to autotmp_0000.\nThen some things in the IF-init refer to cap(autotmp_0000).\n\nBut if you say 6g -race -W x.go. the output begins:\n\n---\nbefore f\n.   RETURN l(4) tc(1)\n.   RETURN-list\n.   .   APPEND l(4) tc(1) isddd(1) ARRAY-[]byte\n.   .   APPEND-list\n.   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20) ld(1)\ntc(1) used(1) ARRAY-[]byte\n\n.   .   .   NAME-main.y u(1) a(1) g(3) l(3) x(24+0) class(PPARAM) f(1) esc(no) ld(1)\ntc(1) used(1) ARRAY-[]byte\nafter walk f\n.   RETURN-init\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0002 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) int\n.   .   .   LEN u(2) l(4) tc(1) int\n.   .   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20) ld(1)\ntc(1) used(1) ARRAY-[]byte\n\n.   .   AS u(3) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0003 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) int\n.   .   .   ADD u(3) l(4) tc(1) int\n.   .   .   .   LEN u(2) l(4) tc(1) int\n.   .   .   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20)\nld(1) tc(1) used(1) ARRAY-[]byte\n.   .   .   .   LEN u(2) l(4) tc(1) int\n.   .   .   .   .   NAME-main.y u(1) a(1) g(3) l(3) x(24+0) class(PPARAM) f(1) esc(no)\nld(1) tc(1) used(1) ARRAY-[]byte\n\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0004 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) uint64\n.   .   .   CONV u(2) l(4) tc(1) uint64\n.   .   .   .   CAP u(2) l(4) tc(1) int\n.   .   .   .   .   NAME-main.autotmp_0000 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N)\ntc(1) used(1) ARRAY-[]byte\n\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0005 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) uint64\n.   .   .   CONV u(2) l(4) tc(1) uint64\n.   .   .   .   NAME-main.autotmp_0003 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) int\n\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0006 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) uint64\n.   .   .   CONV u(2) l(4) tc(1) uint64\n.   .   .   .   NAME-main.autotmp_0002 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) int\n\n.   .   AS u(2) l(4) tc(1)\n.   .   .   NAME-main.autotmp_0000 u(1) a(1) l(4) x(0+0) class(PAUTO) esc(N) tc(1)\nused(1) ARRAY-[]byte\n.   .   .   NAME-main.x u(1) a(1) g(2) l(3) x(0+0) class(PPARAM) f(1) esc(20) ld(1)\ntc(1) used(1) ARRAY-[]byte\n---\n\nThe IF-init appears to have been hoisted up above the RETURN-init: the initialization of\nautotmp_000 happens at the very bottom of the snippet, but there is a reference to\ncap(autotmp_0000) in the middle of the snippet.\n\nThis is before racewalk even runs, but appendslice contains an if(flag_race) that\ngenerates different code, code that appears to be buggy.\n\nRelease-Go1.3 because this makes the race detector unusable.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:40:49Z",
+	"created_at": "2014-02-14T22:11:03Z",
+	"updated_at": "2016-06-25T01:27:39Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

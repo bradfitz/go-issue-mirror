@@ -1,0 +1,12 @@
+{
+	"id": 76637911,
+	"body": "The problem is that your Go file uses the String method, and stringer fails\r\nto type check the file because the String method doesn't exist at that time. \r\nThis is a chicken-and-egg problem.\r\n\r\nOne workaround is to separate the code that defines the type and constants\r\nand the code that uses the String method into different files, and then in the\r\n// go:generate line, use $GOFILE explicitly, so that stringer won't try to type\r\ncheck the whole package.\r\n\r\ne.g.\r\n// a.go\r\npackage main\r\n\r\n//go:generate stringer -type=MyIntType $GOFILE\r\ntype MyIntType int\r\n\r\nconst (\r\nresource MyIntType = iota\r\n)\r\n\r\n// b.go\r\npackage main\r\n\r\nfunc main() {\r\nprintln(resource.String())\r\n}\r\n\r\nThis is a limitation of stringer implementation, but not an easy bug to fix.\r\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-01T23:22:42Z",
+	"updated_at": "2015-03-01T23:24:46Z"
+}

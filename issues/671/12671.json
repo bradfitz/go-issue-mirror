@@ -1,0 +1,22 @@
+{
+	"id": 107094494,
+	"number": 12671,
+	"state": "closed",
+	"title": "x/build/coordinator: truncated snapshot tar.gz",
+	"body": "I found builders failing on a truncated snapshot of make.bash. The .tar.gz file on Google Cloud Storage was only 6 MB instead of ~40 MB. This led to unhappiness when pushing that tarball to builders.\r\n\r\nThe question: how did a 6 MB .tar.gz end up in GCS?\r\n\r\nThe code in question is:\r\n\r\n```go\r\nfunc (st *buildStatus) writeSnapshot() error {\r\n        st.logEventTime(\"write_snapshot\")\r\n        defer st.logEventTime(\"write_snapshot_done\")\r\n\r\n        tgz, err := st.bc.GetTar(\"go\")\r\n        if err != nil {\r\n                return err\r\n        }\r\n        defer tgz.Close()\r\n\r\n        wr := storage.NewWriter(serviceCtx, snapBucket(), st.snapshotObjectName())\r\n        wr.ContentType = \"application/octet-stream\"\r\n        wr.ACL = append(wr.ACL, storage.ACLRule{Entity: storage.AllUsers, Role: storage.RoleReader})\r\n        if _, err := io.Copy(wr, tgz); err != nil {\r\n                wr.Close()  // \u003c-------- this is the bug\r\n                return err\r\n        }\r\n\r\n        return wr.Close()\r\n}\r\n```\r\n\r\nAnd indeed: the `wr.Close()` inside the `io.Copy` error case should not simply close it. It should abort the write instead, so GCS never makes it available in the namespace.\r\n\r\nDo we have an API for that?\r\n\r\n/cc @adg @rakyll @okdave ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Builders"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-09-18T21:37:28Z",
+	"created_at": "2015-09-17T23:09:04Z",
+	"updated_at": "2015-11-20T22:02:55Z"
+}

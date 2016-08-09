@@ -1,0 +1,22 @@
+{
+	"id": 51280686,
+	"number": 3488,
+	"state": "closed",
+	"title": "C compiler code generation bug",
+	"body": "\u003cpre\u003e\u0026gt;What steps will reproduce the problem?\n12924:d685ccae1668 tip, Linux/amd64\npatch in \u003ca href=\"http://golang.org/cl/5986054/\"\u003ehttp://golang.org/cl/5986054/\u003c/a\u003e (patchset 4)\n$cd src/pkg/runtime \u0026amp;\u0026amp; go test -run=Parfor2\n\n\u0026gt;What is the expected output?\nThe test passes.\n\n\u0026gt;What do you see instead?\npanic: runtime error: index out of range [recovered]\n\tpanic: runtime error: index out of range\ngoroutine 3 [running]:\ntesting._func_003(0x7f8912f71fa8, 0x7f8912f71100, 0x7f8912f71fb8, 0x7f8912f71d80)\n\t/usr/local/google/home/dvyukov/go_select/src/pkg/testing/testing.go:268 +0xf3\n----- stack segment boundary -----\nruntime_test._func_021(0xf840059d80, 0x3eb, 0x3fe000001af, 0x64008b000)\n\t/usr/local/google/home/dvyukov/go_select/src/pkg/runtime/parfor_test.go:45 +0x31\nruntime_test.TestParfor2(0xf840054150, 0x1be95ed8)\n\t/usr/local/google/home/dvyukov/go_select/src/pkg/runtime/parfor_test.go:49 +0x1ac\ntesting.tRunner(0xf840054150, 0x5f8b98, 0x0, 0x0)\n\t/usr/local/google/home/dvyukov/go_select/src/pkg/testing/testing.go:273 +0x6f\ncreated by testing.RunTests\n\t/usr/local/google/home/dvyukov/go_select/src/pkg/testing/testing.go:349 +0x77c\n\nLong story short:\n\n\tuint32 begin, end, begin2, newpos, try, victim, i;\n\tuint64 *mypos, *victimpos, pos;\n\t\t\tfor(;;) {\n\t\t\t\t// see if it has any work\n\t\t\t\tbegin = (uint32)pos;\n\t\t\t\tend = (uint32)(pos\u0026gt;\u0026gt;32);\n\t\t\t\tif(begin \u0026gt;= end-1) {\n\t\t\t\t\tbegin = end = 0;\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t\tif(idle) {\n\t\t\t\t\truntime·xadd(\u0026amp;desc-\u0026gt;done, -1);\n\t\t\t\t\tidle = false;\n\t\t\t\t}\n\t\t\t\tbegin2 = begin + (end-begin)/2;\n\t\t\t\tnewpos = (uint64)begin | (((uint64)begin2)\u0026lt;\u0026lt;32);\n\t\t\t\tif(runtime·cas64(victimpos, \u0026amp;pos, newpos)) {\n\t\t\t\t\tbegin = begin2;\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t}\n\n1. begin = (uint32)pos;\nValue of pos is copied into RDX (which represents begin)\n2. if(begin \u0026gt;= end-1) {\nValue of end-1 is compared to EDX (OK, high part is stripped)\n3. newpos = (uint64)begin | (((uint64)begin2)\u0026lt;\u0026lt;32);\n(((uint64)begin2)\u0026lt;\u0026lt;32 is ORed with RDX\nThat is, whatever garbage was in high part of RDX is moved to newpos. It must not\nhappen, begin is uint32, so high part must be zeroed.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:18:14Z",
+	"created_at": "2012-04-06T18:35:43Z",
+	"updated_at": "2016-06-24T22:17:27Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 64761098,
+	"number": 10270,
+	"state": "closed",
+	"title": "cmd/cover: go test -c -cover runtime fails",
+	"body": "```\r\n$ go test -c -cover runtime\r\n# runtime\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/cgocall.go:152: args escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/chan.go:95: t escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/chan.go:312: c escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/chan.go:635: t escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/chan.go:653: t escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/env_posix.go:40: arg escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/env_posix.go:51: arg escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/extern.go:10: rpc escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/hashmap.go:218: t escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/hashmap.go:287: t escapes to heap, not allowed in runtime.\r\n/var/folders/00/0zkq0000h01000cxqpysvccm003y_w/T/go-build973521540/runtime/_test/_obj_test/hashmap.go:287: too many errors\r\n```\r\n\r\nThe problem is that cover strips all comments, including important //go:noescape/nosplit/linkname comments that affect behavior. We have such comments in runtime, bytes, crypto/md5, syscall and maybe other packages.\r\n\r\ncover must not strip these comments.\r\n\r\nFWIW, here is a patch that works for me:\r\n\r\n```\r\ndiff --git a/cmd/cover/cover.go b/cmd/cover/cover.go\r\nindex 3aaf246..2bce5c6 100644\r\n--- a/cmd/cover/cover.go\r\n+++ b/cmd/cover/cover.go\r\n@@ -19,6 +19,7 @@ import (\r\n \t\"path/filepath\"\r\n \t\"sort\"\r\n \t\"strconv\"\r\n+\t\"strings\"\r\n )\r\n \r\n const usageMessage = \"\" +\r\n@@ -324,11 +325,26 @@ func annotate(name string) {\r\n \tif err != nil {\r\n \t\tlog.Fatalf(\"cover: %s: %s\", name, err)\r\n \t}\r\n-\tparsedFile, err := parser.ParseFile(fset, name, content, 0)\r\n+\tparsedFile, err := parser.ParseFile(fset, name, content, parser.ParseComments)\r\n \tif err != nil {\r\n \t\tlog.Fatalf(\"cover: %s: %s\", name, err)\r\n \t}\r\n \r\n+\tcgs := parsedFile.Comments\r\n+\tparsedFile.Comments = nil\r\n+\tfor _, cg := range cgs {\r\n+\t\tcs := cg.List\r\n+\t\tcg.List = nil\r\n+\t\tfor _, c := range cs {\r\n+\t\t\tif strings.HasPrefix(c.Text, \"//go:\") {\r\n+\t\t\t\tcg.List = append(cg.List, c)\r\n+\t\t\t}\r\n+\t\t}\r\n+\t\tif cg.List != nil {\r\n+\t\t\tparsedFile.Comments = append(parsedFile.Comments, cg)\r\n+\t\t}\r\n+\t}\r\n+\r\n```\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-03-27T22:52:49Z",
+	"created_at": "2015-03-27T13:21:35Z",
+	"updated_at": "2016-06-25T02:04:09Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

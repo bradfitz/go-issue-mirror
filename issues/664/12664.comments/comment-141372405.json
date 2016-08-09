@@ -1,0 +1,12 @@
+{
+	"id": 141372405,
+	"body": "Just tested on tip:\r\n\r\n```\r\ndiff --git a/src/runtime/race/testdata/mop_test.go b/src/runtime/race/testdata/mop_test.go\r\nindex d7cbc98..af12c96 100644\r\n--- a/src/runtime/race/testdata/mop_test.go\r\n+++ b/src/runtime/race/testdata/mop_test.go\r\n@@ -297,6 +297,17 @@ func TestRaceCaseTypeIssue5890(t *testing.T) {\r\n        \u003c-c\r\n }\r\n \r\n+func TestRaceIssue12664(t *testing.T) {\r\n+       a := \"hi\"\r\n+       c := make(chan struct{})\r\n+       go func() {\r\n+               a = \"bye\"\r\n+               close(c)\r\n+       }()\r\n+       fmt.Println(a)\r\n+       \u003c-c\r\n+}\r\n+\r\n func TestNoRaceRange(t *testing.T) {\r\n        ch := make(chan int, 3)\r\n        a := [...]int{1, 2, 3}\r\n```\r\n\r\nproduces:\r\n```\r\n==================\r\nWARNING: DATA RACE\r\nWrite by goroutine 7:\r\n  command-line-arguments_test.TestRaceIssue12664.func1()\r\n      src/runtime/race/testdata/mop_test.go:304 +0x2e\r\n\r\nPrevious read by goroutine 6:\r\n  command-line-arguments_test.TestRaceIssue12664()\r\n      src/runtime/race/testdata/mop_test.go:307 +0xc1\r\n  testing.tRunner()\r\n      src/testing/testing.go:456 +0xdc\r\n\r\nGoroutine 7 (running) created at:\r\n  command-line-arguments_test.TestRaceIssue12664()\r\n      src/runtime/race/testdata/mop_test.go:306 +0xb3\r\n  testing.tRunner()\r\n      src/testing/testing.go:456 +0xdc\r\n\r\nGoroutine 6 (running) created at:\r\n  testing.RunTests()\r\n      src/testing/testing.go:561 +0xaaf\r\n  testing.(*M).Run()\r\n      src/testing/testing.go:494 +0xe4\r\n  main.main()\r\n      command-line-arguments/_test/_testmain.go:312 +0x210\r\n==================\r\n```\r\n\r\ngo version devel +d5fe165 Fri Sep 18 07:15:52 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-18T07:46:40Z",
+	"updated_at": "2015-09-18T07:46:40Z"
+}

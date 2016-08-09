@@ -1,0 +1,23 @@
+{
+	"id": 155105797,
+	"number": 15703,
+	"state": "closed",
+	"title": "net/http: with Transfer-Encoding: chunked, Transport doesn't reuse the tcp connection",
+	"body": "1. With both below versions:\r\n\r\n - `go version go1.6.2 linux/amd64` \r\n - tip `devel +b66b97e Mon May 16 15:05:04 2016 +0000`,\r\n\r\n2. On Arch Linux, go env:\r\n ```text\r\n GOARCH=\"amd64\"\r\n GOBIN=\"\"\r\n GOEXE=\"\"\r\n GOHOSTARCH=\"amd64\"\r\n GOHOSTOS=\"linux\"\r\n GOOS=\"linux\"\r\n GOPATH=\"/home/jerome/go\"\r\n GORACE=\"\"\r\n GOROOT=\"/usr/lib/go\"\r\n GOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\n GO15VENDOREXPERIMENT=\"1\"\r\n CC=\"gcc\"\r\n GOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\n CXX=\"g++\"\r\n ```\r\n\r\n3. With this program https://play.golang.org/p/HHqlKiVR4o\r\n\r\n4. I expect that http client reuses the tcp connection for first and second http request.\r\n The problem is describe more deeply here:\r\n https://github.com/go-kit/kit/issues/249\r\n\r\n5. Sometime, the http client doesn't reuse the tcp connection between first and second http request (I  check it with Wireshark filter on port given into the log e.g. tcp.port == 35068).\r\n\r\n When the tcp connection is not reused, [delve](https://github.com/derekparker/delve) shows me that (https://github.com/golang/go/blob/master/src/net/http/internal/chunked.go#L61) `cr.r.Buffered()`  return 0, and EOF isn't read (https://github.com/golang/go/blob/master/src/net/http/internal/chunked.go#L56), as the last 0 that indicates the end of chunked response isn't read.\r\n So http client send a tcp reset to http server and open a new tcp connection.\r\n\r\n If I drain the response.Body (with `io.Copy(ioutil.Discard, resp.Body)`), the tcp connection is always reused by the http client (even is `cr.r.Buffered()` returns 0)\r\n\r\n\r\n",
+	"user": {
+		"login": "jerome-laforge",
+		"id": 9979375,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-05-18T00:44:30Z",
+	"created_at": "2016-05-16T19:45:01Z",
+	"updated_at": "2016-05-18T01:00:34Z"
+}

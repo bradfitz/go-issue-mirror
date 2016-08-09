@@ -1,0 +1,33 @@
+{
+	"id": 60263927,
+	"number": 10112,
+	"state": "closed",
+	"title": "cmd/internal/obj/arm64: support more efficient relocations",
+	"body": "We might want to investigate a R_ADDRARM64 relocation that would not\r\nrequire pool literals.\r\n\r\nRight now `MOV g(SB), R` is\r\n\r\n\tMOV\tpool(PC), TMP\r\n\tMOV\t(TMP), R\r\n\t...\r\n\tDWORD\tg(SB)\r\n\r\nSo it uses 8 bytes of instructions and 8 bytes of pool. Note that the\r\npool literals are not coalesced (perhaps this can be implemented). We\r\ncan say that the cost of using R_ADDR is:\r\n\r\n\tCost(n * R_ADDR) = {2n+2n bytes, 2n loads}\r\n\r\nA potential R_ADDRARM64 might do this instead:\r\n\r\n\tADRP\tg(SB), TMP\r\n\tMOV\toff(TMP), R\r\n\r\nThe ADRP instruction calculates the 4k page which holds g(SB), the final\r\nMOV can just encode an immediate offset since it's in C_ADDCON0 class.\r\n\r\nFor `MOV g(SB), R` the generated code is:\r\n\r\n\tADRP\tg(SB), R\r\n\tADR\tg(SB), R\r\n\r\nNote that we don't even need the temporary register, and we don't even do any loads.\r\n\r\nIn both cases we don't need pool literals at all, and they only do one\r\nor zero loads!\r\n\r\n\tCost(n * R_ADDRARM64) = {2n bytes, 0.5n loads}\r\n\r\nRelated to issue #10108.\r\nReplaces 4ad/go#66.\r\n",
+	"user": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"closed_at": "2015-04-08T09:09:12Z",
+	"created_at": "2015-03-08T16:25:42Z",
+	"updated_at": "2016-06-25T02:02:52Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

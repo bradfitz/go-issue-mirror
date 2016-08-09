@@ -1,0 +1,22 @@
+{
+	"id": 51280933,
+	"number": 3649,
+	"state": "closed",
+	"title": "os: report more precise error from StartProcess",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. Use os/exec with  \n\n  syscall.SysProcAttr{Chroot: ... }\n\nfor cmd.SysProcAttr.\n\n2. Try to run; this will fail, since src/pkg/os/exec_posix.go \ndoes\n\nfunc StartProcess(name string, argv []string, attr *ProcAttr) (p *Process, err error) {\n+       // Double-check existence of the directory we want\n+       // to chdir into.  We can make the error clearer this way.\n+       if attr != nil \u0026amp;\u0026amp; attr.Dir != \u0026quot;\u0026quot; {\n+               if _, err := Stat(attr.Dir); err != nil {\n+                       pe := err.(*PathError)\n+                       pe.Op = \u0026quot;chdir\u0026quot;\n+                       return nil, pe\n+               }\n+       }\n+\n\nOf course, this should rather stat attr.Sys.Chroot + \u0026quot;/\u0026quot; + attr.Dir.\n\nWorking around this problem is tricky, since newProcess(pid, h) (used in startProcess)\nis not available outside os package.\n\nI'm not sure if the check is a good idea at all, given that setgid/setuid etc. could\nalso cause the stat to fail spuriously too.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux.\n\n\nWhich version are you using?  (run 'go version')\n\nhanwen@oats:~/vc/go$ hg sum\nparent: 12994:2ccfd4b451d3 release go1.0.1\n go1.0.1\nbranch: release-branch.go1\ncommit: 4 unknown (clean)\nupdate: 2 new changesets (update)\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "hanwen",
+		"id": 31547,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:19:14Z",
+	"created_at": "2012-05-21T23:49:05Z",
+	"updated_at": "2016-06-24T22:19:21Z"
+}

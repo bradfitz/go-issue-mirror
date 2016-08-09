@@ -1,0 +1,21 @@
+{
+	"id": 51285243,
+	"number": 6476,
+	"state": "open",
+	"title": "net: dummy byte in WriteMsgUnix breaks unixgram protocols",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n\u003ca href=\"https://groups.google.com/d/topic/golang-nuts/PyOeimgyvFw/discussion\"\u003ehttps://groups.google.com/d/topic/golang-nuts/PyOeimgyvFw/discussion\u003c/a\u003e\n\nWriteMsgUnix always sends a dummy normal byte if one tries to send only\nout-of-band/ancillary data (e.g. a file descriptor), because ReadMsgUnix doesn't receive\noob-only writes (it just blocks) on stream sockets.\n\nThis was done based on prior art:\n\n\u003ca href=\"https://git.gitorious.org/libancillary/libancillary.git\"\u003ehttps://git.gitorious.org/libancillary/libancillary.git\u003c/a\u003e\n\n\u003ca href=\"http://svn.python.org/projects/python/branches/release32-maint/Modules/_multiprocessing/multiprocessing.c\"\u003ehttp://svn.python.org/projects/python/branches/release32-maint/Modules/_multiprocessing/multiprocessing.c\u003c/a\u003e\n\nand discussions:\n\n\u003ca href=\"https://groups.google.com/d/msg/golang-dev/Rkwgwug2OpI/7YYunK4Z9NUJ\"\u003ehttps://groups.google.com/d/msg/golang-dev/Rkwgwug2OpI/7YYunK4Z9NUJ\u003c/a\u003e\n\n\u003ca href=\"https://golang.org/cl/2331044#msg12\"\u003ehttps://golang.org/cl/2331044#msg12\u003c/a\u003e\n\nHowever, it turns out that you can send oob-only messages on a datagram socket.\n\nsystemd implements a datagram socket protocol for talking to its journal to exchange\nfile descriptors of temporary files containing messages that are too long to send via\nthe datagram socket directly.\n\nsystemd doesn't expect the dummy byte and returns an error if it is present.\n\nRemoving the dummy byte will cause this test with a stream socket to hang:\n\n\u003ca href=\"http://play.golang.org/p/ebLI7mwBPF\"\u003ehttp://play.golang.org/p/ebLI7mwBPF\u003c/a\u003e\n\nbut this test with a datagram socket still works:\n\n\u003ca href=\"http://play.golang.org/p/q-eWEP3_96\"\u003ehttp://play.golang.org/p/q-eWEP3_96\u003c/a\u003e\n\nwhich is expected, because systemd has a test for this scenario.\n\nWhich version are you using?  (run 'go version')\n\ntip\n\nPlease provide any additional information below.\n\nsystemd code:\n\n\u003ca href=\"http://cgit.freedesktop.org/systemd/systemd/tree/src/journal/journal-send.c#n345\"\u003ehttp://cgit.freedesktop.org/systemd/systemd/tree/src/journal/journal-send.c#n345\u003c/a\u003e\n\u003ca href=\"http://cgit.freedesktop.org/systemd/systemd/tree/src/journal/journald-server.c#n1197\"\u003ehttp://cgit.freedesktop.org/systemd/systemd/tree/src/journal/journald-server.c#n1197\u003c/a\u003e\n\u003ca href=\"http://cgit.freedesktop.org/systemd/systemd/tree/src/journal/test-journal-send.c#n48\"\u003ehttp://cgit.freedesktop.org/systemd/systemd/tree/src/journal/test-journal-send.c#n48\u003c/a\u003e\n\nsystemd test output shows that the test passes:\n\n\u003ca href=\"https://gist.github.com/philips/1938c88d544e49f40889/raw/cf64b66c261aee63c0476b28a32e448ecb2d5b60/gistfile1.txt\"\u003ehttps://gist.github.com/philips/1938c88d544e49f40889/raw/cf64b66c261aee63c0476b28a32e448ecb2d5b60/gistfile1.txt\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2013-09-25T14:28:09Z",
+	"updated_at": "2015-04-14T19:45:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

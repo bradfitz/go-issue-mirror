@@ -1,0 +1,25 @@
+{
+	"id": 144345553,
+	"number": 15021,
+	"state": "open",
+	"title": "Proposal: provide access to runtime network poller via socket registration mechanism",
+	"body": "**Overview**\r\n\r\nAt this time, there is no mechanism for socket types outside of the standard library to access the runtime network poller.  This proposal, if accepted, would enable a resolution to issue #10565.  This would enable packages outside of the standard library to take advantage of the runtime network poller, instead of implementing their own network polling mechanism.\r\n\r\n**Proposed Change**\r\n\r\nI propose adding a new API to package `net` which enables registration of arbitrary sockets for use with the runtime network poller.  The design of this API is based upon a comment from @rsc found here: https://github.com/golang/go/issues/11492#issuecomment-117855313.\r\n\r\n\u003e It seems to me that the net package should just keep using (and providing) only FileConn but perhaps we can put a registration mechanism in package syscall to let clients register converters between sockaddrs and net.Addr for non-standard sockaddr types.\r\n\r\nThis is what I was able to come up with after a little bit of experimentation.  Parameter list is to be determined, but this is what I was able to get working with my prototype on a Linux system.  Efforts will be made to make this mechanism as generic and cross-platform friendly as possible, but it may not be implemented immediately on non-UNIX platforms.  From what I can tell, `syscall.Sockaddr` does appear to be available on all platforms.\r\n\r\n```go\r\npackage net\r\n\r\n// Registration mechanism, perhaps called in init() or main() when a\r\n// socket is first initalized.\r\nfunc RegisterSocket(\r\n    family int,\r\n    sockaddr syscall.Sockaddr,\r\n    addr Addr,\r\n    convertSockaddr func(syscall.Sockaddr) Addr,\r\n    convertNetAddr func(Addr) syscall.Sockaddr,\r\n)\r\n\r\n// Generic net.Conn and net.PacketConn implementation which embeds the\r\n// internal net.conn type.  Checks for registered socket hooks to determine\r\n// validity of sent and received net.Addr implementations.\r\ntype SocketConn struct {\r\n    conn\r\n}\r\n```\r\n\r\n**Example**\r\n\r\nUsing a modified version of package `net`, I was able to gain access to the runtime network poller and \r\nsimplify my [raw sockets package](https://github.com/mdlayher/raw) code to something like the following:\r\n\r\n```go\r\n// Called in init() in package raw\r\nnet.RegisterSocket(\r\n    syscall.AF_PACKET,\r\n    \u0026syscall.SockaddrLinklayer{},\r\n    \u0026Addr{},\r\n    // internal conversion functions for syscall.SockaddrLinklayer \u003c-\u003e raw.Addr\r\n    convertSockaddr,\r\n    convertNetAddr,\r\n)\r\n\r\nsock, _ := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, proto)\r\n_ = syscall.Bind(sock, \u0026syscall.SockaddrLinklayer{\r\n    Protocol: pbe,\r\n    Ifindex:  ifi.Index,\r\n})\r\nf := os.NewFile(uintptr(sock), \"linklayer\")\r\n// c is type net.SocketConn, backed by raw socket (uses raw.Addr for addressing)\r\nc := net.FilePacketConn(f)\r\n```\r\n\r\n**Summary**\r\n\r\nThe runtime network poller is an excellent mechanism, and enabling access to it will allow the future development of packages for raw ethernet sockets, netlink sockets, and other platform-specific socket types.\r\n\r\nIf this proposal is accepted, I'd happily seek guidance from @mikioh regarding creating the best possible API for this feature.  In addition, this would enable me to contribute code from my raw ethernet socket package as a resolution to https://github.com/golang/go/issues/8432.\r\n\r\nQuestions and comments appreciated, and thanks for your time.\r\n\r\n/cc @rsc @mikioh ",
+	"user": {
+		"login": "mdlayher",
+		"id": 1926905,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"created_at": "2016-03-29T18:17:07Z",
+	"updated_at": "2016-04-14T08:09:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 9,
+		"+1": 9
+	}
+}

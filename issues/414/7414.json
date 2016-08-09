@@ -1,0 +1,27 @@
+{
+	"id": 51286675,
+	"number": 7414,
+	"state": "closed",
+	"title": "crypto/tls: Can't read final bytes off of TLS socket before close",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nSuppose a server emits some data on a TLS socket and then immediately closes that\nsocket. In the current implementation of tls.Conn, the client side of that socket may or\nmay not be able to read those final bytes off the socket if the client is also\nconcurrently streaming writes to the server.\n\nI've attached a sample client.go and server.go that demonstrate the issue. The client\nessentially does this:\n\n - Writes 1, 2, 3, ... in a loop until a write error occurs\n - Concurrently, does a blocking read for another integer from the server\n\nThe server reads integers in a loop from the client until it reads 2048, then echoes\n2048 back to the client and exits.\n\nTo test, fire up the server with some throwaway self-signed cert and key:\n\n $ go run server.go -port=10000 -cert=server.crt -key=server.key\n\nThen run the client. Sometimes, the reader wins and is able to read the final message\nfrom the server (2048) before the writer encounters an error:\n\n $ go run client.go -addr='secure.nhaminated.com:9999' -useTLS\n2014/02/24 20:10:14.722902 read value:  2048\n2014/02/24 20:10:14.723218 write error on iteration  6642 :  write tcp\n162.243.46.153:9999: broken pipe\n\nOther times, the writer wins and an encounters an error before the reader is able to\nread the final bytes off the socket:\n\n $ go run client.go -addr='secure.nhaminated.com:9999' -useTLS\n2014/02/24 20:10:23.934537 write error on iteration  6494 :  write tcp\n162.243.46.153:9999: broken pipe\n2014/02/24 20:10:23.934632 read error:  write tcp 162.243.46.153:9999: broken pipe\n\nIn both cases, the server actually wrote this final value of 2048, and the client's TCP\nstack received and acked that value, before closing the socket in an orderly fashion\nwith a FIN. This can be verified by looking at the attached packet trace in wireshark,\nusing the result.key master key to decrypt the SSL connection.\n\nThis issue appears to be bacause tls.Conn has a single connErr field. Both\ntls.Conn.Read() and tls.Conn.Write() update this field and return errors from that\nfield. The issue is that if the writer encounters an error first before the reader, then\nthe writer sets connErr and the reader can no longer read the final bytes off the\nsocket, even though those bytes could be read if go were to emit the read() syscall.\n\nYou can omit the -useTLS flag on the client and the -key/-cert flags on the server to\nconfirm that this issue does not occur when using raw sockets.\n\nThe type of protocol I've described is extremely widely used in production. For\ninstance, in Apple's APNs protocol, the client continuously streams push messages with\nids to the server. If the server encounters a malformed push message, it returns the id\nof the malformed push message and then closes the socket. It is critical for the client\nto be able to read this error message because the server expects the client to\nre-connect and restart streaming from the push just after the failed id.\n\nWhat is the expected output?\n\nThe reader should be able to read the last bytes off the socket; in the test program, it\nshould always be able to read the integer value 2048.\n\nWhat do you see instead?\n\nSometimes the reader can read the last value, and sometimes it just returns an error.\n\nWhich operating system are you using?\n\nOS X 10.9.2 and Ubuntu 13.10 (Linux 3.11.0-12-generic)\n\nWhich version are you using?  (run 'go version' or 'gccgo --version')\n\ngo version go1.2 darwin/amd64 and go version go1.2 linux/amd64\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7414/0/server.go\"\u003eserver.go\u003c/a\u003e (2240 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7414/0/client.go\"\u003eclient.go\u003c/a\u003e (1206 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7414/0/result.key\"\u003eresult.key\u003c/a\u003e (1679 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7414/0/result.log\"\u003eresult.log\u003c/a\u003e (717 bytes)",
+	"user": {
+		"login": "bnham",
+		"id": 3528856,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:41:15Z",
+	"created_at": "2014-02-25T23:02:27Z",
+	"updated_at": "2016-06-25T01:28:28Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

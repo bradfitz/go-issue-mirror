@@ -1,0 +1,22 @@
+{
+	"id": 51288640,
+	"number": 8749,
+	"state": "closed",
+	"title": "runtime: can't semacquire from the M stack",
+	"body": "\u003cpre\u003eFrom a failing net/http test:\n\nruntime stack:\nruntime.gothrow(0x9d3ed0, 0x24)\n\tc:/go/src/runtime/panic.go:409 +0x8e fp=0x44bfd68 sp=0x44bfd50\nruntime.badmcall(0xa469b8)\n\tc:/go/src/runtime/proc.go:184 +0x3b fp=0x44bfd80 sp=0x44bfd68\nruntime.gopark(0x4365f0, 0x155d380, 0x97e2f0, 0xa)\n\tc:/go/src/runtime/proc.go:129 +0x116 fp=0x44bfdc0 sp=0x44bfd80\nruntime.goparkunlock(0x155d380, 0x97e2f0, 0xa)\n\tc:/go/src/runtime/proc.go:135 +0x4f fp=0x44bfde8 sp=0x44bfdc0\nruntime.semacquire(0x1540310, 0x27b5e100)\n\tc:/go/src/runtime/sema.go:84 +0x203 fp=0x44bfe20 sp=0x44bfde8\nreadmemstats_m()\n\tc:/go/src/runtime/mgc0.c:1438 +0x7b fp=0x44bfe48 sp=0x44bfe20\nruntime.onM(0xc082015200)\n\tc:/go/src/runtime/asm_amd64.s:257 +0x6d fp=0x44bfe50 sp=0x44bfe48\nruntime.mstart()\n\tc:/go/src/runtime/proc.c:828 fp=0x44bfe58 sp=0x44bfe50\n\ngoroutine 269 [running]:\nruntime.switchtoM()\n\tc:/go/src/runtime/asm_amd64.s:198 fp=0xc082083ec8 sp=0xc082083ec0\nruntime.ReadMemStats(0x15633e0)\n\tc:/go/src/runtime/mgc0.c:1423 +0x41 fp=0xc082083ee0 sp=0xc082083ec8\ntesting.(*B).StopTimer(0xc082064400)\n\tc:/go/src/testing/benchmark.go:74 +0x136 fp=0xc082083f50 sp=0xc082083ee0\ntesting.(*B).runN(0xc082064400, 0x2)\n\tc:/go/src/testing/benchmark.go:125 +0x100 fp=0xc082083f60 sp=0xc082083f50\ntesting.(*B).launch(0xc082064400)\n\tc:/go/src/testing/benchmark.go:216 +0x1d1 fp=0xc082083fd8 sp=0xc082083f60\nruntime.goexit()\n\tc:/go/src/runtime/proc.c:1705 fp=0xc082083fe0 sp=0xc082083fd8\ncreated by testing.(*B).run\n\tc:/go/src/testing/benchmark.go:179 +0x53\n\nThere is a call to ReadMemStats.  It switches to the M stack and then tries to stop the\nworld.  The first part of stopping the world involves acquiring the worldsema.  That\ncalls semacquire, and that calls goparkunlock.  We can't goparkunlock from the M stack -\nwe need a clean G stack to suspend the current execution.\n\ngopark correctly asserts that it can't run from the M stack.  We need to convert all\ncalls to semacquire to come from the G stack.\n\nThis currently happens in the following 3 routines:\ngomaxprocs_m\nreadmemstats_m\nwriteheapdump_m\n\nSo I think we have to move the semacquire in these routines earlier, to the other side\nof the G/M switch.\n\nThen we need to assert at the start of semacquire that we are still on the G stack.\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:48:27Z",
+	"created_at": "2014-09-16T03:02:12Z",
+	"updated_at": "2016-06-25T01:41:37Z"
+}

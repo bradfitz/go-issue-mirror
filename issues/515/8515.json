@@ -1,0 +1,27 @@
+{
+	"id": 51288308,
+	"number": 8515,
+	"state": "closed",
+	"title": "fmt: Sscanf handles spaces and \\n inconsistently",
+	"body": "by **kwalsh@holycross.edu**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3 linux/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\nExample: \u003ca href=\"http://play.golang.org/p/RoYiOHlHCQ\"\u003ehttp://play.golang.org/p/RoYiOHlHCQ\u003c/a\u003e\n\nTry any of these examples with var x, y int\n1. n, err = fmt.Sscanf(\u0026quot;7 8\u0026quot;, \u0026quot;%d %d\u0026quot;, \u0026amp;x, \u0026amp;y)\n2. n, err = fmt.Sscanf(\u0026quot;7\\n8\u0026quot;, \u0026quot;%d %d\u0026quot;, \u0026amp;x, \u0026amp;y)\n3. n, err = fmt.Sscanf(\u0026quot;7 8\u0026quot;, \u0026quot;%d%d\u0026quot;, \u0026amp;x, \u0026amp;y)\n4. n, err = fmt.Sscanf(\u0026quot;7\\n8\u0026quot;, \u0026quot;%d%d\u0026quot;, \u0026amp;x, \u0026amp;y)\n5. n, err = fmt.Sscanf(\u0026quot;7\\n\\n8\u0026quot;, \u0026quot;%d\\n\\n%d\u0026quot;, \u0026amp;x, \u0026amp;y)\n\nWhat happened?\nThe results are, respectively:\n1. n=2\n2. n=2\n3. n=2\n4. n=1\n5. n=1\n\nWhat should have happened instead?\nIf I am to believe the documentation for fmt, something like:\n1. n=2\n2. n=1\n3. n=1\n4. n=1\n5. n=2\n\nPlease provide any additional information below.\n\nSee also \u003ca href=\"https://golang.org/issue/8236\"\u003eissue #8236\u003c/a\u003e for a related error.\n\nCase (1) is as expected. All the other examples give surprising results, either\ncontradicting other examples or directly contradicting the docs.\n\nThe docs says \u0026quot;Scanf, Fscanf and Sscanf require newlines in the input to match\nnewlines in the format\u0026quot;. Case (2) contradicts that, since apparently newlines in\nthe input can instead match a variety of kinds of space in the format.\n\nThe docs says \u0026quot;When scanning with a format, all non-empty runs of space characters\n(except newline) are equivalent to a single space in both the format and the input. With\nthat proviso, text in the format string must match the input text;\u0026quot; Case (3)\ncontradicts that, since apparently certain spaces in the input don't have to match\nanything in the format.\n\nCase (4) is similar to case (3), but gives different results (arguably following the\ndocs this time).\n\nCase (5) is just crazy talk, since the format matches the input perfectly.\n\nSome of the problem seems to stem from \nfmt/scan.go:1075 func (s *ss) advance(format string) (i int)\nwhich seems to treaty *any* sequence of spaces (including newlines) in the format string\nas being equivalent to a single space, directly contradicting the docs for Sscanf and\nfriends. It also mishandles the case of \u0026quot;\\r\\n\u0026quot; in the input because, around\nline 1096 it directly checks for '\\n' without bothering to check for '\\r' too. And all\nof that code completely ignores ss.nlIsSpace, but then after the first input space it\ninvokes skipSpace which has yet different behavior.\n\nCompounding those problems, in\nfmt/scan.go:651 func (s *ss) scanInt(verb rune, bitSize int) int64\nand many similar functions, skipSpace() is called, though the docs mention nothing about\nskipping leading spaces. I think this one is just a documentation bug: classic C scanf\nignores leading spaces for most verbs, and apparently fmt/scan does too but does not\ndocument that behavior and actually repeatedly implies the opposite.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-07-01T00:35:31Z",
+	"created_at": "2014-08-12T03:21:01Z",
+	"updated_at": "2016-07-01T17:13:33Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

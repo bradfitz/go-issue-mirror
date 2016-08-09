@@ -1,0 +1,12 @@
+{
+	"id": 66092378,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eLooks like Request.Write \u0026 transfer.go's WriteBody are fine, and properly return the\nerror.\n\nProblem seems (at first glance) to be Transport: it writes in one goroutine and sends\nthe correct error back on a channel (after marking the underlying conn as dead, so it\nwon't be reused), but meanwhile another goroutine is reading the response, and gets a\nvalid HTTP response from the server, so we return it.  (And because the server didn't\nread the entire request body, it also notes that the connection is to be closed after\nthe response, since it can't reuse that TCP connection....)\n\nWe should also wait to know whether we finished writing the request before we return\nsuccess to from the RoundTripper.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-12T17:11:58Z",
+	"updated_at": "2014-12-08T10:41:50Z"
+}

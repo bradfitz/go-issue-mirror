@@ -1,0 +1,12 @@
+{
+	"id": 226112170,
+	"body": "I agree with @nkaethler that we should change:\r\n```\r\ns = UTF16ToString(p[data.PrintNameOffset/2 : (data.PrintNameLength - data.PrintNameOffset)/2])\r\n```\r\nfor\r\n```\r\ns = UTF16ToString(p[data.PrintNameOffset/2 : (data.PrintNameLength + data.PrintNameOffset)/2])\r\n```\r\nCurrent code works because everything we test has data.PrintNameOffset set to 0 (and it does not matter if we use + or -). But \"Junction.exe published by sysinternals\", unlike standard mklink command, sets data.PrintNameLength to 0. I have found some explanation here https://svn.boost.org/trac/boost/ticket/10900\r\n`\r\nread_symlink extracts the reparse point's PrintName?, which isn't guaranteed to be valid - according to  http://msdn.microsoft.com/en-us/library/cc232006.aspx, \"the print name SHOULD be an informative pathname, suitable for display to a user, that also identifies the target of the symbolic link\", but it's not guaranteed to be the actual target (most notably, with junctions created using the Sysinternals junction.exe tool, the PrintName? is completely empty). It should probably be extracting the SubstituteName? instead, though that would likely require stripping off the leading \"\\??\\\" to yield a properly usable pathname (unless it's a device ID, in which case all bets are off).\r\n`\r\nI also think we should use SubstituteName? instead of PrintName?, just like the article recommends. But SubstituteName? needs to be \"cleaned up\" first. I don't think we should change to SubstituteName? for go1.7.\r\n\r\nAlso I don't have a test for either change.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-15T07:42:04Z",
+	"updated_at": "2016-06-15T07:42:04Z"
+}

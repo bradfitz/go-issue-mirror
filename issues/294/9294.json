@@ -1,0 +1,33 @@
+{
+	"id": 51838103,
+	"number": 9294,
+	"state": "closed",
+	"title": "cmd/gc: gccgo: redeclared as different kind of symbol",
+	"body": "gapstone library (Go bindings to capstone) using cgo compiles fine with gc but not gccgo.\r\n\r\nSteps to reproduce:\r\n```\r\n$ git clone https://github.com/aquynh/capstone\r\n$ cd capstone\r\n$ make\r\n$ make install\r\n```\r\n\r\n```\r\n$ go get https://github.com/bnagy/gapstone\r\n$ cd $GOPATH/src/github.com/bnagy/gapstone\r\n$ go build .\r\n(works)\r\n$ go build -compiler gccgo .\r\n# _/home/stalkr/github/gapstone\r\nIn file included from $WORK/_/home/stalkr/github/gapstone/_obj/_cgo_main.c:9:0:\r\n./engine.go:18:16: error: ‘trampoline’ redeclared as different kind of symbol\r\n/tmp/go-build286027823/_/home/stalkr/github/gapstone/_obj/_cgo_main.c:6:13: note: previous declaration of ‘trampoline’ was here\r\n```\r\n\r\niant's reply:\r\n\u003e The problem is presumably that there is an extern declaration of trampoline in the cgo comment and there is also an export of a trampoline function in the file.\r\n\u003e I'm surprised this works for gc and I guess it doesn't work at all for gccgo.\r\n\u003e I would guess that you can fix it by removing the declaration of trampoline in the cgo comment.\r\n\r\n\r\nRemoving the declaration https://github.com/bnagy/gapstone/blob/master/engine.go#L18 it fails to build with both gc and gccgo:\r\n```\r\n$ go build .\r\n# _/home/stalkr/github/gapstone\r\ncould not determine kind of name for C.trampoline\r\n$ go build -compiler gccgo .\r\n# _/home/stalkr/github/gapstone\r\ncould not determine kind of name for C.trampoline\r\n```\r\n\r\n(And removing the export https://github.com/bnagy/gapstone/blob/master/engine.go#L285 can't link because of undefined reference to trampoline.)",
+	"user": {
+		"login": "StalkR",
+		"id": 1389952,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2014-12-20T01:42:09Z",
+	"created_at": "2014-12-12T18:37:28Z",
+	"updated_at": "2016-06-25T01:56:15Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 68504526,
+	"body": "The problem is that Go tip generate write barriers for the variable _Cfpvar_fp_free:\r\n//go:linkname __cgo_free free\r\n//go:cgo_import_static free\r\nvar __cgo_free byte\r\nvar _Cfpvar_fp_free unsafe.Pointer = (unsafe.Pointer)(unsafe.Pointer(\u0026__cgo_free))\r\n\r\nusing LEAQ instruction (see the LEQA at offset 0x55):\r\n        0x004a 00074 (gotypes.go:33)    LEAQ    \"\"._Cfpvar_fp_free+0(SB),BX\r\n        0x0051 00081 (gotypes.go:33)    MOVQ    BX,(SP)\r\n        0x0055 00085 (gotypes.go:33)    LEAQ    free+0(SB),BX\r\n        0x005c 00092 (gotypes.go:33)    MOVQ    BX,8(SP)\r\n        0x0061 00097 (gotypes.go:33)    PCDATA  $0,$0\r\n        0x0061 00097 (gotypes.go:33)    CALL    ,runtime.writebarrierptr(SB)\r\n...\r\n        rel 88+4 t=9 free+0 // 9 is R_PCREL\r\n\r\nMach-O doesn't support this kind of pc relative relocation of a dynamic\r\nsymbol.\r\n\r\nI see multiple possible ways to fix this, for example:\r\n1. use static initialization for static addresses, as they can't possibly affect GC,\r\nthus no need for write barriers\r\n2. encode the LEAQ externalSymbol+0(SB), REG as MOVABS $address, REG\r\n\r\nSuggestions?",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-02T01:14:12Z",
+	"updated_at": "2015-01-02T01:16:27Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 126063337,
+	"number": 13914,
+	"state": "closed",
+	"title": "runtime/pprof: CPU profiling crashes on NetBSD",
+	"body": "* go version go1.5.2 netbsd/amd64\r\n* NetBSD 7.0 amd64\r\n\r\nThe following program crashes after less than a second.\r\n\r\n    package main\r\n    \r\n    import (\r\n            \"os\"\r\n            \"runtime/pprof\"\r\n    )\r\n\r\n    func main() {\r\n            f, _ := os.Create(\"demo.pprof\")\r\n            pprof.StartCPUProfile(f)\r\n            for {\r\n            }\r\n    }\r\n\r\nThe crash only happens in profiling mode.\r\n\r\nWhen run under the eyes of `ktruss -t A -R`, the program does this:\r\n\r\n    thread | relative time | syscall\r\n    ...\r\n    2   0.000011454   __nanosleep50   = 0\r\n    2   0.000035199   __clock_gettime50(0, 0xc820037ee8) = 0\r\n    2   0.000033803   __clock_gettime50(0, 0xc820037ed0) = 0\r\n    3   -1.979777508  stop kernel\r\n    3   0.020298198   resume kernel\r\n    3   0.000010895   compat_60__lwp_park Err#4 EINTR\r\n    3   0.000015364   SIGPROF caught handler=0x455aa0 mask=0x0 code=0x0\r\n    3   0.000084925   setcontext(0x40) Err#14 EFAULT\r\n    3   0.000009499   exit(0xffffffffffffffff)\r\n    2   -1.999839927  stop kernel\r\n    2   0.000196948   resume kernel\r\n    2   0.000006984   __nanosleep50   Err#4 EINTR\r\n    3   -1.999966198  stop kernel\r\n    3   0.000063973   resume kernel\r\n    3   0.000009777   stop kernel\r\n    3   0.000053079   resume kernel\r\n",
+	"user": {
+		"login": "rillig",
+		"id": 3233724,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-01-23T15:51:09Z",
+	"created_at": "2016-01-11T23:36:06Z",
+	"updated_at": "2016-01-23T15:51:09Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

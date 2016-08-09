@@ -1,0 +1,21 @@
+{
+	"id": 51288035,
+	"number": 8328,
+	"state": "open",
+	"title": "x/net/tcp: provide a way to set keepalive time and interval separately",
+	"body": "by **redforks**:\n\n\u003cpre\u003efunc setKeepAlivePeriod() in net/tcpsockopt_unix.go is the back end of\nTCPConn.SetKeepAlivePeriod() on linux platform. It set both TCP_KEEPINTVL and\nTCP_KEEPIDLE to the period passed in:\n\nfunc setKeepAlivePeriod(fd *netFD, d time.Duration) error {\n\tif err := fd.incref(); err != nil {\n\t\treturn err\n\t}\n\tdefer fd.decref()\n\n\t// The kernel expects seconds so round to next highest second.\n\td += (time.Second - time.Nanosecond)\n\tsecs := int(d.Seconds())\n\n\terr := os.NewSyscallError(\u0026quot;setsockopt\u0026quot;, syscall.SetsockoptInt(fd.sysfd, syscall.IPPROTO_TCP, syscall.TCP_KEEPINTVL, secs))\n\tif err != nil {\n\t\treturn err\n\t}\n\treturn os.NewSyscallError(\u0026quot;setsockopt\u0026quot;, syscall.SetsockoptInt(fd.sysfd, syscall.IPPROTO_TCP, syscall.TCP_KEEPIDLE, secs))\n}\n\nLinux has three socket option affects keep alive:\n\n  tcp_keepalive_time\n\n the interval between the last data packet sent (simple ACKs are not considered data) and the first keepalive probe; after the connection is marked to need keepalive, this counter is not used any further\n\ntcp_keepalive_intvl\n\n the interval between subsequential keepalive probes, regardless of what the connection has exchanged in the meantime\n\ntcp_keepalive_probes\n\n the number of unacknowledged probes to send before considering the connection dead and notifying the application layer\n\nIf I am not wrong, first kernel waits for TCP_KEEPIDLE seconds than send a keep alive\npackage (first probe), if not receive response from peer, wait TCP_KEEPINTVL seconds\nsend keep alive package again until TCP_KEEPCNT times, then close the tcp connection.\n\nLinux default parameters is:\n  TCP_KEEPIDLE: 7200 // 2 hours\n  TCP_KEEPINTVL: 75 // 75 seconds\n  TCP_KEEPCNT: 9 // try 9 times\nSo default a connection will closed after 7200+75*9 seconds, about 2 hours and 11\nminutes.\n\nSet both TCP_KEEPINTVL and TCP_KEEPIDLE to the same value normally is not we want. Such\nas:\n\n  conn.SetKeepAlivePeriod(time.Hour)\n\nThe actual effect is: 1 hour + 9 hour, after 10 hours kernel close the connection, it is\nmuch longer than OS default settings.\n\nI guess for compatible reason, SetKeepAlivePeriod() can not support all the three\nparameters that linux use, but at least not set TCP_KEEPINTVL.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-07-04T09:09:25Z",
+	"updated_at": "2015-05-02T06:19:34Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 97760743,
+	"number": 11911,
+	"state": "closed",
+	"title": "runtime: unbounded heap growth with concurrent GC",
+	"body": "The following program has live set of at most 100MB . With GODEBUG=gcstoptheworld=1 RSS stabilizes at ~204MB according to top, which makes sense. However with GODEBUG=gcstoptheworld=0 RSS steadily chaotically grows over time, I waited only for few minutes and RSS grew to 1106MB, one of the jumps was from 212MB to 678MB in one second. GOMAXPROCS value may have effect on this, I've get the worst numbers with GOMAXPROCS=2/4, however I did not make an exhaustive investigation, maybe GOMAXPROCS is red herring.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"math/rand\"\r\n\t\"sync\"\r\n\t\"sync/atomic\"\r\n\t\"unsafe\"\r\n)\r\n\r\nvar (\r\n\tgs, retained, seed int32\r\n\tmu                 sync.Mutex\r\n\tblocks             [][]*byte\r\n\tsink               = make([]byte, 4096)\r\n)\r\n\r\nconst (\r\n\tmaxGs       = 100\r\n\tmaxRetained = 100 \u003c\u003c 20\r\n\tmaxBlock    = 64 \u003c\u003c 10\r\n)\r\n\r\nfunc main() {\r\n\tgo worker()\r\n\tselect {}\r\n}\r\n\r\nfunc worker() {\r\n\trnd := rand.New(rand.NewSource(int64(atomic.AddInt32(\u0026seed, 1))))\r\n\tss := unsafe.Sizeof(\u0026gs)\r\n\tvar local [][]*byte\r\nloop:\r\n\tfor {\r\n\t\tswitch r := rnd.Intn(1000); {\r\n\t\tcase r == 0 || r == 1:\r\n\t\t\tif !tryAdd(\u0026gs, 1, maxGs, 1) {\r\n\t\t\t\tcontinue loop\r\n\t\t\t}\r\n\t\t\tgo worker()\r\n\t\tcase r == 2:\r\n\t\t\tif !tryAdd(\u0026gs, 1, maxGs, -1) {\r\n\t\t\t\tcontinue loop\r\n\t\t\t}\r\n\t\t\ts := 0\r\n\t\t\tfor _, b := range local {\r\n\t\t\t\ts += len(b)\r\n\t\t\t}\r\n\t\t\tlocal = nil\r\n\t\t\tif !tryAdd(\u0026retained, 0, maxRetained, -int32(s)*int32(ss)) {\r\n\t\t\t\tpanic(\"bad\")\r\n\t\t\t}\r\n\t\t\treturn\r\n\t\tcase r \u003c 300:\r\n\t\t\ts := maxBlock / int(ss)\r\n\t\t\tif !tryAdd(\u0026retained, 0, maxRetained, int32(s)*int32(ss)) {\r\n\t\t\t\tcontinue loop\r\n\t\t\t}\r\n\t\t\tb := make([]*byte, s)\r\n\t\t\tp := \u0026sink[len(sink)-1]\r\n\t\t\tfor i := range b {\r\n\t\t\t\tb[i] = p\r\n\t\t\t}\r\n\t\t\tmu.Lock()\r\n\t\t\tblocks = append(blocks, b)\r\n\t\t\tmu.Unlock()\r\n\t\tcase r \u003c 500:\r\n\t\t\ts := 0\r\n\t\t\tmu.Lock()\r\n\t\t\tif len(blocks) \u003e 0 {\r\n\t\t\t\tidx := rnd.Intn(len(blocks))\r\n\t\t\t\ts = len(blocks[idx])\r\n\t\t\t\tblocks[idx] = blocks[len(blocks)-1]\r\n\t\t\t\tblocks[len(blocks)-1] = nil\r\n\t\t\t\tblocks = blocks[:len(blocks)-1]\r\n\t\t\t}\r\n\t\t\tmu.Unlock()\r\n\t\t\tif !tryAdd(\u0026retained, 0, maxRetained, -int32(s)*int32(ss)) {\r\n\t\t\t\tpanic(\"bad\")\r\n\t\t\t}\r\n\t\tcase r \u003c 800:\r\n\t\t\ts := maxBlock / int(ss)\r\n\t\t\tif !tryAdd(\u0026retained, 0, maxRetained, int32(s)*int32(ss)) {\r\n\t\t\t\tcontinue loop\r\n\t\t\t}\r\n\t\t\tb := make([]*byte, s)\r\n\t\t\tp := \u0026sink[len(sink)-1]\r\n\t\t\tfor i := range b {\r\n\t\t\t\tb[i] = p\r\n\t\t\t}\r\n\t\t\tlocal = append(local, b)\r\n\t\tdefault:\r\n\t\t\ts := 0\r\n\t\t\tif len(local) \u003e 0 {\r\n\t\t\t\tidx := rnd.Intn(len(local))\r\n\t\t\t\ts = len(local[idx])\r\n\t\t\t\tlocal[idx] = local[len(local)-1]\r\n\t\t\t\tlocal[len(local)-1] = nil\r\n\t\t\t\tlocal = local[:len(local)-1]\r\n\t\t\t}\r\n\t\t\tif !tryAdd(\u0026retained, 0, maxRetained, -int32(s)*int32(ss)) {\r\n\t\t\t\tpanic(\"bad\")\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc tryAdd(p *int32, min, max, v int32) bool {\r\n\tfor {\r\n\t\told := atomic.LoadInt32(p)\r\n\t\txchg := old + v\r\n\t\tif xchg \u003c min || xchg \u003e max {\r\n\t\t\treturn false\r\n\t\t}\r\n\t\tif atomic.CompareAndSwapInt32(p, old, xchg) {\r\n\t\t\treturn true\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\ngo version devel +d0729a6 Tue Jul 28 06:23:38 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"closed_at": "2015-08-04T18:56:03Z",
+	"created_at": "2015-07-28T17:43:00Z",
+	"updated_at": "2016-08-05T16:11:30Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

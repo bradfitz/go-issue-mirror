@@ -1,0 +1,12 @@
+{
+	"id": 66053930,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eUntested minimal fix, perhaps not fixing the root issue.  (I'd prefer to fix readLine,\nbut that'd require some auditing)\n\n\nbradfitz@bradfitz-glaptop:~/go/src$ hg diff\ndiff -r 51c777dbccb9 src/pkg/http/response.go\n--- a/src/pkg/http/response.go\tThu Dec 23 13:32:20 2010 +1100\n+++ b/src/pkg/http/response.go\tWed Jan 05 07:36:04 2011 -0800\n@@ -86,9 +86,12 @@\n \t\treturn nil, err\n \t}\n \tf := strings.Split(line, \" \", 3)\n-\tif len(f) \u0026lt; 3 {\n+\tif len(f) \u0026lt; 2 {\n \t\treturn nil, \u0026badStringError{\"malformed HTTP response\", line}\n \t}\n+\tif len(f) == 2 {\n+\t\tf = append(f, \"\")  // empty Reason-Phrase\n+\t}\n \tresp.Status = f[1] + \" \" + f[2]\n \tresp.StatusCode, err = strconv.Atoi(f[1])\n \tif err != nil {\n\n\nAnd the above patch doesn't properly reject responses like \"HTTP/1.0 303\" that don't end\nin trailing whitespace.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-01-05T15:37:26Z",
+	"updated_at": "2014-12-22T05:53:42Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51288434,
+	"number": 8604,
+	"state": "closed",
+	"title": "runtime: holes in FUNCDATA value space waste text segment memory",
+	"body": "\u003cpre\u003eIn pkg/runtime/funcdata.h, we currently have:\n\n#define PCDATA_ArgSize 0 /* argument size at CALL instruction */\n#define PCDATA_StackMapIndex 1\n\n#define FUNCDATA_ArgsPointerMaps 2 /* garbage collector blocks */\n#define FUNCDATA_LocalsPointerMaps 3\n#define FUNCDATA_DeadValueMaps 4\n\nHowever, PCDATA and FUNCDATA values live in logically distinct spaces, so there appears\nto be no reason to not number the FUNCDATA values 0,1,2 instead of 2,3,4.  Further,\nbecause the FUNCDATA values are used to index into a flat vector, not using the 0 and 1\nentries means we leave holes in each function's pclntab entry.\n\nOn linux/amd64, changing the FUNCDATA values to 0,1,2 reduces the text segment size (as\nreported by the binutils \u0026quot;size\u0026quot; utility) for \u0026quot;go\u0026quot; by ~104kB, for\n\u0026quot;gofmt\u0026quot; by ~45kB, and for \u0026quot;camlistored\u0026quot; by ~208kB:\n\nBefore:\n$ size go gofmt camlistored \n   text\t   data\t    bss\t    dec\t    hex\tfilename\n6506842\t 136996\t 105784\t6749622\t 66fdb6\tgo\n2376046\t  85232\t  90984\t2552262\t 26f1c6\tgofmt\n17051050\t 190256\t 130320\t17371626\t10911ea\tcamlistored\n\nAfter:\n$ size go gofmt camlistored \n   text\t   data\t    bss\t    dec\t    hex\tfilename\n6403034\t 136996\t 105784\t6645814\t 656836\tgo\n2331118\t  85232\t  90984\t2507334\t 264246\tgofmt\n16842586\t 190256\t 130320\t17163162\t105e39a\tcamlistored\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:46Z",
+	"created_at": "2014-08-27T23:33:35Z",
+	"updated_at": "2016-06-25T01:40:17Z"
+}

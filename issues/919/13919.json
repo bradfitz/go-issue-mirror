@@ -1,0 +1,17 @@
+{
+	"id": 126118272,
+	"number": 13919,
+	"state": "closed",
+	"title": "inconsistent behavior with cgo and zero-length C arrays",
+	"body": "go version go1.5.2 linux/amd64\r\n\r\nIf there is a zero-length array at the end of a C struct which contains other fields, then cgo omits the field from the Go view of the C struct in $WORKDIR/.../_cgo_gotypes.go\r\n\r\nBut if the zero-length array is the only field in the struct then cgo keeps it. And if the zero-length array isn't last it keeps it.\r\n\r\nIn other words the code below fails to compile with the error\r\n  ./tst27.go:19: t2.x undefined (type C.struct_T2 has no field or method x)\r\n\r\nwhich is somewhat strange given that it is happy with the reference to the very similar t1.x.\r\n\r\n----------------------------------------------------------------------------\r\n    package main\r\n    \r\n    /*\r\n    struct T1 {\r\n        char x[0];\r\n    };\r\n    \r\n    struct T2 {\r\n        int i;\r\n        char x[0];\r\n    };\r\n    */\r\n    import \"C\"\r\n    \r\n    func main() {\r\n        var t1 C.struct_T1\r\n        _ = t1.x\r\n        var t2 C.struct_T2\r\n        _ = t2.x\r\n    }\r\n\r\n---------------------------------------------------------------------------------------------\r\n\r\n(Also since Go is fine with zero-length arrays in Go structs I don't see why cgo is omitting T2.x)\r\n",
+	"user": {
+		"login": "nsd20463",
+		"id": 6062588,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-12T10:31:18Z",
+	"created_at": "2016-01-12T07:42:05Z",
+	"updated_at": "2016-01-12T16:00:14Z"
+}

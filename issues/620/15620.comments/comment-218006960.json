@@ -1,0 +1,12 @@
+{
+	"id": 218006960,
+	"body": "@griesemer In your last example, the run-time panic is due to the dereference of p in `println(*p)`, not the tuple assignment statement. This program runs without panic though: https://play.golang.org/p/HNJ8aH3eIi\r\n\r\nFor what it's worth, my reading of the Go spec is that\r\n\r\n        xs, xs[len(xs)-1] = append(xs[:i], xs[i+1:]...), 0\r\n\r\nshould be equivalent to:\r\n\r\n\t// \"Otherwise, when evaluating the operands of an expression,\r\n\t// assignment, or return statement, all function calls, method\r\n\t// calls, and communication operations are evaluated in\r\n\t// lexical left-to-right order.\"\r\n\ttmp1 := len(xs)\r\n\ttmp2 := append(xs[:i], xs[i+1:]...)\r\n\r\n\t// \"First, the operands of index expressions and pointer\r\n\t// indirections (including implicit pointer indirections in\r\n\t// selectors) on the left and the expressions on the right are\r\n\t// all evaluated in the usual order.\"\r\n\ttmp3, tmp4, tmp5, tmp6 := xs, tmp1-1, tmp2, 0\r\n\r\n\t// \"Second, the assignments are carried out in left-to-right\r\n\t// order.\"\r\n\txs = tmp5\r\n\ttmp3[tmp4] = tmp6\r\n\r\nWhich supports cmd/compile's current behavior: https://play.golang.org/p/bFofYVAqt-",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-09T22:18:36Z",
+	"updated_at": "2016-05-09T22:18:36Z"
+}

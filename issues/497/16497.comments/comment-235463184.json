@@ -1,0 +1,12 @@
+{
+	"id": 235463184,
+	"body": "I was going to post this on the CL, but I think GitHub or the dev list might be a better place (I never know where to post things). If this is incorrect, please let me know and I'll move it.\r\n\r\nCurrently the patch I have in the CL breaks two tests, but I think the behavior is wrong and the tests need to be changed. I'm not sure if this behavior is covered by the compatibility promise or not, but XMLNS fixes have been put in place in the past that changed the behavior of marshaling/unmarshaling with the rational that they were bug fixes and not part of the compatibility promise, so I'm hoping this will be simliar.\r\n\r\nThe issue is that right now if you unmarshal XML into a struct that contains an inner struct with an XMLName the XMLName will be matched against the XML correctly and the struct (and all its attributes) will be unmarshaled correctly *however* the XMLName field on the inner struct will not be set. If you go the other way and marshal that struct back to XML however the inner XML's XMLName tag will be used and the resulting XML will have the correct name and namespace.\r\n\r\nExample — https://play.golang.org/p/bunS8dHMAO\r\n\r\nThis means that Marshal and Unmarshal are not inverse functions, which feels like  a bug to me.\r\n\r\nThoughts? Is it okay to change this behavior so that the example above, instead of printing:\r\n\r\n```\r\n\u003couterstruct xmlns=\"urn:example:issue:16497\"\u003e\u003c/outerstruct\u003e\r\nInnerStruct: {XMLName:{Space:urn:example:issue:16497 Local:outerstruct}}\r\nOuterStruct: {InnerStruct:{XMLName:{Space: Local:}}}\r\nOuterOuterStruct: {OuterStruct:{InnerStruct:{XMLName:{Space: Local:}}}}\r\n```\r\n\r\nwould print:\r\n\r\n```\r\n\u003couterstruct xmlns=\"urn:example:issue:16497\"\u003e\u003c/outerstruct\u003e\r\nInnerStruct: {XMLName:{Space:urn:example:issue:16497 Local:outerstruct}}\r\nOuterStruct: {InnerStruct:{XMLName:{Space:urn:example:issue:16497 Local:outerstruct}}}\r\nOuterOuterStruct: {OuterStruct:{InnerStruct:{XMLName:{Space:urn:example:issue:16497 Local:outerstruct}}}}\r\n```",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-27T02:22:58Z",
+	"updated_at": "2016-07-27T02:23:37Z"
+}

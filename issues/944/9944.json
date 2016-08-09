@@ -1,0 +1,22 @@
+{
+	"id": 58387689,
+	"number": 9944,
+	"state": "closed",
+	"title": "encoding/binary: package performance for signed vs unsigned integers",
+	"body": "The `encoding/binary` package performs more slowly writing `uint{8,16,32,64}` data vs the corresponding `int{8,16,32,64}` data. The performance when writing `*uints` and `*ints` is almost identical.\r\n\r\nSee `binary1.go` in http://play.golang.org/p/--qpN-sy6o and `binary1_test.go` in http://play.golang.org/p/ypH8OTtYYx\r\n\r\nHere is part of the output from running the benchmark test.\r\n```\r\n\u003ego test binary1.go binary1_test.go -bench=.\r\ntesting: warning: no tests to run\r\nPASS\r\nBenchmarkWrite_int8        10000            171109 ns/op\r\nBenchmarkWrite_uint8        5000            367821 ns/op\r\nBenchmarkWrite_int8_p      10000            114706 ns/op\r\nBenchmarkWrite_uint8_p     10000            115306 ns/op\r\n```\r\nThe results for larger integers are similar.\r\n\r\nThe problem appears to be in the `encoding/binary` package's `intDataSize` function:\r\n```\r\n// intDataSize returns the size of the data required to represent the data when encoded.\r\n// It returns zero if the type cannot be implemented by the fast path in Read or Write.\r\nfunc intDataSize(data interface{}) int {\r\n\tswitch data := data.(type) {\r\n\tcase int8, *int8, *uint8:\r\n\t\treturn 1\r\n\tcase []int8:\r\n\t\treturn len(data)\r\n\tcase []uint8:\r\n\t\treturn len(data)\r\n```\r\nThe first case of the switch does not include `uint8` so the fast path is not used. The data size is looked up later using reflection instead of using this hard coded size. Larger unsigned ints are also missing later in the switch.\r\n",
+	"user": {
+		"login": "djhenderson",
+		"id": 1244826,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-02-23T10:45:15Z",
+	"created_at": "2015-02-20T17:56:23Z",
+	"updated_at": "2016-06-25T02:01:26Z"
+}

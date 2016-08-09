@@ -1,0 +1,27 @@
+{
+	"id": 67527517,
+	"number": 10406,
+	"state": "closed",
+	"title": "runtime: windows syscall with callback that grow stack returns wrong value",
+	"body": "Apply this diff:\r\n\r\n```\r\ndiff --git a/src/runtime/syscall_windows_test.go b/src/runtime/syscall_windows_test.go\r\nindex 720f70b..1c10977 100644\r\n--- a/src/runtime/syscall_windows_test.go\r\n+++ b/src/runtime/syscall_windows_test.go\r\n@@ -554,3 +554,77 @@ func TestWERDialogue(t *testing.T) {\r\n \t// Child process should not open WER dialogue, but return immediately instead.\r\n \tcmd.CombinedOutput()\r\n }\r\n+\r\n+var used byte\r\n+\r\n+func use(buf []byte) {\r\n+\tfor _, c := range buf {\r\n+\t\tused += c\r\n+\t}\r\n+}\r\n+\r\n+func forceStackCopy() (r int) {\r\n+\tvar f func(int) int\r\n+\tf = func(i int) int {\r\n+\t\tvar buf [256]byte\r\n+\t\tuse(buf[:])\r\n+\t\tif i == 0 {\r\n+\t\t\treturn 0\r\n+\t\t}\r\n+\t\treturn i + f(i-1)\r\n+\t}\r\n+\tr = f(128)\r\n+\treturn\r\n+}\r\n+\r\n+func TestReturnAfterStackGrowInCallback(t *testing.T) {\r\n+\r\n+\tconst src = `\r\n+#include \u003cstdint.h\u003e\r\n+\r\n+typedef uintptr_t __stdcall (*callback)(uintptr_t);\r\n+\r\n+uintptr_t cfunc(callback f, uintptr_t n) {\r\n+\treturn f(n);\r\n+}\r\n+`\r\n+\ttmpdir, err := ioutil.TempDir(\"\", \"TestReturnAfterStackGrowInCallback\")\r\n+\tif err != nil {\r\n+\t\tt.Fatal(\"TempDir failed: \", err)\r\n+\t}\r\n+\tdefer os.RemoveAll(tmpdir)\r\n+\r\n+\tsrcname := \"mydll.c\"\r\n+\terr = ioutil.WriteFile(filepath.Join(tmpdir, srcname), []byte(src), 0)\r\n+\tif err != nil {\r\n+\t\tt.Fatal(err)\r\n+\t}\r\n+\toutname := \"mydll.dll\"\r\n+\tcmd := exec.Command(\"gcc\", \"-shared\", \"-s\", \"-Werror\", \"-o\", outname, srcname)\r\n+\tcmd.Dir = tmpdir\r\n+\tout, err := cmd.CombinedOutput()\r\n+\tif err != nil {\r\n+\t\tt.Fatalf(\"failed to build dll: %v - %v\", err, string(out))\r\n+\t}\r\n+\tdllpath := filepath.Join(tmpdir, outname)\r\n+\r\n+\tdll := syscall.MustLoadDLL(dllpath)\r\n+\tdefer dll.Release()\r\n+\r\n+\tproc := dll.MustFindProc(\"cfunc\")\r\n+\r\n+\tcb := syscall.NewCallback(func(n uintptr) uintptr {\r\n+\t\tforceStackCopy()\r\n+\t\treturn n\r\n+\t})\r\n+\r\n+\t// Use a new goroutine so that we get a small stack.\r\n+\tc := make(chan uintptr)\r\n+\tgo func() {\r\n+\t\tr, _, _ := proc.Call(cb, 100)\r\n+\t\tc \u003c- r\r\n+\t}()\r\n+\tif got, want := \u003c-c, uintptr(100); got != want {\r\n+\t\tt.Errorf(\"got %d want %d\", got, want)\r\n+\t}\r\n+}\r\n```\r\n\r\nto cb10ff1ef9a9d1606e652573c1add5b698da7b25 and run new test:\r\n\r\n```\r\nC:\\\u003eu:\\test -test.v -test.run=ReturnAfter\r\n=== RUN TestReturnAfterStackGrowInCallback\r\n--- FAIL: TestReturnAfterStackGrowInCallback (0.12s)\r\n        syscall_windows_test.go:628: got 0 want 100\r\nFAIL\r\n```\r\n\r\nIf you comment out call to forceStackCopy, then the test succeeds.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-06-29T02:46:02Z",
+	"created_at": "2015-04-10T07:02:34Z",
+	"updated_at": "2016-07-11T22:37:55Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

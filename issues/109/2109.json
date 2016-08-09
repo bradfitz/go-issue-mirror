@@ -1,0 +1,27 @@
+{
+	"id": 51278743,
+	"number": 2109,
+	"state": "closed",
+	"title": "cmd/go: make update work consistently for git",
+	"body": "\u003cpre\u003eas per: \u003ca href=\"https://groups.google.com/d/msg/golang-nuts/3GtbT2s2HCc/djHr2YXFzEQJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/3GtbT2s2HCc/djHr2YXFzEQJ\u003c/a\u003e\n\n--\n\nI do not think \u0026quot;goinstall -u\u0026quot; does what its author intended. It does this:\n\ngit fetch\ngit show-ref release\ngit checkout release\n\n\u0026quot;git fetch\u0026quot; does not alter \u0026quot;release\u0026quot;. It alters\n\u0026quot;origin/release\u0026quot; (along with other branches, on all remotes: \u0026quot;man\ngit-remote\u0026quot;). You need to follow-up with\n\ngit merge FETCH_HEAD\n\nto do a true update, assuming that the branch is actually tracking something. For\ndetails:\n\n\u003ca href=\"http://www.kernel.org/pub/software/scm/git/docs/git-fetch.html\"\u003ehttp://www.kernel.org/pub/software/scm/git/docs/git-fetch.html\u003c/a\u003e\n\u003ca href=\"http://git.661346.n2.nabble.com/FETCH-HEAD-question-td2339060.html\"\u003ehttp://git.661346.n2.nabble.com/FETCH-HEAD-question-td2339060.html\u003c/a\u003e\n\nBut merging can me a mess. I have a better idea:\n\ngit fetch origin  # to avoid wasting time on other remotes\ngit show-ref origin/release\ngit checkout origin/release\n\n\u0026quot;origin\u0026quot; is ok, since goinstall implicitly created the remote with that name\nwhen it cloned the repo. You would then see\n\n$ git branch\n* (no branch)\n  master\n  release\n\n\u0026quot;(no branch)\u0026quot; is explained here:\n\u003ca href=\"http://edspencer.net/2009/10/git-what-to-do-if-you-commit-to-no-branch.html\"\u003ehttp://edspencer.net/2009/10/git-what-to-do-if-you-commit-to-no-branch.html\u003c/a\u003e\nGenerally, you never commit to \u0026quot;no branch\u0026quot;. The \u0026quot;origin/release\u0026quot;\nthing is a pseudo-branch, technically a \u0026quot;remote tracking branch\u0026quot;. You cannot\nalter its head; it just tracks the remote when you \u0026quot;fetch\u0026quot;. No merging is\nnecessary.\n\nThe other benefit is that I can change which remote \u0026quot;origin\u0026quot; refers to, as I\njust described in another post.\n\ngoinstall -v github.com/blah/blah/blah\ncd gopath-dir/src/github.com/blah/blah/blah\ngit remote rename origin official  # official/release is the official branch now.\ngit remote add origin git://~me/path\ngit fetch origin\ngit branch --set-upstream release origin/release\ngoinstall -v -u github.com/blah/blah/blah\n\nAt that point, \u0026quot;-u\u0026quot; will fetch from my own github repo. (And currently, it\nwill change me to the \u0026quot;release\u0026quot; branch, but fail to merge from\n\u0026quot;origin/release\u0026quot;. I hope that's clear.)\nReport abusePost reply\u003c/pre\u003e",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:11:22Z",
+	"created_at": "2011-07-26T21:58:25Z",
+	"updated_at": "2016-06-24T19:32:47Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

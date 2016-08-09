@@ -1,0 +1,12 @@
+{
+	"id": 66067489,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThanks for the reproduction case. If I bound the arguments to findMatch the problem goes\naway (diff below) but I am concerned that there are other wraparound bugs lurking.  I\nwill ask the person who wrote the code initially.\n\ndiff -r 7637a893613f src/pkg/compress/flate/deflate.go\n--- a/src/pkg/compress/flate/deflate.go\tTue May 29 14:37:41 2012 -0400\n+++ b/src/pkg/compress/flate/deflate.go\tTue May 29 15:43:15 2012 -0400\n@@ -154,6 +154,9 @@\n \tminIndex := pos - windowSize\n \n \tfor i := prevHead; tries \u0026gt; 0; tries-- {\n+if i \u0026lt; 0 || i+1 \u0026gt;= len(win) || i+length \u0026gt;= len(win) || i+length \u0026lt; 0 {\n+\tprint(\"BAD i=\", i, \" length=\", length, \" len(win)=\", len(win), \"\\n\")\n+}\n \t\tif w0 == win[i] \u0026\u0026 w1 == win[i+1] \u0026\u0026 wEnd == win[i+length] {\n \t\t\t// The hash function ensures that if win[i] and win[i+1] match, win[i+2] matches\n \n@@ -260,10 +263,11 @@\n \t\t\tminIndex = 0\n \t\t}\n \n-\t\tif d.chainHead-d.hashOffset \u0026gt;= minIndex \u0026\u0026\n+\t\tif off := d.chainHead-d.hashOffset; off \u0026gt;= minIndex \u0026\u0026 off \u0026lt; len(d.window) \u0026\u0026\n \t\t\t(d.fastSkipHashing != skipNever \u0026\u0026 lookahead \u0026gt; minMatchLength-1 ||\n \t\t\t\td.fastSkipHashing == skipNever \u0026\u0026 lookahead \u0026gt; prevLength \u0026\u0026 prevLength \u0026lt; d.lazy) {\n-\t\t\tif newLength, newOffset, ok := d.findMatch(d.index, d.chainHead-d.hashOffset,\nminMatchLength-1, lookahead); ok {\n+if d.chainHead-d.hashOffset \u0026gt; 1\u0026lt;\u0026lt;29 { print(\"chainHead=\", d.chainHead, \"\nhashOffset=\", d.hashOffset, \" diff=\", off, \"\\n\") }\n+\t\t\tif newLength, newOffset, ok := d.findMatch(d.index, off, minMatchLength-1,\nlookahead); ok {\n \t\t\t\td.length = newLength\n \t\t\t\td.offset = newOffset\n \t\t\t}\u003c/pre\u003e\n\n_Labels changed: added **priority-later**, removed **priority-triage**._\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-05-29T19:44:30Z",
+	"updated_at": "2014-12-22T06:15:27Z"
+}

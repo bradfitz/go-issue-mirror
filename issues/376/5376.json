@@ -1,0 +1,39 @@
+{
+	"id": 51283541,
+	"number": 5376,
+	"state": "open",
+	"title": "spec: byte view: type that can represent a []byte or string",
+	"body": "\u003cpre\u003eGo has no built-in type which can represent a read-only view of possibly-changing bytes.\n\nWe have two current types which internally are a byte pointer and a length:  (the first\nalso has a capacity, irrelevant to this issue) \n\n\n[]byte\n\n   Allowance: \u0026quot;you can mess with this memory\u0026quot;\n   Restriction: \u0026quot;this memory isn't necessarily forever; anybody else might be changing it now (race) or later (iterator becoming invalidated after this call, etc)\u0026quot;\n\nstring\n\n   Allowance: \u0026quot;if you have a reference to this, it's good forever, and nobody will ever mess with it\u0026quot;.\n   Restriction: \u0026quot;you can NOT change\u0026quot;\n\n\nAnd because of their conflicting allowances and restrictions, any conversion from\nstring-\u0026gt;[]byte or []byte-\u0026gt;string necessarily has to make a copy and often\ngenerates garbage. \n\nBoth are great, but there's a missing piece:\n\nMany places in Go's API want a type with *neither* of those allowances, and are happy\nwith both of those restrictions:\n\n-- much of pkg strings\n-- much of pkg bytes\n-- all the strconv.Parse* functions (\u003ca href=\"https://golang.org/issue/2632\"\u003eissue #2632\u003c/a\u003e)\n-- most of the string arguments to system calls\n-- the io.Writer interface's argument (no need then for io.WriteString)\n-- leveldb's Key/Value accessors.\n\nLook at leveldb's Iterator:\n\n\u003ca href=\"http://godoc.org/code.google.com/p/leveldb-go/leveldb/db#Iterator\"\u003ehttp://godoc.org/code.google.com/p/leveldb-go/leveldb/db#Iterator\u003c/a\u003e\n\nIt has to go out of its way to say \u0026quot;please do not corrupt my memory\u0026quot;.  If\nsomebody uses memdb directly\n(\u003ca href=\"http://godoc.org/code.google.com/p/leveldb-go/leveldb/memdb)\"\u003ehttp://godoc.org/code.google.com/p/leveldb-go/leveldb/memdb)\u003c/a\u003e and misuses the Iterator\ntype, all the sudden the memory corruption and stack traces implicate the memdb package,\neven though it's a caller of memdb who violated the db.Iterator contract.\n\nAll leveldb really wants is to give callers a view of the bytes.\n\nThat is, in addition to \u0026quot;string\u0026quot; with its promise A (handle for life) and\n\u0026quot;[]byte\u0026quot; with its promise B (you can mutate), we need a a common type to both\nof those with neither promise, what is constant-time assignable from a string or a\n[]byte.\n\ns := \u0026quot;string\u0026quot;\nb := []byte(s)\nvar v byteview = s // constant time assignment\nvar v byteview = b // constant time assignment\n\nA byteview would be represented in memory just like a string (*byte, int), but the\ncompiler would prevent mutations or addressing (like string), and callers would always\ntreat its backing data as ephemeral, like a []byte, unless negotiated otherwise.\n\nObviously this isn't a Go 1.n item, considering the impact it would have on the standard\nlibrary.\n\nA good name for byteview would be \u0026quot;bytes\u0026quot;, but we have a package\n\u0026quot;bytes\u0026quot; already. Maybe we can get rid of that package.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "LanguageChange"
+		},
+		{
+			"name": "LongTerm"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 6,
+	"created_at": "2013-04-30T03:40:15Z",
+	"updated_at": "2015-10-28T01:20:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

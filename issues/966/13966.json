@@ -1,0 +1,17 @@
+{
+	"id": 126823132,
+	"number": 13966,
+	"state": "closed",
+	"title": "net/mail: Address and ParseAddress are not symmetric with parentheses",
+	"body": "In the `net/mail` package, `Address` is used to generate a valid RFC 5322 address. `ParseAddress` is used to parse a single RFC 5322 address.\r\n\r\nThere is currently a bug if the address name contains parentheses.\r\n\r\nThe following code fails to run:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\nimport \"net/mail\"\r\n\r\nfunc main() {\r\n\r\n\ttests := []*mail.Address{\r\n\t\t{Name: \"Robert Müller\", Address: \"bob@example.com\"},\r\n\t\t{Name: \"Robert (Bob) Müller\", Address: \"bob@example.com\"},\r\n\t}\r\n\r\n\tfor i, in := range tests {\r\n\t\tfmt.Printf(\"\\nTest %d\\n\", i)\r\n\r\n\t\t// straight encoding, will use q-encoding if needed\r\n\t\tfmt.Printf(\"In:  %s\\n\", in)\r\n\t\t\r\n\t\t// decode the q-encoding\r\n\t\tout, err := mail.ParseAddress(in.String())\r\n\t\tif err != nil {\r\n\t\t\t// oops! cannot parse our own address?\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\t\r\n\t\t// should match our earlier q-encoding\r\n\t\tfmt.Printf(\"Out: %s\\n\", out)\r\n\t}\r\n}\r\n```\r\n\r\nExpected output:\r\n\r\n```text\r\nTest 0\r\nIn:  =?utf-8?q?Robert_M=C3=BCller?= \u003cbob@example.com\u003e\r\nOut: =?utf-8?q?Robert_M=C3=BCller?= \u003cbob@example.com\u003e\r\n\r\nTest 1\r\nIn:  =?utf-8?q?Robert_(Bob)_M=C3=BCller?= \u003cbob@example.com\u003e\r\nOut: =?utf-8?q?Robert_(Bob)_M=C3=BCller?= \u003cbob@example.com\u003e\r\n```\r\n\r\nActual output:\r\n\r\n```text\r\nTest 0\r\nIn:  =?utf-8?q?Robert_M=C3=BCller?= \u003cbob@example.com\u003e\r\nOut: =?utf-8?q?Robert_M=C3=BCller?= \u003cbob@example.com\u003e\r\n\r\nTest 1\r\nIn:  =?utf-8?q?Robert_(Bob)_M=C3=BCller?= \u003cbob@example.com\u003e\r\npanic: mail: no angle-addr\r\n\r\ngoroutine 1 [running]:\r\nmain.main()\r\n```\r\n\r\nSee it in action [here](https://play.golang.org/p/mtDJuwLZiD).\r\n\r\nThese functions should be symmetric if I correctly understand the documentation.",
+	"user": {
+		"login": "chowey",
+		"id": 991221,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-15T18:26:12Z",
+	"created_at": "2016-01-15T07:40:32Z",
+	"updated_at": "2016-01-15T18:26:12Z"
+}

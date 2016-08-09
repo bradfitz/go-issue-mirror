@@ -1,0 +1,12 @@
+{
+	"id": 66075104,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eOk I think i figured out the problem.\n\ncgen_call allocates a register before calling ginscall. This results in the following\nprogram before optimization:\n\n0000 (main.go:3) TEXT    main+0(SB),$4-0\n0001 (main.go:3) LOCALS  ,\n0002 (main.go:4) MOVL    $0,f+-4(SP)\n0003 (main.go:5) JMP     ,5\n0004 (main.go:5) JMP     ,10\n0005 (main.go:6) MOVL    f+-4(SP),BX\n0006 (main.go:6) MOVL    BX,AX\n0007 (main.go:6) MOVL    (AX),BX\n0008 (main.go:6) CALL    ,BX\n0009 (main.go:5) JMP     ,5\n0010 (main.go:8) RET     ,\n\nAfter this, the peephole optimizer removes the MOVL BX,AX.\n\nForgot to mention, this is on 386. I suspect this bug is also in amd64.\u003c/pre\u003e",
+	"user": {
+		"login": "DanielMorsing",
+		"id": 545573,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-22T11:44:29Z",
+	"updated_at": "2014-12-08T10:25:57Z"
+}

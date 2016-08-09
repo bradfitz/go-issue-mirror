@@ -1,0 +1,12 @@
+{
+	"id": 231107512,
+	"body": "My solution, which is now submitted, does not work if somebody writes\r\n\r\n    type I interface {\r\n        Call(...uintptr) (uintptr, uintptr, error)\r\n    }\r\n    \r\n    var i I = lazyDLL.NewProc(\"f\")\r\n    \r\n    func F() {\r\n        var buf [1024]byte\r\n        I.Call(uintptr(unsafe.Pointer(\u0026buf[0])))\r\n    }\r\n\r\nThe fact that the call requires special treatment is lost when the call is made through an interface.  This is not a problem for `syscall.Syscall` because that is a function, not a method.\r\n\r\nThe approach I was suggesting above would be to add variants of `FindProc` and `NewProc` to take a function type, as in `reflect.TypeOf((func(*byte))(nil))`.  Then they could write code like\r\n\r\n    v := reflect.MakeFunc(typ, func(in []Value) []Value {\r\n        r1, r2, err := Syscall(p.Addr(), uintptr(in[0].Pointer()), 0, 0)\r\n        return reflect.ValueOf(r1), reflect.ValueOf(r2), reflect.ValueOf(err)\r\n    }\r\n    return func(p *byte) (uintptr, uintptr, error) {\r\n        out := v.Call(reflect.ValueOf(p))\r\n        return out[0].(uintptr), out[1].(uintptr), out[2].(error)\r\n    }\r\n\r\nThis approach keeps the pointer value as a pointer down to the call to `syscall.Syscall`, which is safe.\r\n\r\nBut, of course, it makes the functions harder to create because you have to construct a type.  On the plus side, they are easier to call.\r\n\r\nHandling different numbers of arguments is tedious though straightforward.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-07T15:10:01Z",
+	"updated_at": "2016-07-07T15:10:01Z"
+}

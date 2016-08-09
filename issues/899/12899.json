@@ -1,0 +1,21 @@
+{
+	"id": 110806522,
+	"number": 12899,
+	"state": "open",
+	"title": "cmd/ld: Incorrect DWARF scope representation",
+	"body": "The DWARF information emitted does not correctly represent the scoping of variables within a procedure.\r\n\r\nTo illustrate, given the following Go source code:\r\n\r\n```go\r\npackage main                                                                                                         \r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n        mystr := \"foo\"\r\n        {\r\n                mystr := \"bar\"\r\n                fmt.Println(mystr)\r\n        }\r\n        fmt.Println(mystr)\r\n}\r\n```\r\n\r\nThe relevant information produced in .debug_info is as follows:\r\n\r\n```\r\n \u003c1\u003e\u003c58\u003e: Abbrev Number: 2 (DW_TAG_subprogram)\r\n    \u003c59\u003e   DW_AT_name        : main.main\r\n    \u003c63\u003e   DW_AT_low_pc      : 0x401000\r\n    \u003c6b\u003e   DW_AT_high_pc     : 0x401240\r\n    \u003c73\u003e   DW_AT_external    : 1   \r\n \u003c2\u003e\u003c74\u003e: Abbrev Number: 4 (DW_TAG_variable)\r\n    \u003c75\u003e   DW_AT_name        : mystr                                                                                 \r\n    \u003c7b\u003e   DW_AT_location    : 5 byte block: 9c 11 80 7f 22 \u003e   (DW_OP_call_frame_cfa; DW_OP_consts: -128; DW_OP_plus)\r\n    \u003c81\u003e   DW_AT_type        : \u003c0x34e72\u003e\r\n \u003c2\u003e\u003c89\u003e: Abbrev Number: 4 (DW_TAG_variable)\r\n    \u003c8a\u003e   DW_AT_name        : mystr \r\n    \u003c90\u003e   DW_AT_location    : 5 byte block: 9c 11 90 7f 22 \u003e   (DW_OP_call_frame_cfa; DW_OP_consts: -112; DW_OP_plus)\r\n    \u003c96\u003e   DW_AT_type        : \u003c0x34e72\u003e\r\n```\r\n\r\nAs you can see, both variables are represented at depth \u003c2\u003e in the tree, however, one should be at depth \u003c3\u003e, following a depth \u003c2\u003e entry of a `DW_AT_lexical_block` with low/high pc values.\r\n\r\nThe first solution is to produce a tree that properly reflects the lexical blocks in the source code. Secondly, it would be great for `DW_TAG_variable`, `DW_TAG_formal_parameter` and family to include `DW_AT_decl_file` and `DW_AT_decl_line` attributes within the entries.",
+	"user": {
+		"login": "derekparker",
+		"id": 1314079,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2015-10-10T17:15:07Z",
+	"updated_at": "2016-02-11T01:00:13Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

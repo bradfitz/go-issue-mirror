@@ -1,0 +1,12 @@
+{
+	"id": 183253450,
+	"body": "Looking into this further, the crash happens here\r\n```\r\n                _, found := key.GetFromMap(m)\r\n                if !found {\r\n                        b.Fatalf(\"WTF: %#v\", key) // here\r\n                }\r\n```\r\nThat is, in the case that should not happen. The key value may be somehow corrupt, because if we remove the printing of the key from the b.Fatal, eventually we get:\r\n\r\nBenchmarkGetFromMapWithMapKey-80        --- FAIL: BenchmarkGetFromMapWithMapKey-80\r\n        key_test.go:423: WTF: key not found\r\n\r\nI thought this was a liveness issue, but moving the key declaration to the package scope does not solve the problem:\r\n```\r\n        for i := 0; i \u003c b.N; i++ {\r\n                key = New(map[string]interface{}{fmt.Sprintf(\"a%d\", i%19): true})\r\n                _, found := key.GetFromMap(m)\r\n                if !found {\r\n                        b.Fatalf(\"WTF: key not found\")\r\n                }\r\n        }\r\n}\r\n\r\nvar key Key\r\n```\r\nBenchmarkGetFromMapWithMapKey-119       --- FAIL: BenchmarkGetFromMapWithMapKey-119\r\n        key_test.go:423: WTF: key not found\r\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-12T09:41:52Z",
+	"updated_at": "2016-02-12T09:41:52Z"
+}

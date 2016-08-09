@@ -1,0 +1,12 @@
+{
+	"id": 229228067,
+	"body": "Thanks for the scheduling trace.  It shows that `GOMAXPROCS` is 1.  The single P is in status `Psyscall`.  It has no associated M.\r\n\r\nThere are 7 M's.  6 have no associated P.  M1 is associated with P0.  M1 is locked to goroutine 17.  The stack trace at the end shows only\r\n\r\n    goroutine 17 [runnable, locked to thread]:\r\n    runtime.goexit()\r\n    \t/go/src/runtime/asm_386.s:1612 +0x1\r\n\r\nThis is probably the goroutine started by `CgoCCodeSIGPROF` making a cgo call (we might get more information if we had set `GOTRACEBACK=system`).\r\n\r\nNote that although goroutine 17 is shown above as `runnable`, up until the very end of the trace its state is `Gsyscall`, suggesting that it is in the middle of the cgo call.\r\n\r\nSo `P0.m == -1` while `M1.p == 0`.  M1 is locked to G17.  P0 and G17 are in syscall state.  P0's `syscalltick` field increases steadily.\r\n\r\nI may see part of the problem.  The program has a loop that just calls into C.  Because it keeps making calls into C, `syscalltick` keeps going up.  Because of that, the sysmon thread never sees the thread as blocked.  But almost every time the sysmon thread runs, the P is in `syscall` state, so the sysmon thread also never sees the thread as having run for too long.\r\n\r\nBefore https://golang.org/cl/24151 I think that would have been enough to hang the program.  Before that CL, the program was in an infinite loop that will not get preempted.  On a system with `GOMAXPROCS == 1`, that could cause this failure.\r\n\r\nHowever, you are seeing this problem even after CL 24151, and I don't have an explanation for that.  After that CL the program should not hang, because it should not run for more than 1 second.\r\n\r\nDoes it fix the problem if you add a call `runtime.GOMAXPROCS(2)` at the start of the function `CgoCCodeSIGPROF` in runtime/testdata/testprogcgo/aprof.go?",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-29T00:59:55Z",
+	"updated_at": "2016-06-29T00:59:55Z"
+}

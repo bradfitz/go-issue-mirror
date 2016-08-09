@@ -1,0 +1,12 @@
+{
+	"id": 120541552,
+	"body": "I don't see what that has to do with the server sending the client a certificate dynamically, but I'm brand new to go.\r\n\r\nHere's the rough code without error checking, channels, goroutines, etc:\r\n\r\n```go\r\n// I start a raw TCP server\r\nln, err := net.Listen(\"tcp\", \":\" + config.Port)\r\n\r\n// I begin accepting connections\r\nconn, err := ln.Accept()\r\n\r\n// the vhost pkg peeks at the incoming buffer and let's me see the servername\r\ntlsConn, err := vhost.TLS(conn)\r\n\r\n// I grab the SNI\r\nservername := tlsConn.Host()\r\n\r\n// Now I want to determine which certificate to issue\r\n// 1. check some cache I create (or maybe GetCertificate?)\r\n// 2. if the expiration is bad, jump ahead to step 5\r\n// 3. if it doesn't exist check on the file system\r\n// 3. if it doesn't exist try SNICallback (from user code)\r\n// 4. if it doesn't exist, try retrieving a brand new certificate from letsencrypt.org\r\n// 5. if that fails, return a dummy certificate\r\n\r\n// Now make the encrypted TCP plainly readable\r\nplainConn := tls.Server(tlsConn, tlsConfig)\r\n\r\n// Now make it an http server request\r\nsrv := \u0026http.Server{Handler: myHandler}\r\nc, err := srv.NewConn(plainConn)\r\n\r\n// Now handle that http request\r\ngo c.Serve()\r\n```\r\n\r\nWhen the server starts I may not have the certificate.\r\nI want to delay creating a `tls.Config` object until I know the servername indication.\r\nThen I want to handle the request as http.\r\n\r\nWhat I'm trying to build is basically\r\n\r\n```go\r\ntype SNICallback func(domainname string) (t *tls.Config)\r\nhttp.ListenAndServeSNI(addr string, sniCallback SNICallback, handler Handler) error\r\n```\r\n\r\nExcept I want a build a higher-level function that would use such a function with letsencrypt. For the time being I'd just shell out to the letsencrypt python client and there's someone already working on a go client for use with caddyserver (and hopefully the code I'm working on will also find its way there).",
+	"user": {
+		"login": "coolaj86",
+		"id": 122831,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-10T22:24:46Z",
+	"updated_at": "2015-07-10T22:27:00Z"
+}

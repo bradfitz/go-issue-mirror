@@ -1,0 +1,12 @@
+{
+	"id": 169522322,
+	"body": "From https://msdn.microsoft.com/en-us/library/windows/desktop/aa365467(v=vs.85).aspx\n\n\u003e The ReadFile function may fail with ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY whenever there are too many outstanding asynchronous I/O requests.\n\nI don't see how that's possible, of course, since this is the first read in the entire program.\n\nActually http://microsoft.public.win32.programmer.kernel.narkive.com/A5Q9kG7J/reading-console-input suggests the maximum size you can read from the console is \"0x77E8\".\n\nCan you try this diff:\n\n\tdiff --git a/src/os/file_windows.go b/src/os/file_windows.go\n\tindex bda495e..f260a72 100644\n\t--- a/src/os/file_windows.go\n\t+++ b/src/os/file_windows.go\n\t@@ -264,9 +264,9 @@ func (f *File) readConsole(b []byte) (n int, err error) {\n\t \t}\n\t \tif len(f.readbuf) == 0 {\n\t \t\tnumBytes := len(b)\n\t-\t\t// Windows  can't read bytes over max of int16.\n\t-\t\tif numBytes \u003e 32767 {\n\t-\t\t\tnumBytes = 32767\n\t+\t\t// Windows can't read bytes over max of int16.\n\t+\t\tif numBytes \u003e 30000 {\n\t+\t\t\tnumBytes = 30000\n\t \t\t}\n\t \t\tmbytes := make([]byte, numBytes)\n\t \t\tvar nmb uint32",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-07T02:01:34Z",
+	"updated_at": "2016-01-07T02:01:34Z"
+}

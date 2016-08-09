@@ -1,0 +1,26 @@
+{
+	"id": 146505289,
+	"number": 15164,
+	"state": "open",
+	"title": "cmd/compile: suboptimal compilation of struct-valued switch statements",
+	"body": "For [CL 21627](https://golang.org/cl/21627), I evaluated replacing the switch statement in cmd/link/internal/ld.relSize with:\r\n\r\n    type ft struct {\r\n        af sys.ArchFamily\r\n        et byte\r\n    }\r\n\r\n    switch (ft{SysArch.Family, byte(elftype)}) {\r\n        ...\r\n        case ft{sys.S390X, R_390_8}:\r\n            ...\r\n    }\r\n\r\nBut this ends up compiling into much less efficient code than the existing idiom of combining into integer constants:\r\n\r\n1. The integer constant cases are implemented as a binary search; the struct cases are implemented as linear search.\r\n2. The struct temporary variables are constructed on the stack using *three* MOVB instructions (even though they're only two bytes large; one of the MOVBs is a useless 0-initialization).\r\n3. Both the switch and case statement's temporary struct variable needs to be loaded from memory each time, even though the switch variable ends up staying register-resident the entire time.\r\n4. Each case statement's temporary variable is independently allocated stack memory, even though their lifetimes don't overlap.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-04-07T04:11:26Z",
+	"updated_at": "2016-04-21T17:26:47Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

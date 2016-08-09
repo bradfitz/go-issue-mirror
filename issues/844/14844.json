@@ -1,0 +1,27 @@
+{
+	"id": 141549675,
+	"number": 14844,
+	"state": "open",
+	"title": "spec: gotype accepts a[1.0\u003c\u003cs] though the compilers do not - which is correct?",
+	"body": "The spec says (https://golang.org/ref/spec#Operators):\r\n\r\n\u003e If the left operand of a non-constant shift expression is an untyped constant, it is first converted \r\n\u003e to the type it would assume if the shift expression were replaced by its left operand alone.\r\n\r\nConsider the following program (http://play.golang.org/p/LsZYy_l_hD):\r\n\r\n```Go\r\npackage main\r\nimport \"fmt\"\r\nfunc main() {\r\n\ts := uint(0)\r\n\ta := []int{1, 2}\r\n\t// A\r\n\tx := a[1.0]\r\n\t// B\r\n\tx = a[1.0\u003c\u003cs] // error\r\n\tfmt.Println(x, s)\r\n}\r\n```\r\n\r\nAccording to the above part of the spec, it would seem that `1.0` in statement B should be converted to `int`, as it was converted in statement A, since A is what B looks like after, quote, \"shift expression were replaced by its left operand alone.\"\r\n\r\nHowever:\r\n \r\n*  `go` version devel +f2772a4 Tue Mar 15 19:57:40 2016 +0000 linux/amd64 reports an error:\r\n\r\n\u003e ./shift-5.go:11: invalid operation: 1 \u003c\u003c s (shift of type float64)\r\n\r\n* corresponding `gotype` produces no output\r\n\r\n* `gccgo` (GCC) 6.0.0 20160314 (experimental) [master revision 96e5a1e:5a53517:1bd2aefdf63c38093e950d365c5b4fa9ed4a5197]\r\n\r\n\u003e shift-5.go:11:7: error: index must be integer\r\n\u003e  x = a[1.0\u003c\u003cs] // error\r\n\u003e       ^\r\n\u003eshift-5.go:11:11: error: shift of non-integer operand\r\n\u003e  x = a[1.0\u003c\u003cs] // error\r\n\r\nIndeed, the spec does not require the index in non-map index-expressions to be of or convertable to `int`. Nonetheless, one would expect either both or none of A and B to fail.\r\n",
+	"user": {
+		"login": "momchil-velikov",
+		"id": 5541560,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-03-17T11:03:35Z",
+	"updated_at": "2016-05-18T01:32:40Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

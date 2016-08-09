@@ -1,0 +1,21 @@
+{
+	"id": 53576859,
+	"number": 9524,
+	"state": "open",
+	"title": "net/http: closeNotify does not work well when read timeout is set",
+	"body": "There is a read timeout configuration for http server: \r\n```go\r\nReadTimeout    time.Duration // maximum duration before timing out read of the request\r\n```\r\n\r\nI expect it is the timeout for finishing reading the request only.\r\n\r\nWhen read timeout is set, the connection will be considered as closed after the timeout even if the connection is still open and working. The following code set up a http server with read timeout and a handler simply blocks forever until closeNotify fires. \r\n\r\nI expect to see the hander blocks \"forever\", but it unblocks after the read timeout. \r\n\r\nThe closeNotifiy depends on the read of the underlying connection. Shall we cancel the read timeout after finishing reading the request?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tsrv := \u0026http.Server{\r\n\t\tAddr:        \"localhost:8080\",\r\n\t\tHandler:     myhandler{},\r\n\t\tReadTimeout: time.Second,\r\n\t}\r\n\tgo func() {\r\n\t\t// wait server to start\r\n\t\ttime.Sleep(time.Second)\r\n\t\tresp, err := http.Get(\"http://\" + srv.Addr)\r\n\t\tif err != nil {\r\n\t\t\tlog.Println(err)\r\n\t\t\treturn\r\n\t\t}\r\n\t\tresp.Body.Close()\r\n\t}()\r\n\tlog.Fatal(srv.ListenAndServe())\r\n}\r\n\r\ntype myhandler struct{}\r\n\r\nfunc (h myhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n\tif cn, ok := w.(http.CloseNotifier); ok {\r\n\t\t\u003c-cn.CloseNotify()\r\n\t\tlog.Panicf(\"unexpected closed client\")\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "xiang90",
+		"id": 4479947,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-01-06T23:22:02Z",
+	"updated_at": "2015-06-29T04:22:04Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 220196570,
+	"body": "How about:\r\n- Disable by default in tls.Config\r\n- Change the 1MB constant to 128KB\r\n- Enable by default in net/http.Server (via cloneTLSConfig, [here](https://tip.golang.org/src/net/http/transport.go#L2008))\r\n\r\nRationale:\r\n- The most important use case is serving HTML. Pageload latency improves when the browser's preload scanner parses the HTML as quickly as possible. Smaller TLS records improve time-to-first-decrypted-byte.\r\n- 128KB should be plenty to cover the HTML with response headers.\r\n- Disabling by default elsewhere means there are no unexpected throughput surprises.\r\n\r\n@rsc, @agl, WDYT?\r\n\r\nI added a simple latency benchmark to Russ's tlsbench_test.go. Results below from my workstation:\r\n\r\n```\r\nBenchmarkLatency_2500kbps_NoDynamicSizing-40    \t     200\t  10392396 ns/op\r\nBenchmarkLatency_1500kbps_NoDynamicSizing-40    \t     100\t  14912234 ns/op\r\nBenchmarkLatency_500kbps_NoDynamicSizing-40     \t     100\t 281757497 ns/op\r\nBenchmarkLatency_200kbps_NoDynamicSizing-40     \t      30\t 677013274 ns/op\r\nBenchmarkLatency_2500kbps_DynamicSizing-40      \t     200\t   6145195 ns/op\r\nBenchmarkLatency_1500kbps_DynamicSizing-40      \t     200\t   6641656 ns/op\r\nBenchmarkLatency_500kbps_DynamicSizing-40       \t     100\t  78163048 ns/op\r\nBenchmarkLatency_200kbps_DynamicSizing-40       \t      30\t 184665580 ns/op\r\n```\r\n[tlsbench_test.go.txt](https://github.com/golang/go/files/271638/tlsbench_test.go.txt)",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-19T00:27:22Z",
+	"updated_at": "2016-05-19T00:27:22Z"
+}

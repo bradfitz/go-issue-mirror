@@ -1,0 +1,12 @@
+{
+	"id": 66056262,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **nmessenger**:\n\n\u003cpre\u003eI was reading through ebnf.go and its associated parser.go, and it seems to me there's\nstill a desynch between EBNF as it's implemented and as it's described in the package\ncomment. As implemented, it seems to permit empty terms, which are propogated up the\ngrammar tree representation. \n\nYou could either bring the spec in line with the implementation, to wit:\n\n    Production = name \"=\" Expression \".\" .\n    Term       = Empty | name | token /* etc. */ .\n    Empty      = .\n\nThis would permit productions like these, which I think the implementation accepts:\n\n    Foo = ( ) .\n    Silly = [ | { ( ) | } ] { } .\n\nOr, keep the correction to the grammar I suggested in the first place, and bring the\nimplementation in line with it, disallowing such forms. I must admit I don't actually\nhave Go, so this is of course untested, but my first stab at a correction:\n\n    // pkg/ebnf/parser.go\n    \n    func (p *parser) parseTerm() (x Expression) {\n            // ...\n            switch p.tok {\n            // ...\n            default:\n                    p.errorExpected(pos, \"Term\")\n            }\n            // ...\n    }\n    \n    // ...\n    \n    func (p *parser) parseProduction() *Production {\n            name := p.parseIdentifier()\n            p.expect(token.ASSIGN)\n            if p.tok == token.PERIOD {\n                    p.next()\n                    return \u0026Production{name, nil}\n            }\n            expr := p.parseExpression()\n            p.expect(token.PERIOD)\n            return \u0026Production{name, expr}\n    }\n\nIt would also need an ebnf_test.go case to make sure productions like Foo are invalid.\n\nCheers.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-15T21:01:08Z",
+	"updated_at": "2014-12-08T10:10:03Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66098247,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eWait-wait-wait. The fix is incorrect and all the conclusions. What is wrong here is that\nrace detector sees events happening on system stacks g0/gsignal. There is no possible\nsemantic meaning for these events. At best they will lead to degraded performance if\nhandled. And at worst to false positives as race detector does not see most of the\nsynchronization happening inside of runtime (that g0 synchronizes with curg during\nmcall, for example). And if we will try to teach race detector about all that\nsynchronization, then it will lead to massive false negatives for user code.\n\nRuntime code is not instrumented by compiler on purpose. The manual instrumentation in\ncopy/growslice/hashmaps was only happening on user gs to date. Now it happens on\ng0/gsignal as we have much more Go code in runtime. The events like copy in mprof are\nimplementation details of runtime, they need to be ignored by race detector. And\ng0/gsignal must not have race context at all.\n\nThere is a possible case when g0 executes an interesting memory access or\nsynchronization on behalf of a user goroutine. For example, if growslice would call onM\nand do the rest of work on g0. We does not seem to have such cases now. If such case is\ndiscovered, then race detector will need to use g-\u003em-\u003ecurg-\u003eracectx to handle such\nevents. But we still don't need racectx for g0.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-02T07:40:16Z",
+	"updated_at": "2014-12-08T10:47:52Z"
+}

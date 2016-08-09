@@ -1,0 +1,12 @@
+{
+	"id": 66065160,
+	"body": "\u003ca id=\"c18\"\u003e\u003c/a\u003eComment 18:\n\n\u003cpre\u003eMore questions: does the HeaderTimeout begin once the request has been written\n(including any POST body), or at the beginning of the RoundTrip?\n\nBoth seem wrong (or at least potentially surprising) for different reasons.\n\nLet's assume you don't set the net.Conn's ReadDeadline until after the request has been\nsent.  In most cases, this will be fine, but if the remote server disappears off the\nnetwork and you write a large HTTP request body such that Write blocks, the RoundTrip\nwill never timeout if it never gets to http.ReadRequest -\u003e bufio.Read -\u003e net.Conn.Read.\n\nBut if you include the time to send a request body, then some POST requests are now too\nlarge to be sent in time.  And the name \"HeaderTimeout\" is now confusing.\n\nSo back to assuming HeaderTimeout is as documented above, and only for reading the\nresponse headers: really the user would need to set both IdleTimeout (for the request\nwrite phrase, say 5 seconds to get TCP progress) + HeaderTimeout (say, 30 seconds). \nThat seems annoying to document.\n\nDo we want to make a zero IdleTimeout mean the minimum of HeaderTimeout and Timeout?  So\nif the user only specifies a 30 second HeaderTimeout, that also means that at least the\nserver needs to respond to TCP during the request write phase at least once every 30\nseconds.  That would prevent offline servers from hanging a Go program.\n\nNone of this is hard to implement. The only hard part of this bug is naming and\ndocumentation.\u003c/pre\u003e\n\n\n_Owner changed to @bradfitz._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-01-17T00:47:33Z",
+	"updated_at": "2014-12-08T10:17:29Z"
+}

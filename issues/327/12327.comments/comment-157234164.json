@@ -1,0 +1,12 @@
+{
+	"id": 157234164,
+	"body": "CL 16964 won't completely fix the issue. The location of the `go.buildid` symbol still varies for my test case. A little digging revealed this is due to the `__TEXT.__stubs` and `__TEXT.__stub_helper` sections being placed before the `__TEXT.__text` section:\r\n\r\n```\r\notool -l ./cockroach\r\n...\r\nSection\r\n  sectname __stubs\r\n   segname __TEXT\r\n...\r\n    offset 7794\r\n...\r\nSection\r\n  sectname __stub_helper\r\n   segname __TEXT\r\n...\r\n    offset 17328\r\n...\r\nSection\r\n  sectname __text\r\n   segname __TEXT\r\n...\r\n    offset 20208\r\n...\r\n```\r\n\r\nThe location of the `go.buildid` symbol within the binary is at offset 20208 (i.e. right at the start of the `__TEXT.__text` section). Any ideas why the `__stubs` and `__stub_helper` sections are being output before the `__text` section? That doesn't happen without CL 16964 applied.\r\n\r\nI wonder if trying to force a symbol into a particular location in the binary is trying to be too clever. It would be more robust to adapt/borrow some code from `debug/macho` to find the location of the `__TEXT.__text` section. Or perhaps to fallback to reading the entire binary if the desired symbol can't be found in the first 16KB of the file. ",
+	"user": {
+		"login": "petermattis",
+		"id": 6201335,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-17T01:42:34Z",
+	"updated_at": "2015-11-17T01:42:34Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 142111397,
+	"number": 14882,
+	"state": "open",
+	"title": "encoding/asn1: When slicing bytes specify capacity or allocate new slice",
+	"body": "`parseField` should use triple slice assignments (`[x:y:z]`) to specify the capacity of slices when dealing with `RawContent` and `RawValue` fields. Defining the capacity of these slices will prevent other fields in a struct that reference the same underlying byte slice from inadvertently being mutated by operations that attempt to expand the slice (i.e. `append`).\r\n\r\n1. What version of Go are you using (`go version`)?\r\n`go1.6`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n`Ubuntu 15.10 amd64`\r\n\r\n3. What did you do?\r\nBasic example: https://play.golang.org/p/ibPZYcKNs5\r\n\r\n```\r\npackage main\r\n\r\nimport \"fmt\"\r\nimport \"encoding/asn1\"\r\n\r\ntype outer struct {\r\n\tRaw     asn1.RawContent\r\n\tVersion int `asn1:\"optional,default:1,tag:0\"`\r\n\tInner   inner\r\n\tOther   asn1.RawValue\r\n\t\r\n}\r\n\r\ntype inner struct {\r\n\tRaw     asn1.RawContent\r\n\tVersion int `asn1:\"optional,default:2,tag:2\"`\r\n}\r\n\r\nfunc main() {\r\n\ta := outer{Version: 1, Inner: inner{Version:2}, Other: asn1.RawValue{1, 1, false, []byte{10}, []byte{1, 1, 10}}}\r\n\tout, _ := asn1.Marshal(a)\r\n\tvar b outer\r\n\tasn1.Unmarshal(out, \u0026b)\r\n\t\r\n\tfmt.Println(b.Raw)\r\n\t// Since b.Inner.Raw and b.Raw share the shame underlying slice when\r\n\t// append extends b.Inner.Raw (since it has no capacity) it is extending\r\n\t// into the part of the underlying slice which is referenced by b.Raw and in\r\n\t// doing so overwrites a section of that slice\r\n\t_ = append((\u0026b).Inner.Raw, []byte{255, 255, 255}...)\r\n\tfmt.Println(b.Raw)\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\nIn above example `b.Raw` shouldn't be affected by using `append`\r\n\r\n5. What did you see instead?\r\nThe last three bytes of `b.Raw` are overwritten.\r\n",
+	"user": {
+		"login": "rolandshoemaker",
+		"id": 5080674,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-03-19T23:37:52Z",
+	"updated_at": "2016-03-20T22:59:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

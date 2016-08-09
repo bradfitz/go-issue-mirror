@@ -1,0 +1,12 @@
+{
+	"id": 107884815,
+	"body": "@RLH,\r\n\r\nLooks like db7fd1c1420d5ef2f874f40c0349b35007568c77 is the culprit. On db7fd1c1420d5ef2f874f40c0349b35007568c77, gocrash crashes with:\r\n```\r\nruntime:greyobject: checkmarks finds unexpected unmarked object obj=0x2082ec070, mbits-\u003ebits=0x1 *mbits-\u003ebitp=0xb9\r\nruntime: found obj at *(0x2083021e0+0x8)\r\nruntime:greyobject Span: obj=0x2082ec070 k=0x104176 s.start=0x2082ec000 s.limit=0x2082ee000 s.sizeclass=1 s.elemsize=8\r\n *(obj+0) = 0x208310d80\r\nfatal error: checkmark found unmarked object\r\n```\r\nafter 5254b7e9cefb597a9b9ce5137d6e5248a14d8d73, with reorganized gc code, gocrash crashes with:\r\n```\r\nunexpected fault address 0x2082df7b0\r\nfatal error: fault\r\n[signal 0xa code=0x2 addr=0x2082df7b0 pc=0x2082df7b0]\r\n```\r\n\r\nPS: I used the following script and didn't use \"git bisect run\" because the single-train source tree contains a few pitfalls such as \"scheduler deadlock issues.\"\r\n```\r\n#!/usr/bin/env bash\r\n\r\ncd $GOROOT/src\r\n./make.bash\r\ncd /path/to/gocrash\r\ngo test -c\r\n\r\nfor i in {1..10}; do\r\n        GODEBUG=gccheckmark=1 GOGC=1 ./gocrash.test -test.bench=. -test.cpu=2,4,8 || exit 1\r\ndone\r\n\r\nexit 0\r\n```",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-02T09:29:00Z",
+	"updated_at": "2015-06-02T09:29:00Z"
+}

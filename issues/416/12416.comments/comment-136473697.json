@@ -1,0 +1,12 @@
+{
+	"id": 136473697,
+	"body": "@mdempsky \r\n\r\n\u003e For the first rule, can you clarify what \"Go code may pass a Go pointer to C provided that the Go memory to which it points does not contain any Go pointers.\" means and perhaps some further rationale behind this restriction? I understand why C code mustn't mutate Go pointers, but there seems to be a significant gap between those two restrictions.\r\n\r\nIf at some point we have a moving GC, then the GC will need to update all Go pointers to point to their new location.  We can work around that for a Go pointer explicitly passed to C code, by temporarily pinning the pointer.  However, if the memory to which that Go pointer points itself holds pointers, then we must either pin those pointers too or we must modify them while the C code is running.  The former is difficult and causes pinning to become a transitive operation.  The latter is racy.\r\n\r\nThe only way this restriction could be a problem would be if Go code wanted to pass a complex data structure into C code, where the data structure is allocated by Go code in Go memory.  It would have to use C types, of course, or the C code wouldn't be able to use it.  That is not a case that seems likely to arise often, and in particular it seems often best to allocate these complex data structures using C memory via C.malloc.\r\n\r\nSo I think it's preferable to use a relatively simple rule here, rather than try to develop a more complex set of restrictions.  This proposal aims to find out whether people can live with the rule.\r\n\r\nYour code example satisfies the rule.  The Go memory to which the pointer points is the [1024]byte.\r\n\r\n\u003e Also, I assume by \"Go pointers\" you actually mean to include all pointer-like types (i.e., strings, slices, functions, interfaces, maps, channels)?\r\n\r\nYes.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-31T19:20:24Z",
+	"updated_at": "2015-08-31T19:20:24Z"
+}

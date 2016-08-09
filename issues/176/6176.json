@@ -1,0 +1,22 @@
+{
+	"id": 51284791,
+	"number": 6176,
+	"state": "closed",
+	"title": "net: 64511+ Concurrent TCP sessions (address already in use)",
+	"body": "by **paul@vanbrouwershaven.com**:\n\n\u003cpre\u003eI'm currently trying to break the 64511 concurrent tcp sessions barrier in my GO\napplication but I encounter some unexpected behavior.\n\nI have optimized my kernel for high tcp concurrency as suggested by Richard Jones on his\nblog back in 2008 (see metabrew.com blog below). Unfortunately it doesn't have any\neffect on the number of concurrent sessions.\n\nAs you have only 64511 unprivileged ports available per IP address, I have added several\nadditional IP addresses to my system and made go loop though these addresses. When I use\na LocalAddr with port 0 go directly starts complaining with \u0026quot;address already in\nuse\u0026quot; as soon I pass the +/- 64511 connections. So I tried to loop over my ip range\nin combination with a specified port for the LocalAddr. Unfortunately this doesn't\nimprove the number of concurrent connections.\n\n1 Million TCP connections (Linux):\n\u003ca href=\"http://www.metabrew.com/article/a-million-user-comet-application-with-mochiweb-part-3\"\u003ehttp://www.metabrew.com/article/a-million-user-comet-application-with-mochiweb-part-3\u003c/a\u003e\n\n2 Million TCP connections (FreeBSD):\n\u003ca href=\"http://blog.whatsapp.com/index.php/2012/01/1-million-is-so-2011/\"\u003ehttp://blog.whatsapp.com/index.php/2012/01/1-million-is-so-2011/\u003c/a\u003e\n\nI'm running a Ubuntu Server with a 3.2 kernel and go1.1.2 linux/amd64\n\nMy connection handling code:\n\nRETRY:\n\n// get the firs source ip:port address in queue \nipNext = \u0026lt;-iprange\n\n// manage our on port numbers per ip to overcome the 64511 limit\nhost, port, _ := net.SplitHostPort(ipNext)\nnextPort, _ := strconv.Atoi(port)\nnextPort++\nif nextPort \u0026gt; 65535 {\n\tnextPort = 1024\n}\n\t\n// add this address with the next port number back to the end of the queue\niprange \u0026lt;- host +\u0026quot;:\u0026quot;+ strconv.Itoa(nextPort)\n\t\t    \nd := net.Dialer{Timeout: 1*time.Second, Deadline: time.Now().Add(2*time.Second)}\nd.LocalAddr, err = net.ResolveTCPAddr(\u0026quot;tcp4\u0026quot;, ipNext)\nif err != nil {\n        log.Fatal(err)\n}\ndc, err := d.Dial(\u0026quot;tcp\u0026quot;, dst)\n\nif err != nil \u0026amp;\u0026amp; strings.Contains(err.Error(), \u0026quot;address already in\nuse\u0026quot;) {\n\tgoto RETRY\n}\n\n--\nSee also the golang-nuts thread:\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/Mi7QkAqP7II\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:33:59Z",
+	"created_at": "2013-08-17T07:32:04Z",
+	"updated_at": "2016-06-24T22:55:31Z"
+}

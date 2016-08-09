@@ -1,0 +1,12 @@
+{
+	"id": 160749573,
+	"body": "@dr2chase Arguably there are atomicity constraints even in expressions like `unsafe.Pointer(uintptr(unsafe.Pointer(\u0026s)) + 1)`, which is why I'd previously proposed adding a function like `func Add(unsafe.Pointer, uintptr) unsafe.Pointer` to the standard library / runtime (#7192).  However, it was rejected, so I've been operating under the impression that the preferred approach is codifying safe unsafe.Pointer/uintptr conversion patterns.\r\n\r\nIf adding more primitive operations *is* on the table, I'd suggest something like:\r\n\r\n    // Base returns a pointer to the beginning of the outermost enclosing variable,\r\n    // and the offset of p into that variable.\r\n    // If p does not point into a variable, then it returns (p, 0).\r\n    func Base(p unsafe.Pointer) (base unsafe.Pointer, offset uintptr)\r\n\r\nSo for example, `Base(unsafe.Pointer(\u0026s.f))` would return `(unsafe.Pointer(\u0026s), unsafe.Offsetof(s.f))`.\r\n\r\nThen @kortschak's offset can be implemented as:\r\n\r\n    func offset(p, q []float64) (difference int, related bool) {\r\n        pb, po := Base(unsafe.Pointer(\u0026p[0]))\r\n        qb, qo := Base(unsafe.Pointer(\u0026q[0]))\r\n        if pb != qb {  // GC-aware pointer equality\r\n            return 0, false\r\n        }\r\n        if po \u003c qo {\r\n            return int((qo - po) / unsafe.Sizeof(float64(0)))\r\n        }\r\n        return -int((po - qo) / unsafe.Sizeof(float64(0)))\r\n    }\r\n",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-30T20:20:42Z",
+	"updated_at": "2015-11-30T20:20:42Z"
+}

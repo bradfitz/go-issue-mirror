@@ -1,0 +1,12 @@
+{
+	"id": 220181188,
+	"body": "\u003e parallelizing packages and parallelizing compilation within a\r\npackage (which we're also thinking about doing), are going after the same\r\nidle cycles\r\n\r\nIndeed. However, (a) there will always be inefficiencies in getting work scheduled, so doing both could help nevertheless and (b) as @bradfitz observed, scheduling compilation processes better helps a lot more if you start to ship compilation off over the network to other machines.\r\n\r\n\u003e Parallelizing compiles sounds like the code is easier, but it may make the\r\nsystem harder to manage - how many parallel compiles should be running?\r\nHow much memory would that take?  What if there's an error?  The\r\nmultiprocess spiderweb gets unwieldy after a while.\r\n\r\ncmd/go already parallelizes compiles, just not super efficiently; it already handles errors and juggles the spiderweb. That said, I rather dislike the cmd/go codebase, in part for this reason. :)\r\n\r\ncmd/go chooses ncpus as the number of parallel compiles to run, which can be altered with `-p`. My experiments with the `-p` flag so far indicate that doing fewer parallel compiles is clearly bad for wall time. And that despite the fact that cmd/compile actually already does rely on more than a single CPU (due to GC?): compiling with GOMAXPROCS=1 on my machine causes a roughly 30-50% slowdown.\r\n\r\nAlso worth noting is that not all of cmd/go's work is in the compiler--cgo and resulting c compilations can be a big part of compile times, and those are not likely to be as core-saturating as cmd/compile anytime soon.\r\n\r\nSo I'm inclined to say it is still worth pursuing both paths. And we have the tools to control concurrency on both fronts (`-p`, `GOMAXPROCS`), so benchmarking and experimentation is easy.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-18T22:49:55Z",
+	"updated_at": "2016-05-18T22:49:55Z"
+}

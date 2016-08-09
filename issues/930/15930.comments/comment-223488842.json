@@ -1,0 +1,12 @@
+{
+	"id": 223488842,
+	"body": "I think the issue is that the flow control doesn't take into account the bytes in `clientStream.bufPipe`.\r\n\r\nThis change brings the Max RSS of @jacobsa's example program down to ~40mb.\r\n\r\n```patch\r\n--- a/http2/transport.go\r\n+++ b/http2/transport.go\r\n@@ -1458,7 +1458,7 @@ func (b transportResponseBody) Read(p []byte) (n int, err error) {\r\n                connAdd = transportDefaultConnFlow - v\r\n                cc.inflow.add(connAdd)\r\n        }\r\n-       if err == nil { // No need to refresh if the stream is over or failed.\r\n+       if err == nil \u0026\u0026 cs.bufPipe.b.Len() \u003c transportDefaultStreamFlow {\r\n                if v := cs.inflow.available(); v \u003c transportDefaultStreamFlow-transportDefaultStreamMinRefresh {\r\n                        streamAdd = transportDefaultStreamFlow - v\r\n                        cs.inflow.add(streamAdd)\r\n```\r\n\r\nI'm not sure if this is the correct fix. We'll need to write a good test to be sure.",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-03T04:36:34Z",
+	"updated_at": "2016-06-03T04:36:34Z"
+}

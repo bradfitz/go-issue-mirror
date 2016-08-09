@@ -1,0 +1,12 @@
+{
+	"id": 121428849,
+	"body": "Here's my attempt so far at analyzing the link.core file.  The relevant mheap_ values are:\r\n\r\n    0x832a8c0 \u003cruntime.mheap_+18144\u003e:       0x08500000      0x000a0000      0x18500000      0x18f00000\r\n    0x832a8d0 \u003cruntime.mheap_+18160\u003e:       0x38502000      0x00000001      0x00000000      0x00000000\r\n\r\nSo that's\r\n\r\n    bitmap = 0x08500000\r\n    bitmap_mapped = 0x000a0000\r\n    arena_start = 0x18500000\r\n    arena_used = 0x18f00000\r\n    arena_end = 0x38502000\r\n\r\nIf I use the formula in heapBitsForAddr to look at 0x187700a0 (the address of the s.R slice member), then I find:\r\n\r\n    (gdb) x/1b 0x18500000 - (0x187700a0 - 0x18500000) / 4 / 4 - 1\r\n    0x184d8ff5:     0x11\r\n\r\nNotably, the previous byte though:\r\n\r\n    (gdb) x/1b 0x18500000 - (0x187700a0 - 0x18500000) / 4 / 4 - 1 - 1\r\n    0x184d8ff4:     0xd5\r\n\r\nMy reading of the 2-bit entry format under \"Heap bitmap\" is that the upper nibble should be 'f' since there are still more bits in the object (namely, the s.R member).  Examining backwards further seems to support that understanding:\r\n\r\n    (gdb) x/8b 0x18500000 - (0x187700a0 - 0x18500000) / 4 / 4 - 1 - 9\r\n    0x184d8fec:     0xfd    0xf5    0xff    0xff    0xf0    0xf0    0xf0    0xf0\r\n\r\nSo the \"still being described\" bits seem to be getting cut short slightly before the s.R member?  Or am I way off here?",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-14T23:35:20Z",
+	"updated_at": "2015-07-14T23:35:35Z"
+}

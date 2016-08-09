@@ -1,0 +1,21 @@
+{
+	"id": 66884431,
+	"number": 10362,
+	"state": "open",
+	"title": "cmd/compile: assigning large values does not use memmove",
+	"body": "Consider this piece of code\r\n```\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n        f()\r\n}\r\n\r\nfunc f() {\r\n        var a [200]int\r\n        var b [200]int\r\n\r\n        a = b\r\n        b = a\r\n\r\n        fmt.Println(\u0026a, \u0026b)\r\n}\r\n```\r\n\r\nThe assignments of `a = b` or `b = a` where the size of `a` or `b` is above the DUFFCOPY limit of 128 words produces some very simplistic code\r\n```\r\n        a = b\r\n   10c60:       e1a01004        mov     r1, r4\r\n   10c64:       e1a00005        mov     r0, r5\r\n   10c68:       e2843e32        add     r3, r4, #800    ; 0x320\r\n   10c6c:       e4912004        ldr     r2, [r1], #4\r\n   10c70:       e4802004        str     r2, [r0], #4\r\n   10c74:       e1530001        cmp     r3, r1\r\n   10c78:       1afffffb        bne     10c6c \u003cmain.f+0x4c\u003e\r\n        b = a\r\n   10c7c:       e1a01005        mov     r1, r5\r\n   10c80:       e1a00004        mov     r0, r4\r\n   10c84:       e2853e32        add     r3, r5, #800    ; 0x320\r\n   10c88:       e4912004        ldr     r2, [r1], #4\r\n   10c8c:       e4802004        str     r2, [r0], #4\r\n   10c90:       e1530001        cmp     r3, r1\r\n   10c94:       1afffffb        bne     10c88 \u003cmain.f+0x68\u003e\r\n```\r\nShould `sgen/stackcopy` take the opportunity to setup a call to `runtime.memmove` for values larger than 128 words ?",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-04-07T13:29:54Z",
+	"updated_at": "2015-06-08T06:21:58Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

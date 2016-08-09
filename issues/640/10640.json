@@ -1,0 +1,22 @@
+{
+	"id": 72202812,
+	"number": 10640,
+	"state": "closed",
+	"title": "testing: common.finished is accessed without holding common.mu lock",
+	"body": "**Note:** CL to fix this is coming soon.\r\n\r\nThis triggers the race detector (for a good reason) when a test case fails by calling directly or indirectly t.FailNow() from two different goroutine.\r\n\r\n## Repro case\r\n```\r\nfunc TestRace(t *testing.T) {\r\n  t2 := testing.T{}\r\n  var wg sync.WaitGroup\r\n  for i := 0; i \u003c 2; i++ {\r\n    wg.Add(1)\r\n    go func() {\r\n      defer wg.Done()\r\n      t2.FailNow()\r\n    }()\r\n  }\r\n  wg.Wait()\r\n}\r\n```\r\n\r\n## Actual\r\n\r\n    go test ./testing -race\r\n\r\n```\r\n==================\r\nWARNING: DATA RACE\r\nWrite by goroutine 30:\r\n  testing.(*common).FailNow()\r\n      /home/maruel/src/golang/src/testing/testing.go:333 +0x48\r\n  testing_test.TestRace.func1()\r\n      /home/maruel/src/golang/src/testing/testing_test.go:28 +0x5d\r\n\r\nPrevious write by goroutine 31:\r\n  testing.(*common).FailNow()\r\n      /home/maruel/src/golang/src/testing/testing.go:333 +0x48\r\n  testing_test.TestRace.func1()\r\n      /home/maruel/src/golang/src/testing/testing_test.go:28 +0x5d\r\n\r\nGoroutine 30 (running) created at:\r\n  testing_test.TestRace()\r\n      /home/maruel/src/golang/src/testing/testing_test.go:29 +0x10f\r\n  testing.tRunner()\r\n      /home/maruel/src/golang/src/testing/testing.go:452 +0xfc\r\n\r\nGoroutine 31 (finished) created at:\r\n  testing_test.TestRace()\r\n      /home/maruel/src/golang/src/testing/testing_test.go:29 +0x10f\r\n  testing.tRunner()\r\n      /home/maruel/src/golang/src/testing/testing.go:452 +0xfc\r\n==================\r\nPASS\r\nFound 1 data race(s)\r\nFAIL    testing 2.480s\r\n```",
+	"user": {
+		"login": "maruel",
+		"id": 75011,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-04-30T15:59:57Z",
+	"created_at": "2015-04-30T15:56:48Z",
+	"updated_at": "2016-06-25T02:07:00Z"
+}

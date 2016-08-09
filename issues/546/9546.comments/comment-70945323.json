@@ -1,0 +1,12 @@
+{
+	"id": 70945323,
+	"body": "Your impression is incorrect. It's definitely ok to use FPU instructions\r\non amd64 with Go's assembler (SSE2 doesn't have log instruction, this\r\nis right.)\r\n\r\ntry using this to replace the content of $GOROOT/src/math/log_amd64.s:\r\n// func Log(x float64) float64\r\nTEXT ·Log(SB),NOSPLIT,$0\r\n        FLDLN2               // F0=log(2)\r\n        FMOVD   x+0(FP), F0  // F0=x, F1=log(2)\r\n        FYL2X                // F0=log(x)=log2(x)*log(2)\r\n        FMOVDP  F0, ret+8(FP)\r\n        RET\r\n\r\nCuriously, my benchmark doesn't show any change for this change, so\r\nwe probably can use this patch to fix the issue.\r\n\r\nHowever, I've confirmed that something is wrong with the Go implementation\r\n(which claim to have \u003c1ulp accuracy) too, and the inaccuracy for amd64 is\r\nnot due to incorrect translation from Go code to assembly.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-21T23:44:08Z",
+	"updated_at": "2015-01-21T23:44:08Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 189618356,
+	"body": "\u003e1. don't change constants in either syscall or x/sys/unix (my understanding is that the numbers are correct but they are not implemented by the kernel anymore. please correct me if I'm wrong.) I'm also open to delete those constants in x/sys/unix, but we have to keep those in the syscall package.\r\n\r\nI investigated it. according to [this](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0483c/BABJCGGE.html),  EABI is supported since 2.6.16.\r\nI downloaded [linux-2.6.16](https://www.kernel.org/pub/linux/kernel/v2.6/).\r\n\r\nHere is related source code:\r\n\r\ninclude/asm-arm/unistd.h\r\n```\r\n#define __NR_time\t\t\t(__NR_SYSCALL_BASE+ 13)\r\n\r\n...\r\n\r\n#if !defined(CONFIG_AEABI) || defined(CONFIG_OABI_COMPAT)\r\n#define __ARCH_WANT_SYS_TIME\r\n#define __ARCH_WANT_SYS_OLDUMOUNT\r\n#define __ARCH_WANT_SYS_ALARM\r\n#define __ARCH_WANT_SYS_UTIME\r\n#define __ARCH_WANT_SYS_OLD_GETRLIMIT\r\n#define __ARCH_WANT_OLD_READDIR\r\n#define __ARCH_WANT_SYS_SOCKETCALL\r\n#endif\r\n```\r\n\r\nkernel/time.c\r\n```\r\n#ifdef __ARCH_WANT_SYS_TIME\r\n \r\nasmlinkage long sys_time(time_t __user * tloc)\r\n{\r\n...\r\n}\r\n...\r\n#endif /* __ARCH_WANT_SYS_TIME */\r\n```\r\n\r\narch/arm/kernel/calls.S\r\n```\r\n/* 0 */\t\tCALL(sys_restart_syscall)\r\n...\r\n/* 10 */\tCALL(sys_unlink)\r\n\t\tCALL(sys_execve_wrapper)\r\n\t\tCALL(sys_chdir)\r\n\t\tCALL(OBSOLETE(sys_time))\t/* used by libc4 */\r\n\t\tCALL(sys_mknod)\r\n/* 15 */\tCALL(sys_chmod)\r\n...\r\n```\r\n\r\nsyscall table is defined by calls.S . So syscall numbers are defined, but functions are not.\r\n\r\n\u003e2. move affected functions from auto-generated zsyscall file into a linux/arm specific file, and implement them correctly.\r\n\r\nI see.\r\n\r\n\u003e3. For x/sys/unix only, consider adding tests for syscalls that are straightforward to test. For example, we can test time.Now() and unix.Time agrees with each other. The test should be generic so that it runs on all linux platforms (not only arm).\r\n\r\nI guess you mean `time.Unix`. I understand.\r\n\r\nThank you.",
+	"user": {
+		"login": "hirochachacha",
+		"id": 898442,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-27T10:59:02Z",
+	"updated_at": "2016-02-27T10:59:02Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 68385722,
+	"body": "Interesting!\r\n\r\ngo/types handles parameter passing to built-ins essentially the same as for regular functions and so this should not be restricted to the built-in append, but also user-defined functions (see below). Furthermore, gccgo also accepts this code. In fact, both, go/types and gccgo accept his code:\r\n\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc f() (x, y []int) {\r\n\treturn []int{1, 2}, []int{3, 4, 5}\r\n}\r\n\r\nfunc append2(x []int, y ...int) {\r\n\tfmt.Printf(\"x = %v\\n\", x)\r\n\tfmt.Printf(\"y = %v\\n\", y)\r\n}\r\n\r\nfunc main() {\r\n\tfmt.Printf(\"%v\\n\", append(f()...))\r\n\tappend2(f()...)\r\n}\r\n\r\ngccgo even runs it \"correctly\":\r\n\r\n$ gccgo x.go \u0026\u0026 ./a.out\r\n[1 2 3 4 5]\r\nx = [1 2]\r\ny = [3 4 5]\r\n\r\nThat is, it's not obviously clear that this is a go/types issue.\r\n\r\nPer the spec:\r\n\r\n1) \"As a special case, if the return values of a function or method g are equal in number and individually assignable to the parameters of another function or method f, then the call f(g(parameters_of_g)) will invoke f after binding the return values of g to the parameters of f in order. The call of f must contain no parameters other than the call of g, and g must have at least one return value. If f has a final ... parameter, it is assigned the return values of g that remain after assignment of regular parameters.\" (http://golang.org/ref/spec#Calls)\r\n\r\nAnd:\r\n\r\n2) \"If the final argument is assignable to a slice type []T, it may be passed unchanged as the value for a ...T parameter if the argument is followed by .... In this case no new slice is created.\" (http://golang.org/ref/spec#Passing_arguments_to_..._parameters)\r\n\r\nThus, if 2) is done after 1), one might argue that the final argument after 1) is indeed a slice of the form []T and thus ... is applicable.\r\n\r\nThis is indeed what go/types does: it first \"unpacks\" f() and treats the results of f() as a sequence of individual results. The ... application to the last argument happens afterwards. I suspect gccgo does something analogous.\r\n\r\nThe spec is not specific enough in this case as evidenced by the different interpretations of it by go/types and gccco, vs gc, and we should clarify it. Permitting the code above could be an unintended consequence of the spec as written, or we can disallow it.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-30T19:00:59Z",
+	"updated_at": "2014-12-30T19:00:59Z"
+}

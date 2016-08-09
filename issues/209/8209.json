@@ -1,0 +1,33 @@
+{
+	"id": 51287848,
+	"number": 8209,
+	"state": "closed",
+	"title": "net/http: TimeoutHandler panics with concurrent requests",
+	"body": "by **vzdravevski**:\n\n\u003cpre\u003eWhen I make concurrent requests (~200 concurrent users, 100 requests each) to this code,\nPOST-ing ~70kb worth of form data in each request, I get the following panic ...\n\n\u003ca href=\"http://play.golang.org/p/LYLFT4l2qp\"\u003ehttp://play.golang.org/p/LYLFT4l2qp\u003c/a\u003e\n\nMy guess based on reading the source code is that timeout causes a write to the response\nbefore reading the request might be completely done. Seems like a race condition because\nthe reading of req/resp isn't synchronized and with the current API can't be\nsynchronized. Race detector also doesn't seem to detect this issue.\n\nThe \u0026quot;timeoutWriter\u0026quot; does have a mutex, but it only protects the response, but\nnot the request in the handler.\n\nNOTE: This was tested on linux/amd64\nGo1.2.2 and 1.3.rc2\n\nPanic:\n---------\nruntime error: slice bounds out of range\ngoroutine 302 [running]:\nnet/http.func·009()\n    /usr/local/go/src/pkg/net/http/server.go:1093 +0xae\nruntime.panic(0x5f6060, 0x87388a)\n    /usr/local/go/src/pkg/runtime/panic.c:248 +0x106\nbufio.(*Reader).Read(0xc210396480, 0xc210b1c000, 0x2000, 0x2000, 0xffffffffffffffec, ...)\n    /usr/local/go/src/pkg/bufio/bufio.go:168 +0x2e7\nio.(*LimitedReader).Read(0xc210459120, 0xc210b1c000, 0x2000, 0x2000, 0x14, ...)\n    /usr/local/go/src/pkg/io/io.go:398 +0xbb\nnet/http.(*body).Read(0xc21042d750, 0xc210b1c000, 0x2000, 0x2000, 0x14, ...)\n    /usr/local/go/src/pkg/net/http/transfer.go:534 +0x96\nio.(*LimitedReader).Read(0xc2101fb800, 0xc210b1c000, 0x2000, 0x2000, 0x14, ...)\n    /usr/local/go/src/pkg/io/io.go:398 +0xbb\nio/ioutil.devNull.ReadFrom(0x0, 0x7fe33e84f4a8, 0xc2101fb800, 0x544, 0x0, ...)\n    /usr/local/go/src/pkg/io/ioutil/ioutil.go:144 +0xb0\nio.Copy(0x7fe33e84dfe8, 0x0, 0x7fe33e84f4a8, 0xc2101fb800, 0x0, ...)\n    /usr/local/go/src/pkg/io/io.go:348 +0x124\nio.CopyN(0x7fe33e84dfe8, 0x0, 0x7fe33e855590, 0xc21042d750, 0x40001, ...)\n    /usr/local/go/src/pkg/io/io.go:317 +0xbe\nnet/http.(*chunkWriter).writeHeader(0xc210260a20, 0xc210246800, 0x1a, 0x800)\n    /usr/local/go/src/pkg/net/http/server.go:787 +0x117d\nnet/http.(*chunkWriter).Write(0xc210260a20, 0xc210246800, 0x1a, 0x800, 0x0, ...)\n    /usr/local/go/src/pkg/net/http/server.go:246 +0x87\nbufio.(*Writer).flush(0xc210058bc0, 0xc2104561d8, 0x7fe3ffffffff)\n    /usr/local/go/src/pkg/bufio/bufio.go:494 +0xa1\nbufio.(*Writer).Flush(0xc210058bc0, 0x7fe33c664e28, 0x1025b038)\n    /usr/local/go/src/pkg/bufio/bufio.go:483 +0x27\nnet/http.(*response).finishRequest(0xc210260a00)\n    /usr/local/go/src/pkg/net/http/server.go:999 +0x57\nnet/http.(*conn).serve(0xc210456180)\n    /usr/local/go/src/pkg/net/http/server.go:1171 +0x7e8\ncreated by net/http.(*Server).Serve\n    /usr/local/go/src/pkg/net/http/server.go:1644 +0x28b\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:45:34Z",
+	"created_at": "2014-06-14T15:38:59Z",
+	"updated_at": "2016-06-25T01:36:28Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

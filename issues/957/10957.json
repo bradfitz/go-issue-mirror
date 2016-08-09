@@ -1,0 +1,33 @@
+{
+	"id": 81097449,
+	"number": 10957,
+	"state": "closed",
+	"title": "archive/zip: bad file size",
+	"body": "The following program crashes with a panic:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/zip\"\r\n\t\"bytes\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"PK\\x03\\x040000000PK\\x01\\x0200000\" +\r\n\t\t\"0000000000000000000\\x00\" +\r\n\t\t\"\\x00\\x00\\x00\\x00\\x00000000000000PK\\x01\" +\r\n\t\t\"\\x020000000000000000000\" +\r\n\t\t\"00000\\v\\x00\\x00\\x00\\x00\\x00000000000\" +\r\n\t\t\"00000000000000PK\\x01\\x0200\" +\r\n\t\t\"00000000000000000000\" +\r\n\t\t\"00\\v\\x00\\x00\\x00\\x00\\x00000000000000\" +\r\n\t\t\"00000000000PK\\x01\\x020000\u003c\" +\r\n\t\t\"0\\x00\\x0000000000000000\\v\\x00\\v\" +\r\n\t\t\"\\x00\\x00\\x00\\x00\\x0000000000\\x00\\x00\\x00\\x00000\" +\r\n\t\t\"00000000PK\\x01\\x0200000000\" +\r\n\t\t\"0000000000000000\\v\\x00\\x00\\x00\" +\r\n\t\t\"\\x00\\x0000PK\\x05\\x06000000\\x05\\x000000\" +\r\n\t\t\"\\v\\x00\\x00\\x00\\x00\\x00\")\r\n\tz, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))\r\n\tif err != nil {\r\n\t\tif z != nil {\r\n\t\t\tpanic(\"non nil z\")\r\n\t\t}\r\n\t\treturn\r\n\t}\r\n\tfor _, f := range z.File {\r\n\t\tr, err := f.Open()\r\n\t\tif err != nil {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tif f.UncompressedSize64 \u003c 1e6 {\r\n\t\t\tn, err := io.Copy(ioutil.Discard, r)\r\n\t\t\tif err == nil \u0026\u0026 uint64(n) != f.UncompressedSize64 {\r\n\t\t\t\tprintln(\"bad size:\", n, f.UncompressedSize64)\r\n\t\t\t\tpanic(\"bad size\")\r\n\t\t\t}\r\n\t\t}\r\n\t\tr.Close()\r\n\t}\r\n}\r\n```\r\n```\r\nbad size: 0 733232\r\npanic: bad size\r\n```\r\n\r\nIf a file read succeeds (err==nil), then the file size should be checked against UncompressedSize. That is, if actual file data is shorter than UncompressedSize, then Read should return io.UnexpectedEOF; if actual file data is larger than UncompressedSize, then Read should stop at UncompressedSize and return an error. That last case (actual data is larger than claimed size) is particularly dangerous (I don't know if this kind of vulnerability is possible, but I suspect it is).\r\n\r\non commit 8017ace",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-05-26T22:18:47Z",
+	"created_at": "2015-05-26T19:17:05Z",
+	"updated_at": "2016-06-25T02:09:32Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

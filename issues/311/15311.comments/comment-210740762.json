@@ -1,0 +1,12 @@
+{
+	"id": 210740762,
+	"body": "This is a little tricky, because the parser has already resolved (or tried to resolve) names, including package-qualified names as well as dot-imported names.  In particular, I'm not sure off hand how to best handle:\r\n\r\n    package p\r\n\r\n    import (\r\n        \"errors\"\r\n        . \"unsafe\"\r\n    )\r\n\r\n    type T struct {\r\n        New     int\r\n        Pointer int\r\n    }\r\n\r\n    var t = T{\r\n        errors.New: 1,  // ERROR\r\n        Pointer: 2,     // ok\r\n    }\r\n\r\nbecause at this point `errors.New` and `Pointer` have both been parsed as references to the imported ONAME and OTYPE Nodes (respectively).  I'm not sure there's a way to distinguish whether the name was qualified or not.\r\n\r\nRelatedly, I discovered that cmd/compile erroneously accepts\r\n\r\n     package p\r\n     import . \"fmt\"\r\n     type T struct { Println int }\r\n     var t = T{ Println: 0 }\r\n\r\neven though the fmt import isn't actually used.  The parser is misrecognizing the \"Println: 0\" as a use of fmt.Println and marking fmt as used.\r\n\r\n(gccgo-4.8 also accepts it; gotype correctly rejects it.)",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-16T05:39:58Z",
+	"updated_at": "2016-04-16T05:48:40Z"
+}

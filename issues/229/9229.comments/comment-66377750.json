@@ -1,0 +1,12 @@
+{
+	"id": 66377750,
+	"body": "The Go runtime needs the following items from AUXV on linux:\r\n* _AT_RANDOM: we can read from /dev/urandom, at the cost of 3 extra syscalls, or use getrandom on newer kernels, one syscall, or use sysctl(uuid) trick.\r\n* _AT_PLATFORM: only on ARM. I think we can get the same information by parsing /proc/cpuinfo.\r\n* _AT_HWCAP: again, only on ARM. Android has its own way of querying the hardware capabilities, the mobile/app package could synthesis an entry for the runtime.\r\n* _AT_SYSINFO: only on 386, we need this to use vdso. Android port needs some way to get this pointer from libc or we can always use INT 0x80 on android.\r\n* _AT_SYSINFO_EHDR: only on amd64. we need this for vdso. We can either fallback to syscall or find some way to query the information.\r\n\r\nFor Android/ARM port, I think the way to go is to make mobile/app synthesize the needed auxv entries.\r\nI will just describe how to deal with _AT_PLATFORM and _AT_HWCAP here.\r\nwe query ```android_getCpuFeatures()``` and then translate:\r\n* if ANDROID_CPU_ARM_FEATURE_ARMv7 and ANDROID_CPU_ARM_FEATURE_VFPv3 are set, we set _AT_PLATFORM=\"v7l\" and _AT_HWCAP = _HWCAP_VFPv3;\r\n* else if ANDROID_CPU_ARM_FEATURE_LDREX_STREX and any of ANDROID_CPU_ARM_FEATURE_VFP* flags are set, we set _AT_PLATFORM=\"v6l\" and _AT_HWCAP=_HWCAP_VFP;\r\n* else set _AT_PLATFORM=\"v5l\", _AT_HWCAP=0\r\n\r\nOf course, the _AT_HWCAP set here is the bare minimum needed by the Go runtime. Ideally, we should translate as many bits of android cpufeatures to hwcaps as possible.\r\n\r\nI'm not sure how to deal with _AT_SYSINFO and _AT_SYSINFO_EHDR yet, but in the worse case we simply pass 0 and let the runtime fallback to int 0x80/syscall.\r\n(for _AT_SYSINFO_EHDR, we can parse /proc/self/maps and looks for \"[vsyscall]\", but I'm not sure if we can read that file if even the seemingly harmless auxv is not readable.)",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-09T23:21:48Z",
+	"updated_at": "2014-12-09T23:23:32Z"
+}

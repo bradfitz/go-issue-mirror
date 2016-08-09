@@ -1,0 +1,22 @@
+{
+	"id": 51287833,
+	"number": 8202,
+	"state": "closed",
+	"title": "testing: allow tests to control main execution",
+	"body": "\u003cpre\u003eA few things have come up recently that could be solved by giving tests a bit more\ncontrol over func main.\n\nSuppose we define a type testing.Main analogous to testing.T or testing.PB - it's there\njust to have methods to call - with one method Run() (exitcode int). Then the default\ntest main.main would refactor to:\n\nfunc main() {\n    // various registration\n    // create m\n    os.Exit(m.Run())\n}\n\nBut if a test package contains a func TestMain(m *testing.Main), then the main.main\nbecomes:\n\nfunc main() {\n    // various registration\n    // create m\n    pkg.TestMain(m.Run())\n}\n\nThe minimal TestMain is\n\nfunc TestMain(m *testing.Main) { os.Exit(m.Run()) }\n\nbut giving people the ability to write this solves a few problems that have been asked\nfor.\n\n\u003ca href=\"https://golang.org/issue/7905\"\u003eissue #7905\u003c/a\u003e: need to run graphics on main thread\n\nfunc TestMain(m *testing.Main) {\n    go func() {\n        os.Exit(m.Run())\n    }()\n    runGraphics()\n}\n\n\u003ca href=\"https://golang.org/issue/8159\"\u003eissue #8159\u003c/a\u003e: testing setup/shutdown hook:\n\nfunc TestMain(m *testing.Main) {\n    setup()\n    exitCode := m.Run()\n    shutdown()\n    os.Exit(exitCode)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:45:29Z",
+	"created_at": "2014-06-13T17:13:05Z",
+	"updated_at": "2016-06-25T01:36:25Z"
+}

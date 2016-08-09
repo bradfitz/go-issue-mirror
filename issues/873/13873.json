@@ -1,0 +1,23 @@
+{
+	"id": 125606461,
+	"number": 13873,
+	"state": "closed",
+	"title": "x/build: freebsd/386 builder is not testing 32-bit tool chain or cgo",
+	"body": "The freebsd/386 builder is not testing cgo, since it is run on a freebsd amd64 host with GOHOST=386 and without GOHOSTARCH=386. This is generating a 64-bit tool chain with a 32-bit runtime, which has cgo disabled:\r\n\r\n```shell\r\n$ uname -a\r\nFreeBSD fbsdamd64 10.1-RELEASE FreeBSD 10.1-RELEASE #0 r274401: Tue Nov 11 21:02:49 UTC 2014     root@releng1.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC  amd64\r\n$ file $(which go)\r\n/home/joel/src/go/bin/go: ELF 64-bit LSB executable, x86-64, version 1 (FreeBSD), dynamically linked (uses shared libs), not stripped\r\n$ GOARCH=386 go version\r\ngo version devel +acc7161 Fri Jan 8 00:56:28 2016 +0000 freebsd/amd64\r\n$ GOARCH=386 go env | grep CGO\r\nCGO_ENABLED=\"0\"\r\n$ cat test.go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"runtime\"\r\n)\r\n\r\nfunc main() {\r\n        fmt.Println(runtime.GOOS, runtime.GOARCH)\r\n}\r\n$ GOARCH=386 go build test.go\r\n$ file test\r\ntest: ELF 32-bit LSB executable, Intel 80386, version 1 (FreeBSD), statically linked, not stripped\r\n$ ./test\r\nfreebsd 386\r\n```\r\n\r\nThe builder should be running with GOHOSTARCH=386 so that it generates a 32-bit tool chain with cgo enabled. However, the misc/cgo/testso currently fails with this configuration.",
+	"user": {
+		"login": "4a6f656c",
+		"id": 8142769,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "4a6f656c",
+		"id": 8142769,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-08T17:02:55Z",
+	"created_at": "2016-01-08T12:51:21Z",
+	"updated_at": "2016-01-08T17:02:55Z"
+}

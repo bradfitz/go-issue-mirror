@@ -1,0 +1,12 @@
+{
+	"id": 165617941,
+	"body": "I don't understand what the problem is. I run this test:\r\n```\r\ndiff --git a/src/os/os_test.go b/src/os/os_test.go\r\nindex 5689e77..7a0e221 100644\r\n--- a/src/os/os_test.go\r\n+++ b/src/os/os_test.go\r\n@@ -1757,3 +1757,48 @@ func TestRemoveAllRace(t *testing.T) {\r\n  close(hold) // let workers race to remove root\r\n  wg.Wait()\r\n }\r\n+\r\n+func TestOpenSymlinkToEmptyDirectory(t *testing.T) {\r\n+ switch runtime.GOOS {\r\n+ case \"android\", \"nacl\", \"plan9\":\r\n+ t.Skipf(\"skipping on %s\", runtime.GOOS)\r\n+ }\r\n+ if !supportsSymlinks {\r\n+ t.Skip(\"skipping because symlinks are not supported\")\r\n+ }\r\n+\r\n+ tmpDir, err := ioutil.TempDir(\"\", \"OpenSymlink\")\r\n+ if err != nil {\r\n+ t.Fatal(err)\r\n+ }\r\n+ defer RemoveAll(tmpDir)\r\n+\r\n+ dir := filepath.Join(tmpDir, \"dir\")\r\n+ err = Mkdir(dir, 0755)\r\n+ if err != nil {\r\n+ t.Fatal(err)\r\n+ }\r\n+ link := filepath.Join(tmpDir, \"link\")\r\n+ err = Symlink(dir, link)\r\n+ if err != nil {\r\n+ t.Fatal(err)\r\n+ }\r\n+\r\n+ f, err := Open(link)\r\n+ if err != nil {\r\n+ t.Fatal(err)\r\n+ }\r\n+ defer f.Close()\r\n+\r\n+ if f == nil {\r\n+ t.Fatal(\"Open returns nil for *File\")\r\n+ }\r\n+\r\n+ names, err := f.Readdirnames(-1)\r\n+ if err != nil {\r\n+ t.Fatal(err)\r\n+ }\r\n+ if len(names) != 0 {\r\n+ t.Fatalf(\"Readdirnames expected to return no names, but %v returned\", names)\r\n+ }\r\n+}\r\n```\r\n\r\nand it succeeds. Why?\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-17T23:49:24Z",
+	"updated_at": "2015-12-17T23:49:24Z"
+}

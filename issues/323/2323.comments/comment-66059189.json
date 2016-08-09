@@ -1,0 +1,12 @@
+{
+	"id": 66059189,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eI think the problem you are seeing is because KERNELBASE.DLL happend to be loaded in the\nmiddle of your address space. Your address space got fragmented, so go runtime can't\nallocate this big chunk of memory it uses for garbage collector.\n\nNon-cgo programs shouldn't be affected, because go runtime loads most of its dlls after\nthis big block of memory is allocated. So Windows just find another place for all these\ndlls.\n\nCgo programs, on the other hand, have dlls loaded during process load time, even before\nprocess started running. Dlls are listed in the pe executable file header. And Windows\nprocess loader just loads them all alongside with the executable. Loader picks whatever\naddresses it likes. This makes your address fragmented even before your process starts.\n\nI am surprised, no-one reported anything like that before.\n\nIf nothing else, we would have to \"reserve\" this big contiguous block of addresses\nsomehow in our pe file description. Maybe create a special pe section for it, or include\nit as part of existing BSS section.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-10-11T06:27:47Z",
+	"updated_at": "2014-12-08T10:12:29Z"
+}

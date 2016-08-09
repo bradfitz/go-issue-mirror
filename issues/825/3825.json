@@ -1,0 +1,27 @@
+{
+	"id": 51281211,
+	"number": 3825,
+	"state": "closed",
+	"title": "bufio: document that ReadLine ignores missing \\n at EOF",
+	"body": "\u003cpre\u003eConsider this test:\n------------------------------------------------------------------\npackage main\n\nimport \u0026quot;bufio\u0026quot;\nimport \u0026quot;strings\u0026quot;\nimport \u0026quot;fmt\u0026quot;\n\nfunc read_lines(data string) {\n        fmt.Printf(\u0026quot;reading %q\\n\u0026quot;, data)\n        br := bufio.NewReader(strings.NewReader(data))\n        for {\n                line, is_prefix, err := br.ReadLine()\n                fmt.Println(line, is_prefix, err)\n                if err != nil {\n                        fmt.Println()\n                        return\n                }\n        }\n}\n\nfunc main() {\n        read_lines(\u0026quot;123\\n\\n123\u0026quot;)\n        read_lines(\u0026quot;123\\n\\n123\\n\u0026quot;)\n}\n------------------------------------------------------------------\n\nThe output for this test is:\n------------------------------------------------------------------\nreading \u0026quot;123\\n\\n123\u0026quot;\n[49 50 51] false \u0026lt;nil\u0026gt;\n[] false \u0026lt;nil\u0026gt;\n[49 50 51] false \u0026lt;nil\u0026gt;\n[] false EOF\n\nreading \u0026quot;123\\n\\n123\\n\u0026quot;\n[49 50 51] false \u0026lt;nil\u0026gt;\n[] false \u0026lt;nil\u0026gt;\n[49 50 51] false \u0026lt;nil\u0026gt;\n[] false EOF\n------------------------------------------------------------------\n\nAs you can see it is identical for both cases. The problem is that in second case, the\nlast empty line gets ignored. However in general ReadLine doesn't ignore empty lines.\nThe question is: is it a special case? If yes - it must be documented. If no - it is a\nbug.\n\nIn my opinion it is a bug. Since ReadLine returns non-empty lines which do not end with\nEOL symbol, it must return empty lines as well.\n\nWon't go into details why it happens, should be pretty obvious from the ReadLine's\nsource code.\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:20:13Z",
+	"created_at": "2012-07-14T22:15:02Z",
+	"updated_at": "2016-06-24T22:21:34Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

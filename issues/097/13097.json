@@ -1,0 +1,28 @@
+{
+	"id": 114125451,
+	"number": 13097,
+	"state": "closed",
+	"title": "runtime/race: false negative at tip",
+	"body": "When running the race detector against x/net/http2 at rev 2fd7f15, Go 1.5.1 on OS X detects this race, but Go tip (rev ab7e82ef3) does not:\r\n\r\n```\r\nbradfitz@laptop http2$ go version\r\ngo version go1.5.1 darwin/amd64\r\nbradfitz@laptop http2$ go test -v -race -run=TestServer_Response_RST_Unblocks_LargeWrite\r\n=== RUN   TestServer_Response_RST_Unblocks_LargeWrite\r\n==================\r\nWARNING: DATA RACE\r\nRead by goroutine 14:\r\n  golang.org/x/net/http2.(*writeScheduler).take()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/writesched.go:123 +0x3af\r\n  golang.org/x/net/http2.(*serverConn).scheduleFrameWrite()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:916 +0x3ab\r\n  golang.org/x/net/http2.(*serverConn).writeFrame()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:802 +0xa2\r\n  golang.org/x/net/http2.(*serverConn).serve()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:674 +0xb90\r\n  golang.org/x/net/http2.(*Server).handleConn()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:282 +0xf93\r\n  golang.org/x/net/http2.ConfigureServer.func1()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:193 +0xc4\r\n  net/http.(*conn).serve()\r\n      /private/var/folders/q8/bf_4b1ts2zj0l7b0p1dv36lr0000gp/T/workdir/go/src/net/http/server.go:1312 +0x9ce\r\n\r\nPrevious write by goroutine 28:\r\n  golang.org/x/net/http2.(*responseWriterState).writeChunk()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1770 +0x4f4\r\n  golang.org/x/net/http2.(*responseWriter).Flush()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1793 +0x140\r\n  golang.org/x/net/http2.(*responseWriter).handlerDone()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1893 +0xc6\r\n  golang.org/x/net/http2.(*serverConn).runHandler()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1526 +0x94\r\n\r\nGoroutine 14 (running) created at:\r\n  net/http.(*Server).Serve()\r\n      /private/var/folders/q8/bf_4b1ts2zj0l7b0p1dv36lr0000gp/T/workdir/go/src/net/http/server.go:1910 +0x464\r\n\r\nGoroutine 28 (finished) created at:\r\n  golang.org/x/net/http2.(*serverConn).processHeaderBlockFragment()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1384 +0x6ad\r\n  golang.org/x/net/http2.(*serverConn).processHeaders()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1328 +0x83a\r\n  golang.org/x/net/http2.(*serverConn).processFrame()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:1048 +0x718\r\n  golang.org/x/net/http2.(*serverConn).processFrameFromReader()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:998 +0xb96\r\n  golang.org/x/net/http2.(*serverConn).serve()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:678 +0xd15\r\n  golang.org/x/net/http2.(*Server).handleConn()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:282 +0xf93\r\n  golang.org/x/net/http2.ConfigureServer.func1()\r\n      /Users/bradfitz/src/golang.org/x/net/http2/server.go:193 +0xc4\r\n  net/http.(*conn).serve()\r\n      /private/var/folders/q8/bf_4b1ts2zj0l7b0p1dv36lr0000gp/T/workdir/go/src/net/http/server.go:1312 +0x9ce\r\n==================\r\n--- PASS: TestServer_Response_RST_Unblocks_LargeWrite (0.06s)\r\nPASS\r\nFound 1 data race(s)\r\nexit status 66\r\nFAIL\t\r\ngolang.org/x/net/http2\t2.499s\r\n```\r\n\r\nAnd the missed detection:\r\n\r\n```\r\nbradfitz@laptop http2$ go version\r\ngo version devel +ab7e82e Thu Oct 29 16:25:37 2015 +0000 darwin/amd64\r\nbradfitz@laptop http2$ go test -v -race -run=TestServer_Response_RST_Unblocks_LargeWrite\r\n=== RUN   TestServer_Response_RST_Unblocks_LargeWrite\r\n--- PASS: TestServer_Response_RST_Unblocks_LargeWrite (0.06s)\r\nPASS\r\nok  \tgolang.org/x/net/http2\t2.729s\r\n```\r\n\r\nEven with a large `--count=` value, in case it was scheduling or something.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-11-04T16:11:59Z",
+	"created_at": "2015-10-29T19:13:12Z",
+	"updated_at": "2015-11-04T16:11:59Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 155474411,
+	"body": "Excuse me, but I have an impression that you haven't seen the full example at all. I'm not talking about calling methods on nil non-interface values here at all. I'll try to explain in here then.\r\n\r\nLet's assume that type `*A` implements `io.Closer`. I have a function `maybeClose` implemented as follows:\r\n```go\r\nfunc maybeClose(c io.Closer) {\r\n\tif c != nil {\r\n\t\tc.Close()\r\n\t}\r\n}\r\n```\r\nI'm using it as follows:\r\n```\r\na := \u0026A{}\r\ndefer func() { maybeClose(a) }()\r\nif err := someValidation(a); err != nil { return nil, err }\r\nif err := someMoreChecks(a); err != nil { return nil, err }\r\n...\r\nif err := lastCheck(a); err != nil { return nil, err }\r\n// alright, a is valid, let's not close it, but return it instead\r\nb := a\r\na = nil\r\nreturn b, nil\r\n```\r\nIf all validations passed, I assign the object to other variable and `nil` the `a` variable. The deferred action is run, takes an `a` variable, which is `nil` at this point. Somehow `c != nil` in `maybeCheck` function does not catch it and happily calls `Close` on it, which might end in nil dereference if `Close` accesses some fields in `*A`.\r\n\r\nNow, either change `c io.Closer` in `maybeClose` to `c *A` or change `a := \u0026A{}` to `a := func() io.Closer { return \u0026A{} } ()` and it works - `Close` is not invoked anymore in deferred function.",
+	"user": {
+		"login": "krnowak",
+		"id": 96081,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-10T16:26:48Z",
+	"updated_at": "2015-11-10T16:31:01Z"
+}

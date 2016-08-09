@@ -1,0 +1,22 @@
+{
+	"id": 159307542,
+	"number": 16017,
+	"state": "closed",
+	"title": "runtime: buildmode=c-shared libraries on Linux all reuse AT_RANDOM bits from aux vector",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version devel +f3689d1 Wed Jun 8 20:35:53 2016 +0000 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/usr/local/google/home/jamesr/gocode\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/google/home/jamesr/go\"\r\nGOTOOLDIR=\"/usr/local/google/home/jamesr/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build474773350=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nIf any number of go libraries built in buildmode=c-shared are loaded into the same program they will all seed their random number generator using the same 16 bytes from the initial processes AT_RANDOM entry in the auxiliary vector.\r\n\r\n4. What did you expect to see?\r\n\r\nShared libraries seeding themselves with different values either by calling the host libc's rand() when loaded from a C shared library or by reading from /dev/urandom explicitly.\r\n\r\n5. What did you see instead?\r\n\r\nglibc's dlopen() passes a pointer to the hosting process' argc which is propagated through to the src/runtime argument parsing routine which identifies the AT_RANDOM tagged data in the auxv section and populates startupRandomData bytes here:\r\n\r\nhttps://go.googlesource.com/go/+/master/src/runtime/os_linux.go#185\r\n\r\nwhich is then seeded into the runtime's random number generator (mixed in with a call to nanotime() which will very likely but not always differ from library to library).\r\n\r\nIn practice this means multiple shared libraries in the same address space will have less initial randomness than might be expected.  This should not cause problems in properly written applications but may be surprising.",
+	"user": {
+		"login": "jamesr",
+		"id": 7497301,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-06-09T17:50:47Z",
+	"created_at": "2016-06-09T00:45:55Z",
+	"updated_at": "2016-06-09T17:50:47Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

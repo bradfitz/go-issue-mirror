@@ -1,0 +1,21 @@
+{
+	"id": 79217934,
+	"number": 10930,
+	"state": "open",
+	"title": "testing: autodetect appropriate benchtime",
+	"body": "For discussion:\r\n\r\nThere is tension in how long to run benchmarks for. You want to run long, in order to make any overhead irrelevant and to reduce run-to-run variance. You want to run short, so that it takes less time; if you have a fixed amount of computing time, it'd be better to run multiple short tests, so you can do better analysis than taking the mean, perhaps by using [benchstat](rsc.io/benchstat).\r\n\r\nRight now we use a fixed duration, which is ok, but we could do better. For example, many of the microbenchmarks in strconv appear stable at 10ms, which is 100x faster than the default of 1s.\r\n\r\nRough idea, input welcomed:\r\n\r\nThe time to run a benchmark is V+C*b.N, where b.N is the number of iterations and V and C are random variables -- V for overhead, C for code execution time. We can take measurements using different b.N (starting small and growing) and estimate V and N. Based on that, we can calculate what b.N value is required to reduce the contribution of V to the sum to some fixed limit, say 1%.\r\n\r\nThis should allow stable, fast benchmarks to execute very quickly. Slower benchmarks would get slower (you have to execute with b.N=1 and 2 at a bare minimum), but that's better than accidentally misleading the user into thinking that they have a meaningful performance number, which is what can currently happen.\r\n\r\nWe would probably want to change benchtime to be a cap on running time and increase the default value substantially. If stable numbers are not achievable within the provided benchtime, we would warn the user, who could increase the benchtime or change the benchmark.\r\n\r\nI put together a quick-and-dirty version of this using linear regression to estimate V and C. It almost immediately caught a badly behaved benchmark (fixed in CL 10053), when it estimated that the benchmark would take hours to run in order to be reliable. I haven't run it outside the `encoding/json` package; I imagine that there are other benchmarks that need fixing.\r\n\r\nAgain, input welcomed. I'm not a statistician; I don't even play one on TV.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2015-05-22T00:30:08Z",
+	"updated_at": "2015-11-04T19:31:10Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

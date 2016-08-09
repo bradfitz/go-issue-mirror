@@ -1,0 +1,27 @@
+{
+	"id": 53452888,
+	"number": 9512,
+	"state": "closed",
+	"title": "os/exec: Piping to a command blocks under freebsd when input string has length \u003e= 8192",
+	"body": "1. Go Version: `go version go1.4 freebsd/amd64`\r\n2. OS Version/Architecture: `10.0-RELEASE-p6 FreeBSD 10.0-RELEASE-p6 #0: Tue Jun 24 07:47:37 UTC 2014     root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64`\r\n3. I'm trying to pipe arbitrary strings to an external command which sometimes hangs for some reason.\r\n4. I want to get the CombinedOutput of the command after executing.\r\n5. The application hangs while piping.\r\n\r\nI investigated and found out that the piping to the command won't finish sometimes. I wrote a program to check under which circumstances the piping would hang and found out that if the string is 8192 chars long (or longer) the piping would hang. Here is the program I used which just pipes to cat and uses increasing sizes for the string:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"math/rand\"\r\n\t\"os/exec\"\r\n)\r\n\r\nvar letters = []rune(\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\")\r\n\r\nfunc randSeq(n int) string {\r\n\tb := make([]rune, n)\r\n\tfor i := range b {\r\n\t\tb[i] = letters[rand.Intn(len(letters))]\r\n\t}\r\n\treturn string(b)\r\n}\r\n\r\nfunc main() {\r\n\tfor i := 8190; i \u003c 8195; i++ {\r\n\t\tlog.Println(\"length: \", i)\r\n\t\tdata := randSeq(i)\r\n\r\n\t\tcommand := exec.Command(\"/bin/cat\")\r\n\r\n\t\tpipe, err := command.StdinPipe()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(\"can not get pipe from command: \", err)\r\n\t\t}\r\n\r\n\t\tlog.Println(\"writing to pipe\")\r\n\t\t_, err = io.WriteString(pipe, data)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(\"can not write to pipe: \", err)\r\n\t\t}\r\n\t\tlog.Println(\"finished writing to pipe\")\r\n\t\tpipe.Close()\r\n\r\n\t\t_, err = command.CombinedOutput()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(\"problem while running command: \", err)\r\n\t\t}\r\n\r\n\t}\r\n}\r\n```\r\nI tried the same under Linux amd64 with the same go version and the program worked as expected.",
+	"user": {
+		"login": "AlexanderThaller",
+		"id": 357645,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-01-05T22:05:03Z",
+	"created_at": "2015-01-05T21:54:26Z",
+	"updated_at": "2016-06-25T01:57:50Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66085142,
+	"body": "\u003ca id=\"c35\"\u003e\u003c/a\u003eComment 35:\n\n\u003cpre\u003eAccording to \u003ca href=\"https://sourceware.org/bugzilla/show_bug.cgi?id=15946\"\u003ehttps://sourceware.org/bugzilla/show_bug.cgi?id=15946\u003c/a\u003e this will be fixed in\nthe glibc 2.20 release.\n\nIt was a one-line patch in glibc:\n\u003ca href=\"https://sourceware.org/git/gitweb.cgi?p=glibc.git\"\u003ehttps://sourceware.org/git/gitweb.cgi?p=glibc.git\u003c/a\u003e;a=blobdiff;f=resolv/res_send.c;h=af42b8aac216356a5466998df5c47c21357881d3;hp=3273d55ceb5eeb354aab61aae96224412a6ed308;hb=f9d2d03254a58d92635a311a42253eeed5a40a47;hpb=71840409ea45ab9e49d0ac70dfc1c355accf355f\n\nIf I'm reading the code correctly, the Go package could avoid the problem by querying\nseparately for AF_INET and AF_INET6 (by setting hints.ai_family).  I think the problem\nonly arises when the hints do not specify an address family, in which case the resolv\nlibrary will send two simultaneous requests, one for AF_INET and one for AF_INET6.  The\nproblem arises when the first request is received but the second request times out.  In\nthat case the second request is resent.  However, between the first and second time the\nsecond request is resent, the network descriptor might have been closed.  If that\nhappened, the second request is resent on the wrong descriptor.  If you're really\nunlucky, that descriptor was reopened as something else.\n\nI do not know if it's worth working around this in the Go code.  I don't know how often\nthis problem arises in practice.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-14T00:15:00Z",
+	"updated_at": "2014-12-08T10:34:52Z"
+}

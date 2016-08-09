@@ -1,0 +1,12 @@
+{
+	"id": 226388159,
+	"body": "@ianlancetaylor It runs this method\r\n```\r\nfunc (rm *retryManager) run() {\r\n\tvar timer *time.Timer\r\n\tvar ch \u003c-chan time.Time\r\n\tn := time.Duration(1)\r\n\tif rm.defaultDriver != nil \u0026\u0026 rm.backupDriver != nil {\r\n\t\ttimer = time.NewTimer(n * time.Second)\r\n\t\tch = timer.C\r\n\t}\r\n\tfor {\r\n\t\tif timer != nil {\r\n\t\t\tif rm.retryDone {\r\n\t\t\t\ttimer.Stop()\r\n\t\t\t} else {\r\n\t\t\t\ttimer.Reset(n * time.Second)\r\n\t\t\t}\r\n\t\t}\r\n\t\tselect {\r\n\t\tcase re := \u003c-rm.dbchan:\r\n\t\t\tre.err \u003c- rm.encodeAndWrite(re.retryEntry)\r\n\t\t\trm.retryDone = false\r\n\t\tcase \u003c-ch:\r\n\t\t\terr := rm.retry()\r\n\t\t\tif err != nil {\r\n\t\t\t\tn *= 2\r\n\t\t\t\tif n \u003e 60 {\r\n\t\t\t\t\tn = 60\r\n\t\t\t\t}\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t\tn = 1\r\n\t\tcase q := \u003c-rm.quit:\r\n\t\t\tq \u003c- struct{}{}\r\n\t\t\treturn\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nAnd panic I expected should happen inside `rm.retry()`.",
+	"user": {
+		"login": "zh-lab",
+		"id": 11348478,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-16T04:55:54Z",
+	"updated_at": "2016-06-16T04:55:54Z"
+}

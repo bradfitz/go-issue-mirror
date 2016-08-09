@@ -1,0 +1,12 @@
+{
+	"id": 172610644,
+	"body": "Good news here. I can explain what happens. Not sure about what would be the best solution, though.\r\n\r\nAs you know, Windows is this idiosyncratic beast. I learned the function GetLongPathName has a peculiarity: it tries to convert the casing of directories and filenames, but the rules are weird. Let's perform a little test. Please keep at hand my utility to invoke GetLongPathName function.\r\n\r\nLet's create a temporary directory for us to tinker with:\r\n\r\n\\\u003e mkdir c:\\trash\r\n\r\nEnter into that directory and create yet another, using a short name, like this:\r\n\r\n\\\u003e mkdir short\r\n\r\nNow we can call GetLongPathName to see the results:\r\n\r\n\\\u003e GetLongPathName.exe c:\\trash\\short\r\n14\r\nc:\\trash\\short\r\n\r\nPass the same path to GetLongPathName, all uppercase this time:\r\n\r\n\\\u003e GetLongPathName.exe C:\\TRASH\\SHORT\r\n14\r\nC:\\trash\\short\r\n\r\nDo you see? The function brings the path to the correct casing, as it was created. Great.\r\nNow, let us create another directory, still inside our trash directory, this time with a little longer name:\r\n\r\n\\\u003e mkdir aLongName\r\n\r\nAnd let's call GetLongPathName again, first with lowercase letters, and then with uppercase:\r\n\r\n\\\u003e GetLongPathName.exe c:\\trash\\aLongName\r\n18\r\nc:\\trash\\aLongName\r\n\r\n\\\u003e GetLongPathName.exe C:\\TRASH\\ALONGNAME\r\n18\r\nC:\\trash\\ALONGNAME\r\n\r\nDo you see? The function didn't changed the casing like it did when we used a short name. The behavior changed due to the directory name length. Can't you believe? I understand your pain.\r\n\r\nSo, my friends, that weird behavior alters the test results, as Windows version of Go function evalSymlinks calls GetLongPathName to format the path before returning it. Unpredictable casing results. So, the simple string comparison at path_windows_test.go:61 cannot be trusted anymore.\r\n\r\nI hope it helps.",
+	"user": {
+		"login": "jucie",
+		"id": 8865244,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-18T18:15:08Z",
+	"updated_at": "2016-01-18T18:25:17Z"
+}

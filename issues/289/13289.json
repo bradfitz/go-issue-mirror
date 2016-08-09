@@ -1,0 +1,22 @@
+{
+	"id": 117323908,
+	"number": 13289,
+	"state": "closed",
+	"title": "runtime: bad pointer 0xc84809c000 unexpected span",
+	"body": "I encountered this crash on linux/amd64 with go1.5.1 compiled with GOEXPERIMENT=framepointer. There is no use of cgo or unsafe. I re-ran my program with the race detector, which found nothing.\r\n\r\nThe program is running on Linux 3.13 on a machine with 60GB memory and 36 cores.\r\n\r\nIt looks like this crash is different than #13176 - the bad pointer isn't nearly full of zeros, it's outside the selected span, and the span state is set to mSpanInUse.\r\n\r\n```\r\nruntime:objectstart Span weird: p=0xc84809c000 k=0x642404e s.start=0xc8d25fe000 s.limit=0xc8d2600000 s.state=0\r\nfatal error: objectstart: bad pointer in unexpected span\r\n\r\ngoroutine 69 [running]:\r\nruntime.throw(0xb77420, 0x2b)\r\n    /usr/local/go/src/runtime/panic.go:527 +0x9b fp=0xc82054c5f8 sp=0xc82054c5d8\r\nruntime.heapBitsForObject(0xc84809c000, 0x0, 0x0, 0xc800000000, 0x7fac7bd79c70)\r\n    /usr/local/go/src/runtime/mbitmap.go:217 +0x29b fp=0xc82054c638 sp=0xc82054c5f8\r\nruntime.scanobject(0xc90cb64000, 0xc820027c20)\r\n    /usr/local/go/src/runtime/mgcmark.go:878 +0x253 fp=0xc82054c710 sp=0xc82054c638\r\nruntime.gcDrain(0xc820027c20, 0x7d0)\r\n    /usr/local/go/src/runtime/mgcmark.go:689 +0x103 fp=0xc82054c748 sp=0xc82054c710\r\nruntime.gcBgMarkWorker(0xc820026a00)\r\n    /usr/local/go/src/runtime/mgc.go:1320 +0x297 fp=0xc82054c7b8 sp=0xc82054c748\r\nruntime.goexit()\r\n    /usr/local/go/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc82054c7c0 sp=0xc82054c7b8\r\ncreated by runtime.gcBgMarkStartWorkers\r\n    /usr/local/go/src/runtime/mgc.go:1239 +0x9f\r\n\r\ngoroutine 1 [semacquire, 3278 minutes]:\r\nsync.runtime_Semacquire(0xc8203fa55c)\r\n    /usr/local/go/src/runtime/sema.go:43 +0x30\r\nsync.(*WaitGroup).Wait(0xc8203fa550)\r\n    /usr/local/go/src/sync/waitgroup.go:126 +0xc3\r\nmain.main()\r\n    /redacted.go:211 +0xfb0\r\n```\r\n\r\nCC @RLH @aclements ",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-11-23T06:41:47Z",
+	"created_at": "2015-11-17T10:20:32Z",
+	"updated_at": "2015-11-23T06:41:47Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

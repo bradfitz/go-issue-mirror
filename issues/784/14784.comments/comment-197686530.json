@@ -1,0 +1,12 @@
+{
+	"id": 197686530,
+	"body": "The check is easy to add in.  But it is failing, SSA is generating a write barrier in runtime/mstkbar.go:208 where we store a slice to the heap:\r\n```\r\n\tgp.stkbar = gp.stkbar[:len(gp.stkbar)+1]\r\n```\r\nWhen the frontend passes this assignment to SSA, it is marked as requiring a write barrier:\r\n```\r\n.   ASWB u(100) l(17067) tc(1)\r\n.   .   DOTPTR u(2) l(17067) x(136+0) tc(1) assigned ARRAY-[]stkbar\r\n.   .   .   NAME-runtime.gp u(1) a(true) g(2) l(17030) x(0+0) class(PPARAM) f(1) esc(no) tc(1) used(true) PTR64-*g\r\n.   .   .   NAME-runtime.stkbar u(1) a(true) l(17067) x(0+0)\r\n.   .   SLICE u(2) l(17067) tc(1) ARRAY-[]stkbar\r\n.   .   .   DOTPTR u(2) l(17067) x(136+0) tc(1) ARRAY-[]stkbar\r\n.   .   .   .   NAME-runtime.gp u(1) a(true) g(2) l(17030) x(0+0) class(PPARAM) f(1) esc(no) tc(1) used(true) PTR64-*g\r\n.   .   .   .   NAME-runtime.stkbar u(1) a(true) l(17067) x(0+0)\r\n.   .   .   KEY l(17067)\r\n.   .   .   .   NAME-runtime.autotmp_2802 u(1) a(true) l(17067) x(0+0) class(PAUTO) esc(N) tc(1) assigned used(true) int\r\n```\r\n\r\nI guess there's some subsequent logic in the legacy compiler that removes the write barrier if it notices that the pointer being written is to the same object as the pointer that is already there.  Might be nice if we pushed that logic up to before the SSA cutoff so it can be shared.\r\n\r\nThe only other occurrence is at mstkbar.go:233:\r\n```\r\n\tgp.stkbar = gp.stkbar[:0]\r\n```\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-17T04:19:18Z",
+	"updated_at": "2016-03-17T04:19:18Z"
+}

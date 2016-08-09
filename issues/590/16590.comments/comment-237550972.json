@@ -1,0 +1,12 @@
+{
+	"id": 237550972,
+	"body": "The -linkshared program above has two different *_type values for ```func() string```, one from each module.\r\n\r\nThe runtime requires there be a single *_type for each type, and for multi-module programs the initialization in runtime.typelinksinit should de-duplicate the *_type instances. In this case it's not because these types have different package names: one is \"main\" and the other is \"fmt\", so runtime.typesEqual is returning false.\r\n\r\nPackage names are used on these types so that package p2 cannot implement an unexported interface method from package p1. That reasoning does not apply to exported method names, and so the smallest fix to this is to ignore package names on exported function types in runtime.typesEqual. I'm not sure if this is a general fix, still pondering.\r\n\r\nFortunately all of this code is guarded behind ```firstmoduledata.next != nil```, so it should be safe to add this to 1.7 without worrying that it effects any of the more tested build modes.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-04T13:22:46Z",
+	"updated_at": "2016-08-04T13:22:46Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 141881729,
+	"body": "You're looking at some pretty ancient code. I wrote the original `archive/tar` in mid 2009, before we even really had a good grasp of what good Go code looked like. It's accreted changes ever since as people have had need. It probably needs a good tidy up.\r\n\r\nI managed to find an email from the code review where `Writer.Flush` got added. @rsc said:\r\n```\r\nLine 51: func (tw *Writer) writePadding() {\r\nrename to Flush and return os.Error.\r\nclients may want to call this explicitly\r\nto finish one file even if they're not\r\nready to call Close or WriteHeader.\r\n```\r\nIn its original form it did indeed write out zeros to the end of the current file. It seems a little bogus now, but we can't drop it.\r\n\r\nThe neutering on line 51 does indeed look silly. It was added in d75abb7c (early 2012), and @rsc noticed that it was silly after it was submitted (https://codereview.appspot.com/5777064). I can't remember why we didn't revise it back then.\r\n\r\nWith the benefit of hindsight, I can't see the use case for writing the zeros automatically. The user of `tar.Writer` needs to know the size in advance (to put it in the header), and can easily write zeros if they want. The 2012 change made `Flush` only write the trailing padding anyway, so we could simplify it now, but it's also somewhat of a historical artifact at this point.",
+	"user": {
+		"login": "dsymonds",
+		"id": 31506,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-21T05:48:15Z",
+	"updated_at": "2015-09-21T05:48:15Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51281359,
+	"number": 3924,
+	"state": "closed",
+	"title": "cmd/gc: inconsistent result type for logical operations",
+	"body": "\u003cpre\u003eThe following program should not compile with gc:\n\npackage main\n\ntype mybool bool\n\nfunc main() {\n\tvar x, y int = 1, 2\n\tvar _ bool = x \u0026lt; y \u0026amp;\u0026amp; x \u0026lt; y\n\tvar _ mybool = x \u0026lt; y \u0026amp;\u0026amp; x \u0026lt; y // should be illegal because x \u0026lt; y is of type bool\n}\n\nThe spec says:\n\n1) \u0026quot;The result of a comparison can be assigned to any boolean type. If the context\ndoes not demand a specific boolean type, the result has type bool.\u0026quot; (\n\u003ca href=\"http://golang.org/ref/spec#Comparison_operators\"\u003ehttp://golang.org/ref/spec#Comparison_operators\u003c/a\u003e )\n\n2) \u0026quot;For other (non-comparison) binary operators, the operand types must be\nidentical unless the operation involves shifts or untyped constants.\u0026quot; (\n\u003ca href=\"http://golang.org/ref/spec#Operators\"\u003ehttp://golang.org/ref/spec#Operators\u003c/a\u003e )\n\n3) \u0026quot;Logical operators apply to boolean values and yield a result of the same type\nas the operands.\u0026quot; ( \u003ca href=\"http://golang.org/ref/spec#Logical_operators\"\u003ehttp://golang.org/ref/spec#Logical_operators\u003c/a\u003e )\n\n4) \u0026quot;In assignments, each value must be assignable to the type of the operand to\nwhich it is assigned.\u0026quot; ( \u003ca href=\"http://golang.org/ref/spec#Assignments\"\u003ehttp://golang.org/ref/spec#Assignments\u003c/a\u003e ).\n\n5) Definition of assignability ( \u003ca href=\"http://golang.org/ref/spec#Assignability\"\u003ehttp://golang.org/ref/spec#Assignability\u003c/a\u003e ).\n\nLooking at the last declaration in the program:\n\nPer 1), the result of the comparisons x \u0026lt; y is bool (note that x, y are not\nconstant). Per 2), the \u0026amp;\u0026amp; operation is legal because both operands (x \u0026lt; y)\nare of the same type bool. Per 3), the result type of the \u0026amp;\u0026amp; operation is of the\nsame type as the operands, which is bool. Per 4) and 5), a bool value is not assignable\nto a mybool.\n\ngc compiles and runs the above program w/o complaint. gccgo correctly complains with:\nx.go:8:6: error: incompatible type in initialization (cannot use type bool as type\nmybool).\n\n(The following program emphasizes that elsewhere in an \u0026amp;\u0026amp; operation, an operand\nthat is a comparison indeed assumes the type bool:\n\npackage main\n\ntype mybool bool\n\nfunc main() {\n\tvar x, y int = 1, 2\n\tvar _ = bool(true) \u0026amp;\u0026amp; x \u0026lt; y      // this is legal as x \u0026lt; y produces a bool\n\tvar _ = mybool(true) \u0026amp;\u0026amp; x \u0026lt; y // invalid operation: mybool(true) \u0026amp;\u0026amp; x \u0026lt; y (mismatched types mybool and bool)\n}\n)\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:46Z",
+	"created_at": "2012-08-07T23:57:35Z",
+	"updated_at": "2016-06-24T22:22:46Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

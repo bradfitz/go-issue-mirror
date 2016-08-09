@@ -1,0 +1,12 @@
+{
+	"id": 66082911,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eI can reliably reproduce it on my 64-bit Windows7 machine if I set process affinity to 1\ncore in runtime.osinit. But can not reproduce on another 64-bit Windows7.\n\nThe bad news is that looks like kernel bug.\nWhy I think so (aside from I do not see a bug in our code):\n- Whenever it happens, when the process exits it hangs in corrupted\nstate. I can not kill it by any means. It remains semi-alive with 1\nthread blocked in kernel.\n- When I tried to look at the semi-alive process with ProcExplorer it\ncaused BSOD several times.\n\nThen a process exists Windows cancels all its outstanding IO requests.\nSo the hypothesis is that the IO request becomes corrupted and causes\nsome kind of kernel deadlock. When the kernel tries to cancel it\nduring process exit, that hangs as well.\n\nI see that the timeout does fire -- the goroutine blocks in\nruntime_pollWaitCanceled.\nAnd it never unblocks, even if I increase the timeout.\nThe CPU is idle, so it's not a busy loop (and the busy loop would not\ncause process exit failure).\n\nIf I add any logging into interesting paths the problem goes away.\n\nAlex, you've said that the request eventually unblocks on your machine\nif you increase the timeout. The hypothesis that your version of OS\nmay have some kind of internal timeout for request cancellation or\nsomething like this. I.e. the OS eventually resolves the situation.\nBut this does not happen on my version of OS.\n\nAnother bad news is that I do not see any reasonable workaround. If my\nhypothesis is correct, then the lockup is caused by concurrent IO\nrediness notification and cancellation request. There is no way to\navoid that.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-07-27T09:27:54Z",
+	"updated_at": "2014-12-08T10:32:49Z"
+}

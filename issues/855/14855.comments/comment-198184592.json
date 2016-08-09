@@ -1,0 +1,12 @@
+{
+	"id": 198184592,
+	"body": "Apologies for having an old copy.\n\nThat CL actually makes things worse. Now there is a pointer update without a write barrier. If there were a race on the slice, before the GC could not have lost track of the pointer. Now it can. This is kind of an ABA problem. Its very important never to write to a pointer in the heap without using a write barrier. The optimization must delete the pointer write entirely, not just the use of the write barrier.\n\nAt current tip:\n\n\t0x000f 00015 (/tmp/x.go:4)\tMOVQ\t\"\".x+8(FP), CX\n\t0x0014 00020 (/tmp/x.go:4)\tMOVQ\t16(CX), DX\n\t0x0018 00024 (/tmp/x.go:4)\tMOVQ\t(CX), BX\n\t0x001b 00027 (/tmp/x.go:4)\tCMPQ\tDX, $8\n\t0x001f 00031 (/tmp/x.go:4)\tJCS\t$0, 91\n\t0x0021 00033 (/tmp/x.go:4)\tCMPQ\tDX, $0\n\t0x0025 00037 (/tmp/x.go:4)\tJEQ\t$0, 39\n\t0x0027 00039 (/tmp/x.go:4)\tMOVQ\tBX, (CX) \u003c\u003c\u003c update to heap pointer without write barrier (!!!)\n\t0x002a 00042 (/tmp/x.go:4)\tMOVQ\t$8, 8(CX)\n\t0x0032 00050 (/tmp/x.go:4)\tMOVQ\tDX, 16(CX) \u003c\u003c\u003c unnecessary update of cap",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-18T03:24:12Z",
+	"updated_at": "2016-03-18T03:24:12Z"
+}

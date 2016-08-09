@@ -1,0 +1,27 @@
+{
+	"id": 51284392,
+	"number": 5925,
+	"state": "closed",
+	"title": "runtime: arm memove corrupts its parameters",
+	"body": "\u003cpre\u003eDue to a misunderstanding about SP being the same as FP on ARM\npkg/runtime/memmove_arm.s is corrupting its parameters instead of\nsaving data in its stack frame.\n\nTEXT runtime·memmove(SB), 7, $4-12\n_memmove:\n        MOVW    to+0(FP), R(TS)\n        MOVW    from+4(FP), R(FROM)\n        MOVW    n+8(FP), R(N)\n\n[snip]\n\n_b4aligned:                             /* is source now aligned? */\n        AND.S   $3, R(FROM), R(TMP)\n        BNE     _bunaligned\n\n        ADD     $31, R(TS), R(TMP)      /* do 32-byte chunks if possible */\n        MOVW    R(TS), savedts+4(SP)    // \u0026lt;------ THIS IS WRONG!\n_b32loop:\n        CMP     R(TMP), R(TE)\n        BLS     _b4tail\n\nWhich disassembles to\n\n0003a370 \u0026lt;runtime.memmove\u0026gt;:\n   3a370:       e52de008        str     r14, [r13, #-8]!\n   3a374:       e59d000c        ldr     r0, [r13, #12] // to argument\n   3a378:       e59db010        ldr     r11, [r13, #16]\n   3a37c:       e59dc014        ldr     r12, [r13, #20]\n\n[snip]\n\n   3a3b0:       e21bc003        ands    r12, r11, #3\n   3a3b4:       1a000015        bne     3a410 \u0026lt;runtime.memmove+0xa0\u0026gt;\n   3a3b8:       e280c01f        add     r12, r0, #31\n   3a3bc:       e58d000c        str     r0, [r13, #12] // should be #4\n   3a3c0:       e158000c        cmp     r8, r12\n   3a3c4:       9a000002        bls     3a3d4 \u0026lt;runtime.memmove+0x64\u0026gt;\n\nIt was clearly the intention of the author to save R(TS) in the stack\nframe (otherwise why allocate it) but actually it is being saved in the\nto argument. In fact the allocated word in the stack frame 4(R13) is\nnever used.\n\nI'm unclear whether called functions are allowed to corrupt their\narguments in the go calling convention or not. However Dave Cheney the\noriginal author of this code agreed that it was a bug and should be\nfixed.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n5g\n\nWhich operating system are you using?\n\nlinux arm\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +77be25034f84 Fri Jul 19 01:22:26 2013 +0400 linux/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "ncw",
+		"id": 536803,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:32:31Z",
+	"created_at": "2013-07-20T15:12:09Z",
+	"updated_at": "2016-06-24T22:52:20Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 184803621,
+	"body": "On Tue, Feb 16, 2016 at 6:31 PM, Russ Cox \u003cnotifications@github.com\u003e wrote:\n\n\u003e Sorry, bear with me, but I still don't understand. It sounds like you want\n\u003e to be able to distinguish the output of the two go list commands in:\n\u003e\n\u003e cd $GOROOT/src/io\n\u003e go list -json ./ioutil\n\u003e go list -json io/ioutil\n\u003e\n\u003e and also that you want\n\u003e\n\u003e cd $GOROOT/src/io\n\u003e go list ./...\n\u003e\n\u003e to report about a package \"./ioutil\" instead of \"io/ioutil\". I don't\n\u003e really see why that's useful. The standard name of the package is\n\u003e io/ioutil, not ./ioutil. The fact that you can refer to it as \"./ioutil\" or\n\u003e \"./...\" from within the $GOROOT/src/io directory is a convenience only. It\n\u003e shouldn't propagate into the rest of the toolchain.\n\u003e\n\nNo, I don't want to change how standard packages are handled.\n\n\u003e I don't know what golint does for reporting relative paths to source files,\n\u003e\nSuppose that, inside a directory \"foo\", you do `golint ../foo`. A file path\nwill be printed as \"../foo/bar.go\"\n\nThat is, all the paths are prefixed with \"..\", since this is how I\nspecified the import paths on the command line.\n\nbut I can tell you what the go command itself does, and I would suggest\n\u003e golint do the same.\n\u003e\nOne of the cause of all this confusion is IMHO that some tools like golint\ndo not use go list internally.\nI have written some tools that required to enumerate installed packages,\nand it was a pain to understand how to get the correct implementation.\n\n\u003e The go command uses this code, which works very well in practice. At least\n\u003e I can't remember a single complaint about the decisions it makes:\n\u003e\n\u003e // shortPath returns an absolute or relative name for path, whatever is shorter.\n\u003e func shortPath(path string) string {\n\u003e     if rel, err := filepath.Rel(cwd, path); err == nil \u0026\u0026 len(rel) \u003c len(path) {\n\u003e         return rel\n\u003e     }\n\u003e     return path\n\u003e }\n\u003e\n\u003e\nUsing shortPath in the previous example, golint would print \"bar.go\", and\nnot \"../foo/bar.go\"\n\nI prefer the golint solution, since it seems more coherent.\n\n\nThanks!\n",
+	"user": {
+		"login": "perillo",
+		"id": 6217088,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-16T18:04:40Z",
+	"updated_at": "2016-02-16T18:04:40Z"
+}

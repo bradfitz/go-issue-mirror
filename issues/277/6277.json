@@ -1,0 +1,22 @@
+{
+	"id": 51284948,
+	"number": 6277,
+	"state": "closed",
+	"title": "(*os.File).ReadAt reading past EOF on Windows can produce an error != io.EOF",
+	"body": "\u003cpre\u003eWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nW7/32b in VirtualBox running in Ubuntu 12.04, x86_64.\n\nWhich version are you using?  (run 'go version')\ngo version 1.1.2\n\nPlease provide any additional information below.\n\nExcerpts from a mail converstaion with the Camlistore developers:\n\n----\nWe've just got this report:\n\u003ca href=\"http://camlistore.org/issue/214\"\u003ehttp://camlistore.org/issue/214\u003c/a\u003e\n\nso I've tried in winxp in a virtualbox a very basic test like\n\u003ca href=\"https://gist.github.com/mpl/6366649\"\u003ehttps://gist.github.com/mpl/6366649\u003c/a\u003e\nand I indeed get an error like:\nkv.Create foo.kv: read foo.kv: Fin de fichier atteinte. (which means EOF)\n----\nFirst partial result:\n\nC:\\home\\src\\github.com\\cznic\\kv\u0026gt;go test -run TestCreate$\n\nThe problem is here: \u003ca href=\"https://github.com/cznic/exp/blob/master/lldb/xact.go#L211\"\u003ehttps://github.com/cznic/exp/blob/master/lldb/xact.go#L211\u003c/a\u003e\nThe first call to ReadAt(112 bytes at offset 16) at L211, returns\ncorrectly (0, err) on Linux - the file is only 16 bytes long at that\nmoment (that's the kv header). 'err' is such that 'err == io.EOF' is\ntrue.\n\nHowever, on Windows the error is(\u0026quot;%T(%#v)\u0026quot;):\n*os.PathError(\u0026amp;os.PathError{Op:\u0026quot;read\u0026quot;, Path:\u0026quot;_testdata/tempname\u0026quot;,\nErr:0x26})\n\nand for this 'err == io.EOF' is false. Which breaks the logic the DB\nengine relies on.\n\nFYI: Some info about 0x26 error here:\n\u003ca href=\"http://social.technet.microsoft.com/Forums/windowsserver/en-US/1a16311b-c625-46cf-830b-6a26af488435/how-to-solve-error-38-0x26-errorhandleeof-using-fsctlgetretrievalpointers\"\u003ehttp://social.technet.microsoft.com/Forums/windowsserver/en-US/1a16311b-c625-46cf-830b-6a26af488435/how-to-solve-error-38-0x26-errorhandleeof-using-fsctlgetretrievalpointers\u003c/a\u003e\nFrom that link it may also be the case that it's actually a Windows\nbug (happens only for small files).\n----\n\n====\n\nI'm aware that this issue report is lacking a small, self contained reproduction case.\nI'm trying to first figure out if the 0x26 error should be translated to an io.EOF by\nthe Go runtime on Windows - or not?\n\nIf a small reproduction case turns out to be unavoidable, I'll attempt to prepare one\nover the weekend.\u003c/pre\u003e",
+	"user": {
+		"login": "cznic",
+		"id": 729580,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:34:32Z",
+	"created_at": "2013-08-29T07:51:15Z",
+	"updated_at": "2016-06-25T01:17:38Z"
+}

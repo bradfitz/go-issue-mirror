@@ -1,0 +1,27 @@
+{
+	"id": 138004437,
+	"number": 14606,
+	"state": "closed",
+	"title": "cmd/compile: performance regression with SSA backend",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version devel +0d1a98e Wed Mar 2 13:01:44 2016 +0000 linux/amd64\r\nand\r\ngo version go1.6 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux/amd64\r\n\r\n3. What did you do?\r\nI ran some benchmarks for a consistent hashing algorithm: (multi-probe consistent hashing, code at https://github.com/dgryski/go-mpchash ) with the new SSA backend and also with 1.6.\r\n\r\n```\r\n ~/work/src/cvs/go.tip/bin/go test -test.bench=Lookup -test.count=20 \u003echoose.ssa\r\ngo test -test.bench=Lookup -test.count=20 \u003echoose.16\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\nNot performance regressions.\r\n\r\n\r\n5. What did you see instead?\r\n\r\nThe number after the benchmark is the number of shards.  For 8 and 32 shards, the new SSA backend is faster.  For larger numbers of shards, the lookup time is worse.\r\n\r\n```\r\n\u003cdgryski@kamek[go-mpchash] \\ʕ◔ϖ◔ʔ/ \u003e benchstat choose.16 choose.ssa \r\nname          old time/op  new time/op  delta\r\nLookup8-4      248ns ± 1%   209ns ± 3%  -15.67%  (p=0.000 n=20+17)\r\nLookup32-4     262ns ± 2%   221ns ± 2%  -15.77%  (p=0.000 n=19+18)\r\nLookup128-4    410ns ± 1%   410ns ± 1%     ~     (p=0.482 n=20+19)\r\nLookup512-4    458ns ± 1%   502ns ± 1%   +9.58%  (p=0.000 n=19+20)\r\nLookup2048-4   501ns ± 1%   548ns ± 1%   +9.41%  (p=0.000 n=20+20)\r\nLookup8192-4   584ns ± 1%   624ns ± 2%   +6.97%  (p=0.000 n=18+20)\r\n```\r\n\r\nTo determine if this was runtime changes or the SSA backend, I also ran it against tip with SSA off (`GOSSAHASH=x`).  Between 1.6 and tip (without SSA), the performance regression is ~5%.\r\n\r\n```\r\n\u003cdgryski@kamek[go-mpchash] \\ʕ◔ϖ◔ʔ/ \u003e benchstat choose.16 choose.tip\r\nname          old time/op  new time/op  delta\r\nLookup8-4      248ns ± 1%   246ns ± 1%  -1.13%  (p=0.000 n=20+20)\r\nLookup32-4     262ns ± 2%   276ns ± 2%  +5.16%  (p=0.000 n=19+19)\r\nLookup128-4    410ns ± 1%   431ns ± 2%  +5.31%  (p=0.000 n=20+20)\r\nLookup512-4    458ns ± 1%   485ns ± 1%  +5.83%  (p=0.000 n=19+20)\r\nLookup2048-4   501ns ± 1%   540ns ± 3%  +7.77%  (p=0.000 n=20+20)\r\nLookup8192-4   584ns ± 1%   624ns ± 2%  +7.00%  (p=0.000 n=18+20)\r\n```\r\nBetween tip and tip-with-ssa, it's faster for 8 and 32 shards, but then only slight changes at larger numbers.\r\n```\r\n\u003cdgryski@kamek[go-mpchash] \\ʕ◔ϖ◔ʔ/ \u003e benchstat choose.tip choose.ssa\r\nname          old time/op  new time/op  delta\r\nLookup8-4      246ns ± 1%   209ns ± 3%  -14.71%  (p=0.000 n=20+17)\r\nLookup32-4     276ns ± 2%   221ns ± 2%  -19.90%  (p=0.000 n=19+18)\r\nLookup128-4    431ns ± 2%   410ns ± 1%   -4.95%  (p=0.000 n=20+19)\r\nLookup512-4    485ns ± 1%   502ns ± 1%   +3.55%  (p=0.000 n=20+20)\r\nLookup2048-4   540ns ± 3%   548ns ± 1%   +1.52%  (p=0.000 n=20+20)\r\nLookup8192-4   624ns ± 2%   624ns ± 2%     ~     (p=0.506 n=20+20)\r\n```",
+	"user": {
+		"login": "dgryski",
+		"id": 970862,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2016-04-20T21:41:51Z",
+	"created_at": "2016-03-02T21:56:27Z",
+	"updated_at": "2016-04-21T08:46:31Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

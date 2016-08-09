@@ -1,0 +1,26 @@
+{
+	"id": 157772506,
+	"number": 15910,
+	"state": "open",
+	"title": "errors: different errors returned by New should not be DeepEqual",
+	"body": "Currently, in `go1.6`, different `error` values returned by `errors.New(...)` are equal (in the sense of the reflect.DeepEqual usage) if they have the same error message. This encourages people to write unit tests like the following:\r\n```go\r\nwant := errors.New(\"archive/tar: header field too long or contains invalid values\")\r\nif !reflect.DeepEqual(got, want) {\r\n\t...\r\n}\r\n```\r\nThis is a poor test it assumes an exact error message and type for an unexported error from a given package. Instead, we should cause DeepEqual to always return false somehow by embedding some field in the concrete `errorString` type that always compares to false for anything but itself.\r\n\r\nThus, I expect the following to happen:\r\n```go\r\na := errors.New(\"foo\")\r\nb := errors.New(\"foo\")\r\n\r\nfmt.Println(a == a) // True\r\nfmt.Println(a == b) // False\r\nfmt.Println(reflect.DeepEqual(a, a)) // True\r\nfmt.Println(reflect.DeepEqual(a, b)) // False (this is currently true on Go1.6)\r\n```\r\n\r\nWe probably cannot change this in Go1 because the sheer number of tests this would probably break, but it may be worth considering for Go2.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-05-31T21:15:36Z",
+	"updated_at": "2016-06-17T20:55:58Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"id": 140052761,
+	"number": 14761,
+	"state": "open",
+	"title": "cmd/compile: regalloc restoring to dead register",
+	"body": "```\r\nfunc f(p *int, v int, b bool) int {\r\n\tif b {\r\n\t\t*p = v\r\n\t}\r\n\truntime.GC()\r\n\treturn *p\r\n}\r\n```\r\n\r\nThis compiles to:\r\n```\r\n\t0x000f 00015 (/home/khr/go/tmp2.go:5)\tMOVBLZX\t\"\".b+24(FP), AX\r\n\t0x0014 00020 (/home/khr/go/tmp2.go:5)\tTESTB\tAL, AL\r\n\t0x0016 00022 (/home/khr/go/tmp2.go:6)\tJEQ\t56\r\n\t0x0018 00024 (/home/khr/go/tmp2.go:7)\tMOVQ\t\"\".p+8(FP), CX\r\n\t0x001d 00029 (/home/khr/go/tmp2.go:7)\tMOVQ\t\"\".v+16(FP), DX\r\n\t0x0022 00034 (/home/khr/go/tmp2.go:7)\tMOVQ\tDX, (CX)\r\n\t0x0025 00037 (/home/khr/go/tmp2.go:9)\tPCDATA\t$0, $0\r\n\t0x0025 00037 (/home/khr/go/tmp2.go:9)\tCALL\truntime.GC(SB)\r\n        ...\r\n\t0x0038 00056 (/home/khr/go/tmp2.go:5)\tMOVQ\t\"\".p+8(FP), CX\r\n\t0x003d 00061 (/home/khr/go/tmp2.go:9)\tJMP\t37\r\n```\r\nNotice the restore of `p` at 56 which is unnecessary, as `CX` is dead.  This is just the register allocator trying to get the same data in the same registers as the other predecessor of instruction 37.  We currently match only the values in registers which are live.  But we really should match values in registers which are live and which are used at least once.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-03-11T00:49:11Z",
+	"updated_at": "2016-04-29T04:37:09Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

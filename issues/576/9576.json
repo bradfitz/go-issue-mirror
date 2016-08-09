@@ -1,0 +1,27 @@
+{
+	"id": 54132691,
+	"number": 9576,
+	"state": "closed",
+	"title": "runtime: crash in checkdead",
+	"body": "I had a Go 1.4 server crash out of the http.ListenAndServe loop. It's not a panic and not a log.Fatal! It looks like a runtime bug to me. I'm running on Mac OS X. I cannot reproduce it.\r\n\r\nruntime: checkdead: find g 5 in status 1\r\nfatal error: checkdead: runnable g\r\n\r\nruntime stack:\r\nruntime.throw(0x40589c)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/panic.go:491 +0xad\r\ncheckdead()\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:2828 +0x287\r\nmput(0x410ca0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:3175 +0x47\r\nstopm()\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:1176 +0xea\r\nfindrunnable(0xc208012000)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:1487 +0x562\r\nschedule()\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:1575 +0x151\r\nruntime.park_m(0xc22a7c4120)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/proc.c:1654 +0x113\r\nruntime.mcall(0x392d4)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/runtime/asm_amd64.s:186 +0x5a\r\n\r\ngoroutine 1 [IO wait]:\r\nnet.(*pollDesc).Wait(0xc22c30a060, 0x72, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_poll_runtime.go:84 +0x47\r\nnet.(*pollDesc).WaitRead(0xc22c30a060, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_poll_runtime.go:89 +0x43\r\nnet.(*netFD).accept(0xc22c30a000, 0x0, 0x4b8b48, 0xc20802aa20)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_unix.go:419 +0x40b\r\nnet.(*TCPListener).AcceptTCP(0xc20803a020, 0x8a09e, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/tcpsock_posix.go:234 +0x4e\r\nnet/http.tcpKeepAliveListener.Accept(0xc20803a020, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1976 +0x4c\r\nnet/http.(*Server).Serve(0xc22c31a060, 0x1c6e0f0, 0xc20803a020, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1728 +0x92\r\nnet/http.(*Server).ListenAndServe(0xc22c31a060, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1718 +0x154\r\nnet/http.ListenAndServe(0x2b22f0, 0x5, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1808 +0xba\r\nmain.main()\r\n\t/Users/dan/src/bitmoon/potus/main.go:50 +0x385\r\n\r\ngoroutine 5 [runnable]:\r\nnet.(*pollDesc).Wait(0xc22c30a140, 0x72, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_poll_runtime.go:84 +0x47\r\nnet.(*pollDesc).WaitRead(0xc22c30a140, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_poll_runtime.go:89 +0x43\r\nnet.(*netFD).Read(0xc22c30a0e0, 0xc20800f000, 0x1000, 0x1000, 0x0, 0x4b8b48, 0xc22b98a310)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/fd_unix.go:242 +0x40f\r\nnet.(*conn).Read(0xc20803a028, 0xc20800f000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/net.go:121 +0xdc\r\nnet/http.(*liveSwitchReader).Read(0xc22c5aa0e8, 0xc20800f000, 0x1000, 0x1000, 0x5b, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:214 +0xab\r\nio.(*LimitedReader).Read(0xc20801e4a0, 0xc20800f000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/io/io.go:408 +0xce\r\nbufio.(*Reader).fill(0xc22c31a120)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/bufio/bufio.go:97 +0x1ce\r\nbufio.(*Reader).ReadSlice(0xc22c31a120, 0xe9e0a, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/bufio/bufio.go:295 +0x257\r\nbufio.(*Reader).ReadLine(0xc22c31a120, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/bufio/bufio.go:324 +0x62\r\nnet/textproto.(*Reader).readLineSlice(0xc20800ac00, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/textproto/reader.go:55 +0x9e\r\nnet/textproto.(*Reader).ReadLine(0xc20800ac00, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/textproto/reader.go:36 +0x4f\r\nnet/http.ReadRequest(0xc22c31a120, 0xc22c62d380, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/request.go:598 +0xcb\r\nnet/http.(*conn).readRequest(0xc22c5aa0a0, 0x0, 0x0, 0x0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:586 +0x26f\r\nnet/http.(*conn).serve(0xc22c5aa0a0)\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1162 +0x69e\r\ncreated by net/http.(*Server).Serve\r\n\t/usr/local/Cellar/go/1.4/libexec/src/net/http/server.go:1751 +0x35e\r\n",
+	"user": {
+		"login": "dadkins",
+		"id": 507004,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 23,
+	"closed_at": "2015-07-22T20:58:57Z",
+	"created_at": "2015-01-13T00:24:30Z",
+	"updated_at": "2016-08-05T16:08:57Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

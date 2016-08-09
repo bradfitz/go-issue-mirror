@@ -1,0 +1,27 @@
+{
+	"id": 51287250,
+	"number": 7815,
+	"state": "closed",
+	"title": "cmd/godoc: some _ should be shown",
+	"body": "\u003cpre\u003eHere is a nice trick to write an enum-like type's constant values:\n\ng% cat x.go\npackage p\n\ntype T int\n\nconst (\n\t_ T = iota\n\tT1\n\tT2\n\tT3\n\tT4\n)\ng% \n\nThis has two properties I wanted: (1) the values start at 1, so the zero value is not a\ndefined value, and (2) all the defined values have the same form on the line, so that I\ncan pipe them through 'sort' without breaking anything. Compare to\n\nconst (\n    X T = 1 + iota\n    Y\n    Z\n)\n\nAnyway, this _ trick works well for me.\n\nIt works less well for godoc:\n\ng% godoc .\nPACKAGE DOCUMENTATION\n\npackage p\n    import \u0026quot;.\u0026quot;\n\n\nCONSTANTS\n\nconst (\n    T1\n    T2\n    T3\n    T4\n)\n\nTYPES\n\ntype T int\n\n\ng% \n\nIt's a bit confusing that you can't see the _ in the godoc output, since the _ is what\ndefines the type and value of the constants.\n\nWorse, the constants are not attached to the type T like they normally would be:\n\ng% godoc . T\ntype T int\n\n\ng% \n\nIf I rename the _ to Dummy, then it works:\n\ng% godoc . T\ntype T int\n\nconst (\n    Dummy T = iota\n    T1\n    T2\n    T3\n    T4\n)\n\n\ng% \n\nWhat's happening here is that _ is treated as unexported and so it filters away.\n(Renaming to dummy shows the same behavior as _.)\n\nPerhaps the best fix would be to treat _ as exported for the purposes of godoc filtering\nin const lists and possibly also struct fields (where _ is often padding).\n\nI thought about saying that _ should be treated as exported for all filtering, but you\nprobably don't want to show things like\n\nfunc _() { ... }\nvar _ Interface = (*Type)(nil)\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:43:21Z",
+	"created_at": "2014-04-18T14:59:48Z",
+	"updated_at": "2016-06-25T01:32:35Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

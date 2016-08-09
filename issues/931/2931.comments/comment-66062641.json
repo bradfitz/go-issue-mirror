@@ -1,0 +1,12 @@
+{
+	"id": 66062641,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eYes, that does appear to solve the issue.  The below code in windows.c is ugly, but\nbehaves correctly:\n\nstatic void\nbgwait1(void)\n{\n\tint i, mode;\n\tchar *cmd;\n\tHANDLE bgh[MAXBG];\n\tDWORD code;\n\n\tif(nbg == 0)\n\t\tfatal(\"bgwait1: nothing left\");\n\n\tfor(i=0; i\u0026lt;nbg; i++)\n\t\tbgh[i] = bg[i].pi.hProcess;\n\ti = WaitForMultipleObjects(nbg, bgh, FALSE, INFINITE);\n\tif(i \u0026lt; 0 || i \u0026gt;= nbg) {\n\t\tCloseHandle(bg[i].pi.hProcess);\n\t\tCloseHandle(bg[i].pi.hThread);\n\t\tbg[i] = bg[--nbg];\n\t\tfatal(\"WaitForMultipleObjects: %s\", errstr());\n\t\treturn;\n\t}\n\t\n\tcmd = bg[i].cmd;\n\tmode = bg[i].mode;\n\tif(!GetExitCodeProcess(bg[i].pi.hProcess, \u0026code)) {\n\t\tCloseHandle(bg[i].pi.hProcess);\n\t\tCloseHandle(bg[i].pi.hThread);\n\t\tbg[i] = bg[--nbg];\n\t\tfatal(\"GetExitCodeProcess: %s\", errstr());\n\t\treturn;\n\t}\n\t\n\t\n\tif(mode==CheckExit \u0026\u0026 code != 0) {\n\t\tCloseHandle(bg[i].pi.hProcess);\n\t\tCloseHandle(bg[i].pi.hThread);\n\t\tbg[i] = bg[--nbg];\n\t\tfatal(\"FAILED: %s\", cmd);\n\t\treturn;\n\t}\n\tCloseHandle(bg[i].pi.hProcess);\n\tCloseHandle(bg[i].pi.hThread);\n\tbg[i] = bg[--nbg];\n}\n\n--\nWhen using a x64 mingw compiler, the error message that caused this is (now that I can\nread it):\nC:\\home\\go\\src\\lib9\\await.c:33:22: fatal error: sys/wait.h: No such file or directory\n\nWhich means the root build issue is an incorrect (old) GOROOT env var.  By deleting the\nold env vars, I got a good build.  Yay!\u003c/pre\u003e",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-09T17:13:59Z",
+	"updated_at": "2014-12-22T06:09:19Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 124300970,
+	"number": 13778,
+	"state": "closed",
+	"title": "os: File.Readdir can return more than n",
+	"body": "[`File.Readdir`](https://golang.org/pkg/os/#File.Readdir) takes an `n` parameter that specifies a maximum count to return (\"If n \u003e 0, Readdir returns at most n FileInfo structures.\"). However, I'm seeing more than `n` being returned when `n` is both 3 and 5 (and likely other values as well).\r\n\r\nChannelizing the `File.Readdir` call:\r\n\r\n```go\r\nfunc (self *Path) List(path string) (\u003c-chan *os.FileInfo, \u003c-chan bool, error) {\r\n    entriesChannel := make(chan *os.FileInfo)\r\n    doneChannel := make(chan bool)\r\n\r\n    go func() {\r\n        f, err := os.Open(path)\r\n        if err != nil {\r\n            panic(err)\r\n        }\r\n\r\n        defer f.Close()\r\n\r\n        for {\r\n            fmt.Printf(\"Batch!\\n\")\r\n\r\n            entries, err := f.Readdir(PathListBatchSize)\r\n            if err == io.EOF {\r\n                break\r\n            } else if err != nil {\r\n                panic(err)\r\n            }\r\n\r\n            for i := range entries {\r\n                entriesChannel \u003c- \u0026entries[i]\r\n            }\r\n        }\r\n\r\n        doneChannel \u003c- true\r\n    }()\r\n\r\n    return entriesChannel, doneChannel, nil\r\n}\r\n```\r\n\r\nUsing it:\r\n\r\n```go\r\nfunc main() {\r\n    p := pfinternal.NewPath()\r\n    entriesChannel, doneChannel, err := p.List(\"/tmp/test_root\")\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n\r\n    done := false\r\n    for done == false {\r\n        select {\r\n            case entry := \u003c-entriesChannel:\r\n                fmt.Printf(\"ENTRY: %s\\n\", (*entry).Name())\r\n\r\n            case done = \u003c-doneChannel:\r\n                break\r\n        }\r\n    }\r\n}\r\n```\r\n\r\nWith n = 3:\r\n\r\n```go\r\n$ ./pfmain \r\nBatch!\r\nENTRY: a\r\nENTRY: b\r\nBatch!\r\nENTRY: c\r\nENTRY: d\r\nENTRY: e\r\nENTRY: f\r\nBatch!\r\nENTRY: g\r\nENTRY: h\r\nBatch!\r\nENTRY: i\r\nBatch!\r\nENTRY: j\r\n```\r\n\r\nWith n = 5:\r\n\r\n```go\r\n$ ./pfmain \r\nBatch!\r\nENTRY: a\r\nENTRY: b\r\nENTRY: c\r\nENTRY: d\r\nBatch!\r\nENTRY: e\r\nENTRY: f\r\nENTRY: g\r\nENTRY: h\r\nENTRY: i\r\nENTRY: j\r\nBatch!\r\n```\r\n",
+	"user": {
+		"login": "dsoprea",
+		"id": 715626,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-12-30T05:36:57Z",
+	"created_at": "2015-12-30T03:53:32Z",
+	"updated_at": "2015-12-30T05:36:57Z"
+}

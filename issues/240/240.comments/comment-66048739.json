@@ -1,0 +1,12 @@
+{
+	"id": 66048739,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11 by **clbanning**:\n\n\u003cpre\u003eHad a similar problem with websocket.Dial() for attaching to servers with DHCP-assigned\nnetwork addresses.  The following works great; just call getWebsocConn() while looping\nthrough a range of addresses. \n\ntype websoc struct {\n   c *websocket.Conn\n   err os.Error\n}\n\nfunc getWebsocConn(wsString, destString string, timeOut int) (*websocket.Conn, os.Error)\n{\n   var ws websoc\n   var ok bool\n\n   ch := make(chan websoc,1)\n   go dialConn(wsString, destString, ch)\n\n   tic := time.Seconds()\n   for {\n      ws, ok = \u0026lt;-ch\n      if ok == true {\n         break\n      }\n      toc := time.Seconds()\n      if to := toc-tic; int(to) \u0026gt; timeOut {\n         ws.err = os.ECONNREFUSED\n         break\n      }\n   }\n   return ws.c, ws.err\n}\n\nfunc dialConn(wsString, destString string, ch chan websoc) {\n   var ws websoc\n   c, ok := websocket.Dial(wsString,\"\",destString)\n   ws.c = c\n   ws.err = ok\n   ch \u0026lt;- ws\n}\n\nYeah, it does leave some go processes waiting for net.Dial() to timeout - but that's\npretty insignificant overhead for being able to go ahead and get some real processing\ndone in a dynamic environment.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-10-02T18:59:00Z",
+	"updated_at": "2014-12-22T05:44:42Z"
+}

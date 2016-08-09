@@ -1,0 +1,33 @@
+{
+	"id": 51282805,
+	"number": 4902,
+	"state": "closed",
+	"title": "database/sql: Stmt.Exec is wasting database resources",
+	"body": "\u003cpre\u003eThis new test\n\ndiff --git a/src/pkg/database/sql/sql_test.go b/src/pkg/database/sql/sql_test.go\n--- a/src/pkg/database/sql/sql_test.go\n+++ b/src/pkg/database/sql/sql_test.go\n@@ -708,3 +708,21 @@\n \t\tt.Errorf(\u0026quot;error = %q; want %q\u0026quot;, err.Error(), want)\n \t}\n }\n+\n+func TestPrepareCount(t *testing.T) {\n+\tdb := newTestDB(t, \u0026quot;people\u0026quot;)\n+\tdefer closeDB(t, db)\n+\tprepares0 := numPrepares(t, db)\n+\tstmt, err := db.Prepare(\u0026quot;INSERT|people|name=?,age=?\u0026quot;)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer stmt.Close()\n+\t_, err = stmt.Exec(\u0026quot;Alice\u0026quot;, 10)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tif prepares := numPrepares(t, db) - prepares0; prepares != 1 {\n+\t\tt.Errorf(\u0026quot;executed %d Prepare statements; want 1\u0026quot;, prepares)\n+\t}\n+}\n\nfails with\n\n=== RUN TestPrepareCount\n--- FAIL: TestPrepareCount (0.00 seconds)\n\tsql_test.go:726: executed -4 Prepare statements; want 1\nFAIL\nexit status 1\nFAIL\tdatabase/sql\t0.007s\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2014-12-08T10:26:05Z",
+	"created_at": "2013-02-25T06:09:31Z",
+	"updated_at": "2016-06-24T22:33:58Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

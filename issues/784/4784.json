@@ -1,0 +1,27 @@
+{
+	"id": 51282636,
+	"number": 4784,
+	"state": "closed",
+	"title": "encoding/json: Unmarshal (but not Decode) panics when UnmarshalJSON returns an error",
+	"body": "\u003cpre\u003eUnmarshal (but not Decode) panics instead of returning an error when a type's\nUnmarshalJSON returns an error.\n\nFor example, add this to decode_test.go:\n\n// Time3339 is a time.Time which encodes to and from JSON                               \n                                                              \n// as an RFC 3339 time in UTC.                                                          \n                                                              \ntype Time3339 time.Time\n\nfunc (t *Time3339) UnmarshalJSON(b []byte) error {\n        if len(b) \u0026lt; 2 || b[0] != '\u0026quot;' || b[len(b)-1] != '\u0026quot;' {\n\t\treturn fmt.Errorf(\u0026quot;types: failed to unmarshal non-string value %q as an RFC 3339 time\u0026quot;)\n        }\n        tm, err := time.Parse(time.RFC3339, string(b[1:len(b)-1]))\n\tif err != nil {\n                return err\n        }\n\t*t = Time3339(tm)\n        return nil\n}\n\nfunc TestUnmarshalJSONLiteralError(t *testing.T) {\n        var t3 Time3339\n        err := Unmarshal([]byte(`\u0026quot;0000-00-00T00:00:00Z\u0026quot;`), \u0026amp;t3)\n        if err == nil {\n                t.Fatalf(\u0026quot;expected error; got time %v\u0026quot;, time.Time(t3))\n        }\n\tif !strings.Contains(err.Error(), \u0026quot;range\u0026quot;) {\n                t.Errorf(\u0026quot;got err = %v; want out of range error\u0026quot;, err)\n        }\n}\n\n\nIt then panics with:\n\n--- PASS: TestUnmarshalJSONLiteralError (0.00 seconds)\npanic: parsing time \u0026quot;0000-00-00T00:00:00Z\u0026quot;: month out of range [recovered]\n\tpanic: parsing time \u0026quot;0000-00-00T00:00:00Z\u0026quot;: month out of range\n\ngoroutine 22 [running]:\ntesting.func·004(0x10384fa8, 0x10384100)\n\t/Users/bradfitz/go/src/pkg/testing/testing.go:309 +0xb3\nencoding/json.(*decodeState).error(0xc2000ff800, 0xc200383c30, 0xc200181460, 0x16)\n\t/Users/bradfitz/go/src/pkg/encoding/json/decode.go:203 +0x47\nencoding/json.(*decodeState).literalStore(0xc2000ff800, 0xc2000fe660, 0x16, 0x16,\n0x18ea08, ...)\n\t/Users/bradfitz/go/src/pkg/encoding/json/decode.go:621 +0x286\nencoding/json.Unmarshal(0xc2000fe660, 0x16, 0x16, 0x177d98, 0xc2000fe640, ...)\n\t/Users/bradfitz/go/src/pkg/encoding/json/decode.go:82 +0x266\nencoding/json.TestUnmarshalJSONLiteralError(0xc2002d0750, 0x1dd35e08)\n\t/Users/bradfitz/go/src/pkg/encoding/json/decode_test.go:1136 +0xbd\ntesting.tRunner(0xc2002d0750, 0x2b91a8, 0x0, 0x0)\n\t/Users/bradfitz/go/src/pkg/testing/testing.go:314 +0x6c\ncreated by testing.RunTests\n\t/Users/bradfitz/go/src/pkg/testing/testing.go:429 +0x875\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x2000, 0x2b8fe0, 0x29, 0x29, 0x1, ...)\n\t/Users/bradfitz/go/src/pkg/testing/testing.go:430 +0x898\ntesting.Main(0x2000, 0x2b8fe0, 0x29, 0x29, 0x2b6350, ...)\n\t/Users/bradfitz/go/src/pkg/testing/testing.go:326 +0x8a\nmain.main()\n\tencoding/json/_test/_testmain.go:149 +0x9a\nexit status 2\nFAIL\tencoding/json\t0.101s\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:25:23Z",
+	"created_at": "2013-02-10T20:38:11Z",
+	"updated_at": "2016-06-24T22:32:40Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

@@ -1,0 +1,36 @@
+{
+	"id": 51286366,
+	"number": 7216,
+	"state": "closed",
+	"title": "io: make MultiReader documentation more explicit",
+	"body": "by **ryguillian**:\n\n\u003cpre\u003eI'm running Go 1.2.\n\nMy issues are about io.MultiReader: I went to go use MultiReader and its behavior\nconfused me.\n\nMultiReader's documentation sez: \n\n“MultiReader returns a Reader that's the logical concatenation of the provided input\nreaders. They're read sequentially. Once all inputs are drained, Read will return EOF.”\n\nThis documentation is pretty bad. It only says what happens once “all inputs are\ndrained”—whatever the hell that means. \n\nI wish this were just a bug report about documentation, but I'm sad to say I think\nMultiReader's behavior is pretty dumb.\n\nLike, uh, is MultiReader.Read supposed to stop after the first Reader returns EOF?\nBecause that's what it does.\n\nIn other words, if I run `cat file1 file2 file3` I get the concatenation of file1,\nfile2, and file3. Even if file2 is empty! I only use this example because Go is replete\nwith analogies to Unix commandlineisms (io.MultiWriter mentions 'tee(1)' explicitly).\nAnd in case differs drastically from the expected behavior. Although in a talk I saw\nonline Rob Pike said something about breaking analogies, so I guess it's OK. Right?\n\nGo is obviously very opinionated software, and that's good. But if you want the user to\nuse io.ReadAtLeast to get the expected behavior then document it. Although I'd argue\nthat using io.ReadAtLeast to invoke a continuation (think about it) is a little too\nsubtle for me.\n\nI'd argue for changing the behavior of this, though. It's weird because you're providing\nan abstraction over Readers and then still preserving reader boundaries. I guess this\nall has to work with network code where things can get unpredictable. If that's what led\nto this wacky design, then maybe offer a non-network-oriented MultiReader. This seems\nmore like a 'ReaderPool' or something.\n\nIt just seems hard to imagine a case where you'd have intermittently available resources\nsomewhere and want to still read them sequentially. I suppose I could contrive an\nexample, but this can't be the #1 use case. I can imagine a lot more situations where\nyou'd want to do something like a queue and use MultiReader to read from the queue if\nit's not empty and then read from an underlying Reader otherwise. \u0026quot;And then\u0026quot;\nis implicit when you use a word like \u0026quot;logical concatenation\u0026quot;.\n\nSo yeah, I'd call for the redesign of\nio.MultiReader.readLessThanSliceLengthOrIfEOFReturnNilCallAgainIfYouWantMore.\n\nThanks,\n\nRyan\n\nP.S. The only code in the Go 'pkg' directory that uses MultiReader is\n'io/multireader_test.go'.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 17,
+	"closed_at": "2014-12-08T10:40:05Z",
+	"created_at": "2014-01-27T10:58:28Z",
+	"updated_at": "2016-06-25T01:26:26Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

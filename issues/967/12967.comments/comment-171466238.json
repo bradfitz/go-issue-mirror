@@ -1,0 +1,12 @@
+{
+	"id": 171466238,
+	"body": "@davecheney's email (https://groups.google.com/d/topic/golang-dev/SJ3LAW5ZXDs/discussion) got me thinking about this again; specifically @randall77's 5th option of shrinking stacks in place. The benefit is of course that this would turn a fairly expensive moving operation into a cheap metadata operation.\r\n\r\nThe concern with shrinking stacks in place is that it would increase fragmentation. However, I wonder how bad of a problem this really is and to what extent we could mitigate it. I think the worst-case here is a large number of goroutines start and grow their stacks to 32K, then all shrink their stacks to 2K. If we do this all in place, each 2K stack will pin a 32K span for stacks, a 16X fragmentation ratio. However, this is nothing new; you can do the same thing by starting lots of goroutines and selectively exiting them, or even carefully allocating and releasing objects. But all of these situations naturally remedy themselves as a program continues doing real work. Fragmentation will decrease as other goroutines start (and use the free slots in the existing stack spans) or as the running goroutines grow their stacks (forcing them to move) or exit.\r\n\r\nWe could also actively mitigate fragmentation. We could move stacks if we detect large fragmentation, but I'd just as soon not. Alternatively, we could combat fragmentation generally by switching from the current size-segregated stack free lists to a buddy allocator. The constraints of stack allocation fit quite nicely with a buddy allocator. This would let one span be used for multiple stack size classes, reducing size calcification. It would efficiently merge neighboring free slots and break up large slots when necessary, while keeping allocation and freeing very efficient. It would only require 16 bits of metadata per stack span, which we could easily steal from several places. We could even do opportunistic in-place stack growth for small stacks. This wouldn't prevent the above worst-case fragmentation, but it would remedy it faster by allowing the free space to be used for other size classes.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-13T23:05:43Z",
+	"updated_at": "2016-01-13T23:05:43Z"
+}

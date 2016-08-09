@@ -1,0 +1,22 @@
+{
+	"id": 112873709,
+	"number": 13024,
+	"state": "closed",
+	"title": "runtime: qemu-arm fails to emulate go user programs",
+	"body": "qemu-arm fails to emulate go user programs due to how qemu handles certain signals.\r\n\r\nThe original issue/diff that seems to solve the issue is here:\r\nhttps://codereview.appspot.com/124900043/diff/60001/src/pkg/runtime/os_linux.c\r\n\r\nThe qemu code is here:\r\nhttp://git.qemu.org/?p=qemu.git;a=blob;f=linux-user/signal.c;h=1141054be2170128d6f7a340b41484b49a255936;hb=HEAD#l82\r\n\r\nTest Case:\r\n\r\nBuild this on an non-arm platform such as x86.\r\n\r\ntest.go:\r\n\r\n```\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n fmt.Println(\"Hi\")\r\n}\r\n```\r\n1. GOARCH=arm go build test.go\r\n2. qemu-arm test\r\n\r\nThis will fail with the following error:\r\n\r\n```\r\nqemu-arm test\r\nfatal error: rt_sigaction failure\r\n\r\nruntime stack:\r\nruntime.throw(0x106d68, 0x14)\r\n\t/usr/lib/go/src/runtime/panic.go:527 +0x78\r\nruntime.setsig(0x40, 0x6f8b0, 0x1)\r\n\t/usr/lib/go/src/runtime/os1_linux.go:297 +0x148\r\nruntime.initsig()\r\n\t/usr/lib/go/src/runtime/signal1_unix.go:67 +0x180\r\nruntime.mstart1()\r\n\t/usr/lib/go/src/runtime/proc1.go:717 +0xd4\r\nruntime.mstart()\r\n\t/usr/lib/go/src/runtime/proc1.go:691 +0x84\r\n\r\ngoroutine 1 [runnable]:\r\nruntime.main()\r\n\t/usr/lib/go/src/runtime/proc.go:28\r\nruntime.goexit()\r\n\t/usr/lib/go/src/runtime/asm_arm.s:1036 +0x4\r\n```\r\n\r\nTesting with the aforementioned patch solves the issue, but I'm unsure its the best approach to solving this. I can re-propose that patch if there isn't a better solution, but this would be a very useful feature for using qemu user space emulation with go.\r\n\r\n--chris\r\n",
+	"user": {
+		"login": "arges",
+		"id": 358664,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2015-11-12T20:06:11Z",
+	"created_at": "2015-10-22T19:29:42Z",
+	"updated_at": "2015-12-15T20:58:54Z",
+	"milestone": {
+		"id": 1295987,
+		"number": 27,
+		"title": "Go1.5.2"
+	}
+}

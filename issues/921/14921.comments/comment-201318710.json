@@ -1,0 +1,12 @@
+{
+	"id": 201318710,
+	"body": "The benchmark results from CL 21027 suggest that append may be the main source of idempotent pointer updates. Josh, do you happen to know what was one level up from the `*dst==src` write barriers? If it's mostly append, I suspect we can optimize just append to avoid the unnecessary pointer updates altogether.\r\n\r\nOne potential downside of modifying writebarrierptr this way is that it can cause extra coherence traffic by first pulling the pointer's cache line into shared and then upgrading it to modified. Though I doubt that's what causing the slowdowns shown in the CL commit message since those benchmarks are sequential.\r\n\r\nI don't think these changes run afoul of the races in #14855. In that case we were doing the pointer write, but not doing the write barrier. It should be safe if we don't do either.\r\n\r\nIf we go the route of modifying the calling code, it would probably be better to make it:\r\n\r\n```\r\nif writeBarrier.enabled {\r\n  if *dst != src {\r\n    writebarrierptr(dst, src)\r\n  }\r\n} else {\r\n  *dst = src\r\n}\r\n```\r\n\r\nso we don't penalize the code with an extra (and potentially poorly predictable) branch when write barriers are off.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-25T14:43:46Z",
+	"updated_at": "2016-03-25T14:43:46Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 54031138,
+	"number": 9568,
+	"state": "closed",
+	"title": "bufio: Second Scan() call populates Scanner token field on tokens that exceed 64kb",
+	"body": "I have confirmed this for\r\ngo version devel +fcff3ba Mon Jan 12 02:09:50 2015 +0000 linux/amd64\r\ngo version go1.4 linux/amd64\r\n\r\nI know that there is a 64kb limit to the Scanner buffer. My issue mainly deals with successive calls to Scan() with a scanner that has encountered a token that is too long. When a Scanner encounters a token that exceeds 64kb, a call to Scan() returns false and its token field is empty. However, it seems that if Scan() is called a second time on the same Scanner, this then populates the token field of the Scanner up to 64kb and returns true. If a third, fourth, ..., Nth call to Scan() is made, the token field is empty and returns false.\r\n\r\nHere is an example:\r\n```\r\n...\r\n\r\nfile, _ := os.Open(\"line.txt\") // file has a single line that exceeds the 64kb limit\r\nscanner := bufio.NewScanner(file)\r\n\r\nvar ret bool\r\nret = scanner.Scan() // ret is false, scanner.Text() is an empty slice of bytes, error field says the line is too long\r\nret = scanner.Scan() // ret is true, scanner.Text() is a slice containing the first 64kb of the line, error field says the line is too long\r\nret = scanner.Scan() // ret is false, scanner.Text() is an empty slice again, error field still says the line is too long\r\n...\r\n```\r\n\r\nI would argue that successive calls to Scan() in these situations should give a consistent result, or perhaps to advertise that a second call to Scan() gets the first 64kb of the token. I would also like to argue for making the 64kb token limit in bufio.Scanner clear in the documentation as it may save some headaches.\r\n\r\nI know this issue is low priority, so I would be happy to take it on.",
+	"user": {
+		"login": "SamThompson",
+		"id": 4391203,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-01-15T01:58:47Z",
+	"created_at": "2015-01-12T08:53:08Z",
+	"updated_at": "2016-06-25T01:58:19Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 148328853,
+	"number": 15297,
+	"state": "closed",
+	"title": "cmd/link: multiple function bodies accepted, one in a .go, one in a .s",
+	"body": "```\r\n$ pwd\r\n/tmp/scratch\r\n$ ls\r\nmain.go  x_amd64.s  x_other.go\r\n$ cat main.go \r\npackage main\r\n\r\nfunc main() {\r\n\tprintln(foo())\r\n}\r\n$ cat x_amd64.s \r\nTEXT ·foo(SB), 7, $0\r\n\tMOVQ $43, ret+0(FP)\r\n\tRET\r\n\r\n$ cat x_other.go \r\npackage main\r\n\r\nfunc foo() int { return 42 }\r\n```\r\n\r\nNote that foo has two bodies defined: one returns 42, the other returns 43. Surely this should be a compile or asm or link error, yet \"go build\" seems happy:\r\n\r\n```\r\n$ go build -x \u0026\u0026 ./scratch \u0026\u0026 rm ./scratch \r\nWORK=/tmp/go-build115513716\r\nmkdir -p $WORK/_/tmp/scratch/_obj/\r\nmkdir -p $WORK/_/tmp/scratch/_obj/exe/\r\ncd /tmp/scratch\r\n/home/nt/go/pkg/tool/linux_amd64/compile -o $WORK/_/tmp/scratch.a -trimpath $WORK -p main -buildid acfccd74ae478f8fecc64195dd5e90e7757cec11 -D _/tmp/scratch -I $WORK -pack -asmhdr $WORK/_/tmp/scratch/_obj/go_asm.h ./main.go ./x_other.go\r\n/home/nt/go/pkg/tool/linux_amd64/asm -o $WORK/_/tmp/scratch/_obj/x_amd64.o -trimpath $WORK -I $WORK/_/tmp/scratch/_obj/ -I /home/nt/go/pkg/include -D GOOS_linux -D GOARCH_amd64 ./x_amd64.s\r\npack r $WORK/_/tmp/scratch.a $WORK/_/tmp/scratch/_obj/x_amd64.o # internal\r\ncd .\r\n/home/nt/go/pkg/tool/linux_amd64/link -o $WORK/_/tmp/scratch/_obj/exe/a.out -L $WORK -extld=gcc -buildmode=exe -buildid=acfccd74ae478f8fecc64195dd5e90e7757cec11 $WORK/_/tmp/scratch.a\r\nmv $WORK/_/tmp/scratch/_obj/exe/a.out scratch\r\n42\r\n```\r\n\r\nChanging the\r\n\r\n    func foo() int { return 42 }\r\n\r\nto be\r\n\r\n    func foo() int\r\n\r\nin x_other.go now has \"go build\" picking up the other definition:\r\n\r\n```\r\n$ vim x_other.go \r\n$ cat x_other.go \r\npackage main\r\n\r\nfunc foo() int\r\n$ go build -x \u0026\u0026 ./scratch \u0026\u0026 rm ./scratch \r\nWORK=/tmp/go-build732255335\r\nmkdir -p $WORK/_/tmp/scratch/_obj/\r\nmkdir -p $WORK/_/tmp/scratch/_obj/exe/\r\ncd /tmp/scratch\r\n/home/nt/go/pkg/tool/linux_amd64/compile -o $WORK/_/tmp/scratch.a -trimpath $WORK -p main -buildid acfccd74ae478f8fecc64195dd5e90e7757cec11 -D _/tmp/scratch -I $WORK -pack -asmhdr $WORK/_/tmp/scratch/_obj/go_asm.h ./main.go ./x_other.go\r\n/home/nt/go/pkg/tool/linux_amd64/asm -o $WORK/_/tmp/scratch/_obj/x_amd64.o -trimpath $WORK -I $WORK/_/tmp/scratch/_obj/ -I /home/nt/go/pkg/include -D GOOS_linux -D GOARCH_amd64 ./x_amd64.s\r\npack r $WORK/_/tmp/scratch.a $WORK/_/tmp/scratch/_obj/x_amd64.o # internal\r\ncd .\r\n/home/nt/go/pkg/tool/linux_amd64/link -o $WORK/_/tmp/scratch/_obj/exe/a.out -L $WORK -extld=gcc -buildmode=exe -buildid=acfccd74ae478f8fecc64195dd5e90e7757cec11 $WORK/_/tmp/scratch.a\r\nmv $WORK/_/tmp/scratch/_obj/exe/a.out scratch\r\n43\r\n```\r\n\r\nStill, something ain't right. Re-inserting that\r\n\r\n    { return 42 }\r\n\r\ninto the x_other.go file gives:\r\n\r\n```\r\n$ vim x_other.go \r\n$ cat x_other.go \r\npackage main\r\n\r\nfunc foo() int { return 42 }\r\n$ go vet\r\n: x_amd64.s:1: [amd64] foo: function foo missing Go declaration\r\nexit status 1\r\n```\r\n",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-04-14T23:28:08Z",
+	"created_at": "2016-04-14T11:18:02Z",
+	"updated_at": "2016-04-15T01:49:36Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

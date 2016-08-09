@@ -1,0 +1,12 @@
+{
+	"id": 66096934,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eLet me try to re-summarize this bug more succinctly, without attachments. Please correct\nme if this is wrong (or confirm if this is correct).\n\nBrowsers may send an If-Range header containing either an ETag or a date:\n\n\u003ca href=\"http://tools.ietf.org/html/rfc7233#section-3.2\"\u003ehttp://tools.ietf.org/html/rfc7233#section-3.2\u003c/a\u003e\n\n    ....\n    If-Range = entity-tag / HTTP-date\n    ....\n\nThe Go code only deals with the entity-tag half, and in fact has a comment about nobody\nseeming to care about sending a date, and the spec being unclear. From fs.go:\n\n    if ir := r.Header.get(\"If-Range\"); ir != \"\" \u0026\u0026 ir != etag {\n        // TODO(bradfitz): handle If-Range requests with Last-Modified                                                  \n        // times instead of ETags? I'd rather not, at least for                                                         \n        // now. That seems like a bug/compromise in the RFC 2616, and                                                   \n        // I've never heard of anybody caring about that (yet).                                                         \n        rangeReq = \"\"\n    }\n\nI like the \"yet\" part. That time apparently is now and Chrome does send a date in\nIf-Range if the handler never sent an ETag.\n\nNote that the comment is discussing RFC 2616, and not the clarification RFC 7233.  For\nreference, 2616 said: \u003ca href=\"http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.27\"\u003ehttp://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.27\u003c/a\u003e\n\nI'd rather not get into the business of guessing ETags for users. Maybe for on-disk\nfiles that's acceptable, but it should be a separate bug.\n\nFor this bug, I think simply accepting an If-Range date matching the Last-Modified time\nshould be an acceptable fix.\u003c/pre\u003e\n\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-07-14T21:38:07Z",
+	"updated_at": "2014-12-08T10:46:30Z"
+}

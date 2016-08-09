@@ -1,0 +1,28 @@
+{
+	"id": 53148184,
+	"number": 9476,
+	"state": "closed",
+	"title": "git-codereview: gofmt hook can be confused by same filename in two different directories",
+	"body": "Concrete example that actually happened to me:\r\n\r\n* In the tools repo, change `astutil/imports.go` and `astutil/imports_test.go`.\r\n* Commit. \r\n* Make changes to `astutil/imports.go`, but do not stage.\r\n* `cd ../imports`. The `imports` directory contains a different `imports.go` than the `astutil` directory.\r\n* `git codereview gofmt`\r\n\r\nResult:\r\n\r\n```\r\ngit-codereview: gofmt reported errors:\r\n\tstat : no such file or directory\r\n```\r\n\r\nDiagnosis:\r\n\r\n```bash\r\n$ git checkout-index --temp --\r\n.merge_file_9gBDjg\timports.go\r\n```\r\n\r\nThe merge file is in the repo root. The gofmt hook assumes that `imports.go` is a relative path, but it is in fact just the basename. It thus records `.merge_file_9gBDjg` as the temporary for `imports/imports.go` rather than `astutil/imports.go`. When it goes to look up the temporary for `astutil/imports.go`, it finds nothing (`\"\"`). `gofmt` then complains that it cannot stat `\"\"`.\r\n\r\nThe obvious fix is to run `git checkout-index --temp` separately for each file, so that the path is unambiguous. This should perhaps also be reported upstream.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-02-03T23:50:11Z",
+	"created_at": "2014-12-30T21:22:52Z",
+	"updated_at": "2016-06-25T01:57:35Z"
+}

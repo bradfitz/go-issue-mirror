@@ -1,0 +1,12 @@
+{
+	"id": 171027178,
+	"body": "Explicit. I am setting the timeouts.\r\n\r\n```go\r\nfunc NewServer(addr string, handler http.Handler) *Server {\r\n\ts := \u0026Server{\r\n\t\tServer: http.Server{\r\n\t\t\tAddr: addr,\r\n\t\t\tHandler: \u0026serverHandler{\r\n\t\t\t\tHandler: handler,\r\n\t\t\t},\r\n\t\t\tMaxHeaderBytes: 4096,\r\n\r\n\t\t\t// Maximum duration before timing out read of the request\r\n\t\t\tReadTimeout: 3 * 60 * time.Second, //60e9,\r\n\r\n\t\t\t// Maximum duration before timing out write of the response\r\n\t\t\tWriteTimeout: 3 * 60 * time.Second, //60e9,\r\n\t\t},\r\n\t}\r\n\ts.ConnState = func(conn net.Conn, state http.ConnState) {\r\n\t\tswitch state {\r\n\r\n\t\t// StateNew represents a new connection that is expected to\r\n\t\t// send a request immediately. Connections begin at this\r\n\t\t// state and then transition to either StateActive or\r\n\t\t// StateClosed\r\n\t\tcase http.StateNew:\r\n\r\n\t\t\t// StateActive represents a connection that has read 1 or more\r\n\t\t\t// bytes of a request. The Server.ConnState hook for\r\n\t\t\t// StateActive fires before the request has entered a handler\r\n\t\t\t// and doesn't fire again until the request has been\r\n\t\t\t// handled. After the request is handled, the state\r\n\t\t\t// transitions to StateClosed, StateHijacked, or StateIdle.\r\n\t\tcase http.StateActive:\r\n\r\n\t\t\tconn.SetReadDeadline(time.Now().Add(s.ReadTimeout))\r\n\t\t\tconn.SetWriteDeadline(time.Now().Add(s.WriteTimeout))\r\n\r\n\t\t\t// StateIdle represents a connection that has finished\r\n\t\t\t// handling a request and is in the keep-alive state, waiting\r\n\t\t\t// for a new request. Connections transition from StateIdle\r\n\t\t\t// to either StateActive or StateClosed.\r\n\t\tcase http.StateIdle:\r\n\r\n\t\t\t// StateHijacked represents a hijacked connection.\r\n\t\t\t// This is a terminal state. It does not transition to StateClosed.\r\n\t\t\t// \r\n\t\t\t// StateClosed represents a closed connection.\r\n\t\t\t// This is a terminal state. Hijacked connections do not\r\n\t\t\t// transition to StateClosed.\r\n\t\tcase http.StateHijacked, http.StateClosed:\r\n\r\n\t\t}\r\n\t}\r\n\treturn s\r\n}\r\n```\r\n",
+	"user": {
+		"login": "karmeye",
+		"id": 366038,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-12T19:33:50Z",
+	"updated_at": "2016-01-13T13:05:31Z"
+}

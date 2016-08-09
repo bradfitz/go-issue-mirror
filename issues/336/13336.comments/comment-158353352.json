@@ -1,0 +1,12 @@
+{
+	"id": 158353352,
+	"body": "FWIW, my first hunch at an API that is in line with the rest of the text repo would be the below. A bit elaborate, but it allows for extensive optimization as most used transformers are stateless.\r\nUsage examples:\r\n\r\n- s, err := secure.Identifier.String(str)\r\n- if err := secure.Identifier.Valid(b); err != nil {\r\n- p, err := secure.NewIdentifier(secure.Norm(norm.NFKD), secure.Width(width.Fold), secure.Disallow(runes.In(unicode.Mn)))\r\nif p.Equal(a, b) { … }\r\n\r\nThis is a quick sketch, so by no means saying this is how it should be.\r\n\r\npackage secure\r\n\r\ntype Profile struct{}\r\n\r\nfunc NewIdentifier(opts …Option) (*Profile, error)\r\nfunc NewFreeForm(opts …Option) (*Profile, error)\r\n// Creation of a profile could be expensive. Basing new profiles on old ones is explicitly not allowed, as per the RFC.\r\n\r\nvar Identifier *Profile\r\nvar FreeForm *Profile\r\n\r\n// principle methods\r\nfunc (p *Profile) Allowed() runes.Set\r\nfunc (p *Profile) NewTransformer() *Transformer\r\n\r\n// wrapper methods for Transformer equivalents, allowing optimization and simpler API when transformer is stateless (most cases).\r\nfunc (p *Profile) String(s string) (string, error)\r\nfunc (p *Profile) Bytes(b []byte) (string, error)\r\nfunc (p *Profile) Valid(b []byte) error\r\nfunc (p *Profile) ValidString(s string) error\r\nfunc (p *Profile) Equal(a, b []byte) bool\r\nfunc (p *Profile) EqualString(a, b string) bool\r\n\r\ntype Option func(*options)\r\n\r\nfunc Norm(f norm.Form) Option\r\nfunc Transform(f …func() transform.Transform) Option\r\n// func Cases(func() transform.Transformer) Option\r\nfunc FoldCase(t language.Tag) Option\r\nfunc Width(w *width.Transformer) Option\r\nfunc Disallow(set runes.Set) Option\r\nvar BidiRule Option\r\n...\r\n\r\ntype Transformer\r\n// Transformer API plus equivalent of wrapper methods above.",
+	"user": {
+		"login": "mpvl",
+		"id": 6445383,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-20T10:41:31Z",
+	"updated_at": "2015-11-20T10:41:31Z"
+}

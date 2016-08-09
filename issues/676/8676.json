@@ -1,0 +1,22 @@
+{
+	"id": 51288535,
+	"number": 8676,
+	"state": "closed",
+	"title": "Calling setns from Go returns EINVAL for mnt namespace",
+	"body": "by **iain.lowe**:\n\n\u003cpre\u003eThe C code works fine and correctly enters the namespace, but the Go code always seems\nto return EINVAL from the `setns` call to enter the `mnt` namespace. I've tried a number\nof permutations (including embedded C code with cgo and external `.so`) on Go `1.2`,\n`1.3` and the current tip.\n\nStepping through the code in `gdb` shows that both sequences are calling `setns` in\n`libc` the exact same way (or so it appears to me).\n\nI have boiled what seems to be the issue down to the code below. What am I doing wrong?\n\n## Setup\n\nI have a shell alias for starting quick busybox containers:\n\n    alias startbb='docker inspect --format \u0026quot;{{ .State.Pid }}\u0026quot; $(docker run -d busybox sleep 1000000)'\n\nAfter running this, `startbb` will start a container and output it's PID.\n\n`lxc-checkconfig` outputs:\n\n    Found kernel config file /boot/config-3.8.0-44-generic\n    --- Namespaces ---\n    Namespaces: enabled\n    Utsname namespace: enabled\n    Ipc namespace: enabled\n    Pid namespace: enabled\n    User namespace: missing\n    Network namespace: enabled\n    Multiple /dev/pts instances: enabled\n    \n    --- Control groups ---\n    Cgroup: enabled\n    Cgroup clone_children flag: enabled\n    Cgroup device: enabled\n    Cgroup sched: enabled\n    Cgroup cpu account: enabled\n    Cgroup memory controller: missing\n    Cgroup cpuset: enabled\n    \n    --- Misc ---\n    Veth pair device: enabled\n    Macvlan: enabled\n    Vlan: enabled\n    File capabilities: enabled\n\n`uname -a` produces:\n\n    Linux gecko 3.8.0-44-generic #66~precise1-Ubuntu SMP Tue Jul 15 04:01:04 UTC 2014 x86_64 x86_64 x86_64 GNU/Linux\n\n## Working C code\n\nThe attached C code works fine.\n\nAfter compiling with `gcc -o checkns checkns.c`, the output of `sudo ./checkns\n\u0026lt;PID\u0026gt;` is:\n\n    setns on ipc namespace succeeded\n    setns on uts namespace succeeded\n    setns on net namespace succeeded\n    setns on pid namespace succeeded\n    setns on mnt namespace succeeded\n\n## Failing Go code\n\nConversely, the attached Go code (which should be identical) doesn't work quite as well.\n\nInstead, running `sudo go run main.go \u0026lt;PID\u0026gt;` produces:\n\n    setns on ipc namespace succeeded\n    setns on uts namespace succeeded\n    setns on net namespace succeeded\n    setns on pid namespace succeeded\n    setns on mnt namespace failed: invalid argument\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8676/0/checkns.c\"\u003echeckns.c\u003c/a\u003e (786 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8676/0/checkns.go\"\u003echeckns.go\u003c/a\u003e (730 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:48:07Z",
+	"created_at": "2014-09-06T21:21:45Z",
+	"updated_at": "2016-06-25T01:40:56Z"
+}

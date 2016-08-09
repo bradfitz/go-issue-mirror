@@ -1,0 +1,30 @@
+{
+	"id": 110104883,
+	"number": 12854,
+	"state": "open",
+	"title": "proposal: spec: untyped composite literals",
+	"body": "Composite literals construct values for structs, arrays, slices, and maps. They consist of a type followed by a brace-bound list of elements. e.g.,\r\n\r\n```go\r\nx := []string{\"a\", \"b\", \"c\"}\r\n```\r\n\r\nI propose adding untyped composite literals, which omit the type. Untyped composite literals are assignable to any composite type. They do not have a default type, and it is an error to use one as the right-hand-side of an assignment where the left-hand-side does not have an explicit type specified.\r\n\r\n```go\r\nvar x []string = {\"a\", \"b\", \"c\"}\r\nvar m map[string]int = {\"a\": 1}\r\n\r\ntype T struct {\r\n  V int\r\n}\r\nvar s []*T = {{0}, {1}, {2}}\r\n\r\na := {1, 2, 3} // error: left-hand-type has no type specified\r\n```\r\n\r\nGo already allows the elision of the type of a composite literal under certain circumstances. This proposal extends that permission to all occasions when the literal type can be derived.\r\n\r\nThis proposal allows more concise code. Succinctness is a double-edged sword; it may increase or decrease clarity. I believe that the benefits in well-written code outweigh the harm in poorly-written code. We cannot prevent poor programmers from producing unclear code, and should not hamper good programmers in an attempt to do so.\r\n\r\nThis proposal may slightly simplify the language by removing the rules on when composite literal types may be elided.\r\n\r\n## Examples\r\n\r\nFunctions with large parameter lists are frequently written to take a single struct parameter instead. Untyped composite literals allow this pattern without introducing a single-purpose type or repetition.\r\n\r\n```go\r\n// Without untyped composite literals...\r\ntype FooArgs struct {\r\n  A, B, C int\r\n}\r\nfunc Foo(args FooArgs) { ... }\r\nFoo(FooArgs{A: 1, B: 2, C:3})\r\n\r\n// ...or with.\r\nfunc Foo(args struct {\r\n  A, B, C int\r\n}) { ... }\r\nFoo({A: 1, B: 2, C: 3})\r\n```\r\n\r\nIn general, untyped composite literals can serve as lightweight tuples in a variety of situations:\r\n\r\n```go\r\nch := make(chan struct{\r\n  value string\r\n  err   error\r\n})\r\nch \u003c- {value: \"result\"}\r\n```\r\n\r\nThey also simplify code that returns a zero-valued struct and an error:\r\n\r\n```go\r\nreturn time.Time{}, err\r\nreturn {}, err // untyped composite literal\r\n```\r\n\r\nCode working with protocol buffers frequently constructs large, deeply nested composite literal values. These values frequently have types with long names dictated by the protobuf compiler. Eliding types will make code of this nature easier to write (and, arguably, read).\r\n\r\n```go\r\np.Options = append(p.Options, \u0026foopb.Foo_FrotzOptions_Option{...}\r\np.Options = append(p.Options, {...}) // untyped composite literal\r\n```",
+	"user": {
+		"login": "neild",
+		"id": 52544,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 50,
+	"created_at": "2015-10-06T21:26:59Z",
+	"updated_at": "2016-07-27T00:23:52Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

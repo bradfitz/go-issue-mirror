@@ -1,0 +1,28 @@
+{
+	"id": 134878446,
+	"number": 14409,
+	"state": "closed",
+	"title": "cmd/compile: compiler does not see that string escapes via function literal",
+	"body": "Hi, I am attaching a test case which fails on OSX El Capitan after upgrading go to version 1.6 \r\nThe first call to the `badFunc` illustrates that the code works when the string returned by the `badFunc` is equal or longer than 32 bytes. For shorter strings it fails. \r\n\r\nWhen I shuffle the code around, the returned bytes are bit different. \r\nWhen I call the `NewError([something shorter than 32 bytes])` it returns expected results.  \r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"reflect\"\r\n\t\"testing\"\r\n)\r\n\r\ntype ErrorType struct {\r\n\tDescription string\r\n}\r\n\r\nfunc TestGoCompileError(t *testing.T) {\r\n\tvar theError = badFunc(\"AAAAAAAAAAAAAAAAAAAAAA\")\r\n\tif reflect.DeepEqual([]byte(theError.Description), []byte(\"AAAAAAAAAAAAAAAAAAAAAADDDDDDDDDDD\")) == false { // 22 + 11 chars = 33 chars in the output\r\n\t\tt.Fatal(\"Test that shouldn't have failed have failed\")\r\n\t}\r\n\r\n\ttheError = badFunc(\"AAAAAAAAAAAAAAAAAAAAA\")\r\n\tif reflect.DeepEqual([]byte(theError.Description), []byte(\"AAAAAAAAAAAAAAAAAAAAADDDDDDDDDDD\")) == false { // 21 chars + 11 chars = 32 chars in the output, fails for char count \u003c= 32\r\n\t\tt.Fatalf(\"Got %v bytes, expected %v\", []byte(theError.Description), []byte(\"AAAAAAAAAAAAAAAAAAAAADDDDDDDDDDD\"))\r\n\t}\r\n}\r\n\r\nfunc badFunc(input string) *ErrorType {\r\n\tvar testSlice = []string{}\r\n\ttestSlice = append(testSlice, input)\r\n\tvar outputString = \"\"\r\n\toutputString = testSlice[0] + \"DDDDDDDDDDD\" // 11 chars\r\n\r\n\treturn NewError(outputString)\r\n}\r\n\r\nfunc NewError(description ...string) *ErrorType {\r\n\treturn \u0026ErrorType{\r\n\t\tDescription: func() string {\r\n\t\t\tif len(description) \u003e 0 {\r\n\t\t\t\treturn description[0]\r\n\t\t\t}\r\n\r\n\t\t\treturn \"Another error\"\r\n\t\t}(),\r\n\t}\r\n}\r\n```\r\n\r\nResults:\r\n```\r\n$ go test \r\n--- FAIL: TestGoCompileError (0.00s)\r\n\tmain_test.go:20: Got [32 0 0 0 0 0 0 0 43 42 4 0 0 0 0 0 192 128 10 32 200 0 0 0 232 141 4 32 200 0 0 0] bytes, expected [65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 65 68 68 68 68 68 68 68 68 68 68 68]\r\nFAIL\r\nexit status 1\r\n```",
+	"user": {
+		"login": "szank",
+		"id": 773802,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-04-19T22:14:55Z",
+	"created_at": "2016-02-19T14:28:18Z",
+	"updated_at": "2016-04-19T23:13:50Z",
+	"milestone": {
+		"id": 1688612,
+		"number": 37,
+		"title": "Go1.6.2"
+	}
+}

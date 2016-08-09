@@ -1,0 +1,28 @@
+{
+	"id": 51277970,
+	"number": 1549,
+	"state": "closed",
+	"title": "encoding/xml: parser does not accumulate nested directives properly",
+	"body": "by **ehog.hedge**:\n\n\u003cpre\u003e1. Compile the attached tryx.go\n2. Run with input redirected to the attached some.xml\n\nWhat is the expected output?\n\nA single `directive` object with nested !ENTITYs\n\nWhat do you see instead?\n\nAn incomplete DOCTYPE directive, four ENTITY directives,\nand trailing text with the final ]\u0026gt;.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nWhich operating system are you using?\nWhich revision are you using?  (hg identify)\n\n8g, Fedora Core 9, ef61c195edc3+ tip\n\ncode from xml.go:\n\n543                       // Probably a directive: \u0026lt;!DOCTYPE ...\u0026gt;,\n\u0026lt;!ENTITY ...\u0026gt;, etc.\n  544                  // We don't care, but accumulate for caller.\n  545                  p.buf.Reset()\n  546                  p.buf.WriteByte(b)\n  547                  for {\n  548                          if b, ok = p.mustgetc(); !ok {\n  549                                  return nil, p.err\n  550                          }\n  551                          if b == '\u0026gt;' {\n  552                                  break\n  553                          }\n  554                          p.buf.WriteByte(b)\n  555                  }\n  556                  return Directive(p.buf.Bytes()), nil\n\nThis cuts the !DOCTYPE off at the closing \u0026gt; of the !ENTITY\n(and discards the \u0026gt;). So the caller doesn't get the entire\n!DOCTYPE, and nor does it get all of the text necessary for\nreconstructing the !DOCTYPE. Unless, I suppose, it has to\nkeep pulling Directives and joining them with \u0026gt; until it gets\nthe ]\u0026gt;? In which case that's pretty horrid.\n\nLooking at the XML spec\n\n  \u003ca href=\"http://www.w3.org/TR/REC-xml/\"\u003ehttp://www.w3.org/TR/REC-xml/\u003c/a\u003e\n\nlooks like a directive can have nested other directives,\nand as far as I can see, \u0026lt;\u0026gt; may also appear inside \nquoted attributes.\n\nSo a revised version of that code could count \u0026lt;\u0026gt; and\nonly finish accumulation of the text when it hits a \nproperly balanced \u0026gt;, not counting \u0026lt; or \u0026gt; if they are\ninside '...' or \u0026quot;...\u0026quot; strings.\n\nThat would mean that the entire outermost directive, and all\nits nested directives, would be available to the program\nusing the parser. As is currently the case, what it chooses\nto do with the contents is up to it.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1549/0/some.xml\"\u003esome.xml\u003c/a\u003e (430 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:08:50Z",
+	"created_at": "2011-02-24T18:14:55Z",
+	"updated_at": "2016-06-24T19:25:46Z"
+}

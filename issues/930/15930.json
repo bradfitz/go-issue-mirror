@@ -1,0 +1,47 @@
+{
+	"id": 158058999,
+	"number": 15930,
+	"state": "closed",
+	"title": "x/net/http2: receive buffer memory usage increases by 400x with HTTP2",
+	"body": "In GoogleCloudPlatform/gcsfuse#173 I discovered that building with Go 1.6.2 increases memory usage by a factor of 400 or so over Go 1.6, apparently due to using HTTP2 by default (406752b640fcc56a9287b8454564cffe2f0021c1). This is on linux/amd64.\r\n\r\nI think this is on behalf of the receive buffer [allocated](https://github.com/golang/go/blob/f6c0241999bffe0fe52e8b7f5bbcc8f9e02edbdf/src/net/http/h2_bundle.go#L6066-L6067) in `http2clientConnReadLoop.handleResponse`. Elsewhere in that file I see that there is an attempt to use fixed-size buffers for outgoing requests (correct?), but this buffer appears to grow without bound, no matter whether the caller consumes the response body or not.\r\n\r\nOn the other hand there seems to be connection-wide flow control [updated](https://github.com/golang/go/blob/f6c0241999bffe0fe52e8b7f5bbcc8f9e02edbdf/src/net/http/h2_bundle.go#L6210) in `http2clientConnReadLoop.processData`. So I'm not sure that this is actually a problem.\r\n\r\nMy question: is it a known issue that memory usage is much much higher when making requests with large responses over HTTP2? Is this RAM \"well spent\" in the sense that it's buying me more throughput?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-06-07T04:32:48Z",
+	"created_at": "2016-06-02T04:51:56Z",
+	"updated_at": "2016-06-08T01:08:41Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	},
+	"assignees": [
+		{
+			"login": "bradfitz",
+			"id": 2621,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "adg",
+			"id": 8446613,
+			"type": "User",
+			"site_admin": false
+		}
+	]
+}

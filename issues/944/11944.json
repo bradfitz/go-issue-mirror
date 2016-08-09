@@ -1,0 +1,32 @@
+{
+	"id": 98214077,
+	"number": 11944,
+	"state": "open",
+	"title": "go/types: does not give types to selectors",
+	"body": "The following program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"go/ast\"\r\n\t\"go/parser\"\r\n\t\"go/token\"\r\n\t\"go/types\"\r\n)\r\n\r\nfunc main() {\r\n\tfset := token.NewFileSet()\r\n\tf, err := parser.ParseFile(fset, \"test.go\", src, 0)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tinfo := \u0026types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}\r\n\tcfg := \u0026types.Config{}\r\n\t_, err = cfg.Check(\"test\", fset, []*ast.File{f}, info)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfor n, t := range info.Types {\r\n\t\tfmt.Printf(\"%+v: %v\\n\", n, t)\r\n\t}\r\n}\r\n\r\nconst src = `\r\npackage x\r\n\r\ntype X struct {\r\n\tf int\r\n}\r\n\r\nfunc foo(x *X) int {\r\n\treturn x.f\r\n}\r\n```\r\noutputs:\r\n```\r\nint: {3 int \u003cnil\u003e}\r\nx: {5 *test.X \u003cnil\u003e}\r\n\u0026{X:x Sel:f}: {5 int \u003cnil\u003e}\r\nint: {3 int \u003cnil\u003e}\r\n\u0026{Struct:20 Fields:0xc820014660 Incomplete:false}: {3 struct{f int} \u003cnil\u003e}\r\nX: {3 test.X \u003cnil\u003e}\r\n\u0026{Star:50 X:X}: {3 *test.X \u003cnil\u003e}\r\n```\r\n\r\nYou can see that selector ```f``` in expression ```x.f``` did not get type.\r\nIt should have a type, when you recursively walk an expression you expect that all subexpressions are typed or constants. But these are completely unindentified.\r\n\r\nThe spec says that selectors have types; and in fact type of the selector expression itself is determined by type of the selector:\r\n```\r\nFor a primary expression x that is not a package name, the selector expression\r\nx.f\r\ndenotes the field or method f of the value x (or sometimes *x; see below). The identifier f is called the (field or method) selector; it must not be the blank identifier. The type of the selector expression is the type of f. If x is a package name, see the section on qualified identifiers.\r\n```\r\n\r\ngo version devel +b7205b9 Thu Jul 30 05:57:37 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-07-30T16:45:35Z",
+	"updated_at": "2016-05-09T19:14:46Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

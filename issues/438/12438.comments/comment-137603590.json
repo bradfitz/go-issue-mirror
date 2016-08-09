@@ -1,0 +1,12 @@
+{
+	"id": 137603590,
+	"body": "It seems dirty to be passing the parent Server into its child Handler.  The Context still wouldn't solve the problem of the ServeContent error logger without either a modification to the method signature, one of its parameters, or the addition of a global variable.  If you're going to make that kind of modification, wouldn't the following suffice?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"log\"\r\n        \"net/http\"\r\n        \"os\"\r\n)\r\n\r\nfunc main() {\r\n        s := \u0026http.Server{Addr: \":8080\"}\r\n        s.ErrorLog = log.New(os.Stdout, \"error: \", log.LstdFlags)\r\n        mux := http.NewServeMux()\r\n        mux.HandleFunc(\"/\", handleIt(s.ErrorLog))\r\n        s.Handler = mux\r\n        s.ListenAndServe()\r\n}\r\n\r\nfunc handleIt(logger *log.Logger) func(http.ResponseWriter, *http.Request) {\r\n        return func(w http.ResponseWriter, r *http.Request) {\r\n                logger.Println(\"fail\")\r\n        }\r\n}\r\n```\r\nI like the idea of the Context, but I'm concerned that it bypasses compile-time safety in favor of flexibility, and it seems like more of a nuclear option to be passing Server down the food chain.",
+	"user": {
+		"login": "wardn",
+		"id": 23034,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-03T23:50:17Z",
+	"updated_at": "2015-09-03T23:50:17Z"
+}

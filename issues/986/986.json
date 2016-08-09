@@ -1,0 +1,22 @@
+{
+	"id": 51277200,
+	"number": 986,
+	"state": "closed",
+	"title": "gccgo too lenient with type switch expressions",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. compile the code below with the latest version of gccgo\n\npackage main\n\nfunc main() {\n\tch := make(chan interface{}, 1)\n\tch \u0026lt;- 1\n\tswitch x := \u0026lt;-ch.(type) {\n\tcase int:\n \t\tprintln(x)\n\t}\n}\n\nWhat is the expected output? What do you see instead?\n\nExpected: A syntax error on line 6, code should not compile and run.\nFound: No error, code compiles and runs.\n\nThe same code is not accepted by 6g or gofmt:\n\n6g test.go\ntest.go:6: use of .(type) outside type switch\ntest.go:6: x = \u0026lt;-(node TYPESW) used as value\n\ngofmt test.go\ntest.go:6:16: expected expression\n\nThere is a syntax error because the expression\n\n\t\u0026lt;-ch.(type)\n\nis interpreted as: \u0026lt;-(ch.(type)) and not as: (\u0026lt;-ch).(type) .\n\nIt appears that gccgo does the latter.\n\nThe spec specifies the TypeSwitchGuard explicitly as:\n\n\tTypeSwitchGuard = [ identifier \u0026quot;:=\u0026quot; ] PrimaryExpr \u0026quot;.\u0026quot; \u0026quot;(\u0026quot; \u0026quot;type\u0026quot; \u0026quot;)\u0026quot; .\n\nThe form x.(type) is really a specialized form of a type assertion; and x must be a\nprimary expression (and thus cannot be a unary expression such as \u0026lt;-ch).\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:06:36Z",
+	"created_at": "2010-08-01T04:46:59Z",
+	"updated_at": "2016-06-24T19:18:31Z"
+}

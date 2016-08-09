@@ -1,0 +1,27 @@
+{
+	"id": 168126217,
+	"number": 16528,
+	"state": "open",
+	"title": "runtime: idle mark workers run when there's work to do",
+	"body": "Currently idle mark workers always run for a whole Go scheduler quantum (10ms), even when more work comes in in the middle of that quantum (e.g., more runnable goroutines or incoming network packets). This is really bad for latency-sensitive systems.\r\n\r\nThe effect of this is particularly noticeable in RPC servers with very short handlers, such as in issue #16432. In these systems, all of the Ps have frequent, short idle periods. With the current idle worker behavior, these idle periods immediately trigger the idle worker, putting that P out of commission for 10ms. This cascades through the Ps until it reaches the point where some set of Ps is completely and continuously saturated.\r\n\r\nWe should fix idle workers to really have idle priority, returning control to the scheduler as soon as possible if there is other work the P could be doing.\r\n\r\nIdeally, the idle worker would be able to check a simple flag on each iteration through the drain loop.\r\n\r\nA simpler solution would be to only scan one object or root job at a time and then return to the scheduler. This is essentially how the background sweep currently achieves an \"idle priority\". This would have fairly high overhead for the idle worker, but it would accomplish the desired effect. We could batch objects into, say, units of 10k bytes, which would limit the idle worker to ~10 microseconds, while somewhat amortizing the cost of returning to the scheduler. I have a version of this prototyped (though with a 1ms time-based bound) at https://go-review.googlesource.com/c/24706/.\r\n\r\nAnother possible solution (from https://github.com/golang/go/issues/16432#issuecomment-235465053) would be to always keep one P \"truly idle\". If that P finds itself with work, it would signal some idle worker to exit immediately.\r\n\r\n/cc @RLH @rhysh ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-07-28T15:32:50Z",
+	"updated_at": "2016-07-28T15:32:50Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

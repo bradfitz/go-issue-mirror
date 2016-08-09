@@ -1,0 +1,12 @@
+{
+	"id": 138713156,
+	"body": "This should be renamed as: \"archive/tar: writer does not support writing base-256 fields\"\r\n\r\nThe issue at hand is not that the reader is giving bogus headers, but that the writer isn't able to encode the headers back since it doesn't support the base-256 format that GNU added.\r\n\r\n~~I recommend closing this as \"won't fix\". Currently, the tar writer already outputs the Pax format when the header information extends beyond what the original tar header was able to encode. Thus, this prevents the use of any other format type, otherwise the output tar file will neither be Pax nor GNU nor BSD; it will be some weird and incompatible mix of two or more formats. It is fortunate (or unfortunate) that the writer already chose Pax as its default extended output format. Thus, it should not use extensions of any other format.~~\r\n\r\n~~A [peruse of the pax code](https://github.com/pinard/paxutils/blob/5864ac10e7688ca0fe18441cf73fc7cbc24ec867/src/fmttar.c#L242) shows that it does not support reading base256 encoded fields,  thus proving that it is not safe to mix some of the exotic GNU/BSD extensions into Pax.~~\r\n\r\n~~@dsymonds If he agrees.~~\r\n\r\nEDIT: I misread the code and it seems that tar does dynamically choose what format to use based on the fields it needs to encode. As I was afraid, this does cause the writer to potentially write conflicting formats if not careful. Issue #9683 is caused by this phenomenon. This will probably be a good time to carefully look through tar and make sure it doesn't conflict with itself.\r\n\r\n---\r\nAs a side note, I should mention that the reader incorrectly reads base256 encoded fields in that it does not handle negative numbers. I'll submit a CL for that. For reference:\r\n* [code from libarchive (BSD implementation)](https://github.com/libarchive/libarchive/blob/3c7a6dc6694d9b26400d2bd672e04d09ed8a4276/libarchive/archive_read_support_format_tar.c#L2531)\r\n* [code from GNU tar](http://git.savannah.gnu.org/cgit/tar.git/tree/src/list.c#n862)\r\n\r\nThe use case of negative numbers allows for timestamps before 1970, and also allows Go's tar implementation to properly reject Tar files with negative file sizes and what not.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-08T21:45:04Z",
+	"updated_at": "2015-09-09T04:17:37Z"
+}

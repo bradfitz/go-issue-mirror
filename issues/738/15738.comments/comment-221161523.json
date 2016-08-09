@@ -1,0 +1,12 @@
+{
+	"id": 221161523,
+	"body": "\u003e I saw your comment. I thought the gccgo code handled this priority inversion somehow but I do not remember how. I haven't looked into the problem yet--I'm looking at the gc 1.7 release and internal stuff before I return to working on gccgo.\r\n\r\nAh, sorry for the noise. Sensible priorities!\r\n\r\n\u003e OK, I took a very quick look. The comment for Package::set_priority says\r\n\u003e \r\n\u003e // Set the priority.  We may see multiple priorities for an imported\r\n\u003e // package; we want to use the largest one.\r\n\u003e So why isn't that working?\r\n\r\nBecause it's not the priority of the package being tested (let's call it A) that's the problem, it's the priority of some other package (say B) that (a) depends on A (b) is depended on by A's external tests that's the problem. B's priority was fixed when it was built, without knowing that A's priority can change in this situation. The only approach to fixing this that I can think of is to walk the import graph at link time, not compute some depth measurement at compile time (or take imports in internal test files into account at compile time for priority purposes, but that sounds bonkers).\r\n\r\n\u003e I also see this comment, earlier, so I think that this did work at one time:\r\n\u003e \r\n\u003e       // If a test of package P1, built as part of package P1,\r\n\u003e       // imports package P2, and P2 imports P1 (perhaps\r\n\u003e       // indirectly), then we will see the same import name with\r\n\u003e       // different import priorities.  That is OK, so don't give\r\n\u003e       // an error about it.\r\n\r\nI think I probably rendered this bit unecessary in https://go-review.googlesource.com/#/c/21692/ -- the link only sees one version of the package now.\r\n",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-24T04:08:33Z",
+	"updated_at": "2016-05-24T04:08:33Z"
+}

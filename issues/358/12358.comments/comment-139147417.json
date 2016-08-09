@@ -1,0 +1,12 @@
+{
+	"id": 139147417,
+	"body": "As mentioned above, the reason PID is used is only for extractors that do not support PAX. Since the tar spec says that unknown type flags be treated as regular files, then the TypeXHeader special files used by PAX will be dropped a regular file, with the contents of the PAX header \"file\" being in a humanly readable format.\r\n\r\nThis is what would hypothetically happen when extracting two conflicting archives back-to-back using a dumb tar that doesn't support pax:\r\n```\r\n$ dumbtar -xvf pax1.tar\r\nfoo/bar/PaxHeaders.1000/file0\r\nfoo/bar/PaxHeaders.1000/file1\r\nfoo/bar/file0\r\nfoo/bar/file1\r\n\r\n$ dumbtar -xvf pax2.tar\r\nfoo/bar/PaxHeaders.1005/file0\r\nfoo/bar/PaxHeaders.1005/file3\r\nfoo/bar/file0\r\nfoo/bar/file2\r\n\r\n$ ls -l foo/bar foo/bar/PaxHeaders.* \r\nfoo/bar:\r\ndrwxr-xr-x 11 rawr dsnet 4.0K Sep  8 21:12 PaxHeaders.1000\r\ndrwxr-xr-x 13 rawr dsnet 4.0K Sep  8 21:12 PaxHeaders.1005\r\n-rw-r--r--  1 rawr dsnet   46 Sep  9 09:30 file0\r\n-rw-r--r--  1 rawr dsnet  10K Sep  9 09:30 file1\r\n-rw-r--r--  1 rawr dsnet  557 Sep  9 10:36 file2\r\n\r\nfoo/bar/PaxHeaders.1000:\r\n-rw-r--r--  1 rawr dsnet  104 Sep  9 09:30 file0\r\n-rw-r--r--  1 rawr dsnet  623 Sep  9 09:30 file1\r\n\r\nfoo/bar/PaxHeaders.1005:\r\n-rw-r--r--  1 rawr dsnet  555 Sep  9 09:30 file0\r\n-rw-r--r--  1 rawr dsnet  123 Sep  9 09:30 file2\r\n```\r\nThe PID is a crude method of separating the header files dropped by multiple invocations of an extraction that may have files that collide. This does allow the PaxHeaders from different invocations to be identified, but it's not that great of a solution anyways since tar extractors typically overwrite previous dropped files anyways.\r\n\r\nFurthermore, the PAX specification does not even mandate that the value must be of the \"%d/PaxHeaders.%p/%f\", it just defaults to that. Thus, it is up to the implementation to choose whatever value they want. Not to mention that the format chosen by PAX is problematic when the directory name is longer than 100 characters anyways. In that situation the \"PaxHeader.*\" string will be truncated off anyways.\r\n\r\nMy vote is to have ID be hardcoded to 0.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-10T07:39:55Z",
+	"updated_at": "2015-10-03T00:45:25Z"
+}

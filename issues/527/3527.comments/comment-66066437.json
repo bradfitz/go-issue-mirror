@@ -1,0 +1,12 @@
+{
+	"id": 66066437,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eI looked a little bit but I am not set up to build V8. The thing to do\nis to treat this like any other C program crash, so step 1 is to run\nit under gdb and try to get a stack trace that way.\n\nI tried this and gdb told me that the test binary crashes at\napi.cc:683.  Looking at\n\u003ca href=\"http://code.google.com/p/v8/source/browse/trunk/src/api.cc\"\u003ehttp://code.google.com/p/v8/source/browse/trunk/src/api.cc\u003c/a\u003e it appears\nthat V8 is using thread-local storage behind the scenes, and probably\nthe current thread is different than the thread that initialized\neverything.\n\nI don't know what V8's story for threaded access is. You are only\nmaking one relevant cgo call, so certainly all the pieces of that call\nrun in a single thread.  But maybe there were static initializers that\nran in a different thread. The comments around api.cc:683 and Isolate\nsuggest that might be the case.\n\nI would try adding\n\nfunc init() {\n    runtime.LockOSThread()\n}\n\nto your package main.  That will make sure that the thread that ran\nthe initialization is still the thread that runs main.main (and in\nfact no other goroutine will ever use that thread: main owns it),\nwhich may make V8 happy.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-13T23:38:36Z",
+	"updated_at": "2014-12-08T10:18:31Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 61881999,
+	"number": 10171,
+	"state": "closed",
+	"title": "crypto/x509: insufficient validation in x509.DecryptPEMBlock leads to decryption false positives",
+	"body": "The validation of  `x509.DecryptPEMBloc` seems to be insufficient and any password that matches the padding validations in (https://golang.org/src/crypto/x509/pem_decrypt.go) provides a non-error return.\r\n\r\nThe following code shows two different passwords decoding the same encrypted PEM file successfully. The correct password for the encrypted PEM file in privateKeyString is \"omgomgponies\".\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/x509\"\r\n\t\"encoding/pem\"\r\n\t\"fmt\"\r\n)\r\n\r\nvar privateKeyString = `\r\n-----BEGIN RSA PRIVATE KEY-----\r\nProc-Type: 4,ENCRYPTED\r\nDEK-Info: DES-EDE3-CBC,68CA28419ADC598B\r\n\r\n0ro1rMiglCY/LVpL4nC3/+JvfcmE84nx317uz1+uXzu5Y+OXxekejTWZrk7hWBeA\r\nchl8anQM8zPEZ+sJ13qMWH+1lUbbd/5ZsCpOlERkgDrut8yHEKkRFRj5MQtrg1Vn\r\neEpd0B7P2UD1ctJb0T8uBo1hhzFyxDI8sG47fSYU/oTnBqqofTom8S+lXPBvKZEm\r\nLcU9ZuJg6M9Q1HO1D3uIbjEGlYP9VH8AZpEdMpcJDnbCZxJ+FBufuq5pIBiHwQW8\r\nSuDoc47iliArbymlbq8ple7rsXxUrzvjjqYKFUz/0DsLeaJLt1CL1dcke3w1sMNS\r\nGy+//b+/Q255lZ94MgYj7ag7zLoCnoEr4AXItKD7mgqDQ7BuCa/UCiW/M9+r+V5Z\r\nMKoE2SEN2BDZSEc53RD2eXKDn1OtwLnNd36dpbHaSqtVPQ6QJDIQKo/GXo/sTVst\r\nAEFCJYBHmrwFw3YNKtCywBmUieeQeHPhooCzoGaXQf8kb5bVoJT5YxlK0lQNV9TQ\r\nlDoim27w11aJMwQg9RCdl3/rHpmnkpiFFFKx3IYGhQko5QrBRmZ67IJUGbgj31/w\r\nq448ZR3s5sIoREaHfGW5XpQA8s2wj88TFm5K4vxoGrMwJeZBQG61/1InAGRC8dX4\r\njwZS7qB/eWLWr6HalY2yi4G/12TJB84yRCnIlFFnbUU9oLJ3xPhhehdqlS9YsARX\r\nawvJTb58ZTo68wN7UKBEw/yz/pKrtCBTMtnIJ9khfhTHnUI18wf7a1KBYv2iZZzp\r\n4jhVaCDOFPv70ydRkoURJTRXyMpTAtAyflLPRNNkvtFMzzLst7Ex367xcAg2af9+\r\n7UYdrIp0q8JOClCdzNkb6+Iy00G2HBAyCfhnf8TupU8SCADNjRReGUzioWOIRu24\r\nTnX8o6fv2G8wGHANJfrS2BGmtBOWW3wdo08WScyCxKQ/lrHMhKW+xeZ+UqCgKfiT\r\nAHKagheEH1+nm0RDZzII0hDDVGLUzZzT6DGrYp5xW5WgOJHDTZCU4dEyZ30N2wkJ\r\nFI2dEGx3lY/YmE7X4knE7UXccjHNJq7NmCbhLzeFfT38FNCwraWIxbRVpdeHClAx\r\ndSYENqn04wER4bSXRsfF9fcDrjAGtb1CGk0PPoEs0D0OoYpyyLVgWw+qnxBMKuvz\r\n5z+mSBDJ8QMybC3x7SOF/kdXsIyXUqknInaUBzJ5qOigRVD+/g4VjZoRtD/eeM4X\r\nmpKtZ4THx9WYz0ZeJijYwUeYBrGt0kglwf/VrMZFSTeYTvxm5BmDkf8+jRB09mV0\r\nYcPPuqGeJvcgrAJqUJ0iny1SyagpSJp4wPFwTYd9xOxjBJzYWgafCfaEdrLpAUSk\r\nYvAVmfVhj591LWzg7r2pATK4Zi75E4nBRORcOlAqyea2zibfKYI0kmtZw8JRj9IL\r\nu3N5piXDAqgQlGqoY2y+GgvMk4vFhF/SO/ZeQaUplYG0XMQlViArE5n/2bIY4Jh4\r\nh4vl6GSXvOWYEhi4NmF0kY34ABmfxbcS8Sngym+tYGPWUb4t+o74DzYvGl+rJ/9Z\r\nlOb1XwXRJvKsaHMI7ujCRu3nhqVgsRlTjCIkWExc5/MnK5leiUVWLHmsfLqC3Kht\r\n-----END RSA PRIVATE KEY-----\r\n`\r\n\r\nfunc checkPassword(pem *pem.Block, password string) {\r\n\t_, err := x509.DecryptPEMBlock(pem, []byte(password))\r\n\r\n\tif err == nil {\r\n\t\tfmt.Println(\"Valid password found: \" + password)\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tdecodedPEM, _ := pem.Decode([]byte(privateKeyString))\r\n\r\n\tcheckPassword(decodedPEM, \"ruvf\")\r\n\tcheckPassword(decodedPEM, \"omgomgponies\")\r\n}\r\n\r\n```\r\n\r\nThe correct password can be verified using openssl (`omgomgponies`):\r\n```bash\r\nopenssl rsa -in private.pem -outform PEM -pubout -out public.pem\r\nEnter pass phrase for private.pem:\r\nwriting RSA key\r\n```\r\n\r\nAnd we can also demonstrate openssl returning an error for the invalid password (`ruvf`):\r\n```bash\r\nopenssl rsa -in private.pem -outform PEM -pubout -out public.pem\r\nEnter pass phrase for private.pem:\r\nunable to load Private Key\r\n140735220982608:error:0D0680A8:asn1 encoding routines:ASN1_CHECK_TLEN:wrong tag:tasn_dec.c:1180:\r\n140735220982608:error:0D07803A:asn1 encoding routines:ASN1_ITEM_EX_D2I:nested asn1 error:tasn_dec.c:365:Type=RSA\r\n140735220982608:error:04093004:rsa routines:OLD_RSA_PRIV_DECODE:RSA lib:rsa_ameth.c:119:\r\n140735220982608:error:0D0680A8:asn1 encoding routines:ASN1_CHECK_TLEN:wrong tag:tasn_dec.c:1180:\r\n140735220982608:error:0D07803A:asn1 encoding routines:ASN1_ITEM_EX_D2I:nested asn1 error:tasn_dec.c:365:Type=PKCS8_PRIV_KEY_INFO\r\n140735220982608:error:0907B00D:PEM routines:PEM_READ_BIO_PRIVATEKEY:ASN1 lib:pem_pkey.c:141:\r\n```\r\n\r\nFound while trying to create a PEM cracker: https://github.com/diogomonica/go-pemcrack",
+	"user": {
+		"login": "diogomonica",
+		"id": 55332,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-03-20T04:42:12Z",
+	"created_at": "2015-03-15T18:53:28Z",
+	"updated_at": "2016-06-25T02:03:20Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

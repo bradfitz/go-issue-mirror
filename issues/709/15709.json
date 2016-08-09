@@ -1,0 +1,27 @@
+{
+	"id": 155147793,
+	"number": 15709,
+	"state": "closed",
+	"title": "crypto/tls: regression in Handshake behavior for bad certificates",
+	"body": "Commit 37c28759ca46cf381a466e32168a793165d9c9e9 caused a regression in the `tls` package that causes some tests to fail.\r\n\r\nThis is my hypothesis (I'm not an expert in the TLS protocol):\r\nPreviously, in the event of a bad client certificate (using the [`ClientAuth`](https://golang.org/pkg/crypto/tls/#ClientAuthType) feature), the server would inform the client that the client's certificate was rejected before returning from the Handshake method. After the change mentioned, it seems that Handshake would return before the client is informed of the failure.\r\n\r\nConsider the following code (where the client is using a bad certificate and should fail the Handshake):\r\n```go\r\n// Snippet of server-side logic.\r\nif err := tc.(*tls.Conn).Handshake(); err != nil {\r\n\t// If the client presented a bad cert, it seems reasonable to\r\n\t// Close the connection immediately.\r\n\ttc.Close()\r\n}\r\n\r\n\r\n// Snippet of client-side logic.\r\nif err := c.Handshake(); err != nil {\r\n\t// The client is intentionally using a bad certificate, so we expect that\r\n\t// the error be \"bad certificate\". However, it is more often a \"pipe error\" instead.\r\n\tpanic(err)\r\n}\r\n```\r\nIf the server's `Handshake` returns before it informs the client of a bad certificate, then there is a race condition going on here. As the client's `Handshake` is asking the server for the status of the TLS handshake, the client's packet may be received by the server *before* the server calls `tc.Close` or it may be received *after* calling `tc.Close`. If received before, then the client's `Handshake` will properly return an \"bad certificate\" error. However, if received after, then the client's `Handshake` will return a \"broken pipe\" error, which is more indicative of a network failure, than an authentication error.\r\n\r\nPutting a `time.Sleep(time.Second)` before calling `tc.Close` on the server makes the client's `Handshake` almost always return 'bad certificate', further indicating that this is a race.\r\n\r\nSee this example: https://play.golang.org/p/7aY0K9wcEW\r\n\r\n@agl, @bradfitz ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2016-06-01T23:27:23Z",
+	"created_at": "2016-05-16T23:50:48Z",
+	"updated_at": "2016-06-01T23:27:23Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

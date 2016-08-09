@@ -1,0 +1,12 @@
+{
+	"id": 170068165,
+	"body": "I'd expect to see some mention of \"panic\" in the stack trace. I'd expect to see it\r\ncalled by the function that panicked (Mutex.Unlock in this case).\r\n\r\nAs it turned out, this particular case happened when there were two nested\r\npanics - the code in newChanStore.func2 was trying to send on a closed\r\nchannel, which caused a deferred unlock to run, which panicked (because\r\nit was unlocking an unlocked mutex), which caused the\r\ndeferred Close to run, which deadlocked because the Unlock\r\nactually locked the mutex (see issue #13879)\r\n\r\nHere's a simpler piece of code that illustrates the same issue (http://play.golang.org/p/r8F94naBit):\r\n\r\n\tpackage main\r\n\timport (\r\n\t\t\"fmt\"\r\n\t)\r\n\t\r\n\tvar c = make(chan int)\r\n\t\r\n\tfunc main() {\r\n\t\tclose(c)\r\n\t\tdefer halt()\r\n\t\tdefer b()\r\n\t\ta()\r\n\t}\r\n\t\r\n\tfunc halt() {\r\n\t\tselect{}\r\n\t}\r\n\t\r\n\tfunc a() {\r\n\t\tfmt.Println(\"a\")\r\n\t\tc \u003c- 1\r\n\t}\r\n\t\r\n\tfunc b() {\r\n\t\tfmt.Println(\"b\")\r\n\t\tpanic(\"b\")\r\n\t}\r\n\r\nSomething along this kind of line would be preferable (without any\r\nthought as to whether it's possible or not!)\r\n\r\n\tfatal error: all goroutines are asleep - deadlock!\r\n\t\r\n\tgoroutine 1 [select (no cases)]:\r\n\tmain.halt()\r\n\t\t/home/rog/src/tst.go:16 +0x1b\r\n\tpanic()\r\n\t\t???\r\n\tmain.b()\r\n\t\t/home/rog/src/tst.go:26 +0x124\r\n\tpanic()\r\n\t\t???\r\n\tmain.a()\r\n\t\t/home/rog/src/tst.go:21 +0x10c\r\n\tmain.main()\r\n\t\t/home/rog/src/tst.go:12 +0x5b\r\n\r\nOf course it would be even better if there was some indication of\r\nwhere the deferred calls were being made from... when there's a\r\nvery deep stack trace, it can be challenging trying to work out\r\nwhat's actually going on.\r\n",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-08T17:37:03Z",
+	"updated_at": "2016-01-08T17:37:03Z"
+}

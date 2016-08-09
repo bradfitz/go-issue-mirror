@@ -1,0 +1,27 @@
+{
+	"id": 51287255,
+	"number": 7820,
+	"state": "closed",
+	"title": "runtime: heapdump and GC are inconsistent",
+	"body": "\u003cpre\u003eObjects which look unreachable in the heap dump are being retained by the garbage\ncollector.  Unclear whether this is a bug in the heapdumper or a bug in GC, but we\nsuspect the GC as these objects should not be reachable in the source program.\n\nThe patch he mentions is 89360043, which cleans up some false retentions due to\nconservative scanning of Gs.\n\nAlan's reproducing instructions:\n\nwith your patch, running my script on a dump made after a GC shows no paths from the\nrootset to an ssa object. Yet the memory usage reported by runtime.MemStats is large,\nindicating that it includes the ssa objects. The heap dump contains all the ssa objects,\neven though they don't appear to be reachable from the root, and jhat, which doesn't\ncheck reachability, shows all those objects.  I think this indicates that the GC is\nfollowing an edge that is not recorded in the heapdump.  This is really two problems:\n(1) the GC and heapdump aren't consistent and (2) the GC is too conservative and the\nmissing edge is spurious. \n\nCan I give you my test case for you to investigate?  I'm not really making any progress.\n\nPatch your \u0026quot;/heapdump\u0026quot; handler so that it logs MemStats.Alloc just after GC. \nBuild code.google.com/p/go.tools/cmd/godoc and run it like so:\n% GOPATH= ./godoc -analysis=type -http :8888\nDump the heap after the message \u0026quot;Extracting type info complete\u0026quot; appears, i.e.\nanalysis is done.  The memory usage will be around 450MB, although I believe it ought to\nbe \u0026lt;\u0026lt;50MB.\n\nBuild and run the following program:\n/home/adonovan/got4/src/github.com/randall77/hprof/heapsearch/main.go\n% ./heapsearch dump godoc \n\nWithout your runtime patches to zero out pointers, this will report a path via (I think)\nallg[4].schedlink, or some variation.\nWith your patches, it reports nothing.  Yet running jhat on the same dump (converted to\nhprof) shows plenty of ssa objects.\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:43:21Z",
+	"created_at": "2014-04-18T21:37:02Z",
+	"updated_at": "2016-06-25T01:32:38Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 75470621,
+	"body": "My reading of the `database/sql` code might be wrong, but I think you can end up in a state where the database is closed because of an error, rather than you gracefully shutting it down. I think relying on `db.Close` as such a signal is probably not the right way to go.\r\n\r\nYou might try something like this, where all your workers can select on a timer or a `quit` channel, and your controller can signal shutdown with `close(quit)`. That will shut your workers down immediately, instead of after the timeout, and you can also put a check in the select statement error handling to see whether you should report the error (I'd say you should anyway).\r\n```\r\nvar quit chan struct{}\r\n\r\ngo func() {\r\n    for {\r\n        select {\r\n        case \u003c-quit:\r\n            // some fast cleanup code\r\n            return\r\n        case \u003c-time.After(time.Minute):\r\n        }\r\n        if _, err := db.Exec(`UPDATE something`); err != nil {\r\n            log.Printf(\"%v\", err)\r\n        }\r\n    }\r\n}()\r\n```",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-22T23:20:32Z",
+	"updated_at": "2015-02-22T23:20:32Z"
+}

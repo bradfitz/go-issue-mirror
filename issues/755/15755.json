@@ -1,0 +1,28 @@
+{
+	"id": 155829340,
+	"number": 15755,
+	"state": "closed",
+	"title": "go/types: \"var x, y b = i.(b)\" should declare 'y' with type 'b', not 'bool'",
+	"body": "cmd/compile and gccgo accept this Go source, but go/types rejects it with \"cannot compare x == y (mismatched types b and bool)\":\r\n\r\n    package p\r\n    \r\n    func f() bool {\r\n    \tvar i interface{}\r\n    \ttype b bool\r\n    \tvar x, y b = i.(b)\r\n    \treturn x == y\r\n    }\r\n\r\nMy reading of the Go spec is that cmd/compile and gccgo are correct here:\r\n\r\n\u003e If a type is present, each variable is given that type.\r\n\r\nSo `x` and `y` should have type `b`.\r\n\r\n\u003e A type assertion used in an assignment or initialization of the special form [...] yields an additional *untyped* boolean value. \r\n\r\nSo `y` is initialized with an untyped boolean value, which is assignable to the named boolean type `b`.\r\n\r\n\r\nArguably the syntax `var x, y b = i.(b)` isn't actually one of the three \"special forms\" described in the Go spec, but none of cmd/compile, go/types, or gccgo complain about that.  It seems reasonable to expect that `var x, y b = i.(b)` should behave identically to `var x, y b; x, y = i.(b)` (which all three tools allow).\r\n\r\n/cc @griesemer @ianlancetaylor ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-05-23T18:20:04Z",
+	"created_at": "2016-05-19T20:37:51Z",
+	"updated_at": "2016-05-23T18:20:04Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

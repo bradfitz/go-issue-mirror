@@ -1,0 +1,22 @@
+{
+	"id": 51279642,
+	"number": 2740,
+	"state": "closed",
+	"title": "cmd/gc: inlining breaks evaluation order",
+	"body": "\u003cpre\u003ethis program \n\n      1 // $G $D/$F.go \u0026amp;\u0026amp; $L $F.$A \u0026amp;\u0026amp; ./$A.out\n      2 \n      3 // Copyright 2011 The Go Authors.  All rights reserved.\n      4 // Use of this source code is governed by a BSD-style\n      5 // license that can be found in the LICENSE file.\n      6 \n      7 package main\n      8 \n      9 var calledf int\n     10 \n     11 func f() int {\n     12         calledf++\n     13         return 0\n     14 }\n     15 \n     16 func g() int {\n     17         return calledf\n     18 }\n     19 \n     20 func main() {\n     21         if f() == g() {\n     22                 println(\u0026quot;wrong order\u0026quot;)\n     23         }\n     24 }\n     25 \n\nprints 'wrong order' even for the current (leaf only one liners) not very aggressive\nsetting\n\nThe reason is that inlining replaces g() with an OCONV with the former body of g on it's\nninit, which walk then pulls into the ninit of the statement containing the expression. \n\nThe best solution i can see is to fix walk and gen to leave the ninit in place, and\ntreat the OCONV node just like a call in the backend.  I think it will be a fairly small\nchange \n\nIt's tricky to punt on this by makeing inliniability more restrictive, since this can\nalso happen for, say read-onnly methods returning a member.\u003c/pre\u003e",
+	"user": {
+		"login": "lvdlvd",
+		"id": 9462795,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:14:35Z",
+	"created_at": "2012-01-19T14:21:02Z",
+	"updated_at": "2016-06-24T21:23:57Z"
+}

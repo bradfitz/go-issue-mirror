@@ -1,0 +1,22 @@
+{
+	"id": 104621660,
+	"number": 12461,
+	"state": "closed",
+	"title": "cmd/link: Creating an archive from an installed package fails",
+	"body": "Me again testing weird cross-compilation options and think I've found another problem\r\n\r\nI have created a package and installed it that contains a few functions, structs and interfaces and have been able to use it successfully when using go build.\r\n\r\nI'd like to write a shim package for interfacing with C code and have run up against the following error:\r\n```\r\n$ go build -v -buildmode=c-archive fli_wrapper.go \r\ncommand-line-arguments\r\n# command-line-arguments\r\n/usr/local/go/pkg/tool/linux_386/link: running ar failed: exit status 1\r\nar: /go.o: No such file or directory\r\n```\r\n\r\nI have my custom package modemmanager built and  installed:\r\n```\r\nls ../../pkg/linux_386/\r\ngithub.com/     golang.org/     gopkg.in/       modemmanager.a \r\n```\r\n\r\nBut when I try and build the following I get the previous error:\r\n```\r\npackage main\r\n\r\nimport (\r\n\tmm \"modemmanager\"\r\n\t\"log\"\r\n\t\"net\"\r\n\t\"net/rpc/jsonrpc\"\r\n)\r\n\r\nfunc GetAvailableModems() {\r\n\r\n\tlog.Println(\"Getting Modems...\")\r\n\r\n\t// Dial up the remote server\r\n\tconn, err := net.Dial(\"tcp\", \"localhost:8222\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer conn.Close()\r\n\tc := jsonrpc.NewClient(conn)\r\n\r\n\t// Get the available modems\r\n\tmodems := make([]mm.Modem, 0)\r\n\tlog.Println(\"Empty:\", modems)\r\n\r\n\t// calling method on RPC server\r\n\terr = c.Call(\"ModemManager.GetAvailableModems\", \u0026modems, \u0026modems)\r\n\tif err != nil {\r\n\t\tlog.Fatal(\"error:\", err)\r\n\t}\r\n\tlog.Println(\"Success: \", modems)\r\n\r\n}\r\n\r\nfunc main() { }\r\n```\r\n\r\nThe modemmanager package consists of simply ```~/gopath/src/modemmanager/common.go``` which defines the package modemmanager.\r\n\r\nIt makes no difference if I have the package available locally and specify the relative package location. Any ideas on why it can't run ar?",
+	"user": {
+		"login": "17twenty",
+		"id": 379176,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-09-03T21:15:31Z",
+	"created_at": "2015-09-03T04:54:31Z",
+	"updated_at": "2015-09-03T21:15:31Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

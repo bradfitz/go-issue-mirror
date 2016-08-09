@@ -1,0 +1,22 @@
+{
+	"id": 51276102,
+	"number": 143,
+	"state": "closed",
+	"title": "net.Conn.Close() race condition can crash the runtime.",
+	"body": "by **jesse.dailey**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n1. Have some go routine reading a socket, and launching a goroutine handler\n\nfor {\n  packet, err :=  readPacket(sock);\n  if valid(packet) {\n    go process(packet,sock);\n  }\n}\n  \n2. Have the handling goroutine Close() the socket.\nfunc process(packet, sock *net.Conn) {\n time.Sleep(1000); // do some stuff\n sock.Close();\n}\n3. Now if you repeat this under stress, it won't take long before the \nClose() will happen while the Read() is blocked.  At which point the \nruntime dies.\n\nThe error is \u0026quot;epoll_ctl: no such file or directory\u0026quot;, and the stack points \nto AddFD() in fd.go\n\n\nWhat is the expected output? What do you see instead?\n\nI've attached a fully fleshed out example, it's an echo server, and a \nsimple client for submitting enough requests to crash it.\n\nYou run the echo server, then run the client.\n\nWhat you should see is 100 lines of '#: defghijklm', where # ranges from 1-\n10.  Instead, partway through it will begin 'connection refused' messages.\n\nFrom the echo server you will see:\nEpoll delete fd=7: bad file descriptor\npollServer AddFD  9 :  epoll_ctl: no such file or directory\n                                  \npanic PC=0xb7e10038               \nnetÂ·*pollServerÂ·AddFD+0x153 /opt/go/src/pkg/net/fd.go:133\n        netÂ·*pollServerÂ·AddFD(0xb7e0b5c0, 0xb7e96e00, 0x72, 0x64)\nnetÂ·*pollServerÂ·Run+0x269 /opt/go/src/pkg/net/fd.go:255\n        netÂ·*pollServerÂ·Run(0xb7e0b5c0, 0x809d6fc)\ngoexit /opt/go/src/pkg/runtime/proc.c:135\n        goexit()                  \n0xb7e0b5c0 unknown pc\n\nand the runtime is dead.\n\nWhat should happen is that the blocked Read() should be woken up by the \nClose() and return an error (similar to EOF).\n\nWhat is your $GOOS?  $GOARCH?\nGOOS=linux (Debian lenny)\nGOARCH=386\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\nchangeset:   4024:1d9d926b1aa7\ntag:         tip\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Thu Nov 12 23:38:48 2009 -0800\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/143/0/echo.go\"\u003eecho.go\u003c/a\u003e (754 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/143/0/client.go\"\u003eclient.go\u003c/a\u003e (892 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/143/0/Makefile\"\u003eMakefile\u003c/a\u003e (70 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:03:25Z",
+	"created_at": "2009-11-13T14:10:59Z",
+	"updated_at": "2016-06-24T19:01:09Z"
+}

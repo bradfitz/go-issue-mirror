@@ -1,0 +1,28 @@
+{
+	"id": 88066668,
+	"number": 11207,
+	"state": "closed",
+	"title": "net/http: allows invalid characters in header values",
+	"body": "net/http successfully parses invalid characters in http header values.\r\nFor examples, in the following program header value is not preserved after Write/Parse. But in general header values must contain only visible character (0x21-0x7f) + space and tab.\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bufio\"\r\n\t\"bytes\"\r\n\t\"net/http\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"GET / HTTP/1.1\\nh:0\\r0\\n\\n\")\r\n\tr, err := http.ReadRequest(bufio.NewReader(bytes.NewReader(data)))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tbuf := new(bytes.Buffer)\r\n\tif err := r.WriteProxy(buf); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Printf(\"%q\\n\", buf.Bytes())\r\n\tr1, err := http.ReadRequest(bufio.NewReader(buf))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tif r.Header.Get(\"h\") != r1.Header.Get(\"h\") {\r\n\t\tfmt.Printf(\"h0: %q\\n\", r.Header.Get(\"h\"))\r\n\t\tfmt.Printf(\"h1: %q\\n\", r1.Header.Get(\"h\"))\r\n\t\tpanic(\"header changed\")\r\n\t}\r\n}\r\n```\r\n```\r\n\"GET / HTTP/1.1\\r\\nHost: \\r\\nUser-Agent: Go 1.1 package http\\r\\nH: 0 0\\r\\n\\r\\n\"\r\nh0: \"0\\r0\"\r\nh1: \"0 0\"\r\n```\r\ngo version devel +a1fe3b5 Sat Jun 13 04:33:26 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-01-08T06:01:51Z",
+	"created_at": "2015-06-13T21:12:56Z",
+	"updated_at": "2016-01-08T19:00:14Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

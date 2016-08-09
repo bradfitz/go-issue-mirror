@@ -1,0 +1,22 @@
+{
+	"id": 112524375,
+	"number": 13008,
+	"state": "closed",
+	"title": "cmd/compile: floating point optimization bug",
+	"body": "I'm hitting something really weird on `go version devel +3bc0601 Tue Oct 20 03:16:09 2015 +0000 darwin/amd64`. I don't have a small reproducer, so I'll just show you what I get and see what we can figure out from that. I have this method, that essentially just calculates a percentage:\r\n\r\n```go\r\n// Completion returns the completion status, in percent, for the given device\r\n// and folder.\r\nfunc (m *Model) Completion(device protocol.DeviceID, folder string) float64 {\r\n\tm.fmut.RLock()\r\n\trf, ok := m.folderFiles[folder]\r\n\tm.fmut.RUnlock()\r\n\tif !ok {\r\n\t\treturn 0 // Folder doesn't exist, so we hardly have any of it\r\n\t}\r\n\r\n\t_, _, tot := rf.GlobalSize()\r\n\tif tot == 0 {\r\n\t\treturn 100 // Folder is empty, so we have all of it\r\n\t}\r\n\r\n\tvar need int64\r\n\trf.WithNeedTruncated(device, func(f db.FileIntf) bool {\r\n\t\tneed += f.Size()\r\n\t\treturn true\r\n\t})\r\n\r\n\tneedRatio := float64(need) / float64(tot)\r\n\tl.Debugln(\"needRatio:\", needRatio)\r\n\tcompletionPct := 100 * (1 - needRatio)\r\n\tl.Debugln(\"completionPct:\", completionPct)\r\n\tl.Debugf(\"%v Completion(%s, %q): %f (%d / %d = %f)\", m, device, folder, completionPct, need, tot, needRatio)\r\n\r\n\treturn completionPct\r\n}\r\n```\r\n\r\nThe relevant part for this report is the last part, `needRatio := ...` and so on. When run as it looks above, I get the following log output (which is correct and as expected):\r\n\r\n```\r\n[JMFJC] 2015/10/21 08:59:24.944322 logger.go:296: DEBUG: needRatio: 0\r\n[JMFJC] 2015/10/21 08:59:24.944353 logger.go:296: DEBUG: completionPct: 100\r\n[JMFJC] 2015/10/21 08:59:24.944470 logger.go:304: DEBUG: model@0xc820748600 Completion(373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU, \"s23\"): 100.000000 (0 / 12296478 = 0.000000)\r\n```\r\n\r\nIf I comment out two of the debug prints:\r\n\r\n```go\r\n\tneedRatio := float64(need) / float64(tot)\r\n\t// l.Debugln(\"needRatio:\", needRatio)\r\n\tcompletionPct := 100 * (1 - needRatio)\r\n\t// l.Debugln(\"completionPct:\", completionPct)\r\n\tl.Debugf(\"%v Completion(%s, %q): %f (%d / %d = %f)\", m, device, folder, completionPct, need, tot, needRatio)\r\n\r\n\treturn completionPct\r\n}\r\n```\r\n\r\nThen I get the following output:\r\n\r\n```\r\n[JMFJC] 2015/10/21 09:00:31.222311 logger.go:304: DEBUG: model@0xc820787400 Completion(373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU, \"s23\"): 301295835217774195877081356294600623999623875498227347264658436707288007434290836880071246344289875456553039631746301745699977654284466935487418350473778212994407067832680206835633320817493452436173546848256.000000 (0 / 12296478 = 0.000000)\r\n```\r\n\r\nNote that `completionPct` has taken on a bizarre value - uninitialized? Printing it separately on the line before fixes this...",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2015-12-05T05:27:03Z",
+	"created_at": "2015-10-21T07:02:02Z",
+	"updated_at": "2015-12-06T09:56:50Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

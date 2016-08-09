@@ -1,0 +1,12 @@
+{
+	"id": 162613860,
+	"body": "I can't recreate it on my system but I'm fairly certain it's a glibc bug.\r\n\r\nThe ctype code relies on TLS variables initialized by a call to __ctype_init.\r\n\r\nWhen you call getpwuid_r in a statically linked program, then, depending on the contents of /etc/nsswitch.conf, in some cases the program will dlopen a supporting shared library.  Since the main executable is statically linked and has no dynamic symbol table, the supporting shared library can not refer to the same TLS variables.  It has its own TLS variables, and when the library is loaded it will call __ctype_init to initialize them.\r\n\r\nHowever, as far as I can tell there is no code to call __ctype_init on any existing threads.  If you then call into the shared library on an existing thread, then any references from the shared library to the TLS ctype variables will crash.\r\n\r\nPlease try compiling this C program with -static and see what happens.  I expect it to crash.\r\n\r\n    #include \u003cstdio.h\u003e\r\n    #include \u003cctype.h\u003e\r\n    #include \u003csys/types.h\u003e\r\n    #include \u003cpwd.h\u003e\r\n    #include \u003cpthread.h\u003e\r\n    \r\n    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;\r\n    \r\n    static void *thread(void *arg) {\r\n    \tstruct passwd pwd;\r\n    \tchar buf[1024];\r\n    \tstruct passwd *result;\r\n    \tpthread_mutex_lock(\u0026mutex);\r\n    \tgetpwuid_r(0, \u0026pwd, buf, sizeof buf, \u0026result);\r\n    \treturn NULL;\r\n    }\r\n    \r\n    int main() {\r\n    \tpthread_t tid;\r\n    \tstruct passwd pwd;\r\n    \tchar buf[1024];\r\n    \tstruct passwd *result;\r\n    \tvoid *retval;\r\n    \tpthread_mutex_lock(\u0026mutex);\r\n    \tpthread_create(\u0026tid, NULL, thread, NULL);\r\n    \tgetpwuid_r(0, \u0026pwd, buf, sizeof buf, \u0026result);\r\n    \tpthread_mutex_unlock(\u0026mutex);\r\n    \tpthread_join(tid, \u0026retval);\r\n    \treturn 0;\r\n    }\r\n",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-07T18:21:38Z",
+	"updated_at": "2015-12-07T18:21:38Z"
+}

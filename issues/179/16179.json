@@ -1,0 +1,21 @@
+{
+	"id": 162253674,
+	"number": 16179,
+	"state": "open",
+	"title": "cmd/pprof: unable to generate output file for some formats",
+	"body": "Using `go1.7beta2`\r\n\r\nThe pprof tools claims:\r\n\u003eOutput file parameters (for file-based output formats):\r\n  -output=f         Generate output on file f (stdout by default)\r\n\r\nIntuitively, a user would expect a output file to be generated that contains the specified format. However, that is not what always happens. The logic that pprof follows is somewhat convoluted and sometimes it will output the file, sometimes it will still invoke the visualizer, and sometimes it does both, and maybe it does neither in some code paths (it's hard to follow the logic)?\r\n\r\nFor example, consider the following command:\r\n```\r\n$ go  tool  pprof  -weblist=.  -output=weblist.html  foo.test  /tmp/cpu.profile\r\nGenerating report in weblist.html\r\n```\r\n\r\nOne would expect that this outputs the `weblist` output as the weblist.html file. However, this is not what happens. Running the command invokes the web browser (which fails over SSH). Even worse, it claims to have written the file, when it simply outputs an empty file with nothing in it.\r\n\r\nThe current logic follows a convoluted path that is dependent on [whether a visualizer is available](https://github.com/golang/go/blob/e9407ae514df7d18e162ce03ebd530fe21aed16d/src/cmd/internal/pprof/commands/commands.go#L48-L81), whether a [post process function is available](https://github.com/golang/go/blob/e9407ae514df7d18e162ce03ebd530fe21aed16d/src/cmd/internal/pprof/driver/driver.go#L1031-L1038), and other non-obvious code paths.\r\n\r\nWhether the pprof tools outputs a file should be simple:\r\n\u003eIf there is an output file specified, always write the output to that file. Otherwise, try to invoke the associated visualizer (svg, chrome, stdout, etc...).",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-25T00:33:55Z",
+	"updated_at": "2016-06-27T16:32:44Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

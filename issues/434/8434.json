@@ -1,0 +1,27 @@
+{
+	"id": 51288190,
+	"number": 8434,
+	"state": "closed",
+	"title": "net: DNSError.Temporary() is false for DNS server temporary failures",
+	"body": "\u003cpre\u003eversion: current Mercurial tip ('devel +ba125b11fd2d')\n\nIf you make a DNS query such as net.LookupMX() and it returns what is\nactually a net.DNSError result, that result's .Temporary() will only be\ntrue if the error was a timeout talking to your resolving DNS server. It\nwill not be true if your DNS server returns a variety of 'cannot resolve\nthis name at the moment' temporary errors, for example if it can't get\na response from any of the domain's NS servers or they respond with\ndenials of authority.\n\nPart of the problem is this code and comment in src/pkg/net/dnsclient.go's\nanswer() function:\n\n        if dns.rcode != dnsRcodeSuccess {\n                // None of the error codes make sense\n                // for the query we sent.  If we didn't get\n                // a name error and we didn't get success,\n                // the server is behaving incorrectly.\n\nThis is in fact not the case. DNS servers may respond with at least\ndnsRcodeServerFailure (aka SERVFAIL) when they can't give you an answer\nfor your request due to problems with other DNS servers. Such failures\naren't uncommon if, for example, you have an MTA that checks whether\nthe domains of incoming MAIL FROMs are valid.\n\nDepending on your perspective, this is one of two bugs. Either DNSError's\nTemporary() method should document that it is simply whether or not the\nrequest timed out or it should return true for temporary server failures.\n\n(I'm aware that Temporary() is not documented at all today, but this\nlikely leads people to assume that it does what they expect, namely\nreturns true if this is a 'temporary' DNS failure. This is certainly\nwhat I assumed until I put it in a program and tested.)\n\nI don't have a simple reproduction that is stable over the long term\nbecause I don't know of any testing DNS domains that are guaranteed to\nalways return SERVFAIL for some queries. If you have logs from an MTA\nhandy you can trawl its logs for 'temporary failure to resolve domain\n\u0026lt;X\u0026gt;' log messages and plug them into a test program to see this in\naction.\u003c/pre\u003e",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-09-04T17:54:12Z",
+	"created_at": "2014-07-28T16:27:56Z",
+	"updated_at": "2015-09-04T17:54:12Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 67888151,
+	"body": "@slimsag, I don't understand. Each call to encoding/json.Encoder.Encode produces one Write. Even if Encode wrote more eagerly to its Writer, you still have the entire argument to Encode (the whatever interface{}) in memory.  So it's at worst a linear factor of memory. This isn't the difference of being able to stream or not.\r\n\r\nRealistically if you want to stream JSON, you'd do something like:\r\n\r\n```\r\n     e := json.NewEncoder(f)\r\n     io.WriteString(f, \"[\")\r\n     for .... {\r\n           dataToStream := ....\r\n           e.Encode(dataToStream)\r\n           io.WriteString(f, \",\")\r\n     }\r\n     io.WriteString(f, \"]\")\r\n```\r\n\r\n... and that pattern works fine even today.\r\n\r\nChanging the internal buffering (this bug) has nothing to do with making it possible to programmatically generate the data to stream. That would a much more invasive API change, and not obviously better than the loop above.\r\n\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-22T20:52:23Z",
+	"updated_at": "2014-12-22T20:52:23Z"
+}

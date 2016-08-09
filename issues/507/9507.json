@@ -1,0 +1,28 @@
+{
+	"id": 53371662,
+	"number": 9507,
+	"state": "closed",
+	"title": "x/mobile: loading webviewchromium after Go.init crashes on 5.0.1",
+	"body": "After `Go.init(this)`, attempting to call `PublisherAdView.loadAd` from `com.google.android.gms:play-services:6.5.87` causes crash on 5.0.1 but *not* previous 4.x versions of android. `PublisherAdView` uses a `WebView` to load ads.\r\n\r\nVery little information is provided in logcat on crash\r\n\r\n```\r\n7911-7911/com.app I/WebViewFactory﹕ Loading com.google.android.webview version 37 (1602158-arm) (code 111201)\r\n7911-7911/com.app I/LibraryLoader﹕ Loading: webviewchromium\r\n7911-7911/com.app E/libsigchain﹕ Warning: Unexpected sigaction action found 0xaff5decc\r\n7911-7911/com.app I/LibraryLoader﹕ Time to load native libraries: 4 ms (timestamps 3728-3732)\r\n7911-7911/com.app I/LibraryLoader﹕ Expected native library version number \"\",actual native library version number \"\"\r\n7911-7911/com.app V/WebViewChromiumFactoryProvider﹕ Binding Chromium to main looper Looper (main, tid 1) {2bc39a28}\r\n7911-7911/com.app I/LibraryLoader﹕ Expected native library version number \"\",actual native library version number \"\"\r\n7911-7911/com.app I/chromium﹕ [INFO:library_loader_hooks.cc(106)] Chromium logging enabled: level = 0, default verbosity = 0\r\n7911-7911/com.app I/BrowserStartupController﹕ Initializing chromium process, renderers=0\r\n7911-7911/com.app W/art﹕ Attempt to remove local handle scope entry from IRT, ignoring\r\n7911-7911/com.app W/chromium﹕ [WARNING:resource_bundle.cc(315)] locale_file_path.empty()\r\n7911-7911/com.app I/chromium﹕ [INFO:aw_browser_main_parts.cc(63)] Load from apk succesful, fd=54 off=46780 len=2953\r\n7911-7911/com.app I/chromium﹕ [INFO:aw_browser_main_parts.cc(78)] Loading webviewchromium.pak from, fd:55 off:229484 len:643667\r\n7911-8173/com.app W/AudioManagerAndroid﹕ Requires BLUETOOTH permission\r\n7911-7911/com.app I/Ads﹕ Starting ad request.\r\n8185-8185/? I/dex2oat﹕ /system/bin/dex2oat --runtime-arg -classpath --runtime-arg  --instruction-set=arm --instruction-set-features=div --runtime-arg -Xrelocate --boot-image=/system/framework/boot.art --dex-file=/data/data/com.app/cache/ads1534321150.jar --oat-fd=86 --oat-location=/data/data/com.app/cache/ads1534321150.dex --runtime-arg -Xms64m --runtime-arg -Xmx512m\r\n8185-8185/? I/dex2oat﹕ dex2oat took 82.342ms (threads: 2)\r\n400-915/? I/WindowState﹕ WIN DEATH: Window{3d2a37ef u0 com.app/com.app.GridActivity}\r\n130-130/? I/Zygote﹕ Process 7911 exited due to signal (11)\r\n400-414/? I/ActivityManager﹕ Process com.app (pid 7911) has died\r\n```\r\n\r\nNotable is `E/libsigchain﹕ Warning: Unexpected sigaction action found 0xaff5decc` after webviewchromium loads native code, which is an error from the ART runtime: https://android.googlesource.com/platform/art/+/master/sigchainlib/sigchain.cc#161\r\n\r\nI believe that's why 4.x is not affected.  I was *not* able to reproduce this issue with the sole use of a simple `WebView` loading a website.\r\n\r\nI have found that allowing a single `PublisherAdView.load` call to complete successfully (to allow webviewchromium native code to load first) followed by `Go.init` does work successfully, including afterwards creating new ad views and more calls to `PublisherAdView.load`.\r\n\r\nI'll put together a minimal sample soon.",
+	"user": {
+		"login": "dskinner",
+		"id": 92266,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-09-23T15:13:44Z",
+	"created_at": "2015-01-05T07:40:19Z",
+	"updated_at": "2015-09-23T15:13:44Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

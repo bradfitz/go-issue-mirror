@@ -1,0 +1,28 @@
+{
+	"id": 153835307,
+	"number": 15614,
+	"state": "closed",
+	"title": "x/net/http2/hpack: Possible decoding mistake in HPACK decoder",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGORACE=\"\"\r\nCC=\"gcc\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n3. What did you do?\r\nhttps://play.golang.org/p/GCCEi-6zBN\r\n\r\n\r\n4. What did you expect to see?\r\nAn error\r\n\r\n5. What did you see instead?\r\nNo error\r\n\r\nI am working on an HTTP/2 compliance test which involves Fuzz testing the HPACK Decoder.  The problem was originally found in the Java implementation of [Netty](https://github.com/netty/netty).  When I looked to see how Go was handling it, it seemed to be different from Netty and also different from the Spec.  \r\n\r\nTwo 0xFF bytes in the input are interpreted as trailing padding in a huffman encoded value. From reading the [spec](https://http2.github.io/http2-spec/compression.html#string.literal.representation), the last paragraph says that padding in excess of 7 bits is an error (rather than being ignored).  I believe this should be a decoding error, rather than being treated as an empty string as the code above behaves.\r\n\r\nNote that the string in the example was shortened for brevity.  The original suspect bytestring is:\r\n\r\n```\r\n  []byte{19, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 164, 91, 41, 164, 33, 1, 0, 130, 255, 255, 0, 15, 0, 164, 0, 0}\r\n```\r\n\r\n",
+	"user": {
+		"login": "carl-mastrangelo",
+		"id": 8943572,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "carl-mastrangelo",
+		"id": 8943572,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-05-13T23:10:06Z",
+	"created_at": "2016-05-09T18:09:25Z",
+	"updated_at": "2016-05-13T23:10:06Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 98050966,
+	"body": "How about creating a pool of resources (say connections or buffers) ?\r\n\r\nCode would look like this:\r\n```\r\nfunc (pool *Pool) getResource() {\r\n   for _, resource := range pool {\r\n      if resource.lock.Try() {\r\n         return resource\r\n      }\r\n   }\r\n\r\n   pool.Lock()\r\n   if pool.len() \u003c MAX_POOL_SIZE {\r\n      r := NewResource()\r\n      pool.add(r)\r\n      pool.Unlock()\r\n      return r\r\n   }\r\n\r\n   pool.Unlock()\r\n   // Stand in the waitgroup for resources to be freed\r\n   // and return it\r\n}\r\n```\r\n\r\nThis is like sync.Pool but for resources that you don't want deallocated when free.\r\nI guess the alternative using channels would have the resources send themselves\r\nover a channel when free? Something like this:\r\n\r\n```\r\nfunc (pool *Pool) getResource() {\r\n   select {\r\n      case v := \u003c-pool.freeResources\r\n         return v \r\n      default:\r\n         pool.lock.Lock()                           // Lock needed to honor MAX_POOL_SIZE\r\n         refer pool.lock.Unlock()\r\n         if pool.length \u003c MAX_POOL_SIZE {\r\n            pool.length++\r\n            return NewResource()\r\n        }\r\n        return \u003c- pool.freeResources\r\n}\r\n\r\nfunc (pool *Pool) freeResource(r *Resource) {\r\n   pool.freeResources \u003c- r\r\n}\r\n```\r\n\r\nThe good side of using channels is that the \"WaitGroup logic\" is straightforward. Also, you dont need to iterate over the busy resources. The only disadvantage with using channels that I can see is that freeing a resource is locking if you reach channel capacity. But then again, you can always call freeResource in a goroutine if you can't estimate the buffering you are going to need.\r\n\r\nAlthough this would seem weird, considering you have MAX_POOL_SIZE, think of a case when MAX_POOL_SIZE is a soft limit, that is, you have two different calls for adquiring resources; `getResource()` and `getResourceNow()`. The second method does not honor the limit and is used on crucial situations when you cannot be bothered by that limit.\r\n\r\nWould this pattern be correct?\r\n",
+	"user": {
+		"login": "alkemir",
+		"id": 4051616,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-01T05:53:57Z",
+	"updated_at": "2015-05-01T06:09:27Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51283477,
+	"number": 5327,
+	"state": "closed",
+	"title": "src/pkg/log/log.go log wrapped time if Lmicrosecond flag specificed",
+	"body": "\u003cpre\u003eIn the code of log.go, t.Nanosecond() and t.Clock() are not sample at the same\ntick.(Line: 93, Line 101).\nThis problem will cause the log parser can not pass log in reasonable method.\n\n    93\t\t\t\thour, min, sec := t.Clock()\n    94\t\t\t\titoa(buf, hour, 2)\n    95\t\t\t\t*buf = append(*buf, ':')\n    96\t\t\t\titoa(buf, min, 2)\n    97\t\t\t\t*buf = append(*buf, ':')\n    98\t\t\t\titoa(buf, sec, 2)\n    99\t\t\t\tif l.flag\u0026amp;Lmicroseconds != 0 {\n   100\t\t\t\t\t*buf = append(*buf, '.')\n   101\t\t\t\t\titoa(buf, t.Nanosecond()/1e3, 6)\n   102\t\t\t\t}\n   103\t\t\t\t*buf = append(*buf, ' ')\n\nThe problem is: the sampling time of t.Clock() and t.Nanosecond() is not at the same\ntime.\n\nThere exist a chance to write out wrap time in log.\n\nWhat is the expected output?\n\n2013/04/22 00:00:00.998999\n2013/04/22 00:00:00.999999\n2013/04/22 00:00:01.001999      \u0026lt;--- here should be 1\n2013/04/22 00:00:01.002999\n2013/04/22 00:00:02.003999\n\n\nWhat do you see instead?\n\n2013/04/22 00:00:00.998999\n2013/04/22 00:00:00.999999\n2013/04/22 00:00:00.001999      \u0026lt;--- here is the wrong data\n2013/04/22 00:00:01.002999\n2013/04/22 00:00:02.003999\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nany\n\nWhich operating system are you using?\nany\n\nWhich version are you using?  (run 'go version')\n\n84e21a8c2137\u003c/pre\u003e",
+	"user": {
+		"login": "dlintw",
+		"id": 326179,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:28:47Z",
+	"created_at": "2013-04-22T02:19:21Z",
+	"updated_at": "2016-06-24T22:38:32Z"
+}

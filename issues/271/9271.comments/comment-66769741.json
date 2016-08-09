@@ -1,0 +1,12 @@
+{
+	"id": 66769741,
+	"body": "Two bugs here. The first is that WriteUTF16 doesn't pre-allocate enough space for the length header, which appears when writing empty strings:\r\n\r\nE/Go      (21191): panic: runtime error: slice bounds out of range\r\nE/Go      (21191): goroutine 18 [running, locked to thread]:\r\nE/Go      (21191): golang.org/x/mobile/bind/seq.(*Buffer).WriteUTF16(0x7b3d2080, 0x0, 0x0)\r\nE/Go      (21191): \t/Users/crawshaw/src/golang.org/x/mobile/bind/seq/utf16.go:41 +0x78\r\n\r\nThe second is that Java_go_seq_readUTF16 allocates an empty Java string for an empty Go string, instead of returning NULL, which trips up the the error-\u003eexception logic. I have a test that exercises both.\r\n\r\nUnfortunately, you couldn't see that panic in your adb logcat output because I didn't get the CL to redirect panic output in until after the Go 1.4 release. If you use tip, you'll see the message.\r\n\r\nThanks the bug report.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-12T13:02:58Z",
+	"updated_at": "2014-12-12T13:02:58Z"
+}

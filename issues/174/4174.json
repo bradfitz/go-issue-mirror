@@ -1,0 +1,27 @@
+{
+	"id": 51281754,
+	"number": 4174,
+	"state": "closed",
+	"title": "runtime: Func.FileLine doesn't handle multiple methods on a single line correctly",
+	"body": "by **jacobsa@google.com**:\n\n\u003cpre\u003e`FileLine` doesn't seem to handle the case of multiple methods on a single\nline correctly, at least in go 1.0.3. Here's a sample program:\n\n    package main\n    \n    import (\n    \t\u0026quot;fmt\u0026quot;\n    \t\u0026quot;reflect\u0026quot;\n    \t\u0026quot;runtime\u0026quot;\n    )\n    \n    type someType int\n    func (x someType) Method1() {}\n    func (x someType) Method2() {}; func (x someType) Method3() {}\n    func (x someType) Method4() {}\n    \n    func main() {\n    \ttyp := reflect.TypeOf(someType(0))\n    \n    \tfor i := 0; i \u0026lt; typ.NumMethod(); i++ {\n    \t\tmethod := typ.Method(i)\n    \n    \t\tpc := method.Func.Pointer()\n    \t\tf := runtime.FuncForPC(pc)\n    \t\tfile, line := f.FileLine(f.Entry())\n    \n    \t\tfmt.Println(method.Name, file, line)\n    \t}\n    }\n\nI would expect the result to be the same for methods 2 and 3, but here's the\noutput:\n\n    $ go run method.go\n    Method1 /Users/jacobsa/tmp/method.go 10\n    Method2 /Users/jacobsa/tmp/method.go 11\n    Method3 /Users/jacobsa/tmp/method.go 0\n    Method4 /Users/jacobsa/tmp/method.go 12\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2014-12-08T10:22:11Z",
+	"created_at": "2012-09-29T11:39:49Z",
+	"updated_at": "2016-06-24T22:25:46Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

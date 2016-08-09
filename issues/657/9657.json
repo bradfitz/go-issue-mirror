@@ -1,0 +1,22 @@
+{
+	"id": 55110028,
+	"number": 9657,
+	"state": "closed",
+	"title": "bufio: Writer.Flush panics if it holds a nil interface writer",
+	"body": "Calling `(*bufio.Writer).Flush` panics if `(*bufio.Writer).Reset` is called with a `nil` `io.Writer`, then `(*bufio.Writer).Write` is called before the flush. This seems like an unlikely scenario but it has been seen on docker/docker#10228. Though the use case may be invalid, the call should not panic.\r\n\r\nThe following code reproduces the issue:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bufio\"\r\n\t\"bytes\"\r\n)\r\n\r\nfunc main() {\r\n\tvar buf bytes.Buffer\r\n\twr := bufio.NewWriter(\u0026buf)\r\n\twr.Reset(nil)\r\n\twr.Write([]byte(\"asdf\"))\r\n\twr.Flush()\r\n}\r\n```\r\n\r\nRunning the above results in the following panic:\r\n\r\n```\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x20 pc=0x3366a]\r\n\r\ngoroutine 1 [running]:\r\nbufio.(*Writer).flush(0x2080f0000, 0x0, 0x0)\r\n\t/usr/local/go/src/bufio/bufio.go:530 +0xda\r\nbufio.(*Writer).Flush(0x2080f0000, 0x0, 0x0)\r\n\t/usr/local/go/src/bufio/bufio.go:519 +0x3a\r\nmain.main()\r\n\t/tmp/bug.go:13 +0x10b\r\n\r\ngoroutine 2 [runnable]:\r\nruntime.forcegchelper()\r\n\t/usr/local/go/src/runtime/proc.go:90\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 3 [runnable]:\r\nruntime.bgsweep()\r\n\t/usr/local/go/src/runtime/mgc0.go:82\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:2232 +0x1\r\nexit status 2\r\n```\r\n\r\nThis was reproduced with Go 1.4.1 on Mac OS X 10.9 but has been experienced in other versions.",
+	"user": {
+		"login": "stevvooe",
+		"id": 120601,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2015-01-22T03:30:11Z",
+	"created_at": "2015-01-22T03:22:54Z",
+	"updated_at": "2016-06-25T01:59:06Z"
+}

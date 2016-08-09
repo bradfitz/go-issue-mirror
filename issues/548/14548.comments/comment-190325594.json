@@ -1,0 +1,12 @@
+{
+	"id": 190325594,
+	"body": "\u003e \u003e so there must be a lingering wakeup caused by reuse of pollDesc objects that started before this snippet, which unblocks the goroutine and allows it to proceed to call getsockopt.\r\n\r\n\u003e I don't know the reason why you suppose so.\r\n\r\nThe reason is in the two `dtruss` snippets. The successful case has `kevent(0x6, 0x0, 0x0)        = 1 0` while the unsuccessful case has `kevent(0x6, 0x0, 0x0)        = 0 0`. The first result value is the number of events returned by `kevent`, and in both cases there was only one `kevent` call in between the calls to `connect` and `getsockopt`. \r\n\r\nThe goroutine in [`netFD.connect()`](https://github.com/golang/go/blob/f4717a902e54d1e532fd21f1676a225523c67649/src/net/fd_unix.go#L71) should not be brought out of [its call to `WaitWrite`](https://github.com/golang/go/blob/f4717a902e54d1e532fd21f1676a225523c67649/src/net/fd_unix.go#L127) until a new result from `kevent` unblocks it. Since it did anyway, I think another thread's call to `kevent` was in the process of waking up this `pollDesc`, but the `pollDesc` was concurrently reassigned from the old goroutine and fd to the new one. I'm not 100% positive this is what's going on because this is some subtle code, but comments in the netpoll files seem to suggest that spurious wakeups are possible, which would cause problems for `netFD.connect()`. ",
+	"user": {
+		"login": "bdarnell",
+		"id": 160562,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-29T18:40:25Z",
+	"updated_at": "2016-02-29T18:40:25Z"
+}

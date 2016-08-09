@@ -1,0 +1,12 @@
+{
+	"id": 66097094,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eThere is another possibility that I consider the best for now (based on the data).\n\nChange interface representations so that the data word is always looks like a pointer.\nValue that would currently be embed is allocated on heap iff it looks like a pointer\ninto heap. Copyin looks along the line of:\n\nstatic void\ncopyin(Type *t, void *src, void **dst)\n{\n\tuintptr size;\n\tvoid *p;\n\tbyte *v;\n\tAlg *alg;\n\n\tsize = t-\u0026gt;size;\n\talg = t-\u0026gt;alg;\n\n\tif(size \u0026gt; sizeof(*dst)) {\n\t\t// large, so must be on heap anyway\n\t\tp = runtime·cnew(t);\n\t\talg-\u0026gt;copy(size, p, src);\n\t\t*dst = p;\n\t} else if((t-\u0026gt;kind\u0026KindNoPointers) == 0) {\n\t\t// pointer, map, chan - store directly\n\t\talg-\u0026gt;copy(size, dst, src);\n\t} else {\n\t\t// not a pointer, but fits into iface\n\t\tv = nil;\n\t\talg-\u0026gt;copy(size, \u0026v, src);  // clear unused bytes if any\n\t\tif(v \u0026lt; arena_start || v \u0026gt;= arena_end) {  // note arena_end, not arena_used\n\t\t\t// does not look like a pointer, store directly\n\t\t\talg-\u0026gt;copy(size, dst, src);\n\t\t} else {\n\t\t\t// not a pointer, but looks like a pointer - move to heap\n\t\t\tp = runtime·cnew(t);\n\t\t\talg-\u0026gt;copy(size, p, src);\n\t\t\t*dst = p;\n\t\t}\t\t\n\t}\n}\n\nThe data word is always marked as pointer, and GC uses the usual [arena_start,\narena_used) check to determine whether it's an interesting pointer or not.\n\nAccording to the data, there are very few values that fall into that last unfortunate\n\"not a pointer, but looks like a pointer\" case even on 386 (\"heap\" column in \"iface\"\ntab). So this solution allows to preserve both memory consumption and performance of the\ncurrent implementation.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-07-22T07:23:56Z",
+	"updated_at": "2014-12-22T06:36:20Z"
+}

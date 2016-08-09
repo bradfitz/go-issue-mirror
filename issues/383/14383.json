@@ -1,0 +1,36 @@
+{
+	"id": 134604135,
+	"number": 14383,
+	"state": "closed",
+	"title": "time: document proper usage of Timer.Stop",
+	"body": "After calling Timer.Stop(), and then clearing the channel, the channel can later be filled anyway. Presumably the task to send to the Timer channel has been put on a run queue, and isn't remove when Stop is called. Here's a test that demonstrates it:\r\n\r\n```\r\nfunc TestTimerFiresAfterStop(t *testing.T) {\r\n\tfail := make(chan struct{})\r\n\tdone := make(chan struct{})\r\n\tdefer close(done)\r\n\tfor range iter.N(1000) {\r\n\t\ttr := time.NewTimer(0)\r\n\t\ttr.Stop()\r\n\t\t// There may or may not be a value in the channel now. But definitely\r\n\t\t// one should not be added after we receive it.\r\n\t\tselect {\r\n\t\tcase \u003c-tr.C:\r\n\t\tdefault:\r\n\t\t}\r\n\t\t// Now set the timer to trigger in hour. It definitely shouldn't be\r\n\t\t// receivable now for an hour.\r\n\t\ttr.Reset(time.Hour)\r\n\t\tgo func() {\r\n\t\t\tselect {\r\n\t\t\tcase \u003c-tr.C:\r\n\t\t\t\t// As soon as the channel receives, notify failure.\r\n\t\t\t\tfail \u003c- struct{}{}\r\n\t\t\tcase \u003c-done:\r\n\t\t\t}\r\n\t\t}()\r\n\t}\r\n\tselect {\r\n\tcase \u003c-fail:\r\n\t\tt.FailNow()\r\n\tcase \u003c-time.After(time.Second):\r\n\t}\r\n}\r\n```\r\n\r\nIncrease the value in iter.N if it doesn't trigger on your system initially. Note that it isn't even necessary to call Reset() to trigger this. You can remove that line. You can Stop() a timer, and then still receive a value from it, some time after you drain it.",
+	"user": {
+		"login": "anacrolix",
+		"id": 988750,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-06-06T21:17:17Z",
+	"created_at": "2016-02-18T15:05:52Z",
+	"updated_at": "2016-06-06T21:17:17Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

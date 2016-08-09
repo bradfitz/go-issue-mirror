@@ -1,0 +1,30 @@
+{
+	"id": 51286402,
+	"number": 7240,
+	"state": "closed",
+	"title": "cmd/go: SECURITY: go build creates world-writable result files",
+	"body": "\u003cpre\u003ego build creates world-writable files under certain circumstances.\n\nThis happens on tip but not 1.2. The commit that introduces bad behavior is\n\u003ca href=\"https://code.google.com/p/go/source/detail?r=e8c8b0e2a52f1540f5059311a137c6fabb02d573\"\u003ehttps://code.google.com/p/go/source/detail?r=e8c8b0e2a52f1540f5059311a137c6fabb02d573\u003c/a\u003e\n\n$ go build -o bar \u0026amp;\u0026amp; ls -l bar\n-rwxrwxrwx 1 tv tv 3971520 Jan 30 14:40 bar*\n$ umask\n0002\n\nThe trigger is $WORK residing on the same filesystem as the destination file.\n\nIn src/cmd/go/build.go *builder.moveOrCopyFile:\n\n\tif err := os.Chmod(src, perm); err == nil {\n\t\tif err := os.Rename(src, dst); err == nil {\n\t\t\tif buildX {\n\t\t\t\tb.showcmd(\u0026quot;\u0026quot;, \u0026quot;mv %s %s\u0026quot;, src, dst)\n\t\t\t}\n\t\t\treturn nil\n\t\t}\n\t}\n\n\treturn b.copyFile(a, dst, src, perm)\n\nperm is given by the caller as 0777 or 0666. Chmod does not respect umask, but sets the\nfile mode to exactly perm.\n\nThis does not trigger if Chmod or Rename fail, and b.copyFile is used (though Chmod\nworking and Rename failing may temporarily leave a world-writable file under $WORK --\nnot good either).\n\nAdding `\u0026amp;\u0026amp; false` at the end of the first if gets the right results in all\ncircumstances.\n\nPerhaps it's not the best idea to have 0777 modes in the source, waiting for this\nmistake? (Then again, only 0700 is safe enough for all environments..)\nAnd Go doesn't seem to let programmer access umask easily, either.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Security"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:40:15Z",
+	"created_at": "2014-01-30T22:48:59Z",
+	"updated_at": "2016-06-25T01:26:39Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

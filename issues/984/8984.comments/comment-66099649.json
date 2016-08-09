@@ -1,0 +1,12 @@
+{
+	"id": 66099649,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003ego fmt calls gofmt, which reads the file, reformats it in memory, and then does:\n\n                if *write {\n                        err = ioutil.WriteFile(filename, res, 0644)\n\t\t\tif err != nil {\n                                return err\n\t                }\n\t        }\n\nWriteFile is just:\n\n// otherwise WriteFile truncates it before writing.\nfunc WriteFile(filename string, data []byte, perm os.FileMode) error {\n        f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)\n        if err != nil {\n                return err\n        }\n        n, err := f.Write(data)\n        if err == nil \u0026\u0026 n \u0026lt; len(data) {\n                err = io.ErrShortWrite\n        }\n        if err1 := f.Close(); err == nil {\n                err = err1\n        }\n        return err\n}\n\nSo yes, we're overwriting it in place.  I suppose we could write it to a temp file in\nthe same dir and then try to automatically rename it into place, at least on Unix (see\nWindows \u003ca href=\"https://golang.org/issue/8914\"\u003eissue #8914\u003c/a\u003e).  But I think we should make a helper function for that rather than\nask each tool to try to do it.\u003c/pre\u003e\n\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-10-23T16:22:01Z",
+	"updated_at": "2014-12-22T06:37:54Z"
+}

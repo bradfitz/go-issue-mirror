@@ -1,0 +1,27 @@
+{
+	"id": 51282371,
+	"number": 4607,
+	"state": "closed",
+	"title": "cmd/cgo: stdcall import names are not undecorated and conflict with symbol versioning",
+	"body": "\u003cpre\u003eWindows, MinGW. go1 and tip.\n\nWhen using cgo to call a __stdcall decorated function that is dynamically imported,\ncmd/ld gives a \u0026quot;funcname(0): not defined\u0026quot; message. This happens because the\nimport name is decorated with the argument size (funcname@0).\n\nSo the dynimport looks like:\n#pragma dynimport funcname@0 funcname@0 libname.dll\n\nThe first issue is that it, from my understanding, it should look like:\n#pragma dynimport funcname funcname@0 libname.dll\n\nThe second issue is that cgo uses the @ character here for symbol versioning in ELF, and\nthe decorator gets stripped from the symbol.\n\nI have attached a .zip file with a minimal library and a .go file to reproduce this.\nJust extract somewhere in $GOPATH/src and run make.bat, as long as you have MinGW setup.\n\nI do believe a probable fix would be simple. The symbol version delimiter would be\nchanged to a '#' or another character, and the decorator for imported symbols in pe\nobjects for the first dynimport argument would be stripped. I will put together a CL for\nreview sometime soon. Initial testing of this seems to be promising, but my\nunderstanding of how cgo, ld, etc. works is limited so I could definitely be doing this\nwrong.\n\nDiscussion: \u003ca href=\"https://groups.google.com/d/topic/golang-dev/Lf1H_3jbQgw/discussion\"\u003ehttps://groups.google.com/d/topic/golang-dev/Lf1H_3jbQgw/discussion\u003c/a\u003e\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4607/0/cgostdcall.zip\"\u003ecgostdcall.zip\u003c/a\u003e (1316 bytes)",
+	"user": {
+		"login": "james4k",
+		"id": 766002,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:24:27Z",
+	"created_at": "2013-01-02T23:54:59Z",
+	"updated_at": "2016-06-24T22:30:40Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66085398,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8 by **matusis**:\n\n\u003cpre\u003eledangs...@gmail.com : your patch seems to return EOF err for an unexpected Pong frame,\nwhich an application cannot distinguish from a normal client disconnect. I think\nPongFrame needs to be handled separately from PingFrame:\n\n--- hybi.go     2014-09-04 11:03:07.000000000 -0700\n+++ hybi.go.patched     2014-09-04 11:02:58.000000000 -0700\n@@ -301,7 +301,14 @@\n                }\n                return nil, nil\n        case PongFrame:\n-               return nil, ErrNotImplemented\n+               //discard unexpected Pong frame\n+               pongMsg := make([]byte, maxControlFramePayloadLength)\n+               _, err := io.ReadFull(frame, pongMsg)\n+               if err != nil \u0026\u0026 err != io.EOF {\n+                       return nil, err\n+               }\n+               io.Copy(ioutil.Discard, frame)\n+               return nil,  nil\n        }\n        return frame, nil\n }\n\nIt would be nice if the code was actually fixed in the repo, since it causes real world\ndisconnects with IE11.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-09-04T18:07:45Z",
+	"updated_at": "2014-12-08T10:35:06Z"
+}

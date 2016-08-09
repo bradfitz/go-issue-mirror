@@ -1,0 +1,12 @@
+{
+	"id": 226630288,
+	"body": "Now that I'm looking more closely, yes, the warnings in 1.6 are incorrect.\r\n`Annotations` is a struct slice:\r\n```go\r\ntype Annotations []Annotation\r\ntype annotations Annotations\r\ntype Annotation struct {\r\n        Name  ACIdentifier `json:\"name\"`\r\n        Value string       `json:\"value\"`\r\n}\r\n```\r\nand it's used like\r\n```go\r\nAnnotations: appctypes.Annotations{                                                                                                \r\n        appctypes.Annotation{\r\n                Name:  *appctypes.MustACIdentifier(k8sRktKubeletAnno),\r\n                Value: k8sRktKubeletAnnoValue,\r\n        },\r\n        appctypes.Annotation{                                                                                                      \r\n                Name:  *appctypes.MustACIdentifier(types.KubernetesPodUIDLabel),\r\n                Value: podUID,\r\n        },\r\n[etc]\r\n```\r\nwhich seems valid.\r\n\r\n`Exec` is just `[]string`, so its uses are definitely OK:\r\n```go\r\nExec:              appctypes.Exec{\"/bin/foo\", \"bar\"},\r\n```\r\n\r\nThe 1.7 warnings look legitimate, too.\r\n```go\r\ntype Environment []EnvironmentVariable\r\ntype environment Environment\r\ntype EnvironmentVariable struct {\r\n        Name  string `json:\"name\"`\r\n        Value string `json:\"value\"`\r\n}\r\n```\r\nOne of the failing lines looks like\r\n```go\r\nEnvironment: []appctypes.EnvironmentVariable{\r\n        {\"env-foo\", \"bar\"},                                                                                   \r\n},\r\n```\r\nwhich is definitely using unkeyed fields.\r\n\r\nI guess my only complaint then is that `go vet` behavior is more correct when dependencies have been built. Can it not build dependencies as necessary so it gives more accurate results?",
+	"user": {
+		"login": "ixdy",
+		"id": 8061296,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-16T22:18:21Z",
+	"updated_at": "2016-06-16T22:20:04Z"
+}

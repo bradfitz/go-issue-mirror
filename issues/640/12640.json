@@ -1,0 +1,27 @@
+{
+	"id": 106718926,
+	"number": 12640,
+	"state": "open",
+	"title": "runtime: memory and performance degradation",
+	"body": "Below is the program, I am running it with 1.4 and current tip. There are significant regressions with binary size, execution time and memory consumption.\r\nBinary size on 1.4 3581368, binary size on tip is 4096280.\r\nBelow are results of running it with ```TIME=\"%e %M\" time```:\r\n```\r\n1.4\r\n4.04 3035492\r\n4.38 3035496\r\n4.66 3035500\r\n4.51 3035500\r\n4.42 3035504\r\n4.34 3035500\r\n4.20 3035496\r\n3.87 3035496\r\n4.07 3035496\r\n4.15 3035504\r\n4.28 3035492\r\n\r\ntip\r\n4.93 3009044\r\n5.30 4910668\r\n5.49 2978652\r\n5.05 3929244\r\n5.86 2980032\r\n5.91 3929368\r\n5.24 2980052\r\n5.26 3929196\r\n5.64 2980976\r\n5.60 2979944\r\n5.15 3929228\r\n5.36 3929224\r\n4.97 2980096\r\n6.36 3929472\r\n4.77 3929172\r\n```\r\n\r\n1.4 reliably consumes 3GB, while 1.5 can consume 3GB or 4GB or 5GB.\r\nThere also seems to be a performance regression of about 30%.\r\n\r\nMemory consumption instability and variance seems to be the most troublesome.\r\ntip should not consume significantly more than 1.4.\r\n\r\n```go\r\npackage gob\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/gob\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"reflect\"\r\n\t\"testing\"\r\n\r\n\t\"github.com/dvyukov/go-fuzz/examples/fuzz\"\r\n)\r\n\r\ntype X struct {\r\n\tA int\r\n\tB string\r\n\tC float64\r\n\tD []byte\r\n\tE interface{}\r\n\tF complex128\r\n\tG []interface{}\r\n\tH *int\r\n\tI **int\r\n\tJ *X\r\n\tK map[string]int\r\n}\r\n\r\nfunc init() {\r\n\tgob.Register(X{})\r\n}\r\n\r\nfunc TestT(t *testing.T) {\r\n\tdata := \t\"#\\xff\\x99\\x03\\x01\\x01\\x03RT\\x19\\x01\\xff\\x9a\\x00\\x01\\xfb\\x00\\aA\\x01\" +\r\n\t\"\\x04\\x00\\x01\\x01B\\x01\\f\\x00\\x01\\x01C\\x01\\b\\x00\\x00\\x00\\x16\\xff\\x9a\\x01\" +\r\n\t\"\\\"\\x01\\x05hello\\x01\\u007f\\xff\\xff\\xff\\xf0\\xf9!\\t@\\x00\"\r\n\r\n\tFuzz([]byte(data))\r\n}\r\n\r\nfunc Fuzz(data []byte) int {\r\n\tscore := 0\r\n\tfor _, ctor := range []func() interface{}{\r\n\t\tfunc() interface{} { return nil },\r\n\t\tfunc() interface{} { return new(int) },\r\n\t\tfunc() interface{} { return new(string) },\r\n\t\tfunc() interface{} { return new(float64) },\r\n\t\tfunc() interface{} { return new([]byte) },\r\n\t\tfunc() interface{} { return new(interface{}) },\r\n\t\tfunc() interface{} { return new(complex128) },\r\n\t\tfunc() interface{} { m := make(map[int]int); return \u0026m },\r\n\t\tfunc() interface{} { m := make(map[string]interface{}); return \u0026m },\r\n\t\tfunc() interface{} { return new(X) },\r\n\t} {\r\n\t\tv := ctor()\r\n\t\tdec := gob.NewDecoder(bytes.NewReader(data))\r\n\t\tif dec.Decode(v) != nil {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tdec.Decode(ctor())\r\n\t\tscore = 1\r\n\t\tif ctor() == nil {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tb1 := new(bytes.Buffer)\r\n\t\tif err := gob.NewEncoder(b1).Encode(v); err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tv1 := reflect.ValueOf(ctor())\r\n\t\terr := gob.NewDecoder(bytes.NewReader(data)).DecodeValue(v1)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tif !fuzz.DeepEqual(v, v1.Interface()) {\r\n\t\t\tfmt.Printf(\"v0: %#v\\n\", reflect.ValueOf(v).Elem().Interface())\r\n\t\t\tfmt.Printf(\"v1: %#v\\n\", v1.Elem().Interface())\r\n\t\t\tpanic(fmt.Sprintf(\"values not equal %T\", v))\r\n\t\t}\r\n\t\tb2 := new(bytes.Buffer)\r\n\t\terr = gob.NewEncoder(b2).EncodeValue(v1)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tv2 := ctor()\r\n\t\tdec1 := gob.NewDecoder(b1)\r\n\t\tif err := dec1.Decode(v2); err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tif err := dec1.Decode(ctor()); err != io.EOF {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tif vv, ok := v.(*X); ok {\r\n\t\t\tfix(vv)\r\n\t\t}\r\n\t\tif !fuzz.DeepEqual(v, v2) {\r\n\t\t\tfmt.Printf(\"v0: %#v\\n\", reflect.ValueOf(v).Elem().Interface())\r\n\t\t\tfmt.Printf(\"v2: %#v\\n\", reflect.ValueOf(v2).Elem().Interface())\r\n\t\t\tpanic(fmt.Sprintf(\"values not equal 2 %T\", v))\r\n\t\t}\r\n\t}\r\n\treturn score\r\n}\r\n\r\nfunc fix(vv *X) {\r\n\t// See https://github.com/golang/go/issues/11119\r\n\tif vv.I != nil \u0026\u0026 (*vv.I == nil || **vv.I == 0) {\r\n\t\t// If input contains \"I:42 I:null\", then I will be in this weird state.\r\n\t\t// It is effectively nil, but DeepEqual does not handle such case.\r\n\t\tvv.I = nil\r\n\t}\r\n\tif vv.H != nil \u0026\u0026 *vv.H == 0 {\r\n\t\tvv.H = nil\r\n\t}\r\n\tif vv.J != nil {\r\n\t\tfix(vv.J)\r\n\t}\r\n}\r\n```\r\n\r\ngo version devel +a1aafdb Tue Sep 15 16:12:59 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-09-16T07:53:36Z",
+	"updated_at": "2015-12-13T18:36:48Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

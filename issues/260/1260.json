@@ -1,0 +1,22 @@
+{
+	"id": 51277561,
+	"number": 1260,
+	"state": "closed",
+	"title": "custom JSON unmarshaler not getting called",
+	"body": "\u003cpre\u003eI'm trying to use the Marshaler/Unmarshaler interface for some custom serialization.\n\nHowever, it doesn't seem to be working.\n\nThis test verifies that my implementation should work, but something in the json library\nis failing to call UnmarshalJSON().\n\n\nimport (\n  \u0026quot;encoding/base64\u0026quot;\n  \u0026quot;fmt\u0026quot;\n  \u0026quot;json\u0026quot;\n  \u0026quot;os\u0026quot;\n  \u0026quot;testing\u0026quot;\n)\n\n\ntype TestTabletKey string\n\n\nfunc testb64encode(s string) string {\n  dst := make([]byte, base64.URLEncoding.EncodedLen(len(s)))\n  base64.URLEncoding.Encode(dst, []byte(s))\n  return string(dst)\n}\n\nfunc testb64decode(s string) string {\n  dst := make([]byte, base64.URLEncoding.DecodedLen(len(s)))\n  n, _ := base64.URLEncoding.Decode(dst, []byte(s))\n  return string(dst[:n])\n}\n\nfunc (key *TestTabletKey) MarshalJSON() ([]byte, os.Error) {\n  return []byte(\u0026quot;\\\u0026quot;\u0026quot; + b64encode(string(*key)) + \u0026quot;\\\u0026quot;\u0026quot;), nil\n}\n\nfunc (key *TestTabletKey) UnmarshalJSON(data []byte) os.Error {\n  raw := TestTabletKey(b64decode(string(data[1 : len(data)-1])))\n  fmt.Printf(\u0026quot;UnmarshalJSON %#v %#v\\n\u0026quot;, data, raw)\n  *key = raw\n  return nil\n}\n\nfunc TestJson2(t *testing.T) {\n  data := TestTabletKey(\u0026quot;\\xff\\xff\\xff\\xff\u0026quot;)\n  expected, _ := data.MarshalJSON()\n\n  jsonData, err := json.Marshal(\u0026amp;data)\n  if err != nil {\n    t.Errorf(\u0026quot;Marshal failed\u0026quot;, err.String())\n  }\n  if string(jsonData) != string(expected) {\n    t.Errorf(\u0026quot;encoding failed: %v != %v\u0026quot;, string(jsonData), string(expected))\n  }\n\n  var unmarshaledData TestTabletKey\n  directUnmarshaledData := new(TestTabletKey)\n  err = directUnmarshaledData.UnmarshalJSON(jsonData)\n  if err != nil {\n    t.Errorf(\u0026quot;UnmarshalJSON failed\u0026quot;, err.String())\n  }\n  if string(data) != string(*directUnmarshaledData) {\n    t.Errorf(\u0026quot;data mangled during DIRECT marshal/unmarshal: %#v != %#v\u0026quot;, data, *directUnmarshaledData)\n  }\n\n  err = json.Unmarshal(jsonData, \u0026amp;unmarshaledData)\n  if err != nil {\n    t.Errorf(\u0026quot;Unmarshal failed %v\u0026quot;, err.String())\n  }\n\n  if string(data) != string(unmarshaledData) {\n    t.Errorf(\u0026quot;data mangled during marshal/unmarshal: %#v != %#v\u0026quot;, data, unmarshaledData)\n  }\n}\u003c/pre\u003e",
+	"user": {
+		"login": "msolo",
+		"id": 5078276,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:07:32Z",
+	"created_at": "2010-11-07T21:48:48Z",
+	"updated_at": "2016-06-24T19:22:07Z"
+}

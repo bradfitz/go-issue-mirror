@@ -1,0 +1,12 @@
+{
+	"id": 91869541,
+	"body": "@davecheney:\r\n\u003e I don't see this as a discussion about the name of the exported value. The\r\n\u003e OP asked us to export `net.errClosing` and through this discussion it's\r\n\u003e been discovered that exporting this would be used to help suppress expected\r\n\u003e errors during async close of a reading socket.\r\n\r\nI understand your concern, but as a gopher, I'm not sure that I agree that we would be breaking the contract by returning the proposed `ErrClosing`. I look at `io.Reader` and see:\r\n\r\n```golang\r\nRead(p []byte) (n int, err error)\r\n```\r\n\r\nI expect `Read` to return a value for `error` in case of an error that could really be anything.  The documentation spends some time discussing the case of `io.EOF` and in fact mentions no other errors.  I don't read this and think that the _documentation_ is specializing the contract beyond the declaration of `Read` and that `Read` will **only** ever return an `error == nil` or `error == io.EOF`.  I'd surely expect other kinds of errors to be returned.\r\n\r\nThere are many packages in Go that implement `io.Reader` (e.g. `io.PipeReader` and `os.File`) that return _device specific_ errors -- e.g. `ErrClosedPipe` in `io.PipeReader`, or `os.File` returning either `os.ErrInvalid`, `io.EOF` or a `os.PathError`.  I think it's completely reasonable for the `net` package to export this new `ErrClosing` error; the only change in the contact here would be if someone was string matching on the current `errClosing` (which they should NOT be doing!).",
+	"user": {
+		"login": "smithwinston",
+		"id": 1114593,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-11T15:28:53Z",
+	"updated_at": "2015-04-11T15:28:53Z"
+}

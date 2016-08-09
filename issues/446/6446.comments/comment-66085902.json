@@ -1,0 +1,12 @@
+{
+	"id": 66085902,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThis is not a great benchmark, because you have allocation in the middle of the loop,\nand that causes serious noise in the timings. Here is a better one.\n\npackage main\n\nimport (\n\t\"container/heap\"\n\t\"math/rand\"\n\t\"testing\"\n)\n\nfunc BenchmarkHeap(b *testing.B) {\n\th := \u0026IntHeap{}\n\tfor num := 1; num \u0026lt; b.N; num++ {\n\t\t*h = (*h)[:0]\n\t\tfor i := 0; i \u0026lt; 10000; i++ {\n\t\t\theap.Push(h, rand.Int())\n\t\t}\n\t\tfor h.Len() \u0026gt; 0 {\n\t\t\theap.Pop(h)\n\t\t}\n\t}\n}\n\nI do see a 7% slowdown in the IntHeap implementation. But it's a silly implementation\ntoo. If you really cared about speed you would not let the wrappers do the dereference.\nYou'd write the IntHeap to have all pointer receivers.\n\nfunc (h *IntHeap) Len() int           { return len(*h) }\nfunc (h *IntHeap) Less(i, j int) bool { return (*h)[i] \u0026lt; (*h)[j] }\nfunc (h *IntHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }\n\nIf I do that then there is no difference between Go 1.1.2 and current tip.\n\nThe 7% is unfortunate but pretty much unavoidable. Wrappers can be expensive, especially\nwrappers for trivial operations.\n\nIf there's anything to do here, it would be to update the example. But the example is\nfine as is. It's not trying to be the fastest possible implementation. It's about not\nhaving to write the heap code yourself and debug it. If you wanted raw speed you'd\nimplement and debug an int-specific heap yourself, avoiding all the interface calls,\nwhich for an IntHeap is worth about 2x.\u003c/pre\u003e\n\n\n\n_Status changed to **Unfortunate**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-09-23T21:10:58Z",
+	"updated_at": "2014-12-22T06:28:58Z"
+}

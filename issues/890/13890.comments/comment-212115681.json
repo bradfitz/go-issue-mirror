@@ -1,0 +1,12 @@
+{
+	"id": 212115681,
+	"body": "@ianlancetaylor Agreed. I'm not saying @momchil-velikov's program *has* to be valid, but I think there should be a simple way to describe making it valid. I also wouldn't be surprised if allowing it is simpler than rejecting it.\r\n\r\n@griesemer I don't think either of those reasons actually force type inference and constant evaluations to happen together. In fact, I think they both already show up in @momchil-velikov's sample, that I walked through above:\r\n\r\n  1. The length of an array type like `[C]float64` does involve a constant expression, but you don't need to evaluate the constant `C` to be able to do type inference.  For example, given `var a [C]float64`, even without evaluating `C` you know that `b := a` means that `b` also has type `[C]float64` or that `a[i]` has type `float64`.  (Of course, if `i` happens to also be a constant, you need to ensure `0 \u003c= i \u003c C`, but that can wait until we've evaluated `i` and `C`.  It doesn't need to be done at the same time as type inference.)\r\n\r\n  2. The expression `len(a)` always has type `int`, so `const x = len(a)` always declares a constant of type `int`.  Again, we can defer evaluating the constant value `len(a)` until a separate constant evaluation pass.\r\n\r\nFormalizing slightly, suppose for Go expression X we have Type(X) to denote X's type and Value(X) to denote X's constant value (if any).  E.g., given `b := a`, we have Type(`b`)=Type(`a`); and given Type(`a`) = `[C]T` (for some type `T`), then Value(`len(a)`) = `C`.\r\n\r\nMy hypothesis is Type's definition does not depend on Value.  If so, then it's sound to separate type inference from constant evaluation into separate passes.\r\n\r\nFurther, if expanding Type(X) or Value(X) in turn recursively references Type(X) or Value(X) (respectively), then there's a cycle and the program is invalid.\r\n\r\nUnder this formulation, disallowing @momchil-velikov's program requires an additional rule that if Type(X)'s expansion includes Type(Y) anywhere, then the program is also invalid if Value(Y)'s expansion mentions Type(X) or Value(X).\r\n\r\n(Of course this sort of pseudo-language-theory is not suitable as is for the Go spec; it's just my thought process on the topic.)",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-19T20:32:53Z",
+	"updated_at": "2016-04-19T20:43:56Z"
+}

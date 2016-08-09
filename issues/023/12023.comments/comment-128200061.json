@@ -1,0 +1,12 @@
+{
+	"id": 128200061,
+	"body": "The code breaking this URL seems to me a classic example of fuzz testing hurting instead of helping, by inducing real bugs when we fix hypothetical bugs. I am inclined to move the validHostPort check up into the [ipv6]:port syntax case. I don't see any reason for it to be here. It is not relevant to the original fuzz report (#11208).\r\n\r\n\tdiff --git a/src/net/url/url.go b/src/net/url/url.go\r\n\tindex abcd23b..1cec43b 100644\r\n\t--- a/src/net/url/url.go\r\n\t+++ b/src/net/url/url.go\r\n\t@@ -478,7 +478,6 @@ func parseAuthority(authority string) (user *Userinfo, host string, err error) {\r\n\t // information. That is, as host[:port].\r\n\t func parseHost(host string) (string, error) {\r\n\t \tlitOrName := host\r\n\t-\tvar colonPort string // \":80\" or \"\"\r\n\t \tif strings.HasPrefix(host, \"[\") {\r\n\t \t\t// Parse an IP-Literal in RFC 3986 and RFC 6874.\r\n\t \t\t// E.g., \"[fe80::1], \"[fe80::1%25en0]\"\r\n\t@@ -490,7 +489,10 @@ func parseHost(host string) (string, error) {\r\n\t \t\tif i \u003c 0 {\r\n\t \t\t\treturn \"\", errors.New(\"missing ']' in host\")\r\n\t \t\t}\r\n\t-\t\tcolonPort = host[i+1:]\r\n\t+\t\tcolonPort := host[i+1:]\r\n\t+\t\tif !validOptionalPort(colonPort) {\r\n\t+\t\t\treturn \"\", fmt.Errorf(\"invalid port %q after host\", colonPort)\r\n\t+\t\t}\r\n\t \t\t// Parse a host subcomponent without a ZoneID in RFC\r\n\t \t\t// 6874 because the ZoneID is allowed to use the\r\n\t \t\t// percent encoded form.\r\n\t@@ -500,11 +502,8 @@ func parseHost(host string) (string, error) {\r\n\t \t\t} else {\r\n\t \t\t\tlitOrName = host[1:j]\r\n\t \t\t}\r\n\t-\t} else {\r\n\t-\t\tif i := strings.Index(host, \":\"); i != -1 {\r\n\t-\t\t\tcolonPort = host[i:]\r\n\t-\t\t}\r\n\t \t}\r\n\t+\r\n\t \t// A URI containing an IP-Literal without a ZoneID or\r\n\t \t// IPv4address in RFC 3986 and RFC 6847 must not be\r\n\t \t// percent-encoded.\r\n\t@@ -517,9 +516,6 @@ func parseHost(host string) (string, error) {\r\n\t \tif strings.Contains(litOrName, \"%\") {\r\n\t \t\treturn \"\", errors.New(\"percent-encoded characters in host\")\r\n\t \t}\r\n\t-\tif !validOptionalPort(colonPort) {\r\n\t-\t\treturn \"\", fmt.Errorf(\"invalid port %q after host\", colonPort)\r\n\t-\t}\r\n\t \tvar err error\r\n\t \tif host, err = unescape(host, encodeHost); err != nil {\r\n\t \t\treturn \"\", err\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-06T01:19:03Z",
+	"updated_at": "2015-08-06T01:19:03Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66089266,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eThanks Ian, you are correct. Armv6 and above can load from unaligned addresses, armv5\ncannot. \n\nAs a slight modification to your diagnosis, it is not the floating point constant code,\nbut the actual injection of runtime.goarm which is \n\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/cmd/5l/obj.c#94\"\u003ehttps://code.google.com/p/go/source/browse/src/cmd/5l/obj.c#94\u003c/a\u003e\n\n        // embed goarm to runtime.goarm\n        s = linklookup(ctxt, \"runtime.goarm\", 0);\n        s-\u003etype = SRODATA;\n        adduint8(ctxt, s, ctxt-\u003egoarm);\n\nhence, runtime.goarm is written as a uint8, not an uint32\n\nthis is further reinforced as\n\nos_linux_arm.c\n19:extern uint8  runtime·goarm; // set by 5l\n\nbut\n\nTEXT runtime·asminit(SB),NOSPLIT,$0-0\n        // disable runfast (flush-to-zero) mode of vfp if runtime.goarm \u003e 5\n        MOVW    runtime·goarm(SB), R11\n\nis loading a word, not a byte, which is wrong (because padding) and also because it will\ncause SIGBUS if runtime.goarm was not word aligned, which in previous versions of Go\nturned out to be dumb luck.\u003c/pre\u003e\n\n\n_Owner changed to @davecheney._\n\n_Status changed to **Started**._",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-28T20:38:17Z",
+	"updated_at": "2014-12-08T10:38:44Z"
+}

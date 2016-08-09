@@ -1,0 +1,28 @@
+{
+	"id": 51284997,
+	"number": 6317,
+	"state": "closed",
+	"title": "compress/gzip: reading through subsequent gzip members allocates excessively",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. curl\n\u003ca href=\"ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data/HG00096/alignment/HG00096.unmapped.ILLUMINA.bwa.GBR.low_coverage.20120522.bam\"\u003eftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data/HG00096/alignment/HG00096.unmapped.ILLUMINA.bwa.GBR.low_coverage.20120522.bam\u003c/a\u003e\n\u0026gt; blocked.gz\n2. gunzip -c blocked.gz | gzip -c - \u0026gt; flat.gz\n3. Using the program at \u003ca href=\"http://play.golang.org/p/5j4GM-JUxl\"\u003ehttp://play.golang.org/p/5j4GM-JUxl\u003c/a\u003e as a _test.go file, run:\n   go test -gz.file flat.gz -run ^$ -bench . -benchmem \u0026gt; flat.text\n   go test -gz.file blocked.gz -run ^$ -bench . -benchmem \u0026gt; blocked.text\n4. benchcmp flat.text blocked.text\n\nWhat is the expected output?\nSimilar levels of allocation.\n\nWhat do you see instead?\n\nGo1.1.2:\n\nbenchmark          old ns/op    new ns/op    delta\nBenchmarkGunzip  10182915083  10557713783   +3.68%\n\nbenchmark         old allocs   new allocs    delta\nBenchmarkGunzip        52474       186766  255.92%\n\nbenchmark          old bytes    new bytes    delta\nBenchmarkGunzip      9004552    295581208  3182.58%\n\n\nGo tip:\n\nbenchmark          old ns/op    new ns/op    delta\nBenchmarkGunzip  10252001101  10576255141   +3.16%\n\nbenchmark         old allocs   new allocs    delta\nBenchmarkGunzip        52422       186048  254.90%\n\nbenchmark          old bytes    new bytes    delta\nBenchmarkGunzip      8896296    292322024  3185.88%\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nlinux\n\nWhich version are you using?  (run 'go version')\ngo version go1.1.2 linux/amd64\ngo version devel +6adf94d423d6 Tue Sep 03 16:19:41 2013 -0400 linux/amd64\n\nPlease provide any additional information below.\nThe blocked.gz file is a gzip file constructed from multiple compressed gzip members,\neach made from \u0026lt;64KB of input data (the spec for this format, BGZF, is on p12 of\n\u003ca href=\"http://samtools.sourceforge.net/SAMv1.pdf)\"\u003ehttp://samtools.sourceforge.net/SAMv1.pdf)\u003c/a\u003e.\n\nAt the end of a gzip member, gzip.Reader creates a new flate.Reader in\n(*Reader).readHeader() discarding the old one.\u003c/pre\u003e",
+	"user": {
+		"login": "kortschak",
+		"id": 275221,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:34:44Z",
+	"created_at": "2013-09-04T00:02:26Z",
+	"updated_at": "2016-06-25T01:18:01Z"
+}

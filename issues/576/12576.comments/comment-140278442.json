@@ -1,0 +1,12 @@
+{
+	"id": 140278442,
+	"body": "@dr2chase As an aside, go/types, which currently implements compile-time numeric constants mathematically exactly (as rational numbers, rather than as a floating-point number with super-high precision), the discussion about a -0 for compile-time constants is moot. -0 is not representable.\r\n\r\nThe reason -0 exists in IEEE is an artifact of the implementation. And then that artifact is used to \"squeeze out\" a bit more \"precision\" (information) from a limited format. The compiler is not restricted to this limited format.\r\n\r\n(I regret having formulated the issue title as is: This was mostly a reminder for me to clarify the spec if need be; posed as a question. The notion of exact constant arithmetic was from the beginning that it would be, well, exact, for simplicity and clarity of concept. The fact that compilers may use a limited- but high-precision (256bits of mantissa at the least!) floating-point number internally is an implementation detail that is invisible for all practical purposes but esoteric corner cases and academic exercises.)\r\n\r\nRegarding the outstanding question of what happens when a negative too-tiny-to-represent-as-float64 constants gets assigned to a variable - the only argument I can come up with for making it -0 is that it would provide a tiny bit more information about the original value, which is probably in the spirit of IEEE-754. For instance, this program ( http://play.golang.org/p/_v68BLI5XQ ):\r\n```\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tconst c = -1e-1000\r\n\tfmt.Println(c, c \u003c 0)\r\n\r\n\tvar x float64 = c\r\n\tfmt.Println(x, x \u003c 0)\r\n\r\n\tvar y float64 = -1\r\n\tfor i := 0; i \u003c 1000; i++ {\r\n\t\ty /= 10\r\n\t}\r\n\tfmt.Println(y, y \u003c 0)\r\n}\r\n```\r\nwould print -0 for both the value of x derived from a constant, and the same value y derived via explicit computation (note that the playground at the moment disagrees, hence the issue).\r\n\r\nBut on the other hand, the \"extra bit of information\" does not even carry over into comparisons: a -0 is not \u003c 0 in IEEE. So while c \u003c 0 is true (constant expression), x \u003c 0 is not even if x were -0.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-15T04:37:25Z",
+	"updated_at": "2015-09-15T04:37:25Z"
+}

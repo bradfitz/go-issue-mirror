@@ -1,0 +1,22 @@
+{
+	"id": 114462665,
+	"number": 13119,
+	"state": "closed",
+	"title": "cmd/go: go tool can be tricked into linking a set of packages that do not typecheck as a whole",
+	"body": "Normally, when compiling a package, it is typechecked together with its imports, their imports , etc, transitively. It is possible to successfully compile a package, but later link it with a version of a package's import, that it has not been typechecked against.\r\n\r\nWhen building a package, the `go` tool generates a buildID as a SHA1 sum of, basically, the list of package source file names and the `buildID`s of the imported packages. The tool compares the expected/computed `buildID` with the actual `buildID`, recorded in the package binary, and decides if the package needs to be rebuilt.\r\n\r\nTwo different packages can have the same set of source file names and the same set of imported packages, consequently the same `buildID`. This is not entirely unlikely, for example, these might be two (binary incompatible) versions of the same package.\r\n\r\nConsider two such packages `A1` and `A2`, with identical `buildID`. A third package,`C`, imports `A` and is successfully typechecked and compiled against `A2` as the actual package found for the import path `A`. If, later, package `C` is linked with `A1`, `go` tool may not notice that `C` needs to be rebuilt, because the computed `buildID` of `C`, which uses the `buildID` of `A1`, is identical to the recorded `buildID` of `C`, which uses the `buildID` of `A2`.\r\n\r\nThe steps to reproduce this problem are described in https://github.com/momchil-velikov/go-abuse\r\n(download link https://github.com/momchil-velikov/go-abuse/archive/master.zip)\r\nThere are two examples, one of accessing a `float32` as `uint32` and one of writing to arbitrary memory location, obviously, without using the `unsafe` package.\r\n\r\nIt was tested with go-1.4.2, go-1.5-1 and master on GNU/Linux and MacOS X.\r\n",
+	"user": {
+		"login": "momchil-velikov",
+		"id": 5541560,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-11-02T14:54:46Z",
+	"created_at": "2015-11-01T10:30:56Z",
+	"updated_at": "2015-11-02T14:54:46Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

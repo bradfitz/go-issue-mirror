@@ -1,0 +1,12 @@
+{
+	"id": 66076310,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eHad to put panic in fakedb_test.go, because you ignore the error it returns.\n\ndiff -r 0c029965805f src/pkg/database/sql/fakedb_test.go\n--- a/src/pkg/database/sql/fakedb_test.go\tThu Mar 14 15:01:45 2013 -0700\n+++ b/src/pkg/database/sql/fakedb_test.go\tFri Mar 15 11:43:14 2013 +1100\n@@ -237,7 +237,7 @@\n \t\treturn errors.New(\"can't close fakeConn; already closed\")\n \t}\n \tif c.stmtsMade \u0026gt; c.stmtsClosed {\n-\t\treturn errors.New(\"can't close; dangling statement(s)\")\n+\t\tpanic(errors.New(\"can't close; dangling statement(s)\"))\n \t}\n \tc.db = nil\n \treturn nil\ndiff -r 0c029965805f src/pkg/database/sql/sql_test.go\n--- a/src/pkg/database/sql/sql_test.go\tThu Mar 14 15:01:45 2013 -0700\n+++ b/src/pkg/database/sql/sql_test.go\tFri Mar 15 11:43:14 2013 +1100\n@@ -736,3 +736,61 @@\n \t\tt.Logf(\"stmt = %#v\", stmt)\n \t}\n }\n+\n+func TestCloseConnBeforeStmts(t *testing.T) {\n+\tdb := newTestDB(t, \"people\")\n+\tdefer closeDB(t, db)\n+\n+\tstmt, err := db.Prepare(\"SELECT|people|name|\")\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer stmt.Close()\n+\n+\teof := fmt.Errorf(\"eof\")\n+\tquery := func(ch chan error) (err2 error) {\n+\t\tdefer func() {\n+\t\t\tch \u0026lt;- err2\n+\t\t}()\n+\t\tch \u0026lt;- nil // wait for other goroutines\n+\t\tr, err := stmt.Query()\n+\t\tif err != nil {\n+\t\t\treturn fmt.Errorf(\"%v\", err)\n+\t\t}\n+\t\tdefer r.Close()\n+\t\ti := 0\n+\t\tch \u0026lt;- nil // wait for other goroutines\n+\t\tfor r.Next() {\n+\t\t\tch \u0026lt;- nil // wait for other goroutines\n+\t\t\tvar is string\n+\t\t\terr = r.Scan(\u0026is)\n+\t\t\tif err != nil {\n+\t\t\t\treturn fmt.Errorf(\"%v\", err)\n+\t\t\t}\n+\t\t\tch \u0026lt;- nil // wait for other goroutines\n+\t\t\ti++\n+\t\t}\n+\t\terr = r.Err()\n+\t\tif err != nil {\n+\t\t\treturn fmt.Errorf(\"%v\", err)\n+\t\t}\n+\t\treturn eof\n+\t}\n+\n+\tchs := make(map[int]chan error)\n+\tfor i := 0; i \u0026lt; 3; i++ {\n+\t\tchs[i] = make(chan error)\n+\t\tgo query(chs[i])\n+\t}\n+\tfor len(chs) \u0026gt; 0 {\n+\t\tfor i, ch := range chs {\n+\t\t\terr := \u0026lt;-ch\n+\t\t\tif err != nil {\n+\t\t\t\tif err != eof {\n+\t\t\t\t\tt.Errorf(\"goroutine #%d failed: %v\", i, err)\n+\t\t\t\t}\n+\t\t\t\tdelete(chs, i)\n+\t\t\t}\n+\t\t}\n+\t}\n+}\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-15T01:06:37Z",
+	"updated_at": "2014-12-22T06:23:11Z"
+}

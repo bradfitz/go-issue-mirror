@@ -1,0 +1,12 @@
+{
+	"id": 159345354,
+	"body": "Measuring the speed of the methods is often done in a unit of the time taken for a single M-R test (occasionally this unit is called a 'Selfridge', but that's rare).  Hence the desire for the cost comparison.  I think more fine-grain timing is needed, without the cost to generate the random numbers.  Perhaps measure the Lucas test separately and use more of them.\r\n\r\nAll things being equal, an AES Lucas test costs less than 2 M-Rs, so the whole test is something like 2.5 M-Rs.  But all things aren't equal here, with the math library using Montgomery math for modular exponentiation, and the whole M-R path being performance tuned for crypto needs.  To get similar performance the Lucas test would have to be done in Montgomery math as well (fortunately there is no need to convert anything back out of Monty form).  That's presumably why this is taking closer to 7 M-Rs using the earlier timing data you did 3 days ago for 5 primes:\r\n\r\n  MR(n=40) took 88ms =\u003e 1 MR takes 2.2ms\r\n  BPSW took 14ms =\u003e BPSW costs 6.4 M-Rs\r\n\r\nThat isn't way off base.  Your comparison with single M-R a few hours ago was 5x, but I think more timing resolution is needed.\r\n\r\nThe big questions seem to be:\r\n  - Does this belong in (1) math/big/ProbablyPrime, (2) math/big/SomethingElse, (3) an external library.\r\n  - If (1) above, should it be using n=0?  Can we have a no-argument form?\r\n  - Is BPSW rigorous enough compared to M-R (n=whatever)?\r\n\r\nNone of these are particular to your implementation.  That has a bunch of other questions and comments best left to review.\r\n\r\nIs the argument for ProbablyPrime always required?  Callers are expected to understand the tradeoffs of different arguments?  Assuming there isn't a no-argument form, then (in my opinion) n=0 makes sense.  It's the option used by people who don't want to micro-manage the implementation and just want an efficient solid answer.  As for the last, BPSW is far better than 7 Miller-Rabin tests.  It also gives us deterministic results for all 64-bit inputs (admittedly this can be achieved using set M-R bases).  Is it better than 20 tests?  IMO yes but we're getting closer, and now the performance tradeoff is getting important.",
+	"user": {
+		"login": "danaj",
+		"id": 125502,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-24T17:15:31Z",
+	"updated_at": "2015-11-24T17:15:31Z"
+}

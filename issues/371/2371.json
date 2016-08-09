@@ -1,0 +1,28 @@
+{
+	"id": 51279119,
+	"number": 2371,
+	"state": "closed",
+	"title": "pkg/scanner: Invalid position in default error handler if first rune is invalid",
+	"body": "by **ijknacho**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nGiven:\npackage main\n\nimport (\n  \u0026quot;bytes\u0026quot;\n  \u0026quot;fmt\u0026quot;\n  \u0026quot;io\u0026quot;\n  \u0026quot;scanner\u0026quot;\n)\n\nfunc testScanner(input io.Reader, error func(s2 *scanner.Scanner, text string)) {\n  var s = new(scanner.Scanner).Init(input)\n  s.Mode = scanner.ScanIdents\n  // Note: after Init(), s.Error==nil\n  s.Error = error\n  for {\n    kind := s.Scan()\n    fmt.Printf(\u0026quot;kind = %v, text = %q\\n\\n\u0026quot;, kind, s.TokenText())\n\n    if kind == scanner.EOF { break }\n  }\n}\n\nfunc main() {\n  fmt.Printf(\u0026quot;[default error handler]\\n\u0026quot;)\n  var b bytes.Buffer\n  b.WriteByte(0x80)\n  b.WriteString(\u0026quot;xy\u0026quot;)\n  testScanner(\u0026amp;b, nil)\n\n  fmt.Printf(\u0026quot;[custom error handler]\\n\u0026quot;)\n  b.Reset()\n  b.WriteByte(0x80)\n  b.WriteString(\u0026quot;xy\u0026quot;)\n\n  testScanner(\u0026amp;b, func(s2 *scanner.Scanner, text string) {\n    fmt.Printf(\u0026quot;%v: %s\\n\u0026quot;, s2.Pos(), text)\n  })\n}\n\n\nWhat is the expected output?\n[default error handler]\n1:1: illegal UTF-8 encoding\nkind = 65533, text = \u0026quot;\\x80\u0026quot;\n\nkind = -2, text = \u0026quot;xy\u0026quot;\n\nkind = -1, text = \u0026quot;\u0026quot;\n\n[custom error handler]\n1:1: illegal UTF-8 encoding\nkind = 65533, text = \u0026quot;\\x80\u0026quot;\n\nkind = -2, text = \u0026quot;xy\u0026quot;\n\nkind = -1, text = \u0026quot;\u0026quot;\n\n\nWhat do you see instead?\n[default error handler]\n???: illegal UTF-8 encoding\nkind = 65533, text = \u0026quot;\\x80\u0026quot;\n\nkind = -2, text = \u0026quot;xy\u0026quot;\n\nkind = -1, text = \u0026quot;\u0026quot;\n\n[custom error handler]\n1:1: illegal UTF-8 encoding\nkind = 65533, text = \u0026quot;\\x80\u0026quot;\n\nkind = -2, text = \u0026quot;xy\u0026quot;\n\nkind = -1, text = \u0026quot;\u0026quot;\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux version 2.6.32-131.17.1.el6.x86_64\n\nWhich revision are you using?  (hg identify)\n32a5db196298 (release-branch.r60) release/release.r60.2\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:12:42Z",
+	"created_at": "2011-10-15T13:15:08Z",
+	"updated_at": "2016-06-24T21:19:31Z"
+}

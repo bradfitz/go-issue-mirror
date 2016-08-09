@@ -1,0 +1,12 @@
+{
+	"id": 107502949,
+	"body": "Third time's a charm?\r\n\r\n```\r\ne870f06c3f49ed63960a2575e330c2c75fc54a34 is the first bad commit\r\ncommit e870f06c3f49ed63960a2575e330c2c75fc54a34\r\nAuthor: Austin Clements \u003caustin@google.com\u003e\r\nDate:   Wed Apr 22 14:42:26 2015 -0400\r\n\r\n    runtime: yield time slice to most recently readied G\r\n    \r\n    Currently, when the runtime ready()s a G, it adds it to the end of the\r\n    current P's run queue and continues running. If there are many other\r\n    things in the run queue, this can result in a significant delay before\r\n    the ready()d G actually runs and can hurt fairness when other Gs in\r\n    the run queue are CPU hogs. For example, if there are three Gs sharing\r\n    a P, one of which is a CPU hog that never voluntarily gives up the P\r\n    and the other two of which are doing small amounts of work and\r\n    communicating back and forth on an unbuffered channel, the two\r\n    communicating Gs will get very little CPU time.\r\n    \r\n    Change this so that when G1 ready()s G2 and then blocks, the scheduler\r\n    immediately hands off the remainder of G1's time slice to G2. In the\r\n    above example, the two communicating Gs will now act as a unit and\r\n    together get half of the CPU time, while the CPU hog gets the other\r\n    half of the CPU time.\r\n    \r\n    This fixes the problem demonstrated by the ping-pong benchmark added\r\n    in the previous commit:\r\n    \r\n    benchmark                old ns/op     new ns/op     delta\r\n    BenchmarkPingPongHog     684287        825           -99.88%\r\n    \r\n    On the x/benchmarks suite, this change improves the performance of\r\n    garbage by ~6% (for GOMAXPROCS=1 and 4), and json by 28% and 36% for\r\n    GOMAXPROCS=1 and 4. It has negligible effect on heap size.\r\n    \r\n    This has no effect on the go1 benchmark suite since those benchmarks\r\n    are mostly single-threaded.\r\n    \r\n    Change-Id: I858a08eaa78f702ea98a5fac99d28a4ac91d339f\r\n    Reviewed-on: https://go-review.googlesource.com/9289\r\n    Reviewed-by: Rick Hudson \u003crlh@golang.org\u003e\r\n    Reviewed-by: Russ Cox \u003crsc@golang.org\u003e\r\n\r\n:040000 040000 bbd15006954b05b00cf4c75514209b3153455458 413aa33afef655aca1494a3116850a2a3713f4ce M\tsrc\r\n```\r\n\r\nInterestingly, with the previous commit, the test seems get stuck occasionally.",
+	"user": {
+		"login": "robx",
+		"id": 132113,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-01T14:07:10Z",
+	"updated_at": "2015-06-01T14:07:10Z"
+}

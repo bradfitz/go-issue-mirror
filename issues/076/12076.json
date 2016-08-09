@@ -1,0 +1,22 @@
+{
+	"id": 99777054,
+	"number": 12076,
+	"state": "closed",
+	"title": "x/sys/unix: Getpagesize can return wrong value for Solaris",
+	"body": "Getpsagesize hardcodes the return value of 4096 for Solaris.  The default pagesize on Solaris for amd64 can actually vary:\r\n\r\n$ pagesize -a\r\n4096\r\n2097152\r\n1073741824\r\n\r\nWith that said, Solaris currently defaults to 4096 for amd64, but this could change at some future point.  And for other architectures (admittedly not yet supported by Go, but that are in development) \r\nthe default pagesize is definitely different, for example, SPARC where the default is currently 8192 although the default may change in the near future as current SPARC systems max out at 64 Terabytes of memory:\r\n\r\n$ pagesize -a\r\n8192\r\n65536\r\n4194304\r\n268435456\r\n2147483648\r\n\r\nIssue 10180 touches on this subject, but in the context of cmd/link.  A response to my inquiry on golang-dev suggested that x/sys/unix (at least) should just return whatever the POSIX interface for page size returns:\r\n\r\nhttps://groups.google.com/forum/#!topic/golang-dev/ZLzxYzULzU8\r\n\r\nAs such, I'm proposing to change x/sys/unix Getpagesize to use sysconf(3C) to get the actual value (and cache it, since the value never changes after the system boots) and return that instead.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-09-17T21:17:12Z",
+	"created_at": "2015-08-08T06:14:06Z",
+	"updated_at": "2015-09-17T21:17:12Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

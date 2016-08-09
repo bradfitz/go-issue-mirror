@@ -1,0 +1,27 @@
+{
+	"id": 96695568,
+	"number": 11830,
+	"state": "closed",
+	"title": "x/sys/unix: No clean way to call `utimes(path, NULL)` or friends",
+	"body": "The kernel differentiates between setting time to *now* vs setting it to some timestamp (that may be very very recent past). For example, FUSE sets a separate flag that signals this:\r\n\r\nhttp://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=17637cbaba592076c221dc045ca78422b4af6290\r\n\r\nThis is normally achieved by passing NULL as times to utimes(2) and friends.\r\n\r\nThe Go syscall wrappers all explicitly prevent this:\r\n\r\n```go\r\nfunc Utimes(path string, tv []Timeval) (err error) {\r\n\tif len(tv) != 2 {\r\n\t\treturn EINVAL\r\n\t}\r\n\treturn utimes(path, (*[2]Timeval)(unsafe.Pointer(\u0026tv[0])))\r\n}\r\n```\r\n\r\nMy use case: I wanted to write a FUSE unit test that behaves like touch, and actually causes that flag to be set. Measuring current time and passing it as argument is not good enough.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-07-27T05:52:22Z",
+	"created_at": "2015-07-23T00:10:39Z",
+	"updated_at": "2016-08-05T16:10:56Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

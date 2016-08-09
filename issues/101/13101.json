@@ -1,0 +1,22 @@
+{
+	"id": 114161439,
+	"number": 13101,
+	"state": "closed",
+	"title": "math: Expm1(x) is off by 1 for values of x around [14, 34]",
+	"body": "http://play.golang.org/p/Ji-WVA0TM4\r\n\r\nThis is due to this error caught by cmd/vet:\r\n\r\n    expm1.go:230: (0x3ff - k) might be too small for shift of 52\r\n\r\nThe problem is k is an int, so the shift here:\r\n\r\n    t := Float64frombits(uint64((0x3ff - k) \u003c\u003c 52)) // 2**-k\r\n\r\nhappens before the conversion to uint64.\r\n\r\nThis only affects amd64p32 and arm, because they're the only ports with 32-bit ints that use the portable Expm1 implementation.\r\n\r\nThe fix is obvious (convert to uint64 before the shift), but I'm not sure the best way to write a test for this.  I thought I'd just add an entry to vfexpm1SC and expm1SC, but TestExpm1 uses alike for testing those, and 386's assembly version of Expm1 returns a slightly different value for Expm1(20) than the portable Go version.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-10-30T22:55:53Z",
+	"created_at": "2015-10-29T22:33:37Z",
+	"updated_at": "2015-10-30T22:55:53Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

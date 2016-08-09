@@ -1,0 +1,27 @@
+{
+	"id": 51285410,
+	"number": 6589,
+	"state": "open",
+	"title": "cmd/compile: 8MB error message for one char error",
+	"body": "\u003cpre\u003e$ cat x.go\npackage p\n\ntype A interface {\n\ta() interface{AB}\n}\n\ntype B interface {\n\ta() interface{AB}\n}\n\ntype AB interface {\n\ta() interface{A;B}\n\tb() interface{A;B}\n}\n\nvar x AB\nvar y interface{A;B}\nvar _ = x == y\n\n\n$ go tool 6g x.go\nx.go:12: duplicate method a\nx.go:13: duplicate method a\nx.go:17: duplicate method a\nx.go:18: invalid operation: x == y (mismatched types AB and interface { a() interface {\na() interface { a() interface { a() interface { a() interface { a() interface { a()\ninterface { a() interface { a() interface { a() interface { a\u0026lt;...\u0026gt;; a() interface\n{ a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b()\ninterface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;;\na() interface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a() interface {\na\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a\u0026lt;...\u0026gt; } } } } } } } } } } }; b()\ninterface { a\u0026lt;...\u0026gt;; a() interface { a() interface { a\u0026lt;...\u0026gt;; a() interface {\na\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface\n{ a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a()\ninterface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a\u0026lt;...\u0026gt; } } } } } } } } };\nb() interface { a\u0026lt;...\u0026gt;; a() interface { a() interface { a\u0026lt;...\u0026gt;; a()\ninterface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;;\nb() interface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface {\na\u0026lt;...\u0026gt;; a\u0026lt;...\u0026gt; } } } } } } }; b() interface { a\u0026lt;...\u0026gt;; a() interface {\na() interface { a\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface {\na\u0026lt;...\u0026gt;; a() interface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a\u0026lt;...\u0026gt; }\n} } } }; b() interface { a\u0026lt;...\u0026gt;; a() interface { a() interface { a\u0026lt;...\u0026gt;; a()\ninterface { a\u0026lt;...\u0026gt;; b() interface { a\u0026lt;...\u0026gt;; a\u0026lt;...\u0026gt; } } };...\n\n\n$ go tool 6g x.go | wc\n       4 1586257 8248570\n\n\nWhen the program is fixed (rename method a in interface B to b), the compiler runs\nextremely long:\n\n$ time go tool 6g x.go\n\nreal\t0m19.170s\nuser\t0m17.352s\nsys\t0m1.037s\n\n\nFor comparison, for the incorrect program, gccgo reports:\n\n$ gccgo x.go\nx.go:12:20: error: inherited method 'a' is ambiguous\n      a() interface{A;B}\n                    ^\nx.go:13:20: error: inherited method 'a' is ambiguous\n      b() interface{A;B}\n                    ^\nx.go:17:17: error: inherited method 'a' is ambiguous\n var y interface{A;B}\n                 ^\nx.go:18:11: error: incompatible types in binary expression\n var _ = x == y\n           ^\n\n\nFor the correct program, gcc does not appear slower than usual.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2013-10-14T21:30:32Z",
+	"updated_at": "2015-06-08T06:21:30Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

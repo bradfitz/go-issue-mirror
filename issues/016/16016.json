@@ -1,0 +1,33 @@
+{
+	"id": 159288035,
+	"number": 16016,
+	"state": "closed",
+	"title": "cmd/compile: bad compilation",
+	"body": "Using `go1.7beta1`\r\n\r\nConsider the following program:\r\n```go\r\npackage foo\r\n\r\nimport (\r\n\t\"testing\"\r\n\t\"time\"\r\n)\r\n\r\ntype T struct{}\r\n\r\nfunc (*T) Foo(vals []interface{}) {\r\n\tswitch v := vals[0].(type) {\r\n\tcase string:\r\n\t\t_ = v\r\n\t}\r\n}\r\n\r\ntype R struct{ *T }\r\n\r\ntype Q interface {\r\n\tFoo([]interface{})\r\n}\r\n\r\nfunc TestQueryStreaming(t *testing.T) {\r\n\tvar q Q = \u0026R{\u0026T{}}\r\n\tfor i := 0; i \u003c 10000; i++ {\r\n\t\tgo func() {\r\n\t\t\tdefer q.Foo([]interface{}{\"meow\"})\r\n\t\t\ttime.Sleep(100 * time.Millisecond)\r\n\t\t}()\r\n\t}\r\n\ttime.Sleep(1 * time.Second)\r\n}\r\n```\r\nThe method `Foo` is a read only method that does a type assertion on the input. It should be safe to run that operation concurrently.\r\n\r\nCurrently this leads to corrupted memory:\r\n```\r\n$ go test foo_test.go\r\nunexpected fault address 0x1643\r\nunexpected fault address 0x14f5\r\nfatal error: fault\r\nunexpected fault address 0x15e8\r\nfatal error: fault\r\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x1643 pc=0x46d48c]\r\n\r\ngoroutine 464 [running]:\r\nruntime.throw(0x50a6eb, 0x5)\r\n\t/usr/local/go.tip/src/runtime/panic.go:566 +0x95 fp=0xc42022b6b8 sp=0xc42022b698\r\nruntime.sigpanic()\r\n\t/usr/local/go.tip/src/runtime/sigpanic_unix.go:27 +0x288 fp=0xc42022b710 sp=0xc42022b6b8\r\ncommand-line-arguments.(*T).Foo(0x5adfd8, 0xc420234000, 0x1, 0x1)\r\n\t/home/joetsai/foo_test.go:11 +0x3c fp=0xc42022b758 sp=0xc42022b710\r\ncommand-line-arguments.TestQueryStreaming.func1(0x580320, 0xc42003a028)\r\n\t/home/joetsai/foo_test.go:29 +0xe0 fp=0xc42022b7b0 sp=0xc42022b758\r\nruntime.goexit()\r\n\t/usr/local/go.tip/src/runtime/asm_amd64.s:2060 +0x1 fp=0xc42022b7b8 sp=0xc42022b7b0\r\ncreated by command-line-arguments.TestQueryStreaming\r\n\t/home/joetsai/foo_test.go:29 +0x9c\r\n```\r\n\r\nThis passes with SSA or GC off:\r\n```\r\n$ GOGC=off go test foo_test.go\r\nok  \tcommand-line-arguments\t1.030s\r\n$ go test -gcflags=-ssa=0 foo_test.go\r\nok  \tcommand-line-arguments\t1.048s\r\n```\r\n\r\n/cc @randall77 @ianlancetaylor ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-06-09T19:34:02Z",
+	"created_at": "2016-06-08T22:20:42Z",
+	"updated_at": "2016-06-09T19:34:02Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 126268524,
+	"number": 13926,
+	"state": "closed",
+	"title": "runtime: infinite loop in ./src/runtime/proc1.go lockextra() on both Linux \u0026 FreeBSD",
+	"body": "Howdy,\r\n\r\nWe've been seeing an issue recently on a couple of FreeBSD boxes. It appears as if the application keeps running as should, but CPU usage rises to 100% and the load increases to infinite numbers.\r\n\r\nTruss showed that the application was doing _a lot_ of sched_yield syscalls. The following keeps repeating:\r\n49270: sched_yield(0x6aa450,0x7fffd96cbdc8,0xbcbcb0,0xfffffffffffff000,0x0,0x2e) = 0 (0x0)\r\n49270: sched_yield(0x6aa450,0x7fffd9ccedc8,0xbcbcb0,0xfffffffffffff000,0x0,0x2e) = 0 (0x0)\r\n49270: sched_yield(0x6aa450,0x7fffd98ccdc8,0xbcbcb0,0xfffffffffffff000,0x0,0x2e) = 0 (0x0)\r\n\r\nStack trace from the core dump: \r\n```\r\n#0  runtime.osyield () at /usr/local/go/src/runtime/sys_freebsd_amd64.s:306\r\n306\t/usr/local/go/src/runtime/sys_freebsd_amd64.s: No such file or directory.\r\n[Current thread is 1 (Thread 8031ee400 (LWP 101729))]\r\n(gdb) bt full\r\n#0  runtime.osyield () at /usr/local/go/src/runtime/sys_freebsd_amd64.s:306\r\nNo locals.\r\n#1  0x0000000000484dcb in runtime.lockextra (nilokay=false, ~r1=0x0) at /usr/local/go/src/runtime/proc1.go:1065\r\n        old = 0\r\n#2  0x00000000004849ef in runtime.needm (x=0 '\\000') at /usr/local/go/src/runtime/proc1.go:942\r\n        mp = 0x0\r\n#3  0x00000000004b04f1 in runtime.cgocallback_gofunc () at /usr/local/go/src/runtime/asm_amd64.s:742\r\nNo locals.\r\n#4  0x00000000004b041a in runtime.cgocallback () at /usr/local/go/src/runtime/asm_amd64.s:714\r\nNo locals.\r\n#5  0x00000000006aa488 in _cgoexp_564f5a6b344f_Go_xxfi_connect (a=0x7fffd7cbedc8, n=32)\r\n        fn = {void (struct github.com/Freeaqingme/gomilter._Ctype_struct_smfi_str *, github.com/Freeaqingme/gomilter._Ctype_char *, struct github.com/Freeaqingme/gomilter._Ctype_struct_sockaddr *, \r\n    github.com/Freeaqingme/gomilter._Ctype_sfsistat *)} 0x7fffd7cbed50\r\n#6  0x000000000075d23d in crosscall2 () at /usr/local/go/src/runtime/cgo/asm_amd64.s:36\r\nNo locals.\r\n```\r\n\r\nI'm not 100% sure whether this thread is also the thread causing all the problems based on the core dump that I have, but given that lockextra() calls osyield() in a for loop it seems very plausible.\r\n\r\nHaving said that, I also run this app on a few other very similar boxes where this problem does not show. Difference in configuration is that on the systems that do show these symptoms I use cmd := os/exec.Command(); cmd.Run(). But I have no indication that that particular code is having any issues ( https://github.com/Freeaqingme/ClueGetter/blob/61f0089/src/cluegetter/mailQueue.go#L107 ).\r\n\r\nSo far I have not been able to reproduce or trigger this behavior on Linux. The binary is compiled using go 1.5.1, although the code in proc.go (proc.go \u0026 proc1.go were merged) and sys_freebsd_amd64.s haven't been modified since. FreeBSD version: 10.1-RELEASE #0 r274401.",
+	"user": {
+		"login": "Freeaqingme",
+		"id": 33034,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		},
+		{
+			"name": "OS-FreeBSD"
+		},
+		{
+			"name": "OS-Linux"
+		}
+	],
+	"comments": 30,
+	"closed_at": "2016-07-20T13:56:19Z",
+	"created_at": "2016-01-12T20:28:00Z",
+	"updated_at": "2016-07-20T13:56:19Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

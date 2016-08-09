@@ -1,0 +1,22 @@
+{
+	"id": 62165387,
+	"number": 10178,
+	"state": "closed",
+	"title": "debug/macho: Invalid index reference in macho file Dysyms.IndirectSyms",
+	"body": "I may be misunderstanding the expected usage of debug/macho but I'm encountering the following and it doesn't seem correct to me. \r\n\r\nThe godoc for the macho package has this definition: \r\n\r\n```\r\n type Dysymtab struct {\r\n        LoadBytes\r\n        DysymtabCmd\r\n        IndirectSyms []uint32 // indices into Symtab.Syms\r\n}\r\n``` \r\n\r\nSo I would expect given the c program: \r\n```\r\n#include \u003cstdio.h\u003e\r\nint main(void){\r\n    puts(\"Hello World\");\r\n}\r\n\r\n/*\r\n$ gcc foo.c -o foo\r\n$ gcc -v\r\nConfigured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/usr/include/c++/4.2.1\r\nApple LLVM version 6.0 (clang-600.0.57) (based on LLVM 3.5svn)\r\nTarget: x86_64-apple-darwin14.1.0\r\nThread model: posix\r\n*/\r\n```\r\n\r\nAnd reading the symbols using the following go code: \r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"debug/macho\"\r\n    \"fmt\"\r\n    \"os\"\r\n)\r\n\r\nfunc main(){\r\n\r\n    for _, path := range os.Args[1:] {\r\n\r\n        file, err := macho.Open(path)\r\n        if err != nil {\r\n            fmt.Printf(\"error: could not open macho file: %v - %v\\n\", path, err)\r\n            os.Exit(1)\r\n        }\r\n        defer file.Close()\r\n\r\n        fmt.Printf(\"Dysymtab for %v\\n\", path)\r\n        for _, index := range file.Dysymtab.IndirectSyms {\r\n            if index \u003c uint32(len(file.Symtab.Syms)) {\r\n                fmt.Println(file.Symtab.Syms[index].Name)\r\n            } else {\r\n                fmt.Printf(\"wtf? \u003e\u003e\u003e\u003e\u003e\u003e %v, max = %v\\n\", index, len(file.Symtab.Syms))\r\n            }\r\n        }\r\n\r\n    }\r\n}\r\n```\r\n\r\nTo not see this in the output: \r\n\r\n```\r\n$ go run testcase.go a.out  | grep wtf\r\nwtf? \u003e\u003e\u003e\u003e\u003e\u003e 1073741824, max = 4\r\n```\r\n\r\nThis looks suspect to me. Although I may be using the library incorrectly.",
+	"user": {
+		"login": "gcmurphy",
+		"id": 222833,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-03-16T23:32:17Z",
+	"created_at": "2015-03-16T18:05:15Z",
+	"updated_at": "2016-06-25T02:03:24Z"
+}

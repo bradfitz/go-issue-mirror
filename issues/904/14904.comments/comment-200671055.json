@@ -1,0 +1,12 @@
+{
+	"id": 200671055,
+	"body": "Thanks Keith. I'll make that change now as a workaround.\n\nOn Thu, Mar 24, 2016 at 4:07 PM, Keith Randall \u003cnotifications@github.com\u003e\nwrote:\n\n\u003e Current suspect:\n\u003e github.com/juju/juju/apiserver/client/status.go:(*statusContext).processService\n\u003e At the very end, it does \"return processStatus\". But processStatus is also\n\u003e a named return value. I think this is confusing SSA, as at the end of the\n\u003e function it generates:\n\u003e\n\u003e v472    23075 (status.go:658)   VARDEF  \"\".processedStatus+16(FP)\n\u003e v265    23076 (status.go:658)   MOVQ    \"\".processedStatus+16(FP), AX\n\u003e v267    23077 (status.go:658)   MOVQ    AX, \"\".processedStatus+16(FP)\n\u003e v161    23078 (status.go:658)   LEAQ    \"\".processedStatus+24(FP), DI\n\u003e v157    23079 (status.go:658)   MOVQ    DI, SI\n\u003e v473    23080 (status.go:658)   DUFFCOPY    $658\n\u003e b57 23081 (status.go:658)   RET\n\u003e\n\u003e It's basically doing processedStatus = processedStatus using DUFFCOPY, but\n\u003e the VARDEF at the start tells the live variable analysis that\n\u003e processedStatus is dead before this code. Thus the GC won't scan any\n\u003e pointers in this structure, and it contains (among other things) maps.\n\u003e\n\u003e So named return values being copied to themselves in a return statement\n\u003e may be buggy. I'll try to make a small repro and a fix tomorrow.\n\u003e\n\u003e Changing \"return processedStatus\" to \"return\" fixed everything. Someone\n\u003e might want to do that to the juju sources, as it is better style and\n\u003e matches the other returns in the function. But I'll definitely fix this on\n\u003e the SSA end, we should generate correct code regardless.\n\u003e\n\u003e —\n\u003e You are receiving this because you authored the thread.\n\u003e Reply to this email directly or view it on GitHub\n\u003e \u003chttps://github.com/golang/go/issues/14904#issuecomment-200667547\u003e\n\u003e\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-24T05:16:12Z",
+	"updated_at": "2016-03-24T05:16:12Z"
+}

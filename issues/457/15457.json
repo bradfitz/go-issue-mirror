@@ -1,0 +1,27 @@
+{
+	"id": 151262176,
+	"number": 15457,
+	"state": "open",
+	"title": "cmd/go: `go env` discards all but the first word of $CC",
+	"body": "1. What version of Go are you using (`go version`)?\r\n\r\ngo1.6.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux/386\r\n\r\nIf you try to stuff extra arguments into the CC environment variable, `go env` will throw them away (here, `bar` is discarded):\r\n```\r\ngo1.6.2$ CC=\"foo bar\" ./bin/go env\r\n...\r\nCC=\"foo\"\r\nGOGCCFLAGS=\"-fPIC -m32 -pthread -fmessage-length=0\"\r\n```\r\nEarlier releases, for example 1.4.3, also remove arguments from CC, but keep them in a separate variable, GOGCCFLAGS:\r\n```\r\ngo1.4.3$ $ CC=\"foo bar\" ./bin/go env\r\n...\r\nCC=\"foo\"\r\nGOGCCFLAGS=\"bar -fPIC -m32 -pthread -fmessage-length=0\"\r\n```\r\nThe code responsible for this shuffling lies in the `mkEnv` function in env.go:\r\nhttps://github.com/golang/go/blob/go1.4.3/src/cmd/go/env.go#L55-L56\r\n```\r\n\t\tenv = append(env, envVar{\"CC\", cmd[0]})\r\n\t\tenv = append(env, envVar{\"GOGCCFLAGS\", strings.Join(cmd[3:], \" \")})\r\n```\r\n(Indices 1 and 2 are skipped because they [are inserted](https://github.com/golang/go/blob/go1.4.3/src/cmd/go/build.go#L2080-L2081) by `ccompilerCmd` in build.go.) Note that `mkEnv` ignores any previous value of GOGCCFLAGS.\r\n\r\nb38fa898c682d6d3f709e4a84710938de5b29d2d is the commit that caused the behvior to change, by [calling `mkEnv` an extra time](https://github.com/golang/go/blob/b38fa898c682d6d3f709e4a84710938de5b29d2d/src/cmd/go/main.go#L155-L162) and overwriting environment variables with its output. Since one application of `mkEnv` does this:\r\n```\r\nCC ← CC[0]\r\nGOGCCFLAGS ← CC[1:] -fPIC -m32 -pthread -fmessage-length=0\r\n```\r\ntwo applications have the effect of discarding CC[1:]:\r\n```\r\nCC ← CC[0]\r\nGOGCCFLAGS ← -fPIC -m32 -pthread -fmessage-length=0\r\n```\r\n\r\nWhy this matters to me: I'm cross-compiling using a specially installed GCC that needs extra -I and -L flags to find its files. (Specifically, I'm doing a cross build from linux to darwin for Tor Browser; [see here](https://gitweb.torproject.org/builders/tor-browser-bundle.git/tree/gitian/descriptors/mac/gitian-pluggable-transports.yml?id=tbb-5.5.5-build3#n76) for details.) I'm running this command, which worked with 1.4.3:\r\n```\r\nCGO_ENABLED=1 CC_FOR_TARGET=\"$CC $CFLAGS $LDFLAGS\" CC= CFLAGS= LDFLAGS= ./make.bash\r\n```\r\n(`$CC` is the cross compiler.) But because make.bash [calls `dist env`](https://github.com/golang/go/blob/go1.6.2/src/make.bash#L129), the necessary `$CFLAGS and $LDFLAGS` disappear and the build fails somewhere in cgo because the compiler cannot find errno.h.\r\n\r\n#13377 is a related issue, particularly [this comment](https://github.com/golang/go/issues/13377#issuecomment-159432447) that talks about \"only using the first word of $CC.\" As a workaround I'm using a suggestion from that ticket: I'm making a shell script called cc-for-target that contains `exec $CC $CFLAGS $LDFLAGS \"$@\"` and invoking make.bash with `CC_FOR_TARGET=cc-for-target`.\r\n",
+	"user": {
+		"login": "AxbB36",
+		"id": 18689121,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"created_at": "2016-04-26T23:22:56Z",
+	"updated_at": "2016-08-08T20:21:35Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

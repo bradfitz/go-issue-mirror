@@ -1,0 +1,12 @@
+{
+	"id": 123850227,
+	"body": "You have two choices. One is to call syscall.Umask(0077) before creating the socket. This will affect your entire process and will make all created files, including the socket, disable the lower bits, so that the socket will be mode 0700 instead of 0777. The other is to call os.Chmod after creating the socket. This way there would still be a window where the socket has the 0777 mode, so if you are worried about attackers and not just appeasing nginx then that might not be preferable.\n\nThis program demonstrates both:\n\n\tpackage main\n\t\n\timport (\n\t\t\"log\"\n\t\t\"net\"\n\t\t\"os\"\n\t\t\"syscall\"\n\t)\n\t\n\tfunc main() {\n\t\tsyscall.Umask(0077)\n\t\tl, err := net.Listen(\"unix\", \"/tmp/asdf\")\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tcheck()\n\t\tif err := os.Chmod(\"/tmp/asdf\", 0700); err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tcheck()\n\t\tl.Close()\n\t}\n\t\n\tfunc check() {\n\t\tfi, err := os.Stat(\"/tmp/asdf\")\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tlog.Println(\"mode\", fi.Mode())\n\t}\n\nYou only need either the syscall.Umask or the os.Chmod, not both.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-22T20:18:09Z",
+	"updated_at": "2015-07-22T20:18:09Z"
+}

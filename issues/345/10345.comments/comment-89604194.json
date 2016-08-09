@@ -1,0 +1,12 @@
+{
+	"id": 89604194,
+	"body": "I don't think @dvyukov is suggesting a change to the GC bit maps. I suspect it will be pretty easy to bring this back for data and bss. Just count each 4K block (or whatever) as a separate job for the markroots parfor. The right part of the bitmap is easy to find in gcdatamask/gcbssmask.\r\n\r\nFor heap objects, I think we don't actually have to change the work buffer representation (which is good; at first I was worried this would halve their space efficiency). If we grey an object under the oblet size threshold (4K or whatever), just add its base pointer as we do now. If we grey a larger object, queue pointers to the beginning of each oblet. When we pull an oblet off the work buffer, compute its size as min(4K, object end - oblet pointer) and scan that much.\r\n\r\nThis will also help with mutator assists in my pacing scheme. Currently they can get unlucky and pull a large object to scan when they're just a little behind on their budget.\r\n\r\nI'm self-assigning this so that it's assigned to someone, but other people should feel free to take it.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-04T15:53:26Z",
+	"updated_at": "2015-04-04T15:53:26Z"
+}

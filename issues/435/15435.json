@@ -1,0 +1,17 @@
+{
+	"id": 150912199,
+	"number": 15435,
+	"state": "closed",
+	"title": "proposal: change type of syscall.EpollEvent.Pad from int32 to [8]byte",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo1.6\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux 64bit\r\n\r\n3. What did you do?\r\n\r\nepoll_event struct is defined like this in c:\r\n           \r\n           typedef union epoll_data {\r\n               void    *ptr;\r\n               int      fd;\r\n               uint32_t u32;\r\n               uint64_t u64;\r\n           } epoll_data_t;\r\n\r\n           struct epoll_event {\r\n               uint32_t     events;    /* Epoll events */\r\n               epoll_data_t data;      /* User data variable */\r\n           };\r\nmember ptr is used to save the pointer, which points to some context data.\r\n\r\nin the go1.6 runtime package (runtime/defs_linux_amd64.go), i can also find the struct member for saving the context pointer\r\n           \r\n           type epollevent struct {\r\n                  events uint32\r\n                  data   [8]byte // unaligned uintptr\r\n           }\r\nbut when it comes to syscall.EpollEvent (syscall/ztypes_linux_amd64.go) definition :\r\n          \r\n           type EpollEvent struct {\r\n                  Events uint32\r\n                  Fd     int32\r\n                  Pad    int32\r\n           }\r\ni have no room for saving a pointer, Pad only has 4 bytes.\r\n",
+	"user": {
+		"login": "leonxu0",
+		"id": 4651679,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-04-25T16:27:39Z",
+	"created_at": "2016-04-25T16:07:56Z",
+	"updated_at": "2016-04-25T20:43:19Z"
+}

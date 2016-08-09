@@ -1,0 +1,30 @@
+{
+	"id": 159996100,
+	"number": 16051,
+	"state": "open",
+	"title": "proposal: a faster C-call mechanism for non-blocking C functions",
+	"body": "I'm not sure this is the place to submit this, the golang-dev list might also have been a good candidate.\r\n\r\nThe cgo FFI mechanism is very general, and makes some pessimistic assumptions about the function being called - specifically it has to handle the case where the called function may block, e.g. in a blocking syscall. Having to handle the worst case adds a lot of overhead to each call into C, including just calling a math function or other small function that does no syscalls or does not block.\r\n\r\nThe problem is for well-behaved calls that neither block nor call back into Go, if the called function does not do much work then the cgo overhead dominates the runtime and causes poor performance. This is a well known limitation (and often complained about on golang-nuts and elsewhere, google \"cgo overhead\" returns about 45,000 hits.) Some of this can be mitigated by making the C function do more work, e.g. exporting a chunkier vs chattier API - but that's not always feasible or desirable.\r\n\r\nFor some classes of problems this overhead is just not admissible, and people resort to doing bad things like calling C from assembly on a Go stack, which just isn't built for it. The Go runtime itself finds the C call overhead too much at times, and Dmitry Vyukov had to work around it when integrating the TSAN race checker with Go. A look at https://golang.org/src/runtime/race_amd64.s?m=text shows a custom C call mechanism that just puts the arguments into the right registers, switches stacks from the Go stack to the C stack, and calls the TSAN runtime function.\r\n\r\nSince this seems to be a requirement that cannot always be worked around, and it's a requirement of both Go users and the Go runtime itself, and the workarounds are difficult, fraught, and fragile - I would like to see a solution for this in Go itself. Such a solution should very closely mirror the functionality in race_amd64.s, ideally because that approach is about as low overhead as possible, and because it can be used to replace that code. It could take any form, but since it needs to be backwards compatible and ideally one does not introduce new syntax - something like an attribute on the function declaration, or a cgo directive would be nice. It is up to the programmer to ensure that C functions called in this way do not block, and don't call back into Go.\r\n```\r\n\r\ne.g. __attribute__ ((nonblocking)) in the declaration,\r\nor // #cgo nonblocking directly preceeding the callsite or the declaration\r\n```\r\n\r\nIs this a reasonable feature for a future version of Go?",
+	"user": {
+		"login": "eloff",
+		"id": 27574,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 30,
+	"created_at": "2016-06-13T16:51:09Z",
+	"updated_at": "2016-08-02T18:50:14Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 5,
+		"+1": 5
+	}
+}

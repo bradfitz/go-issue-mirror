@@ -1,0 +1,12 @@
+{
+	"id": 66066320,
+	"body": "\u003ca id=\"c16\"\u003e\u003c/a\u003eComment 16:\n\n\u003cpre\u003eThis can be seen as a compiler optimization, a specialized form of escape analysis. \nGiven a []byte b, a map lookup of string(b) can use the bytes directly without making a\ncopy.  In general, we can do this optimization for any function call where the compiler\nknows the complete code of the function (the function does not make any calls to unknown\nfunctions) and where the string does not escape the function (this is not something we\nnormally check for) and where the function does not execute any synchronization\noperations (also something we do not normally check for, but given the lack of function\ncalls this means no channel operations).  Map lookup is a special case of a function\ncall where these attributes are known.\n\nWe could also view it as a language extension, but I don't think that is a good idea. \nIt would be similar to the way copy/append accept string as well as []byte, but we could\nonly permit it for a map lookup, not for a map insertion.\n\nI agree that this optimization doesn't introduce any races that were not already\npresent, but we still need to consider what should happen for a racy program.  Right now\na racy program will yield an unpredictable string, but the code to convert from []byte\nto string is quite simple and will not crash or introduce memory corruption.  We would\nneed to preserve that property.  Looking at the strhash and strequal functions, I think\nwe would be OK.\n\nSo I don't see any strong objections to this optimization, though of course somebody\nwould have to actually do the work.\u003c/pre\u003e\n\n_Labels changed: removed **priority-later**._\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-05T17:10:25Z",
+	"updated_at": "2014-12-08T10:18:25Z"
+}

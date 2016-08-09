@@ -1,0 +1,12 @@
+{
+	"id": 163827804,
+	"body": "I sent [CL 17723](https://go-review.googlesource.com/17723) with documentation of the current behavior, but I think I found a serious enough problem to warrant postponing any changes to Scanf until Go 1.7. Specifically, \"X\\n Y\" does not match \"X\\n Y\" (the same string). The fundamental issue (and a source of much confusion for me until I read the code) is that in the input format, any newline surrounded by zero or more space characters (that is, any section of input format matching `/ *\\n */`) corresponds to consuming `/ *\\n/` from the input. Note the trailing space-star in the first regexp but not the second: \" \\n \" in the format is the same as \"\\n\"; both can consume \" \\n\" from the input but not \" \\n \".\r\n\r\nLess serious but still odd, \"X %c\" does not match \"X \\n\" (reading '\\n' into the %c argument) while \"X%c\" does match \"X\\n\".\r\n\r\nI think we should roll back the one newline-related change from the Go 1.6 cycle and revisit the whole big picture for Go 1.7. If we're going to break user code, we might as well do it just once.\r\n\r\nI sent [CL 17724](https://go-review.googlesource.com/17724) for the rollback of Go 1.6's newline change.\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-11T03:33:27Z",
+	"updated_at": "2015-12-11T03:33:27Z"
+}

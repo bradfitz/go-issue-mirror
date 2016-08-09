@@ -1,0 +1,28 @@
+{
+	"id": 130067924,
+	"number": 14166,
+	"state": "closed",
+	"title": "text/scanner: default error to os.Stderr should mention \"text/scanner\"",
+	"body": "\r\nWhat version of Go are you using (go version)?\r\ngo version go1.5.2 darwin/amd64\r\n\r\nWhat did you do?\r\n\r\nRan golang text/scanner Scanner on a file.\r\n\r\nGOT:\r\nMy program was outputting odd error messages to Stderr.\r\n\r\n```\r\n87:17: illegal char escape\r\n```\r\n\r\nBut as `text/scanner` is a small part of the whole program it wasn't obvious what this message was or where it was coming from.  I was reviewing a lot of code until i traced all the back to \r\n\r\nhttps://golang.org/src/text/scanner/scanner.go?s=14356:14385#L531\r\n\r\n```\r\n   326\tfunc (s *Scanner) error(msg string) {\r\n   327\t\ts.ErrorCount++\r\n   328\t\tif s.Error != nil {\r\n   329\t\t\ts.Error(s, msg)\r\n   330\t\t\treturn\r\n   331\t\t}\r\n   332\t\tpos := s.Position\r\n   333\t\tif !pos.IsValid() {\r\n   334\t\t\tpos = s.Pos()\r\n   335\t\t}\r\n   336\t\tfmt.Fprintf(os.Stderr, \"%s: %s\\n\", pos, msg)  // \u003c----HERE\r\n   337\t}\r\n```\r\n\r\n(The error it self isn't the problem and was correct, it's just the delivery that is the issue).\r\n\r\nWANT:\r\n\r\nIt would be nice to make error output configurable somehow.  For my needs, just having a `io.Writer` (default to `os.Stderr`) that i can set to `ioutil.Discard` is all I need  but I'm sure others will have more advanced requirements.\r\n\r\nthanks all!\r\n\r\nnickg",
+	"user": {
+		"login": "client9",
+		"id": 217179,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-02-18T19:47:11Z",
+	"created_at": "2016-01-31T03:00:03Z",
+	"updated_at": "2016-02-18T19:47:11Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

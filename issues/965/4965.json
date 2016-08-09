@@ -1,0 +1,27 @@
+{
+	"id": 51282901,
+	"number": 4965,
+	"state": "closed",
+	"title": "math/rand: Float32() and Float64() are not uniformly distributed",
+	"body": "by **arnehormann**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nSee \u003ca href=\"http://play.golang.org/p/uZw1CbxcMx\"\u003ehttp://play.golang.org/p/uZw1CbxcMx\u003c/a\u003e\nIt uses a constant source (returns seed, sets seed before each call to Float64) to\ninspect the distance between uint64 seeds and the generated float64 values.\n\n\nWhat is the expected output?\n\nThe distance between all adjacent generated float64 values in range [0,1) should be the\nsame and two adjacent uint64 should not be mapped to the same float64.\nThe output of the referenced program should not print anything below the line\n\u0026quot;=======\u0026quot;\n\n\nWhat do you see instead?\n\nIntent: illustrate problems with \u003ca href=\"http://golang.org/src/pkg/math/rand/rand.go?#L92\"\u003ehttp://golang.org/src/pkg/math/rand/rand.go?#L92\u003c/a\u003e\nf0\t(0) :=\t0p-1074\t(0)\nf1\t(1) :=\t4503599627370496p-115\t(1.0842021724855044e-19)\nhigh\t(9223372036854775295) :=\t9007199254740991p-53\t(0.9999999999999999)\nhigher\t(9223372036854775296) :=\t4503599627370496p-52\t(1)\nmax\t(9223372036854775807) :=\t4503599627370496p-52\t(1)\n=======\nmax == higher, but the source uint64 difference is 511\n - the mapping uint63 to float64 has 'holes' for adjacent numbers\ndistances between adjacent float64s are different\n - the largest difference is 8998403161718784p-106 (1.109138822452671e-16)\n   which is more than f1 - f0: 4503599627370496p-115 (1.0842021724855044e-19)\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\nplay.golang.org and locally 6g\n\n\nWhich operating system are you using?\n\nOS X Mountain Lion\n\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +b0c8d47acfc5 Sat Mar 02 10:41:53 2013 +0400 darwin/amd64\n\n\nPlease provide any additional information below.\n\nThe calculation used in rand.Float64 (and Float32) uses 63 (31) bits of the passed\ninteger although the mantissa is only 52 (23) bits long. The binary representation is\nnot able to contain all possible values and creates a \u0026quot;kind of\u0026quot; logarithmic\ndistribution with an increasing amount of ints mapped to the same float the nearer it\ngets to 1.0. Not having an uniform distribution and this bias probably also influence\nthe creation of numbers in different (e.g. normal) distributions.\n\nI propose using one of these ways:\n\neither create a number in [1,2) (which are always in uniform distribution) and subtract\n1:\n\nfunc UniformFloat64(b uint64) float64 {\n\tconst range_1_2Exp = 0x3ff0000000000000\n\tconst mantissaMask = 0x000fffffffffffff\n\treturn math.Float64frombits(range_1_2Exp|(mantissaMask\u0026amp;b)) - 1.0\n}\n\nor create the smallest legal \u0026quot;step\u0026quot; and multiply it with a number masked to be\nin range [0, max mantissa]:\n\nfunc UniformFloat64(b uint64) float64 {\n\tconst mantissaMask = 0x000fffffffffffff\n\tstep := math.Float64frombits(0x3cb0000000000000)\n\treturn step * float64(mantissaMask\u0026amp;b)\n}\n\nBoth create the same float for the same input, I didn't benchmark them yet.\n\nI have some tests and code ready if you are interested, I only need to know if the\nexisting functions can safely be replaced or there may be some weird dependency on their\nbehavior.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:26:26Z",
+	"created_at": "2013-03-02T17:47:34Z",
+	"updated_at": "2016-06-24T22:34:43Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

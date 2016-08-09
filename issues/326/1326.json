@@ -1,0 +1,28 @@
+{
+	"id": 51277654,
+	"number": 1326,
+	"state": "closed",
+	"title": "field tags crash ast.Walk",
+	"body": "by **rulERR911**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nPut attached test.go and testCode.go to one folder. Compile and run test.go file.\n\nIt parses testCode.go with parser.ParseFile and walks through the returned tree,\nprinting address, type and position of every node.\n\nWhat is the expected output?\nprogram prints all nodes with no error \n\nWhat do you see instead?\n0x12e780 *ast.File testCode.go:1:1 \n0x13b780 *ast.Ident testCode.go:1:9 \n0x1299b0 *ast.GenDecl testCode.go:3:1 \n0x13b680 *ast.TypeSpec testCode.go:3:6 \n0x13b760 *ast.Ident testCode.go:3:6 \n0x13b6c0 *ast.StructType testCode.go:3:8 \n0x13b6e0 *ast.Field testCode.go:4:2 \n0x13b740 *ast.Ident testCode.go:4:2 \n0x13b700 *ast.Ident testCode.go:4:4 \n0x0 *ast.BasicLit panic: runtime error: invalid memory address or nil pointer dereference\n\npanic PC=0x15ca34\nruntime.panic+0xa9 /home/rulerr/go/src/pkg/runtime/proc.c:1028\n\truntime.panic(0x80a16f4, 0x110aa0)\nruntime.panicstring+0x61 /home/rulerr/go/src/pkg/runtime/runtime.c:86\n\truntime.panicstring(0x817093f, 0x1)\nruntime.sigpanic+0x11b /home/rulerr/go/src/pkg/runtime/linux/thread.c:286\n\truntime.sigpanic()\ngo/ast.*BasicLit·Pos+0x2d /home/rulerr/go/src/pkg/go/ast/ast.go:328\n\tgo/ast.*BasicLit·Pos(0x0, 0x110a98, 0x110a88)\nmain.*posVisitor·Visit+0x184 /home/rulerr/Desktop/test.go:16\n\tmain.*posVisitor·Visit(0x110878, 0x80a364c, 0x0, 0x13b620, 0x110878, ...)\ngo/ast.Walk+0x54 /home/rulerr/go/src/pkg/go/ast/walk.go:51\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a364c, 0x0)\ngo/ast.Walk+0x70a /home/rulerr/go/src/pkg/go/ast/walk.go:72\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a384c, 0x13b6e0)\ngo/ast.Walk+0x1196 /home/rulerr/go/src/pkg/go/ast/walk.go:77\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a386c, 0x12e7c0)\ngo/ast.Walk+0x2724 /home/rulerr/go/src/pkg/go/ast/walk.go:138\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a3bcc, 0x13b6c0)\ngo/ast.Walk+0x299d /home/rulerr/go/src/pkg/go/ast/walk.go:260\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a3c6c, 0x13b680)\ngo/ast.Walk+0x1c62 /home/rulerr/go/src/pkg/go/ast/walk.go:269\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a392c, 0x1299b0)\ngo/ast.Walk+0xa5d /home/rulerr/go/src/pkg/go/ast/walk.go:314\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a690c, 0x134360)\ngo/ast.Walk+0x2420 /home/rulerr/go/src/pkg/go/ast/walk.go:287\n\tgo/ast.Walk(0x13b620, 0x110878, 0x80a388c, 0x12e780)\nmain.main+0xa8 /home/rulerr/Desktop/test.go:24\n\tmain.main()\nruntime.mainstart+0xf /home/rulerr/go/src/pkg/runtime/386/asm.s:84\n\truntime.mainstart()\nruntime.goexit /home/rulerr/go/src/pkg/runtime/proc.c:146\n\truntime.goexit()\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nUbuntu 10.04 LTS\n\nWhich revision are you using?  (hg identify)\nf7e692dc29b0 release.2010-12-02/release\n\nPlease provide any additional information below.\nast.Walk source: \u003ca href=\"http://golang.org/src/pkg/go/ast/walk.go#L47\"\u003ehttp://golang.org/src/pkg/go/ast/walk.go#L47\u003c/a\u003e\n\nAt line 72 of ast/walk.go ast.Walk calls itself for Tag property of *ast.Field node. And\nif we look one entry higher in stack trace, we'll notice that the tag property passed\nnil check (line 48) and ast.Walk called v.Visit at line 51.\n\nBut the output says that Tag property was nil:\n0x0 *ast.BasicLit\n\nSo we have a nil node, for which Visit function was called. It violates the statement\nfrom go/ast package doc:\n\u0026quot;Walk traverses an AST in depth-first order: If node != nil, it invokes\nv.Visit(node)\u0026quot;\n\u003ca href=\"http://golang.org/pkg/go/ast/#Walk\"\u003ehttp://golang.org/pkg/go/ast/#Walk\u003c/a\u003e\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1326/0/test.go\"\u003etest.go\u003c/a\u003e (411 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1326/0/testCode.go\"\u003etestCode.go\u003c/a\u003e (38 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:07:49Z",
+	"created_at": "2010-12-07T16:04:02Z",
+	"updated_at": "2016-06-24T19:22:56Z"
+}

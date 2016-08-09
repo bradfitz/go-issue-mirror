@@ -1,0 +1,21 @@
+{
+	"id": 90925595,
+	"number": 11394,
+	"state": "open",
+	"title": "cmd/vet: flags composite literals of slice types from other packages as using unkeyed fields",
+	"body": "My Go version is `go version go1.4.2 linux/amd64`.\r\n\r\nI've got the following situation:\r\n\r\n```\r\n$ for f in `find unkeyed-example -type f` ; do printf \"\\n=== $f ===\\n\" ; cat $f ; done\r\n\r\n=== unkeyed-example/slice/slice.go ===\r\npackage slice\r\n\r\ntype Int []int\r\n\r\n=== unkeyed-example/slice/slice_test.go ===\r\npackage slice\r\n\r\nimport \"testing\"\r\n\r\nfunc TestIntSlice(t *testing.T) {\r\n        value := 42\r\n\r\n        data := Int{\r\n                value,\r\n        }\r\n\r\n        t.Logf(\"data = %#v\\n\", data)\r\n}\r\n\r\n=== unkeyed-example/ex2/main.go ===\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"unkeyed-example/slice\"\r\n)\r\n\r\nfunc main() {\r\n        value := 42\r\n\r\n        data := slice.Int{\r\n                0: value,\r\n        }\r\n\r\n        fmt.Printf(\"data = %#v\\n\", data)\r\n}\r\n\r\n=== unkeyed-example/ex1/main.go ===\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"unkeyed-example/slice\"\r\n)\r\n\r\nfunc main() {\r\n        value := 42\r\n\r\n        data := slice.Int{\r\n                value,\r\n        }\r\n\r\n        fmt.Printf(\"data = %#v\\n\", data)\r\n}\r\n```\r\n\r\nWhen running `go vet` in `unkeyed-example/slice`, I get no error.\r\n\r\nWhen running `go vet` in `unkeyed-example/ex1`, I get the following output: `main.go:11: slice.Int composite literal uses unkeyed fields`. In this case, I expect `go vet` to treat the literal `slice.Int{ value }` the same as `Int{ value }`, and thus, not to indicate an error.\r\n\r\nWhen running `go vet` in `unkeyed-example/ex2`, I again get no error. This is meant as validation that `go vet`indeed expects an explicit key and will show no error when provided with one (in this case, the key is an index to the slice).\r\n\r\nMy general expectation here is that `go vet` would behave consistently, no matter whether a literal refers to a slice type within the same package or to a slice type from another package.",
+	"user": {
+		"login": "akrennmair",
+		"id": 41766,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"created_at": "2015-06-25T10:38:29Z",
+	"updated_at": "2015-11-05T02:00:00Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

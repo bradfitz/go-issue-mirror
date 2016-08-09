@@ -1,0 +1,27 @@
+{
+	"id": 51279239,
+	"number": 2458,
+	"state": "closed",
+	"title": "net: document that File method is ONLY for passing to children",
+	"body": "by **sebastien.paolacci**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull\u0026quot;, \u0026quot;hg update default\u0026quot;, rebuild, and\nretry\nwhat you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n1. Ask for an os.File representation of a timeout-protected connection\n2. Issue a timeout-able framework call (e.g con.{accept, read, write})\n3. Wait.\n\nWhat is the expected output?\nEffective timeout: \u0026quot;resource temporarily unavailable\u0026quot;.\n\nWhat do you see instead?\nCall will block forever.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nlinux/amd64\n\nWhich revision are you using?  (hg identify)\nr60.3, tip.\n\nPlease provide any additional information below.\nDiscussed on golang-nuts\n(\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/c88f08fa652497da#)\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/c88f08fa652497da#)\u003c/a\u003e,\nissue filled for the record.\n\npackage main \n\nimport ( \n        \u0026quot;flag\u0026quot; \n        \u0026quot;net\u0026quot; \n        \u0026quot;fmt\u0026quot; \n        \u0026quot;syscall\u0026quot; \n) \n\nconst TIMEOUT = 1e8 \n\nfunc main() { \n        unblock := flag.Bool(\u0026quot;unblock\u0026quot;, false, \u0026quot;revert socket blocking mode\u0026quot;) \n        flag.Parse() \n\n        addr, _ := net.ResolveTCPAddr(\u0026quot;tcp\u0026quot;, \u0026quot;12345\u0026quot;) \n        l, err := net.ListenTCP(\u0026quot;tcp\u0026quot;, addr) \n        if err != nil { \n                panic(err) \n        } \n        if err := l.SetTimeout(TIMEOUT); err != nil { \n                panic(err) \n        } \n\n        f, _ := l.File() \n        fmt.Printf(\u0026quot;observing '%v'\\n\u0026quot;, f) \n\n        if *unblock { \n                syscall.SetNonblock(f.Fd(), true) \n        } \n\n        fmt.Printf(\u0026quot;should timeout in %v seconds...\\n\u0026quot;, float64(TIMEOUT)/1e9) \n        con, err := l.Accept() // Will hang forever if the '-unblock' flag is not set.\n        fmt.Println(con, err) \n}\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2458/0/timeout.patch\"\u003etimeout.patch\u003c/a\u003e (4183 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:13:06Z",
+	"created_at": "2011-11-13T10:18:45Z",
+	"updated_at": "2016-06-24T21:20:34Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

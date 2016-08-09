@@ -1,0 +1,28 @@
+{
+	"id": 148811805,
+	"number": 15329,
+	"state": "closed",
+	"title": "cmd/compile: mishandling multiple reflect.Value uintptr=\u003eunsafe.Pointer conversions in single statement",
+	"body": "[I thought I've pointed this out before, but I can't find the issue for it now, so filing again.]\r\n\r\n[tip.golang.org/pkg/unsafe](https://tip.golang.org/pkg/unsafe) says:\r\n\r\n\u003e (5) Conversion of the result of reflect.Value.Pointer or reflect.Value.UnsafeAddr from uintptr to Pointer.\r\n\u003e\r\n\u003e Package reflect's Value methods named Pointer and UnsafeAddr return type uintptr instead of unsafe.Pointer to keep callers from changing the result to an arbitrary type without first importing \"unsafe\". However, this means that the result is fragile and must be converted to Pointer immediately after making the call, in the same expression:\r\n\u003e\r\n\u003e     p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))\r\n\u003e\r\n\u003e As in the cases above, it is invalid to store the result before the conversion:\r\n\u003e\r\n\u003e     // INVALID: uintptr cannot be stored in variable\r\n\u003e     // before conversion back to Pointer.\r\n\u003e     u := reflect.ValueOf(new(int)).Pointer()\r\n\u003e     p := (*int)(unsafe.Pointer(u))\r\n\r\nHowever, the Go compiler does not correctly handle this case when there are multiple reflect.Value.Pointer invocations in a single statement.  For example: http://play.golang.org/p/lBhYwaBvSa\r\n\r\nThe problem is that when there are multiple function calls in a statement, cmd/compile rewrites all of the calls into separate statements that spill to temporary stack variables with the same type as their return value.  Conversions are only applied after all of the function calls are evaluated, which leaves the reflect.Value.Pointer return value sitting on the stack for a while, at risk of becoming invalidated.  I.e.,\r\n\r\n    \teq(unsafe.Pointer(f(1).Pointer()), unsafe.Pointer(f(2).Pointer()))\r\n\r\nis compiled as roughly:\r\n\r\n        var autotmp_1 uintptr = f(1).Pointer()\r\n        var autotmp_2 uintptr = f(2).Pointer()\r\n     \teq(unsafe.Pointer(autotmp_1), unsafe.Pointer(autotmp_2))\r\n\r\nI think the least surprising fix would be that we recognize the pattern `unsafe.Pointer(x())` where `x()` has type `uintptr`, and ensure its autotmp variable is type `unsafe.Pointer` instead of `uintptr`.  This should fix both of the test cases in the sample program above.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-05-18T14:01:54Z",
+	"created_at": "2016-04-16T03:11:50Z",
+	"updated_at": "2016-05-18T14:01:54Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51283653,
+	"number": 5455,
+	"state": "closed",
+	"title": "net/http: connection timed out using siege, but not sure why...",
+	"body": "by **chris@altonymous.com**:\n\n\u003cpre\u003eThis issue is found using 1.0.3, 1.1 rc1, \u0026amp; 1.1 rc3\n\nHere's what I'm finding...  I saw the ab issue, but I'm not sure it's related.\n\nI'm using a simple web app..\n\npackage main\n\nimport (\n  \u0026quot;encoding/json\u0026quot;\n  \u0026quot;net/http\u0026quot;\n)\n\n// structs\ntype Reading struct {\n  Id   string `json:\u0026quot;id\u0026quot;`\n  Name string `json:\u0026quot;name\u0026quot;`\n}\n\nfunc main() {\nhttp.HandleFunc(\u0026quot;/machines/\u0026quot;, func(w http.ResponseWriter, r *http.Request) {\n  // Setup readings\n  readings := prepareReadings()\n\n  // return readings\n  w.Write([]byte(readingsToString(readings)))\n})\n  http.ListenAndServe(\u0026quot;:3000\u0026quot;, nil)\n}\n\nfunc readingsToString(readings []Reading) string {\n  data, err := json.Marshal(readings)\n  if err != nil {\n    panic(err)\n  }\n\n  return string(data)\n}\n\nfunc prepareReadings() []Reading {\n  var readings []Reading\n  for i := 1; i \u0026lt;= 1; i++ {\n    readings = append(readings, Reading{Name: \u0026quot;Thing\u0026quot;})\n  }\n\n  return readings\n}\n\n\nAs you can see not much to it.  I've setup multiple load generation servers that are\nseparate from the web server itself.  So in total I have 17 machines.  1 web server, and\n16 load generation servers.  On the load generation servers I am using siege, not ab.  \n\nRunning this command on all servers: siege -v \u0026quot;\u003ca href=\"http://192.168.122.31:3000/machines/\"\u003ehttp://192.168.122.31:3000/machines/\u003c/a\u003e\nPOST\u0026quot; -c 500 -r 100 -b\n\nCauses me to start getting connection timed out messages.\n\nMy file descriptor limits for the web server are pretty high...\n\n[api #3312 -- limits]\nLimit                     Soft Limit           Hard Limit           Units\nMax cpu time              unlimited            unlimited            seconds\nMax file size             unlimited            unlimited            bytes\nMax data size             unlimited            unlimited            bytes\nMax stack size            8388608              unlimited            bytes\nMax core file size        0                    unlimited            bytes\nMax resident set          unlimited            unlimited            bytes\nMax processes             59479                59479                processes\nMax open files            4999999              4999999              files\nMax locked memory         65536                65536                bytes\nMax address space         unlimited            unlimited            bytes\nMax file locks            unlimited            unlimited            locks\nMax pending signals       59479                59479                signals\nMax msgqueue size         819200               819200               bytes\nMax nice priority         0                    0\nMax realtime priority     0                    0\nMax realtime timeout      unlimited            unlimited            us\n\nWhen I use the command 'lsof | wc -l', I dont' get above 1000. Generally in the ~800-850\nrange.\n\nWhen I use the command 'watch --interval=2 'netstat -tuna |grep \u0026quot;SYN_RECV\u0026quot;|wc\n-l'', I am generally in the ~130-250 range.\n\nI'm not sure if this is related, or possibly a problem with siege at this point.\n\nAny advice?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:29:33Z",
+	"created_at": "2013-05-13T20:29:14Z",
+	"updated_at": "2016-06-24T22:39:56Z"
+}

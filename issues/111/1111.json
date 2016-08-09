@@ -1,0 +1,22 @@
+{
+	"id": 51277364,
+	"number": 1111,
+	"state": "closed",
+	"title": "list.Iter() leaks memory",
+	"body": "\u003cpre\u003eThe Go core packages should never leak memory.\n\ncontainer/list.Iter() leaks memory when the channel is not drained.\n\n6g; hg id ec584ae2ad58 tip; GOOS=linux; GOARCH=amd64.\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;container/list\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n)\n\nfunc memleak() {\n\tl := list.New()\n\tfor i := 0; i \u0026lt; 1e3; i++ {\n\t\tl.PushBack(make([]byte, 1e6))\n\t}\n\tfor _ = range l.Iter() {\n\t\tbreak\n\t}\n\tl.Init()\n}\n\nfunc main() {\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\tmemleak()\n\t\truntime.GC()\n\t\tfmt.Println(i, runtime.MemStats.Alloc, runtime.MemStats.TotalAlloc)\n\t}\n}\n\nOutput:\n0 1073420608 1073434744\n1 2146666592 2146680728\n2 3219910416 3219924600\n3 4293155776 4293170008\n4 5366401136 5366415416\n5 6439644960 6439659288\n6 7512890320 7512904696\n7 8586135680 8586150104\n8 9659379504 9659393976\n9 10732624864 10732639384\n\nProblems with a memory-leaking tree structure - golang-nuts\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/371c577eb7a5cad6/72e40e8588341c3c\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/371c577eb7a5cad6/72e40e8588341c3c\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "peterGo",
+		"id": 4561296,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:07:02Z",
+	"created_at": "2010-09-15T21:35:50Z",
+	"updated_at": "2016-06-24T19:20:14Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 236916445,
+	"body": "Yeah, it doesn't like your headers. I've mailed out https://go-review.googlesource.com/25401 to add more logging about why.\r\n\r\nCan you patch that in? The relevant diff is:\r\n\r\n```patch\r\ndiff --git a/http2/frame.go b/http2/frame.go\r\nindex bd50d09..6769907 100644\r\n--- a/http2/frame.go\r\n+++ b/http2/frame.go\r\n@@ -1419,6 +1419,9 @@ func (fr *Framer) readMetaFrame(hf *HeadersFrame) (*MetaHeadersFrame, error) {\r\n        hdec.SetEmitEnabled(true)\r\n        hdec.SetMaxStringLength(fr.maxHeaderStringLen())\r\n        hdec.SetEmitFunc(func(hf hpack.HeaderField) {\r\n+               if VerboseLogs \u0026\u0026 logFrameReads {\r\n+                       log.Printf(\"http2: decoded hpack field %+v\", hf)\r\n+               }\r\n                if !httplex.ValidHeaderFieldValue(hf.Value) {\r\n                        invalid = headerFieldValueError(hf.Value)\r\n                }\r\n@@ -1477,10 +1480,16 @@ func (fr *Framer) readMetaFrame(hf *HeadersFrame) (*MetaHeadersFrame, error) {\r\n        }\r\n        if invalid != nil {\r\n                fr.errDetail = invalid\r\n+               if VerboseLogs {\r\n+                       log.Printf(\"http2: invalid header: %v\", invalid)\r\n+               }\r\n                return nil, StreamError{mh.StreamID, ErrCodeProtocol}\r\n        }\r\n        if err := mh.checkPseudos(); err != nil {\r\n                fr.errDetail = err\r\n+               if VerboseLogs {\r\n+                       log.Printf(\"http2: invalid pseudo headers: %v\", err)\r\n+               }\r\n                return nil, StreamError{mh.StreamID, ErrCodeProtocol}\r\n        }\r\n        return mh, nil\r\n```\r\n\r\nI have an Apache mod_h2 docker container now, though, but without CGI. I'll try and reproduce too.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-02T14:11:50Z",
+	"updated_at": "2016-08-02T14:11:50Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51289140,
+	"number": 9136,
+	"state": "closed",
+	"title": "runtime/race: atomic operations fail on non-heap addresess",
+	"body": "\u003cpre\u003eg% cat ~/x.go\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;sync/atomic\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n\t\u0026quot;unsafe\u0026quot;\n)\n\nfunc main() {\n\tdata, err := syscall.Mmap(-1, 0, 4096, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_ANON)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tprintln(data)\n\tatomic.AddUint32((*uint32)(unsafe.Pointer(\u0026amp;data[0])), 1)\n}\ng% go run ~/x.go\n[4096/4096]0x2208335000\ng% go run -race ~/x.go\n[4096/4096]0xbf2000\nunexpected fault address 0x200002fc8000\nfatal error: fault\n[signal 0xb code=0x1 addr=0x200002fc8000 pc=0xcc623]\n\ngoroutine 1 [running]:\nruntime.gothrow(0x0, 0x0)\n\t/Users/rsc/g/go/src/runtime/panic.go:503 +0x8e fp=0x7fff5fbff4e0 sp=0x7fff5fbff4c8\nexit status 2\ng% \n\nProgram should run under -race the same as it does normally.\nThis worked in Go 1.3, because Go 1.3 implemented these using raceread/raceacquire\ninstead of \u0026quot;fast paths\u0026quot;.\n\nThis is blocking Go 1.4. One possible fix is to restore the old \u0026quot;slow path\u0026quot; Go\n1.3 implementations of these functions.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:49:58Z",
+	"created_at": "2014-11-20T02:29:25Z",
+	"updated_at": "2016-06-25T01:44:41Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

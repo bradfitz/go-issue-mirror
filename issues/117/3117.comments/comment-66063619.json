@@ -1,0 +1,12 @@
+{
+	"id": 66063619,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eI don't think this buys _too_ much, since even with this there'd be no way to \"merge\"\nvalues which happen to be structs/maps. For example:\n\ntype S struct { f, g, h int }\nm := map[int]S{0: S{1,2,3}}\n// I want to update f and g, but not h\nm[0] #= S{f:5, g:4} // some sort of squirrely 'merge' syntax\n\nI'm certainly not proposing such a thing (besides which, it doesn't fit with any other\npart of the language) -- the fact does remain that:\n\nm[0].f = 5\nm[0].g = 4\n\nis shorter, but likely much less efficient even if Ian's offset-set functionality were\nadded, compared to:\n\ns := m[0]\ns.f = 5\ns.g = 4\nm[0] = s\n\nThe performance gap would certainly increase with the number of fields you want to\nupdate.\n\nAll that said, if this feature is particularly desirable, then I think the simpler way\nto handle the semantics is to keep the addressability requirement, and consider some\ncases to be syntactic sugar:\n\nm[0][:] already works for []int and *[...]int. Because values can be moved around in the\nmap implementation, m[0][:] should never work for [...]int.\n\n`m[0].f = 1` already works if the value is a pointer type. Why is that a big deal? If\nyou want less memory fragmentation and better cache lining, use \"2nd order allocators\".\nThe hashmap implementation already uses pointer indirection anyway.\n\nAlternatively, `m[0].f = 1` for 'non addressable' values could be _sugar_ for `tmp :=\nm[0]; tmp.f = 1; m[0] = tmp`. Ian's optimization would be transparent, and\nimplementation dependent. Same for m[0]++\n\nm[0].M() already works for value receivers and pointer values. For the same reason array\nvalues shouldn't be sliceable, pointer receivers on non-pointer values should not be\nallowed.\n\n\u0026m[0].f should be prohibited in all cases where it's currently prohibited.\u003c/pre\u003e",
+	"user": {
+		"login": "extemporalgenome",
+		"id": 536740,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-11T18:50:54Z",
+	"updated_at": "2014-12-08T10:16:13Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 83787777,
+	"body": "\u003e The error philosophy for Go is that errors should be opaque to the caller\r\n\u003e and from what I am hearing you can already do this.\r\n\r\nIt just seems that the errClosing is an oddity; Close()ing the io.ReadWriteCloser seems to be a common use case as it's the only way to \"break\" a goroutine out of a blocking Read().\r\n\r\nBTW: I'm going from [this blog posting](http://blog.golang.org/error-handling-and-go) as \"best practices\" for error handling.  I typically define my own errors as follows:\r\n\r\n```golang\r\nvar ErrMessageResponseTimeout = errors.New(“Message Response Timeout”)\r\n```\r\n\r\nSo I can take action on particular errors.\r\n\r\n\u003e Are there cases currently that you consider an error cause to be temporary\r\n\u003e that you are not able to identify?\r\n\r\nI don't think so, I don't know what a temporary network error would even be?  (I assume the runtime handles things like `EBUSY` or `EINTR`).\r\n\r\n\u003e The case of closing the socket concurrently in the shutdown situation\r\n\u003e should probably be handled with a flag on the retry loop of your program,\r\n\r\nYes, in m design that's how I do it; in response to the error, the reader/writers exit.  If a shutdown is in progress, this has already been signaled and the retry loop ends.  If there's no shutdown flag, the retry loop will create a new connection and restart the reader/writers.\r\n\r\nI guess you can argue that there's always a case when an ErrClosing is intentional and thus should be indicated by some kind of shutdown flag.  But it sure would be nice to be able not to clutter the error log on errClosing without having to do a string match!",
+	"user": {
+		"login": "smithwinston",
+		"id": 1114593,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-19T22:34:18Z",
+	"updated_at": "2015-03-19T22:34:18Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 158919231,
+	"number": 15986,
+	"state": "open",
+	"title": "x/mobile: gomobile's JNI crashes under android x86 with ARM translation",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go version go1.6.2 darwin/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nHost: x86_64\r\n```\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\n```\r\nTarget:\r\n`genymotion android 4.2/4.3(x86) with arm translation 1.1`\r\n\r\n\r\n3. What did you do?\r\n\r\nhttps://play.golang.org/p/zUeejSnLmO\r\n\r\narmeabi-v7a under android x86 with arm translation, the CompareAndSwapUint64 crashes like this:\r\n```\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x38273e98]\r\n```\r\n\r\nI only want to build armeabi-v7a JNIs to reduce my APK's size.\r\nThe crash only occurs under x86 with arm translation. \r\nThe code under armeabi-v7a and x86_64 with arm translation works correctly.\r\n\r\nI made a very dirty hack to make the code work:\r\n```\r\n    1. clean gomobile compiled packages:  rm -rf ~/go/pkg/gomobile/pkg_*\r\n    2. modify /usr/local/go/src/sync/atomic/asm_linux_arm.s\r\n       comment out \"__kuser_cmpxchg64\"\r\n       force arm arch to 7: MOVW\t $7, R0\r\n\r\nTEXT setupAndCallCAS64\u003c\u003e(SB),NOSPLIT,$-4-21\r\n\t//MOVB\truntime·armArch(SB), R0\r\n\tMOVW\t$7, R0\r\n\t// LDREXD, STREXD only present on ARMv6K or higher\r\n\tCMP\t$6, R0\r\n\tMOVW.CS\t$·armCompareAndSwapUint64(SB), R1\r\n\tMOVW.CS\tR1, armCAS64(SB)\r\n\tMOVW.CS\tR1, R15\r\n\r\n\t3. re-init gomobile:  gomobile init\r\n\t4. re-compile library \u0026 app\r\n```\r\n",
+	"user": {
+		"login": "wxiaoguang",
+		"id": 2114189,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-06-07T13:11:52Z",
+	"updated_at": "2016-06-17T18:48:26Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

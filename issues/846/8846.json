@@ -1,0 +1,21 @@
+{
+	"id": 51288773,
+	"number": 8846,
+	"state": "open",
+	"title": "cmd/link: invalid dwarf frames",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Compile test.go \u003ca href=\"http://play.golang.org/p/8G9JQFMlmY\"\u003ehttp://play.golang.org/p/8G9JQFMlmY\u003c/a\u003e\n2. Run lldb test\n3. b main.foo\n4. run\n\nWhat happened?\nlldb segfaulted\n\nWhat should have happened instead?\nno segfault\n\nPlease provide any additional information below.\nIt looks to me like the go compiler is generating invalid dwarf frames. I can't really\nfollow the code in dwarf.c to tell what's going on. Here's what dwarfdump shows:\n\n0x00000014: FDE\n        length: 0x00000020\n   CIE_pointer: 0x00000000\n    start_addr: 0x0000000000002000 main.foo\n    range_size: 0x0000000000000060 (end_addr = 0x0000000000002060)\n  Instructions: 0x0000000000002000: CFA=rsp+8     rip=[rsp]\n                DW_CFA_advance_loc (25)\n                DW_CFA_def_cfa_offset_sf (rax, 8)\n                0x0000000000002019: CFA=rsp+8     rip=[rsp]\n                DW_CFA_advance_loc (55)\n                DW_CFA_def_cfa_offset_sf (rax, 24)\n                0x0000000000002050: CFA=rsp+24    rip=[rsp+16]\n                DW_CFA_advance_loc (16)\n                DW_CFA_def_cfa_offset_sf (rax, 8)\n                DW_CFA_nop\n                DW_CFA_nop\n                DW_CFA_nop\n                0x0000000000002060: CFA=rsp+8     rip=[rsp]\n\nIf I'm reading the dissasembly right, I think the rows should be\n\n0x0000000000002000: CFA=rsp+8     rip=[rsp]\n0x0000000000002019: CFA=rsp+24     rip=[rsp+16]\n0x0000000000002050: CFA=rsp+8    rip=[rsp]\n\nAlso, dwarfdump --verify complains because the row for 0x2060 is beyond the address\nrange of the function.\n\nHere's the disassembled function:\ntest`main.foo at test.go:3:\ntest[0x2000]:  movq   %gs:0x8a0, %rcx\ntest[0x2009]:  cmpq   (%rcx), %rsp\ntest[0x200c]:  ja     0x2015                    ; main.foo + 21 at test.go:3\ntest[0x200e]:  callq  0x21710                   ; runtime.morestack8_noctxt at\nasm_amd64.s:495\ntest[0x2013]:  jmp    0x2000                    ; main.foo at test.go:3\ntest[0x2015]:  subq   $0x10, %rsp\ntest[0x2019]:  leaq   0x2b800, %rbx\ntest[0x2021]:  leaq   (%rsp), %rbp\ntest[0x2025]:  movq   %rbp, %rdi\ntest[0x2028]:  movq   %rbx, %rsi\ntest[0x202b]:  movsq  (%rsi), %es:(%rdi)\ntest[0x202d]:  movsq  (%rsi), %es:(%rdi)\ntest[0x202f]:  callq  0x10770                   ; runtime.printstring at print.c:373\ntest[0x2034]:  callq  0x107e0                   ; runtime.printsp at print.c:384\ntest[0x2039]:  movq   0x18(%rsp), %rbx\ntest[0x203e]:  movq   %rbx, (%rsp)\ntest[0x2042]:  callq  0x10620                   ; runtime.printint at print.c:340\ntest[0x2047]:  callq  0x10820                   ; runtime.printnl at print.c:390\ntest[0x204c]:  addq   $0x10, %rsp\ntest[0x2050]:  retq\ntest[0x2051]:  addb   %al, (%rax)\ntest[0x2053]:  addb   %al, (%rax)\ntest[0x2055]:  addb   %al, (%rax)\ntest[0x2057]:  addb   %al, (%rax)\ntest[0x2059]:  addb   %al, (%rax)\ntest[0x205b]:  addb   %al, (%rax)\ntest[0x205d]:  addb   %al, (%rax)\u003c/pre\u003e",
+	"user": {
+		"login": "ribrdb",
+		"id": 72241,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2014-09-30T23:30:45Z",
+	"updated_at": "2015-06-08T06:26:05Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

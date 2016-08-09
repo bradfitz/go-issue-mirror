@@ -1,0 +1,17 @@
+{
+	"id": 153050882,
+	"number": 15538,
+	"state": "closed",
+	"title": "Goroutines cause deadlocks after `fork()` when run in shared library",
+	"body": "If a shared library is written in Go, loaded using `dlopen` and then forked, Go behavior becomes unstable, often resulting in a deadlock or bad file descriptor error.\r\n\r\nThe `bad file descriptor` error is reproduced in this gist: https://gist.github.com/cavaliercoder/688a3cd7dac20c8edb0c0f6f2851b54d\r\n\r\nComment out the parent pid's call to `(*f)()` on `cbin.c:18` to reproduce the deadlock issue.\r\n\r\nThis issue has been reproduced on Go 1.5 and 1.6 on CentOS 7, Ubuntu 14 and OS X with only x86_64.\r\n\r\n**Stack trace from a hung process:**\r\n```\r\ngoroutine 0 [idle]:\r\nruntime.futex(0xc820022110, 0x0, 0x0, 0x0, 0x7f0c00000000, 0x7f0cad577879, 0x0, 0x0, 0x7f0cad577ae8, 0xc820022110, ...)\r\n        /usr/local/go/src/runtime/sys_linux_amd64.s:288 +0x21\r\nruntime.futexsleep(0xc820022110, 0xc800000000, 0xffffffffffffffff)\r\n        /usr/local/go/src/runtime/os1_linux.go:39 +0x53\r\nruntime.notesleep(0xc820022110)\r\n        /usr/local/go/src/runtime/lock_futex.go:142 +0xa8\r\nruntime.stoplockedm()\r\n        /usr/local/go/src/runtime/proc1.go:1268 +0xb2\r\nruntime.schedule()\r\n        /usr/local/go/src/runtime/proc1.go:1590 +0x72\r\nruntime.park_m(0xc820000600)\r\n        /usr/local/go/src/runtime/proc1.go:1698 +0x191\r\nruntime.mcall(0x7f0cad5c722a)\r\n        /usr/local/go/src/runtime/asm_amd64.s:204 +0x53\r\n```\r\n\r\n```\r\n[pid 12184] munmap(0x7f92d61c5000, 4096) = 0\r\n[pid 12184] semop(655360, {{0, 1, SEM_UNDO}}, 1) = 0\r\n[pid 12184] socket(PF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 7\r\n[pid 12184] setsockopt(7, SOL_SOCKET, SO_BROADCAST, [1], 4) = 0\r\n[pid 12184] connect(7, {sa_family=AF_INET, sin_port=htons(10050), sin_addr=inet_addr(\"0.0.0.0\")}, 16) = -1 EINPROGRESS (Operation now in progress)\r\n[pid 12184] epoll_create1(EPOLL_CLOEXEC) = 8\r\n[pid 12184] epoll_ctl(8, EPOLL_CTL_ADD, 7, {EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, {u32=3491763008, u64=140268533715776}}) = 0\r\n[pid 12184] futex(0x7f92d1064390, FUTEX_WAKE, 1) = 0\r\n[pid 12184] futex(0xc82001e110, FUTEX_WAIT, 0, NULL\r\n```\r\n",
+	"user": {
+		"login": "cavaliercoder",
+		"id": 7133556,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-05-04T16:14:08Z",
+	"created_at": "2016-05-04T16:03:08Z",
+	"updated_at": "2016-05-10T06:01:20Z"
+}

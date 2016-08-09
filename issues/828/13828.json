@@ -1,0 +1,27 @@
+{
+	"id": 125036412,
+	"number": 13828,
+	"state": "open",
+	"title": "crypto/tls: Set{Read,Write}Deadline implementation is surprising/ineffective",
+	"body": "Bear with me, this is a little long-winded, but I'm not sure how I can explain this more succinctly..\r\n\r\nThe current implementation of these functions is to pass them directly through to c.conn. Judging by my understanding of how TLS works, I think this is wrong. Picture a TLS listener socket which has just accepted a client (which won't ever complete a handshake, say, telnet or something).\r\n\r\nGiven:\r\n````\r\ntype aClient struct {\r\n\tconn net.Conn\r\n}\r\n````\r\n\r\nOn accept of an incoming connection, an aClient instance is created (with conn populated from the TLS listener) \u0026 the server is instructed to time out the client after X seconds of not sending anything (through a goroutine, a Timer, and a channel to cancel the goroutine), something like this:\r\n\r\n```\r\nfunc authTimeout(client *aClient, controlChan chan int) {\r\n\tfor {\r\n\t\ttimer := time.NewTimer(time.Second * 5)\r\n\t\tselect {\r\n\t\tcase \u003c-timer.C:\r\n\t\t\tclient.Write(\"You didn't authenticate in time.\")\r\n\t\t\tclient.conn.Close()\r\n\t\t\treturn\r\n\t\tcase \u003c-controlChan:\r\n\t\t\treturn\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nclient.Write's implementation looks something like this:\r\n\r\n```\r\nfunc (this *aClient) Write(format string, args ...interface{}) {\r\n\t// one would expect this to time out...\r\n\tthis.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))\r\n\tthis.conn.Write(fmsg)\r\n\t// but if the client doesn't handshake, it'll hang!\r\n}\r\n```\r\n\r\nauthTimeout's timer will successfully fire, Write will be called, and set the Write deadline, and attempt to write. However, because the connection hasn't been read/written previously, it needs a handshake. And as handshaking requires reading from the underlying socket, this write deadline won't ever actually trigger.\r\n\r\nThis, to me, is incorrect/surprising. I'm not entirely sure what the behaviour of deadlines should be before handshake (maybe take whichever is the lowest? Maybe offer an explicit handshake deadline?) but I'm pretty sure there needs to be _something_ done here even if that something is just a warning in the documentation. This bit me when blindly porting some code over from net/tcp to TLS.\r\n\r\nIt's worth noting, also, that net/http/transport.go tries to work around this very issue, but at least my own attempts to implement a similar pattern (handshake right after accepting, with a goroutine to time out the handshake and Close() on fail) seemed to suffer similar problems with Close() never returning unless I set both a ReadDeadline and WriteDeadline. I didn't (yet) analyze this problem, though.",
+	"user": {
+		"login": "rburchell",
+		"id": 125863,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-01-05T19:44:38Z",
+	"updated_at": "2016-03-11T00:00:14Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

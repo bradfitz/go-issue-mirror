@@ -1,0 +1,31 @@
+{
+	"id": 51277006,
+	"number": 840,
+	"state": "closed",
+	"title": "compilers don't complain about out-of-range characters",
+	"body": "\u003cpre\u003eAccording to the spec, out-of-range characters in character literals are illegal - it is\nnot explicit about what should happen when there are \nout-of-range characters in strings. For the following program:\n\npackage main\n\nfunc main() {\n\t// println('\\777')  // this character is out of range\n\t// These characters/strings should get out of range errors as well:\n\tprintln('\\U0010FFFF', 0x0010FFFF)\n\tprintln('\\U00110000', 0x00110000)  // ERROR 'ilegal'\n\tprintln([]int(\u0026quot;\\U0010FFFF\u0026quot;)[0], 0x0010FFFF)\n\tprintln([]int(\u0026quot;\\U00110000\u0026quot;)[0], 0xFFFD)  // ERROR 'illegal'\n}\n\nthe output is as follows:\n\n6g bug286.go \u0026amp;\u0026amp; 6l bug286.6 \u0026amp;\u0026amp; 6.out\n1114111 1114111\n1114112 1114112\n1114111 1114111\n65533 65533\n\nObservations:\n1) 6g correctly complains about '\\777' being out of range\n2) Since '\\777' is illegal, '\\U00110000' should be illegal as well, however, 6g\ninterprets it as the integer value 0x00110000\n3) The string \u0026quot;\\U00110000\u0026quot; is accepted, but the illegal code point is\nconverted to 0xFFFD - it be should illegal\n4) gccgo accepts complains in one case but not the other.\n5) One could argue that none of the character literal escapes should be illegal since\nthey just represent integer values. However, that only \nmakes things more complicated, and at the moment 6g appears to be doing the opposite.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:06:03Z",
+	"created_at": "2010-06-04T21:51:35Z",
+	"updated_at": "2016-06-24T19:16:44Z"
+}

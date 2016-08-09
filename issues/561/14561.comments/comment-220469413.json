@@ -1,0 +1,16 @@
+{
+	"id": 220469413,
+	"body": "I think this is #10958 (or one of the many similar \"infinite loops are bad\" known issues).  Namely, your [`(*fieldList).NumFields` method](https://github.com/bobziuchkovski/golang-select-repro/blob/master/field_list.go#L45) has an infinite loop if `p != nil \u0026\u0026 p.parent != nil`.\r\n\r\nFYI, here's how I diagnosed this:\r\n\r\n  1. Run your test program until it hung for more than a second.\r\n  2. Use `ps -L -eo pid,tid,class,rtprio,ni,pri,psr,pcpu,stat,wchan:14,comm` to identify the thread that's currently running.\r\n  3. Use `kill -QUIT $threadid` to send SIGQUIT to that thread.  (Sending it to the process generally ends up being received by an idle thread, which precludes getting a backtrace for the running thread.)\r\n  4. Repeat a few times and notice that `main.(*fieldList).NumFields` is always at the top of the backtrace.\r\n\r\nAfter changing `current = p.parent` to `current = current.parent`, the program ran successfully 100 times in a row.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-05-19T22:25:54Z",
+	"updated_at": "2016-05-19T22:26:34Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 64396932,
+	"number": 10253,
+	"state": "closed",
+	"title": "cmd/7g: bad codegen, probably regopt related",
+	"body": "Distilled from one of the failures in go test strings, a small-ish test case looks like this:\r\n\r\n```shellsession\r\nmwhudson@am2:~/go/src$ cat s5.go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\ntype stringFinder struct {\r\n\tpattern        string\r\n}\r\n\r\nvar f = \u0026stringFinder{pattern: \"He\"}\r\n\r\nfunc next() int {\r\n\ti := 1\r\n\tfor i \u003c 6 {\r\n\t\t// Compare backwards from the end until the first unmatching character.\r\n\t\tj := 1\r\n\t\tfor j \u003e= 0 \u0026\u0026 \"xHello\"[i] == f.pattern[j] {\r\n\t\t\ti--\r\n\t\t\tj--\r\n\t\t}\r\n\t\tif j \u003c 0 {\r\n\t\t\treturn i + 1 // match\r\n\t\t}\r\n\t\ti += 1\r\n\t}\r\n\treturn -1\r\n}\r\n\r\nfunc main() {\r\n\tfmt.Println(next())\r\n}\r\nmwhudson@am2:~/go/src$ ~/go/bin/go run s5.go\r\n-1\r\nmwhudson@am2:~/go/src$ ~/go1.4/bin/go run s5.go\r\n1\r\n```\r\n\r\nThis assembles to https://gist.github.com/mwhudson/41bbb7f10f6eda55ad86, which is as hard to read as any page of assembly, but single stepping through in gdb shows the problem: line 25 loads \"xHellox\"[i] into w0 and line 32 stomps on it, before line 39 does the comparison. ",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 17,
+	"closed_at": "2015-04-02T20:21:13Z",
+	"created_at": "2015-03-25T23:37:07Z",
+	"updated_at": "2016-06-25T02:04:03Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

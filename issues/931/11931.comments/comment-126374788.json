@@ -1,0 +1,12 @@
+{
+	"id": 126374788,
+	"body": "Escape analysis bug. Reproduction:\r\n\r\n\tpackage p\r\n\t\r\n\ttype T1 struct {\r\n\t\tm map[string]string\r\n\t\tp *int\r\n\t}\r\n\t\r\n\ttype T2 struct {\r\n\t\tT1 T1\r\n\t}\r\n\t\r\n\tfunc F() *T2 {\r\n\t\tvar x interface{}\r\n\t\tx = \u0026T1{\r\n\t\t\tm: make(map[string]string),\r\n\t\t\tp: new(int),\r\n\t\t}\r\n\t\treturn \u0026T2{\r\n\t\t\tT1: *x.(*T1),\r\n\t\t}\r\n\t}\r\n\t\r\n\t$ go tool compile -m x.go\r\n\tx.go:12: can inline F\r\n\tx.go:19: \u0026T2 literal escapes to heap\r\n\tx.go:15: F make(map[string]string) does not escape \u003c\u003c\u003c WRONG\r\n\tx.go:16: F new(int) does not escape \u003c\u003c\u003c WRONG\r\n\tx.go:16: F \u0026T1 literal does not escape\r\n\tx.go:17: F \u0026T1 literal does not escape\r\n\r\nSo it's nothing to do with maps. Plain *int isn't handled correctly either. But it's something to do with interfaces.\r\n\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-30T15:45:29Z",
+	"updated_at": "2015-07-30T15:45:29Z"
+}

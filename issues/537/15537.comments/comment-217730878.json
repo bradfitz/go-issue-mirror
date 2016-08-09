@@ -1,0 +1,12 @@
+{
+	"id": 217730878,
+	"body": "@dr2chase will take a look at sparse phi CL on Monday. (Mother's Day today.) Sorry that I've been a delinquent reviewer in general. Juggling too many things.\r\n\r\nA few other random, somewhat related thoughts:\r\n\r\nThe self-conflict bit is a fly in the ointment indeed. On my simple benchmark case in the comment above, most of the allocation is the two append statements building s.interfere, so I looked into representing interference as sets of equivalence classes. I know that the interferes relationship is not transitive in general, but it is frequently, so I was going to model it with multiple equivalence classes. The interferes relationship is also not reflexive, but I was going to assume it was anti-reflexive and compensate...boom. :(\r\n\r\nI noticed in the list of SSA stack size regressions that most of the really big increases are init functions, which generally look a lot like this code--building a large composite literal. But the components of a composite literal can always be computed independently of each other. I wonder whether a better short term fix might be teaching the compiler that fact. We still need to fix the quadratic behavior, but reducing spills from composite literals would (a) generate better code anyway and (b) whack a whole class of problem cases.\r\n\r\nIt scares me that Type is used as a map key in stackalloc, given that everywhere else we use .Compare == CMPeq for equality. Given that, I wonder whether we should use == for the related cases in stackalloc. For 1.8, I'll plan switch us to using the GC pattern instead (onebitwalktype). That'll make the interference sets bigger, though, exacerbating the performance problems here.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-08T16:25:50Z",
+	"updated_at": "2016-05-08T16:25:50Z"
+}

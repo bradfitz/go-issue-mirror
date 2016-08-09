@@ -1,0 +1,12 @@
+{
+	"id": 157645392,
+	"body": "@okdave, I understand that it works if there is no request body, yes. The body is written as part of [`Request.Write(conn)`](https://github.com/golang/go/blob/53c21df12153871bf3bfcc8de25ebab0ffc008c7/src/net/http/request.go#L478), which reads the body, [if it is present](https://github.com/golang/go/blob/master/src/net/http/transfer.go#L212) (which it is, in the reverseproxy example). So it is certain to be read from if it's not nil, even if there are zero bytes to read.\r\n\r\nI'd like to see this fixed this because it means leaking connections and goroutines to docker in [go-dockerclient](https://github.com/golang/go/blob/master/src/net/http/transfer.go#L212), which a long lived process of mine uses. I want to [implement cancellation in go-dockerclient](https://github.com/fsouza/go-dockerclient/issues/161) in terms of ctxhttp but don't feel comfortable doing so while I know there is some chance that connections are leaked if someone is unlucky enough to build with go 1.4. The presence of this leak makes it harder to identify and diagnose other leaks.\r\n\r\nThe failure I'm concerned about is particularly pathological because the other side (docker) of the connection will hold the connection open indefinitely in some cases, so it could quickly run out of file descriptors and leak an unreasonable number of goroutines.\r\n\r\nBy avoiding the complexity in the library, that is pushing it onto the users! :)",
+	"user": {
+		"login": "pwaller",
+		"id": 438648,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-18T08:40:37Z",
+	"updated_at": "2015-11-18T08:40:37Z"
+}

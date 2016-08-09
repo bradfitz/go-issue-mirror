@@ -1,0 +1,27 @@
+{
+	"id": 51287539,
+	"number": 8009,
+	"state": "closed",
+	"title": "cmd/ld: Objective-C dynamic relocation link failure with internal linker on Mac OS X 10.6 with Xcode 4.2",
+	"body": "\u003cpre\u003e(This is somewhat related to \u003ca href=\"https://golang.org/issue/5699\"\u003eissue #5699\u003c/a\u003e but I was told to file a new one; things got\nmore interesting since.)\n\n$ cat a.go\npackage main; import \u0026quot;fmt\u0026quot;\n// #cgo LDFLAGS: -framework Foundation -framework AppKit\n// extern void *cgoptr;\nimport \u0026quot;C\u0026quot;\nfunc main() { fmt.Printf(\u0026quot;pointer from cgo: %p\\n\u0026quot;, C.cgoptr) }\n$ cat a.m\n#include \u0026lt;AppKit/NSKeyValueBinding.h\u0026gt;\nvoid *cgoptr = \u0026amp;NSObservedObjectKey;\n\nAll of the following:\n\n$ CC=gcc   CGO_ENABLED=1 GOARCH=amd64 go build -x\n$ CC=gcc   CGO_ENABLED=1 GOARCH=386   go build -x\n$ CC=clang CGO_ENABLED=1 GOARCH=amd64 go build -x\n$ CC=clang CGO_ENABLED=1 GOARCH=386   go build -x\n\nwill yield the following during the final link:\n\nmain(__DATA/__data): unexpected reloc for dynamic symbol NSObservedObjectKey\nmain(__DATA/__data): unhandled relocation for NSObservedObjectKey (type 32 rtype 1)\n\nThis happens for any Objective-C anything.\n\nFor larger projects, the link failures become more spectacular. Attached are the results\nof building\n\u003ca href=\"https://github.com/andlabs/ui/commit/93914ecb8cc7bf4bf6eb8199f96fc3a685fc44cf\"\u003ehttps://github.com/andlabs/ui/commit/93914ecb8cc7bf4bf6eb8199f96fc3a685fc44cf\u003c/a\u003e (this\nspecific commit) with a modified cmd/ld that does not terminate after 20 error messages\n(this should probably be an option like it is for the compilers but I'll leave that for\nanother issue). I don't know why the 386 one has a different error from the rest; it\nshould probably be a third issue...\n\ngo version:\ngo version devel +b10044024a6d Thu May 15 15:55:31 2014 +1000 darwin/amd64\n\ngcc version:\ni686-apple-darwin10-llvm-gcc-4.2 (GCC) 4.2.1 (Based on Apple Inc. build 5658) (LLVM\nbuild 2336.1.00)\nCopyright (C) 2007 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nclang version:\nApple clang version 3.0 (tags/Apple/clang-211.10.1) (based on LLVM 3.0svn)\nTarget: x86_64-apple-darwin10.8.0\nThread model: posix\n\nThis is with Xcode 4.2 for Snow Leopard.\n\nThanks.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8009/0/newerr.386\"\u003enewerr.386\u003c/a\u003e (10200 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8009/0/newerr.amd64\"\u003enewerr.amd64\u003c/a\u003e (17599 bytes)",
+	"user": {
+		"login": "andlabs",
+		"id": 718242,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-04-28T22:58:06Z",
+	"created_at": "2014-05-16T14:12:25Z",
+	"updated_at": "2016-06-25T01:34:24Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

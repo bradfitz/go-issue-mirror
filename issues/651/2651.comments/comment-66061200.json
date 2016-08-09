@@ -1,0 +1,12 @@
+{
+	"id": 66061200,
+	"body": "\u003ca id=\"c17\"\u003e\u003c/a\u003eComment 17 by **reddooots**:\n\n\u003cpre\u003eTestRoundTripGzip output\n$ go test -test.v -test.run TestRoundTripGzip\n\nFAIL    net/http        0.356s\n=== RUN TestRoundTripGzip\n--- FAIL: TestRoundTripGzip (0.18 seconds)\n        transport_test.go:440: in handler, test 1: Accept-Encoding = \"\", want \"f\noo\"\n        transport_test.go:492: 1. Content-Encoding = \"\"; want \"foo\"\n        transport_test.go:474: invalid gzip header\nFAIL\n\nTestStreamingGet output\n$ go test -test.v -test.run TestStream -test.timeout 30s\n\nFAIL    net/http        30.229s\n=== RUN TestStreamingGet\n. connecting: \u003ca href=\"http://127.0.0.1:54937\"\u003ehttp://127.0.0.1:54937\u003c/a\u003e\n| flushing:\n| flushed:\npanic: test timed out\n\nI have used prints all the way down c.Get(ts.URL) until presistConn.readLoop in\ntransport.go and it gets stuck at pb, err := pc.br.Peek(1).  The only ways I have found\nto get past that point are to send a bunch of data like above or remove the for loop in\nthe handler and then as one would expect the test gets stuck on the first send to the\nsay channel.\n\nHere is the output with the for loop removed in the handler and the patch applied\n$ go test -test.v -test.run TestStream -test.timeout 30s\n\nFAIL    net/http        30.155s\n=== RUN TestStreamingGet\n. connecting: \u003ca href=\"http://127.0.0.1:54947\"\u003ehttp://127.0.0.1:54947\u003c/a\u003e\n| flushing:\n| flushed:\n. connected:\npanic: test timed out\n\nThe docs for http.Flusher say \"Note that even for ResponseWriters that support Flush, if\nthe client is connected through an HTTP proxy, the buffered data may not reach the\nclient until the response completes.\"  I did some searching and as far as I can tell\nthis box is not setup to use a proxy so I doubt that is the problem but I guess it could\nbe.\n\nEarlier I did a simple ping pong test with the net package over a tcp connection and it\ndid not hang so next on my list is to dig deeper into how the server and client for\nnet/http talk to each other and see if I can use the -httptest.serve flag and see if I\ncan get any data from TestStreamingGet using the net package.\n\nIf you have a better idea or more patches to run let me know.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-08T07:57:47Z",
+	"updated_at": "2014-12-08T10:14:07Z"
+}

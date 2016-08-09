@@ -1,0 +1,22 @@
+{
+	"id": 51278292,
+	"number": 1779,
+	"state": "closed",
+	"title": "split stack overflow while in exception handler",
+	"body": "\u003cpre\u003eThis program:\n\npackage main\n\nfunc main() {\n        var pad [28*100]byte\n        a := 0\n        b := 10 / a\n        println(b)\n        println(len(pad))\n}\n\noutputs this:\n\nruntime: split stack overflow: 0x1084a5a8 \u0026lt; 0x1084a800\nthrow: runtime: split stack overflow\n\nruntime.throw+0x42 /root/hg/go/src/pkg/runtime/runtime.c:102\n        runtime.throw(0x41f365, 0x1084a5a8)\nruntime.newstack+0x9b /root/hg/go/src/pkg/runtime/proc.c:741\n        runtime.newstack()\nruntime.morestack+0x4c /root/hg/go/src/pkg/runtime/386/asm.s:220\n        runtime.morestack()\n----- morestack called from goroutine 1 -----\nruntime.sigtramp1+0x19 /root/hg/go/src/pkg/runtime/windows/386/sys.s:68\n        runtime.sigtramp1(0x1084a5c4, 0x1084a5d0, 0x77fbb272, 0x1084a670, 0x6ffbc, ...)\nruntime.sigtramp+0xd /root/hg/go/src/pkg/runtime/windows/386/sys.s:63\n        runtime.sigtramp()\n----- goroutine created by -----\n_rt0_386+0xbf /root/hg/go/src/pkg/runtime/386/asm.s:80\n\ngoroutine 1 [2]:\nruntime.mainstart /root/hg/go/src/pkg/runtime/386/asm.s:91\n        runtime.mainstart()\nruntime.goexit /root/hg/go/src/pkg/runtime/proc.c:178\n        runtime.goexit()\n----- goroutine created by -----\n_rt0_386+0xbf /root/hg/go/src/pkg/runtime/386/asm.s:80\n\nI expect output to be different. And similar program:\n\npackage main\n\nfunc main() {\n        var pad [20*100]byte\n        a := 0\n        b := 10 / a\n        println(b)\n        println(len(pad))\n}\n\noutputs correct text:\n\npanic: runtime error: integer divide by zero\n\n[signal 0xc0000094 code=0x1003f addr=0x0 pc=0x40103a]\n\nruntime.panic+0x9e /root/hg/go/src/pkg/runtime/proc.c:1060\n        runtime.panic(0x40e66c, 0x10840000)\nruntime.panicstring+0x94 /root/hg/go/src/pkg/runtime/runtime.c:116\n        runtime.panicstring(0x41e822, 0xb)\nruntime.sigpanic+0xc5 /root/hg/go/src/pkg/runtime/windows/thread.c:279\n        runtime.sigpanic()\nmain.main+0x3a /home/sambauser/pub/t2/a.go:6\n        main.main()\nruntime.mainstart+0xf /root/hg/go/src/pkg/runtime/386/asm.s:93\n        runtime.mainstart()\nruntime.goexit /root/hg/go/src/pkg/runtime/proc.c:178\n        runtime.goexit()\n----- goroutine created by -----\n_rt0_386+0xbf /root/hg/go/src/pkg/runtime/386/asm.s:80\n\nI think this is what happens:\n\n1) division by zero occurs and exception is raised;\n2) Windows exception handler runs, it puts some data on the stack;\n3) Windows exception handler calls our exception handler runtime.settramp;\n4) runtime.settramp calls runtime.settramp1;\n5) as runtime.settramp1 is not '#pragma textflag 7', it will try to check stack only to\ndiscover that it is overflown;\n6) CRASH!\n\nMy:\nhd id is 29f6e2e230a3,\nGOARCH is 386\nGOOS is windows\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2014-12-08T10:09:52Z",
+	"created_at": "2011-05-06T06:32:02Z",
+	"updated_at": "2016-06-24T19:28:35Z"
+}

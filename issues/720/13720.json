@@ -1,0 +1,22 @@
+{
+	"id": 123665664,
+	"number": 13720,
+	"state": "closed",
+	"title": "go/build: allow @ in #cgo lines for OS X special paths",
+	"body": "At present, `safeCgoName` in `src/go/build/build.go` does not allow `@` in a `#cgo` line, preventing the use of `@` on any platform. Simple nonworking test:\r\n\r\n```go\r\npackage main\r\n// #cgo LDFLAGS: @fail\r\nimport \"C\"\r\n```\r\n\r\nresults in\r\n\r\n```\r\ncan't load package: /tmp/x.go: malformed #cgo argument: @fail\r\n```\r\n\r\nWhy is `@` needed? OS X does not use `$ORIGIN` in its `rpath` for indicating that binaries should look in the binary's directory for their shared libraries; instead, it uses the special name `@executable_path`. [There are](http://jorgen.tjer.no/post/2014/05/20/dt-rpath-ld-and-at-rpath-dyld/) [a number](https://www.mikeash.com/pyblog/friday-qa-2009-11-06-linking-and-install-names.html) of these special names provided by Apple's loader (and more in other links I can't find right now).\r\n\r\nI don't know what the consequences of adding `@` to the list of safe cgo runes would be, or why `@` was omitted, so I am submitting a bug instead of a patch.\r\n\r\nAfter this fix, Go packages that use `-rpath @executable_path` in its `#cgo LDFLAGS` line should be able to build. Furthemore, `TestCgoHandlesWlORIGIN` in `src/cmd/go/go_test.go` could also be adjusted to work on OS X as well.\r\n\r\nI am running\r\n\r\n```\r\ngo version devel +49065cb Fri Sep 18 18:09:15 2015 +0000 linux/amd64\r\n```\r\n\r\nbut manually confirmed the issue will still happen on master. [Here](https://github.com/andlabs/ui/issues/112) is an issue where someone else runs into it in my code using stable go1.5.2.",
+	"user": {
+		"login": "andlabs",
+		"id": 718242,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-01-07T00:39:25Z",
+	"created_at": "2015-12-23T14:11:11Z",
+	"updated_at": "2016-01-07T00:39:25Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

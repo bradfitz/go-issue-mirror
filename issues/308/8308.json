@@ -1,0 +1,22 @@
+{
+	"id": 51288010,
+	"number": 8308,
+	"state": "closed",
+	"title": "math/rand: Calling single rand.Rand object from multiple threaded gorouttiness panics",
+	"body": "by **suokkos**:\n\n\u003cpre\u003eSharing single rand.Rand object using mutex synchronization kills parallel performance\nif code is using random numbers heavily. To avoid synchronization over-head one can\nallocate rand.Rand object per goroutine. But rand.Rand object has pretty large internal\nstate that causes memory to be scaling bottleneck.\n\nI looked the generator implementation and noticed that it is very simple to make thread\nsafe without mutex locking. This bug report includes my test cases and actual working\nimplementation change.\n\nWhat does 'go version' print?\ngo version devel +423bfcb6b3ce Tue Jul 01 18:04:46 2014 +0300 linux/amd64\n\n(I originally noticed this scaling issue with gccgo 4.9.0 20140405 (experimental) [trunk\nrevision 209157])\n\nWhat steps reproduce the problem?\n\n1. Download attached gambling.go  (parallel implementation of pig dice game example;\n\u003ca href=\"http://golang.org/doc/codewalk/functions/)\"\u003ehttp://golang.org/doc/codewalk/functions/)\u003c/a\u003e\n2. go run gambling.go -p unlimitedshared\n\nWhat happened?\npanic: runtime error: index out of range\n\ngoroutine 3 [running]:\nmain.roll\n\tgambling.go:51\nmain.play\n\tgambling.go:99\nmain.$nested1\n\tgambling.go:180\ncreated by main.main\n\tgambling.go:326\n\n\nWhat should have happened instead?\nProgram could complete without errors with minor changes to rngSource implementation.\n\nPlease provide any additional information below.\n\nOther attachments include an unit test case for the issue and possible fix.\n\nChanges feel like breaking ABI so I have no idea. But I don't have yet enough\nunderstanding how go works to be sure if that kind ABI change is allowed or not.\n\nChanges generate deterministic number sequence in random order as long as there is less\nthan _TAP number of simultaneous calls to rngSource.Int63. The change panics at _LEN\nnumber of parallel calls even tough any number above _TAP could be handled easily\nwithout panic. Possible alternative would be:\n\nfor feed \u0026lt; 0 {\n   feed -= _LEN\n}\n\nIf someone sees enough value in these changes they can be freely taken and modified to\nacceptable form. I'm unlikely to try to submit them to review any time soon.\n\nATTETION! Change doesn't use explicit atomic writes for rngSource.vec because I assumed\nthat writes to vec index don't affect neighbour entries. But that might not be true in\nall cpu architectures.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8308/0/gambling.go\"\u003egambling.go\u003c/a\u003e (8076 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8308/0/0001-test-case-for-threaded-rand-use.patch\"\u003e0001-test-case-for-threaded-rand-use.patch\u003c/a\u003e (11680 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8308/0/0002-allow-parallel-calls-to-rngSource-Int63.patch\"\u003e0002-allow-parallel-calls-to-rngSource-Int63.patch\u003c/a\u003e (1923 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:46:10Z",
+	"created_at": "2014-07-01T16:14:52Z",
+	"updated_at": "2016-06-25T01:37:25Z"
+}

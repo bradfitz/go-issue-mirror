@@ -1,0 +1,12 @@
+{
+	"id": 220552983,
+	"body": "So in a weird twist, it seems like by the time that a snippet's Run is triggered, it has been removed from the file system or at least it isn't in the place that it reports being called from see https://play.golang.org/p/QJrwR06lnA or\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"path/filepath\"\r\n\t\"runtime\"\r\n)\r\n\r\nfunc callerSourcePath() string {\r\n\t_, callerPath, _, _ := runtime.Caller(1)\r\n\treturn callerPath\r\n}\r\n\r\nfunc main() {\r\n\t// Will walk up to the root from the call site of this file\r\n\tcurPath := callerSourcePath()\r\n\tfmt.Printf(\"This file location is %q, attempt to walk up the root\\n\", curPath)\r\n\tfor {\r\n\t\tif curPath == \"\" || curPath == \"/\" {\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tfmt.Printf(\"walking to %v \", curPath)\r\n\t\tf, err := os.Open(curPath)\r\n\t\tfmt.Printf(\"\\n\\tpath %s exists=%v(f=%v) err=%v\\n\", curPath, f != nil, f, err)\r\n\t\tif f != nil {\r\n\t\t\t_ = f.Close()\r\n\t\t}\r\n\t\tcurPath = filepath.Dir(curPath)\r\n\t}\r\n}\r\n```\r\n\r\nwhen run on the playground shows that only `/tmp` exists but the file that it is purported to exist in cannot be found\r\n```shell\r\nThis file location is \"/tmp/sandbox025674958/main.go\", attempt to walk up the root\r\nwalking to /tmp/sandbox025674958/main.go \r\n\tpath /tmp/sandbox025674958/main.go exists=false(f=\u003cnil\u003e) err=open /tmp/sandbox025674958/main.go: No such file or directory\r\nwalking to /tmp/sandbox025674958 \r\n\tpath /tmp/sandbox025674958 exists=false(f=\u003cnil\u003e) err=open /tmp/sandbox025674958: No such file or directory\r\nwalking to /tmp \r\n\tpath /tmp exists=true(f=\u0026{0x10434210}) err=\u003cnil\u003e\r\n```\r\n\r\nI came to this conclusion by stripping down os.Open down to the nacl implementation of syscall and running that raw implementation on the playground itself. Please see https://play.golang.org/p/9fMAPM6lNc\r\nwhich produces\r\n```shell\r\n\u003cnil\u003e stat /tmp/sandbox890988319/main.go: No such file or directory\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-20T08:59:09Z",
+	"updated_at": "2016-05-20T08:59:09Z"
+}

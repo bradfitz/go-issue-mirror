@@ -1,0 +1,33 @@
+{
+	"id": 51279701,
+	"number": 2782,
+	"state": "closed",
+	"title": "net/http: add Request.RequestURI",
+	"body": "\u003cpre\u003eThe net/url Parse function percent-decodes the path component of the URL.  This is a\nlossy operation. \n\nAn application cannot distinguish between \u0026quot;/\u0026quot; used as a path segment delimiter\nand \u0026quot;/\u0026quot; encoded in a path segment. \n\nfunc main() {\n    u, err := url.Parse(\u0026quot;\u003ca href=\"http://example.com/x/y%2fz\u0026quot\"\u003ehttp://example.com/x/y%2fz\u0026quot\u003c/a\u003e;)\n    if err != nil {\n        panic(err)\n    }\n    fmt.Println(u.Path)\n}\n\nOutput: /x/y/z\n\nThe second \u0026quot;/\u0026quot; is a delimiter. The third \u0026quot;/\u0026quot; is not. \n\nAn application cannot recover the original encoding of the path from the parsed URL.  \n\nfunc main() {\n    u, err := url.Parse(\u0026quot;\u003ca href=\"http://example.com/%2b%3f\u0026quot\"\u003ehttp://example.com/%2b%3f\u0026quot\u003c/a\u003e;)\n    if err != nil {\n        panic(err)\n    }\n    fmt.Println(u)\n}\n\nOutput: /+?\n\nThe application cannot determine from the parsed URL that the \u0026quot;+\u0026quot; is percent\nencoded and that the \u0026quot;?\u0026quot; is percent-encoded in lowercase hex.\n\nScenarios where the information loss is a problem:\n\n- The HTTP client in the net/http package cannot request resources with a path segment\ncontaining \u0026quot;/\u0026quot;.\n\n- A server handler for the net/http package cannot implement OAuth 1.0 correctly. In\nOAuth 1.0, the client signs parts of the request including the raw path. A handler\ncannot in general verify the signature because the handler cannot get the raw path from\nthe parsed URL. \n\nWhich compiler are you using (5g, 6g, 8g, gccgo)? 6g\nWhich operating system are you using? Lion\nWhich revision are you using?  (hg identify) 9f2be4fbbf69 weekly/weekly.2012-01-20\nPlease provide any additional information below.\n\nHere's how libraries for other languages handle URL path encoding:\n\nPython urlparse module: returns raw path\nRuby URI module: returns raw path\nJava URI class: getPath() returns decoded path, getRawPath() returns raw path.\u003c/pre\u003e",
+	"user": {
+		"login": "garyburd",
+		"id": 33411,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:14:47Z",
+	"created_at": "2012-01-25T18:15:23Z",
+	"updated_at": "2016-06-24T21:24:28Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

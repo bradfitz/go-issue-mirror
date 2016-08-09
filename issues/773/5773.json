@@ -1,0 +1,25 @@
+{
+	"id": 51284166,
+	"number": 5773,
+	"state": "closed",
+	"title": "cmd/gc: escape annotation defeated by files in wrong order",
+	"body": "\u003cpre\u003eIn sha1, the arguments to Write escape if block is in assembler, even if we mark the\nassembler routine with go:noescape, but they should not.\n\n% r\ngo build -gcflags=-m \n# crypto/sha1\n./sha1.go:57: can inline (*digest).Size\n./sha1.go:59: can inline (*digest).BlockSize\n./sha1.go:40: (*digest).Reset d does not escape\n./sha1.go:52: new(digest) escapes to heap\n./sha1.go:57: (*digest).Size d does not escape\n./sha1.go:59: (*digest).BlockSize d does not escape\n./sha1.go:61: leaking param: d\n./sha1.go:74: d.x escapes to heap\n./sha1.go:61: leaking param: d\n./sha1.go:61: (*digest).Write p does not escape\n./sha1.go:85: (*digest).Write d.x does not escape\n./sha1.go:92: moved to heap: d\n./sha1.go:99: d escapes to heap\n./sha1.go:101: d escapes to heap\n./sha1.go:109: d escapes to heap\n./sha1.go:90: leaking param: in to result ~anon1\n./sha1.go:90: (*digest).Sum d0 does not escape\n./sha1.go:99: (*digest).Sum tmp does not escape\n./sha1.go:101: (*digest).Sum tmp does not escape\n./sha1.go:109: (*digest).Sum tmp does not escape\n./sha1.go:123: (*digest).Sum digest does not escape\n./sha1block_decl.go:11: block dig does not escape\n./sha1block_decl.go:11: block p does not escape\ntubenose=% hg diff .\ndiff -r f6de76ff41a3 src/pkg/crypto/sha1/sha1block_decl.go\n--- a/src/pkg/crypto/sha1/sha1block_decl.go\tMon Jun 24 16:53:13 2013 -0700\n+++ b/src/pkg/crypto/sha1/sha1block_decl.go\tMon Jun 24 17:18:52 2013 -0700\n@@ -6,4 +6,6 @@\n \n package sha1\n \n+//go:noescape\n+\n func block(dig *digest, p []byte)\n% \n% \n\n\nNow a magic trick: Compile the block declaration first.\n\ntubenose=% mv sha1block_decl.go A.go   ###### NOTE: put sha1block_decl.go first in\ncompilation\ntubenose=% go build -gcflags=-m \n# crypto/sha1\n./sha1.go:57: can inline (*digest).Size\n./sha1.go:59: can inline (*digest).BlockSize\n./A.go:11: block dig does not escape\n./A.go:11: block p does not escape\n./sha1.go:40: (*digest).Reset d does not escape\n./sha1.go:52: new(digest) escapes to heap\n./sha1.go:57: (*digest).Size d does not escape\n./sha1.go:59: (*digest).BlockSize d does not escape\n./sha1.go:61: (*digest).Write d does not escape\n./sha1.go:61: (*digest).Write p does not escape\n./sha1.go:74: (*digest).Write d.x does not escape\n./sha1.go:85: (*digest).Write d.x does not escape\n./sha1.go:90: leaking param: in to result ~anon1\n./sha1.go:90: (*digest).Sum d0 does not escape\n./sha1.go:99: (*digest).Sum d does not escape\n./sha1.go:99: (*digest).Sum tmp does not escape\n./sha1.go:101: (*digest).Sum d does not escape\n./sha1.go:101: (*digest).Sum tmp does not escape\n./sha1.go:109: (*digest).Sum d does not escape\n./sha1.go:109: (*digest).Sum tmp does not escape\n./sha1.go:123: (*digest).Sum digest does not escape\n\nNow the arguments to Write do not escape.\u003c/pre\u003e",
+	"user": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:31:39Z",
+	"created_at": "2013-06-25T00:27:43Z",
+	"updated_at": "2016-06-24T22:43:16Z"
+}

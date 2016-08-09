@@ -1,0 +1,27 @@
+{
+	"id": 66058140,
+	"number": 10326,
+	"state": "open",
+	"title": "x/tools/cmd/eg: take better care with pointers, maintain addressability of expressions",
+	"body": "Given this package:\r\n\r\n```go\r\npackage egbug\r\n\r\nvar Imap = map[*T]int{}\r\n\r\ntype T struct {\r\n\tI int\r\n}\r\n\r\nfunc main() {\r\n\tvar t T\r\n\tp := \u0026t.I\r\n\t_ = p\r\n}\r\n```\r\n\r\nand this template:\r\n\r\n```go\r\npackage p\r\n\r\nimport \"egbug\"\r\n\r\nfunc before(t *egbug.T) int { return t.I }\r\nfunc after(t *egbug.T) int  { return egbug.Imap[t] }\r\n```\r\n\r\napplying eg generates uncompilable code:\r\n\r\n```go\r\npackage egbug\r\n\r\nvar Imap = map[*T]int{}\r\n\r\ntype T struct {\r\n\tI int\r\n}\r\n\r\nfunc main() {\r\n\tvar t T\r\n\tp := \u0026Imap[t]\r\n\t_ = p\r\n}\r\n```\r\n\r\n```bash\r\n$ go build\r\n# egbug\r\n./x.go:11: cannot use t (type T) as type *T in map index\r\n./x.go:11: cannot take the address of Imap[t]\r\n```\r\n\r\nThere are two separate bugs here--T vs *T and breaking addressability.\r\n\r\nThis is a real life example, from attempting to use `eg` to instrument the gc compiler to find correlations in Node field usage.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-04-03T02:38:38Z",
+	"updated_at": "2015-04-14T19:37:39Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

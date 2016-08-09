@@ -1,0 +1,28 @@
+{
+	"id": 124828408,
+	"number": 13815,
+	"state": "closed",
+	"title": "cmd/go: -msan failure when rebuilding runtime/cgo with -fsanitize=memory",
+	"body": "foo_test.go:\r\n```go\r\npackage foo\r\n\r\nimport \"testing\"\r\n\r\nfunc FooTest(t *testing.T) {\r\n}\r\n```\r\n\r\n```shell\r\n$ go test -msan\r\n==1083== WARNING: MemorySanitizer: use-of-uninitialized-value\r\n    #0 0x7ff79a84d2a8  (/tmp/go-build084496566/github.com/cockroachdb/cockroach/foo/_test/foo.test+0x30a2a8)\r\n    #1 0x7ff79a74f7ac  (/tmp/go-build084496566/github.com/cockroachdb/cockroach/foo/_test/foo.test+0x20c7ac)\r\n\r\nExiting\r\nexit status 77\r\nFAIL\tgithub.com/cockroachdb/cockroach/foo\t0.013s\r\n```\r\n\r\nRunning under `lldb` didn't reveal much other than the involvement of cgo (I had to build the executable to get `image lookup` to work):\r\n```shell\r\n$ go test -msan -c -o foo.test\r\n$ lldb-3.6 -- foo.test\r\n(lldb) target create \"foo.test\"\r\nCurrent executable set to 'foo.test' (x86_64).\r\n(lldb) process launch --disable-aslr=false\r\nProcess 1193 launching\r\nProcess 1193 launched: '/go/src/github.com/cockroachdb/cockroach/foo/foo.test' (x86_64)\r\n(lldb) ==1193== WARNING: MemorySanitizer: use-of-uninitialized-value\r\n    #0 0x7f2b2762c2a8  (/go/src/github.com/cockroachdb/cockroach/foo/foo.test+0x30a2a8)\r\n    #1 0x7f2b2752e7ac  (/go/src/github.com/cockroachdb/cockroach/foo/foo.test+0x20c7ac)\r\n\r\nExiting\r\nProcess 1193 exited with status = 77 (0x0000004d)\r\n\r\nerror: No auto repeat.\r\n(lldb) image lookup --address 0x7f2b2752e7ac\r\n      Address: foo.test[0x000000000020c7ac] (foo.test..text + 709100)\r\n      Summary: foo.test`runtime.asmcgocall + 172 at asm_amd64.s:612\r\n(lldb) image lookup --address 0x7f2b2762c2a8\r\n      Address: foo.test[0x000000000030a2a8] (foo.test..text + 1748200)\r\n      Summary: foo.test`_cgo_sys_thread_start + 920 at gcc_linux_amd64.c:72\r\n(lldb)\r\n```\r\n\r\nSome system details:\r\n```shell\r\n$ uname -a\r\nLinux 43c41b292c47 4.0.9-boot2docker #1 SMP Thu Sep 10 20:39:20 UTC 2015 x86_64 GNU/Linux\r\n$ go version\r\ngo version go1.6beta1 linux/amd64\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"/usr/bin/clang-3.6\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0\"\r\nCXX=\"/usr/bin/clang++-3.6\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nNote that I had to use:\r\n- linux 4.0.9 due to https://llvm.org/bugs/show_bug.cgi?id=24155, and couldn't upgrade from\r\n- clang 3.6 due to https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=779785\r\n\r\ncc @ianlancetaylor ",
+	"user": {
+		"login": "tamird",
+		"id": 1535036,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-01-06T04:05:03Z",
+	"created_at": "2016-01-04T20:05:14Z",
+	"updated_at": "2016-01-06T04:05:03Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

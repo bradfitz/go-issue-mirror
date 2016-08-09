@@ -1,0 +1,28 @@
+{
+	"id": 144080873,
+	"number": 14999,
+	"state": "closed",
+	"title": "cmd/compile: runtime.gcBgMarkWorker.func1 is heap allocated",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo version go1.6 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux/amd64\r\n\r\nThe closure passed to gopark by gcBgMarkWorker is heap allocated even though it captures no variables. In fact, the constructed closure contains only the code pointer, which is never supposed to happen. This is particularly bad since it's causing an unexpected allocation inside the garbage collector itself. Also strange is that this is an implicit allocation in the runtime, which is supposed to be disallowed.\r\n\r\nThis happens on master with SSA as well (not too surprising; it's probably a frontend issue).\r\n\r\n```\r\n$ go1.6 build -a -gcflags -S runtime\r\n...\r\n\"\".gcBgMarkWorker t=1 size=1488 value=0 args=0x8 locals=0x70\r\n\t0x0000 00000 (src/runtime/mgc.go:1352)\tTEXT\t\"\".gcBgMarkWorker(SB), $112-8\r\n\t0x0000 00000 (src/runtime/mgc.go:1352)\tMOVQ\t(TLS), CX\r\n\t0x0009 00009 (src/runtime/mgc.go:1352)\tCMPQ\tSP, 16(CX)\r\n\t0x000d 00013 (src/runtime/mgc.go:1352)\tJLS\t1475\r\n\t0x0013 00019 (src/runtime/mgc.go:1352)\tSUBQ\t$112, SP\r\n\t0x0017 00023 (src/runtime/mgc.go:1352)\tFUNCDATA\t$0, gclocals·37a2283f5c69c342946cad8073b58fca(SB)\r\n\t0x0017 00023 (src/runtime/mgc.go:1352)\tFUNCDATA\t$1, gclocals·a96d92a3f832e9b072adea30fecea992(SB)\r\n\t0x0017 00023 (src/runtime/mgc.go:1357)\tMOVQ\t$0, BX\r\n\t0x0019 00025 (src/runtime/mgc.go:1357)\tMOVQ\tBX, \"\".park+96(SP)\r\n\t0x001e 00030 (src/runtime/mgc.go:1357)\tMOVQ\tBX, \"\".park+104(SP)\r\n\t0x0023 00035 (src/runtime/mgc.go:1359)\tNOP\r\n\t0x0023 00035 (src/runtime/mgc.go:1359)\tMOVQ\t(TLS), BX\r\n\t0x002c 00044 (src/runtime/mgc.go:1359)\tMOVQ\tBX, \"\".gp+88(SP)\r\n\t0x0031 00049 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x0031 00049 (src/runtime/mgc.go:1360)\tMOVQ\t(TLS), CX\r\n\t0x003a 00058 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x003a 00058 (src/runtime/mgc.go:1360)\tMOVQ\t48(CX), AX\r\n\t0x003e 00062 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x003e 00062 (src/runtime/mgc.go:1360)\tMOVL\t216(AX), BP\r\n\t0x0044 00068 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x0044 00068 (src/runtime/mgc.go:1360)\tINCL\tBP\r\n\t0x0046 00070 (src/runtime/mgc.go:1360)\tMOVL\tBP, 216(AX)\r\n\t0x004c 00076 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x004c 00076 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x004c 00076 (src/runtime/mgc.go:1360)\tNOP\r\n\t0x004c 00076 (src/runtime/mgc.go:1360)\tMOVQ\t48(CX), BP\r\n\t0x0050 00080 (src/runtime/mgc.go:1360)\tMOVQ\tBP, \"\".park+96(SP)\r\n\t0x0055 00085 (src/runtime/mgc.go:1361)\tMOVQ\t\"\"._p_+120(FP), BX\r\n\t0x005a 00090 (src/runtime/mgc.go:1361)\tMOVQ\tBX, \"\".park+104(SP)\r\n\t0x005f 00095 (src/runtime/mgc.go:1369)\tLEAQ\t\"\".work(SB), BX\r\n\t0x0066 00102 (src/runtime/mgc.go:1369)\tMOVQ\tBX, (SP)\r\n\t0x006a 00106 (src/runtime/mgc.go:1369)\tADDQ\t$168, (SP)\r\n\t0x0072 00114 (src/runtime/mgc.go:1369)\tPCDATA\t$0, $1\r\n\t0x0072 00114 (src/runtime/mgc.go:1369)\tCALL\t\"\".notewakeup(SB)\r\n\t0x0077 00119 (src/runtime/mgc.go:1402)\tLEAQ\t\"\".park+96(SP), BX\r\n\t0x007c 00124 (src/runtime/mgc.go:1402)\tXORQ\t$0, BX\r\n\t0x0080 00128 (src/runtime/mgc.go:1402)\tMOVQ\tBX, \"\".~r1+80(SP)\r\n# Bad closure type\r\n\t0x0085 00133 (src/runtime/mgc.go:1375)\tLEAQ\ttype.struct { F uintptr }(SB), BX\r\n\t0x008c 00140 (src/runtime/mgc.go:1375)\tMOVQ\tBX, (SP)\r\n\t0x0090 00144 (src/runtime/mgc.go:1375)\tPCDATA\t$0, $2\r\n# Bad allocation\r\n\t0x0090 00144 (src/runtime/mgc.go:1375)\tCALL\truntime.newobject(SB)\r\n\t0x0095 00149 (src/runtime/mgc.go:1375)\tMOVQ\t8(SP), AX\r\n\t0x009a 00154 (src/runtime/mgc.go:1375)\tNOP\r\n\t0x009a 00154 (src/runtime/mgc.go:1375)\tLEAQ\t\"\".gcBgMarkWorker.func1(SB), BP\r\n\t0x00a1 00161 (src/runtime/mgc.go:1375)\tMOVQ\tBP, (AX)\r\n# Closure becomes first argument to gopark\r\n\t0x00a4 00164 (src/runtime/mgc.go:1402)\tMOVQ\tAX, (SP)\r\n\t0x00a8 00168 (src/runtime/mgc.go:1402)\tMOVQ\t\"\".~r1+80(SP), BX\r\n\t0x00ad 00173 (src/runtime/mgc.go:1402)\tMOVQ\tBX, 8(SP)\r\n\t0x00b2 00178 (src/runtime/mgc.go:1402)\tLEAQ\tgo.string.\"GC worker (idle)\"(SB), BX\r\n\t0x00b9 00185 (src/runtime/mgc.go:1402)\tMOVQ\tBX, 16(SP)\r\n\t0x00be 00190 (src/runtime/mgc.go:1402)\tMOVQ\t$16, 24(SP)\r\n\t0x00c7 00199 (src/runtime/mgc.go:1402)\tMOVB\t$20, 32(SP)\r\n\t0x00cc 00204 (src/runtime/mgc.go:1402)\tMOVQ\t$0, 40(SP)\r\n\t0x00d5 00213 (src/runtime/mgc.go:1402)\tPCDATA\t$0, $1\r\n\t0x00d5 00213 (src/runtime/mgc.go:1402)\tCALL\t\"\".gopark(SB)\r\n...\r\n```\r\n\r\n/cc @RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-04-01T02:09:22Z",
+	"created_at": "2016-03-28T20:55:24Z",
+	"updated_at": "2016-04-07T20:11:55Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

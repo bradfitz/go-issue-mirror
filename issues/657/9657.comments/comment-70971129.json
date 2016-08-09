@@ -1,0 +1,12 @@
+{
+	"id": 70971129,
+	"body": "@stevvooe bufio.Writer.Reset(w) is setting the underlying writer to w; if Reset is called with nil, that writer is nil. Arguably that is a programmer error, or shall I say \"invalid use\" of the library. In your case you see a panic in Flush, but any function that eventually writes to the underlying nil writer will panic (e.g.: http://play.golang.org/p/P_f8BbNvCa).\r\n\r\nI'd agree with @minux that it's not the job of the library to check for nil each time in this case. And even if one would check, that would lead to a difficult to use library because in the case of bufio, the panics (or errors, rather, if we check) would come at somewhat \"arbitrary times\". For instance in the example I gave above, all is fine if the buffer is large enough and never flushed, and the programming error is thus hidden as @minux @aluded to.\r\n\r\nThat said, I think an argument could be made that the bufio factory functions (NewReader, NewScanner, NewWriter, ...  ) but also functions modifying the underlying data structure (Reset, etc.) should check their arguments for validity and report an error otherwise.\r\n\r\nHowever, this is not how this library was written. In case of the factory functions, one could argue that they should return a nil Reader/Writer/what-have-you if the incoming arguments are invalid. But that again puts the burden on each client, even clients that don't do anything wrong, because they cannot know if something else might cause a nil return.\r\n\r\nTo make a long story short: this package is written with the assumption that the supplied readers and writers are valid: Calling bufio.NewWriter with a nil underlying writer simply makes no sense.\r\n\r\nThus I must agree with @minux that this is working as intended. If one wanted to be very explicit, the documentation could say that the supplied arguments must be non-nil. At best this is a documentation issue.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-22T04:49:28Z",
+	"updated_at": "2015-01-22T04:49:28Z"
+}

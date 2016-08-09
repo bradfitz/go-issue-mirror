@@ -1,0 +1,12 @@
+{
+	"id": 138140040,
+	"body": "I may be late to the party, but let me propose an alternative design:\r\n\r\n1.  Allow `{{template}}` to accept a pipeline as an argument, e.g. `{{template .content}}`. Currently it accepts only a constant string.\r\n2.  Add built-in `map` func that accepts a list of pairs and returns a map, e.g. `map \"foo\" 1 \"bar\" 2` in a template is equivalent to `map[interface{}]interface{}{\"foo\": 1, \"bar\": 2}` in Go.\r\n    *  Alternatively, add support for map literal.\r\n\r\nThis enables the following:\r\n\r\nmaster:\r\n\r\n```\r\n{{if .content}}\r\n    {{template .content .data}}\r\n{{else}}\r\n    Default content\r\n{{end}}\r\n```\r\n\r\npage:\r\n\r\n```\r\n{{define \"content\"}}\r\n    REAL content: {{.}}\r\n{{end}}\r\n\r\n{{template \"master\" map \"content\" \"content\" \"data\" .}}\r\n```\r\n\r\nHere the \"page\" _explicitly_ passes the name of the template to be used as a content block. The \"master\" checks if content block was passed, and if it is, uses it. Otherwise, master uses the default content. This design relies on the fact that template scope is global and `content` template is indeed accessible to master.\r\n\r\nHere is a proof of concept, with defined `map` function and hardcoded value of the `content` key: https://play.golang.org/p/ytuEwBxDoV",
+	"user": {
+		"login": "nodirt",
+		"id": 643254,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-07T00:28:08Z",
+	"updated_at": "2015-09-07T01:51:06Z"
+}

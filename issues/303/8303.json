@@ -1,0 +1,26 @@
+{
+	"id": 51288005,
+	"number": 8303,
+	"state": "open",
+	"title": "ponies: create builtin interfaces, let builtin types fulfill them",
+	"body": "\u003cpre\u003e1. Provide a package builtin/interf with interfaces of the kind of\n\n     type Stringer interface {\n        String() string\n     }\n\n     type Booler interface {\n        Bool() bool\n     }\n\nfor the following builtin types:\n\nbool, byte, complex128, complex64, float32, float64, int, int16, int32, int64, int8,\nrune,\nstring, uint, uint16, uint32, uint64, uint8\n\n2. Have the compiler use the builtin when it is assigned to \u0026quot;its\u0026quot; interface,\nas if\neach builtin would fulfill its corresponding interface from builtin/interf.\n\nSo code like this\n\n     import \u0026quot;builtin/interf\u0026quot;\n     \n     func a(b interf.Booler) {\n       // do something with b.Bool()\n     }\n     \n     func main() {\n       a(true)\n     }\n\nwould compile and optimized, so that the performance and allocation characteristics for\nthe call\n a(true) would be the same as if a had the signature to receive a bool.\nThat means assignment of a builtin to \u0026quot;its\u0026quot; interface and call of\n\u0026quot;its\u0026quot; interface's method should cost nothing.\n\nWHY and WHAT IS IT FOR?\n\nThere are times more often than not, where we want the meantioned builtins to be\noptional.\nAn example would be the use of the json package with structs where there is no easy way\nto have optional builtins, like shown in this blog post:\n\n\u003ca href=\"https://willnorris.com/2014/05/go-rest-apis-and-pointers?utm_content=bufferb70ff\u0026amp\"\u003ehttps://willnorris.com/2014/05/go-rest-apis-and-pointers?utm_content=bufferb70ff\u0026amp\u003c/a\u003e;utm_medium=social\u0026amp;utm_source=twitter.com\u0026amp;utm_campaign=buffer\n\nAs it turns out, the best solution is to define optional values as interfaces, as shown\nhere:\n\u003ca href=\"http://play.golang.org/p/cIO2yQ4676\"\u003ehttp://play.golang.org/p/cIO2yQ4676\u003c/a\u003e\n\nThe optional aspect is expression via the fact that any interface may be nil.\n\nThere are other places where optional builtins make programming with go awkward, e.g. the\nNull* types in the database/sql package.\n\nThe problem is that every package wanting to have optional builtins will resort to its\nown solution. Some of them are type wrappers leading incompatible types and solutions\nbetween packages and a lot of mental and coding boilerplate.\n\nThe proposed solution would not only provide a idiomatic and performant solution, but\nalso allows\nsome function signatures to relax and accept the new builtin interfaces instead of  the\nbuiltin and\nby that be compatible with the builtins without performance digression but also flexible\nenough to\nbe used with custom implementations.\n\nbuiltin/interf being a package that has to be included in order to be used, means we are\nstaying compatible and optional.\u003c/pre\u003e",
+	"user": {
+		"login": "metakeule",
+		"id": 180603,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"comments": 8,
+	"created_at": "2014-06-30T10:03:11Z",
+	"updated_at": "2015-04-14T16:35:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

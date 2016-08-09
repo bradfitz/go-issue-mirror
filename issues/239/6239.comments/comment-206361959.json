@@ -1,0 +1,16 @@
+{
+	"id": 206361959,
+	"body": "@aclements @RLH @randall77\r\n\r\nOptimization of the timer heap can give up to 10%. On some of our prod servers we see 5-8% of time in siftdown.\r\n\r\nBut the real problem is the global mutex. We need:\r\n1. Merge timers into netpoll (epoll/kqueue/IOCP can wait with timeout).\r\n2. Get rid of the timer thread (this will also reduce timer latency, because currently we need 2 thread context switches to handle a timer).\r\n3. Distribute netpoll+timers per P.\r\n\r\nHere is a prototype for 1 and 2:\r\nhttps://go-review.googlesource.com/#/c/5760\r\n\r\nDistribution is somewhat tricky. We will need hierarchical epoll descriptors, and kqueue/IOCP does not support hierarchical descriptors AFAICT. For timers we will need to somehow block on global minimum time, rather than on per-P minimum time.\r\n\r\n\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 6,
+		"+1": 6
+	},
+	"created_at": "2016-04-06T13:09:52Z",
+	"updated_at": "2016-04-06T13:09:52Z"
+}

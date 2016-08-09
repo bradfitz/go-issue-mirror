@@ -1,0 +1,27 @@
+{
+	"id": 55430637,
+	"number": 9686,
+	"state": "closed",
+	"title": "syscall: Pdeathsig ignored when using setuid/setgid (Linux)",
+	"body": "When attempting to use the `Pdeathsig` functionality on Linux, along with using setuid/setgid, the death signal appears to be ignored. However when setuid/setgid is not used, the death signal works as expected. This behavior was observed on Go version 1.4.1 with the following test code:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"strconv\"\r\n\t\"syscall\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tattrs := syscall.SysProcAttr{\r\n\t\tPdeathsig: syscall.SIGTERM,\r\n\t}\r\n\r\n\tif len(os.Args) \u003e 1 {\r\n\t\tid, _ := strconv.ParseUint(os.Args[1], 0, 32)\r\n\t\tattrs.Credential = \u0026syscall.Credential{Uid: uint32(id), Gid: uint32(id)}\r\n\t}\r\n\r\n\tcmd := exec.Command(\"/bin/sleep\", \"300\")\r\n\tcmd.SysProcAttr = \u0026attrs\r\n\r\n\terr := cmd.Start()\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlog.Printf(\"Started child %d\\n\", cmd.Process.Pid)\r\n\r\n\t// Wait a bit and then die\r\n\ttime.Sleep(2 * time.Second)\r\n\tlog.Printf(\"Dying... Check child status with `ps -p %d -f`\\n\", cmd.Process.Pid)\r\n}\r\n```\r\n\r\n#### Steps to reproduce\r\n\r\nWithout setting a uid/gid to switch to, the death signal works as expected\r\n```\r\n[andrew@localhost ~]$ sudo ./deathsig_example \r\n2015/01/25 14:56:15 Started child 2022\r\n2015/01/25 14:56:17 Dying... Check child status with `ps -p 2022 -f`\r\n[andrew@localhost ~]$ ps -p 2022 -f\r\nUID        PID  PPID  C STIME TTY          TIME CMD\r\n```\r\n\r\nWhen switching to another uid/gid (user and group \"nobody\" in this case) we see that the child is not sent a sigterm.\r\n```\r\n[andrew@localhost ~]$ sudo ./deathsig_example 99\r\n2015/01/25 14:56:26 Started child 2029\r\n2015/01/25 14:56:28 Dying... Check child status with `ps -p 2029 -f`\r\n[andrew@localhost ~]$ ps -p 2029 -f\r\nUID        PID  PPID  C STIME TTY          TIME CMD\r\nnobody    2029     1  0 14:56 pts/2    00:00:00 /bin/sleep 300\r\n```\r\n\r\nI reproduced this bug on Fedora 20 (kernel version: 3.16.4-200.fc20.x86_64) as well as on Centos 6.6 (kernel version: 2.6.32-431.11.2.el6.x86_64).\r\n\r\n#### The fix\r\n\r\nFrom what I can tell by looking at the kernel source, it appears Linux resets the death signal attribute on a task when the effective uid/gid changes.\r\n\r\nhttps://github.com/torvalds/linux/blob/d82012695ef29e4e1c8153ccf43098ec8e50369e/kernel/sys.c#L561\r\nhttps://github.com/torvalds/linux/blob/9a3c4145af32125c5ee39c0272662b47307a8323/kernel/cred.c#L441\r\n\r\nIn `src/syscall/exec_linux.go` we set the death signal *before* we make any setuid/setgid system calls which means it will always be cleared in those cases. Moving the `Pdeathsig` code farther down in the function seems to fix the problem.\r\n\r\nI'll be submitting a CL shortly.",
+	"user": {
+		"login": "williamsandrew",
+		"id": 722481,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-12T19:35:17Z",
+	"created_at": "2015-01-25T21:17:55Z",
+	"updated_at": "2016-06-25T01:59:18Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

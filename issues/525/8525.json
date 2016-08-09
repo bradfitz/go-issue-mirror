@@ -1,0 +1,27 @@
+{
+	"id": 51288326,
+	"number": 8525,
+	"state": "closed",
+	"title": "cmd/compile: failure to optimize away temporary variable",
+	"body": "\u003cpre\u003eI'd expect these functions to compile identically:\n\nfunc f() int {\n\ta := 2\n\treturn a\n}\n\nfunc g() int {\n\treturn 2\n}\n\nThey do not (6g):\n\n\u0026quot;\u0026quot;.f t=1 size=32 value=0 args=0x8 locals=0x8\n  0x0000 00000 (d.go:3) TEXT \u0026quot;\u0026quot;.f+0(SB),4,$8-8\n  0x0000 00000 (d.go:3) SUBQ $8,SP\n  0x0004 00004 (d.go:3) FUNCDATA $2,gclocals·a7a3692b8e27e823add69ec4239ba55f+0(SB)\n  0x0004 00004 (d.go:3) FUNCDATA $3,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\n  0x0004 00004 (d.go:4) MOVQ $2,AX\n  0x000b 00011 (d.go:5) MOVQ AX,\u0026quot;\u0026quot;.~r0+16(FP)\n  0x0010 00016 (d.go:5) ADDQ $8,SP\n  0x0014 00020 (d.go:5) RET ,\n\n\u0026quot;\u0026quot;.g t=1 size=16 value=0 args=0x8 locals=0x0\n  0x0000 00000 (d.go:8) TEXT \u0026quot;\u0026quot;.g+0(SB),4,$0-8\n  0x0000 00000 (d.go:8) NOP ,\n  0x0000 00000 (d.go:8) NOP ,\n  0x0000 00000 (d.go:8) FUNCDATA $2,gclocals·a7a3692b8e27e823add69ec4239ba55f+0(SB)\n  0x0000 00000 (d.go:8) FUNCDATA $3,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\n  0x0000 00000 (d.go:9) MOVQ $2,\u0026quot;\u0026quot;.~r0+8(FP)\n  0x0009 00009 (d.go:9) RET ,\n\nThere are two inefficiencies in f: A useless stack variable and two MOVQs where one\nsuffices.\n\nCL 126160043 will address the useless stack variable. The MOVQs should presumably be\nhandled with a peephole optimization that copies the constant when it has only one\nsubsequent use.\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2016-03-31T15:19:29Z",
+	"created_at": "2014-08-13T22:43:31Z",
+	"updated_at": "2016-03-31T15:19:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

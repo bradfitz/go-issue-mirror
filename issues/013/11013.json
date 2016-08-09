@@ -1,0 +1,27 @@
+{
+	"id": 83299539,
+	"number": 11013,
+	"state": "closed",
+	"title": "net/http: Transport.CancelRequest is inherently racy",
+	"body": "The [implementation](https://github.com/golang/go/blob/c723230e4a1ddb30b4822de8f795c16fd9aa90ff/src/net/http/transport.go#L277-L287) of http.Transport.CancelRequest looks for the supplied request struct in a map of in-flight requests, doing nothing if it doesn't exist. If I understand correctly, that means that this snippet is racy, in the sense that cancellation of the context may be lost if it is seen before RoundTrip gets around to sticking the request in the map:\r\n\r\n```Go\r\nfunc cancellableDo(ctx context.Context, req *http.Request) (err error) {\r\n  // Propagate cancellation of the context to the HTTP request.\r\n  go func() {\r\n    \u003c-context.Done()\r\n    http.DefaultTransport.CancelRequest(req)\r\n  }()\r\n  \r\n  // Call through.\r\n  err = http.DefaultTransport.RoundTrip(req)\r\n  return\r\n}\r\n```\r\n\r\nThis is made more likely to happen by RoundTripper implementations like [oauth2.Transport](http://godoc.org/golang.org/x/oauth2#Transport), which may [make network calls](https://github.com/golang/oauth2/blob/a8c019d04a8950d6debe7ba474dcb8744dbe68f3/transport.go#L40-L43) before calling through to RoundTrip. In the end I'm forced to [cancel in a hacky loop](https://github.com/jacobsa/gcloud/blob/75820d08bdcabb482e77ce9ad38ea63afaba043f/httputil/do.go#L63-L74) to ensure that the HTTP package pays attention.\r\n\r\nIs there anything that can be done to eliminate this race?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2015-06-30T01:24:31Z",
+	"created_at": "2015-06-01T04:03:20Z",
+	"updated_at": "2016-06-29T21:01:30Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

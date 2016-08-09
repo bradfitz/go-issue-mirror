@@ -1,0 +1,22 @@
+{
+	"id": 105339231,
+	"number": 12538,
+	"state": "closed",
+	"title": "testing: go test shouldn't terminate if leftover process remain when executed in verbose mode (-v flag)",
+	"body": "go version go1.5 linux/amd64\r\n\r\nI wrote a test that didn' terminate in normal mode, but did terminate when running in verbose mode (`-v` flag). I believe the behaviour should be the same in both cases.\r\n\r\nThe test uses a TestMain function that looked like:\r\n\r\n    func TestMain(m *testing.M) {\r\n    \tvar psql *database.Postgresql\r\n    \tvar err error\r\n    \r\n    \tlog.Println(\"Create test database\")\r\n    \r\n    \tpsql, db, err = database.StartPostgresqlTempConnect()\r\n    \t\tif err != nil {\r\n    \t\tlog.Fatal(err)\r\n    \t\tos.Exit(1)\r\n    \t}\r\n    \tdefer psql.Close()\r\n    \tdefer db.Close()\r\n    \r\n    \tos.Exit(m.Run())\r\n    }\r\n\r\nThe problem being that `os.Exit` was called, and the defer statement were not being run. There were leftover postgresql processes running.\r\n\r\nThis is obviously a problem with the test, but I still believe that the `go test` command should behave the same way, whether the `-v` flag is specified or not.",
+	"user": {
+		"login": "mildred",
+		"id": 33804,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-05T16:43:47Z",
+	"created_at": "2015-09-08T09:28:10Z",
+	"updated_at": "2015-11-05T16:43:47Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

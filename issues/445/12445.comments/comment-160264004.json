@@ -1,0 +1,12 @@
+{
+	"id": 160264004,
+	"body": "Something like below seems like it should be safe even under a moving GC.\r\n\r\n    // Overlap returns whether there exist i and j such that\r\n    // a[i*stride] and b[j*stride] address the same variable.\r\n    func overlap(a, b []float64, stride uintptr) bool {\r\n        an, bn := uintptr(len(a)), uintptr(len(b))\r\n        if an == 0 || bn == 0 {\r\n            // Degenerate case; empty slices can't overlap.\r\n            return false\r\n        }\r\n\r\n        // Keep as unsafe.Pointer for safety under moving GC.\r\n        ap, bp := unsafe.Pointer(\u0026a[0]), unsafe.Pointer(\u0026b[0])\r\n\r\n        // If a and b are entirely disjoint, there can't be any overlap.\r\n        if uintptr(bp) - uintptr(ap) \u003e= 8 * an \u0026\u0026 uintptr(ap) - uintptr(bp) \u003e= 8 * bn {\r\n            return false\r\n        }\r\n\r\n        // There is *some* overlap, so ap and bp must point into the same variable,\r\n        // which means we can assume a stable offset between them.\r\n        offset := uintptr(bp) - uintptr(ap)\r\n\r\n        // ap and bp must be aligned modulo the stride.\r\n        return offset % (stride * 8) == 0\r\n    }",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-28T08:13:19Z",
+	"updated_at": "2015-11-28T08:13:19Z"
+}

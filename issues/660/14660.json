@@ -1,0 +1,37 @@
+{
+	"id": 138695431,
+	"number": 14660,
+	"state": "closed",
+	"title": "proposal: context: new package for standard library",
+	"body": "@Sajmani and I are interested in adding `golang.org/x/net/context` to the standard library, probably as the top-level package `context`.\r\n\r\n(Why not `net/context`? It has little to do with networking, except that people often use it with networking; it doesn't even cross network boundaries on its own without help.)\r\n\r\nSome places in the standard library which could use it:\r\n\r\n* https://golang.org/pkg/net/http/#Request -- add a new `Context` field, alongside like the existing (Context.Done-compatible) `Request.Cancel` field. It will take precedence over `Cancel`, and we can make it work for both outbound and inbound requests. For server requests it would use `CloseNotifier`'s mechanism for c* ancelation. (which for http2 includes the http2-level explicit stream cancelation frame too, also used by gRPC)\r\n\r\n* https://golang.org/pkg/net/#Dialer -- same as `http.Request`. `net.Dialer` also has a Done-compatible `Cancel` field, which could be a Context.\r\n\r\n* https://golang.org/pkg/os/exec/#Cmd could have a new `Context` field to automatically kill+wait the process when a context expires, if the context expires before the child?\r\n\r\n* https://golang.org/pkg/database/sql/#DB.Query already takes `...interface{}` which can be special-cased to say that if the first parameter is a `context.Context`, it's used for deadlines. Trashy or clever? Maybe both. We could also add parallel `DB.QueryContext` which is a bit of a mouthful.\r\n\r\n* .... (where else?) ....\r\n\r\nOpen questions:\r\n\r\n* do we do something with the `io` package in the same release, or later? i.e. do we add `*os.File.IO(context.Context) io.ReadWriteCloser` sort of methods, to curry a context into `io` interfaces? Or wait on that. If it'd be nice to push down cancelation into even OS-level file I/O, but we don't even really do that inside Google with `IO`-like methods and pervasive Context usage, since we don't really use `*os.File`. So I'm inclined to wait on that. Too many operating systems to deal with.\r\n\r\nConcerns:\r\n\r\n* we can't add it to as many places in the standard library we'd like to since APIs are frozen. Basically we can only add it to structs. While we've told people not to add contexts to structs, I think that guidance is over-aggressive. The real advice is not to _store_ contexts. They should be passed along like parameters. But if the struct is essentially just a parameter, it's okay. I think this concern can be addressed with package-level documentation and examples.\r\n\r\n* what field name in structs to use? We use \"ctx\" for variables, but struct names are typically spelled out. But does that cause too much stutter? e.g.\r\n\r\n```go\r\npackage http\r\ntype Request struct {\r\n    Context context.Context\r\n}\r\n```\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 67,
+	"closed_at": "2016-05-05T16:03:20Z",
+	"created_at": "2016-03-05T16:27:51Z",
+	"updated_at": "2016-07-14T14:25:31Z",
+	"milestone": {
+		"id": 1414136,
+		"number": 32,
+		"title": "Go1.7Early"
+	},
+	"reactions": {
+		"total_count": 75,
+		"+1": 75
+	}
+}

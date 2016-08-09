@@ -1,0 +1,22 @@
+{
+	"id": 112573271,
+	"number": 13010,
+	"state": "closed",
+	"title": "cmd/asm: x86, incorrect Optab entry - PSRLW ",
+	"body": "In `src/cmd/internal/obj/x86/asm6.go`, the `Optab` table entry\r\n\r\n    {APSRLW, yps, Py3, [23]uint8{0xd1, 0x71, 02, Pe, 0xe1, Pe, 0x71, 02}},\r\n\r\nshould instead be\r\n\r\n    {APSRLW, yps, Py3, [23]uint8{0xd1, 0x71, 02, Pe, 0xd1, Pe, 0x71, 02}},\r\n\r\nAs it is now, if the shift amount is specified in a xmm register then PSRLW actually performs an arithmetic shift right i.e. PSRAW.\r\n\r\nThe issue can be reproduced with the below assembly function by calling it with `shift := uint8(1)` and `x := [8]uint16{65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535}`\r\n\r\nThe expected return value is `[8]uint16{32767, 32767, 32767, 32767, 32767, 32767, 32767, 32767}`\r\nThe actual return value is `[8]uint16{65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535}`\r\n\r\nApologies for the redundant loads/stores in the assembly, it's output from code generation.\r\n\r\n    // func shru16x8(x [8]uint16, shift uint8) [8]uint16 \r\n    TEXT ·shru16x8s(SB),NOSPLIT,$56-40\r\n        MOVQ         $0, ret0+24(FP)\r\n        MOVQ         $0, ret0+32(FP)\r\n        MOVQ         $0, t0-16(SP)\r\n        MOVQ         $0, t0-8(SP)\r\n        MOVQ         $0, t2-48(SP)\r\n        MOVQ         $0, t2-40(SP)\r\n        MOVQ         $0, t1-32(SP)\r\n        MOVQ         $0, t1-24(SP)\r\n    block0:\r\n        MOVOU        x+0(FP), X15\r\n        MOVOU        X15, t0-16(SP)\r\n        MOVOU        t0-16(SP), X14\r\n        MOVOU        X14, t1-32(SP)\r\n        MOVB         shift+16(FP), R15\r\n        MOVQ         R15, X15\r\n        MOVOU        t1-32(SP), X14\r\n        PSRLW        X15, X14\r\n        MOVOU        X14, t2-48(SP)\r\n        MOVOU        t2-48(SP), X15\r\n        MOVOU        X15, ret0+24(FP)\r\n        RET\r\n",
+	"user": {
+		"login": "bjwbell",
+		"id": 31277,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-10-21T20:06:18Z",
+	"created_at": "2015-10-21T12:10:38Z",
+	"updated_at": "2015-11-16T00:10:56Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

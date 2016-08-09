@@ -1,0 +1,12 @@
+{
+	"id": 151014180,
+	"body": "@stemar94 I basically came up with the same change, except I didn't sort the keys when encoding -- good catch.  The decoding seems fine to me.  I'm going to extend your CL with documentation and tests.\r\n\r\nThe sorting may be problematic, IMO:  Storing all of the stringified map keys in memory is painful, but at least we don't store all of the map values too.  The JSON package doesn't mention the sorting anywhere, so in theory we don't have to respect that, however many people appear to rely on the generated JSON being stable, so it seems we shouldn't disrupt that lightly.\r\n\r\nAnyone have opinions on how to handle sorting the keys?  The issue is that the keys are currently assumed to be strings and sorted using reflect.Value.String().  For strings this returns the string, for anything else it returns the type, e.g. `\"\u003cmain.Foo Value\u003e\"`.  Options are:\r\n 1. Sort the keys by encoding all of the map keys up-front and then sorting the list of encoded strings.\r\n 2. Don't change the current sorting, so that non-strings will be sorted using their (likely repeated) type as a string, and so generated output will probably differ from one encoding to the next for maps with more than 1 encoding.TextMarshaller.\r\n 3. Stop sorting, so all encoding is different on each encoding.\r\n 4. Check to see if the encoding type implements sort.Interface and use that if possible, otherwise fall back to pre-encoding the keys.\r\n\r\n1 seems like the most reasonable option to me.",
+	"user": {
+		"login": "augustoroman",
+		"id": 676565,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-26T03:33:00Z",
+	"updated_at": "2015-10-26T03:33:00Z"
+}

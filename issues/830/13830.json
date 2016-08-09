@@ -1,0 +1,28 @@
+{
+	"id": 125049882,
+	"number": 13830,
+	"state": "closed",
+	"title": "cmd/cgo: panic while checking **unsafe.Pointer in cgo call",
+	"body": "**What version of Go are you using (go version)?**\r\n```\r\n$ go version\r\ngo version go1.6beta1 darwin/amd64\r\n```\r\n\r\n**What operating system and processor architecture are you using?**\r\n```\r\n$ uname -a\r\nDarwin xlab-dev.local 15.2.0 Darwin Kernel Version 15.2.0: Fri Nov 13 19:56:56 PST 2015; root:xnu-3248.20.55~2/RELEASE_X86_64 x86_64\r\n```\r\n\r\n**What did you do?**\r\n\r\nI'm trying to pass a pointer into a cgo call. The program below is a full demo.\r\n```\r\npackage main\r\n\r\nimport \"unsafe\"\r\n\r\n// typedef void Bar;\r\n// void Foo(Bar** ptr) {};\r\nimport \"C\"\r\n\r\ntype Bar [0]byte\r\n\r\nfunc Foo(arg **Bar) {\r\n\tptr := (**C.Bar)(unsafe.Pointer(arg))\r\n\tC.Foo(ptr)\r\n}\r\n\r\nfunc main() {\r\n\tvar ptr *Bar\r\n\tFoo(\u0026ptr)\r\n}\r\n```\r\n\r\n**What did you expect to see?**\r\n\r\nThe pointer successfully passed or a failure because of Go 1.6 restrictions against passing a pointer to Go allocated memory that has pointers to Go allocated memory.\r\n\r\n**What did you see instead?**\r\n\r\n```\r\n$ go run main.go\r\npanic: interface conversion: interface {} is **main._Ctype_Bar, not *unsafe.Pointer\r\n\r\ngoroutine 1 [running]:\r\nmain._cgoCheckPointer0(0x40552e0, 0xc82002a008, 0x0, 0x0, 0x0, 0x4056420)\r\n\tcommand-line-arguments/_obj/_cgo_gotypes.go:40 +0x91\r\nmain.Foo(0xc82002a008)\r\n\tcgofail/main.go:13 +0x48\r\nmain.main()\r\n\tcgofail/main.go:18 +0x31\r\nexit status 2\r\n```\r\n\r\nThe helper has been generated as:\r\n\r\n```\r\nfunc _cgoCheckPointer0(p interface{}, args ...interface{}) *unsafe.Pointer {\r\n\treturn _cgoCheckPointer(p, args...).(*unsafe.Pointer)\r\n}\r\n```",
+	"user": {
+		"login": "xlab",
+		"id": 477998,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"closed_at": "2016-06-09T16:02:42Z",
+	"created_at": "2016-01-05T20:57:00Z",
+	"updated_at": "2016-06-09T16:02:42Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66075625,
+	"body": "\u003ca id=\"c16\"\u003e\u003c/a\u003eComment 16:\n\n\u003cpre\u003eI am not worried about system call dispatch being different on different\nmachines. The set of Windows kernel system calls has been very stable over\na period of decades, and there's no reason to believe it will change any\ntime soon. And if it does change, it will be with a new Windows version,\nwhich might have other things to update anyway. We sometimes go through\nsimilar updates when new OS X versions come out.\n\nHere is the definition of the NtWaitForSingleObject function, disassembled\nusing gdb. Note that I don't trust the symbols, but I do trust the memory:\n\n0x774b5464 \u0026lt;ntdll!ZeWaitForSingleObject\u0026gt;:    mov   $0x160, %eax\n0x774b5469 \u0026lt;ntdll!ZeWaitForSingleObject+5\u0026gt;:  mov   $0x7ffe0300,%edx\n0x774b546e \u0026lt;ntdll!ZeWaitForSingleObject+10\u0026gt;: call  *(%edx)\n0x774b5470 \u0026lt;ntdll!ZeWaitForSingleObject+12\u0026gt;: ret   $0xc\n\n0x7ffe0300 0x774b5ca0\n\n0x774b5ca0 \u0026lt;ntdll!KiUserExceptionDispatcher\u0026gt;:    mov  %esp,%edx\n0x774b5ca2 \u0026lt;ntdll!KiUserExceptionDispatcher+2\u0026gt;:  sysenter\n\nThe entire function uses only one extra word of space, for the return PC\npushed by the call instruction. I am willing to assume that will not change\nany time soon. You are correct that the linker does not expect even that\none word, and sometimes one word can make a difference. So I propose that\nour wrapper first call a NOSPLIT no-op function that uses an extra word of\nspace. If the linker doesn't reject the program, then the no-op call is\nsafe, and by implication so is the call to the direct system call wrapper.\n\nIt is important to me that we get cgo fully running again soon, because I\nam making other changes to cgo and don't want to be debugging those\nbreakages with this breakage mixed in.\n\nFor 386, I propose \u003ca href=\"https://golang.org/cl/7563043\"\u003ehttps://golang.org/cl/7563043\u003c/a\u003e. It takes the\napproach I have described. I can run it with -test.cpu=1,2,4 on the win32\nbuilder without any notable slowdown. I will not mail the CL for review\nuntil I have added and tested amd64 too, but I'll gladly accept comments\nany time.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-07T04:13:48Z",
+	"updated_at": "2014-12-22T06:22:37Z"
+}

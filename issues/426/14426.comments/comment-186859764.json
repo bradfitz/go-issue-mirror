@@ -1,0 +1,12 @@
+{
+	"id": 186859764,
+	"body": "It looks as if my assumption was correct: `priv` is uninitialized.\r\n\r\nI ported your example [to C](https://gist.github.com/dwbuiten/3d143b5acaec06743439), added a touch to `priv`, and ran it under valgrind:\r\n\r\n```\r\n==42866== Conditional jump or move depends on uninitialised value(s)\r\n==42866==    at 0x400AC3: process_pkt (bug.c:7)\r\n==42866==    by 0x400CFB: main (bug.c:74)\r\n==42866==  Uninitialised value was created by a stack allocation\r\n==42866==    at 0x68D6FA8: read_frame_internal (utils.c:1317)\r\n```\r\n\r\nMy guess is that the when the packet is statically allocated in the library, it uses some memory that once was used by Go, perhaps, and by chance ends up with a pointer-like value, causing the CGO analysis to catch it and panic.\r\n\r\nI will submit for a fix to go into the older releases of FFmpeg. This is not a Go bug.",
+	"user": {
+		"login": "dwbuiten",
+		"id": 1189609,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-21T17:04:16Z",
+	"updated_at": "2016-02-21T17:05:34Z"
+}

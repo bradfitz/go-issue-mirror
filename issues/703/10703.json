@@ -1,0 +1,27 @@
+{
+	"id": 73401633,
+	"number": 10703,
+	"state": "closed",
+	"title": "syscall: Non-root Unix build fails after commit 055ecb7be580 in TestSCMCredentials",
+	"body": "If I build current git master at or after commit 055ecb7be5805e07498488c59c6f01644fdacccc, it fails:\r\n\r\n    --- FAIL: TestSCMCredentials (0.00s)\r\n            creds_test.go:60: WriteMsgUnix failed with write unix @-\u003e\u003cnil\u003e: sendmsg: operation not permitted, want EPERM\r\n\r\nThis is src/syscall/creds_test.go, which contains code that assumes a net.OpError.Err field is directly a syscall.EPERM:\r\n\r\n    if err.(*net.OpError).Err != syscall.EPERM { .... }\r\n\r\nThis assumption is false after the commit. Now the syscall.EPERM is now wrapped up inside a SyscallError that's the result of calling os.NewSyscallError() in src/net/fd_unix.go's writeMsg().\r\n\r\nThe entire test here is conditional on os.Getuid() not being 0. I assume that the buildbots are running in some environment where os.Getuid() returns 0, which means this entire subtest in TestSCMCredentials() is being skipped. That may be a bug in itself (and there are a number of other tests that are conditional on the UID not being seen as 0).",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-06T00:30:13Z",
+	"created_at": "2015-05-05T19:04:56Z",
+	"updated_at": "2016-06-25T02:07:36Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

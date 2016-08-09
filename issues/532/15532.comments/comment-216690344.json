@@ -1,0 +1,12 @@
+{
+	"id": 216690344,
+	"body": "Looks like we're making unnecessary copies as a leftover from inlining.  Here's a small repro:\r\n```\r\nfunc f(a [2]float64) float64 {\r\n\treturn a[0] + a[1]\r\n}\r\n\r\nfunc g(a [2]float64) float64 {\r\n\treturn f(a)\r\n}\r\n```\r\n`f` looks fine, but `g` has an extra copy operation:\r\n```\r\n        0x0004 00004 (/home/khr/go/tmp4.go:8)   MOVUPS  \"\".a+24(FP), X0\r\n        0x0009 00009 (/home/khr/go/tmp4.go:8)   MOVUPS  X0, \"\".a(SP)\r\n        0x000d 00013 (/home/khr/go/tmp4.go:8)   MOVSD   \"\".a(SP), X0\r\n        0x0012 00018 (/home/khr/go/tmp4.go:8)   MOVSD   \"\".a+8(SP), X1\r\n        0x0018 00024 (/home/khr/go/tmp4.go:8)   ADDSD   X1, X0\r\n        0x001c 00028 (/home/khr/go/tmp4.go:8)   MOVSD   X0, \"\".~r1+40(FP)\r\n```\r\nThis copy is not needed.  The old compiler can get rid of the copy, but SSA doesn't.\r\n\r\nI don't see any obvious fix.  I will ponder.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-03T23:00:10Z",
+	"updated_at": "2016-05-03T23:00:10Z"
+}

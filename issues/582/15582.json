@@ -1,0 +1,33 @@
+{
+	"id": 153520883,
+	"number": 15582,
+	"state": "closed",
+	"title": "x/build/cmd/coordinator: hang if writing source tarball fails midway ",
+	"body": "I noticed an openbsd build fail and hang:\r\n\r\n```\r\n  builder: openbsd-amd64-gce58\r\n      rev: 26124695adcf9440d38dbd2f117221019243d4fa\r\n buildlet: http://10.240.0.25 GCE VM: buildlet-openbsd-amd64-gce58-rn1ced503\r\n  started: 2016-05-06 18:53:34.631002774 +0000 UTC\r\n   status: still running\r\n\r\nEvents:\r\n  2016-05-06T18:53:34Z get_buildlet \r\n  2016-05-06T18:53:34Z awaiting_gce_quota \r\n  2016-05-06T18:53:34Z finish_awaiting_gce_quota after 3.07µs\r\n  2016-05-06T18:53:34Z create_gce_buildlet buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:53:34Z create_gce_instance buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:54:02Z finish_create_gce_instance after 27.855829702s; buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:54:02Z wait_buildlet_start buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:54:04Z got_instance_info waiting_for_buildlet...\r\n  2016-05-06T18:54:04Z finish_wait_buildlet_start after 1.617098383s; buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:54:04Z finish_create_gce_buildlet after 29.473051761s; buildlet-openbsd-amd64-gce58-rn1ced503\r\n  2016-05-06T18:54:04Z finish_get_buildlet after 29.473098819s\r\n  2016-05-06T18:54:04Z using_buildlet 10.240.0.25:80\r\n  2016-05-06T18:54:04Z write_go_bootstrap_tar \r\n  2016-05-06T18:54:04Z write_version_tar \r\n  2016-05-06T18:54:04Z get_source \r\n  2016-05-06T18:54:04Z finish_get_source after 31.995µs\r\n  2016-05-06T18:54:04Z write_go_src_tar \r\n  2016-05-06T19:03:50Z finish_write_go_src_tar after 9m46.615158891s; err=writing tarball from Gerrit: Put http://10.240.0.25/writetgz?dir=go: write tcp 10.240.0.3:33048-\u003e10.240.0.25:80: write: connection reset by peer\r\n +1047.1s (now)\r\n\r\nBuild log:\r\n\r\n\r\n(buildlet still starting; no live streaming. reload manually to see status)\r\n```\r\n\r\n\r\nOne goroutine is stuck at:\r\n\r\n```\r\ngoroutine 3391 [select, 28 minutes]:\r\nnet/http.(*persistConn).roundTrip(0xc82039c2d0, 0xc820845b80, 0x0, 0x0, 0x0)\r\n\t/home/bradfitz/go/src/net/http/transport.go:1701 +0x95f\r\nnet/http.(*Transport).RoundTrip(0xc820fd1b30, 0xc8205905a0, 0xc820fd1b30, 0x0, 0xc800000000)\r\n\t/home/bradfitz/go/src/net/http/transport.go:385 +0x42a\r\nnet/http.send(0xc8205905a0, 0xd7b880, 0xc820fd1b30, 0x0, 0x0, 0x0, 0x8, 0x2a, 0xc820021238)\r\n\t/home/bradfitz/go/src/net/http/client.go:253 +0x14f\r\nnet/http.(*Client).send(0xc8206c8ea0, 0xc8205905a0, 0x0, 0x0, 0x0, 0xc820021238, 0x0, 0x1)\r\n\t/home/bradfitz/go/src/net/http/client.go:143 +0xef\r\nnet/http.(*Client).doFollowingRedirects(0xc8206c8ea0, 0xc8205905a0, 0xb0dae0, 0x4, 0x5f9901, 0xc8202c85dc)\r\n\t/home/bradfitz/go/src/net/http/client.go:498 +0x4d4\r\nnet/http.(*Client).Do(0xc8206c8ea0, 0xc8205905a0, 0xc8218518c0, 0xc8218518c0, 0x45defe)\r\n\t/home/bradfitz/go/src/net/http/client.go:184 +0x10b\r\ngolang.org/x/build/buildlet.(*Client).do(0xc8202c8540, 0xc8205905a0, 0xa36c80, 0xc8206e10b0, 0xc821636d80)\r\n\t/home/bradfitz/src/golang.org/x/build/buildlet/buildletclient.go:210 +0xf5\r\ngolang.org/x/build/buildlet.(*Client).doOK(0xc8202c8540, 0xc8205905a0, 0x0, 0x0)\r\n\t/home/bradfitz/src/golang.org/x/build/buildlet/buildletclient.go:306 +0x55\r\ngolang.org/x/build/buildlet.(*Client).PutTarFromURL(0xc8202c8540, 0xc8208ac6e0, 0x4f, 0xabb798, 0x5, 0x0, 0xd7b400)\r\n\t/home/bradfitz/src/golang.org/x/build/buildlet/buildletclient.go:345 +0x2cb\r\nmain.(*buildStatus).writeBootstrapToolchain(0xc820e05680, 0xc828288740, 0xc828288750)\r\n\t/home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1749 +0xe4\r\nmain.(*buildStatus).(main.writeBootstrapToolchain)-fm(0x7573655200000008, 0xb0e120)\r\n\t/home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1414 +0x20\r\ngo4.org/syncutil.(*Group).Go.func1(0xc8206e1020, 0xc821852fa0)\r\n\t/home/bradfitz/src/go4.org/syncutil/group.go:35 +0x4d\r\ncreated by go4.org/syncutil.(*Group).Go\r\n\t/home/bradfitz/src/go4.org/syncutil/group.go:41 +0x58\r\n```\r\n\r\nAnd the parent one is stuck at:\r\n\r\n```\r\ngoroutine 247 [semacquire, 28 minutes]:\r\nsync.runtime_Semacquire(0xc8206e102c)\r\n\t/home/bradfitz/go/src/runtime/sema.go:47 +0x26\r\nsync.(*WaitGroup).Wait(0xc8206e1020)\r\n\t/home/bradfitz/go/src/sync/waitgroup.go:131 +0x8d\r\ngo4.org/syncutil.(*Group).Err(0xc8206e1020, 0xc821852fa0, 0xe)\r\n\t/home/bradfitz/src/go4.org/syncutil/group.go:52 +0x23\r\nmain.(*buildStatus).build(0xc820e05680, 0x0, 0x0)\r\n\t/home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1415 +0xfa8\r\nmain.(*buildStatus).start.func1(0xc820e05680)\r\n\t/home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1267 +0x3d\r\ncreated by main.(*buildStatus).start\r\n\t/home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1275 +0x53\r\n```\r\n\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Builders"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-09T21:15:10Z",
+	"created_at": "2016-05-06T19:23:17Z",
+	"updated_at": "2016-05-09T21:15:10Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

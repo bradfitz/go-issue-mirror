@@ -1,0 +1,33 @@
+{
+	"id": 52418351,
+	"number": 9384,
+	"state": "closed",
+	"title": "runtime: bad pointer due to map iteration",
+	"body": "An internal Google program is executing code like the below and getting occasional runtime crashes during garbage collection:\r\n\r\n\tfunc computeIncomingDependencies() (map[string]map[string]struct{}, error) {\r\n\t\tgopath := os.Getenv(\"GOPATH\")\r\n\t\tif gopath == \"\" {\r\n\t\t\treturn nil, fmt.Errorf(\"GOPATH is not set\")\r\n\t\t}\r\n\t\tdirs := strings.Split(gopath, \":\")\r\n\t\tallDirs := map[string]struct{}{}\r\n\t\tfor _, dir := range dirs {\r\n\t\t\tif err := collectDirs(filepath.Join(dir, \"src\"), \"\", allDirs); err != nil {\r\n\t\t\t\treturn nil, err\r\n\t\t\t}\r\n\t\t}\r\n\t\tallDeps := map[string]map[string]struct{}{}\r\n\t\tfor dir, _ := range allDirs {\r\n\t\t\tallDeps[dir] = map[string]struct{}{} \u003c\u003c\u003c GC during makemap on this line \u003c\u003c\u003c\r\n\t\t}\r\n\t\tfor dir, _ := range allDirs {\r\n\t\t\tmode := build.ImportMode(0)\r\n\t\t\tpkg, err := build.Import(dir, \"\", mode)\r\n\t\t\tif err != nil {\r\n\t\t\t\tfmt.Errorf(\"Import(%v, %v) failed: %v\", dir, mode, err)\r\n\t\t\t}\r\n\t\t\timports := pkg.Imports\r\n\t\t\tif includeTestsFlag {\r\n\t\t\t\timports = append(imports, pkg.TestImports...)\r\n\t\t\t}\r\n\t\t\tfor _, dep := range imports {\r\n\t\t\t\tif deps, ok := allDeps[dep]; ok {\r\n\t\t\t\t\tdeps[dir] = struct{}{}\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}\r\n\t\treturn allDeps, nil\r\n\t}\r\n\r\nA garbage collection happens on the marked line. During the scan of the stack frame corresponding to this function, the garbage collector finds an invalid heap pointer and crashes the program. The invalid heap pointer is at 0x1f8(SP). The map iterator for the loop being executed start at 0x1f0(SP), making this the second word in the iterator, it.value.\r\n\r\nThe error I am looking at says:\r\n\r\n    runtime: garbage collector found invalid heap pointer *(0xc20805ec20+0x198)=0xc2080f7000 span=0xc2080ee000-0xc2080f7000-0xc2080f8000 state=0\r\n    fatal error: invalid heap pointer\r\n\r\nThe actual stack frame is sp=0xc20805ebc0, giving the extra 0x60+0x198 = 0x1f8.\r\n\r\nThis is the generated code for the creation of allDeps and then that loop:\r\n\r\n\t:118\t0x45ebc1\te81a7bfaff\t\t\tCALL runtime.makemap(SB)\r\n\t:118\t0x45ebc6\t488b5c2410\t\t\tMOVQ 0x10(SP), BX\r\n\t:118\t0x45ebcb\t48899c2480000000\t\tMOVQ BX, 0x80(SP)\r\n\t:119\t0x45ebd3\t488b4c2478\t\t\tMOVQ 0x78(SP), CX\r\n\t:119\t0x45ebd8\t488dbc24f0010000\t\tLEAQ 0x1f0(SP), DI\r\n\t:119\t0x45ebe0\t31c0\t\t\t\tXORL AX, AX\r\n\t:119\t0x45ebe2\te865acfdff\t\t\tCALL 0x43984c\r\n\t:119\t0x45ebe7\t488d1dd2fc1000\t\t\tLEAQ 0x10fcd2(IP), BX\r\n\t:119\t0x45ebee\t48891c24\t\t\tMOVQ BX, 0(SP)\r\n\t:119\t0x45ebf2\t48894c2408\t\t\tMOVQ CX, 0x8(SP)\r\n\t:119\t0x45ebf7\t488d9c24f0010000\t\tLEAQ 0x1f0(SP), BX\r\n\t:119\t0x45ebff\t48895c2410\t\t\tMOVQ BX, 0x10(SP)\r\n\t:119\t0x45ec04\te8c790faff\t\t\tCALL runtime.mapiterinit(SB)\r\n\t:119\t0x45ec09\t488b9c24f0010000\t\tMOVQ 0x1f0(SP), BX\r\n\t:119\t0x45ec11\t31ed\t\t\t\tXORL BP, BP\r\n\t:119\t0x45ec13\t4839eb\t\t\t\tCMPQ BP, BX\r\n\t:119\t0x45ec16\t0f84b4000000\t\t\tJE 0x45ecd0\r\n\t:119\t0x45ec1c\t488b9c24f0010000\t\tMOVQ 0x1f0(SP), BX\r\n\t:119\t0x45ec24\t4883fb00\t\t\tCMPQ $0x0, BX\r\n\t:119\t0x45ec28\t0f8431060000\t\t\tJE 0x45f25f\r\n\t:119\t0x45ec2e\t488b0b\t\t\t\tMOVQ 0(BX), CX\r\n\t:119\t0x45ec31\t488b6b08\t\t\tMOVQ 0x8(BX), BP\r\n\t:120\t0x45ec35\t48898c24b8000000\t\tMOVQ CX, 0xb8(SP)\r\n\t:120\t0x45ec3d\t48898c2408010000\t\tMOVQ CX, 0x108(SP)\r\n\t:120\t0x45ec45\t4889ac24c0000000\t\tMOVQ BP, 0xc0(SP)\r\n\t:120\t0x45ec4d\t4889ac2410010000\t\tMOVQ BP, 0x110(SP)\r\n\t:120\t0x45ec55\t488d1d64fc1000\t\t\tLEAQ 0x10fc64(IP), BX\r\n\t:120\t0x45ec5c\t48891c24\t\t\tMOVQ BX, 0(SP)\r\n\t:120\t0x45ec60\t48c744240800000000\t\tMOVQ $0x0, 0x8(SP)\r\n\t:120\t0x45ec69\te8727afaff\t\t\tCALL runtime.makemap(SB) \u003c\u003c\u003c GC here \u003c\u003c\u003c\r\n\t:120\t0x45ec6e\t488b5c2410\t\t\tMOVQ 0x10(SP), BX\r\n\t:120\t0x45ec73\t48895c2470\t\t\tMOVQ BX, 0x70(SP)\r\n\t:120\t0x45ec78\t488d1dc1fa1000\t\t\tLEAQ 0x10fac1(IP), BX\r\n\t:120\t0x45ec7f\t48891c24\t\t\tMOVQ BX, 0(SP)\r\n\t:120\t0x45ec83\t488b9c2480000000\t\tMOVQ 0x80(SP), BX\r\n\t:120\t0x45ec8b\t48895c2408\t\t\tMOVQ BX, 0x8(SP)\r\n\t:120\t0x45ec90\t488d9c2408010000\t\tLEAQ 0x108(SP), BX\r\n\t:120\t0x45ec98\t48895c2410\t\t\tMOVQ BX, 0x10(SP)\r\n\t:120\t0x45ec9d\t488d5c2470\t\t\tLEAQ 0x70(SP), BX\r\n\t:120\t0x45eca2\t48895c2418\t\t\tMOVQ BX, 0x18(SP)\r\n\t:120\t0x45eca7\te88486faff\t\t\tCALL runtime.mapassign1(SB)\r\n\t:119\t0x45ecac\t488d9c24f0010000\t\tLEAQ 0x1f0(SP), BX\r\n\t:119\t0x45ecb4\t48891c24\t\t\tMOVQ BX, 0(SP)\r\n\t:119\t0x45ecb8\te87392faff\t\t\tCALL runtime.mapiternext(SB)\r\n\t:119\t0x45ecbd\t488b9c24f0010000\t\tMOVQ 0x1f0(SP), BX\r\n\t:119\t0x45ecc5\t31ed\t\t\t\tXORL BP, BP\r\n\t:119\t0x45ecc7\t4839eb\t\t\t\tCMPQ BP, BX\r\n\t:119\t0x45ecca\t0f854cffffff\t\t\tJNE 0x45ec1c\r\n\r\nThe bad pointer is 0xc2080f7000 and the span summary is 0xc2080ee000-0xc2080f7000-0xc2080f8000, meaning that s.limit == 0xc2080f7000. The conclusion seems to be that mapiternext (or mapiterinit, which calls mapiternext) can leave it.value pointing at the end of the underlying map data array. \r\n\r\nI don't see how that can happen by reading mapiternext, but it seems to be possible somehow. Should probably fix for Go 1.4.1.\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2014-12-22T22:27:09Z",
+	"created_at": "2014-12-18T21:26:45Z",
+	"updated_at": "2016-06-25T01:56:52Z",
+	"milestone": {
+		"id": 906464,
+		"number": 3,
+		"title": "Go1.4.1"
+	}
+}

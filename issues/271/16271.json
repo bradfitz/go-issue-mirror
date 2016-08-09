@@ -1,0 +1,27 @@
+{
+	"id": 163905683,
+	"number": 16271,
+	"state": "open",
+	"title": "gccgo: stack memory leak if create large number of goroutines in short time",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1.  What version of Go are you using (go version)?\r\n    \r\n        $ go version\r\n        go version go1.6.1 gccgo (GCC) 6.1.1 20160602 linux/amd64\r\n\r\n2.  What operating system and processor architecture are you using (go env)?\r\n    \r\n    Its gcc-go 6.1.1.-2 under Arch Linux.\r\n    \r\n        $ uname -a\r\n        Linux fa-host 4.6.3-1-ARCH #1 SMP PREEMPT Fri Jun 24 21:19:13 CEST 2016 x86_64 GNU/Linux\r\n    \r\n        $ go env\r\n        GOARCH=\"amd64\"\r\n        GOBIN=\"\"\r\n        GOEXE=\"\"\r\n        GOHOSTARCH=\"amd64\"\r\n        GOHOSTOS=\"linux\"\r\n        GOOS=\"linux\"\r\n        GOPATH=\"/usr/lib/go:/usr/share/gocode:/usr/lib/go/site\"\r\n        GORACE=\"\"\r\n        GOROOT=\"/usr\"\r\n        GOTOOLDIR=\"/usr/lib/gcc/x86_64-pc-linux-gnu/6.1.1\"\r\n        GO15VENDOREXPERIMENT=\"1\"\r\n        CC=\"/usr/bin/gcc\"\r\n        GOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\n        CXX=\"/usr/bin/g++\"\r\n        CGO_ENABLED=\"1\"\r\n\r\n3.  What did you do?\r\n    \r\n    After several days memory leak debugging work for our go\r\n    application, I found the memory issue only occurred when\r\n    compiled by gccgo, and its goroutine stack memory related\r\n    instead of heap. Here is a simple demo to reproduce it:\r\n    \r\n        package main\r\n        \r\n        import \"time\"\r\n        import \"fmt\"\r\n        import \"runtime/debug\"\r\n        \r\n        func main() {\r\n            worker := func() {\r\n                time.Sleep(3 * time.Second)\r\n            }\r\n            for i := 0; i \u003c 5000; i++ {\r\n                go worker()\r\n            }\r\n            time.Sleep(10 * time.Second)\r\n            fmt.Println(\"try to release memory\")\r\n            debug.FreeOSMemory()\r\n            time.Sleep(3600 * 12 * time.Second)\r\n        }\r\n    \r\n    For example save it as test.go and run:\r\n    \r\n        go build -compiler gccgo test.go\r\n        ./test\r\n\r\n4.  What did you expect to see?\r\n    \r\n    The used memory should be released after \"try to release\r\n    memory\" printed.\r\n\r\n5.  What did you see instead?\r\n    \r\n    The memory(about 100MB) is still in used and looks never be\r\n    released even through I waited for a long time(about 1\r\n    hour). So I think it should be a special stack memory leak\r\n    issue.\r\n    \r\n    BTW: Everything is OK if compiled by go/gc.",
+	"user": {
+		"login": "fasheng",
+		"id": 3049011,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-07-05T17:39:03Z",
+	"updated_at": "2016-07-20T18:37:43Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

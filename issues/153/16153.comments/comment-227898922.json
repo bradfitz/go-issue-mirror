@@ -1,0 +1,12 @@
+{
+	"id": 227898922,
+	"body": "I digged a bit into the code and it seems the problem is (also?) in go/doc/exports.go and the way type propagation is done in filterSpecList.\r\n\r\n`filterSpecList` is called here:\r\nhttps://github.com/golang/go/blob/master/src/go/doc/exports.go#L229\r\n\r\nand defined in\r\nhttps://github.com/golang/go/blob/master/src/go/doc/exports.go#L196\r\n\r\nin filterSpecList, `if specType = nil \u0026\u0026 prevType != nil `, spec.Type is set from prevType with a `copyConstType` call just returns the previous Type's Name:\r\nhttps://github.com/golang/go/blob/master/src/go/doc/exports.go#L203\r\nhttps://github.codm/golang/go/blob/master/src/go/doc/exports.go#L176-183\r\n\r\nand I believe this is how we end up with incorrect type information. \r\n\r\nDo we need that type propagation at all in the doc package for `const`s?  Or could we simply delete this block of code:\r\nhttps://github.com/golang/go/blob/master/src/go/doc/exports.go#L197-215\r\n\r\nI modified my test package to highlight the fact that the type propagation is not related to integers:\r\nhttps://godoc.org/github.com/dmitris/mytest shows now:\r\n```\r\nconst (\r\n    ConstBad string = 256 // max uint8 + 1\r\n\r\n    Bar uint8 = \"bar\"\r\n)\r\n```",
+	"user": {
+		"login": "dmitris",
+		"id": 31205,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-22T22:39:05Z",
+	"updated_at": "2016-06-22T22:42:23Z"
+}

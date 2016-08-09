@@ -1,0 +1,12 @@
+{
+	"id": 66096629,
+	"body": "\u003ca id=\"c31\"\u003e\u003c/a\u003eComment 31 by **voidlogic7**:\n\n\u003cpre\u003eThis is going to break a huge number of existing cgo bindings. I understand this is\nnecessary to support things like copying/compacting GC... but in light how much existing\n(and in production) Go software this is going to break I imagine whatever release this\nbecomes reality in, many people will be stuck on the previous release quite a while as\nthey scramble to replace offending dependencies.\n\nSince the common case is buffers ([]byte, etc) being passed to C, filled and handed\nback, what about introducing a cgo function to make this situation easier:\n\nbuf := C.make([]byte, 2048)\ndefer C.release(buf)\nC.someFunction((...)buf.Data)\n\nC.make would be like make, except the GC would be unaware of the resulting memory\n(different memory arena from normal GC'd memory?).\nC.release would be like 'free' but rather then freeing memory it just makes the GC aware\nof it and eligible for later collection. (These functions are meant to be Go functions\nso the above code only crosses the boundary once. Also notice no extra copying is\nnecessary to go on to use buf inside of Go objects [unless the GC decides to copy a\n\"released\" slice into the normal GC space later of course])\n\nI hope this would make it trivial to \"fix\" most broken cgo dependencies and at the same\ntime stay out of the way of GC advancement.\n\nThe alternative to something like this is either making two cgo calls (one to perform\nthe action and make the allocation) and another to free the buffer later OR to create\nsome kind of pooling object that allocates the pool on the C side and returns batches\nlater on the Go side.\n\nThis solution isn't perfect but I think its better than the alternatives. In some ways\nthis is like pinning without the burdons of supporting arbitrary one of pinning in the\nprimary GC arena.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-08-12T20:51:18Z",
+	"updated_at": "2014-12-08T10:46:11Z"
+}

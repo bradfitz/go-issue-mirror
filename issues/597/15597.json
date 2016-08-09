@@ -1,0 +1,21 @@
+{
+	"id": 153629513,
+	"number": 15597,
+	"state": "open",
+	"title": "cmd/compile: investigate SSA stack size regressions",
+	"body": "For the most part, SSA generates smaller stacks than the old backend, but not always. This issue is to (a) document an easy way to find such regressions and (b) serve as a reminder to investigate some of them to see whether there are reasonable improvements available.\r\n\r\nFirst, apply this diff, so that -S prints just package, function, and stack size:\r\n\r\n```dif\r\ndiff --git a/src/cmd/internal/obj/objfile.go b/src/cmd/internal/obj/objfile.go\r\nindex a1fdee6..ea13412 100644\r\n--- a/src/cmd/internal/obj/objfile.go\r\n+++ b/src/cmd/internal/obj/objfile.go\r\n@@ -114,6 +114,7 @@ import (\r\n        \"log\"\r\n        \"path/filepath\"\r\n        \"sort\"\r\n+       \"strings\"\r\n )\r\n \r\n // The Go and C compilers, and the assembler, call writeobj to write\r\n@@ -310,6 +311,11 @@ func (w *objWriter) writeRefs(s *LSym) {\r\n \r\n func (w *objWriter) writeSymDebug(s *LSym) {\r\n        ctxt := w.ctxt\r\n+       if s.Type != STEXT {\r\n+               return\r\n+       }\r\n+       fmt.Fprintf(ctxt.Bso, \"STACK %s.%s %d\\n\", ctxt.Pathname, strings.TrimPrefix(s.Name, `\"\".`), s.Locals)\r\n+       return\r\n        fmt.Fprintf(ctxt.Bso, \"%s \", s.Name)\r\n        if s.Version != 0 {\r\n                fmt.Fprintf(ctxt.Bso, \"v=%d \", s.Version)\r\n```\r\n\r\nThen\r\n\r\n```bash\r\n$ go build -a -gcflags=\"-S\" std 2\u003e\u00261 | sort \u003e ssa.stacksize\r\n$ go build -a -gcflags=\"-S -ssa=0\" std 2\u003e\u00261 | sort \u003e nossa.stacksize\r\n$ diff --suppress-common-lines --width 10000 --side-by-side nossa.stacksize ssa.stacksize | awk '{if ($2!=$6) {next} if(($7==0) \u0026\u0026 ($3 ==0)) {next} if ($7\u003c=$3) {next} print $3/$7\" \"$2\" \"$3\" -\u003e \"$7}' | sort -n\r\n```\r\n\r\nThis is using OS X's diff. This prints four columns: old stack size / new stack size, package+function, old stack size, new stack size.\r\n\r\nA few sample lines, pulled from a few places in the output:\r\n\r\n```\r\n0 crypto/cipher.fastXORBytes 0 -\u003e 8\r\n0 image.yCbCrSize 0 -\u003e 8\r\n0 math/big.shlVU_g 0 -\u003e 8\r\n0 math.qzero 0 -\u003e 96\r\n0 testing.(*B).add 0 -\u003e 136\r\n0.0248963 image/color/palette.init 48 -\u003e 1928\r\n0.0444444 vendor/golang.org/x/net/http2/hpack.init 112 -\u003e 2520\r\n0.75 sort.doPivot 96 -\u003e 128\r\n```\r\n\r\nFull output at commit e6ec82067a9068c93db6e7041017060a1c863452 is at https://gist.github.com/josharian/9919226c603e9c90a367738962241a06.\r\n\r\ncc @randall77 @dr2chase \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-05-08T01:54:37Z",
+	"updated_at": "2016-05-08T01:54:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

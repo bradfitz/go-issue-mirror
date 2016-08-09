@@ -1,0 +1,12 @@
+{
+	"id": 133507258,
+	"body": "The error occurs in the `scan` function (in math/big/floatconv.go), specifically during the `10**exp10` correction multiplication. \r\n\r\nOn line [130](https://github.com/golang/go/blob/master/src/math/big/floatconv.go#L130) we call `umul` as\r\n\r\n```\r\nz.umul(z, p.pow10(exp10))\r\n```\r\n\r\n`umul(x, y)` has precondition\r\n\r\n\u003e x and y must have a non-empty mantissa and valid exponent.\r\n\r\nand there's no input checking for +Inf values. Unfortunately `p.pow10(exp10)` **can** be `Inf` (when `exp10` is big). \r\n\r\nWhen `Parse` is called with `1e81391777742999`, this results in a call to `pow10` that returns an Inf `Float`. Then `umul` is called as `umul(1, +Inf)` and happily returns a bogus value of `1e151`.\r\n\r\nThe fix is simple: if the `umul` call on line 130 is replaced with a `Mul` call (which does Inf checking), then \r\n\r\n```\r\nx.SetString(\"1e81391777742999\")\r\nfmt.Printf(\"x = %.6g\\n\", \u0026x)\r\n```\r\ncorrectly gives\r\n\r\n```\r\n+Inf\r\n```\r\n\r\nThe fix also uncovered two wrong test. In the first one (floatconv_test.go, line 370)\r\n\r\n```\r\n{\"1e1000000000\", 64, 'p', 0, \"0x.ecc5f45aa573d3p+1538481529\"},\r\n```\r\nthe expected value (with exponent `1538481529`) is wrong. `1e1000000000` is not representable as a floating point number with `int32` exponent. Again, what is coded as the expected result is a bogus number returned by an `umul` call with an Inf parameter. \r\n\r\nAnother test\r\n\r\n```\r\n{\"1e-1000000000\", 64, 'p', 0, \"0x.8a64dd983a4c7dabp-1538481528\"}\r\n```\r\n\r\nproves that negative exponents too are mis-handled. In fact, `1e-81391777742999` returns `1e-151`. This problem, too, can be fixed by replacing a `uquo` call (no Inf checking), with a `Quo`, in line 128 of floatconv.go\r\n\r\nI've sent a patch.\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-21T17:41:28Z",
+	"updated_at": "2015-08-21T17:41:28Z"
+}

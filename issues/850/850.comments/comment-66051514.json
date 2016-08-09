@@ -1,0 +1,12 @@
+{
+	"id": 66051514,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eI actually have isPrintable bodged locally for just this reason.\n\nGetting the cert using:\n$ openssl s_client -tls1 -connect gist.github.com:443\nAnd dumping it by pasting it into:\n$ openssl asn1parse -inform PEM\n\nShows that the commonName is, indeed a PrintableString. That's bogus and the certificate\nis technically broken. However, including wildcards is pretty common in a certificate.\ncommonNames with wildcards should be T61Strings or IA5Strings (like the *.google.com\ncert which uses T61).\n\nBecause PrintableString is the default, we can't create certificates with wildcards in\nthem either.\n\nFrom RFC 5280, the CommonName is actually a CHOICE. We don't deal with this very well\nbecause we only have one string type:\nX520CommonName ::= CHOICE {\n      teletexString     TeletexString   (SIZE (1..ub-common-name)),\n      printableString   PrintableString (SIZE (1..ub-common-name)),\n      universalString   UniversalString (SIZE (1..ub-common-name)),\n      utf8String        UTF8String      (SIZE (1..ub-common-name)),\n      bmpString         BMPString       (SIZE (1..ub-common-name)) }\n\nThoughts:\n  1) Add '*' to the isPrintable enumeration. Shitty, but it seems common enough that we want to do it.\n  2) Automatically upgrade to a T61String or UTF8String as needed when marshaling.\n\nIf you like either of those I'll send a patch.\u003c/pre\u003e",
+	"user": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-06-09T23:18:53Z",
+	"updated_at": "2014-12-08T10:06:05Z"
+}

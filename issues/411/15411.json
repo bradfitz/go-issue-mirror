@@ -1,0 +1,25 @@
+{
+	"id": 150478306,
+	"number": 15411,
+	"state": "closed",
+	"title": "proposal: allow send on a closed channel to gracefully fail in a select",
+	"body": "Currently, the only way to close a channel with multiple writers is to use a hacky `defer func() { recover() }()` or using a waitgroup and a counter.\r\n\r\nMy proposal is to allow something like this to work without the hack:\r\n\r\n```\r\nfunc SendVal(ch chan *Val, closeCh chan struct{}, v *Val) (ok bool) {\r\n\tselect {\r\n\tcase \u003c-closeCh:\r\n\t\treturn false\r\n\tcase ch \u003c- v:\r\n\t\treturn true\r\n\t}\r\n}\r\n```\r\n\r\nIt should still panic without the select, or an alternative syntax but I know this is highly unlikely in the 1.x cycle.\r\n\r\n```\r\nfunc SendVal(ch chan *Val, closeCh chan struct{}, v *Val) (ok bool) {\r\n\tok = ch \u003c- v\r\n\treturn\r\n}\r\n```\r\n\r\nThis is *not* about allowing multiple writers to close a channel, this is about allowing a closed channel in a multiple select situation.\r\n\r\n```\r\nclosed \u003c- v\r\n// and\r\nselect {\r\ncase closed \u003c- v:\r\n}\r\n```\r\n\r\nShould still panic, however:\r\n\r\n```\r\nselect {\r\ncase closed \u003c- v:\r\ncase \u003c-anotherCh:\r\n}\r\n```\r\n\r\nWouldn't panic (check the CL and the test in it).\r\n",
+	"user": {
+		"login": "OneOfOne",
+		"id": 1080443,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2016-04-22T21:54:21Z",
+	"created_at": "2016-04-22T21:46:11Z",
+	"updated_at": "2016-04-23T00:57:27Z"
+}

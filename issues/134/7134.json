@@ -1,0 +1,27 @@
+{
+	"id": 51286236,
+	"number": 7134,
+	"state": "closed",
+	"title": "cmd/gc: incorrect initialization order",
+	"body": "\u003cpre\u003e\u003ca href=\"http://play.golang.org/p/VMk-h3Js4z\"\u003ehttp://play.golang.org/p/VMk-h3Js4z\u003c/a\u003e\n\nproduces the following output:\n\n6 2 5 3 4 1\n\nwhich appears to initialize the variables a to f in the order they are mentioned in the\ncomposite literal in makeOrder.\n\nHowever, the spec says ( \u003ca href=\"http://tip.golang.org/ref/spec#Program_execution\"\u003ehttp://tip.golang.org/ref/spec#Program_execution\u003c/a\u003e ):\n\n\u0026quot;If the initializer of A depends on B, A will be set after B. Dependency analysis\ndoes not depend on the actual values of the items being initialized, only on their\nappearance in the source. A depends on B if the value of A contains a mention of B,\ncontains a value whose initializer mentions B, or mentions a function that mentions B,\nrecursively. It is an error if such dependencies form a cycle. If two items are not\ninterdependent, they will be initialized in the order they appear in the source,\npossibly in multiple files, as presented to the compiler.\u0026quot;\n\n- dependency only depends on the appearance in the source: makeOrder depends on a...f\nbecause it contains a mention of a...f. It doesn't say it depends on the order of those\nmentions.\n\n- not interdependent items are initialized in the order they appear in the source: a...f\nare not interdependent, so they should be initialized in the order they appear: a, b, c,\nd, e, f\n\nTherefore the correct result should be:\n\n1 2 3 4 5 6\n\ngccgo produces this correct order.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:39:40Z",
+	"created_at": "2014-01-15T21:28:25Z",
+	"updated_at": "2016-06-25T01:25:40Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

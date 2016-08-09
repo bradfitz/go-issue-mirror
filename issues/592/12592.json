@@ -1,0 +1,17 @@
+{
+	"id": 106104184,
+	"number": 12592,
+	"state": "closed",
+	"title": "debug/dwarf: fails on files with unknown formSecOffset attributes",
+	"body": "If the .debug_abbrev section of an ELF file contains attributes that aren't known to the dwarf package and that have form formSecOffset, debug/dwarf.New will fail with an error like \"decoding dwarf section abbrev at offset 0x17: cannot determine class of unknown attribute with formSecOffset\". This worked with Go 1.4 because Go 1.4 didn't try to disambiguate formSecOffset.\r\n\r\nTo reproduce this, create a trivial C file, build it with `-gsplit-dwarf`, and then attempt to load the DWARF info:\r\n\r\n```\r\necho \"void main() {}\" \u003e x.c\r\ngcc -gsplit-dwarf x.c\r\ncat \u003ex.go \u003c\u003cEOF\r\npackage main\r\n\r\nimport (\r\n\t\"debug/elf\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\telff, _ := elf.Open(\"a.out\")\r\n\t_, err := elff.DWARF()\r\n\tfmt.Println(err)\r\n}\r\nEOF\r\ngo run x.go\r\n```\r\n\r\nWith Go 1.5, this will fail with the aforementioned error because a.out contains an abbrev with the unknown attribute DW_AT_GNU_addr_base, which has form DW_FORM_sec_offset. But in Go 1.4 it will succeed.\r\n\r\nWe could simply add these attributes. I believe they're being standardized in DWARF v5 anyway. But perhaps we need to more gracefully handle this case, rather than refusing to read the entire DWARF info when there's something we don't recognize. We could introduce a ClassUnknown, or perhaps more specifically ClassUnknownPtr, to use in this case. Currently formSecOffset is the only case where we must know the attribute to map the form to a class.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-09-15T18:00:16Z",
+	"created_at": "2015-09-11T22:15:45Z",
+	"updated_at": "2015-09-15T18:00:16Z"
+}

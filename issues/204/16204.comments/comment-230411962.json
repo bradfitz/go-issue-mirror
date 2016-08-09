@@ -1,0 +1,12 @@
+{
+	"id": 230411962,
+	"body": "@JadenTeng gotcha.\r\nSo depending on what gets decided for Go1.8, I think we can catch this check since IMO in the first place we should have been checking to see if .Type() could be invoked on the value passed in. The reflect docs are explicit on the behavior of invalid/zero values panicing when any other methods except .String() are invoked.\r\nhttps://golang.org/pkg/reflect/#Value\r\n\u003cimg width=\"955\" alt=\"screen shot 2016-07-05 at 12 57 32 am\" src=\"https://cloud.githubusercontent.com/assets/4898263/16577685/7c9d4b20-424b-11e6-9740-0af19772a394.png\"\u003e\r\nie .Type() cannot be invoked on a kind == reflect.Invalid value\r\n\r\nIn this diff, I catch that check and then panic with an error directly from gob itself instead of letting it propagate to reflect\r\n```diff\r\ndiff --git a/src/encoding/gob/encoder.go b/src/encoding/gob/encoder.go\r\nindex d6c8fdd..14871bc 100644\r\n--- a/src/encoding/gob/encoder.go\r\n+++ b/src/encoding/gob/encoder.go\r\n@@ -215,9 +215,13 @@ func (enc *Encoder) sendTypeId(state *encoderState, ut *userTypeInfo) {\r\n // guaranteeing that all necessary type information has been transmitted first.\r\n // Passing a nil pointer to EncodeValue will panic, as they cannot be transmitted by gob.\r\n func (enc *Encoder) EncodeValue(value reflect.Value) error {\r\n-\tif value.Kind() == reflect.Ptr \u0026\u0026 value.IsNil() {\r\n+\tkind := value.Kind()\r\n+\tif kind == reflect.Ptr \u0026\u0026 value.IsNil() {\r\n \t\tpanic(\"gob: cannot encode nil pointer of type \" + value.Type().String())\r\n \t}\r\n+\tif kind == reflect.Invalid {\r\n+\t\tpanic(\"gob: cannot encode an invalid/zero value\")\r\n+\t}\r\n \r\n \t// Make sure we're single-threaded through here, so multiple\r\n \t// goroutines can share an encoder.\r\n```\r\nif we decide to instead an error, then we can modify it in this place.",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-05T08:01:52Z",
+	"updated_at": "2016-07-05T08:01:52Z"
+}

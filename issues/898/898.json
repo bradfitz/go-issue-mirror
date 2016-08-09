@@ -1,0 +1,22 @@
+{
+	"id": 51277076,
+	"number": 898,
+	"state": "closed",
+	"title": "ARMv7 (5g, 5l) ",
+	"body": "by **chris.vanhorne**:\n\n\u003cpre\u003eTested against release (as of 6/30/10) and tip (6470c731be0).\n\nGOARCH=arm, GOOS=linux, gcc=4.4.3 (Ubuntu 4.4.3-4ubuntu5)\n\nCode running under the ARMv7 architecture [1] compiled with 5g/5l does not exhibit the\nsame behavior as 386 8g/8l.\n\nUsing the simple web server example from golang.org [2], the IP and Port values become\nnull and 0 when the type is converted from a TCPAddr to sockaddr.\n\nListenTCP in net/tcpsock.go is passed an instance of type TCPAddr which is then\nconverted to a sockaddr via the toAddr() call in net/tcpsock.go, but the IP and Port\nfields are then null and 0 when entering the toAddr function. This later causes an\nallocation loop when attempting to call TCPAddr.String() with null arguments in\nnet/fd.go:newFD at the following line:\n        var ls, rs string\n        if laddr != nil {\n                ls = laddr.String() // stuck and looped allocation here\n        }\n\nWith a few rudimentary debugging print statements [3], the differences between the 386\nand ARM code can be seen when attempting to run the example Go web server:\n\n386:/tmp$ ./test\nnet/tcpsock.go:toAddr: a.IP=, a.Port=12345\nnet/tcpsock.go:sockaddr: a.IP=, a.Port=12345\nnet/ipsock.go:ipToSockaddr: ip=, port=12345\n^C\n386:/tmp$\n\nand the ARM execution:\n# ./test\nnet/tcpsock.go:toAddr: a.IP=, a.Port=12345\nnet/tcpsock.go:sockaddr: a.IP=?, a.Port=0\nnet/ipsock.go:ipToSockaddr: ip=?, port=0\n[1]   Killed                  ./test \narm#\n\n\n[1] \n# cat /proc/cpuinfo\nProcessor       : ARMv7 Processor rev 2 (v7l)\nBogoMIPS        : 162.54\nFeatures        : swp half thumb fastmult vfp edsp thumbee neon\nCPU implementer : 0x51\nCPU architecture: 7\nCPU variant     : 0x0\nCPU part        : 0x00f\nCPU revision    : 2\n\n\n[2] \npackage main\n\nimport (\n       \u0026quot;fmt\u0026quot;\n       \u0026quot;http\u0026quot;\n)\n\nfunc handler(c *http.Conn, r *http.Request) {\n       fmt.Fprintf(c, \u0026quot;Hi there, I love %s!\u0026quot;, r.URL.Path[1:])\n}\n\nfunc main() {\n       http.HandleFunc(\u0026quot;/\u0026quot;, handler)\n       http.ListenAndServe(\u0026quot;:8080\u0026quot;, nil)\n}\n\n\n[3] Attached diff with print debugging\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/898/0/debug1.diff\"\u003edebug1.diff\u003c/a\u003e (1187 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:06:15Z",
+	"created_at": "2010-07-01T23:21:48Z",
+	"updated_at": "2016-06-24T19:17:26Z"
+}

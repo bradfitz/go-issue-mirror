@@ -1,0 +1,12 @@
+{
+	"id": 223184481,
+	"body": "Ok.  So it's not just type information, but also information about the origins of the values: a `*foo` that points to an element of a `[]foo` needs a different check from a `*foo` that points to a member of a struct.\r\n\r\nAnd presumably we need call sites to remain expressions (not statements), because the result of a C function call could itself be a function parameter.  So we can't pull the `_cgoCheckPointer` calls out into separate statements unless they're in a func literal.\r\n\r\n...and we can't use func literals because we can't necessarily name the return-type in the current file (if the type happens to include unsafe.Pointer).  So now I understand where the `_cgoCheckPointer0` function comes from.\r\n\r\nSo what about the definition of `_cgoCheckPointer0` itself?  Is there a reason the first arg needs to be an `interface{}` when we know we're just going to pass it through the runtime and type-assert it to something else?\r\n\r\nIn `src/cmd/cgo/out.go`, could we change\r\n\r\n```go\r\n  fmt.Fprintf(fgo2, \"\\nfunc %s(p interface{}, args ...interface{}) %s {\\n\", n, t)\r\n```\r\n\r\nto\r\n\r\n```go\r\n  fmt.Fprintf(fgo2, \"\\nfunc %s(p %s, args ...interface{}) %s {\\n\", n, t, t)\r\n```\r\n\r\n?",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-02T03:09:59Z",
+	"updated_at": "2016-06-02T03:09:59Z"
+}

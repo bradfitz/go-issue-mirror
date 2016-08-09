@@ -1,0 +1,12 @@
+{
+	"id": 190753527,
+	"body": "There have been a number of OK-but-not-obviously-right proposals for saying \"you can't copy this\". My view of the situation is:\r\n\r\n1. Go doesn't support this today, and in fact it used to but we took that out.\r\n2. The original motivation here was sync.Mutex, which is handled by the current cmd/vet copylock check (which looks for a Lock method), and sync.Cond, which isn't handled but could easily be added to vet in some way.\r\n3. The most common way to  create types that _cannot_ be copied is to embed a sync.Mutex, and those types are already handled by the cmd/vet check.\r\n\r\nInstead of building more generality into vet as a kind of back-door language change, let's leave things alone for now - without any attempt to expand the generality of the copylock check - and wait to see if a better idea or more compelling evidence comes along. We should probably also make sure vet understands that sync.Cond cannot be copied, if it does not already. I opened a separate issue for that: #14582.\r\n\r\nNote that code that absolutely must opt in to the vet check can already do so. A package can define:\r\n\r\n    type noCopy struct{}\r\n    func (*noCopy) Lock() {}\r\n\r\nand then put a `noCopy noCopy` into any struct that must be flagged by vet.\r\n\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-01T14:50:59Z",
+	"updated_at": "2016-03-01T14:50:59Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 137848642,
+	"body": "Thanks for the backtrace.  This is the Go signal handler receiving a SIGCHLD signal.  It's not a problem for getg to return nil in sigtrampgo.  That just means that a signal occurred on a non-Go thread.  The Go code is going to do some shuffling and eventually raise the signal on a C thread, with the C signal handler installed.  That should cause the right thing to happen.\r\n\r\nHowever, in this backtrace, the shuffling fails because the sigaltstack system call fails.  I think that sigaltstack must be returning EPERM: an attempt was made to change the alternate signal stack while the process was already executing on the alternate signal stack.  That could happen if the C program create a thread, called sigaltstack on that thread, and then received a signal.  That might explain why you are not seeing a problem with relatively simple programs, but only with relatively complex ones.\r\n\r\nIf that is indeed the problem, the solution may be relatively simple: if sigaltstack fails due to EPERM, we should fetch the current alternative signal stack and use it to set the value of m.gsignal.stack.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-04T20:48:08Z",
+	"updated_at": "2015-09-04T20:48:08Z"
+}

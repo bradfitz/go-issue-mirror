@@ -1,0 +1,27 @@
+{
+	"id": 167532785,
+	"number": 16498,
+	"state": "open",
+	"title": "x/net/http2: Server doesn't respect client's flow control",
+	"body": "Go's http2.Server doesn't respect the client's flow control.\r\n\r\nIt accounts for it partly, and enforces the other direction (that the client can't send too much to the server), but does not ever deduct its own credit when sending DATA frames, and doesn't wait for flow control when doing so.\r\n\r\nIn the process of fixing #16481 I had expected a test like this to hang:\r\n\r\n```go\r\n        body := strings.Repeat(\"a\", 16\u003c\u003c10)\r\n        st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {\r\n                println(r.RemoteAddr)\r\n                // Write out a 16KB body which the client won't ever read.                                                                                                   \r\n                io.WriteString(w, body)\r\n        }, optOnlyServer)\r\n        defer st.Close()\r\n\r\n        tr := \u0026Transport{TLSClientConfig: tlsConfigInsecure}\r\n        defer tr.CloseIdleConnections()\r\n\r\n        // Verify we can do this over 4 times without hanging:                                                                                                               \r\n        for i := 0; i \u003c 10; i++ {\r\n                println(i)\r\n                req, _ := http.NewRequest(\"GET\", st.ts.URL, nil)\r\n                res, err := tr.RoundTrip(req)\r\n                if err != nil {\r\n                        t.Fatal(err)\r\n                }\r\n                res.Body.Close()\r\n                println(i, \"done\")\r\n        }\r\n```\r\n\r\nBut it didn't.\r\n\r\nAdd a test like that back once the http2.Server respects flow control.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-07-26T06:47:02Z",
+	"updated_at": "2016-07-27T07:40:06Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

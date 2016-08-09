@@ -1,0 +1,22 @@
+{
+	"id": 51288300,
+	"number": 8508,
+	"state": "closed",
+	"title": "openpgp/clearsign: clearsign.Decode() truncates initial CRLFs from plaintext body",
+	"body": "by **bruce@subgraph.com**:\n\n\u003cpre\u003eIf the signed plaintext data begins with newline characters, these characters are\nomitted from Block.Bytes which prevents correct signatures from verifying correctly.\n\nThe loop which compiles plaintext data has a conditional which is supposed to append the\nCRLF sequence for the previous line:\n\n                // The final CRLF isn't included in the hash so we don't write it until\n                // we've seen the next line.\n                if len(b.Bytes) \u0026gt; 0 {\n                        b.Bytes = append(b.Bytes, crlf...)\n                }\n\nThe length check is used to avoid appending CRLF the first time through the loop, but if\nthe plaintext begins with newline characters b.Bytes will still be empty on the next\npass and the loop will fail to correctly add CRLF to the buffer.\n\nOne way to fix this would be to use a boolean flag to indicate the first pass through\nthe loop rather than depending on the length of the buffer.\n\nThis is what a clearsigned message looks like which causes problems:\n\n-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA1\n\n\nSome text to sign  with an extra newline after armor header.  clearsign.Decode() will\neat the extra newline(s).\n-----BEGIN PGP SIGNATURE-----\n\n[... a pgp signature here...]\n\n-----END PGP SIGNATURE-----\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:16Z",
+	"created_at": "2014-08-11T11:17:50Z",
+	"updated_at": "2016-06-25T01:39:24Z"
+}

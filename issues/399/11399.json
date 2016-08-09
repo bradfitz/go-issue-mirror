@@ -1,0 +1,27 @@
+{
+	"id": 90983446,
+	"number": 11399,
+	"state": "closed",
+	"title": "net/http: client overwrites valid Authorization headers when user included in URL",
+	"body": "In function send() in net/http/client.go:\r\n\r\n```\r\n\tif u := req.URL.User; u != nil {\r\n\t\tusername := u.Username()\r\n\t\tpassword, _ := u.Password()\r\n\t\treq.Header.Set(\"Authorization\", \"Basic \"+basicAuth(username, password))\r\n\t}\r\n```\r\nThis means if someone builds a Request which includes the username and password already encoded in the Authorization header, either set directly or via SetBasicAuth(), and the URL happens to include a username (but no password) - which is somewhat common in Git clone URLs for example - the request has its Authorization header re-written and authentication will fail, rather inexplicably for the developer who believes they constructed their request correctly (indeed sending the same thing via curl works). I only figured out why this was by using Wireshark then looking at the Go source!\r\n\r\nI think Go should not overwrite the Authorization header if it is already present. I suggest this code should instead be:\r\n```\r\n\tif u := req.URL.User; u != nil \u0026\u0026 req.Header.Get(\"Authorization\") == \"\" {\r\n\t\tusername := u.Username()\r\n\t\tpassword, _ := u.Password()\r\n\t\treq.Header.Set(\"Authorization\", \"Basic \"+basicAuth(username, password))\r\n\t}\r\n```\r\n\r\nWhile you might suggest not using a username and no password in the URL if Authorization is present, these URLs are out there on systems already, and stripping them because of this unintuitive behaviour is the wrong approach. \r\n\r\nI would have just submitted a PR if you were using them :)\r\n",
+	"user": {
+		"login": "sinbad",
+		"id": 142735,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-26T17:33:15Z",
+	"created_at": "2015-06-25T14:38:47Z",
+	"updated_at": "2016-06-27T17:06:59Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

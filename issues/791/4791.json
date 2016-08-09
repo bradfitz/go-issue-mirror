@@ -1,0 +1,22 @@
+{
+	"id": 51282643,
+	"number": 4791,
+	"state": "closed",
+	"title": "dist: cross-compile uses CGO_ENABLED for both host and target",
+	"body": "\u003cpre\u003eI encountered this issue with the OS X homebrew installation of Go 1.0.3.  I filed a bug\nwith them to workaround the issue here: \u003ca href=\"https://github.com/mxcl/homebrew/pull/17758\"\u003ehttps://github.com/mxcl/homebrew/pull/17758\u003c/a\u003e.\n\nWhen you build Go with cross-compilation with homebrew, it basically walks across a list\nof tuples like this:\n    (os, arch, cgo_enabled)\n\nand sets GOOS, GOARCH, and CGO_ENABLED based on those, and then calls ./make.bash\n--no-clean from the src directory.\n\nHomebrew was doing them in this order:\n\n    (darwin, 386, True)\n    (darwin, amd64, True)\n    (linux, 386, False)\n    (linux, amd64, False)\n    (windows, 386, False)\n    (windows, amd64, False)\n\nThe cross-compilation steps in make.bash first rebuild the host environment, then build\nthe target environment.  Aside from the obvious inefficiency of repeatedly building the\nhost environment when you want to build several target environments, the CGO_ENABLED\nflag is used for both the host and target environments.  If the host environment\n(darwin/amd64 in my case) is not built last, the host environment ends up lacking cgo\nand things like x509 certificate lookups in the system keychain start failing.  (go get\nfailing to validate code.google.com SSL certificates is how I encountered this problem\nin the first place.)\n\nThe workaround downstream is to build darwin/amd64 last, but a better fix upstream would\nbe to allow a TARGET_CGO_ENABLED flag or something to that effect to be handled inside\nmake.bash instead.\n\nAlso I suppose a fix to #4714 would also solve things, although probably quite a bit\ntrickier to get set up.\u003c/pre\u003e",
+	"user": {
+		"login": "joeshaw",
+		"id": 39916,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2016-06-22T15:00:11Z",
+	"created_at": "2013-02-11T19:15:47Z",
+	"updated_at": "2016-06-22T15:00:11Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

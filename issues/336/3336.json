@@ -1,0 +1,22 @@
+{
+	"id": 51280436,
+	"number": 3336,
+	"state": "closed",
+	"title": "Pipe server in package net",
+	"body": "by **raul.san@sent.com**:\n\n\u003cpre\u003eTo connecting (locally) with clients of another languages, we can use unix sockets in\nLinux. But it is not possible in Windows, so we would have to use a TCP/UDP conection\nwhich has 2 disadvantages: it's lower and the Windows firewall shows a window for each\nconection.\n\nInstead, it could be used a full-duplex server based in named pipes to connecting with\nclients of another languages.\n\nSo it would be great if the package net could manage a pipe conection like for the\nanother conections.\n\nI've playing a little with it although it lacks the field \u0026quot;fd\u0026quot; in PipeListener:\n\n// * * *\n\nimport (\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;net\u0026quot;\n)\n\ntype PipeAddr struct {\n\tInput  string\n\tOutput string\n}\n\nfunc (a *PipeAddr) Network() string { return \u0026quot;pipe\u0026quot; }\n\nfunc (a *PipeAddr) String() string {\n\tif a == nil {\n\t\treturn \u0026quot;\u0026lt;nil\u0026gt;\u0026quot;\n\t}\n\treturn a.Input + \u0026quot; | \u0026quot; + a.Output\n}\n\nfunc ResolvePipeAddr(input, output string) (*PipeAddr, error) {\n\treturn \u0026amp;PipeAddr{input, output}, nil\n}\n\n// * * *\n\ntype PipeListener struct {\n\t//fd     *net.netFD\n\tinput  *os.File // named pipe to reading\n\toutput *os.File // named pipe to writing\n\n\taddr   *PipeAddr\n}\n\nfunc (l *PipeListener) Read(p []byte) (n int, err error) {\n\treturn l.input.Read(p)\n}\n\nfunc (l *PipeListener) Write(p []byte) (n int, err error) {\n\treturn l.output.Write(p)\n}\n\nfunc (l *PipeListener) Close() error {\n\tinErr := l.input.Close()\n\toutErr := l.output.Close()\n\n\tif inErr != nil {\n\t\treturn inErr\n\t}\n\treturn outErr\n}\n\nfunc (l *PipeListener) Addr() net.Addr {\n\treturn l.addr\n}\n\n// * * *\n\nfunc ListenPipe(inName, outName string, addr *PipeAddr) (*PipeListener, error) {\n\tinput, err := os.OpenFile(inName, os.O_RDONLY|os.O_CREATE|os.O_TRUNC|os.O_SYNC, os.ModeNamedPipe)//|0666)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\toutput, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_SYNC, os.ModeNamedPipe)//|0666)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn \u0026amp;PipeListener{input, output, addr}, nil\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:17:20Z",
+	"created_at": "2012-03-16T21:03:17Z",
+	"updated_at": "2016-06-24T22:15:41Z"
+}

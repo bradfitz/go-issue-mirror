@@ -1,0 +1,28 @@
+{
+	"id": 72169188,
+	"number": 10638,
+	"state": "closed",
+	"title": "cmd/internal/gc: accessing an array with power of two 2 size should use left shifts not multiplications",
+	"body": "For the following code\r\n```go\r\npackage test\r\nvar X[8][8][8] uint64\r\nfunc S1(i, j, k int) uint64 {\r\n        return X[i][j][k]\r\n}      \r\n```\r\n\r\nthe following code is generated (I disabled bounds checking)\r\n````\r\n\"\".S1 t=1 size=64 value=0 args=0x20 locals=0x0\r\n        0x0000 00000 (a.go:5)   TEXT    \"\".S1(SB), $0-32\r\n        0x0000 00000 (a.go:5)   NOP\r\n        0x0000 00000 (a.go:5)   NOP\r\n        0x0000 00000 (a.go:5)   FUNCDATA        $0, gclocals·b9336996773e215995755fe256cd9398(SB)\r\n        0x0000 00000 (a.go:5)   FUNCDATA        $1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n        0x0000 00000 (a.go:6)   LEAQ    \"\".X(SB), BX\r\n        0x0007 00007 (a.go:6)   MOVQ    \"\".i+8(FP), BP\r\n        0x000c 00012 (a.go:6)   IMULQ   $512, BP\r\n        0x0013 00019 (a.go:6)   ADDQ    BP, BX\r\n        0x0016 00022 (a.go:6)   MOVQ    \"\".j+16(FP), BP\r\n        0x001b 00027 (a.go:6)   IMULQ   $64, BP\r\n        0x001f 00031 (a.go:6)   ADDQ    BP, BX\r\n        0x0022 00034 (a.go:6)   MOVQ    \"\".k+24(FP), BP\r\n        0x0027 00039 (a.go:6)   LEAQ    (BX)(BP*8), BX\r\n        0x002b 00043 (a.go:6)   MOVQ    (BX), BP\r\n        0x002e 00046 (a.go:6)   MOVQ    BP, \"\".~r3+32(FP)\r\n        0x0033 00051 (a.go:6)   RET\r\n```\r\n\r\n```IMULQ   $512, BP```, and ```IMULQ   $64, BP``` should be replaced by left shifts.\r\n\r\nGenerally multiplications by a power of two are replaced by left shifts by go compiler so this is just a missed optimization.\r\n\r\n",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-05-05T02:18:13Z",
+	"created_at": "2015-04-30T13:55:28Z",
+	"updated_at": "2016-06-25T02:07:00Z"
+}

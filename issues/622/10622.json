@@ -1,0 +1,21 @@
+{
+	"id": 72010627,
+	"number": 10622,
+	"state": "open",
+	"title": "net: target domain names in SRV records should not be compressed",
+	"body": "The current spec for SRV records (RFC 2782) says \"Target: The domain name of the target host. [...] Unless and until permitted by future standards action, name compression is not to be used for this field.\"\r\n\r\nThe main way I've seen this manifest as a problem (not with Go specifically) is:\r\n\r\n  1. An authoritative DNS server (non-compliantly) sends an SRV RR using domain name compression.\r\n  2. The SRV RR is (compliantly) cached by an intermediate DNS server as an opaque byte string without applying uncompression.\r\n  3. The cached SRV RR is sent in a response to a DNS stub client that (non-compliantly) tries to apply name uncompression.\r\n\r\nThis fails because the client interprets the compressed domain name pointers as offsets into the intermediate server's DNS message, but they were actually computed according to the authoritative server's DNS message.  With good luck, the client will notice they're obviously bogus and reject them; but it's also possible the pointers happen to look valid and the client ends up with subtly-bogus SRV records.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-04-29T22:50:29Z",
+	"updated_at": "2015-07-15T03:11:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

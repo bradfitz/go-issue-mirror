@@ -1,0 +1,22 @@
+{
+	"id": 51277918,
+	"number": 1519,
+	"state": "closed",
+	"title": "crypto/rsa: EncryptOAEP returning data with unexpected/inconsistent length",
+	"body": "by **reuben.bond**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Download rsa_test.go (attached, credit to wrtp from #go-nuts for writing it) into\n$GOROOT/src/pkg/crypto/rsa\n  - File includes 1 test case and a method, TestEncryptOAEP2\n  - TestEncryptOAEP2 runs an infinite loop trying to encrypt random, short messages and testing the length of the encrypted result.\n  - The same effect can be achieved by using random seeds on a fixed message (I think)\n2. Run gotest\n3. Wait for error\n\nWhat is the expected output?\nLoops indefinitely, no error\n\nWhat do you see instead?\ngotest fails in under a minute\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nUbuntu Linux\n\nWhich revision are you using?  (hg identify)\n1d32c7df56c8+ tip\n\nWhy this may be important: When attempting to encrypt more than ((pub.N.BitLen() + 7) /\n8 - 2*hash.Size()-2) bytes, the result of subsequent calls to rsa.EncryptOAEP over\nsmaller slices of data can be appended to each other to form the resulting data (I\nbelieve this is considered secure). A non-constant output length creates programming\noverhead for programmers, presenting them with two solutions:\n  * Account for the behaviour by associating \u0026quot;block length\u0026quot; information with each encrypted block, or\n  * Manually pad-out the encryption result to the expected length\n\nFurther Information: The C implementation of RSAES-OAEP at\n\u003ca href=\"http://www.rsa.com/products/bsafe/documentation/cryptoc_621_dev_guide/group__AD__CRC__OAEP.html\"\u003ehttp://www.rsa.com/products/bsafe/documentation/cryptoc_621_dev_guide/group__AD__CRC__OAEP.html\u003c/a\u003e\nseems to use a constant blockLength, so it seems that a constant length is\n\u0026quot;expected behaviour\u0026quot; according to RSA\n\nWorkaround: prepend the resulting encrypted data block with the difference between\nexpected and actual length of output data.\neg: encrypted = append(make([]byte, expectedLen - len(encrypted)), encrypted). In\npractice, it seems that this difference is up to 1 byte.\n\nPS: I hope this bug report is informative and useful, if I could have improved it,\nplease let me know.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1519/0/rsa_test.go\"\u003ersa_test.go\u003c/a\u003e (12183 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:08:42Z",
+	"created_at": "2011-02-16T07:05:09Z",
+	"updated_at": "2016-06-24T19:25:23Z"
+}

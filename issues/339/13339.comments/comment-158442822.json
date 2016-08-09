@@ -1,0 +1,12 @@
+{
+	"id": 158442822,
+	"body": "for this, the functional-options idiom is probably best:\r\n http://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis\r\n\r\n```go\r\n// ----------------\r\npackage screen\r\nvar (\r\n  WindowSize func(Window)\r\n  WindowTransparency func(Window)\r\n)\r\n\r\n// -----------------\r\npackage mydriver\r\n\r\nfunc (s *screenImpl) NewWindow(opts ...func(w screen.Window)) (screen.Window, error) {\r\n  // ...\r\n}\r\n\r\nfunc windowSize(width, height int) func(w screen.Window) {\r\n  return func(w screen.Window) {\r\n     xw := w.(*windowImpl)\r\n     xw.width = width\r\n     xw.height = height\r\n  }\r\n}\r\n\r\nfunc windowTransparency(v uint16) func(w screen.Window) {\r\n  return func(w screen.Window) {\r\n     xw := w.(*windowImpl)\r\n     xw.setTransparency(v)\r\n  }\r\n}\r\n\r\nfunc init() {\r\n  screen.WindowTransparency = windowTransparency\r\n  screen.WindowSize = windowSize\r\n}\r\n\r\n// -------------------\r\npackage main\r\n\r\nfunc foo(s screen.Screen) {\r\n  w, err := s.NewWindow(\r\n       screen.WindowTransparency(0xCC),\r\n       screen.WindowSize(600,600),\r\n  )\r\n  //...\r\n}\r\n```\r\n\r\n(except \"of course\" when `screen` doesn't know anything about `xyzdriver.windowImpl`, so gymnastics are needed...)",
+	"user": {
+		"login": "sbinet",
+		"id": 1070920,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-20T16:02:37Z",
+	"updated_at": "2015-11-20T16:02:37Z"
+}

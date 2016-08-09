@@ -1,0 +1,22 @@
+{
+	"id": 51278912,
+	"number": 2225,
+	"state": "closed",
+	"title": "escape analysis: result differs when pointer method is stack allocated and called as a goroutine",
+	"body": "\u003cpre\u003eAs reported on golang-dev and confirmed by Mikio Hara. With thanks to Mikio Hara for the\nsample code provided here\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n        ch := make(chan bool)\n        go worker(ch)\n        \u0026lt;-ch\n}\n\ntype testStruct struct {\n        s string\n}\n\nfunc worker(ch chan bool) {\n        ts := testStruct{s: \u0026quot;ts\u0026quot;}\n        ts.String()\n\n        ts2 := \u0026amp;testStruct{s: \u0026quot;ts2\u0026quot;}\n        ts2.String()\n\n        ts3 := \u0026amp;testStruct{s: \u0026quot;ts3\u0026quot;}\n        go ts3.String()\n\n        ts4 := testStruct{s: \u0026quot;ts4\u0026quot;}\n        go ts4.String() // ts4.String via goroutine takes ts4 as a pointer to ts4?\n\n        ch \u0026lt;- true\n}\n\nfunc (ts *testStruct) String() {\n        fmt.Printf(\u0026quot;%q\\n\u0026quot;, ts.s)\n}\n\nWhat is the expected output?\n\nlucky(~/devel/test) % 8g -s ea.go \u0026amp;\u0026amp; 8l ea.8 \u0026amp;\u0026amp; ./8.out \n\u0026quot;ts\u0026quot;\n\u0026quot;ts2\u0026quot;\n\u0026quot;ts3\u0026quot;\n\u0026quot;ts4\u0026quot;\n\nWhat do you see instead?\n\nlucky(~/devel/test) % 8g ea.go \u0026amp;\u0026amp; 8l ea.8 \u0026amp;\u0026amp; ./8.out \n\u0026quot;ts\u0026quot;\n\u0026quot;ts2\u0026quot;\n\u0026quot;ts3\u0026quot;\n\u0026quot;e\\x8b\\r\u0026quot;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g\n\nWhich operating system are you using?\n\n% uname -a\nLinux lucky 2.6.38-11-generic #48-Ubuntu SMP Fri Jul 29 19:05:14 UTC 2011 i686 i686 i386\nGNU/Linux\n\nWhich revision are you using?  (hg identify)\n\n% hg identify $GOROOT\n0f7a647510f9 tip\n\nPlease provide any additional information below.\n\n\u003ca href=\"http://groups.google.com/group/golang-dev/browse_thread/thread/86fd7a8adc58efb3\"\u003ehttp://groups.google.com/group/golang-dev/browse_thread/thread/86fd7a8adc58efb3\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:11:59Z",
+	"created_at": "2011-09-04T09:48:00Z",
+	"updated_at": "2016-06-24T19:34:19Z"
+}

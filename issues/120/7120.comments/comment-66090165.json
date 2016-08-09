@@ -1,0 +1,12 @@
+{
+	"id": 66090165,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eGccgo doesn't have any opinion about how small arrays are passed.  That is entirely up\nto the Aarch64 backend.  The trouble is that the Go type [2]uintptr is not directly\nrepresentable in C, at least for the purposes of a calling convention (in C you can only\npass pointers, not arrays).  The Go frontend passes the ARRAY_TYPE to the middle-end. \nlibffi, on the other hand, treats an array as a struct containing a single field which\nis an array of the appropriate length and type, in this case struct { uintptr_t f[2]; }\n(see go_array_to_ffi in libgo/runtime/go-reflect-call.c).  The Aarch64 backend always\npasses arrays by reference (aarch64_pass_by_reference in config/aarch64/aarch64.c). \nHowever, structs that are two words or less are passed in registers rather than in\nmemory (same function).  Hence the confusion.\n\nI don't particularly want to treat all arrays as structs, so I think the right fix is\ngoing to be to trick libffi to do the right thing, or to change the Aarch64 backend to\nnot always pass array types by reference.  The latter would be an ABI change and may not\nbe possible, depending on what the Aarch64 ABI says about array types.  The former would\nrequire go-reflect-call.c to treat the array value as a pointer and tell libffi to pass\na pointer.  That would be type unsafe but should wind up doing the right thing.  In\ngo-reflect-call you can use #if to detect the ABI--search for __i386__ in that file.\n\nOf course the correct fix is to modify libffi to support array types, but that may be\nmore than you care to tackle.\u003c/pre\u003e\n\n_Labels changed: added **repo-gccgo**._",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-14T01:27:15Z",
+	"updated_at": "2014-12-08T10:39:35Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 89447765,
+	"number": 11284,
+	"state": "closed",
+	"title": "math/big: Int.GCD misbehaves when argument reused for result",
+	"body": "Code of the form x.GCD(nil, nil, y, x) is likely to return an incorrect result. For example, this code:\r\n\r\n```go\r\npackage main\r\nimport \"fmt\"\r\nimport \"math/big\"\r\nfunc main() {\r\n\ttwo := big.NewInt(2)\r\n\tfmt.Print(big.NewInt(0).GCD(nil, nil, two, big.NewInt(1)))\r\n\tx := big.NewInt(1)\r\n\tfmt.Print(x.GCD(nil, nil, two, x))\r\n\tfmt.Print(x)\r\n\r\n\tu := big.NewInt(0)\r\n\tv := big.NewInt(0)\r\n\tfmt.Print(big.NewInt(0).GCD(u, v, two, big.NewInt(1)))\r\n\tx = big.NewInt(1)\r\n\tfmt.Print(x.GCD(u, v, two, x))\r\n\tfmt.Println(x)\r\n}\r\n```\r\n\r\nshould print `111111`. Instead, it prints `122111`.\r\n\r\nThe cause is clear from examining the start of the binaryGCD method in int.go:\r\n\r\n```go\r\n   682\tfunc (z *Int) binaryGCD(a, b *Int) *Int {\r\n   683\t\tu := z\r\n   684\t\tv := new(Int)\r\n   685\t\r\n   686\t\t// use one Euclidean iteration to ensure that u and v are approx. the same size\r\n   687\t\tswitch {\r\n   688\t\tcase len(a.abs) \u003e len(b.abs):\r\n   689\t\t\tu.Set(b)\r\n   690\t\t\tv.Rem(a, b)\r\n   691\t\tcase len(a.abs) \u003c len(b.abs):\r\n   692\t\t\tu.Set(a)\r\n   693\t\t\tv.Rem(b, a)\r\n   694\t\tdefault:\r\n   695\t\t\tu.Set(a)\r\n   696\t\t\tv.Set(b)\r\n   697\t\t}\r\n```\r\n\r\nIn the misbehaving call, z and b point to the same object, so the calls to u.Set() will modify the value of b. Since the rest of the function does not use a and b, it should be possible to fix this by simply setting v before u in each of the three instances above.\r\n\r\nLastly, go version returns `go version go1.4.2 linux/amd64`",
+	"user": {
+		"login": "pat42smith",
+		"id": 12960541,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-06-19T19:54:03Z",
+	"created_at": "2015-06-19T02:31:54Z",
+	"updated_at": "2016-06-25T02:11:31Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

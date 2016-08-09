@@ -1,0 +1,16 @@
+{
+	"id": 232385516,
+	"body": "I see two drawbacks to this feature:\r\n\r\n1.) It breaks the \"different names means different types\" invariant that has existed since Go 1.0.\r\n```go\r\ntype foo struct { ... }\r\ntype bar =\u003e foo  \r\n```\r\nbar *is* foo.  It's not just the same shape in memory as foo, it's not just compatible with foo's methods.  They *are* the same type.  Something that takes a `func(foo) error` can take a `func(bar) error`.  Before now, this was impossible, and I think that was a good thing.\r\n\r\n2.) When this is used in practice, the aliases will almost certainly live on forever.  The whole reason you'd use an alias is because the refactor would be too cumbersome without it and/or you just don't control the other code referencing these types.  This means that large swaths of the codebase will be referencing these aliases, and then any new code has to make a choice - use the new \"real\" location of the types, or use the aliases to conform to the way the rest of the codebase looks.  \r\n\r\n\r\nIn practice, I think this feature will lead to confusion, since this is mostly useful for large codebases with lots of developers, and developers will constantly trip over two pieces of code that look like they're using different types, but really are not.  For an example, consider how many people have asked how to convert int32 to a rune, or a string into a []byte (the latter is not a perfect example, but close enough for illustration).. and those are built into the language.\r\n\r\n\r\nHowever, I'm not totally against it.  This would have been hugely useful in one specific case I had in Juju.  I had a to do a massive refactor to move a very commonly used package outside of the main Juju repo for use in a separate repo.  The work was delayed by months because I had to touch so many files that I inevitably had a million conflicts every time I updated from master.  If all I had to do was make an alias in the original place, all those conflicts would not have happened, and in theory, we could have done the conversion incrementally (though, see number 2 above, I don't think we actually ever would have put forth the effort).",
+	"user": {
+		"login": "natefinch",
+		"id": 3185864,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 11,
+		"+1": 11
+	},
+	"created_at": "2016-07-13T15:08:33Z",
+	"updated_at": "2016-07-13T15:08:33Z"
+}

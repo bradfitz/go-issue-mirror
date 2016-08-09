@@ -1,0 +1,25 @@
+{
+	"id": 51281268,
+	"number": 3860,
+	"state": "closed",
+	"title": "os: data race in epipecheck()",
+	"body": "\u003cpre\u003eWhen running proprietary code under ThreadSanitizer I see the following reports:\n\nWARNING: DATA RACE at 0x000040115140\nWrite by goroutine 104:\n  os.epipecheck()\n      src/pkg/os/file_posix.go:23 +0x135\n  os.(*File).Write()\n      src/pkg/os/file.go:144 +0xec\n  ...\nPrevious write by goroutine 99:\n  os.epipecheck()\n      src/pkg/os/file_posix.go:23 +0x135\n  os.(*File).Write()\n      src/pkg/os/file.go:144 +0xec\n  ...\n\nepipecheck() clearly has a data race on file.npipe:\n\nfunc epipecheck(file *File, e error) {\n\tif e == syscall.EPIPE {\n\t\tfile.nepipe++\n\t\tif file.nepipe \u0026gt;= 10 {\n\t\t\tsigpipe()\n\t\t}\n\t} else {\n\t\tfile.nepipe = 0\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:20:24Z",
+	"created_at": "2012-07-25T11:42:31Z",
+	"updated_at": "2016-06-24T22:21:59Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 54647815,
+	"number": 9621,
+	"state": "closed",
+	"title": "cmd/link: detect -X setting non-string variable?",
+	"body": "Ok this is a bit of an oddball bug. We tried for at least 3 hours to find a small reproducible case to give you all but could not find a way to do it.\r\n\r\nWe just switched the Docker project, https://github.com/docker/docker, to use go 1.4.1. The problem we are seeing is a few patches that have been submitted are compiling successfully _but_ the resulting binary is failing to work. It cannot find the linked files, etc. But I should note, the master branch of docker is working correctly with Go1.4.1.\r\n\r\nSome background on how we compile docker:\r\n- we create a static binary\r\n- the build tags/script we use is here: https://github.com/docker/docker/blob/master/project/make.sh#L116\r\n\r\nWe have found that we can get Docker to compile correctly on these failed patches, by adding an empty \r\n\r\n```go\r\nfunc init(){\r\n}\r\n```\r\n\r\nto the bottom of the [dockerversion.go file](https://github.com/docker/docker/blob/master/dockerversion/dockerversion.go) which is the file being compiled with `-X dockerversion.IAMSTATIC` in the above script linked to our build process.\r\n\r\nSo we have an idea:\r\n- Maybe there is some compiler optimization we are hitting. The thoughts behind this stem from the fact, the variables in the [`dockerversion.go` file](https://github.com/docker/docker/blob/master/dockerversion/dockerversion.go) are empty and get filled at the linker stage. But this theory is quite odd because as mentioned before, the master branch works with go1.4.1.\r\n\r\nThe patches that fail are:\r\n- https://github.com/docker/docker/pull/10143.patch\r\n- https://github.com/docker/docker/pull/10151.patch\r\n- https://github.com/docker/docker/pull/10149.patch\r\n\r\nThese are not abnormal patches in anyway, we can't find any commonality between them that would cause this.\r\n\r\nTo sum up, all patches work successfully on Go1.4.0, but fail on 1.4.1. Also by fail I mean they compile with no errors but when trying to run the resulting binary it does not work because it cannot find the linked files.\r\n\r\ncc @tianon @icecrime\r\n\r\nAlso again, apologies we could not find a simple reproducible case. Let me know anything else I can do information wise. and I welcome those I pinged above to add anything I may have forgotten or explained poorly.\r\n\r\n### Reproducing\r\n\r\n**Making a binary**\r\n\r\n```console\r\n$ git clone git@github.com:docker/docker\r\n$ cd docker\r\n$ ./hack/make.sh binary\r\n\r\n# running the binary, this should fail with the patches\r\n$ ./bundles/1.4.1-dev/binary/docker -d -D\r\n```\r\n\r\n**Running the integration suite**\r\n\r\nThese are the tests that run on the compiled binary. All should fail when you apply any of the above patches.\r\n\r\n```console\r\n$ ./hack/make.sh test-integration-cli \r\n```",
+	"user": {
+		"login": "jfrazelle",
+		"id": 1445228,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 23,
+	"closed_at": "2015-06-29T20:28:48Z",
+	"created_at": "2015-01-17T02:38:28Z",
+	"updated_at": "2016-06-28T21:53:26Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

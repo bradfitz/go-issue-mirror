@@ -1,0 +1,12 @@
+{
+	"id": 66079006,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eSome notes.\n\nWhen I look at the type _select in zruntime_defs_$(GOOS)_$(GOARCH).go, I'm slightly\ntroubled by this:\n\ntype _select struct {\n\ttcase\tuint16\n\tncase\tuint16\n\tpollorder\t*uint16\n\tlockorder\t**hchan\n\tscase\t[1]scase\n}\n\nThe C code will allocate more than one entry for scase (see newselect in chan.c).  Will\nthe precise GC handle this unwarranted chumminess correctly?  It should be fine as long\nas all the pointers to this memory are (from the point of view of the GC) untyped.  And\nthat may well be the case.\n\nThe crash is happening on a parked call to selunlock, which must have come from\nchan.c:989.  When I look at the goroutine backtraces, I'm puzzled that I don't see any\ngoroutine sitting at that line number.  Somebody must have called runtime·ready on the\ngoroutine to cause it to start going again, but where is it?  This may be expected, I'm\nnot sure.\n\nAt the point of failure the program is running TestMultiConsumer from\nruntime/chan_test.go.  It's interesting to note that that test does not use select at\nall, so it would seem that whatever goroutine is executing a select is left over from\nsome earlier test.  Although I can't make out which test that would be.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-05-07T13:59:46Z",
+	"updated_at": "2014-12-08T10:29:19Z"
+}

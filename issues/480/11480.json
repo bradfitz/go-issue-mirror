@@ -1,0 +1,27 @@
+{
+	"id": 91940995,
+	"number": 11480,
+	"state": "closed",
+	"title": "cmd/compile: functions implemented in assembly do not automatically get a funcsym, causing problems with shared libraries",
+	"body": "This is quite a little tower of details, but it's possible for an executable using shared libraries to crash with a \"runtime: unknown pc in defer\" message.  Here's a diff adding a test case that fails this way:\r\n\r\n```diff\r\ndiff --git a/misc/cgo/testshared/src/dep/asm.s b/misc/cgo/testshared/src/dep/asm.s\r\nnew file mode 100644\r\nindex 0000000..b332fe2\r\n--- /dev/null\r\n+++ b/misc/cgo/testshared/src/dep/asm.s\r\n@@ -0,0 +1,10 @@\r\n+// Copyright 2014 The Go Authors.  All rights reserved.\r\n+// Use of this source code is governed by a BSD-style\r\n+// license that can be found in the LICENSE file.\r\n+\r\n+//+build !gccgo\r\n+\r\n+#include \"textflag.h\"\r\n+\r\n+TEXT ·ImplementedInAsm(SB),NOSPLIT,$0-0\r\n+       RET\r\ndiff --git a/misc/cgo/testshared/src/dep/gccgo.go b/misc/cgo/testshared/src/dep/gccgo.go\r\nnew file mode 100644\r\nindex 0000000..552ec30\r\n--- /dev/null\r\n+++ b/misc/cgo/testshared/src/dep/gccgo.go\r\n@@ -0,0 +1,5 @@\r\n+//+build gccgo\r\n+\r\n+package dep\r\n+\r\n+func ImplementedInAsm() {}\r\ndiff --git a/misc/cgo/testshared/src/dep/stubs.go b/misc/cgo/testshared/src/dep/stubs.go\r\nnew file mode 100644\r\nindex 0000000..036296a\r\n--- /dev/null\r\n+++ b/misc/cgo/testshared/src/dep/stubs.go\r\n@@ -0,0 +1,5 @@\r\n+//+build !gccgo\r\n+\r\n+package dep\r\n+\r\n+func ImplementedInAsm()\r\ndiff --git a/misc/cgo/testshared/src/exe/exe.go b/misc/cgo/testshared/src/exe/exe.go\r\nindex 34fd144..f644776 100644\r\n--- a/misc/cgo/testshared/src/exe/exe.go\r\n+++ b/misc/cgo/testshared/src/exe/exe.go\r\n@@ -1,7 +1,12 @@\r\n package main\r\n \r\n-import \"dep\"\r\n+import (\r\n+       \"dep\"\r\n+       \"runtime\"\r\n+)\r\n \r\n func main() {\r\n+       defer dep.ImplementedInAsm()\r\n+       runtime.GC()\r\n        dep.V = dep.F() + 1\r\n }\r\n```\r\n\r\nThe problem seems to be that when dep is built into libdep2.so there is no ImplementedInAsm·f symbol created in libdep2.so. One is created when building exe but in the .o file it is created by a reloc against an undefined STT_FUNC symbol, which the system linker reacts to by creating a plt and putting the address of the plt stub in the ImplementedInAsm·f symbol, so the address of the PLT stub ends up in the defer slot and the runtime chokes on it.\r\n\r\nI guess it's not exactly common to defer and assembly-implemented function implemented in another packge, but this does happens in the standard library: sync.Once defers a call to sync/atomic.StoreUint32, which is how I found the problem.\r\n\r\nNot sure what to do about this. Maybe nothing for 1.5. But maybe even functions implemented in assembly should get a funcsym?",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-07-20T00:50:58Z",
+	"created_at": "2015-06-30T00:19:19Z",
+	"updated_at": "2016-07-20T14:27:25Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

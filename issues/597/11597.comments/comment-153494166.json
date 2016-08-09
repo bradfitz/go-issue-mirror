@@ -1,0 +1,12 @@
+{
+	"id": 153494166,
+	"body": "The compiler gets stuck trying to print an error message. \r\n\r\nWhile compiling the above snippet, gc reaches the following line in the `overflow` function inside `gc/compile/const.go`:\r\n\r\n```\r\nYyerror(\"constant %s overflows %v\", Vconv(v, 0), t)\r\n```\r\n\r\n`Vconv` calls the `Fconv` function in `gc/compile/mparith3`, where gc dies in an infinite loop caused by the fact that the number to be printed in the error message is `+Inf`, but `Fconv` tries to scale it to a reasonable size in a loop before printing the error, dividing it by `10` and checking for `m =\u003e 10` (which will never became `false` if `m` is `+Inf`).\r\n\r\nA quick way to fix this is to change the `overflow` function so that it doesn't print any error when it gets `Inf` floats (which is correct, since `+Inf` does not overflows `float32` o `float64`: it's a valid `float32` value).\r\n\r\nA `const xxxx overflows float32` is already printed by the frontend when the number is parsed the first time, so we shouldn't loose any informative error message (I hope).\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-03T21:25:47Z",
+	"updated_at": "2015-11-03T21:25:47Z"
+}

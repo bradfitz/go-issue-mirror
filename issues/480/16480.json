@@ -1,0 +1,21 @@
+{
+	"id": 167201855,
+	"number": 16480,
+	"state": "open",
+	"title": "os: Chtimes doesn't use utimens, retain full timestamp granularity",
+	"body": "ZFS on Solaris retains nanosecond precision file timestamps. These can be seen in the information returned by `os.Stat`. However `os.Chtimes` seems limited to setting microsecond precision. This means, among other things, that a file can't be copied with the timestamp fully retained.\r\n\r\n```\r\njb@zlogin4:~/s/g/s/s/test $ go version\r\ngo version go1.7rc3 solaris/amd64\r\n```\r\n\r\n```\r\n# Nanoseond precision before running program:\r\njb@zlogin4:~/s/g/s/s/test $ touch test.file \r\njb@zlogin4:~/s/g/s/s/test $ stat test.file\r\n  File: ‘test.file’\r\n  Size: 0               Blocks: 1          IO Block: 131072 regular empty file\r\nDevice: 5a00010023h/386547122211d       Inode: 96951       Links: 1\r\nAccess: (0644/-rw-r--r--)  Uid: (  502/      jb)   Gid: (    1/   other)\r\nAccess: 2016-07-23 20:57:53.896596091 +0200\r\nModify: 2016-07-23 20:57:53.896596091 +0200\r\nChange: 2016-07-23 20:57:53.896613387 +0200\r\n Birth: -\r\n\r\n# Go program sees correct precision, attempts to set the same:\r\njb@zlogin4:~/s/g/s/s/test $ go run testchtimes.go test.file\r\n2016-07-23 20:57:53.896596091 +0200 CEST\r\n\r\n# Precision was reduced\r\njb@zlogin4:~/s/g/s/s/test $ stat test.file\r\n  File: ‘test.file’\r\n  Size: 0               Blocks: 1          IO Block: 131072 regular empty file\r\nDevice: 5a00010023h/386547122211d       Inode: 96951       Links: 1\r\nAccess: (0644/-rw-r--r--)  Uid: (  502/      jb)   Gid: (    1/   other)\r\nAccess: 2016-07-23 20:57:53.896596000 +0200\r\nModify: 2016-07-23 20:57:53.896596000 +0200\r\nChange: 2016-07-23 20:58:02.133653117 +0200\r\n Birth: -\r\n\r\n# The program:\r\njb@zlogin4:~/s/g/s/s/test $ cat testchtimes.go \r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"os\"\r\n)\r\n\r\nfunc main() {\r\n        info, err := os.Stat(os.Args[1])\r\n        if err != nil {\r\n                fmt.Println(err)\r\n                os.Exit(1)\r\n        }\r\n        t := info.ModTime()\r\n        fmt.Println(t)\r\n        if err := os.Chtimes(os.Args[1], t, t); err != nil {\r\n                fmt.Println(err)\r\n                os.Exit(1)\r\n        }\r\n}\r\n```\r\n",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-23T20:24:51Z",
+	"updated_at": "2016-07-24T00:05:53Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

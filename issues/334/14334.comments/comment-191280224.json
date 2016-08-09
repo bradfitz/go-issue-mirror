@@ -1,0 +1,12 @@
+{
+	"id": 191280224,
+	"body": "@bryanpkc The original problem with RawSockaddr was found because gccgo and gc from golang had different declarations for the RawSockaddr structure.  That caused problems when building Docker because the two compilers were not consistent in their compiling of Go source code.  For RawSockaddrUnix.Path, I can see that gc has a special case for powerpc64 to force the structure to be a signed char, and that matches how gccgo declares it.  \r\n\r\nIn syscall/types_linux.go:\r\n`struct my_sockaddr_un {`\r\n`    sa_family_t sun_family;`\r\n`#if defined(__ARM_EABI__) || defined(__powerpc64__)`\r\n`    // on ARM and PPC char is by default unsigned`\r\n`    signed char sun_path[108];`\r\n`#else`\r\n `   char sun_path[108];`\r\n`#endif`\r\n\r\nThis forces the declaration of RawSockaddrUnix in gccgo and gc to be the same on powerpc64.  Given my past experience with the RawSockaddr change I don't think it is worth changing for powerpc64 because of the compatibility issues it will introduce with the compilers.  I'd have to change in both.\r\n\r\nAre you asking this because for s390 gccgo declares this as signed but gc declares it unsigned?  If so then the above ifdef could be changed to include s390 or you could change gccgo so they match.  I think the compilers must be consistent in how they compile Go code.\r\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-02T15:11:19Z",
+	"updated_at": "2016-03-02T15:11:50Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 126401220,
+	"body": "I wrote a utility method to handle this:\r\n```go\r\nfunc jsonEncodeChan(w io.Writer, vc interface{}) (err error) {\r\n\tcval := reflect.ValueOf(vc)\r\n\t_, err = w.Write([]byte{'['})\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tvar buf *bytes.Buffer\r\n\tvar enc *json.Encoder\r\n\tv, ok := cval.Recv()\r\n\tif !ok {\r\n\t\tgoto End\r\n\t}\r\n\t// create buffer \u0026 encoder only if we have a value\r\n\tbuf = new(bytes.Buffer)\r\n\tenc = json.NewEncoder(buf)\r\n\tgoto Encode\r\nLoop:\r\n\tv, ok = cval.Recv()\r\n\tif !ok {\r\n\t\tgoto End\r\n\t}\r\n\tif _, err = w.Write([]byte{','}); err != nil {\r\n\t\treturn\r\n\t}\r\nEncode:\r\n\terr = enc.Encode(v.Interface())\r\n\tif err == nil {\r\n\t\t_, err = w.Write(bytes.TrimRight(buf.Bytes(), \"\\n\"))\r\n\t\tbuf.Reset()\r\n\t}\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tgoto Loop\r\nEnd:\r\n\t_, err = w.Write([]byte{']'})\r\n\treturn\r\n}\r\n```\r\n\r\nThat's how I would envision encoding/json handling a channel. Although it would be a bit simpler using the internal `encode` method (no `\\n` or separate buffer needed).",
+	"user": {
+		"login": "lukescott",
+		"id": 486224,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-30T16:56:31Z",
+	"updated_at": "2015-07-30T17:09:46Z"
+}

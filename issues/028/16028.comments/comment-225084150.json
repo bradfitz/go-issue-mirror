@@ -1,0 +1,12 @@
+{
+	"id": 225084150,
+	"body": "Here is a complex way to fix the problem.  Add the following internal API to the runtime package.\r\n\r\n    // sigchldCount returns the number of SIGCHLD signals received since the process started.\r\n    runtime.sigchldCount() int\r\n    // waitForSIGCHLD sleeps until more than c SIGCHLD signals have been received.\r\n    runtime.waitForSIGCHLD(c int)\r\n\r\nWith those functions, the code in `os.Process.wait` can be written as\r\n\r\n    for {\r\n        c := runtime.sigchldCount()\r\n        pid1, e := syscall.Wait4(p.Pid, \u0026status, syscall.WNOHANG, \u0026rusage)\r\n        if e != nil {\r\n            return nil, NewSyscallError(\"wait\", e)\r\n        }\r\n        if pid1 != 0 {\r\n            break\r\n        }\r\n        runtime.waitForSIGCHLD(c)\r\n    }\r\n    p.setDone()",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-10T03:18:03Z",
+	"updated_at": "2016-06-10T03:18:03Z"
+}

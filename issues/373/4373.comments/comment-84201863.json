@@ -1,0 +1,12 @@
+{
+	"id": 84201863,
+	"body": "\u003e I don't quite follow the argument about exporting ErrClosed (did you mean ErrClosing) and the Go 1 guarantee. Can you expand on that? Thanks.\r\n\r\nI am sorry, I transposed one for the other. My argument can be better summarised as the `net.Conn` interface inherits its `Read` and `Write` methods from the corresponding interfaces in the `io` package. Those interfaces only specify the behaviour of one error value, `io.EOF`. \r\n\r\nIf _an_ exported type, call it `net.ErrClosed`, the name is unimportant, is specified for `net.Conn.Read` interface method then any implementation of a `net.Conn` is bound by this new behaviour. For example, `tls.Conn` will have to be checked to ensure that it properly propagates errors matching `net.ErrClosed` up to the caller who is relying on this concurrent close contract. This also applies to every other type that satisfies `net.Conn`. To not return `net.ErrClosing` in situations when the underlying `net.Conn`, possibly itself wrapped several times, does, would make that implementation a violation of the `net.Conn` interface contract. \r\n\r\nI see this as an additional requirement over and above the Go 1 promise, and a disproportionate cost to pay given the justifications provided by the OP.",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-21T00:21:31Z",
+	"updated_at": "2015-03-21T00:21:41Z"
+}

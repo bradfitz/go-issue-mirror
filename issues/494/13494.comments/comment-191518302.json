@@ -1,0 +1,12 @@
+{
+	"id": 191518302,
+	"body": "On Unix systems, `newosproc0` is called at process startup time, with no stack guards installed.  I assume the same is true in your Windows implementation.  Therefore, it must be //go:nosplit.  This is not optional.  Also, it must only call //go:nosplit functions.  This is unlike `newosproc`, which does not need to be //go:nosplit.  But if you are going to have `newosproc0` call `newosproc`, as implied above, then `newosproc` must also be //go:nosplit.\r\n\r\nSimilarly, `newosproc0` is called before the GC is installed, and therefore any write barriers will fail, so //go:nowritebarrierrec is a good choice (nowritebarrierrec is better than nowritebarrier, as it means that not only must this function have no write barriers, every function it calls must have no write barriers).  This is a warning option that does not affect code generation, so it's OK if it's not there.  But since you are writing new code, you should add it.  `newosproc` is normally //go:nowritebarrier because it is called from `newm`, where the comment explains why no write barriers are permitted.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-03T00:57:24Z",
+	"updated_at": "2016-03-03T00:57:24Z"
+}

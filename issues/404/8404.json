@@ -1,0 +1,33 @@
+{
+	"id": 51288140,
+	"number": 8404,
+	"state": "closed",
+	"title": "cmd/gc: make slice/string updates atomic wrt garbage collector",
+	"body": "\u003cpre\u003eToday garbage collection treats slices and strings as multiword objects: if cap == 0\n(define cap=len for strings), the object base pointer is ignored, because it might point\njust beyond the end of the underlying array. Both base pointer and cap must be consulted\nto understand the slice/string.\n\nWhen we move to a concurrent garbage collector that effectively races with the other\ngoroutines, slice and string updates made by an ordinary goroutine must be seen\natomically by the concurrent collector. It must not be possible for the collector to\nobserve a half-updated slice or string.\n\n(The same general problem applies to interface representations, but the solution will be\ndifferent, so they are a separate issue, not yet filed.)\n\nThe plan is to disallow slice representations in which the base pointer points outside\nthe underlying array. Given that restriction, the garbage collector only needs to read\nthe base pointer, not the cap. Reducing the data read to a single word makes updates\natomic wrt the garbage collector.\n\nA slice with cap 0 only has one valid operation that exposes the base pointer: testing\nfor nil. As long as we preserve that \n\nvar x []byte\nx[0:] == nil\n\nand\n\nvar x = make([]byte, 10)\nx[10:] != nil\n\nwe have considerable flexibility in the choice of actual base pointer.\n\nThe initial option we discussed is to have the slice operation check if it has computed\ncap 0 for a non-nil base ptr, and if so change base to 1.\n\nA better option appears to be to drop the addition entirely. That is, normally x[i:]\nproduces the slice {x+i*width, len(x)-i, cap(x)-i}. If cap(x)-i == 0, it can omit the\n+i*width and produce {x, len(x)-i, cap(x)-i} = {x, 0, 0}. The result will be correctly\nnil or non-nil matching whether x was nil/non-nil. \n\nThe trick of dropping +i*width avoids having an \u0026quot;else\u0026quot; body after the cap=0\noperation. The cap=0 path just jumps over a few instructions in the standard path.\n\nEffectively, this rewrite implements x[i:] where cap(x)-i == 0 as x[0:0:0]. I believe\nthis implementation, although surprising, is legal.\n\nI have an implementation that needs some more tests. Once this is done, the current bit\npatterns in mgc0.c for string and slice change from \n\n    BitsMultiword BitsString =\u0026gt; BitsPointer BitsScalar\n    BitsMultiword BitsSlice BitsScalar =\u0026gt; BitsPointer BitsScalar BitsScalar\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:46:40Z",
+	"created_at": "2014-07-21T23:38:09Z",
+	"updated_at": "2016-06-25T01:38:23Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

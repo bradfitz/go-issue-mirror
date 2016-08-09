@@ -1,0 +1,12 @@
+{
+	"id": 120649086,
+	"body": "I've further reduced the `doRequest` function to the following:\r\n\r\n```\r\nfunc doRequest() (*response, error) {\r\n\ttype async struct {\r\n\t\tresp *response\r\n\t\terr  error\r\n\t}\r\n\tch := make(chan *async, 0)\r\n\r\n\tgo func() {\r\n\t\tselect {\r\n\t\tcase ch \u003c- \u0026async{resp: nil, err: myError{}}:\r\n\t\tcase \u003c-(chan struct{})(nil):\r\n\t\t}\r\n\t}()\r\n\r\n\tr := \u003c-ch\r\n\truntime.Gosched()\r\n\treturn r.resp, r.err\r\n}\r\n```\r\n\r\nThe send is still in a multi-case select block (although only one of the cases involves a non-nil channel at runtime), but the receive is now just a basic blocking receive.\r\n\r\nI wonder if the problematic sequence of events is as follows:\r\n1. GC begins, scans stack of receiving goroutine\r\n2. sending goroutine writes the struct pointer into a sudoG\r\n3. sending goroutine enqueues the sudoG on the channel's sendq, *does not mark (something) as dirty*\r\n4. sender goroutine exits\r\n5. GC mark phase completes\r\n6. GC sweep reclaims struct memory\r\n7. receiving goroutine wakes up, grabs the sudoG from the channel's sendq, *successfully* reads a pointer to *reclaimed* memory\r\n8. receiving goroutine passes the dangling pointer to something that later uses it\r\n9. *BOOM*\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-11T18:07:11Z",
+	"updated_at": "2015-07-11T18:07:11Z"
+}

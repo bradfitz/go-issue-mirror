@@ -1,0 +1,28 @@
+{
+	"id": 115273470,
+	"number": 13160,
+	"state": "closed",
+	"title": "runtime: non-atomic pointer writes in memclr/memmove",
+	"body": "The following program crashes when run with ```GODEBUG=invalidptr=1 GOARCH=386```:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"math/rand\"\r\n\t\"runtime\"\r\n)\r\n\r\nfunc main() {\r\n\tP := 2 * runtime.GOMAXPROCS(0)\r\n\tptrs := make([][]*int, P)\r\n\tfor i := 0; i \u003c P; i++ {\r\n\t\ti := i\r\n\t\tgo func() {\r\n\t\t\tr := rand.New(rand.NewSource(int64(i)))\r\n\t\t\tvar sink []byte\r\n\t\t\tp := make([]*int, 4)\r\n\t\t\tz := make([]*int, 4)\r\n\t\t\tptrs[i] = p\r\n\t\t\tfor {\r\n\t\t\t\tif r.Intn(20) != 0 {\r\n\t\t\t\t\ta := p[:1]\r\n\t\t\t\t\ta[0] = new(int)\r\n\t\t\t\t\tfor j := range a {\r\n\t\t\t\t\t\ta[j] = nil\r\n\t\t\t\t\t}\r\n\t\t\t\t\tfor j := range p {\r\n\t\t\t\t\t\tp[j] = new(int)\r\n\t\t\t\t\t}\r\n\t\t\t\t\tcopy(p[:3], z)\r\n\t\t\t\t\tfor j := range p {\r\n\t\t\t\t\t\tp[j] = new(int)\r\n\t\t\t\t\t}\r\n\t\t\t\t\tcopy(p[1:4], z)\r\n\t\t\t\t\tfor j := range p {\r\n\t\t\t\t\t\tp[j] = new(int)\r\n\t\t\t\t\t\tcopy(p[j:j+1], z)\r\n\t\t\t\t\t}\r\n\t\t\t\t} else {\r\n\t\t\t\t\tsink = make([]byte, 8\u003c\u003c10)\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\t_ = sink\r\n\t\t}()\r\n\t}\r\n\tselect {}\r\n}\r\n```\r\n\r\n```\r\nGODEBUG=invalidptr=1 GOARCH=386 go run memclr.go\r\n\r\nruntime: pointer 0x18d90000 to unallocated spanidx=0x548 span.start=0x185d2000 span.limit=0x185d4000 span.state=3\r\nruntime: found in object at *(0x18456000+0x0)\r\nobject=0x18456000 k=0xc22b s.start*_PageSize=0x18456000 s.limit=0x18458000 s.sizeclass=2 s.elemsize=16\r\n *(object+0) = 0x0 \u003c==\r\n *(object+4) = 0x0\r\n *(object+8) = 0x18d9b354\r\n *(object+12) = 0x18d9b3b0\r\nfatal error: found bad pointer in Go heap (incorrect use of unsafe or cgo?)\r\n```\r\n\r\nThe problem is that memclr clears 4-byte regions on 386 with 2 separate 2-byte stores:\r\n```\r\n_3or4:\r\n\tMOVW\tAX, (DI)\r\n\tMOVW\tAX, -2(DI)(BX*1)\r\n```\r\nThis exposes corrupted pointer to GC.\r\n\r\nNot sure whether it can crash without invalidptr, I would not exclude such possibility. But it's clearly bad and can lead to false retention. Also it makes data race failure modes significantly worse, introducing exploitation possibilities like use-after-free and easy controlled overwrite.\r\n\r\nThere is similar issue in amd64p32 memclr which clears pointers with byte stores:\r\n```\r\nTEXT runtime·memclr(SB),NOSPLIT,$0-8\r\n\tMOVL\tptr+0(FP), DI\r\n\tMOVL\tn+4(FP), CX\r\n\tMOVQ\tCX, BX\r\n\tANDQ\t$3, BX\r\n\tSHRQ\t$2, CX\r\n\tMOVQ\t$0, AX\r\n\tCLD\r\n\tREP\r\n\tSTOSL\r\n\tMOVQ\tBX, CX\r\n\tREP\r\n\tSTOSB\r\n\tRET\r\n```\r\n\r\nSimilar issue in 386 memmove which moves pointer with 2 stores:\r\n```\r\nmove_3or4:\r\n\tMOVW\t(SI), AX\r\n\tMOVW\t-2(SI)(BX*1), CX\r\n\tMOVW\tAX, (DI)\r\n\tMOVW\tCX, -2(DI)(BX*1)\r\n\tRET\r\n```\r\n\r\nSimilar issue in plan9/386 memclr:\r\n```\r\n_1or2:\r\n\tMOVB\tAX, (DI)\r\n\tMOVB\tAX, -1(DI)(BX*1)\r\n```\r\n\r\nSimilar issue in amd64 memclr:\r\n```\r\n_5through8:\r\n\tMOVL\tAX, (DI)\r\n\tMOVL\tAX, -4(DI)(BX*1)\r\n```\r\n\r\nDid not look at arm/ppc. I guess we just need to go through all of them one-by-one.\r\n@rsc @randall77 @RLH @aclements @dr2chase @davecheney @minux @0intro @4ad ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-11-07T02:42:34Z",
+	"created_at": "2015-11-05T12:28:27Z",
+	"updated_at": "2015-11-13T19:29:23Z",
+	"milestone": {
+		"id": 1295987,
+		"number": 27,
+		"title": "Go1.5.2"
+	}
+}

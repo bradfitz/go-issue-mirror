@@ -1,0 +1,12 @@
+{
+	"id": 66086883,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12:\n\n\u003cpre\u003eGOMAXPROCS not set. Stuck in meetings all day; will gather some GOMAXPROCS data when I\ncan.\n\nIn the meantime, a quick note before I run off. (Please bear with me, I'm new to this\ncode, and am reading it in meetings. :P)\n\nFirst, it's not clear to me why runtime·new will allocate a fixed size over the\nlifetime of a program, given only that the stack is the same; it could be called with\ndifferent Types, no?\n\nThat said, last night I instrumented runtime·MProf_Free and runtime·MProf_Malloc to\nlog all calls and all calls that got short-circuited (nomemprof caught my eye as well).\n\nOrganizing these log lines by pointer / size / event and then sort | uniq -c gives a\nlook at what is going on on a per-memory-address basis. Here's activity for one sample\npointer:\n\ncount | ptr | event | size\n\n   2 0x10551000 1024 free\n   2 0x10551000 1024 malloc\n   1 0x10551000 1024 skipmalloc\n   3 0x10551000 1152 free\n   3 0x10551000 1152 malloc\n   3 0x10551000 1152 skipfree\n   4 0x10551000 1536 free\n   4 0x10551000 1536 malloc\n   3 0x10551000 1536 skipfree\n   1 0x10551000 1536 skipmalloc\n  28 0x10551000 2048 free\n  28 0x10551000 2048 malloc\n   3 0x10551000 2048 skipfree\n   4 0x10551000 2048 skipmalloc\n   7 0x10551000 2560 free\n   7 0x10551000 2560 malloc\n  14 0x10551000 4096 free\n  14 0x10551000 4096 malloc\n   1 0x10551000 4096 skipfree\n   3 0x10551000 512 free\n   3 0x10551000 512 malloc\n\nNote the mismatched skipfree/skipmalloc counts. (Skip is a misnomer here; should be\n\"short-circuit\".)\n\nNote also that the pointer is used in setaddrbucket but not in stkbucket, so these will\nall impact the same recent_alloc_bytes, IIUC. The mismatched short-circuits would then\nexplain both the incorrect totals and the non-multiple of 2048, I think.\n\nBack in a few hours.\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-10-17T17:08:47Z",
+	"updated_at": "2014-12-08T10:36:31Z"
+}

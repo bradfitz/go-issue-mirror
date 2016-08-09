@@ -1,0 +1,33 @@
+{
+	"id": 90058023,
+	"number": 11324,
+	"state": "closed",
+	"title": "runtime: writebarrier inheap check is racy",
+	"body": "In heap does the following:\r\n```go\r\nfunc inheap(b uintptr) bool {\r\n\tif b == 0 || b \u003c mheap_.arena_start || b \u003e= mheap_.arena_used {\r\n\t\treturn false\r\n\t}\r\n\t...\r\n\ts := h_spans[x]\r\n\t...\r\n}\r\n```\r\nwhile mHeap_SysAlloc does the following:\r\n```go\r\nfunc mHeap_SysAlloc(h *mheap, n uintptr) unsafe.Pointer {\r\n\t\t\t\th.arena_used = p + (-uintptr(p) \u0026 (_PageSize - 1))\r\n...\r\n\t\tmHeap_MapSpans(h, p+n)\r\n}\r\n```\r\nNow consider that there is a non-Go-heap mmap in the heap area. It is possible that mHeap_SysAlloc updates h.arena_used to include the non-Go-heap region, however h_spans are not yet mapped for that region. Now another goroutine invokes writebarrier for a pointer in non-Go-heap region. The writebarrier invokes inheap, inheap checks that the pointer value is within [arena_start, mheap_.arena_used) and accesses h_spans for the pointer. However, h_spans is not yet mapped for the region. Bang!\r\n\r\nI believe that's what happens on the windows builders:\r\nhttp://build.golang.org/log/85ba224f0fe7b0d2d4c5e63ca6f7643131b0dba3\r\nhttp://build.golang.org/log/6242a4b521f0e5bcce48db07a8eb51d3b874b7c7\r\nhttp://build.golang.org/log/20d249a8596c79b11043f704fda3aa404e1808b3\r\nhttp://build.golang.org/log/16e89685e920d8af90b39a1f55e692650b07c121\r\nhttp://build.golang.org/log/0b17582865258804b41b8157bb5dd09a245f2bc9\r\n\r\n/cc @aclements @rsc ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "RLH",
+		"id": 972447,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-06-23T18:59:35Z",
+	"created_at": "2015-06-22T09:56:12Z",
+	"updated_at": "2016-06-25T02:11:40Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

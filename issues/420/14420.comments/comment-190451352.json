@@ -1,0 +1,12 @@
+{
+	"id": 190451352,
+	"body": "Sure enough. The goroutines don't even have to be doing anything. The cost is something like 25ns/goroutine on my laptop. Amusingly, I can cut that roughly in half just by putting gcAssistBytes on the same cache line as gcscandone and gcscanvalid. :)\r\n\r\nI think we can just do this concurrently in gcStart before stopping the world. The downside of that is that it will still block allocation on Gs that go outside of their span cache, but that's better than blocking everything.\r\n\r\nWe could also make it just plain faster by pulling those fields out into their own contiguous arrays we can bulk zero.\r\n\r\nWe're paying the same per-goroutine cost in markroot during STW mark termination when we look for stacks to scan. That's trickier to avoid. We might be able to fix that by lifting the gcscanvalid check up in to markroot if we also move gcscanvalid in to a contiguous array.\r\n\r\n@RLH, any thoughts?\r\n\r\nHere's a simplified reproducer (I love the term \"ballast\", BTW):\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"time\"\r\n)\r\n\r\nconst (\r\n\tballastSize   = 100 \u003c\u003c 20\r\n\tgarbageSize   = 10 \u003c\u003c 20\r\n\tgarbagePeriod = 100 * time.Millisecond\r\n\r\n\t// This uses about 2GB of memory for stacks.\r\n\tnumGs = 4e5\r\n)\r\n\r\nvar (\r\n\tballast []byte\r\n\tgarbage []byte\r\n)\r\n\r\nfunc churn() {\r\n\tballast = make([]byte, ballastSize)\r\n\r\n\tfor {\r\n\t\ttime.Sleep(garbagePeriod)\r\n\t\tgarbage = make([]byte, garbageSize)\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tfor i := 0; i \u003c numGs; i++ {\r\n\t\tgo func() { select {} }()\r\n\t}\r\n\r\n\tgo churn()\r\n\r\n\ttime.AfterFunc(10*time.Second, func() { os.Exit(0) })\r\n\tselect {}\r\n}\r\n```",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-29T23:37:15Z",
+	"updated_at": "2016-02-29T23:37:15Z"
+}

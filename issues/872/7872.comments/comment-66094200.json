@@ -1,0 +1,12 @@
+{
+	"id": 66094200,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **nicolashillegeer**:\n\n\u003cpre\u003e\u003e Yeah, suppose it could use a bufio.Writer instead of a bytes.Buffer.\n\nThis could indeed save a useless copy, as also noted in this issue:\n\u003ca href=\"https://golang.org/issue/5683\"\u003ehttps://golang.org/issue/5683\u003c/a\u003e\n\nHowever, there are some small things. For example, I'm using an Encoder to encode\nstraight into a go.net websocket. Due to the current implementation, the Encoder issues\na Write once the entire message is completed. With a bufio.Writer, there could be\nseveral writes. The go.net WebSocket implementation takes every write as an entire\nmessage (as far as I can see from perusing the source). This would make my json possibly\narrive in arbitrary pieces.\n\nNote that what I'm doing is not necessarily the appropriate usage of go.net WebSockets,\nit has websocket.JSON.Receive/Send methods to send and receive entire messages at a\ntime. And I should be using that. But those methods use json.Marshal/json.Unmarshal\nunder the hood, which cause buffer churn when used a lot (my use case is relatively\nhigh-throughput). Ideally the go.net WebSockets package would use Encoder/Decoder with a\nbytes.Buffer under the hood for the JSON.(Send|Receive) calls, reusing the buffer every\ntime (either using a sync.Pool for the buffers or storing them in the websocket\nconnection itself, since I believe those don't support concurrent writing anyway).\n\nI would not mourn too much if my current usage of go.net WebSockets stops working.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-25T12:46:11Z",
+	"updated_at": "2014-12-08T10:43:42Z"
+}

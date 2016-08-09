@@ -1,0 +1,12 @@
+{
+	"id": 66900359,
+	"body": "\u003e Probably\r\n\u003e in a loop, since (at least at the time I have tried), I can Exec as much as I want,\r\n\u003e without knowing if the query has actually got to the server or not, which is certainly\r\n\u003e not assuring.\r\n\r\nNow I'm truly confused.  If, as you claim, you can \"Exec as much as you want\", how does your workaround *which still uses Exec* help at all?  It's not obvious from your description whether you looked at the error from stmt.Exec(), but I get driver.ErrBadConn which should indicate that something's not quite right with the connectivity to the database.\r\n\r\n\u003e This can be useful, if one wants to check if the server is _still_ reachable.\r\n\r\n*shrug*  Since Ping() is fine with returning a connection from the pool without actually hitting the server, I don't consider it to be the right tool in the first place.  E.g. this program:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t_ \"github.com/lib/pq\"\r\n\t\"database/sql\"\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tdb, err := sql.Open(\"postgres\", \"sslmode=disable\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\t// open maxBadConnRetries+1 connections to the DB, and keep them in the pool\r\n\tfunc(openConns int) {\r\n\t\tdb.SetMaxIdleConns(openConns)\r\n\t\tfor i := 0; i \u003c openConns; i++ {\r\n\t\t\trows, err := db.Query(\"SELECT 1\")\r\n\t\t\tif err != nil {\r\n\t\t\t\tpanic(err)\r\n\t\t\t}\r\n\t\t\tdefer rows.Close()\r\n\t\t}\r\n\t}(11)\r\n\r\n\tstmt, err := db.Prepare(\"SELECT 1\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Println(\"kill the server now\")\r\n\ttime.Sleep(5 * time.Second)\r\n\t_, err = stmt.Exec()\r\n\tfmt.Printf(\"err: %s\\n\", err)\r\n\terr = db.Ping()\r\n\tfmt.Printf(\"err: %s\\n\", err)\r\n}\r\n```\r\n\r\nconsistently prints:\r\n\r\n```\r\nerr: driver: bad connection\r\nerr: %!s(\u003cnil\u003e)\r\n```\r\n\r\nwhich is quite bogus.",
+	"user": {
+		"login": "johto",
+		"id": 951744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-14T02:36:17Z",
+	"updated_at": "2014-12-14T02:36:17Z"
+}

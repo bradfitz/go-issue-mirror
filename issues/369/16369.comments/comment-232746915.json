@@ -1,0 +1,12 @@
+{
+	"id": 232746915,
+	"body": "The new importer/exporter can handle this data structure w/o problem but we had to turn off the mechanism a while back because the compiler's internal type representation cannot handle such a recursive type (see trackAllTypes flag in bexport.go of the compiler). Unfortunately this broke cycle detection and we get a stack overflow.\r\n\r\nThis should probably report an error, or perhaps silently pass as was the case with 1.6.\r\n\r\nNote also while this \"seems to work\" with 1.6, the compiler actually cannot import the resulting package anymore (syntax error in import). Any package with such an interface-recursive exported type cannot be imported - it's only useful at the top-level (main package), but in that case such a type doesn't need to be exported.\r\n\r\nWith 1.6, for:\r\n```\r\npackage main\r\n\r\ntype T interface {\r\n\tM(interface {\r\n\t\tT\r\n\t})\r\n}\r\n```\r\nthe export data looks like:\r\n```\r\n$$\r\npackage main\r\n\ttype @\"\".T interface { M(? interface { M(? interface { M(? interface { M(? interface { M(? interface { M\u003c...\u003e }) }) }) }) }) }\r\n\tfunc @\"\".init ()\r\n\r\n$$\r\n```\r\n(Note the recursion that's \"terminated\" with `interface { M\u003c...\u003e }` which cannot be parsed by the importer.)\r\n\r\nProbably not a release blocker, but I'll see if there's a low-risk fix that could prevent the crash.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-14T18:13:24Z",
+	"updated_at": "2016-07-14T18:13:24Z"
+}

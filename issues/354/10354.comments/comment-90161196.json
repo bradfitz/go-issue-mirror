@@ -1,0 +1,12 @@
+{
+	"id": 90161196,
+	"body": "#8560 discusses the types library, but not the loader library, and it appears that they have different behavior. Consistent with @adonovan 's comments on  #8560, loader should be consistent too.\r\n\r\ntest case:\r\n\r\nminimal test case small.go:\r\n~~~\r\npackage main\r\n\r\nfunc takeClosure(f func(i interface{})) {\r\n}\r\n\r\nfunc main() {\r\n    var touchedInClosure string\r\n    takeClosure(func(i interface{}) {\r\n        switch i.(type) {\r\n        case string:\r\n            touchedInClosure = \"I have been written to!\"\r\n        }\r\n    })\r\n}\r\n~~~\r\n\r\nMinimal loader program loader.go:\r\n~~~\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n\r\n    \"golang.org/x/tools/go/loader\"\r\n)\r\n\r\nfunc main() {\r\n    var conf loader.Config\r\n    conf.CreateFromFilenames(\"main\", \"small.go\")\r\n    _, err := conf.Load()\r\n    fmt.Println(err)\r\n}\r\n~~~\r\nresults on small.go\r\n~~~\r\n$ go run loader.go\r\nsmall.go:7:6: touchedInClosure declared but not used\r\ncouldn't load packages due to errors: main\r\n~~~\r\n",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-06T17:19:07Z",
+	"updated_at": "2015-04-06T17:19:07Z"
+}

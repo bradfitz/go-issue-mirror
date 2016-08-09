@@ -1,0 +1,36 @@
+{
+	"id": 161032183,
+	"number": 16108,
+	"state": "open",
+	"title": "cmd/compile: do front-end constant evaluation across simple inlined function boundaries",
+	"body": "```go\r\nfunc i(x int) int { return x }\r\n\r\nfunc f(a int) bool {\r\n\tswitch a {\r\n\tcase 1, 2, 3, 4, 5, 6:\r\n\t\treturn true\r\n\t}\r\n\treturn false\r\n}\r\n\r\nfunc g(a int) bool {\r\n\tswitch a {\r\n\tcase i(1), i(2), i(3), i(4), i(5), i(6):\r\n\t\treturn true\r\n\t}\r\n\treturn false\r\n}\r\n```\r\n\r\nf and g should compile to the same code. They don't. In g, i(n) is not recognized as a constant case, because i(n) ends up being a tempname introduced to hold the inlined return value from i. As a result, g does not use binary search over the cases. The SSA back-end can see past such things, but several important optimization decisions are made in the front-end on a const/non-const basis.\r\n\r\nAs a first pass, maybe recognized inlined functions containing exactly one return statement and inline the returned expression directly. This may also require work to avoid converting inlined arguments from constants to tempnames, which itself might be useful.\r\n\r\nSample real world code in which this occurs, from asm9.go in the s390x obj code:\r\n\r\n```go\r\nfunc OPVCC(o uint32, xo uint32, oe uint32, rc uint32) uint32 {\r\n\treturn o\u003c\u003c26 | xo\u003c\u003c1 | oe\u003c\u003c10 | rc\u00261\r\n}\r\n\r\nfunc opform(ctxt *obj.Link, insn uint32) int {\r\n\tswitch insn {\r\n\tdefault:\r\n\t\tctxt.Diag(\"bad insn in loadform: %x\", insn)\r\n\tcase OPVCC(58, 0, 0, 0), // ld\r\n\t\tOPVCC(58, 0, 0, 0) | 1\u003c\u003c1, // lwa\r\n\t\tOPVCC(62, 0, 0, 0):        // std\r\n\t\treturn DS_FORM\r\n\tcase OP_ADDI, // add\r\n\t\tOPVCC(32, 0, 0, 0), // lwz\r\n\t\tOPVCC(42, 0, 0, 0), // lha\r\n\t\tOPVCC(40, 0, 0, 0), // lhz\r\n\t\tOPVCC(34, 0, 0, 0), // lbz\r\n\t\tOPVCC(50, 0, 0, 0), // lfd\r\n\t\tOPVCC(48, 0, 0, 0), // lfs\r\n\t\tOPVCC(36, 0, 0, 0), // stw\r\n\t\tOPVCC(44, 0, 0, 0), // sth\r\n\t\tOPVCC(38, 0, 0, 0), // stb\r\n\t\tOPVCC(54, 0, 0, 0), // stfd\r\n\t\tOPVCC(52, 0, 0, 0): // stfs\r\n\t\treturn D_FORM\r\n\t}\r\n\treturn 0\r\n}\r\n```\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-18T16:30:36Z",
+	"updated_at": "2016-06-18T16:30:36Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

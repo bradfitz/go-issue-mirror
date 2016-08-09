@@ -1,0 +1,12 @@
+{
+	"id": 163436405,
+	"body": "I suspect the rapid memory explosion in Go 1.5.1 is a consequence of #11466. Because `a` in `test` is large, it pushes `test`'s stack over the \"small\" limit, which means that, currently, when that goroutine exits, that stack isn't available for reuse until the next GC cycle finishes. If the GC falls behind just a little, it can quickly rack up these stacks, since there's also currently no GC back-pressure on stack allocations (unlike regular allocations).\r\n\r\nI suspect this is better on tip simply because GC scheduling is a lot tighter, so the window for falling behind is much smaller. However, this doesn't explain why there's a slow RSS growth on tip over the course of thousands of GCs, since each GC cycle should clean up all of these stacks and make their spans available for reuse and the allocations following that should simply reuse them.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-09T23:31:14Z",
+	"updated_at": "2015-12-09T23:31:14Z"
+}

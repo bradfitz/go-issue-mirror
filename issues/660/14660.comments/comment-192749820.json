@@ -1,0 +1,12 @@
+{
+	"id": 192749820,
+	"body": "How do you expect putting context in http.Request (or any other parameter-ish struct) will interact with adding values (or timeouts or whatever) to the context?\r\n\r\nI can think of two basic approaches, caller-save and callee-save:\r\n\r\n```\r\nfunc f(w http.ResponseWriter, req *http.Request) {\r\n\tctx := req.Context\r\n\tg(w, req)\r\n\t// ... something with ctx ...\r\n}\r\nfunc g(w http.ResponseWriter, req *http.Request) {\r\n\treq.Context = context.WithValue(req.Context, foo, bar)\r\n\th(w, req)\r\n}\r\n```\r\n\r\nor\r\n\r\n```\r\nfunc f(w http.ResponseWriter, req *http.Request) {\r\n\tg(w, req)\r\n\t// ... something with req.Context ...\r\n}\r\nfunc g(w http.ResponseWriter, req *http.Request) {\r\n\treq2 := new(http.Request)\r\n\t*req2 = *req\r\n\treq2.Context = context.WithValue(req.Context, foo, bar)\r\n\th(w, req2)\r\n}\r\n```\r\n\r\nOf course, it's fine if both caller and callee save the old value, but it's bad if neither of them does it, each expecting the other to do so. So, should we recommend one and document and promote it up front?",
+	"user": {
+		"login": "kr",
+		"id": 4178,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-05T22:00:20Z",
+	"updated_at": "2016-03-05T22:00:20Z"
+}

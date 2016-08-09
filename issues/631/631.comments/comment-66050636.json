@@ -1,0 +1,12 @@
+{
+	"id": 66050636,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12:\n\n\u003cpre\u003eOkay, that makes sense.  Now we know where the finalization-ready\nobjects are coming from, so it's definitely \"memory leak involving finalizers\"\nas the subject now says.\n\nWhat happens is that the finalizers keep objects alive for an \nextra garbage collection cycle, and then that trips up the \ngarbage collector's calculation of how often to garbage collect.\n\nIf the collector runs and ends up with N objects still in use,\nit arranges to collect once N more have been allocated (total 2N),\nin the hope that in a steady state the collection will cut the\nnumber of objects from 2N back to N and repeat.  Let's assume\nthat N is the steady state number of live objects.\n\nSo suppose that there are 2N objects allocated, N of them are dead but\nhave finalizers.  They get added to the finalizer queue (not collected)\nso that at the end of the collection, there are still 2N objects,\nso the garbage collector schedules the next collection at 4N.\nThe finalizers run and the program continues, and at the next collection\nthere are still N live objects, N dead (finalized) objects,\nand 2N dead but not yet finalized objects.  So the collection \nends with 3N objects and schedules the next for 6N.\nThe one at 6N will find N live, 2N dead, and 3N finalizer-ready, \nso it will have 4N live objects and schedule for 8N, which will\nin turn schedule for 10N, and so on.\n\nThis assumes that the objects are all finalizer-ready (channels)\nbut even if there's just a small fraction of finalizer-ready objects\nyou get the same compounding.\n\nI haven't figured out how to reconcile this kind of finalizer behavior\nwith the garbage collector schedule.  The workaround for now is to\nrun the garbage collection more frequently by calling runtime.GC.\nThat's obviously unsatisfactory, but I don't have a better solution yet.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-03-03T19:55:02Z",
+	"updated_at": "2014-12-08T10:05:20Z"
+}

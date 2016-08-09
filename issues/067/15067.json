@@ -1,0 +1,17 @@
+{
+	"id": 145280700,
+	"number": 15067,
+	"state": "closed",
+	"title": "vet: incorrectly matching methods to printList entries",
+	"body": "```sh\r\n$ go version\r\ngo version go1.6 linux/amd64\r\n```\r\n\r\n```sh\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/home/alex/Code/coreos/src/third_party/ignition/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/alex/Code/coreos/src/third_party/ignition/gopath\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"x86_64-pc-linux-gnu-gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"x86_64-pc-linux-gnu-g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n`go vet` is incorrectly running its print-related checks on methods. Given the following source:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n)\r\n\r\ntype LoggerOps interface {\r\n        Emerg(string) error\r\n}\r\n\r\ntype Logger struct {\r\n        ops LoggerOps\r\n}\r\n\r\nfunc (l Logger) Emerg(format string, a ...interface{}) error {\r\n        return l.log(l.ops.Emerg, format, a...)\r\n}\r\n\r\nfunc (l Logger) log(logFunc func(string) error, format string, a ...interface{}) error {\r\n        return logFunc(fmt.Sprintf(format, a...))\r\n}\r\n```\r\n\r\nWhen I run `go vet`, I see a failure even though this code is perfectly valid.\r\n\r\n```\r\n$ go vet bug.go \r\nbug.go:16: arg l.ops.Emerg in log call is a function value, not a function call\r\nexit status 1\r\n```\r\n\r\nThe tool is confusing `l.log` (a method on `Logger`) for the builtin `log`. The internal list of function names comes from [print.go:68](https://github.com/golang/go/blob/5dd129bcff20e7b7337bd536935fab3b7214db15/src/cmd/vet/print.go#L68).",
+	"user": {
+		"login": "crawford",
+		"id": 368848,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-04-06T18:11:57Z",
+	"created_at": "2016-04-01T20:41:23Z",
+	"updated_at": "2016-04-06T18:11:57Z"
+}

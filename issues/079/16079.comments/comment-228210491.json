@@ -1,0 +1,12 @@
+{
+	"id": 228210491,
+	"body": "\u003e issues: #15446\r\n\u003e \r\n\u003e it should be getting an EOF on HEAD/POST requests where putting a retry loop around the call to client.Do.\r\n\r\nIt sounds like you're saying that you get a spurious error if the keepalive'd connection was closed before the request. That will be fixed in issue #15723 by retrying the request. In the meantime, however, your code (in `concurrentPush`) can retry the request when it receives that error. That will allow you to reuse the same connection for many requests.\r\n\r\n\u003e The Go version is 1.6 what I use in my program. It's the reason why I try to specifying request.Close that can keep the connection open\r\n\r\nWe are never going to fix this for Go 1.6. If you are using Go 1.6, you are going to need to work around this as I suggest above. Otherwise, you can wait for a fix in Go 1.8.\r\n\r\nThere's fundamentally nothing we can do in Go. You are requesting a separate TCP connection for each request, and there are a finite number of TCP ports which can be used for that connection (65,535 theoretical ports, though the actual number is lower depending on how your kernel is configured). When those ports are all used up, it's not possible to make a new connection to the same host. You need to wait for those ports to be freed up before you can make new requests. You can look at this by running \"netstat -n\"; you'll see a separate connection in `TIME_WAIT` for each request. I suggest Googling \"tcp time_wait linux\" to find several great explanations of why this is.\r\n\r\nI'm going to close this issue as I don't think there's anything we can do in Go. Please leave a comment if you think there is still a bug here that we can fix. Thanks.",
+	"user": {
+		"login": "quentinmit",
+		"id": 115761,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-23T22:57:56Z",
+	"updated_at": "2016-06-23T22:57:56Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66066827,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12 by **branimirkaradzic**:\n\n\u003cpre\u003eHere is the test:\n\npackage main\n\nimport (\n\t\"encoding/base64\"\n\t\"net\"\n\t\"syscall\"\n\t\"testing\"\n\t\"time\"\n)\n\nfunc client() {\n\n\trw, err := net.Dial(\"tcp\", \":1234\")\n\n\tfor err == nil {\n\n\t\tb := make([]byte, 1024)\n\t\trw.SetReadDeadline(time.Now().Add(8e9))\n\t\t_, err = rw.Read(b)\n\n\t\tif err != syscall.EAGAIN {\n\t\t\terr = nil // do not disconnect on timeout!\n\t\t}\n\t}\n\n\trw.Close()\n}\n\nfunc TestExpected(t *testing.T) {\n\n\tl, err := net.Listen(\"tcp\", \":1234\")\n\tif err != nil {\n\t\tt.Fatalf(\"listen error: %v\", err)\n\t}\n\tdefer l.Close()\n\n\tgo client()\n\n\trw, err := l.Accept()\n\tdefer rw.Close()\n\n\tnowNs := time.Now().UnixNano()\n\texitNs := nowNs + 15e9\n\tvar calls uint64\n\n\tfor err == nil \u0026\u0026 nowNs \u0026lt; exitNs {\n\n\t\tb := make([]byte, 1024)\n\t\trw.SetReadDeadline(time.Now().Add(1e9))\n\t\t_, err = rw.Read(b)\n\t\tcalls++\n\n\t\tif err != syscall.EAGAIN {\n\t\t\terr = nil // do not disconnect on timeout!\n\t\t}\n\n\t\tnowNs = time.Now().UnixNano()\n\t}\n\n\tt.Logf(\"Calls %d\", calls)\n\n\tif calls \u0026gt; 30 {\n\t\tt.Fatalf(\"Read called %d times. Expected ~15.\", calls)\n\t}\n}\n\nfunc TestBug(t *testing.T) {\n\n\tl, err := net.Listen(\"tcp\", \":1234\")\n\tif err != nil {\n\t\tt.Fatalf(\"listen error: %v\", err)\n\t}\n\tdefer l.Close()\n\n\tgo client()\n\n\trw, err := l.Accept()\n\tdefer rw.Close()\n\n\tdec := base64.NewDecoder(base64.StdEncoding, rw)\n\n\tnowNs := time.Now().UnixNano()\n\texitNs := nowNs + 15e9\n\tvar calls uint64\n\n\tfor err == nil \u0026\u0026 nowNs \u0026lt; exitNs {\n\n\t\tb := make([]byte, 1024)\n\t\trw.SetReadDeadline(time.Now().Add(1e9))\n\t\t_, err = dec.Read(b)\n\t\tcalls++\n\n\t\tif err != syscall.EAGAIN {\n\t\t\terr = nil // do not disconnect on timeout!\n\t\t}\n\n\t\tnowNs = time.Now().UnixNano()\n\t}\n\n\tt.Logf(\"Calls %d\", calls)\n\n\tif calls \u0026gt; 30 {\n\t\tt.Fatalf(\"Read called %d times. Expected ~15.\", calls)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-05-03T00:42:55Z",
+	"updated_at": "2014-12-22T06:14:24Z"
+}

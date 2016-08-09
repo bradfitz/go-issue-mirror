@@ -1,0 +1,32 @@
+{
+	"id": 89254457,
+	"number": 11270,
+	"state": "open",
+	"title": "proposal: cmd/link: add support for TLS variables to the toolchain",
+	"body": "All platforms that support cgo use some kind of thread local storage to store g across cgo calls (Intel platforms always store g there).\r\n\r\nOn most systems that have support for TLS in the dynamic linker (e.g. linux/amd64), we use that support. On other systems (e.g. darwin/arm) there is a hack to determine the offset from the thread local base to the storage for a key created with pthread_key_create. There is fragile code spread over multiple places to do the right thing -- e.g. the linker does different things to a symbol called runtime·tlsg depending on the value of GOOS.\r\n\r\nI want to make -buildmode=shared work on other architectures, and this requires changing details in how TLS works. Rather than adding further complications, I think it would be make things easier to understand if we could simply say that we wanted to use TLS on platforms that supported it.\r\n\r\nMy idea is that one could declare (in a .s file) a variable to be thread local, e.g:\r\n\r\n```\r\nGLOBL runtime·tlsg+0(SB), TLSBSS, $4\r\n```\r\n\r\nThe only operations that would be supported on this variable would be MOVs to and from a register.\r\n\r\ncmd/internal/obj would convert these operations, based on $GOOS and any flags passed, into the necessary instructions and relocations for a given platform, for example tls_arm.s might contain:\r\n\r\n```\r\nMOV runtime·tlsg(SB), R0\r\n```\r\n\r\nand this might, on Linux, with GOARM=7 but without any flags implying the code will end up in a shared library, become (ARM syntax, and using r12 as a scratch register):\r\n\r\n```\r\nmrc     15, 0, r0, cr13, cr0, {3}\r\nldr\tr12, [pc, #off]--.\r\nldr\tr0, [r0, r12]    |\r\n...                      |\r\n.word \u003c------------------' \u003c- reloc with Type=R_TLS_LE, Sym=runtime·tlsg pointing here\r\n```\r\n\r\nThe linker when linking externally would turn the relocation into R_ARM_TLS_LE32 and when linking internally would allocate each references TLS symbol an offset from the base and process the relocation accordingly (and create a PT_TLS header). If the code was compiled with go tool compile -dynlink, a different sequence and relocation would be generated and the linker would turn the relocation into R_ARM_TLS_IE32 instead.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2015-06-18T10:20:28Z",
+	"updated_at": "2015-10-24T04:52:43Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

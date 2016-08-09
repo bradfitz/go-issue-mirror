@@ -1,0 +1,22 @@
+{
+	"id": 51286679,
+	"number": 7416,
+	"state": "closed",
+	"title": "math.Pow() slowness",
+	"body": "by **caglar@10ur.org**:\n\n\u003cpre\u003ego-nuts thread: \u003ca href=\"https://groups.google.com/d/msg/golang-nuts/GOviOxfkt2E/FMZ894wTIMAJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/GOviOxfkt2E/FMZ894wTIMAJ\u003c/a\u003e\n\ngo version: go version devel +bca0032e86af Wed Feb 26 13:20:36 2014 +1100 darwin/amd64\n\nSummary of the problem:\n\nWas profiling some code and profiler showed that I was spending a huge amount of time\ninside the math.Pow function. I decided to write the following benchmark to see what’s\ngoing on (attached to the report)\n\nRunning the benchmark on my 2GHz Intel Core i7 laptop (OSX 10.9.1) with latest go showed\nfollowing;\n\ngo test -bench=.\ntesting: warning: no tests to run\nPASS\nBenchmarkUnrollTrue 100000000         24.8 ns/op\nBenchmarkUnrollFalse 10000000       254 ns/op\nok  _/Users/sonur/g/pow 41.491s\n\nAfter some back and forth in mailing list, I tried adding following special case to pow\nfunction\n\n--- a/src/pkg/math/pow.go\tWed Feb 26 13:20:36 2014 +1100\n+++ b/src/pkg/math/pow.go\tWed Feb 26 00:23:10 2014 -0500\n@@ -41,6 +41,8 @@\n \t\treturn 1\n \tcase y == 1:\n \t\treturn x\n+\tcase y == 2:\n+\t\treturn x*x\n \tcase y == 0.5:\n \t\treturn Sqrt(x)\n \tcase y == -0.5:\n\nwhich improved the situation\n\ngo test -bench=.\ntesting: warning: no tests to run\nPASS\nBenchmarkUnrollTrue\t100000000\t        27.5 ns/op\nBenchmarkUnrollFalse\t50000000\t        46.9 ns/op\nok  \t_/Users/sonur/g/pow\t54.729s\n\n\nI understand that it's not feasible or possible to add every case into math.Pow\nfunction's fast-path but on the other hand 10x slowness didn't sound right. Dave Cheney\nsuggested me to raise an issue to discuss so I am  wondering whether you are open to add\nadditional special cases into pow function or considering this as an expected outcome of\nusing a generic function?\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7416/0/pow_test.go\"\u003epow_test.go\u003c/a\u003e (1150 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:41:15Z",
+	"created_at": "2014-02-26T06:38:40Z",
+	"updated_at": "2016-06-25T01:28:30Z"
+}

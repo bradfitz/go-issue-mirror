@@ -1,0 +1,31 @@
+{
+	"id": 54523508,
+	"number": 9608,
+	"state": "closed",
+	"title": "cmd/gc: dead-code elimination for switch statements with constant expressions",
+	"body": "Commit 5bfed7c (\"runtime: log all thread stack traces during GODEBUG=crash on Linux and OS X\") broke several architectures because it expected that\r\n\r\n    const GOOS = \"openbsd\"\r\n    switch GOOS {\r\n    case \"linux\", \"darwin\":\r\n        raiseproc(_SIGQUIT)\r\n    }\r\n\r\nwould optimize away the call to raiseproc(), so it wouldn't matter that it wasn't implemented on other architectures.  However, cmd/gc optimizes \"if\" statements with constant conditions, but it doesn't optimize \"switch\" statements with constant expressions.  E.g.\r\n\r\n    $ cat foo.go\r\n    package foo\r\n    \r\n    func f() bool {\r\n    \tconst x = 0\r\n    \tswitch x {\r\n    \tcase 0:\r\n    \t\treturn true\r\n    \t}\r\n    \treturn false\r\n    }\r\n    \r\n    func g() bool {\r\n    \tconst x = 0\r\n    \tif x == 0 {\r\n    \t\treturn true\r\n    \t}\r\n    \treturn false\r\n    }\r\n\r\n    $ go tool 6g -S foo.go\r\n    \"\".f t=1 size=32 value=0 args=0x8 locals=0x0\r\n    \t0x0000 00000 (foo.go:3)\tTEXT\t\"\".f+0(SB),4,$0-8\r\n    \t0x0000 00000 (foo.go:3)\tNOP\t,\r\n    \t0x0000 00000 (foo.go:3)\tNOP\t,\r\n    \t0x0000 00000 (foo.go:3)\tFUNCDATA\t$0,gclocals·a7a3692b8e27e823add69ec4239ba55f+0(SB)\r\n    \t0x0000 00000 (foo.go:3)\tFUNCDATA\t$1,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\r\n    \t0x0000 00000 (foo.go:5)\tMOVQ\t$0,AX\r\n    \t0x0002 00002 (foo.go:6)\tCMPQ\tAX,$0\r\n    \t0x0006 00006 (foo.go:6)\tJNE\t,14\r\n    \t0x0008 00008 (foo.go:7)\tMOVB\t$1,\"\".~r0+8(FP)\r\n    \t0x000d 00013 (foo.go:7)\tRET\t,\r\n    \t0x000e 00014 (foo.go:9)\tMOVB\t$0,\"\".~r0+8(FP)\r\n    \t0x0013 00019 (foo.go:9)\tRET\t,\r\n    \t0x0000 31 c0 48 83 f8 00 75 06 c6 44 24 08 01 c3 c6 44  1.H...u..D$....D\r\n    \t0x0010 24 08 00 c3                                      $...\r\n    \"\".g t=1 size=16 value=0 args=0x8 locals=0x0\r\n    \t0x0000 00000 (foo.go:12)\tTEXT\t\"\".g+0(SB),4,$0-8\r\n    \t0x0000 00000 (foo.go:12)\tNOP\t,\r\n    \t0x0000 00000 (foo.go:12)\tNOP\t,\r\n    \t0x0000 00000 (foo.go:12)\tFUNCDATA\t$0,gclocals·a7a3692b8e27e823add69ec4239ba55f+0(SB)\r\n    \t0x0000 00000 (foo.go:12)\tFUNCDATA\t$1,gclocals·3280bececceccd33cb74587feedb1f9f+0(SB)\r\n    \t0x0000 00000 (foo.go:15)\tMOVB\t$1,\"\".~r0+8(FP)\r\n    \t0x0005 00005 (foo.go:15)\tRET\t,\r\n    \t0x0000 c6 44 24 08 01 c3                                .D$...",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-02-06T19:06:11Z",
+	"created_at": "2015-01-16T00:07:49Z",
+	"updated_at": "2016-06-25T01:58:38Z"
+}

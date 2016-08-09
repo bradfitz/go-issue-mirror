@@ -1,0 +1,22 @@
+{
+	"id": 51283157,
+	"number": 5124,
+	"state": "closed",
+	"title": "arm cannot unwind stack frames through cgo call out and call backs",
+	"body": "\u003cpre\u003eA function that calls out into native and calls back into Go should be able to have its\nstack unwound by gentraceback.  This works on 386 and amd64 but does not work on arm.\n\nThere appear to be 2 problems with the arm that make unwinding impossible.  \n\nThe first is that the runtime.cgocallback_gofunc does not abide by the function linkage\nconvention for the arm.  While the convention expects the return address for a frame to\nbe stored on the top of the stack, this function stores its return address following the\n386 and amd64 convention which stores the return address between the locals and the\nargs.  When the unwind reaches runtime.cgocallback_gofunc it will find junk on the stack\nand terminates prematurely.\n\nThe second is that some frames seem to have the wrong size preventing the unwind from\nfinding the procedure linkage.  One such example is runtime.cgocall.  When the unwind\nreaches runtime.cgocall it will miss the word with linkage information by 4 bytes.\n\nI will be adding a test named TestCallbackCallers to the cgo test suite that\ndemonstrates this issue.\u003c/pre\u003e",
+	"user": {
+		"login": "lexprfuncall",
+		"id": 5360361,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:27:25Z",
+	"created_at": "2013-03-25T19:42:39Z",
+	"updated_at": "2016-06-24T22:36:24Z"
+}

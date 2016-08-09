@@ -1,0 +1,22 @@
+{
+	"id": 51287335,
+	"number": 7869,
+	"state": "closed",
+	"title": "net/http/httputil/dump.go: DumpRequestOut leaks two goroutines",
+	"body": "by **ben@extrahop.com**:\n\n\u003cpre\u003eWhat does 'go version' print? go version go1.2.1 linux/amd64\n\nWhat steps reproduce the problem?\n\n1. Call DumpRequestOut.\n2. No step 2.\n\nSee example code written by a colleague here: \u003ca href=\"http://play.golang.org/p/XhkiOmdHPv\"\u003ehttp://play.golang.org/p/XhkiOmdHPv\u003c/a\u003e\n\nWhat happened?\n\nAfter running DumpRequestOut, two goroutines end up sticking around. So after 1000 calls\nto DumpRequestOut, the goroutines will include:\n\n1000 @ 0x4173e6 0x404be2 0x405028 0x453194 0x4175b0\n#\t0x453194\tnet/http.(*persistConn).readLoop+0x2f4\t/usr/local/go/src/pkg/net/http/transport.go:701\n\n1000 @ 0x4173e6 0x4059e4 0x405632 0x453b81 0x4175b0\n#\t0x4059e4\tselectgo+0x384\t\t\t\t/usr/local/go/src/pkg/runtime/chan.c:996\n#\t0x405632\truntime.selectgo+0x12\t\t\t/usr/local/go/src/pkg/runtime/chan.c:840\n#\t0x453b81\tnet/http.(*persistConn).writeLoop+0x271\t/usr/local/go/src/pkg/net/http/transport.go:791\n\nWhat should have happened instead? No additional goroutines.\n\nFix? I think DumpRequestOut is missing a t.CloseIdleConnections()\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:43:41Z",
+	"created_at": "2014-04-25T21:18:49Z",
+	"updated_at": "2016-06-25T01:33:08Z"
+}

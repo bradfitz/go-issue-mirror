@@ -1,0 +1,12 @@
+{
+	"id": 235628616,
+	"body": "@atdiar \r\n\r\n\u003e If your type/func/etc was initially in net/context, packages that import net/context expect the type/func/var to come from net/context. (the package name is part of the type information).\r\n\r\nThat's true, but most programs should not rely on that information (it's only visible using reflection).  Fortunately, `golang.org/x/net/context` is not subject to the same compatibility requirements as `context`: it aims for API compatibility but does not guarantee perfect compatibility.  Defining `golang.org/x/net/context` in terms of `context` would be fine; it wouldn't break most programs and would require only minor changes in the remainder.\r\n\r\nBut you're correct that we could not, say, use this same mechanism to refactor the Go standard library without technically breaking Go 1 compatibility.\r\n\r\n\u003e Aliasing seems to get things backwards. If you move types to, let's say, an internal package, you don't want clients to use this type. The type info has changed.\r\n\r\nCorrect.  You want clients to refer to the type by its name in the public package.  But they can do that; the only place that doesn't work is when using reflection to get the package-qualified name of the type.  And as I understand it that approach is fragile in the presence of vendoring anyway: if the build system rewrites import paths, the paths as seen through reflection will change regardless.\r\n\r\n\u003e If you did that, any change at the bottom of the dependency tree would have to be propagated upwards, to clients of clients and clients of clients of clients etc.\r\n\r\nYes.  The point of aliasing is that it propagates those changes automatically (without requiring manual editing).\r\n\r\n\u003e Now, let's say the context.Context type has methods that returns types that have been moved to a different packages, if these types are not copied back, things are going to break.\r\n\r\nLet's be precise: how would they break?  (In particular, how would they break if the `context` package includes aliases for the types that have been moved?)",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-27T15:47:14Z",
+	"updated_at": "2016-07-27T15:47:14Z"
+}

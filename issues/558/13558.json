@@ -1,0 +1,22 @@
+{
+	"id": 121359198,
+	"number": 13558,
+	"state": "closed",
+	"title": "io: MultiReader should be more efficient when chained multiReaders contain few actual readers",
+	"body": "The specific motivating case here is when doing decoding from a stream of json. In some cases I need to make two passes to determine the appropriate struct into which to decode based on some content. The json.Decoder offers buffered in an io.Reader. Thus I have access to the in-tact stream by taking:\r\n\r\nio.MultiReader(dec.Buffered(), r) // where r is the underlying reader.\r\n\r\nThe problem with this is that each time this process happens, a new multiReader is created to wrap these two readers. In general, the next call to read will Read the entire Reader from Buffered leaving just the underlying reader. The problem is that the last reader remains wrapped in an underlying *multiReader. So after doing this 100 times, there may be just one actual reader with data but the call to read will have to call through the multiReader.Read method 100 times.\r\n\r\nThe current constructor looks like this:\r\n```\r\nfunc MultiReader(readers ...Reader) Reader {\r\n\tr := make([]Reader, len(readers))\r\n\tcopy(r, readers)\r\n\treturn \u0026multiReader{r}\r\n}\r\n```\r\n\r\nI propose that we do something like this:\r\n```\r\nfunc MultiReader(readers ...Reader) Reader {\r\n    r := make([]Reader, 0, len(readers))\r\n    for _, reader := range readers {\r\n        if mr, ok := reader.(*multiReader); ok {\r\n            r = append(r, mr.readers...)\r\n        } else {\r\n            r = append(r, reader)\r\n        }\r\n    } \r\n    return \u0026multiReader{r}\r\n}\r\n```",
+	"user": {
+		"login": "ajwerner",
+		"id": 1839234,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-16T22:56:54Z",
+	"created_at": "2015-12-09T22:49:28Z",
+	"updated_at": "2016-05-16T22:56:54Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

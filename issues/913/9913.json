@@ -1,0 +1,27 @@
+{
+	"id": 58010663,
+	"number": 9913,
+	"state": "closed",
+	"title": "runtime, liblink, cmd/ld: externally linked binaries without cgo crash immediately on amd64",
+	"body": "If you externally link a binary and runtime/cgo.a cannot be found (maybe by saying CGO_ENABLED=0 ./make.bash) you get a warning, and a binary that crashes during startup:\r\n\r\n```shellsession\r\nmwhudson@narsil:src$ ../bin/go run -ldflags -linkmode=external /opt/opensource/go-test-cases/trivial.go\r\n# command-line-arguments\r\nwarning: unable to find runtime/cgo.a\r\nsignal: segmentation fault (core dumped)\r\n```\r\n\r\nThe reason turns out to be a disagreement over the TLS offset for g.  Presumably because both g and m used to be stored in TLS, the runtime and internal linking assumes it to be 16 but as g is now the only pointer stored in TLS, binutils ld sets it to 8, causing the tls consistency check on startup to fail.\r\n\r\nI see two ways to fix this: one would be to just change the runtime and internal linker to assume the offset is 8 bytes and the other would be use a special relocation to get the linker (either internal or external) to tell us what the symbol is.  In the latter case I don't *think* there would really be any need to do the magic import of runtime/cgo in an externally linked program (the comment justifying it is already a bit wrong, unless I am very confused).",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-03-05T01:24:11Z",
+	"created_at": "2015-02-18T01:17:12Z",
+	"updated_at": "2016-06-25T02:01:08Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

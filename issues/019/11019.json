@@ -1,0 +1,22 @@
+{
+	"id": 83569762,
+	"number": 11019,
+	"state": "closed",
+	"title": "runtime: livelock near runtime.sysmon",
+	"body": "```\r\n$ go version\r\ngo version devel +8cd191b Sat May 30 12:21:56 2015 +0000 linux/amd64\r\n$ uname -a | awk '$2=\"host\"'\r\nLinux host 3.13.0-52-generic #86~precise1-Ubuntu SMP Tue May 5 18:08:21 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux\r\n```\r\n\r\nI have a process that receives data over a few hundred concurrent TCP connections and writes them to files. It's been locking up on recent versions of tip (it was stable on 1.4.1). When it locks up, `top` shows it consuming 10-30% of a core, `perf top` doesn't show it at all, and `strace` shows it repeatedly calling `select(2)` with a NULL fd list (maybe used just as a sleep?). SIGABRT causes a stack dump which starts with a g0 stack (followed by goroutines from my app that have been blocked for many minutes).\r\n\r\n```\r\n$ strace -ttt -f -p 47135\r\n[snip]\r\n[pid 47156] 1433139204.018227 \u003c... select resumed\u003e ) = 0 (Timeout)\r\n[pid 47156] 1433139204.018256 select(0, NULL, NULL, NULL, {0, 100} \u003cunfinished ...\u003e\r\n[pid 47155] 1433139204.018400 \u003c... futex resumed\u003e ) = -1 ETIMEDOUT (Connection timed out)\r\n[pid 47155] 1433139204.018432 clock_gettime(CLOCK_MONOTONIC, {437662, 793520114}) = 0\r\n[pid 47156] 1433139204.018494 \u003c... select resumed\u003e ) = 0 (Timeout)\r\n[pid 47155] 1433139204.018508 clock_gettime(CLOCK_MONOTONIC,  \u003cunfinished ...\u003e\r\n[pid 47156] 1433139204.018525 select(0, NULL, NULL, NULL, {0, 100} \u003cunfinished ...\u003e\r\n[pid 47155] 1433139204.018541 \u003c... clock_gettime resumed\u003e {437662, 793595479}) = 0\r\n[pid 47155] 1433139204.018575 futex(0xa7ee70, FUTEX_WAIT, 0, {0, 100000} \u003cunfinished ...\u003e\r\n[pid 47156] 1433139204.018772 \u003c... select resumed\u003e ) = 0 (Timeout)\r\n[pid 47156] 1433139204.018803 select(0, NULL, NULL, NULL, {0, 100} \u003cunfinished ...\u003e\r\n[pid 47155] 1433139204.018821 \u003c... futex resumed\u003e ) = -1 ETIMEDOUT (Connection timed out)\r\n[pid 47155] 1433139204.018854 clock_gettime(CLOCK_MONOTONIC, {437662, 793941489}) = 0\r\n[pid 47155] 1433139204.018914 clock_gettime(CLOCK_MONOTONIC, {437662, 794001909}) = 0\r\n[pid 47155] 1433139204.018974 futex(0xa7ee70, FUTEX_WAIT, 0, {0, 100000} \u003cunfinished ...\u003e\r\n[snip]\r\n```\r\n\r\n```\r\nSIGABRT: abort\r\nPC=0x463393 m=1\r\n\r\ngoroutine 0 [idle]:\r\nruntime.futex(0xa7ee80, 0x0, 0xc208047ee0, 0x0, 0x0, 0x4631ec, 0x3c, 0x0, 0x416994, 0xa7ee80, ...)\r\n\t/usr/local/go/src/runtime/sys_linux_amd64.s:283 +0x23\r\nruntime.futexsleep(0xa7ee80, 0x0, 0xdf8475800)\r\n\t/usr/local/go/src/runtime/os1_linux.go:56 +0xf0\r\nruntime.notetsleep_internal(0xa7ee80, 0xdf8475800, 0xc2080003c0)\r\n\t/usr/local/go/src/runtime/lock_futex.go:167 +0x134\r\nruntime.notetsleep(0xa7ee80, 0xdf8475800, 0x45d964b800)\r\n\t/usr/local/go/src/runtime/lock_futex.go:187 +0x78\r\nruntime.sysmon()\r\n\t/usr/local/go/src/runtime/proc1.go:2954 +0x480\r\nruntime.mstart1()\r\n\t/usr/local/go/src/runtime/proc1.go:703 +0xfa\r\nruntime.mstart()\r\n\t/usr/local/go/src/runtime/proc1.go:673 +0x72\r\n\r\ngoroutine 1 [chan receive, 794 minutes]:\r\nmain.main()\r\n\t/redacted.go:230 +0xe7b\r\n\r\ngoroutine 18 [chan send, 741 minutes]:\r\nredacted(0xc2080c8000)\r\n\t/redacted.go:199 +0x1f0\r\ncreated by redacted.init.1\r\n\t/redacted.go:184 +0x6e\r\n\r\n[snip]\r\n```",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-06-23T05:30:40Z",
+	"created_at": "2015-06-01T15:44:15Z",
+	"updated_at": "2016-03-06T18:35:06Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 77177842,
+	"body": "@adg, here's the smoking gun:\r\n\r\n```\r\ngoroutine 5024 [semacquire, 784 minutes]:\r\nsync.runtime_Semacquire(0xc208524dd4)\r\n    /home/bradfitz/go/src/runtime/sema.go:43 +0x2d\r\nsync.(*Mutex).Lock(0xc208524dd0)\r\n    /home/bradfitz/go/src/sync/mutex.go:82 +0x1c3\r\nmain.(*buildStatus).isRunning(0xc208524d80, 0xc208437200)\r\n    /home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1157 +0x3d\r\nmain.(*buildStatus).watchLogs(0xc208524d80, 0x0)\r\n    /home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:1269 +0x16f\r\nmain.handleLogs(0x7f77b5f65570, 0xc20885aa50, 0xc2088056c0)\r\n    /home/bradfitz/src/golang.org/x/build/cmd/coordinator/coordinator.go:505 +0x22c\r\nnet/http.HandlerFunc.ServeHTTP(0x9dcf00, 0x7f77b5f65570, 0xc20885aa50, 0xc2088056c0)\r\n    /home/bradfitz/go/src/net/http/server.go:1316 +0x41\r\nnet/http.(*ServeMux).ServeHTTP(0xc20803a780, 0x7f77b5f65570, 0xc20885aa50, 0xc2088056c0)\r\n    /home/bradfitz/go/src/net/http/server.go:1592 +0x190\r\nnet/http.serverHandler.ServeHTTP(0xc2082ac2a0, 0x7f77b5f65570, 0xc20885aa50, 0xc2088056c0)\r\n    /home/bradfitz/go/src/net/http/server.go:1754 +0x1a2\r\nnet/http.(*conn).serve(0xc2087545a0)\r\n    /home/bradfitz/go/src/net/http/server.go:1255 +0xc40\r\ncreated by net/http.(*Server).Serve\r\n    /home/bradfitz/go/src/net/http/server.go:1802 +0x39e\r\n```\r\n\r\nWhere watchLogs grabs the mutex and also calls isRunning, which grabs the mutex again:\r\n\r\n```\r\nfunc (st *buildStatus) watchLogs() \u003c-chan []byte {\r\n        st.mu.Lock()\r\n        defer st.mu.Unlock()\r\n\r\n        ch := make(chan []byte, 10) // room for a few log writes                                                                                                       \r\n        ch \u003c- st.output.Bytes()\r\n        if !st.isRunning() {\r\n                close(ch)\r\n                return ch\r\n        }\r\n\r\n        st.watcher = append(st.watcher, \u0026logWatcher{\r\n                ch:     ch,\r\n                offset: st.output.Len(),\r\n        })\r\n        return ch\r\n}\r\n                \r\nfunc (st *buildStatus) isRunning() bool {\r\n        st.mu.Lock()\r\n        defer st.mu.Unlock()\r\n        return st.done.IsZero()\r\n}       \r\n```",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-04T15:25:55Z",
+	"updated_at": "2015-03-04T15:25:55Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66093025,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eRemoving the use of a[:] lets the linker drop the variable, no matter what. That slice\noperation happens in a generated func init either way. If we recognized that in the\n'init-\u003estatic' converter it would always get collected. I've changed the bug report to\ntrack that.\n\nThe confusion about {} vs {3} happens because if you use {} the binary gets smaller,\nbecause 'a' is moved into the bss. But it's still there if and only if a[:] is used in\nthe original.\n\nHere are four test cases showing the variations from the original report:\n\ng% cat x1.go # original report\npackage main\nfunc main() {}\ntype foo struct { arr []int }\nvar f = foo{arr: a[:]}\nvar a = [1000111]int{3}\n\ng% cat x2.go # {3} -\u003e {}\npackage main\nfunc main() {}\ntype foo struct { arr []int }\nvar f = foo{arr: a[:]}\nvar a = [1000111]int{}\n\ng% cat x3.go # foo{a[:]} -\u003e foo{}\npackage main\nfunc main() {}\ntype foo struct { arr []int }\nvar f = foo{}\nvar a = [1000111]int{3}\n\ng% cat x4.go # {3} -\u003e {}, foo{a[:]} -\u003e foo{}\npackage main\nfunc main() {}\ntype foo struct { arr []int }\nvar f = foo{}\nvar a = [1000111]int{}\n\n# a still here for both {} and {3}. difference in size is initialized data vs bss.\ng% go build x1.go \u0026\u0026 echo $(go tool nm x1 | grep main.a) $(ls -l x1)\n55020 D main.a -rwxr-xr-x 1 rsc 5000 8490784 Apr 24 17:29 x1\n\ng% go build x2.go \u0026\u0026 echo $(go tool nm x2 | grep main.a) $(ls -l x2)\n75ce0 B main.a -rwxr-xr-x 1 rsc 5000 487200 Apr 24 17:29 x2\n\n# removing use of a removes from binary (no nm output)\ng% go build x3.go \u0026\u0026 echo $(go tool nm x3 | grep main.a) $(ls -l x3)\n-rwxr-xr-x 1 rsc 5000 483024 Apr 24 17:30 x3\n\ng% go build x4.go \u0026\u0026 echo $(go tool nm x4 | grep main.a) $(ls -l x4)\n-rwxr-xr-x 1 rsc 5000 483024 Apr 24 17:30 x4\u003c/pre\u003e\n\n_Labels changed: added **release-go1.4**, removed **release-go1.3maybe**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-24T21:34:54Z",
+	"updated_at": "2014-12-08T10:42:31Z"
+}

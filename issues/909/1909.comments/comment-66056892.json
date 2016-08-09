@@ -1,0 +1,12 @@
+{
+	"id": 66056892,
+	"body": "\u003ca id=\"c26\"\u003e\u003c/a\u003eComment 26:\n\n\u003cpre\u003eHere's another good test case:\n\npackage main\n\ntype (\n\tA interface {\n\t\ta() interface {\n\t\t\tABC1\n\t\t}\n\t}\n\tB interface {\n\t\tb() interface {\n\t\t\tABC2\n\t\t}\n\t}\n\tC interface {\n\t\tc() interface {\n\t\t\tABC3\n\t\t}\n\t}\n\n\tAB interface {\n\t\tA\n\t\tB\n\t}\n\tBC interface {\n\t\tB\n\t\tC\n\t}\n\n\tABC1 interface {\n\t\tA\n\t\tB\n\t\tC\n\t}\n\tABC2 interface {\n\t\tAB\n\t\tC\n\t}\n\tABC3 interface {\n\t\tA\n\t\tBC\n\t}\n)\n\nvar (\n\tx1 ABC1\n\tx2 ABC2\n\tx3 ABC3\n)\n\nfunc main() {\n\tx1 = x2\n\tx2 = x3\n\tx2 = x3\n}\n\nThis causes the compiler to go into an infinite (probably) recursion (memory is consumed\nuntil machine becomes unresponsive).\n\nAll types ABC1, ABC2, ABC3 are identical interface types, but they are constructed in\ndifferent ways in the source. Here's a black-box analysis. There are several problems\nfor a front-end to solve:\n\n1) It must correctly create the internal cyclic type representation for these interface\ntypes. The representation must be based on the methods, not the actual source code\n(since there are different ways to get to the same method set). That representation is\ncyclic in this case, and the recursion is not represented by ending in a named type\n(since the method result types here are unnamed); it's a true cycle in the type\nrepresentation.\n\n2) When type-checking the assignments, the compiler must verify that the lhs and rhs\nhave identical types. That is, in this case it must verify that the cyclic graph on the\nlhs matches the cyclic graph on the rhs. Because the cycles are not created with named\ntypes, the graph-comparison algorithm must use some marking scheme (visited map) to\ndetect cycles.\n\n3) The export data structure for such types (currently we can only have this for\ninterface types) must be able to represent such recursion. Specifically, it either\nreproduces the original source definition (w/ embedding information intact) so it can\nuse the existing type names to express the recursion; or it needs some other mechanism\n(linearization of arbitrary cyclic graph comes to mind - easy, but not done at the\nmoment).\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-10-16T20:45:09Z",
+	"updated_at": "2014-12-08T10:10:30Z"
+}

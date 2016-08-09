@@ -1,0 +1,12 @@
+{
+	"id": 66078519,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eCarl theorized that this was related to his work on \u003ca href=\"https://golang.org/issue/353\"\u003eissue #353\u003c/a\u003e \u0026 \u003ca href=\"https://golang.org/issue/5134\"\u003eissue #5134\u003c/a\u003e.\n\nTo test that theory, he was curious to see what happened if you ran foo in a goroutine,\nwith its own stack.\n\nNo change:\n\n$ cat z.go\npackage main\n\nimport (\n        \"fmt\"\n        \"runtime\"\n)\n\ntype T struct {\n        S *string\n}\n\nfunc newString(s string) *string {\n        return \u0026s\n}\n\nfunc foo() {\n        t := \u0026T{S: newString(\"foo\")}\n        runtime.SetFinalizer(t, func(p *T) { fmt.Println(\"GC T\") })\n        runtime.SetFinalizer(t.S, func(p *string) { fmt.Println(\"GC string\") })\n}\n\nfunc main() {\n        fmt.Println(\"hi\")\n\tdonec := make(chan bool)\n\tgo func() {\n\t\tfoo()\n\t\tdonec \u0026lt;- true\n\t}()\n\t\u0026lt;-donec\n        runtime.GC()\n        runtime.GC()\n        fmt.Println(\"bye\")\n}\n\n$ go run --ldflags=-Z z.go\nhi\nGC T\nbye\n\n\nLikewise if making the channel buffered or putting in a big sleep after the channel\nreceive.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-04-24T20:28:34Z",
+	"updated_at": "2014-12-22T06:24:39Z"
+}

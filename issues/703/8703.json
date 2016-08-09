@@ -1,0 +1,22 @@
+{
+	"id": 51288577,
+	"number": 8703,
+	"state": "closed",
+	"title": "sync: intermittent crash locking Mutex -- unexpected fault address",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.3.1 linux/amd64\n\nWhat steps reproduce the problem?\n\nWe cannot yet reliably reproduce this problem. It happens in large clusters very\nintermittently. The context of the crash is launching goroutines while iterating a slice\nin a for-select loop.\n\nfunc (tab *ProcessTable) loop() {\n    for {\n        select {\n        // ...\n        case set := \u0026lt;-tab.persist:\n            for _, p := range tab.ps {\n                p := p\n                go p.DatasetPersisted(set)\n            }\n        }\n        // ...\n    }\n}\n\nThe method called is attempting to lock a mutex.\n\nfunc (p *Process) DatasetPersisted(outset vaultdata.Dataset) {\n    if p == nil {\n        return\n    }  \n    p.chwrmut.Lock()\n    defer p.chwrmut.Unlock()\n    if !p.closed {\n        p.setPersistStatus \u0026lt;- setPersistStatus{outset, nil}\n    }  \n}\n\nWhat happened?\n\nThe system crashes with the following error. I've only included the top stack as there\nare several hundred active goroutines at the time this occurs. There is a\nruntime.goexit() call near the bottom that is confusing.\n\nunexpected fault address 0x0\nfatal error: fault\n[signal 0x7 code=0x80 addr=0x0 pc=0x60f9dd]\n\ngoroutine 10270 [running]:\nruntime.throw(0xae7a56)\n        /usr/local/go/src/pkg/runtime/panic.c:520 +0x69 fp=0x7ff97dcc5ee8 sp=0x7ff97dcc5ed0\nruntime.sigpanic()\n        /usr/local/go/src/pkg/runtime/os_linux.c:232 +0x25b fp=0x7ff97dcc5f00 sp=0x7ff97dcc5ee8\nsync/atomic.CompareAndSwapUint32(0x7561772f746e6d9f, 0x100000000)\n        /usr/local/go/src/pkg/sync/atomic/asm_amd64.s:42 +0xd fp=0x7ff97dcc5f08 sp=0x7ff97dcc5f00\nsync.(*Mutex).Lock(0x7561772f746e6d9f)\n        /usr/local/go/src/pkg/sync/mutex.go:43 +0x42 fp=0x7ff97dcc5f30 sp=0x7ff97dcc5f08\nvault/vaultproc.(*Process).DatasetPersisted(0x7561772f746e6d2f, 0x6f2f646f72702e73,\n0x393034312f736a62, 0x2d343034302d3131, 0x39382f61382f3435)\n        /tmp/wault-build-356012266/git/src/vault/vaultproc/proc.go:233 +0x4a fp=0x7ff97dcc5f80 sp=0x7ff97dcc5f30\nruntime.goexit()\n        /usr/local/go/src/pkg/runtime/proc.c:1445 fp=0x7ff97dcc5f88 sp=0x7ff97dcc5f80\ncreated by vault/vaultproc.(*ProcessTable).loop\n        /tmp/wault-build-356012266/git/src/vault/vaultproc/table.go:255 +0x3c3\n\nWhat should have happened instead?\n\nNo fatal error should occur there.\n\nPlease provide any additional information below.\n\nThe rate we have seen this occur has been approximately once every several weeks (this\nis the first occurrence on go1.3.1).\n\nWe saw this error in go1.3 as well. The codebase is young and was running on go1.2.1 for\nonly a very short time. So while we didn't see the problem present then, given how\nintermittent the crash is in nature, I can't say with certainty that it wouldn't have\nhappened.\n\nAlso, we have run into an occasional problem where the go process reaches the limit on\nopen file descriptors. I have no idea if could be related. And as I said previously\nthere's no indication from our logs that was the case when the faults have occurred.\u003c/pre\u003e",
+	"user": {
+		"login": "bmatsuo",
+		"id": 15089,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 17,
+	"closed_at": "2015-04-10T05:47:04Z",
+	"created_at": "2014-09-11T10:52:55Z",
+	"updated_at": "2016-06-25T01:41:14Z"
+}

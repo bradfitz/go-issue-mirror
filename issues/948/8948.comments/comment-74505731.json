@@ -1,0 +1,12 @@
+{
+	"id": 74505731,
+	"body": "If I change the program as (add usage of cgo):\r\n\r\n```go\r\npackage main\r\n\r\n/*\r\n#include \u003cstdio.h\u003e\r\n#include \u003cwindows.h\u003e\r\n\r\nvoid foo() {\r\n\tSYSTEM_INFO info;\r\n\tGetSystemInfo(\u0026info);\r\n\tprintf(\"%d\\n\", info.dwPageSize);\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport (\r\n    \"database/sql\"\r\n    \"fmt\"\r\n    _ \"github.com/mattn/go-sqlite3\"\r\n)\r\n\r\nfunc main() {\r\n    db, err := sql.Open(\"sqlite3\", \"./test.db\")\r\n    if err != nil {\r\n        fmt.Println(\"err%+v\", err)\r\n        return\r\n    }\r\n    defer db.Close()\r\n\r\n    err = db.Ping()\r\n    if err != nil {\r\n        panic(err.Error())\r\n    }\r\n    fmt.Println(\"ok\")\r\n}\r\n```\r\n\r\nThen the program fails even without race detector.\r\n\r\nIn both working and non-working case, address of  GetSystemInfo looks like 0x66b070, which means that it does not come from a windows system library (probably from libmingw?). However, in non-working cases the address of GetSystemInfo seems to be a little off. I can speculate that it is off by size of an object file or or a section in one of the packages. Probably we compute symbol offsets assuming that there is only one package that uses native code...\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-16T13:09:26Z",
+	"updated_at": "2015-02-16T13:09:26Z"
+}

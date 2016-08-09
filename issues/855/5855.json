@@ -1,0 +1,22 @@
+{
+	"id": 51284294,
+	"number": 5855,
+	"state": "closed",
+	"title": "make.bash sometimes builds .a files with inverted timestamps, causing \"go install foo\" to fail later",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Build go from source on different machines or possibly at different times.\n\nWhat is the expected output?\nAll files are built in the same order with consistent (well-ordered) timestamps.\n\n\nWhat do you see instead?\nSometimes files get built in different orders. For example, I have seen this:\n\ngolang-1.1.1-4.fc20.x86_64 works:\n/usr/lib64/golang/pkg/linux_amd64 $ ls -l --full-time sync.a sync/atomic.a\n-rw-r--r--. 1 root root 55766 2013-07-05 00:07:34.000000000 -0400 sync.a\n-rw-r--r--. 1 root root  8364 2013-07-05 00:07:33.000000000 -0400 sync/atomic.a\n\ngolang-1.1.1-4.fc20.i686 fails:\n/usr/lib/golang/pkg/linux_386 $ ls -l --full-time sync.a sync/atomic.a \n-rw-r--r--. 1 root root 55694 2013-07-05 00:07:38.000000000 -0400 sync.a\n-rw-r--r--. 1 root root  8970 2013-07-05 00:07:39.000000000 -0400 sync/atomic.a\n\n\nHere are the build logs:\n\u003ca href=\"http://kojipkgs.fedoraproject.org//packages/golang/1.1.1/4.fc20/data/logs/x86_64/build.log\"\u003ehttp://kojipkgs.fedoraproject.org//packages/golang/1.1.1/4.fc20/data/logs/x86_64/build.log\u003c/a\u003e\n\u003ca href=\"http://kojipkgs.fedoraproject.org//packages/golang/1.1.1/4.fc20/data/logs/i686/build.log\"\u003ehttp://kojipkgs.fedoraproject.org//packages/golang/1.1.1/4.fc20/data/logs/i686/build.log\u003c/a\u003e\n\n\nWhat this means is that in the situation where sync/atomic.a is newer than sync.a, after\nthese files are copied to /usr/lib for final install, subsequent go install commands\nwill fail with:\ngo install sync: open /usr/lib/golang/pkg/linux_386/sync.a: permission denied\n\nThis seems to be non-deterministic.\n\nFor now, I will reset all the .a timestamps, but this seems like a hack. I think\nmake.bash should deterministically build these files so that the go build can\nimmediately be copied to read-only storage.\n\n\nWhich operating system are you using?\nLinux (Fedora)\n\n\nWhich version are you using?  (run 'go version')\n1.1.1\u003c/pre\u003e",
+	"user": {
+		"login": "agoode",
+		"id": 59842,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:32:10Z",
+	"created_at": "2013-07-10T05:11:34Z",
+	"updated_at": "2016-06-24T22:51:35Z"
+}

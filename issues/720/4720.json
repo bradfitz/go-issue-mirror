@@ -1,0 +1,22 @@
+{
+	"id": 51282534,
+	"number": 4720,
+	"state": "closed",
+	"title": "sync: add Pool type",
+	"body": "\u003cpre\u003eMany Go programs and packages try to reuse memory either for locality reasons or to\nreduce GC pressure:\n\npkg/regexp: pool of available threads\n\npkg/net/http: wants to reuse a lot and has TODOs, but has resisted the temptation so far\n\npkg/fmt: print.go's var ppFree = newCache(func() interface{} { return new(pp) })\n\npkg/io: for the 32 KB copy buffers; see discussion at\n\u003ca href=\"https://golang.org/cl/7206048/\"\u003ehttps://golang.org/cl/7206048/\u003c/a\u003e (which spawned this bug).  These buffers showed\nup in dl.google.com profiles.  Lot of things in the Go standard library use io.Copy, so\nthis can't be fixed by caller code.\n\npkg/io/ioutil: see\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/io/ioutil/blackhole.go\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/io/ioutil/blackhole.go\u003c/a\u003e for reusing\nthe Discard buffers\n\ndl.google.com: was allocating hundreds of MB/s, causing lots of GCs, until we added a\ngoogle-internal (for now) []byte pool reuse library, with an API like:\n\n    package pool\n    func NewBytePool(...opts...) *BytePool\n    func (*BytePool) Alloc(n int) []byte\n    func (*BytePool) Free(buf []byte)\n\nThere are two distinct but related uses:\n\n    * reusing small-ish structs (like regexp, fmt)\n    * reusing bigger []byte (io, ioutil, dl.google.com)\n\nThe former would benefit more from a per-m cache. Dmitry and Russ had some thoughts\ntowards this.  With big []byte, per-m doesn't matter as much, but you do care about\nthings not being able to burst to some threshold (yet not retain memory for too long\nunnecessarily) and grouping things into size classes (i.e. a \u0026quot;user-space\u0026quot;\ntcmalloc) when the sizes differ.\n\nThe question:\n\nDo we make a new package or facility to promote this pattern?\n\nThe status quo is that it keeps being reimplemented in each package privately, and\npoorly.  It'd be nice to have a good implementation that everybody could reuse.\n\nAlmost all uses are beyond what I believe are reasonable with static liveness/escape\nanalysis.  This isn't a GC problem, because by the time the GC's involved, it's too late\nand we've already allocated too much.  This is about allocating less and reusing memory\nwhen caller code knows it's no longer needed.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 37,
+	"closed_at": "2014-12-08T10:25:00Z",
+	"created_at": "2013-01-28T18:37:23Z",
+	"updated_at": "2016-06-24T22:31:54Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66055344,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eI think this is caused by complete exhaustion of the heap,\n\nruntime.panicstring+0x81 /export/home/dave/go/src/pkg/runtime/runtime.c:115\n\truntime.panicstring(0x83159ef, 0x9b4a8d80)\nruntime.sigpanic+0x11b /export/home/dave/go/src/pkg/runtime/linux/thread.c:292\n\truntime.sigpanic()\nruntime.MCache_Alloc+0x96 /export/home/dave/go/src/pkg/runtime/mcache.c:29\n\truntime.MCache_Alloc(0x87739db0, 0x1d, 0x400, 0x1, 0x810e06b, ...)\n\nThe MCache is empty so it calls \n\n\t\t// Replenish using central lists.\n\t\tn = runtime·MCentral_AllocList(\u0026runtime·mheap.central[sizeclass],\n\t\t\truntime·class_to_transfercount[sizeclass], \u0026first);\n\t\tl-\u0026gt;list = first;\n\nl-\u0026gt;first is then referenced on line 29, \n\n\tv = l-\u0026gt;list;\n\nWhich causes the SIGBUS panic, which is then made worse by the runtime trying to\nallocate a bit more memory for the panic string\n\n\t\tif(g-\u0026gt;sigcode0 == BUS_ADRERR \u0026\u0026 g-\u0026gt;sigcode1 \u0026lt; 0x1000)\n\t\t\truntime·panicstring(\"invalid memory address or nil pointer dereference\");\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-04-18T06:04:48Z",
+	"updated_at": "2014-12-22T05:54:41Z"
+}

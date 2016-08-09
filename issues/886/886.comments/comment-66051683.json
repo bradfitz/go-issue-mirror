@@ -1,0 +1,12 @@
+{
+	"id": 66051683,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eJust a random guess, it appears that this patch fixes the problem:\n------------------------------------------------------\ndiff -r 23d5aba3fbc9 src/pkg/runtime/proc.c\n--- a/src/pkg/runtime/proc.c\tTue Jun 22 15:22:49 2010 +0100\n+++ b/src/pkg/runtime/proc.c\tMon Jun 28 06:54:44 2010 +0600\n@@ -168,7 +168,7 @@\n \tM *m;\n \n \t// If g is wired, hand it off directly.\n-\tif((m = g-\u0026gt;lockedm) != nil) {\n+\tif(sched.mcpu \u0026lt; sched.mcpumax \u0026\u0026 (m = g-\u0026gt;lockedm) != nil) {\n \t\tmnextg(m, g);\n \t\treturn;\n \t}\n\n------------------------------------------------------\n\nBut I have no idea is it correct or not. However, it fits. Garbage collector relies on\nthe fact that mcpumax == 1 will prevent running ms and keep them asleep. But in case if\nit's a locked goroutine (e.g. after LockOSThread) this is the only place where it\nbypasses that rule, resulting in mcpu == 2 and mcpumax == 1, which is unexpected. The\npatch above fixes that unexpected result and therefore prevents race conditions. My test\napps show that error is gone.\n\nHope it helps..\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-06-28T00:59:30Z",
+	"updated_at": "2014-12-22T05:52:19Z"
+}

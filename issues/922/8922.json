@@ -1,0 +1,22 @@
+{
+	"id": 51288872,
+	"number": 8922,
+	"state": "closed",
+	"title": "keyword 'defer' can not unlock the mutex correctly.",
+	"body": "by **jikai507**:\n\n\u003cpre\u003eThis is the correct version:\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;sync\u0026quot;\n)\n\nvar (\n\tcount int\n\tlock  sync.Mutex\n)\n\nfunc Foo(sem chan int) {\n\t// Every Foo() will increase count 5000 times.\n\t// I use Mutex to get it.\n\tfor i := 0; i \u0026lt; 5000; i++ {\n\t\tlock.Lock()\n\t\ttemp := count\n\t\tfmt.Println(temp)\n\t\tcount = temp + 1\n\t\tlock.Unlock()\n\t}\n\tsem \u0026lt;- 1\n}\n\nfunc main() {\n\tvar (\n\t\tsem1 = make(chan int)\n\t\tsem2 = make(chan int)\n\t)\n\tgo Foo(sem1)\n\tgo Foo(sem2)\n\t\u0026lt;-sem1\n\t\u0026lt;-sem2\n}\n\nand this is the wrong version:\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;sync\u0026quot;\n)\n\nvar (\n\tcount int\n\tlock  sync.Mutex\n)\n\nfunc Foo(sem chan int) {\n\t// Every Foo() will increase count 5000 times.\n\t// I use Mutex to get it.\n\tfor i := 0; i \u0026lt; 5000; i++ {\n\t\tlock.Lock()\n\t\tdefer lock.Unlock() // \u0026lt;- I just use 'defer'' to replece the previous version\n\t\ttemp := count\n\t\tfmt.Println(temp)\n\t\tcount = temp + 1\n\t}\n\tsem \u0026lt;- 1\n}\n\nfunc main() {\n\tvar (\n\t\tsem1 = make(chan int)\n\t\tsem2 = make(chan int)\n\t)\n\tgo Foo(sem1)\n\tgo Foo(sem2)\n\t\u0026lt;-sem1\n\t\u0026lt;-sem2\n}\n\n\nThe second version of my code will cause deadlock but the previous will not.\n\n\nWhat does 'go version' print?\ngo version go1.3.1 windows/386\nand I also try it at linux with go1.3.3 amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1.\n2.\n3.\n\nWhat happened?\nthe second version of code cause the deadlock.\n\nWhat should have happened instead?\noutput the \u0026quot;10000\u0026quot; at last.\n\nPlease provide any additional information below.\nnone.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:49:09Z",
+	"created_at": "2014-10-11T15:04:28Z",
+	"updated_at": "2016-06-25T01:42:57Z"
+}

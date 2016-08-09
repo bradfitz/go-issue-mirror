@@ -1,0 +1,12 @@
+{
+	"id": 222027590,
+	"body": "Looks like the write barrier is wrong for the store to the global.  It's storing junk instead of the result of the New(\"ID\") call.\r\n```\r\n   \t00146 (init.go:24)\tTEXT\t\"\".init(SB), $0\r\n   \t00147 (init.go:24)\tFUNCDATA\t$0, \"\".gcargs·4(SB)\r\n   \t00148 (init.go:24)\tFUNCDATA\t$1, \"\".gclocals·5(SB)\r\n   \t00149 (init.go:24)\tTYPE\t\"\".autotmp_9(SP)type.*\"\".CIString, $8\r\nv25\t00150 (init.go:17)\tLEAQ\t16(SP), AX\r\nv42\t00151 (init.go:17)\tMOVQ\tAX, \"\".autotmp_9(SP)\r\nv5\t00152 (init.go:24)\tMOVBLZX\t\"\".initdone·(SB), CX\r\nv43\t00153 (init.go:24)\tCMPB\tCX, $1\r\nb1\t00154 (init.go:24)\tJLS\t$0, 156\r\nb2\t00155 (init.go:24)\tRET\r\nb3\t00156 (init.go:24)\tJNE\t$0, 158\r\nv14\t00157 (init.go:24)\tCALL\truntime.throwinit(SB)\r\nv18\t00158 (init.go:24)\tMOVB\t$1, \"\".initdone·(SB)\r\nv19\t00159 (init.go:24)\tCALL\tfmt.init(SB)\r\nv35\t00160 (init.go:17)\tLEAQ\tgo.string.\"ID\"(SB), AX\r\nv22\t00161 (init.go:17)\tMOVQ\tAX, (SP)\r\nv23\t00162 (init.go:17)\tMOVQ\t$2, 8(SP)\r\nv24\t00163 (init.go:17)\tCALL\t\"\".New(SB)\r\nv30\t00164 (init.go:17)\tMOVL\truntime.writeBarrier(SB), AX\r\nv9\t00165 (init.go:17)\tTESTB\tAX, AX\r\nb8\t00166 (init.go:17)\tJNE\t$0, 171\r\nv33\t00167 (init.go:17)\tMOVUPS\t16(SP), X0\r\nv41\t00168 (init.go:17)\tMOVUPS\tX0, \"\".a(SB)\r\nv46\t00169 (init.go:24)\tMOVB\t$2, \"\".initdone·(SB)\r\nb11\t00170 (init.go:24)\tRET\r\nv21\t00171 (init.go:17)\tLEAQ\ttype.\"\".CIString(SB), AX\r\nv34\t00172 (init.go:17)\tMOVQ\tAX, (SP)\r\nv10\t00173 (init.go:17)\tLEAQ\t\"\".a(SB), AX\r\nv36\t00174 (init.go:17)\tMOVQ\tAX, 8(SP)\r\nv40\t00175 (init.go:17)\tMOVQ\t\"\".autotmp_9(SP), AX\r\nv38\t00176 (init.go:17)\tMOVQ\tAX, 16(SP)\r\nv39\t00177 (init.go:17)\tCALL\truntime.typedmemmove(SB)\r\nb9\t00178 (init.go:17)\tJMP\t169\r\n```\r\nThe result of the New is 16 bytes big and at 16(SP) right after the call.  When we branch to the write barrier, it sets up the call to typedmemmove.  To do that, it needs to write 24 bytes of arguments.  The last 8 of those overwrite the result of New (and hence clobber the string pointer).  The result of New must be moved out of the return args section before the call to typedmemmove.\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-27T00:00:15Z",
+	"updated_at": "2016-05-27T00:00:15Z"
+}

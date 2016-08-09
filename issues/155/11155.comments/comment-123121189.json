@@ -1,0 +1,12 @@
+{
+	"id": 123121189,
+	"body": "I have my doubts, but you could try applying this patch to go/src/runtime:\n\n\tdiff --git a/src/runtime/os1_linux.go b/src/runtime/os1_linux.go\n\tindex e6942a9..894a864 100644\n\t--- a/src/runtime/os1_linux.go\n\t+++ b/src/runtime/os1_linux.go\n\t@@ -132,8 +132,15 @@ func newosproc(mp *m, stk unsafe.Pointer) {\n\t \t// Disable signals during clone, so that the new thread starts\n\t \t// with signals disabled.  It will enable them in minit.\n\t \tvar oset sigset\n\t+\thavep := getg().m.p != nil\n\t \trtsigprocmask(_SIG_SETMASK, \u0026sigset_all, \u0026oset, int32(unsafe.Sizeof(oset)))\n\t+\tif havep {\n\t+\t\tentersyscall(0)\n\t+\t}\n\t \tret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))\n\t+\tif havep {\n\t+\t\texitsyscall(0)\n\t+\t}\n\t \trtsigprocmask(_SIG_SETMASK, \u0026oset, nil, int32(unsafe.Sizeof(oset)))\n\t \n\t \tif ret \u003c 0 {",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-21T01:18:42Z",
+	"updated_at": "2015-07-21T01:18:42Z"
+}

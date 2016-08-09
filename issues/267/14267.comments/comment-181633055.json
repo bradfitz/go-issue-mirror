@@ -1,0 +1,12 @@
+{
+	"id": 181633055,
+	"body": "@minux, I don't see the relationship between memory access order and endianness; you can load from higher or lower address first regardless of the endianness. Unless you mean for code already in production with compatibility agreements?\r\n\r\nAs in the case of [encoding/binary.PutUint64](https://github.com/golang/go/blob/b72a4a07c257f394f5a96dff29a4fc862601a41f/src/encoding/binary/binary.go#L74), where the indexes already start from a lower address, can't we do an initial bounds check that the length is \u003e= 8? If yes, combine the stores, otherwise, fall back the original code.\r\n\r\nThat is, the compiler will implicitly convert the code to be:\r\n```go\r\nfunc (bigEndian) PutUint64(b []byte, v uint64) {\r\n\tif len(b) \u003e= 8 {\r\n\t\t// Combined store version of the code below.\r\n\t\treturn\r\n\t}\r\n\tb[0] = byte(v \u003e\u003e 56)\r\n\tb[1] = byte(v \u003e\u003e 48)\r\n\tb[2] = byte(v \u003e\u003e 40)\r\n\tb[3] = byte(v \u003e\u003e 32)\r\n\tb[4] = byte(v \u003e\u003e 24)\r\n\tb[5] = byte(v \u003e\u003e 16)\r\n\tb[6] = byte(v \u003e\u003e 8)\r\n\tb[7] = byte(v)\r\n}\r\n```\r\n\r\nThis, ensures that we preserve the behavior of partial stores, but remains fast in the vastly-common case.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-09T00:04:52Z",
+	"updated_at": "2016-02-10T00:28:37Z"
+}

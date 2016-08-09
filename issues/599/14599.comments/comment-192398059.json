@@ -1,0 +1,12 @@
+{
+	"id": 192398059,
+	"body": "My current guess is that 0x536110 is not actually a C function.  If it were a C function, it would fail the `findmoduledatap` test at the start of `findfunc`.  I think that address is actually the very last Go function.  I can recreate the problem with this, because the cgo function that calls the C code winds up as the last Go function in the binary.\r\n\r\n    package main\r\n\r\n    // void nop() {}\r\n    import \"C\"\r\n\r\n    import (\r\n\t    \"bytes\"\r\n\t    \"runtime/pprof\"\r\n    )\r\n\r\n    func main() {\r\n\t    c := make(chan bool)\r\n\t    go func() {\r\n\t\t    for {\r\n\t\t\t    \u003c-c\r\n\t\t\t    for i := 0; i \u003c 1e7; i++ {\r\n\t\t\t\t    C.nop()\r\n\t\t\t    }\r\n\t\t\t    c \u003c- true\r\n\t\t    }\r\n\t    }()\r\n\r\n\t    for try := 0; try \u003c 10; try++ {\r\n\t\t    var buf bytes.Buffer\r\n\t\t    pprof.StartCPUProfile(\u0026buf)\r\n\t\t    c \u003c- true\r\n\t\t    \u003c-c\r\n\t\t    pprof.StopCPUProfile()\r\n\t    }\r\n    }",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-04T18:30:23Z",
+	"updated_at": "2016-03-04T18:30:23Z"
+}

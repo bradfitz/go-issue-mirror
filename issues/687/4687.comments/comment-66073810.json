@@ -1,0 +1,12 @@
+{
+	"id": 66073810,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9 by **goneri@rulezlan.org**:\n\n\u003cpre\u003eI changed decodeRFC2047Word() function a bit in met/mail/message.go to be able to\nreuse it in Get() method. This do the trick for me. What I changed:\n- do not return \"\" in case of error\n- relax a bit RFC2047 validity check, this was require for some of my sample\n mails and I think it's armless.\n\n\n--- message.go.goneri   2013-03-09 17:04:34.216090509 +0100\n+++ message.go  2013-03-09 18:27:36.480099769 +0100\n@@ -107,7 +107,8 @@\n // Get gets the first value associated with the given key.\n // If there are no values associated with the key, Get returns \"\".\n func (h Header) Get(key string) string {\n-       return textproto.MIMEHeader(h).Get(key)\n+       v, _ := decodeRFC2047Word(textproto.MIMEHeader(h).Get(key))\n+       return v\n }\n \n var ErrHeaderNotPresent = errors.New(\"mail: header not in message\")\n@@ -437,14 +438,13 @@\n \n func decodeRFC2047Word(s string) (string, error) {\n        fields := strings.Split(s, \"?\")\n-       if len(fields) != 5 || fields[0] != \"=\" || fields[4] != \"=\" {\n-               return \"\", errors.New(\"mail: address not RFC 2047 encoded\")\n+       if len(fields) != 5 || fields[0] != \"=\" {\n+               return s, errors.New(\"mail: address not RFC 2047 encoded\")\n        }\n        charset, enc := strings.ToLower(fields[1]), strings.ToLower(fields[2])\n        if charset != \"iso-8859-1\" \u0026\u0026 charset != \"utf-8\" {\n-               return \"\", fmt.Errorf(\"mail: charset not supported: %q\", charset)\n+               return s, fmt.Errorf(\"mail: charset not supported: %q\", charset)\n        }\n-\n        in := bytes.NewBufferString(fields[3])\n        var r io.Reader\n        switch enc {\n@@ -453,12 +453,12 @@\n        case \"q\":\n                r = qDecoder{r: in}\n        default:\n-               return \"\", fmt.Errorf(\"mail: RFC 2047 encoding not supported: %q\", enc)\n+               return s, fmt.Errorf(\"mail: RFC 2047 encoding not supported: %q\", enc)\n        }\n \n        dec, err := ioutil.ReadAll(r)\n        if err != nil {\n-               return \"\", err\n+               return s, err\n        }\n \n        switch charset {\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-09T17:43:36Z",
+	"updated_at": "2014-12-08T10:24:50Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51284815,
+	"number": 6194,
+	"state": "closed",
+	"title": "runtime: SIGSEGV during map lookup",
+	"body": "\u003cpre\u003eI just observed this crash caused by a segmentation fault:\n\nunexpected fault address 0xc2212e0000\nfatal error: fault\n[signal 0xb code=0x1 addr=0xc2212e0000 pc=0x4f75e4]\n\ngoroutine 1 [running]:\nruntime.throw(0xa01ef7)\n\t/home/adonovan/go3/src/pkg/runtime/panic.c:480 +0x69 fp=0x7f3db4e663f0 \nruntime.sigpanic()\n\t/home/adonovan/go3/src/pkg/runtime/os_linux.c:240 +0xe9 fp=0x7f3db4e66408 \ncode.google.com/p/go.tools/pointer.nodeset.diff(0xc21d83de80, 0xc21e7ca180,\n0x7f3db4e665d0)\n\t/home/adonovan/go3/got/src/code.google.com/p/go.tools/pointer/util.go:172 +0xa4 fp=0x7f3db4e664b0 \ncode.google.com/p/go.tools/pointer.(*analysis).solve(0xc219a6a5a0)\n\nThe last frame of application code is this function:\n\ntype nodeid uint32\ntype void struct{} // a unitary type, for use in map-based sets.\ntype nodeset map[nodeid]void\n...\nfunc (x nodeset) diff(y nodeset) nodeset {\n\tvar z nodeset\n\tfor k := range x {\n\t\tif _, ok := y[k]; !ok {  // execution is inside this hash lookup\n\t\t\tz.add(k)\n\t\t}\n\t}\n\treturn z\n}\n\nnil is a valid and common value of y in this code.\n\nMy executable (attached) was compiled using a 6g built from head on Jul 26.\n\nThe crash is not deterministic but occurs on about 10% of runs.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6194/0/oracle\"\u003eoracle\u003c/a\u003e (8513744 bytes)",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:34:03Z",
+	"created_at": "2013-08-20T14:22:58Z",
+	"updated_at": "2016-06-24T22:55:43Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

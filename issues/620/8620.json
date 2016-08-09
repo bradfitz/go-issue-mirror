@@ -1,0 +1,30 @@
+{
+	"id": 51288457,
+	"number": 8620,
+	"state": "closed",
+	"title": "runtime: copy() returns wrong value for slices of zero-width elements under race detector",
+	"body": "\u003cpre\u003eAccording to the Go spec: \u0026quot;The function copy copies slice elements from a source\nsrc to a destination dst and returns the number of elements copied. [...] The number of\nelements copied is the minimum of len(src) and len(dst).\u0026quot;\n\nThis is normally handled correctly as demonstrated below, but when the race detector is\nenabled, copy() returns 0 instead.  This is because gc switches to using slicecopy(),\nwhich includes a \u0026quot;width == 0\u0026quot; short-circuit test, but then returns\n\u0026quot;0\u0026quot; instead of \u0026quot;min(len(src), len(dst))\u0026quot;.\n\n(Doesn't seem terribly important, so I'll wait for the next release cycle to send a\npatch.  Just wanted to note down the issue so I don't forget it later.)\n\n$ cat copytest.go\npackage main\nimport \u0026quot;fmt\u0026quot;\nfunc main() {\n        var b [100][0]byte\n        s := b[:]\n        fmt.Println(len(s), copy(s, s))\n}\n\n$ go run copytest.go \n100 100\n\n$ go run -race copytest.go \n100 0\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-01-04T02:00:13Z",
+	"created_at": "2014-08-30T07:29:45Z",
+	"updated_at": "2016-06-25T01:40:26Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

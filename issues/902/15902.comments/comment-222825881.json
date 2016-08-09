@@ -1,0 +1,12 @@
+{
+	"id": 222825881,
+	"body": "This is a problem at the intersection of tinyalloc, zeroing code, and alignment faults.\r\n```\r\n       0x005c 00092 (../test/fixedbugs/bug260.go:30)   MOVW    $type.[10]\"\".T1(SB), R0\r\n        0x0060 00096 (../test/fixedbugs/bug260.go:30)   MOVW    R0, 4(R13)\r\n        0x0064 00100 (../test/fixedbugs/bug260.go:30)   CALL    runtime.newobject(SB)\r\n        0x0068 00104 (../test/fixedbugs/bug260.go:30)   MOVW    8(R13), R2\r\n        0x006c 00108 (../test/fixedbugs/bug260.go:30)   MOVW    R2, R1\r\n        ...\r\n        0x0078 00120 (../test/fixedbugs/bug260.go:30)   MOVW    $0, R0\r\n        0x007c 00124 (../test/fixedbugs/bug260.go:30)   MOVW.P  R0, 4(R1)\r\n        0x0080 00128 (../test/fixedbugs/bug260.go:30)   MOVW.P  R0, 4(R1)\r\n        0x0084 00132 (../test/fixedbugs/bug260.go:30)   MOVB.P  R0, 1(R1)\r\n        0x0088 00136 (../test/fixedbugs/bug260.go:30)   MOVB.P  R0, 1(R1)\r\n```\r\n\r\nThose are 4-byte writes there, but mallocgc is returning something that isn't 4-byte aligned.  It is doing that because [10]byte is tiny-allocatable, so sometimes we get an allocation some way into a 16-byte tinyalloc chunk.\r\n\r\nThe fix should be to do zeroing correctly, respecting the possible alignment of the type.\r\n\r\nNagging questions TBA:\r\nWhy doesn't this error happen on linux/arm?\r\nWhy does this have anything to do with the live variable analysis change?\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-31T21:25:24Z",
+	"updated_at": "2016-05-31T21:25:24Z"
+}

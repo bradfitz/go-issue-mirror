@@ -1,0 +1,27 @@
+{
+	"id": 51285889,
+	"number": 6895,
+	"state": "closed",
+	"title": "syscall: support unix-domain socket pathname longer than system defined value",
+	"body": "by **joshpoimboeuf**:\n\n\u003cpre\u003eSeveral of the net functions return EINVAL for UNIX sockets with path names \u0026gt;= 108\ncharacters, including net.Listen, net.Dial, and rpc.Dial.  The error seems to be related\nto the full path length including leading directories, not just the length of the file\nname itself.\n\n~ $ cat test.go\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\nfunc socketTest(name string) {\n\tlog.Printf(\u0026quot;%s: %d characters\\n\u0026quot;, name, len(name))\n\tos.Remove(name)\n\taddr := \u0026amp;net.UnixAddr{Net: \u0026quot;unix\u0026quot;, Name: name}\n\tif _, err := net.ListenUnix(\u0026quot;unix\u0026quot;, addr); err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tlog.Printf(\u0026quot;%s: success\\n\u0026quot;, name)\n}\n\nfunc main() {\n\tshortSocketName := \u0026quot;/tmp/0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999.sock\u0026quot;\n\tlongSocketName := \u0026quot;/tmp/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999.sock\u0026quot;\n\tsocketTest(shortSocketName)\n\tsocketTest(longSocketName)\n}\n~ $ go run test.go\n2013/12/04 23:33:06\n/tmp/0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999.sock:\n107 characters\n2013/12/04 23:33:06\n/tmp/0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999.sock:\nsuccess\n2013/12/04 23:33:06\n/tmp/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999.sock:\n108 characters\n2013/12/04 23:33:06 listen unix\n/tmp/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999.sock:\nbind: invalid argument\nexit status 1\n\n\nWhat steps will reproduce the problem?\nSee above reproducer\n\nWhat is the expected output?\n2 success messages\n\nWhat do you see instead?\n1 success message and 1 error message\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux\n\nWhich version are you using?  (run 'go version')\ngo version go1.2 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 14,
+	"closed_at": "2014-12-08T10:38:24Z",
+	"created_at": "2013-12-05T05:38:05Z",
+	"updated_at": "2016-06-25T01:23:27Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

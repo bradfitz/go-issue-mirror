@@ -1,0 +1,12 @@
+{
+	"id": 142721111,
+	"body": "\u003e We might also need more locking. There are comments in addspecial/removespecial claiming that it's okay for the GC to access the specials list without locks, but they don't explain why and I'm not sure I believe them.\r\n\r\nIt's certainly not safe for GC to traverse the specials list during removefinalizer/removespecial. Memory for finalizers is manually managed, so at best the GC could try to read from freed memory while traversing the list. This isn't a problem today because everywhere that traverses this list is either STW or holds span.speciallock. We could traverse this list during concurrent GC without a large cost if we peeked at the list head without holding span.speciallock and only if it's non-nil take the lock and walk the list.\r\n\r\nTraversing the list during addfinalizer/addspecial without locking could be safe, but isn't in theory under the Go memory model and may not be in practice on non-TSO machines because there's no publication fence between filling in the special and splicing it in to the list.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-23T20:36:30Z",
+	"updated_at": "2015-09-23T20:36:30Z"
+}

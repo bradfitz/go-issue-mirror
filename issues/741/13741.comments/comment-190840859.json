@@ -1,0 +1,12 @@
+{
+	"id": 190840859,
+	"body": "@nigeltao I bisected this issue to https://github.com/golang/mobile/commit/11f6745c3d563e5ed2\r\n\r\nAs far as I can tell, the call to `C.AInputQueue_detachLooper` is not necessary.\r\n\r\nAccording to the documentation here http://developer.android.com/ndk/samples/sample_na.html regarding `native_app_glue_code` and the source (older commit) https://android.googlesource.com/platform/development/+/79b946e/ndk/sources/android/native_app_glue/android_native_app_glue.c, gomobile would need to be making use of native_app_glue_code for there to be a looper attached. I can't find any reference to such in gomobile as what native_app_glue_code normally provides is handled in https://github.com/golang/mobile/blob/master/app/android.c without attaching a looper.\r\n\r\nMy best guess is this results in the crash seen on 4.x and the error of trying to detach a looper that was never attached is ignored on 5.x.\r\n\r\nIf this sounds right to you, then the call to `C.AInputQueue_detachLooper` should be removed and I'd assume should be called in `onInputQueueDestroyed` and I can submit a CL doing such.\r\n\r\n/cc @hyangah ",
+	"user": {
+		"login": "dskinner",
+		"id": 92266,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-01T18:21:39Z",
+	"updated_at": "2016-03-01T18:21:39Z"
+}

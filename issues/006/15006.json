@@ -1,0 +1,21 @@
+{
+	"id": 144156717,
+	"number": 15006,
+	"state": "open",
+	"title": "cmd/compile: \"missing function body\" error when using the //go:linkname compiler directive",
+	"body": "###### What version of Go are you using (`go version`)?\r\n\r\n`go version go1.6 darwin/amd64`\r\n`go version devel +aa3650f Wed Mar 9 09:13:43 2016 +0000 darwin/amd64`\r\n\r\n###### What operating system and processor architecture are you using (`go env`)?\r\n\r\nMac OS X 10.9.5 on Intel Core i7-3615QM\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/tsuna/go\"\r\nGOROOT=\"/usr/local/Cellar/go/1.6/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.6/libexec/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n###### What did you do?\r\n\r\nThe Go manual on [Compiler Directives](https://golang.org/cmd/compile/#hdr-Compiler_Directives) says:\r\n\u003e The //go:linkname directive instructs the compiler to use “importpath.name” as the object file symbol name for the variable or function declared as “localname” in the source code.\r\n\r\nFor example let's say (hypothetically) that I wanted to call the `strhash` function defined in the `runtime` package, I could do:\r\n\r\n```go\r\npackage key\r\n\r\nimport \"unsafe\"\r\n\r\n//go:linkname strhash runtime.strhash\r\nfunc strhash(a unsafe.Pointer, h uintptr) uintptr\r\n\r\nfunc hash(s string) uintptr {\r\n    return strhash(unsafe.Pointer(\u0026s), 0)\r\n}\r\n```\r\n\r\n###### What did you expect to see?\r\n\r\nThe code above should build with no special ceremony.\r\n\r\n###### What did you see instead?\r\n\r\nThe code doesn't build for a silly reason:\r\n```\r\nstrhash.go:6: missing function body for \"strhash\"\r\n```\r\n\r\nThis comes from the fact that in `cmd/compile/internal/gc/pgen.go` we do:\r\n```go\r\n    if fn.Nbody == nil {\r\n        if pure_go != 0 || strings.HasPrefix(fn.Func.Nname.Sym.Name, \"init.\") {\r\n            Yyerror(\"missing function body for %q\", fn.Func.Nname.Sym.Name)\r\n            goto ret\r\n        }\r\n```\r\n\r\nSo in order to pass this check, we need to not have `pure_go`, which comes from the `-complete` flag in `cmd/compile/internal/gc/lex.go`:\r\n```go\r\n    obj.Flagcount(\"complete\", \"compiling complete package (no C or assembly)\", \u0026pure_go)\r\n```\r\nwhich is passed from `cmd/go/build.go` under the following circumstances:\r\n```go\r\n    // If we're giving the compiler the entire package (no C etc files), tell it that,\r\n    // so that it can give good error messages about forward declarations.\r\n    // Exceptions: a few standard packages have forward declarations for\r\n    // pieces supplied behind-the-scenes by package runtime.\r\n    extFiles := len(p.CgoFiles) + len(p.CFiles) + len(p.CXXFiles) + len(p.MFiles) + len(p.SFiles) + len(p.SysoFiles) + len(p.SwigFiles) + len(p.SwigCXXFiles)\r\n    if p.Standard {\r\n        switch p.ImportPath {\r\n        case \"bytes\", \"net\", \"os\", \"runtime/pprof\", \"sync\", \"time\":\r\n            extFiles++\r\n        }\r\n    }\r\n    if extFiles == 0 {\r\n        gcargs = append(gcargs, \"-complete\")\r\n    }\r\n```\r\n\r\nSo one workaround to not be `-complete` is to include an empty `.s` file in the package using the `//go:linkname` directive, as this will make `len(p.SFiles)` be `1`, which in turn will make `extFiles` non-zero, so that the `-complete` flag won't get passed and we can pass the check above, and *then* the code builds and runs as expected.  Phew!",
+	"user": {
+		"login": "tsuna",
+		"id": 128281,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-03-29T05:01:33Z",
+	"updated_at": "2016-03-30T16:01:49Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

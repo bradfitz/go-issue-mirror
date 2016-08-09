@@ -1,0 +1,12 @@
+{
+	"id": 193816711,
+	"body": "@ianlancetaylor Forgive me for not explaining that clearly. The only time I have seen the cgo check fail is when it is passed a short `[]byte` retrieved from the Bytes() method on bytes.Buffer, such that the slice address points into the array inside a bytes.Buffer object. Aside from this and other situations with similarly designed structs the code in my project, lmdb-go, does not trigger the cgo argument check panic (I thought I had already changed everything to comply!).\r\n\r\nYou should be able to see this. Changing the code I provided so that `b := []byte(\"test\")`, or simply writing enough into the `buf` object to overflow the internal array.\r\n\r\nThat is what I am benchmarking in my lmdb-go project, byte slices that are unaffected by this issue. And after compensating for this corner case I see processing in the normal case degrading farther than I would like it to.\r\n\r\nAs I eluded to, I don't think the behavior here is captured well by the cgo change proposal, or any other documentation that I have seen about the restrictions (like the cmd/cgo [docs](https://golang.org/cmd/cgo/)). I was under the impression that the code example from the issue description was passing the address of a struct field (i.e. the byte array field inside bytes.Buffer), in which case the documentation states\r\n\r\n\u003e When passing a pointer to a field in a struct, the Go memory in question is the memory occupied by the field, not the entire struct.\r\n\r\nI don't think the documentation is very clear about the need to perform the indirection at the cgo call site (as was suggested in #14210 and demonstrated at http://play.golang.org/p/eX1pSIjmo4). It never says explicitly says my code should work but it doesn't say that it shouldn't work either.",
+	"user": {
+		"login": "bmatsuo",
+		"id": 15089,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-08T15:06:48Z",
+	"updated_at": "2016-03-08T15:06:48Z"
+}

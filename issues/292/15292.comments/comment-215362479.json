@@ -1,0 +1,16 @@
+{
+	"id": 215362479,
+	"body": "There were some ideas with regards to specializing on the interface types; e.g. the *package templates* approach \"proposals\" [1](https://groups.google.com/forum/#!msg/golang-nuts/JThDpFJftCY/1MqzfeBjvT4J) [2](https://groups.google.com/forum/#!msg/golang-nuts/y3LqthbBiuY/tJZw232o7ggJ) are examples of it.\r\n\r\ntl;dr; the generic package with interface specialization would look like:\r\n\r\n    package set\r\n    type E interface { Equal(other E) bool }\r\n    type Set struct { items []E }\r\n    func (s *Set) Add(item E) { ... }\r\n\r\nVersion 1. with package scoped specialization:\r\n\r\n    package main\r\n    import items set[[E: *Item]]\r\n    \r\n    type Item struct { ... }\r\n    func (a *Item) Equal(b *Item) bool { ... }\r\n    \r\n    var xs items.Set\r\n    xs.Add(\u0026Item{})\r\n\r\nVersion 2. the declaration scoped specialization:\r\n\r\n    package main\r\n    import set\r\n    \r\n    type Item struct { ... }\r\n    func (a *Item) Equal(b *Item) bool { ... }\r\n    \r\n    var xs set.Set[[E: *Item]]\r\n    xs.Add(\u0026Item{})\r\n\r\nThe package scoped generics will prevent people from significantly abusing the generics system, since the usage is limited to basic algorithms and data-structures. It basically prevents building new language-abstractions and functional-code.\r\n\r\nThe declaration scoped specialization has more possibilities at the cost making it more prone to abuse and it is more verbose. But, functional code would be possible, e.g:\r\n\r\n    type E interface{}\r\n    func Reduce(zero E, items []E, fn func(a, b E) E) E { ... }\r\n    \r\n    Reduce[[E: int]](0, []int{1,2,3,4}, func(a, b int)int { return a + b } )\r\n    // there are probably ways to have some aliases (or similar) to make it less verbose\r\n    alias ReduceInt Reduce[[E: int]]\r\n    func ReduceInt Reduce[[E: int]]\r\n\r\nThe interface specialization approach has interesting properties:\r\n* Already existing packages using interfaces would be specializable. e.g. I would be able to call `sort.Sort[[Interface:MyItems]](...)` and have the sorting work on the concrete type instead of interface (with potential gains from inlining).\r\n* Testing is simplified, I only have to assure that the generic code works with interfaces.\r\n* It's easy to state how it works. i.e. imagine that `[[E: int]]` replaces all declarations of `E` with `int`.\r\n\r\nBut, there are verbosity issues when working across packages:\r\n\r\n    type op\r\n    import \"set\"\r\n\r\n    type E interface{}\r\n    func Union(a, b set.Set[[set.E: E]]) set.Set[[set.E: E]] {\r\n    \tresult := set.New[[set.E: E]]()\r\n    \t...\r\n    }\r\n\r\n*Of course, the whole thing is simpler to state than to implement. Internally there are probably tons of problems and ways how it could work.*\r\n\r\n*PS, to the grumblers on slow generics progress, I applaud the Go Team for spending more time on issues that have a bigger benefit to the community e.g. compiler/runtime bugs, SSA, GC, http2.*",
+	"user": {
+		"login": "egonelbre",
+		"id": 192964,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 9,
+		"+1": 9
+	},
+	"created_at": "2016-04-28T09:17:52Z",
+	"updated_at": "2016-04-28T09:17:52Z"
+}

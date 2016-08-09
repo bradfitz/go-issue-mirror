@@ -1,0 +1,22 @@
+{
+	"id": 101966904,
+	"number": 12204,
+	"state": "closed",
+	"title": "runtime: heap trigger ratio and actual growth ratio are slightly incompatible",
+	"body": "The heap trigger ratio (h_t or gcController.triggerRatio) is in terms of growth over memstats.heap_reachable, while the actual heap growth ratio (h_a or actualGrowthRatio) computed by endCycle is in terms of growth over memstats.heap_marked. Subtracting them to compute the trigger error and the trigger heap size for the next cycle is mathematically unsound. In practice, it often works out because heap_reachable and heap_marked are very similar in most workloads, but in rapidly allocating workloads this may not be the case. The consequence is that we get pacer updates like\r\n\r\n```\r\npacer: H_m_prev=215220624 h_t=+9.500000e-001 H_T=408888823 h_a=+9.252894e-001 H_a=414361984 h_g=+1.000000e+000 H_g=430441248 u_a=+9.056581e-001 u_g=+2.500000e-001 W_a=214290176 goalΔ=+5.000000e-002 actualΔ=-2.471061e-002 u_a/u_g=+3.622632e+000\r\n```\r\n\r\nNote that the actual growth ratio h_a is *less than* the trigger growth ratio h_t, while at the same time actual heap size H_a is *greater than* the trigger heap size H_T. The computed trigger error is `1 - 0.95 - 0.9056581/.25*(0.9252894 - .95) = 0.139517`, so we drive the trigger up (and cap it at 0.95 again), even though the utilization ratio is way over 1 and we should be driving the trigger down.\r\n\r\nWe need to revisit the math for these ratios and make sure everything is compatible. One possibility would be to reframe the trigger error in terms of heap sizes rather than ratios, though we still need the trigger to be tracked as a ratio for the proportional controller to do the right thing as the heap size changes.\r\n\r\nI've seen various allocation-heavy benchmarks exhibit this behavior, but here's the one I used to construct the above pacer output: https://gist.github.com/aclements/45e464e104a347992573 (this is basically the same benchmark as in #12199, but tuned differently)\r\n\r\n/cc @RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-11-04T19:24:25Z",
+	"created_at": "2015-08-19T18:33:34Z",
+	"updated_at": "2016-03-30T22:01:06Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

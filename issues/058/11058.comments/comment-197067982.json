@@ -1,0 +1,16 @@
+{
+	"id": 197067982,
+	"body": "@ianlancetaylor, @alexbrainman : I believe I have located the translation bug in asm6.go.  As a refresher:\r\n\r\nWe want:\r\n\r\n```\r\n  4e2556:   65 48 8b 1c 25 28 00    mov    %gs:0x28,%rbx\r\n  4e255f:   48 c7 83 00 00 00 00    movq   $0x123,0x0(%rbx)\r\n```\r\n\r\nbut we get:\r\n\r\n```\r\n    6dc8bae8:   65 48 8b 1c 25 28 00    mov    %gs:0x28,%rbx\r\n    6dc8baf1:   64 48 c7 03 23 01 00    movq   $0x123,%fs:(%rbx)\r\n```\r\n\r\nIt looks like the code at src/cd/internal/obj/x86/asm6.go:2266 is unconditionally overriding the prefix in shared libraries to %fs. I wrote some diagnostics to detect calls to this code, and it is getting activated on Windows during a c-shared build. \r\n\r\nI updated my code to avoid this transformation on Windows, and the result is that the .dll that gets created runs perfectly fine on my test harness. So that's one down.\r\n",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 6,
+		"+1": 6
+	},
+	"created_at": "2016-03-15T23:30:47Z",
+	"updated_at": "2016-03-15T23:57:34Z"
+}

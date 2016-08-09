@@ -1,0 +1,32 @@
+{
+	"id": 87106502,
+	"number": 11151,
+	"state": "open",
+	"title": "go/parser: eats \\r in comments",
+	"body": "In the following program go/parser/printer turn a correct program into incorrect one, and so the second parsing fails:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"go/parser\"\r\n\t\"go/printer\"\r\n\t\"go/token\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"package A\t/**\\r/*/\\n\")\r\n\tfset := token.NewFileSet()\r\n\tf, err := parser.ParseFile(fset, \"src.go\", data, parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tbuf := new(bytes.Buffer)\r\n\tprinter.Fprint(buf, fset, f)\r\n\tfset1 := token.NewFileSet()\r\n\t_, err = parser.ParseFile(fset1, \"src.go\", buf.Bytes(), parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"source0: %q\\n\", data)\r\n\t\tfmt.Printf(\"source1: %q\\n\", buf.Bytes())\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n```\r\n```\r\nsource0: \"package A\\t/**\\r/*/\\n\"\r\nsource1: \"package A\\t/**/*/\\n\"\r\npanic: src.go:1:15: expected ';', found '*'\r\n```\r\n\r\ngo version devel +b0532a9 Mon Jun 8 05:13:15 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-06-10T21:02:53Z",
+	"updated_at": "2015-09-12T00:49:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

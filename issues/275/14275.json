@@ -1,0 +1,28 @@
+{
+	"id": 132513041,
+	"number": 14275,
+	"state": "closed",
+	"title": "net/http: Transport's automatic http2 too aggressive?",
+	"body": "I was just investigating an internal bug report where Go 1.6 broke user's code. The user's code was like:\r\n\r\n```go\r\n\ttransport := \u0026http.Transport{\r\n\t\tTLSClientConfig:     \u0026tls.Config{},\r\n\t}\r\n\ttransport.Dial = func(network, addr string) (net.Conn, error) {\r\n\t\tif isHTTPSProxy(addr) {\r\n\t\t\treturn tls.Dial(network, addr, transport.TLSClientConfig)\r\n\t\t}\r\n\t\treturn dialer.Dial(network, addr)\r\n\t}\r\n```\r\n\r\nIn Go 1.5, that TLSClientConfig was untouched. In Go 1.6, the first call to RoundTrip calls http2.ConfigureTransport, which mutates the Transport.TLSClientConfig.\r\n\r\nIn this user's case, that meant they sent a TLS NextProto of `h2` to the peer, which was accepted, and the peer started speaking http2, but the net/http was trying to make a normal http (not https) request, so http2 wasn't even considered. Then Go's transport was speaking http/1.1 and the server thought it was speaking http2. Fail.\r\n\r\nPerhaps we need to rethink how the automatic upgrade to http2 works in Go 1.7.\r\n\r\nMaybe as an intermediate conservative step for Go 1.6 we don't auto-enable http2 on Transports where TLSClientConfig is populated, so it doesn't surprise people by being mutated. I was also considering disabling it if Dial or DialTLS are populated, but http.DefaultTransport sets Dial, and I don't want to special-case looking at whether the transport == DefaultTransport.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-05-18T20:54:06Z",
+	"created_at": "2016-02-09T19:41:49Z",
+	"updated_at": "2016-05-18T20:54:06Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 86790338,
+	"body": "@akavel, Here's my understanding of it...\r\n\r\nRFC 2616 (HTTP/1.1 June 1999) does state that clients must not automatically redirect POST requests that return 301 or 307. (Only GET and HEAD may be automatically redirected.) But it also says the same thing for 302.\r\n\r\nI think the underlying *principle* of the matter is that if the client is going to resend the POST request body data, then RFC 2616 wants clients to get the user's consent. The trouble is that most client implementations did not resend the POST data when following 301 or 302 redirects. So the principle of getting user consent doesn't really apply.\r\n\r\nRFC 7231 (HTTP/1.1 June 2014) changes this. It ratifies the common behavior of 301 and 302 (to not re-POST), and in doing so it leaves it up to the client to determine when it is safe to automatically redirect.\r\n\r\nhttp://tools.ietf.org/html/rfc7231#appendix-B\r\n```\r\n   The set of request methods that are safe to automatically redirect is\r\n   no longer closed; user agents are able to make that determination\r\n   based upon the request method semantics.  The redirect status codes\r\n   301, 302, and 307 no longer have normative requirements on response\r\n   payloads and user interaction.  (Section 6.4)\r\n\r\n   The status codes 301 and 302 have been changed to allow user agents\r\n   to rewrite the method from POST to GET.  (Sections 6.4.2 and 6.4.3)\r\n```\r\n\r\nI think good default behavior for net/http would be to automatically follow redirects only for status codes where data is *not* re-POSTed. Consequently, if it handles 301s as POST/301/GET, then it should have no reason to not automatically follow the redirect.\r\n\r\nI'm not sure what net/http/client does in every scenario, but I believe all of the following would be technically legal behaviors, paired with the auto-redirect behavior I'd expect of each client behavior:\r\n```\r\nPOST/301/GET  - auto follow\r\nPOST/301/POST - get user consent\r\nPOST/302/GET  - auto follow\r\nPOST/302/POST - get user consent\r\nPOST/303/GET  - auto follow\r\nPOST/307/POST - get user consent\r\n\r\n   */3**/GET  - auto follow\r\n   */3**/POST - get user consent\r\n```\r\n\r\nGetting back to this bug report...\r\n```\r\nPOST/303/GET/301/GET - auto follow\r\nPOST/303/GET/307/GET - auto follow\r\n```",
+	"user": {
+		"login": "ademarre",
+		"id": 3452351,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-27T02:29:22Z",
+	"updated_at": "2015-03-27T22:42:04Z"
+}

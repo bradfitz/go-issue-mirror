@@ -1,0 +1,28 @@
+{
+	"id": 51278651,
+	"number": 2042,
+	"state": "closed",
+	"title": "diagnose ALL the import cycles",
+	"body": "\u003cpre\u003e6g version weekly.2011-06-23 8968\n\nMake two packages, foo and bar.  bar depends on foo, and foo_test.go depends on bar. \nThis is legal as far as I know.  It's not circular because both foo and bar need to be\ninstalled before gotest runs on foo_test.go, and only bar depends on foo.\n\n$ cat foo/foo.go \npackage foo\n\ntype I interface {\n\tMeth(*S) *S\n}\n\ntype S struct {\n\tx int\n}\n\n$ cat bar/bar.go \npackage bar\n\nimport \u0026quot;bugtest/foo\u0026quot;\n\ntype BarImpl struct {}\n\nfunc (*BarImpl) Meth(*foo.S) *foo.S {\n\treturn nil\n}\n\nvar _ foo.I = (*BarImpl)(nil)\n\n\nBoth install fine without problems:\n\n$ make -C foo install\n$ make -C bar install\n\nBut running foo's tests:\n\n\n$ cat foo/foo_test.go \npackage foo\n\nimport \u0026quot;bugtest/bar\u0026quot;\n\nvar _ I = (*bar.BarImpl)(nil)\n\n\n$ make -C foo test\nmake: Entering directory `/home/bradfitz/go/bugdemo/foo'\ngotest\nrm -f _test/bugtest/foo.a\n6g  -o _gotest_.6 foo.go foo_test.go\nfoo_test.go:5: cannot use nil (type *bar.BarImpl) as type I in assignment:\n\t*bar.BarImpl does not implement I (wrong type for Meth method)\n\t\thave Meth(*foo.S) *foo.S\n\t\twant Meth(*S) *S\nmake: *** [_gotest_.6] Error 1\ngotest: \u0026quot;/home/bradfitz/go/bin/gomake testpackage GOTESTFILES=foo_test.go\u0026quot;\nfailed: exit status 2\nmake: *** [test] Error 2\nmake: Leaving directory `/home/bradfitz/go/bugdemo/foo'\n\nNotice the parameters to the method differ only in a package qualifier.\n\nFiles \u0026amp; Makefiles attached.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2042/0/bugdemo.tar.gz\"\u003ebugdemo.tar.gz\u003c/a\u003e (541 bytes)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2014-12-08T10:11:05Z",
+	"created_at": "2011-07-06T07:56:56Z",
+	"updated_at": "2016-06-24T19:31:57Z"
+}

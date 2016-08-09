@@ -1,0 +1,21 @@
+{
+	"id": 139665859,
+	"number": 14735,
+	"state": "open",
+	"title": "runtime: throttle heap growth",
+	"body": "GC goal is calculated as:\r\n```\r\ngoal = reachable * (1 + GOGC/100)\r\n```\r\nThis works good in steady state and it is not a problem when heap is shrinking. But it is a problem when reachable heap size has episodic short-term spikes.\r\n\r\nConsider that typical reachable heap size is 1GB, so heap grows to 2GB (provided GOGC=100). Now consider that there is a short spike of reachable heap size to 1.5GB. If GC is triggered after the spike, everything is fine. However if we are unlucky and GC observes 1.5GB of reachable heap, it will set goal to 3GB. And at this point we will necessary consume these 3GB and increase RSS by 1.5x unnecessary.\r\n\r\nThe proposal is to throttle GC goal if we see that the new goal will increase max heap size. We can either use, say, GOGC/2 in such cases; or maybe set heap goal to current max heap size. In the above example, if we set goal to 2GB we can avoid growing heap at all. This way we pay a fixed amount of CPU during heap growth, but can get lower RSS in return. Note that heap growth can't continue infinitely, so the amount of additional CPU is limited.\r\n\r\nFWIW client-side GC-based systems (most notably javascript), go to great effort to throttle heap growth in such scenarios. AFAIK, v8 uses something like GOGC=10% during growth just to not over-allocate.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-03-09T18:46:12Z",
+	"updated_at": "2016-04-09T23:53:48Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

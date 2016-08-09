@@ -1,0 +1,12 @@
+{
+	"id": 128523628,
+	"body": "One example I just came across: gosqlite package which says \r\n```#cgo LDFLAGS: -lsqlite3```\r\nIf you try to build a binary with it dynamically, everything works. If you try to build it statically, it complains about missing pthread* and dlopen/dlsym/etc symbols. Let's look at pkg-config:\r\n```\r\n$ pkg-config --libs sqlite3\r\n-lsqlite3  \r\n$ pkg-config --libs --static sqlite3\r\n-lsqlite3 -ldl -lpthread \r\n```\r\nSo, it's all there they way it should be. One would thing that everything that is needed to fix it would be this:\r\n```\r\n-#cgo LDFLAGS: -lsqlite3\r\n+#cgo pkg-config: sqlite3\r\n```\r\nBut unfortunately it won't work either for static linking case. One either needs to add ```--static``` unconditionally (leading to overlinking in the dynamic case), or wish that cmd/go would do it for them, which is the subject of the issue.\r\n\r\nIf there is any other way to fix it, please let me know. I am only aware of an overlinking workaround, which is to pass -Wl,--as-needed, but with it parameters to linker needs to be in a proper order ($FLAGS $OBJECTS $LIBS), and it can also break some specific cases.\r\n",
+	"user": {
+		"login": "kolyshkin",
+		"id": 4522509,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-06T22:10:28Z",
+	"updated_at": "2015-08-06T22:25:21Z"
+}

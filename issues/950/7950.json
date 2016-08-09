@@ -1,0 +1,27 @@
+{
+	"id": 51287441,
+	"number": 7950,
+	"state": "closed",
+	"title": "compress/flate: flate.NewReader allocates too much memory when decoding small buffers",
+	"body": "by **jamesr.gatech**:\n\n\u003cpre\u003eI have a program that processes git repositories which are composed of git objects\n(commits, files, metadata) stored as deflate compressed buffers.  Many common operations\nrequire decompressing lots of small buffers, around a few hundred bytes.  For example,\nperforming the operation 'git log --first-parent 779792a5f2' on the main git repository,\nwhich shows a linearized history of the repo, requires inflating 13480 buffers with an\naverage size of 535.9 bytes each (inflated).\n\nThe current flate.NewReader() implementation allocates just over 40kb per reader most of\nwhich is for the history buffer which is 32768 bytes allocated here:\n\u003ca href=\"https://code.google.com/p/go/source/browse/src/pkg/compress/flate/inflate.go#689\"\u003ehttps://code.google.com/p/go/source/browse/src/pkg/compress/flate/inflate.go#689\u003c/a\u003e\n\nAllocating 40kb to inflate 500 bytes is pretty inefficient.  In my program, allocating\nthese readers and the GCs these allocations that causes are responsible for the majority\nof CPU time of the overall program and 25% of the total execution time (the program\nshould be I/O bound and mostly is other than this).  I'm testing on a 2.3 GHz Core i7\nMac Book Pro with go 1.2.1 darwin/amd64.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:44:03Z",
+	"created_at": "2014-05-07T19:50:33Z",
+	"updated_at": "2016-06-25T01:33:48Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

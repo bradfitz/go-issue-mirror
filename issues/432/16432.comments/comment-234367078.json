@@ -1,0 +1,12 @@
+{
+	"id": 234367078,
+	"body": "Hi @aclements, I tried CL 24706 PS 1. When I checked it out and built/ran my program, the program consumed a lot more CPU. An execution trace showed GC runs lasting for about 25ms with about 11ms of application execution between them. During the 1/3rd of the time for which the app was running, the user goroutines were busy doing sweep work.\r\n\r\nI cherry-picked CL 24706 PS 1 onto go1.7rc2, and it didn't seem to have the effect you describe in the commit message of preempting the gcBgMarkWorker every 1ms. It may well not apply to go1.7rc2 in a meaningful way, I haven't looked into the patches it's based on.\r\n\r\nBelow is an execution trace of the program with go1.7rc2 with CL 24706 PS 1 cherry-picked on top. It doesn't exhibit the behavior of many Ps running gcBgMarkWorker (which sounds like it's not a bug in the first place?), and it also doesn't show the gcBgMarkWorker goroutines allowing themselves to be descheduled after 1ms of work. It still shows a decrease in the frequency of \"Network\" events, which (not pictured) still have a multi-ms delay (I've found up to 7ms) before the corresponding goroutines are scheduled, vs the \u003c50µs delay typical when the GC is not running.\r\n\r\n![screen shot 2016-07-21 at 12 50 12 pm redacted](https://cloud.githubusercontent.com/assets/230685/17036753/7d454394-4f42-11e6-8c8e-0e7597404ad6.png)\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-21T20:03:18Z",
+	"updated_at": "2016-07-21T20:03:18Z"
+}

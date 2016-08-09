@@ -1,0 +1,12 @@
+{
+	"id": 66083618,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eYour example program was already buggy.  ReadSlice documentation says:\n\n\u003ca href=\"http://golang.org/pkg/bufio/#Reader.ReadSlice\"\u003ehttp://golang.org/pkg/bufio/#Reader.ReadSlice\u003c/a\u003e -- \"The bytes stop being valid at the next\nread call.  ... Because the data returned from ReadSlice will be overwritten by the next\nI/O operation, most clients should use ReadBytes or ReadString instead. \"\n\nRegarding:\n\n\u003e When you checked in the reader change you said that\n\u003e BenchmarkReaderEmpty went from 3 allocs to 2. It is back at 3.\n\nSomething else changed int the meantime.  I added io.WriteString to ioutil.Discard and\nit's back to 2.  But it's still not as aggressive with recycling as it could be.  This\ndid matter and show up in benchmarks (net/http stuff probably) or I wouldn't have\nsubmitted it.\n\nI would fix bufio's buffer recycling to be more aggressive, but I don't want to waste\nany more of my time on it you're just going to remove it, though.\n\nFinally,\n\n\u003e In the Writer case, ReadFrom exposes the buffer slice.\n\nWe always expose slices in Read([]byte) and Write([]byte) and it's always considered\nwrong to retain references to them after the Read or Write returns.  How is this new?\n\nIn any case, I could detect that rare case in Write and not recycle.\n\nBut before I fix anything, let's figure out a plan.\n\nI think bufio is safe now.  If you find bugs that I didn't think of and they're not\nfixable, we need a way to address the garbage issues:  maybe\nbufio.Reader.SwitchTo(io.Reader) and bufio.Writer.SwitchTo(io.Writer).  That would let\nme remove all this stuff from net/http/server.go:\n\n// A switchReader can have its Reader changed at runtime.\n// It's not safe for concurrent Reads and switches.\ntype switchReader struct {\n        io.Reader\n}\n\n// A switchWriter can have its Writer changed at runtime.\n// It's not safe for concurrent Writes and switches.\ntype switchWriter struct {\n        io.Writer\n}\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-09T22:48:19Z",
+	"updated_at": "2014-12-08T10:33:28Z"
+}

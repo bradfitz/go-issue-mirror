@@ -1,0 +1,25 @@
+{
+	"id": 149767443,
+	"number": 15386,
+	"state": "open",
+	"title": "x/net/http2: support graceful shutdown of http2 server handlers",
+	"body": "HTTP/2 supports error-free shutdown of connections by allowing peers to transmit GOAWAY frames for announcing connection shutdown and specifying which streams were processed. The gRPC wire format explicitly references this method (http://www.grpc.io/docs/guides/wire.html#goaway-frame) for clean migration of clients away from a server.\r\n\r\nnet/http2 sends GOAWAY frames for errors as specified by HTTP2, but does not yet support the graceful shutdown scenario. I propose at least adding shutdown functionality that lets all in-flight streams complete but does not accept new ones. Looking at the net/http2 client, I think it requires some minor changes to properly close streams that are invalidated by the GOAWAY. \r\n\r\nA completely graceful shutdown goes a little further on the server side: \"A server that is attempting to gracefully shut down a connection SHOULD send an initial GOAWAY frame with the last stream identifier set to (2^31)-1 and a NO_ERROR code\". The standard goes on to propose waiting one RTT after this initial GOAWAY (measured from http2 pings), but it seems likely that one would have a fix upper bound for the wait time anyway (e.g. 10s) so I'm not convinced the RTT adjustment is particularly useful.\r\n\r\nI've started writing code to this effect but would appreciate feedback and guidance through the proposal process.",
+	"user": {
+		"login": "devnev",
+		"id": 79550,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-04-20T13:27:07Z",
+	"updated_at": "2016-05-09T21:19:42Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

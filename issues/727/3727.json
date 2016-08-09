@@ -1,0 +1,27 @@
+{
+	"id": 51281058,
+	"number": 3727,
+	"state": "closed",
+	"title": "x/net/websocket: missing error check",
+	"body": "by **svinartchouk.alexis@free.fr**:\n\n\u003cpre\u003eThere is something strange in the Send function (lines 287 to 301 in\nwebsocket/websocket.go):\n\nOn the line 297 we have this:\nw, err := ws.frameWriterFactory.NewFrameWriter(payloadType)\nAnd on the next line, instead of checking the error, we directly write to w:\n_, err = w.Write(data)\nBut if there was an error, w is nil and calling w.Write(data) leads to a runtime\nexception.\nAlso, at the very beginning of the function, there is a check for the err variable which\nhave not been affected at this point.\n\nHere is my corrected version:\n\nfunc (cd Codec) Send(ws *Conn, v interface{}) (err error) {\n\tdata, payloadType, err := cd.Marshal(v)\n\tif err != nil {\n\t\treturn err\n\t}\n\tws.wio.Lock()\n\tdefer ws.wio.Unlock()\n\tw, err := ws.frameWriterFactory.NewFrameWriter(payloadType)\n\tif err != nil {\n\t\treturn err\n\t}\n\t_, err = w.Write(data)\n\tw.Close()\n\treturn err\n}\n\nThanks\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:19:39Z",
+	"created_at": "2012-06-12T18:58:02Z",
+	"updated_at": "2016-08-05T16:08:08Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

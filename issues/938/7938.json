@@ -1,0 +1,22 @@
+{
+	"id": 51287428,
+	"number": 7938,
+	"state": "closed",
+	"title": "os/exec: command.Process.Kill() results in an invalid exit status code ",
+	"body": "by **onsijoe**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.2.1 darwin/amd64\n\nWhat steps reproduce the problem?\n\nHere's a complete program that exhibits the problem (because it involves exec, it\ndoesn't manifest in the playground):\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os/exec\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\tcmd := exec.Command(\u0026quot;sleep\u0026quot;, \u0026quot;1000000\u0026quot;)\n\tcmd.Start()\n\n\tdone := make(chan struct{})\n\tgo func() {\n\t\terr := cmd.Wait()\n\t\texitStatus := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()\n\n\t\tfmt.Println(\u0026quot;Error:\u0026quot;, err)\n\t\tfmt.Println(\u0026quot;Status:\u0026quot;, exitStatus)\n\n\t\tclose(done)\n\t}()\n\n\tcmd.Process.Kill()\n\n\t\u0026lt;-done\n}\n\n\nWhat happened?\nThe output is\n\nError: signal: killed\nStatus: -1\n\nWhat should have happened instead?\n\nInstead, I (believe) I should have seen:\n\nError: signal: killed\nStatus: 137\n\nPlease provide any additional information below.\n\nLooking at ExitStatus here\n(\u003ca href=\"http://golang.org/src/pkg/syscall/syscall_linux.go?s=4510:4546#L180)\"\u003ehttp://golang.org/src/pkg/syscall/syscall_linux.go?s=4510:4546#L180)\u003c/a\u003e I see that -1\nimplies the process has not exited.  But it actually has (I checked with `ps`)!\n\nIs this a bug, or desired behavior?  When I run `sleep 1000000` in a shell and then send\nsaid process the KILL signal I get an exit code of 137 which is consistent with\n\u003ca href=\"http://www.tldp.org/LDP/abs/html/exitcodes.html\"\u003ehttp://www.tldp.org/LDP/abs/html/exitcodes.html\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:44:01Z",
+	"created_at": "2014-05-05T03:42:15Z",
+	"updated_at": "2016-06-25T01:33:42Z"
+}

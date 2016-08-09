@@ -1,0 +1,17 @@
+{
+	"id": 133939546,
+	"number": 14346,
+	"state": "closed",
+	"title": "x/mobile/bind: local reference table overflow (max=512)",
+	"body": "The existing implementation has  memory leaks on two local variables\r\nthat are not deleted after use.\r\nAndroid app will crash after this issue.\r\n\r\n\r\nsample code:\r\nGo side:\r\n    package client\r\n    import \"time\"\r\n\r\n    var GEventHandler StockPriceUpdateEevent\r\n\r\n    type StockPricePushClient struct {\r\n    }\r\n\r\n    type StockPriceUpdateEevent interface {\r\n\tPriceUpdate(foo int64)\r\n    }\r\n    \r\n    func (m *StockPricePushClient) StartUpdate() {\r\n\tgo func() {\r\n\t\tfor {\r\n\t\t\ttime.After(time.Millisecond * 100)\r\n\t\t\tif GEventHandler != nil {\r\n\t\t\t\tGEventHandler.PriceUpdate(time.Now().Unix())\r\n\t\t\t}\r\n\t\t}\r\n\t}()\r\n    }\r\n\r\n    func NewStockPricePushClient() *StockPricePushClient {\r\n     \tm := StockPricePushClient{}\r\n    \treturn \u0026m\r\n    }\r\n\r\n    func SetFooEvent(event StockPriceUpdateEevent) {\r\n    \tGEventHandler = event\r\n    }\r\nJava side:\r\n\r\n    Client.SetFooEvent(new EventHandler());\r\n\r\n        Client.StockPricePushClient c = Client.NewStockPricePushClient();\r\n        c.StartUpdate();\r\n\r\n\r\n  class EventHandler extends Client.StockPriceUpdateEevent.Stub {\r\n\r\n        @Override\r\n        public void PriceUpdate(long l) {\r\n\r\n        }\r\n    }",
+	"user": {
+		"login": "ttyh061",
+		"id": 12654155,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-02-17T14:36:20Z",
+	"created_at": "2016-02-16T10:21:23Z",
+	"updated_at": "2016-02-17T14:36:20Z"
+}

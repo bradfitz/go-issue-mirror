@@ -1,0 +1,17 @@
+{
+	"id": 128770833,
+	"number": 14097,
+	"state": "closed",
+	"title": "os/exec: exec.Command docker run exit status 1",
+	"body": "```go\r\npackage main\r\n\r\n/*\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cstring.h\u003e\r\n#include \u003cerrno.h\u003e\r\n#include \u003cstdio.h\u003e\r\n\r\nvoid executeCmd(const char* cmd)\r\n{\r\n    FILE *fp;\r\n    char buf[1024];\r\n    int readSize;\r\n    int bufSize;\r\n\r\n    bufSize = sizeof(buf) - 1;\r\n    fp = popen(cmd, \"r\");\r\n    if (fp != NULL)\r\n    {\r\n    \twhile(1)\r\n    \t{\r\n    \t\treadSize = fread(buf, sizeof(char), bufSize, fp);\r\n\t\t\tif(readSize \u003c= 0)\r\n\t\t\t{\r\n\t\t\t\tbreak;\r\n\t\t\t}\r\n\r\n\t\t\tbuf[readSize] = '\\0';\r\n\t\t\tprintf(\"%s\", buf);\r\n    \t}\r\n\r\n\t\tpclose(fp);\r\n    }\r\n\telse\r\n\t\tprintf(\"executeCmd popen null:%s\\n\",strerror(errno));\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n\t\"unsafe\"\r\n)\r\n\r\nfunc RunExecCommand() {\r\n\tfmt.Println(\"RunExecCommand\")\r\n\tbs, err := exec.Command(\"docker\", \"run ubuntu:14.04 echo hello\").Output()\r\n\tif err != nil {\r\n\t\tfmt.Println(\"docker error:\", err)\r\n\t} else {\r\n\t\ttext := string(bs)\r\n\t\tfmt.Println(text)\r\n\t}\r\n}\r\n\r\nfunc RunCPopen() {\r\n\tfmt.Println(\"RunCPopen\")\r\n\r\n\tgostr := \"docker run ubuntu:14.04 echo hello\"\r\n\tcstr := C.CString(gostr)\r\n\tC.executeCmd(cstr)\r\n\tC.free(unsafe.Pointer(cstr))\r\n}\r\n\r\nfunc main() {\r\n\tRunExecCommand()\r\n\tRunCPopen()\r\n}\r\n```\r\n\r\nThe output is:\r\nRunExecCommand\r\ndocker error: exit status 1\r\nRunCPopen\r\nhello\r\n\r\nI expect “exec.Command(\"docker\", \"run ubuntu:14.04 echo hello\").Output()\" output is \"hello\", but it is \"docker error: exit status 1\". So i write c function \"executeCmd\" to test it, and it works fine.\r\n\r\nMy question is why exec.Command is incorrect? ",
+	"user": {
+		"login": "iexploree",
+		"id": 16595487,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-01-26T14:01:44Z",
+	"created_at": "2016-01-26T09:31:46Z",
+	"updated_at": "2016-01-26T14:01:44Z"
+}

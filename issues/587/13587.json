@@ -1,0 +1,28 @@
+{
+	"id": 121808849,
+	"number": 13587,
+	"state": "closed",
+	"title": "cmd/compile: Possible stack corruption when passing pointer to a \"named return variable\" to deferred function",
+	"body": "Repro code: https://github.com/prashantv/defer-repro/blob/master/main.go\r\n\r\n(The current version is the simplest repro, but takes longer to run. Older versions crash faster but have more code)\r\n\r\nUsing named returns, and passing a pointer to the return value to another function seems to cause some sort of stack corruption sometimes. Running the code tends to crash either either:\r\n```\r\npanic: runtime error: growslice: cap out of range\r\n\r\ngoroutine 480 [running]:\r\nfmt.(*fmt).padString(0xc824ec82c8, 0x22e0, 0xc823ee0210)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/format.go:130 +0x406\r\nfmt.(*fmt).fmt_s(0xc824ec82c8, 0x22e0, 0xc823ee0210)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/format.go:322 +0x61\r\nfmt.(*pp).fmtString(0xc824ec8270, 0x22e0, 0xc823ee0210, 0xc800000076)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/print.go:518 +0x144\r\nfmt.(*pp).printArg(0xc824ec8270, 0xc7ac0, 0xc824e24020, 0x76, 0x0, 0x0)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/print.go:797 +0xd91\r\nfmt.(*pp).doPrint(0xc824ec8270, 0xc823a77f08, 0x2, 0x2, 0xc824e20101)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/print.go:1254 +0x258\r\nfmt.Fprintln(0x3a91c0, 0xc82000a3c0, 0xc823a77f08, 0x2, 0x2, 0x0, 0x0, 0x0)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/fmt/print.go:254 +0x67\r\nmain.instrument.func1()\r\n        /Users/prashant/gocode/src/github.com/prashantv/defer-repro/main.go:22 +0x1ae\r\nmain.methodWithError(0x0, 0x0)\r\n        /Users/prashant/gocode/src/github.com/prashantv/defer-repro/main.go:28 +0xf7\r\nmain.main.func1()\r\n        /Users/prashant/gocode/src/github.com/prashantv/defer-repro/main.go:13 +0x18\r\ncreated by main.main\r\n        /Users/prashant/gocode/src/github.com/prashantv/defer-repro/main.go:15 +0x3a\r\n```\r\nor with\r\n```\r\nruntime:objectstart Span weird: p=0xc8246b2000 k=0x6412359 s.start=0xc8246b2000 s.limit=0xc8246b4000 s.state=2\r\nfatal error: objectstart: bad pointer in unexpected span\r\n\r\ngoroutine 1025 [running]:\r\nruntime.throw(0x132d20, 0x2b)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/panic.go:527 +0x90 fp=0xc82002fe10 sp=0xc82002fdf8\r\nruntime.heapBitsForObject(0xc8246b2000, 0x0, 0x0, 0xc800000000, 0x580988)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/mbitmap.go:217 +0x287 fp=0xc82002fe48 sp=0xc82002fe10\r\nruntime.scanobject(0xc824682c40, 0xc82001e720)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/mgcmark.go:878 +0x239 fp=0xc82002ff18 sp=0xc82002fe48\r\nruntime.gcDrainUntilPreempt(0xc82001e720, 0x7d0)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/mgcmark.go:741 +0x152 fp=0xc82002ff50 sp=0xc82002ff18\r\nruntime.gcBgMarkWorker(0xc82001d500)\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/mgc.go:1329 +0x474 fp=0xc82002ffb8 sp=0xc82002ff50\r\nruntime.goexit()\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc82002ffc0 sp=0xc82002ffb8\r\ncreated by runtime.gcBgMarkStartWorkers\r\n        /usr/local/Cellar/go/1.5.1/libexec/src/runtime/mgc.go:1239 +0x93\r\n```\r\n\r\nModifying `methodWithError` to not return directly, but set to the return variable, stops the panic.\r\n\r\n```go\r\nfunc methodWithError() (err error) {\r\n\tdefer instrument(\u0026err)()\r\n\terr = errors.New(\"error\")\r\n\treturn err\r\n}\r\n```\r\n\r\nVersion information:\r\n```bash\r\n$ go version\r\ngo version go1.5.1 darwin/amd64\r\n$ uname -prsv\r\nDarwin 15.2.0 Darwin Kernel Version 15.2.0: Fri Nov 13 19:56:56 PST 2015; root:xnu-3248.20.55~2/RELEASE_X86_64 i386\r\n```\r\n\r\n(Does not seem OSX specific however, we also saw this issue on Linux x64)",
+	"user": {
+		"login": "prashantv",
+		"id": 140159,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-12-12T06:47:24Z",
+	"created_at": "2015-12-11T23:01:24Z",
+	"updated_at": "2016-01-14T17:02:05Z",
+	"milestone": {
+		"id": 1503411,
+		"number": 35,
+		"title": "Go1.5.4"
+	}
+}

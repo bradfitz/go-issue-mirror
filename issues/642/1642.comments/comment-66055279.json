@@ -1,0 +1,12 @@
+{
+	"id": 66055279,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eIan, yes, that would be nice.  Unfortunately compared to the nice performance\nimprovement in \u003ca href=\"https://golang.org/cl/8179043/\"\u003ehttps://golang.org/cl/8179043/\u003c/a\u003e , using reflect.SetCap actually\nmakes it worse:\n\n+\t\tif vv == nil \u0026\u0026 len(strs) \u003e 0 {\n+\t\t\t// More than likely this will be a single-element key.\n+\t\t\t// Most headers aren't multi-valued.\n+\t\t\tvv, strs = strs[:1], strs[1:]\n+\t\t\tvv[0] = value\n+\t\t\treflect.ValueOf(\u0026vv).Elem().SetCap(1)\n+\t\t\tif cap(vv) != 1 {\n+\t\t\t\tpanic(\"wrong cap\")\n+\t\t\t}\n+\t\t\tm[key] = vv\n+\t\t} else {\n+\t\t\tm[key] = append(vv, value)\n+\t\t}\n\nba12:textproto bradfitz$ ~/go/misc/benchcmp before after2\nbenchmark                  old ns/op    new ns/op    delta\nBenchmarkReadMIMEHeader         7765         8004   +3.08%\n\nbenchmark                 old allocs   new allocs    delta\nBenchmarkReadMIMEHeader           23           23    0.00%\n\nbenchmark                  old bytes    new bytes    delta\nBenchmarkReadMIMEHeader         1708         1669   -2.28%\n\nThe reflect allocations exactly make up for the allocations I was trying to save, and\nCPU gets worse.  Unless there's a cheaper way to use reflect.\n\nRobert, even if this were promoted to the language proper (and I still hope it does), we\nwould _still_ need a reflect change, analogous to\n\u003ca href=\"http://golang.org/pkg/reflect/#Value.SetLen\"\u003ehttp://golang.org/pkg/reflect/#Value.SetLen\u003c/a\u003e  I assume you mean unseemly to *only* have a\nlibrary provide it.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-30T17:21:51Z",
+	"updated_at": "2014-12-08T10:09:14Z"
+}

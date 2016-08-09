@@ -1,0 +1,28 @@
+{
+	"id": 51286948,
+	"number": 7602,
+	"state": "closed",
+	"title": "cmd/compile: liveness too conservative for variables declared in loop body",
+	"body": "\u003cpre\u003epackage main\n\nimport \u0026quot;runtime\u0026quot;\n\nfunc g(p **int) {\n}\n\nfunc main() {\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\truntime.GC()\n\t\tvar x *int\n\t\tg(\u0026amp;x)\n\t}\n}\n\n$ go tool 6g -S -live -l addrinloop.go\naddrinloop.go:5: live at entry to g: p\naddrinloop.go:10: live at call to GC: x\naddrinloop.go:12: live at call to g: x\n...\n\nThat second line is wrong - x should not be considered live at the GC() call.  x is not\ninitialized at that point (on the first iteration of the loop, anyway), so it contains\njunk.  That's only false retention in this example, but it's a real bug when x's type is\n*interface{}.  \n\nThis bug is preventing us from turning down most of the zeroing that's currently causing\nperformance problems.\n\nThis bug occurs in real world situations - in src/pkg/go/build/build.go:693, the\n[2]interface{} that is constructed to hold the ... args to log.Panicf behaves like x\nabove.  It isn't initialized until just before the log.Printf call, but our liveness\nanalysis thinks it is live for the entire containing loop (lines 597-733).\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-06-27T13:45:42Z",
+	"created_at": "2014-03-20T21:59:53Z",
+	"updated_at": "2016-06-27T13:45:42Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

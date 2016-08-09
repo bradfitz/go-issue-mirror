@@ -1,0 +1,22 @@
+{
+	"id": 96668709,
+	"number": 11826,
+	"state": "closed",
+	"title": "net: UnixListener unlinks socket files inherited via socket activation",
+	"body": "docker can use systemd for socket activation. docker creates a net.UnixListener using net.FileListener on the inherited fd. naturally, upon shutdown, docker calls Close on the net.Listener.\r\n\r\nin [unixsock_posix.go](https://github.com/golang/go/blob/master/src/net/unixsock_posix.go#L321), Close calls syscall.Unlink on the file name that was found via getsockname. this code has been there since at least 2011.\r\n\r\nthe result of this is that upon the socket-activated service (docker) restarting, the service will reconnect to the inherited file descriptor, but clients of that socket will no longer be able to reach it because the socket file in the filesystem is gone, and never recreated.\r\n\r\nthis seems to have been worked around in docker in docker/docker@053c3557b3198466ecfbe066fefdbab2a78771d5, but this affects any socket-activated go program that 'properly' Closes it's UnixListeners.\r\n\r\nif the UnixListener was not responsible for creating the socket file, it should *not* unlink the socket file on Close.\r\n\r\n",
+	"user": {
+		"login": "mischief",
+		"id": 1487996,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-11T04:44:07Z",
+	"created_at": "2015-07-22T21:25:03Z",
+	"updated_at": "2015-12-11T05:00:17Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

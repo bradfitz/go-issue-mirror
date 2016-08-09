@@ -1,0 +1,12 @@
+{
+	"id": 207145199,
+	"body": "@Thomasdezeeuw,\r\n\r\nThanks for the information. My guess is that:\r\n- You probably see issues caused by two different root causes\r\n- One comes from tip\r\n - It looks like tip has changed/improved runtime stuff related to goroutine and defer block scheduling\r\n - At present, we see many intermittent build failures of runtime/trace, net, net/http, testing packages which depend on such stuff and testing.Parallel\r\n- Another comes from latest darwin kernels, 10.11.x\r\n - See #14548\r\n\r\nI guess that the following patch might mitigate the failures.\r\n```\r\n--- a/src/net/timeout_test.go\r\n+++ b/src/net/timeout_test.go\r\n@@ -315,7 +315,7 @@ var readTimeoutTests = []struct {\r\n }\r\n \r\n func TestReadTimeout(t *testing.T) {\r\n-       t.Parallel()\r\n+       //t.Parallel()\r\n \r\n        switch runtime.GOOS {\r\n        case \"plan9\":\r\n```\r\nJust tried `go test -v -run=Timeout --parallel 10 -count=100` and had no failure.",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-08T00:08:49Z",
+	"updated_at": "2016-04-08T00:08:49Z"
+}

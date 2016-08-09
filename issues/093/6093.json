@@ -1,0 +1,27 @@
+{
+	"id": 51284666,
+	"number": 6093,
+	"state": "closed",
+	"title": "x/net/websocket: Read returns partial frames",
+	"body": "by **keith.rollin**:\n\n\u003cpre\u003eI am using \u0026quot;go version go1.1.1 darwin/amd64\u0026quot; on a 2009 vintage iMac using an\nup-to-date Mac OS X 10.8.4. I am using go.net/websocket from a couple of weeks ago. I\nhave checked that there have been no updates to the package since then. I've searched\nall issues for \u0026quot;websocket\u0026quot; -- open and closed -- but don't find any discussion\non the problem I'm having.\n\nI am using go to write a websocket client to test a websocket server I'm writing. The\ntest client is written in go, and the server I'm testing is written in C++ using\nlibwebsocket, running on CentOS 5.7 with linux 2.6.18. Part of the protocol I'm\nimplementing over websocket includes both the client and server sending PING/PONG\nmessages every few seconds. Note that these are NOT WebSocket Ping/Pong packets. I am\nnot using those because of incomplete Ping/Pong support in the contexts in which both my\nserver and clients run.\n\nEvery few seconds, the client and server will send the other a standard TEXT frame with\nthe following contents:\n\nPING\u0026lt;timestamp\u0026gt;\n\nIn response, the receiving side sends back\n\nPONG\u0026lt;timestamp from the PING message\u0026gt;\n\nFor implementation reasons, the \u0026lt;timestamp\u0026gt; from the PINGs the server sends is in\nmilliseconds and is 13 digits long, and the \u0026lt;timestamp\u0026gt; from the PINGs the client\nsends is in nanoseconds and is 19 digits long. This information may be relevant, as well\nsee later.\n\nI noticed that, every once and a while, when the client would call\nwebsocket.Read(buffer) (where buffer is a 5K byte buffer), that it would receive just\n\u0026quot;PONG\u0026quot; without any timestamp. On the next call to Read(), it would get the\ntimestamp.\n\nChecking my server's logs and using tcpdump, I see that this happens when the server is\nboth sending its own PING\u0026lt;timestamp\u0026gt; and responding to a client's PING by sending\na PONG\u0026lt;timestamp\u0026gt; at nearly the same time. That is, the server is writing\nsomething like:\n\nFrame 1: \u0026lt;0x81\u0026gt;\u0026lt;0x11\u0026gt;PING1376035994244\nFrame 2: \u0026lt;0x81\u0026gt;\u0026lt;0x17\u0026gt;PONG1376035994222985405\n\nIf these happen in close proximity to each other, however, the actual TCP packets look\nlike:\n\nPacket 1: \u0026lt;0x81\u0026gt;\u0026lt;0x11\u0026gt;PING1376035994244\u0026lt;0x81\u0026gt;\u0026lt;0x17\u0026gt;PONG\nPacket 2: 1376035994222985405\n\nFor some reason, TCP is sending the data in packets that don't align with the websocket\nframing or with the socket send() calls that libwebsocket is making. For some reason, it\nappears to be using the length of Frame 2 when sending the contents of the socket buffer\n-- note that Packet 1 includes six bytes more than you'd expect, and that Frame 2 is six\nbytes longer than Frame 1.\n\ngo.net/websocket responds to these packets by returning the following on successive\ncalls to websocket.Read():\n\nResult 1: PING1376035994244\nResult 2: PONG\nResult 3: 1376035994222985405\n\nWhen my client code sees this sequence, it flags it as invalid. It's flexible enough to\ndeal with the PONG message that doesn't have a timestamp, but it has no idea what to do\nwith the 1376035994222985405.\n\nI have three comments here:\n\nFirst, I don't think that the PONG message should be returned by websocket.Read in two\nparts. go.net/websocket knows the length of the frame and should return the whole thing\nto my client application.\n\nSecond, given the current behavior, I don't see a way for me to workaround it and\ndetermine that Result 2 represents an incomplete frame and that it should be glued with\nResult 3 before trying to process the combined result.\n\nThird, I wonder if there's a related issue here. The documentation for websocket.Read\nsays that it will only return as much information as is available in the buffer passed\nto Read, and that if there is more information, the application can call websocket.Read\nagain. However, there is no facility for telling the caller that there *is* more\ninformation -- that the caller received only a partial frame and that the subsequent\nRead will return the rest (or more) of it rather than data from a subsequent frame.\n\nBecause of these issues -- particularly the first two -- I'm at a loss to know how to\nupdate my go-based client program to account for my frame data being split up.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:33:29Z",
+	"created_at": "2013-08-09T19:22:21Z",
+	"updated_at": "2016-08-05T16:08:19Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

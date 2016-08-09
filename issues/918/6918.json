@@ -1,0 +1,27 @@
+{
+	"id": 51285925,
+	"number": 6918,
+	"state": "open",
+	"title": "database/sql: provide optional way to mitigate convT2E allocations",
+	"body": "\u003cpre\u003eIn debugging the performance of Camlistore start-up (which slurps the index from disk to\nmemory), I compared two popular MySQL drivers' allocations.  Even the one that was being\ncareful to not allocate (go-mysql-driver) was still allocating memory proportional to\nthe data size (169.55 bytes in MysQL and 153.36 allocated):\n\n2013/12/09 03:32:55 2512532 rows, 177786156 bytes; took 2.375200197s, 945ns each, 71.38\nMB/s\n2013/12/09 03:32:55 allocated = 160809408\n\nI look into where the allocations were coming from.\n\nIn the go-mysql-driver's Rows.Next (\u003ca href=\"http://golang.org/pkg/database/sql/driver/#Rows)\"\u003ehttp://golang.org/pkg/database/sql/driver/#Rows)\u003c/a\u003e\ncall:\n\n     .  153.5   597: dest[i], isNull, n, err = readLengthEncodedString(data[pos:])\n....\n     .      .      45d2bd: MOVQ AX,18(SP)\n     .  153.5      45d2c2: CALL runtime.convT2E(SB)\n\n\nIt's exclusively from runtime.convT2E calls, assigning a []byte to an interface{}\n(driver.Value)\n\n160809408 bytes / 2512532 rows / 2 columns = 32 bytes allocated per scanned string\n[]byte column, even when the user of database/sql is trying to reduce allocations with\nsql.RawBytes.\n\nProposal:\n\nRight now, the \u003ca href=\"http://golang.org/pkg/database/sql/driver/#Rows\"\u003ehttp://golang.org/pkg/database/sql/driver/#Rows\u003c/a\u003e Next method's dest\n[]Value slice is purely an output that the driver is expected to write into.\n\nIf we change it to also be an optional input to the driver, we could supply it with\n*[]byte and drivers can either work as they do today and write to dest, or new/updated\ndrivers can notice a *[]byte in dest and instead using that pointer to assign directly,\nand signal that they've done so with a sentinel value:\n\n   *(dest[i]) = rawByteSlice\n   dest[i] = driver.SentinelValue\n\ndriver.SentinelValue can be a pointer, so it fits into the empty interface without\nallocation.\n\nThe only other driver.Value type (\u003ca href=\"http://golang.org/pkg/database/sql/driver/#Value)\"\u003ehttp://golang.org/pkg/database/sql/driver/#Value)\u003c/a\u003e that\nis bigger than a word is time.Time.  If we care about that (and perhaps we should), we\ncould extend this and say that instead of a *[]byte being supplied in the dest slice of\n[]driver.Value, we instead populate it with *Sink pointers.\n\npackage driver\ntype Sink struct {\n    ....\n}\n\nfunc (s *Sink) SetBytes(b []byte) { ... }\nfunc (s *Sink) SetTime(t time.Time)\n\nAnd then calling a Set method on a Sink replaces the need to have a sentinel value.\n\nIf we do this, all existing drivers are still compatible.  New drivers can type-assert\nfor the *driver.Sink and call the Set method instead.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2013-12-09T11:47:00Z",
+	"updated_at": "2015-04-14T19:45:21Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

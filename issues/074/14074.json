@@ -1,0 +1,21 @@
+{
+	"id": 128262791,
+	"number": 14074,
+	"state": "open",
+	"title": "net: UDPConn.ReadFrom returns error for oversized datagram on Windows",
+	"body": "On all UNIXy platforms I've tried, ReadFrom(buf) consistently returns a nil error\r\nand n == len(buf) when a datagram larger than buf arrives. Excess data is discarded\r\nsilently. On Windows, ReadFrom returns n == 0 and error WSAEMSGSIZE in this case\r\n(see error table [here](https://msdn.microsoft.com/en-us/library/windows/desktop/ms741688(v=vs.85).aspx)).\r\n\r\nThis is an unfortunate inconsistency. The following test case fails on Windows\r\nbut succeeds everywhere else:\r\n\r\n```go\r\nfunc TestWSAEMSGSIZE(t *testing.T) {\r\n\tlistener, err := net.ListenPacket(\"udp\", \"127.0.0.1:0\")\r\n\tif err != nil {\r\n\t\tt.Fatal(err)\r\n\t}\r\n\tdefer listener.Close()\r\n\tsender, err := net.Dial(\"udp\", listener.LocalAddr().String())\r\n\tif err != nil {\r\n\t\tt.Fatal(err)\r\n\t}\r\n\tdefer sender.Close()\r\n\r\n\tsendN := 1800\r\n\trecvN := 300\r\n\tfor i := 0; i \u003c 20; i++ {\r\n\t\tgo func() {\r\n\t\t\tbuf := make([]byte, sendN)\r\n\t\t\tfor i := range buf {\r\n\t\t\t\tbuf[i] = byte(i)\r\n\t\t\t}\r\n\t\t\tsender.Write(buf)\r\n\t\t}()\r\n\t\tbuf := make([]byte, recvN)\r\n\t\tlistener.SetDeadline(time.Now().Add(1 * time.Second))\r\n\t\tn, _, err := listener.ReadFrom(buf)\r\n\t\tif err != nil {\r\n\t\t\tif nerr, ok := err.(net.Error); ok \u0026\u0026 nerr.Timeout() {\r\n\t\t\t\tcontinue\r\n\t\t\t}\r\n\t\t\tt.Fatal(\"unexpected read error:\", err)\r\n\t\t}\r\n\t\tif n != recvN {\r\n\t\t\tt.Fatalf(\"short read: %d, want %d\", n, recvN)\r\n\t\t}\r\n\t\tfor i := range buf {\r\n\t\t\tif buf[i] != byte(i) {\r\n\t\t\t\tt.Fatal(\"error in pattern\")\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nThe trivial fix would be to add a check for WSAEMSGSIZE in the Windows implementation of recvfrom\r\nand returning n == len(buf) and a nil error instead. Another fix could be to mark the error as temporary.\r\n\r\nIs this something we want to fix? The UDPConn documentation does not dictate any particular behavior for oversized datagrams, so what happens on Windows is technically valid. Yet working around this issue\r\nis very inconvenient and requires unpacking/comparing of errno and use of package syscall.\r\n",
+	"user": {
+		"login": "fjl",
+		"id": 6915,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-01-22T22:35:48Z",
+	"updated_at": "2016-05-18T00:50:39Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

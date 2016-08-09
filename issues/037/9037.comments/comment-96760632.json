@@ -1,0 +1,12 @@
+{
+	"id": 96760632,
+	"body": "The documentation says:\r\n\r\n\"The JSON null value unmarshals into an interface, map, pointer, or slice by setting that Go value to nil. Because null is often used in JSON to mean “not present,” unmarshaling a JSON null into any other Go type has no effect on the value and produces no error.\"\r\n\r\nMy understanding is a null value bound to a time.Time should leave it unchanged (since a time.Time is a struct). Now, time.Time implements the json.Unmarshaller interface, and the implementation just parses a RFC3339 formatted string, without checking for JSON null values. In the JSON decoding engine, the call to the Unmarshaller interface takes precedence over null value management, which I guess is the origin of the problem.\r\n\r\nThere are two ways to fix it:\r\n\r\n 1) A minor change in decode.go can prevent an eventual Unmarshaller method to be called in case of null value, fully leading to the \"null for non reference type, no change\" semantic.\r\n\r\n 2) Proper management of null values in the time.Time unmarshaller method can be added.\r\n\r\nI have a fix which seems to work fine for the first case, but I'm not 100% sure it is really the expected behavior. Can someone please advise?\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "dspezia",
+		"id": 652458,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-27T17:59:52Z",
+	"updated_at": "2015-04-27T18:01:22Z"
+}

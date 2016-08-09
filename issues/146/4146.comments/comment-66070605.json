@@ -1,0 +1,12 @@
+{
+	"id": 66070605,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eWhile we're listing use cases, I'd also be able to take an arbitrary http.ResponseWriter\nvalue from a client (which may implement optional http.Hijacker and/or io.WriterTo\nand/or http.Flusher) and change a method or two on it, while still forwarding all other\nmethods on it.\n\nCurrently whenever I want to implement an http.ResponseWriter wrapper (which I continue\nto do regularly), I have to defensively implement all 3 optional interfaces, with the\nimplementation bodies checking at runtime whether the wrapper ResponseWrapper implements\nthose, otherwise I break people's flushing or sendfile or hijacking, when perhaps all I\nwant to do is record Writes that go by, or change the underlying transport, or watch for\nerrors, etc.\n\nDoing something like:\n\ntype myWrapper struct {\n    io.Writer\n    http.ResponseWriter\n}\n\n... is an error, due to Write ambiguity, and something like:\n\ntype myWrapper struct {\n    http.ResponseWriter\n}\n\nfunc (myWrapper) Write([]byte) (int, error) { ... }\n\n... hides Flush, WriteTo, Hijack, etc.\n\nI could see where this road leads to abuse and performance problems, though.\n\nBut it's painful either way.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-09-25T01:21:48Z",
+	"updated_at": "2014-12-08T10:22:01Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 158597187,
+	"number": 15967,
+	"state": "closed",
+	"title": "x/net/webdav: Wrong name0 passed to Confirm() with Handler prefix.",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo1.7beta1 and go1.6\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux amd64\r\n\r\n3. What did you do?\r\nInstall davfs and `sudo mount -t davfs 'http://127.0.0.1/some/path/prefix/theresource' /tmp/dav`\r\nRun the http server with the webdav handler:\r\n\r\n```\r\n\u0026webdav.Handler{\r\n\t\"/some/path/prefix\",\r\n\tNewMemFS(),\r\n\tNewMemLS(),\r\n\tfunc(r *http.Request, err error) {\r\n\t\tfmt.Println(r.Method, r.Header, err)\r\n\t},\r\n```\r\n\r\nTouch a file.\r\n\r\n4. What did you expect to see?\r\nSuccess!\r\n\r\n5. What did you see instead?\r\nThe PUT request had a \"webdav: locked\" error.\r\nWhen printing the inside the following function found in lock.go int he webdav package:\r\n\r\n```\r\nfunc (m *memLS) lookup(name string, conditions ...Condition) (n *memLSNode) {\r\n\t// TODO: support Condition.Not and Condition.ETag.\r\n\tfor _, c := range conditions {\r\n\t\tn = m.byToken[c.Token]\r\n\t\tfmt.Println(\"HERE!\", c, n, name)\r\n\t\tif n == nil || n.held {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tif name == n.details.Root {\r\n\t\t\treturn n\r\n\t\t}\r\n\t\tif n.details.ZeroDepth {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tif n.details.Root == \"/\" || strings.HasPrefix(name, n.details.Root+\"/\") {\r\n\t\t\treturn n\r\n\t\t}\r\n\t}\r\n\treturn nil\r\n}\r\n```\r\n\r\nname is \"/some/path/prefix/theresource\" while n.details.Root is \"/theresource\" :(\r\n\r\nProblem seems to be here https://github.com/golang/net/blob/master/webdav/webdav.go#L151\r\nI have verified that if you put the following instead of line 151:\r\n\r\n```\r\nreqPath, status, err := h.stripPrefix(u.Path)\r\nif err != nil {\r\n\treturn nil, status, err\r\n}\r\nlsrc = reqPath\r\n```\r\n\r\nit solves the issue in my case.",
+	"user": {
+		"login": "gaillard",
+		"id": 984510,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-16T00:25:30Z",
+	"created_at": "2016-06-06T04:03:58Z",
+	"updated_at": "2016-06-16T00:26:02Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

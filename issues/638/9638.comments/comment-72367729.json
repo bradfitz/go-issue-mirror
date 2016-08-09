@@ -1,0 +1,12 @@
+{
+	"id": 72367729,
+	"body": "I agree, optimizing `append(x, make([]T, n)...)` would be very nice, I ran into that extra allocation the other day.\r\n\r\nAbsent that optimization, an extend function in bytes would also be very useful.\r\n\r\nThe function provided is very slow however, and it does not zero out the bytes between len and cap. I came up with this, which allocates less and is faster in every case:\r\n\r\n```\r\nconst extendShortLen = 512\r\nvar extendShort [extendShortLen]byte\r\nfunc Extend(b []byte, s int, zero bool) []byte {\r\n\tl := len(b)\r\n\te := l\r\n\tif l+s \u003c= cap(b) {\r\n\t\t// Short append; extension fits in cap, no allocation.\r\n\t\tb = b[:l+s]\r\n\t\te += s\r\n\t} else {\r\n\t\t// Extension does not fit, use up all cap first\r\n\t\te = cap(b)\r\n\t\tb = b[:e]\r\n\t\ts -= e - l\r\n\t\tif s \u003c= extendShortLen {\r\n\t\t\t// Mid append, must allocate new backing array.\r\n\t\t\tb = append(b, extendShort[:s]...)\r\n\t\t} else {\r\n\t\t\t// Long append, must allocate new backing array and temporary slice.\r\n\t\t\tb = append(b, make([]byte, s)...)\r\n\t\t}\r\n\t}\r\n\tif zero {\r\n\t\tx := b[l:e]\r\n\t\tfor len(x) \u003e 0 {\r\n\t\t\tx = x[copy(x, extendShort[:]):]\r\n\t\t}\r\n\t}\r\n\treturn b\r\n}\r\n```\r\n",
+	"user": {
+		"login": "PieterD",
+		"id": 821733,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-01T14:54:51Z",
+	"updated_at": "2015-02-01T14:54:51Z"
+}

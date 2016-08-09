@@ -1,0 +1,34 @@
+{
+	"id": 51281653,
+	"number": 4109,
+	"state": "closed",
+	"title": "spec: spec is incorrect about the requirement for parentheses around the type in a conversion",
+	"body": "\u003cpre\u003eThe spec says ( \u003ca href=\"http://tip.golang.org/ref/spec#Conversions\"\u003ehttp://tip.golang.org/ref/spec#Conversions\u003c/a\u003e ):\n\n\u0026quot;If the type (in a conversion) starts with an operator it must be\nparenthesized\u0026quot;\n\nThis is indeed the case for:\n\n\t(*T)(x)          otherwise it would be *(T(x))\n\t(\u0026lt;-chan T)(x)    otherwise it would be \u0026lt;-(chan T(x))\n\nbut it is not required for:\n\n\t[n]T(a)          same as ([n]T)(a)\n\t[]T(a)           same as ([]T)(a)\n\nboth of which start with an operator. All, gc, gccgo, and gofmt accept this syntax and\nwe cannot easily blame them for being incorrect as there is plenty of code in the\nlibrary that converts strings into []bytes as in: []byte(\u0026quot;foo\u0026quot;) (try e.g.,\n\u003ca href=\"http://tip.golang.org/search?q=%5C%5B%5C%5Dbyte%5C%28\"\u003ehttp://tip.golang.org/search?q=%5C%5B%5C%5Dbyte%5C%28\u003c/a\u003e.*%5C%29 ).\n\nFurthermore, conversions to literal function types without result specification require\nparentheses:\n\n\t(func())(f)      otherwise it might be (func())(f) or (func()(f))x or func()(f){...} but we don't know until we see the x or {...}\n\neven though \u0026quot;func\u0026quot; is not an operator but a keyword. All, gc, gccgo, and gofmt\nrequire parenthesis in this case. To make things more complicated, conversions to\nfunction literal types specifying a result (even if empty) do not require parentheses:\n\n\tfunc()(T)(f)     same as (func()(T))(f)\n\tfunc()T(f)       same as (func()T)(f)\n\tfunc()())(f)     same as (func())(f)\n\nProposal: The spec should be adjusted to say:\n\n\u0026quot;If the type (in a conversion) starts with \u0026quot;*\u0026quot;, \u0026quot;\u0026lt;-\u0026quot;, or\n\u0026quot;func\u0026quot; it must be parenthesized\u0026quot;\n\nThis would be a backward-incompatible change. We need to back it up by confirming that\nsuch function conversions are indeed rare or do not occur in the wild.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:21:50Z",
+	"created_at": "2012-09-19T23:15:45Z",
+	"updated_at": "2016-06-24T22:25:01Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 98884308,
+	"body": "I'm updating the title to reflect the least common denominator. Since this is reproducible using both gorilla's websocket library *and* code.google.com/p/go.net/websocket, it doesn't make sense to say that its an error in the websocket library. \r\n\r\nThey both use the net/http library however, and the behavior that is occurring is a direct result of when a goroutine besides the one initially spawned to handle the request utilizes the connection object to write to it. I have tried several other variants to try and rule out race conditions, ie, I tweaked it to use the channel in lock-step to prevent read/write at once:\r\n\r\n```\r\nfunc echoHandler(ws *websocket.Conn) {\r\n\techoChan := make(chan string)\r\n\tdefer close(echoChan)\r\n\tgo func() {\r\n\t\tfor data := range echoChan {\r\n\t\t\twebsocket.Message.Send(ws, data)\r\n\t\t\techoChan \u003c- data\r\n\t\t}\r\n\t}()\r\n\r\n\tvar d string\r\n\tfor true {\r\n\t\terr := websocket.Message.Receive(ws, d)\r\n\t\tif err != nil {\r\n\t\t\techoChan \u003c- d\r\n\t\t\t\u003c-echoChan\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nThat doesn't help. However, if I have the new goroutine *not write the data out*, and instead it just passes it back, and the original goroutine handling the request does the write, no more TLS handshake problems.\r\n\r\nMy only theory at this point is that the connection has somehow mangled things in the system somewhere on being passed between the goroutine's, such that new clients get TLS handshake errors.",
+	"user": {
+		"login": "bbangert",
+		"id": 100193,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-04T23:30:48Z",
+	"updated_at": "2015-05-04T23:30:48Z"
+}

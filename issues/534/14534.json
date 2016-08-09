@@ -1,0 +1,36 @@
+{
+	"id": 136815108,
+	"number": 14534,
+	"state": "closed",
+	"title": "io: add test to verify that ReadAt doesn't affect seek offset (for Plan 9 kernel bug)",
+	"body": "Running `go tool nm` on object files doesn't work anymore on Plan 9:\r\n\r\n```\r\n% go tool nm file.o\r\nopen file.o: unrecognized object file\r\n```\r\n\r\nThis error is returned by [rd.parseObject](https://github.com/golang/go/blob/c2d3e1123c/src/cmd/internal/goobj/read.go#L475) in goobj.Parse.\r\nIt reads the \"386 deve\" string which doesn't match the expected \"go objec\" string.\r\nIt happens because [objfile.Open](https://github.com/golang/go/blob/c2d3e1123c/src/cmd/internal/objfile/objfile.go#L53) calls [debug/elf.NewFile](https://github.com/golang/go/blob/c2d3e1123c/src/debug/elf/file.go#L228) before, which does a ReadAt of 16 bytes. However, the implementation of [pread](https://9p.io/magic/man2html/2/read) in the Plan 9 kernel contains a bug where it updates the channel offset while it  shouldn't. Hence, the first 16 bytes of the files are already read before calling goobj.Parse.\r\n\r\nThis is related to #11265\r\n\r\nThis can be fixed by [fixing the pread system call](http://9legacy.org/9legacy/patch/9-pread-offset.diff) in the Plan 9 kernel.\r\n\r\nA workaround is to add `Seek(0, 0)` after calling ReadAt:\r\n\r\n```\r\n--- a/src/cmd/internal/objfile/objfile.go\r\n+++ b/src/cmd/internal/objfile/objfile.go\r\n@@ -50,6 +50,10 @@ func Open(name string) (*File, error) {\r\n \t\treturn nil, err\r\n \t}\r\n \tfor _, try := range openers {\r\n+\t\t_, err = r.Seek(0, 0)\r\n+\t\tif err != nil {\r\n+\t\t\treturn nil, err\r\n+\t\t}\r\n \t\tif raw, err := try(r); err == nil {\r\n \t\t\treturn \u0026File{r, raw}, nil\r\n \t\t}\r\n```",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Builders"
+		},
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-05-10T03:56:20Z",
+	"created_at": "2016-02-26T21:07:41Z",
+	"updated_at": "2016-05-10T03:56:20Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

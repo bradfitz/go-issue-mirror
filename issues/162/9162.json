@@ -1,0 +1,27 @@
+{
+	"id": 51289175,
+	"number": 9162,
+	"state": "closed",
+	"title": "net/http: TimeoutHandler header race on timeout",
+	"body": "\u003cpre\u003eHi, this might be related to \n\n\u003ca href=\"https://golang.org/issue/8414\"\u003ehttps://golang.org/issue/8414\u003c/a\u003e\nand\n\u003ca href=\"https://golang.org/issue/8209\"\u003ehttps://golang.org/issue/8209\u003c/a\u003e\n\nWhat does 'go version' print?\n\n$ ./go version\ngo version devel +59dbd878547f Tue Nov 25 08:42:00 2014 +0100 linux/amd64\n\nWhat steps reproduce the problem?\n\nA slight modification to the test:\n\ndiff -r 493ad916c3b1 src/net/http/serve_test.go\n--- a/src/net/http/serve_test.go\tSun Nov 23 15:13:48 2014 -0500\n+++ b/src/net/http/serve_test.go\tMon Nov 24 15:50:11 2014 +0100\n@@ -1171,6 +1171,7 @@\n \tsendHi := make(chan bool, 1)\n \twriteErrors := make(chan error, 1)\n \tsayHi := HandlerFunc(func(w ResponseWriter, r *Request) {\n+\t\tw.Header().Set(\u0026quot;Content-Type\u0026quot;, \u0026quot;text/plain\u0026quot;)\n \t\t\u0026lt;-sendHi\n \t\t_, werr := w.Write([]byte(\u0026quot;hi\u0026quot;))\n \t\twriteErrors \u0026lt;- werr\n\nmodifying a header before timing out.\n\nWhat happened?\n\n$ go test -race\n\nproduces a race warning.\n\nWhat should have happened instead?\n\nNo data race should occur.\n\nPlease provide any additional information below.\n\nAfter digging a little bit, it seems like the way the cloning is set up prevents\nhandlers to be run in another goroutine other than the one created by http.Server.\n\nWARNING: DATA RACE\nRead by goroutine 20:\n  net/http.(*response).Header()\n      /home/user/gotip/src/net/http/server.go:609 +0x62\n  net/http.(*timeoutWriter).Header()\n      /home/user/gotip/src/net/http/server.go:1944 +0x5b\n  net/http_test.func·073()\n      /home/user/gotip/src/net/http/serve_test.go:1174 +0x4d\n  net/http.HandlerFunc.ServeHTTP()\n      /home/user/gotip/src/net/http/server.go:1265 +0x4e\n  net/http.func·018()\n      /home/user/gotip/src/net/http/server.go:1918 +0xfe\n\nPrevious write by goroutine 17:\n  net/http.(*response).WriteHeader()\n      /home/user/gotip/src/net/http/server.go:639 +0x17d\n  net/http.(*timeoutHandler).ServeHTTP()\n      /home/user/gotip/src/net/http/server.go:1928 +0x4c3\n  net/http/httptest.(*waitGroupHandler).ServeHTTP()\n      /home/user/gotip/src/net/http/httptest/server.go:200 +0xf7\n  net/http.serverHandler.ServeHTTP()\n      /home/user/gotip/src/net/http/server.go:1703 +0x1f6\n  net/http.(*conn).serve()\n      /home/user/gotip/src/net/http/server.go:1204 +0x1087\n\nGoroutine 20 (running) created at:\n  net/http.(*timeoutHandler).ServeHTTP()\n      /home/user/gotip/src/net/http/server.go:1920 +0x2ca\n  net/http/httptest.(*waitGroupHandler).ServeHTTP()\n      /home/user/gotip/src/net/http/httptest/server.go:200 +0xf7\n  net/http.serverHandler.ServeHTTP()\n      /home/user/gotip/src/net/http/server.go:1703 +0x1f6\n  net/http.(*conn).serve()\n      /home/user/gotip/src/net/http/server.go:1204 +0x1087\n\nGoroutine 17 (running) created at:\n  net/http.(*Server).Serve()\n      /home/user/gotip/src/net/http/server.go:1751 +0x3cd\u003c/pre\u003e",
+	"user": {
+		"login": "wongak",
+		"id": 105424,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2015-12-14T14:56:05Z",
+	"created_at": "2014-11-25T10:09:53Z",
+	"updated_at": "2015-12-14T14:56:05Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

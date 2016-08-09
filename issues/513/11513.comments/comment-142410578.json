@@ -1,0 +1,12 @@
+{
+	"id": 142410578,
+	"body": "@rogpeppe Are you sure your fix is guaranteed to work?\r\n\r\nI can reproduce @enormouspenguin's result (no need for the GOMAXPROCS setting in 1.5). You gave this workaround in your original post:\r\n\r\n``` go\r\nt.Stop()\r\nselect {\r\ncase \u003c-t.C:\r\ndefault:\r\n}\r\nt.Reset(x)\r\n```\r\n\r\nHowever, this is subject to failure because of a race condition; consider the following sequence of events:\r\n\r\n* The timer has just fired, so `t.Stop()` returns false\r\n* The value hasn't been delivered to the channel yet, so the default arm of the select is taken\r\n\r\nSee http://play.golang.org/p/80kzKDerpZ for a demonstration.\r\n\r\n**Edit:** If the timer was previously set but the channel wasn't received from and you want to reliably reset it, do the following:\r\n\r\n``` go\r\nif !timer.Stop() {\r\n  \u003c-timer.C\r\n}\r\ntimer.Reset(x)\r\n```\r\n\r\nPlease ignore the code below.\r\n\r\n~~I think the following is a correct solution:~~\r\n\r\n``` go\r\nL:\r\n\tfor !timer.Stop() {\r\n\t\tselect {\r\n\t\tcase \u003c-timer.C:\r\n\t\t\tbreak L\r\n\t\tdefault:\r\n\t\t}\r\n\t\truntime.Gosched() // not needed, but prevents some extra spinning\r\n\t}\r\n\ttimer.Reset(x)\r\n```",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-22T20:29:17Z",
+	"updated_at": "2015-11-17T08:50:37Z"
+}

@@ -1,0 +1,25 @@
+{
+	"id": 51287780,
+	"number": 8162,
+	"state": "closed",
+	"title": "text/tabwriter: index out of range error during concurrent writes",
+	"body": "by **bcwaldon**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.2.1 darwin/amd64\n\nWhat steps reproduce the problem?\n\n```\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;\n        \u0026quot;os\u0026quot;\n        \u0026quot;text/tabwriter\u0026quot;\n)\n\nfunc main() {\n        writer := new(tabwriter.Writer)\n        writer.Init(os.Stdout, 0, 8, 1, '\\t', 0)\n\n        count := 100000\n\n        start := make(chan bool)\n        done := make(chan bool, count)\n\n        write := func(msg string) {\n                \u0026lt;-start\n                fmt.Fprintln(writer, msg)\n                done \u0026lt;- true\n        }\n\n        for i := 0; i \u0026lt; count; i++ {\n                go write(\u0026quot;foo\u0026quot;)\n        }\n\n        close(start)\n\n        for i := 0; i \u0026lt; count; i++ {\n                \u0026lt;-done\n        }\n}\n```\n\nWhat happened?\n\npanic: runtime error: index out of range [recovered]\n        panic: interface conversion: interface is runtime.errorCString, not tabwriter.osError [recovered]\n        panic: interface conversion: interface is *runtime.TypeAssertionError, not tabwriter.osError\n\ngoroutine 33040 [running]:\nruntime.panic(0xa64a0, 0x210266080)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/runtime/panic.c:266 +0xb6\ntext/tabwriter.handlePanic(0x2220732ee0)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:439 +0x4e\nruntime.panic(0xa64a0, 0x210266040)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/runtime/panic.c:248 +0x106\ntext/tabwriter.handlePanic(0x2220732df0)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:439 +0x4e\nruntime.panic(0xa6180, 0x18fed7)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/runtime/panic.c:248 +0x106\ntext/tabwriter.(*Writer).writeLines(0x210269000, 0x0, 0x0, 0x5, 0x3)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:262 +0x5b3\ntext/tabwriter.(*Writer).format(0x210269000, 0x0, 0x0, 0x5, 0x5)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:370 +0x307\ntext/tabwriter.(*Writer).Flush(0x210269000, 0x0, 0x0)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:462 +0xce\ntext/tabwriter.(*Writer).Write(0x210269000, 0x210222068, 0x4, 0x6, 0x4, ...)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/text/tabwriter/tabwriter.go:497 +0x3e9\nfmt.Fprintln(0x2239f51640, 0x210269000, 0x2220732f60, 0x1, 0x1, ...)\n        /usr/local/Cellar/go/1.2.1/libexec/src/pkg/fmt/print.go:287 +0xa3\nmain.func·001(0xbcfc0, 0x3)\n        /private/tmp/tabwriter.go:20 +0x11a\ncreated by main.main\n        /private/tmp/tabwriter.go:25 +0x19d\n\n\nWhat should have happened instead?\n\nNo panic.\n\nPlease provide any additional information below.\n\nThis panic is not encountered every time I run the script.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:45:16Z",
+	"created_at": "2014-06-07T00:09:15Z",
+	"updated_at": "2016-06-25T01:36:02Z"
+}

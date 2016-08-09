@@ -1,0 +1,17 @@
+{
+	"id": 116978979,
+	"number": 13254,
+	"state": "closed",
+	"title": "builtin for querying an item in a sorted list",
+	"body": "I come up with this often \u0026 had talked about it before https://groups.google.com/forum/#!topic/golang-nuts/tRXTa_cdnqg\r\n\r\nI propose to have a generic builtin (like append) for comparable types, functionally like this:\r\n\r\n```go\r\n// Return indice of itm in sorted list srl or -1 if absent\r\nfunc ListInd(itm string, srl []string) int {\r\n\tif len(srl) \u003c 1 {\r\n\t\treturn -1\r\n\t}\r\n\tvar bisec func(a, b int) int\r\n\r\n\tbisec = func(a, b int) int { // [a, b)\r\n\t\tif b-a \u003e 2 {\r\n\t\t\tm := (a + b) / 2\r\n\t\t\tif itm \u003c srl[m] {\r\n\t\t\t\treturn bisec(a, m)\r\n\t\t\t}\r\n\t\t\tif itm \u003e srl[m] {\r\n\t\t\t\treturn bisec(m+1, b)\r\n\t\t\t}\r\n\t\t\treturn m\r\n\t\t}\r\n\r\n\t\tif itm == srl[a] {\r\n\t\t\treturn a\r\n\t\t}\r\n\t\ta++\r\n\t\tif a \u003c b \u0026\u0026 itm == srl[a] {\r\n\t\t\treturn a\r\n\t\t}\r\n\t\treturn -1\r\n\t}\r\n\r\n\treturn bisec(0, len(srl))\r\n}\r\n```\r\nIf I write it in Go, I have the following drawbacks:\r\n- At the line of \"itm \u003e srl[m]\" there is a second (and redundant) comparison because Go does not have three-valued comparisons at the moment. For types like string this is not good (enough).\r\n- All slice access in bisec() is safe but there are (redundant) boundary checks at each srl[] access.\r\n\r\nA builtin function can overcome these drawbacks and it would be a very nice \u0026 needed addition to the language :)",
+	"user": {
+		"login": "jfcg",
+		"id": 1410597,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-11-16T13:20:22Z",
+	"created_at": "2015-11-15T07:30:43Z",
+	"updated_at": "2015-11-16T13:20:22Z"
+}

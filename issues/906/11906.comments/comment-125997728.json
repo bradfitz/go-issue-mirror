@@ -1,0 +1,12 @@
+{
+	"id": 125997728,
+	"body": "In general float point have much longer latency for operations on x64, which is measurable. Lets take a very simple example, where we don't give integers an unfair advantage. A simple average of two values:\r\n```Go\r\nf := (a+b) * 0.5\r\ni := (a+b+1) \u003e\u003e1\r\n```\r\nThe integer needs another instruction to maintain proper rounding.\r\n\r\nThe assembly would probably look like this on x64, here Intel(R) Core(TM) i7-5820K:\r\n```\r\nADD r64, r64                L:  1.0c  T: 0.34c\r\nADD r64, imm8             L:  1.0c  T: 0.34c\r\nSAR r64, imm8              L: 1.0c  T: 0.50c\r\nLatency: 3 cycles, max thoughput: 1.18c\r\n```\r\n```\r\nADDSS xmm, xmm        L: 3.0c  T:  1.00c\r\nMULSS xmm, xmm        L: 5.0c  T:  0.50c\r\nLatency: 8 cycles, max throughput: 1.5 cycles\r\n```\r\nSo with integer we have the result ready after 3 cycles, where it takes 8 cycles with float. Of course you can get closer to the throughput value if you 'hide' other instructions, but the base performance of integer operations are still better than float.\r\n\r\nInteger multiply is 3 cycles compared to the 5 of a float point, notwithstanding the cases where you can shift instead. Also consider the 8 cycles going from integer -\u003e float -\u003e integer. `x mod 1.0` is 11 cycles in float, 1 cycle with integer. Division is faster in float, but you rarely have to do them.\r\n\r\nThe only real advantage for float over fixed point is that SIMD is a lot easier with float. It is still slower, but easier to write.",
+	"user": {
+		"login": "klauspost",
+		"id": 5663952,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-29T15:56:10Z",
+	"updated_at": "2015-07-29T15:56:10Z"
+}

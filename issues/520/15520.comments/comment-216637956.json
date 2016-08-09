@@ -1,0 +1,12 @@
+{
+	"id": 216637956,
+	"body": "@randall77 -- question for you below.\r\n\r\nSimilar to #15112, the biggest problem is that our coarse partition doesn't separate convT2I return values, which results in lots of expensive cleanup work.\r\n\r\nUnlike #15112, though, convT2I and convT2E do not always return a new object (like newobject does). Options:\r\n\r\n(1) Tell CSE that convT2I/convT2E always return new objects, a la CL 21937. This is a lie, but perhaps an acceptable one, since the case in which they don't is when they have preallocated storage on the stack, which is fairly rare.\r\n(2) Teach CSE to peek at the third argument to convT2I/convT2E to determine whether we have preallocated storage, and act appropriately.\r\n(3) Split convT2I and convT2E into variants, with and without preallocated storage. There's a bit of code duplication, but not really that much. As a bonus, binary sizes should shrink because the common case (no preallocated storage) has fewer arguments to set up.\r\n\r\n(1) would do the trick and is the safest, but it's non-optimal, and we're not *that* frozen yet, are we?\r\n\r\n(2) feels like a terrible, awful abstraction leak.\r\n\r\nI like (3). And the duplication will go away entirely if we later inline convT2E/convT2I. (There's an issue for that, but I can't find it.)\r\n\r\n@randall77 what do you think?\r\n\r\nBtw, I prototyped option 1, compiling just a hacked up version of actiontable.go. One my machine:\r\n\r\nGo 1.6:\r\nreal\t0m3.666s\r\nuser\t0m5.357s\r\nsys\t0m0.329s\r\n\r\nTip, without the fix:\r\nreal\t0m41.794s\r\nuser\t0m42.635s\r\nsys\t0m0.507s\r\n\r\nTip, with the fix:\r\nreal\t0m6.328s\r\nuser\t0m7.766s\r\nsys\t0m0.460s\r\n\r\nThere's still a regression, but it is probably within \"live with it for 1.7\" range, and it's no longer in CSE.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-03T19:24:05Z",
+	"updated_at": "2016-05-03T19:24:05Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 222156260,
+	"body": "To reproduce this on Linux it suffices to start at tip and comment out the `defer ln.Close()` in the goroutine inside net_test.go's TestZeroByteRead and then run `go test -short -count=20 net`. I am completely baffled. The test is installing various hooks that might be causing problems, so maybe this is just a buggy test. Or maybe it's a real finalization problem. It's difficult to tell. I asked @aclements to look at it when he finishes the bug he is currently working on.\r\n\r\nI can't figure out how, even in the presence of early finalization, ln might get closed more than once, but that seems to be what is happening. Closing the fd twice could, if the fd were reused between the two, step on someone else. But then having stepped on someone else, when that someone else closes their fd, that could step on a third person, and so on, creating a chain of errors like in the failure output. I can't come up with another explanation for how this one async close could cause so many different test failures otherwise. But I also can't explain how the fd could possibly be closed twice. We're so careful about that - even if the program were racy or there were a normal Close racing with the finalizer close (and there doesn't appear to be), the uses of the fd are interlocked and reference counted, and we only actually close the fd when the ref count drops to zero.\r\n\r\nNote: I commented last night that it looked like the liveness bug I just fixed, but that makes no sense since that was specific to SSA and this is not. I deleted that comment.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-27T14:10:19Z",
+	"updated_at": "2016-05-27T14:10:19Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 101792552,
+	"number": 12190,
+	"state": "closed",
+	"title": "net: LookupAddr force use of cgo no matter what",
+	"body": "While investigating #12189, found that the new Go 1.5 implementation of LookupAddr always calls cgo first, even when the DNS configuration on the machine does not merit it, and even when GODEBUG=netdns=go is set in the environment. (If the tree was built with CGO_ENABLED=0 ./make.bash then the cgo call fails quickly and the code falls back to the pure Go version. But it is still called.)\n\nPrevious releases of Go had no cgo implementation of LookupAddr, so they always used the pure Go version.\n\nUsing cgo unconditionally means that a thread is held by a blocked call (except when CGO_ENABLED=0 of course), where in previous releases it was only a goroutine being held. This is a significant resource increase. \n\nIt's even worse that setting GODEBUG, which is supposed to keep cgo from being used, does nothing in this case.\n\nLookupAddr should respect GODEBUG and even without GODEBUG it should not use cgo if the resolver config can be handled by pure Go.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-19T04:20:59Z",
+	"created_at": "2015-08-19T02:27:08Z",
+	"updated_at": "2015-08-20T20:25:51Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51284412,
+	"number": 5936,
+	"state": "closed",
+	"title": "database/sql: dangling statement(s)",
+	"body": "\u003cpre\u003eDiscovered while investigating \u003ca href=\"https://code.google.com/p/odbc/issues/detail?id=12\"\u003ehttps://code.google.com/p/odbc/issues/detail?id=12\u003c/a\u003e\n\nIf I add this:\n\ndiff --git a/src/pkg/database/sql/sql_test.go b/src/pkg/database/sql/sql_test.go\n--- a/src/pkg/database/sql/sql_test.go\n+++ b/src/pkg/database/sql/sql_test.go\n@@ -1046,6 +1046,20 @@\n \t}\n }\n \n+func TestStmtCloseOrder(t *testing.T) {\n+\tdb := newTestDB(t, \u0026quot;people\u0026quot;)\n+\tdefer closeDB(t, db)\n+\n+\tdb.SetMaxIdleConns(0)\n+\tsetStrictFakeConnClose(t)\n+\tdefer setStrictFakeConnClose(nil)\n+\n+\t_, err := db.Query(\u0026quot;SELECT|non_existent|name|\u0026quot;)\n+\tif err == nil {\n+\t\tt.Fatal(\u0026quot;Quering non-existent table should fail\u0026quot;)\n+\t}\n+}\n+\n func manyConcurrentQueries(t testOrBench) {\n \tmaxProcs, numReqs := 16, 500\n \tif testing.Short() {\n\nthen test fails with\n\n# go test                                                                    \n--- FAIL: TestStmtCloseOrder (0.00 seconds)                                          \n        fakedb_test.go:257: failed to close a test fakeConn: can't close; dangling statement(s)                                                                           \nFAIL                                                                                 \nexit status 1                                                                        \nFAIL    database/sql    0.179s                                                       \n# hg id                                                                      \ne6a6dc0d9c22+ tip                                                                    \n#                                                                            \n\nI am not familiar with source code, but I think \u003ca href=\"https://golang.org/cl/11620046\"\u003ehttps://golang.org/cl/11620046\u003c/a\u003e\nshould fix the problem.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:32:37Z",
+	"created_at": "2013-07-23T01:26:16Z",
+	"updated_at": "2016-06-24T22:52:27Z"
+}

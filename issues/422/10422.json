@@ -1,0 +1,33 @@
+{
+	"id": 67781256,
+	"number": 10422,
+	"state": "closed",
+	"title": "os: TestProgWideChdir failing on Plan 9",
+	"body": "Running TestProgWideChdir (CL 6382) on Plan 9 leads to a failure\r\nof TestAppend and TestSameFile.\r\n\r\nTestAppend and TestSameFile are failing because they are accessing\r\na file from a relative path, but the current working directory has been\r\ndeleted at the end of TestProgWideChdir.\r\n\r\n```\r\n% go test -v -run 'Test(ProgWideChdir|Append|SameFile)'\r\n=== RUN TestProgWideChdir\r\nChdir /tmp/test401904176\r\n → getwd /tmp/test401904176\r\nChdir /usr/go/src/os\r\n  → getwd /usr/go/src/os\r\nRemove /tmp/test401904176\r\n → getwd /usr/go/src/os\r\n → Getwd /usr/go/src/os\r\n--- PASS: TestProgWideChdir (0.03s)\r\n=== RUN TestAppend\r\nfixwdLocked\r\n → getwd err file has been removed\r\nfixwdLocked\r\n → getwd err file has been removed\r\nRemove append.txt\r\n → getwd\r\n → Getwd /usr/go/src/os\r\n--- FAIL: TestAppend (0.01s)\r\n\tos_test.go:1330: Open: open append.txt: 'append.txt' file has been removed\r\n=== RUN TestSameFile\r\nfixwdLocked getwd err file has been removed\r\n--- FAIL: TestSameFile (0.00s)\r\n\tos_test.go:1416: Create(a): open a: 'a' file has been removed\r\nFAIL\r\nexit status: 'os.test 631609: 1'\r\nFAIL\tos\t0.095s\r\n```\r\n\r\nAt the end of TestProgWideChdir, Chdir is calling chdir to change\r\nthe working directory for the current process and set wdStr.\r\nThen the directory is removed.\r\n\r\nIn TestAppend, it calls Remove, which should fix the working directory.\r\nHowever, fixwdLocked calls getwd which returns an error, because\r\nthe working directory was not yet changed in this process and this\r\ndirectory was removed.\r\n\r\nhttps://github.com/golang/go/blob/bc9748ee6b/src/syscall/pwd_plan9.go#L28\r\n\r\nSince getwd is returning an error, fixwdLocked returns and never calls\r\nchdir(wdStr) to fix the working directory.\r\n\r\nI think we should ignore errors from getwd in fixwdLocked to always\r\nbe able to fix the working directory.",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"closed_at": "2015-04-12T17:39:13Z",
+	"created_at": "2015-04-11T12:46:57Z",
+	"updated_at": "2016-06-25T02:05:26Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

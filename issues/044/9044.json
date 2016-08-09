@@ -1,0 +1,33 @@
+{
+	"id": 51289022,
+	"number": 9044,
+	"state": "closed",
+	"title": "runtime: gentraceback on own stack confused by stack growth during gentraceback",
+	"body": "\u003cpre\u003eset StackFromSystem=1 and StackFaultOnFree=1 and go test -a -short strings.\nIt faults during gentraceback.\n\nfatal error: unexpected signal during runtime execution\n[signal 0xa code=0x2 addr=0x22084914b8 pc=0x1c290]\n\ngoroutine 1 [running, locked to thread]:\nruntime.gothrow(0x1c0810, 0x2a)\n\t/Users/rsc/g/go/src/runtime/panic.go:503 +0x8e fp=0x22084939a8 sp=0x2208493990\nruntime.sigpanic()\n\t/Users/rsc/g/go/src/runtime/sigpanic_unix.go:14 +0x5e fp=0x22084939f8 sp=0x22084939a8\nruntime.gentraceback(0x10fe1, 0x2208491358, 0x0, 0x2082b2120, 0x4, 0x2208493b98, 0x20,\n0x0, 0x0, 0x0, ...)\n\t/Users/rsc/g/go/src/runtime/traceback.go:200 +0xbc0 fp=0x2208493ae8 sp=0x22084939f8\nruntime.callers(0x4, 0x2208493b98, 0x20, 0x0)\n\t/Users/rsc/g/go/src/runtime/traceback.go:514 +0xb5 fp=0x2208493b58 sp=0x2208493ae8\nruntime.mProf_Malloc(0x2082f8000, 0x100000)\n\t/Users/rsc/g/go/src/runtime/mprof.go:237 +0x51 fp=0x2208493cc0 sp=0x2208493b58\nruntime.profilealloc(0x265880, 0x2082f8000, 0x100000)\n\t/Users/rsc/g/go/src/runtime/malloc.go:408 +0x9b fp=0x2208493ce8 sp=0x2208493cc0\nruntime.mallocgc(0x100000, 0x0, 0x3, 0x5c7d23d3aa6c13a4)\n\t/Users/rsc/g/go/src/runtime/malloc.go:335 +0x3e0 fp=0x2208493d98 sp=0x2208493ce8\nruntime.rawstring(0x100000, 0x0, 0x0, 0x0, 0x0, 0x0)\n\t/Users/rsc/g/go/src/runtime/string.go:195 +0x94 fp=0x2208493dc8 sp=0x2208493d98\nruntime.slicebytetostring(0x208500000, 0x100000, 0x100000, 0x0, 0x0)\n\t/Users/rsc/g/go/src/runtime/string.go:69 +0x4b fp=0x2208493e58 sp=0x2208493dc8\nstrings_test.func·007(0x0, 0x0)\n\t/Users/rsc/g/go/src/strings/strings_test.go:1163 +0xf2 fp=0x2208493ee8 sp=0x2208493e58\nstrings_test.init()\n\t/Users/rsc/g/go/src/strings/strings_test.go:1166 +0xd6a fp=0x2208493f80 sp=0x2208493ee8\nmain.init()\n\tstrings/_test/_testmain.go:274 +0x4a fp=0x2208493f98 sp=0x2208493f80\nruntime.main()\n\t/Users/rsc/g/go/src/runtime/proc.go:58 +0xe4 fp=0x2208493fe0 sp=0x2208493f98\nruntime.goexit()\n\t/Users/rsc/g/go/src/runtime/asm_amd64.s:2232 +0x1 fp=0x2208493fe8 sp=0x2208493fe0\n\nThis was running on a 2k stack. It crossed the 2k boundary into a 4k stack in a call\nmade out of gentraceback with sp=...9f0. On return gentraceback was still using an\nun-updated local SP variable.\n\nWe might be able to make gentraceback cope with this by giving the SP variables the\nright types, but the result will still describe half one stack and half another. It\nseems much safer to require that gentraceback of the current goroutine run on the g0\nstack instead.\n\nMore generally, the result of getcallersp is invalidated by making a call to a function\nthat might grow the stack or pause the goroutine (because the stack can shrink during GC\npauses). It must be used basically immediately, and must only be passed to nosplit\nfunctions that do not block.\n\nThis affects runtime.Callers, runtime.Stack, and nearly all the runtime profiling\nroutines. It does not directly impact garbage collection or stack copying; their uses of\ngentraceback were already running on a g0 stack.\n\nCL 167060043 should fix this.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:49:38Z",
+	"created_at": "2014-11-02T14:49:35Z",
+	"updated_at": "2016-06-25T01:44:00Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

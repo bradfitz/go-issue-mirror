@@ -1,0 +1,12 @@
+{
+	"id": 75468322,
+	"body": "I'll explain my specific use case, so it is not so abstract.\r\n\r\nI run a cooking process periodically on a separate goroutine. Occasionally this fails because of transaction locks, etc. My default behavior is to simply log the error and then retry during the next cook period.\r\n\r\nWhen the program is asked to stop, I issue a `db.Close()`. This immediately causes any in-progress cooking process to fail with an error. The easy and robust way to deal with this is that the cooker understands this error message, stops its timer, does some fast cleanup and returns on its goroutine.\r\n\r\nThe current way I deal with it is to wrap `db.Close()` to save the \"closed\" state and then specifically check for the \"closed\" state when the cooker has an error, so it cleans up and exits gracefully at that point. This is a little more overhead but it adds up in complexity when I have multiple cookers.\r\n\r\nSpecifically I wouldn't return a nil instead of an error. The code looks more like this (or would look like this if `errDBClosed ` was exported):\r\n\r\n```\r\ngo func() {\r\n    for {\r\n        time.Sleep(time.Minute)\r\n        _, err := db.Exec(`UPDATE something`)\r\n        if err == sql.ErrDBClosed {\r\n            // some fast cleanup code\r\n            return\r\n        } else {\r\n            log.Printf(\"%v\", err)\r\n        }\r\n    }\r\n}()\r\n```",
+	"user": {
+		"login": "chowey",
+		"id": 991221,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-22T22:48:12Z",
+	"updated_at": "2015-02-22T22:48:12Z"
+}

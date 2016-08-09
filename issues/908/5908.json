@@ -1,0 +1,27 @@
+{
+	"id": 51284370,
+	"number": 5908,
+	"state": "closed",
+	"title": "runtime: map could be faster for small keys",
+	"body": "\u003cpre\u003eFollowing on from a discussion on IRC, then in email with khr, maps could do a better\njob when hashing small keys. \n\nWhat steps will reproduce the problem?\n1. go get github.com/davecheney/bfk\n2. % go test -bench=. \n\nWhat is the expected output? What do you see instead?\n\nOn my linux/amd64 SNB core i5 I get something like this\n\nBenchmarkArray  20000000                89.5 ns/op\nBenchmarkSwitch 10000000               189 ns/op\nBenchmarkMap      500000              4518 ns/op\n\nClearly for a this sort of problem, using an array if func pointers is the best\nsolution, but it does raise the question if performance for the map variant could be\nimproved. Looking at the profile\n\nlucky(~/src/github.com/davecheney/bfk) % go tool pprof bfk.test cpu.out \nWelcome to pprof!  For help, type 'help'.\n(pprof) top\nTotal: 232 samples\n      84  36.2%  36.2%      145  62.5% hash_lookup\n      58  25.0%  61.2%       58  25.0% runtime.aeshashbody\n      38  16.4%  77.6%      232 100.0% github.com/davecheney/bfk.BenchmarkMap\n      27  11.6%  89.2%      194  83.6% runtime.mapaccess1\n      16   6.9%  96.1%       16   6.9% runtime.memmove\n       6   2.6%  98.7%       22   9.5% runtime.memcopy\n       2   0.9%  99.6%        2   0.9% runtime.memequal8\n       1   0.4% 100.0%        1   0.4% runtime.aeshash\n       0   0.0% 100.0%      232 100.0% runtime.gosched0\n       0   0.0% 100.0%      232 100.0% testing.(*B).launch\n\naeshash{,body} is called when the key is a byte and the body is two words. khr thought\nthat this could be improved.\n\nPlease use labels and text to provide additional information.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:32:28Z",
+	"created_at": "2013-07-18T05:19:21Z",
+	"updated_at": "2016-06-24T22:52:08Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

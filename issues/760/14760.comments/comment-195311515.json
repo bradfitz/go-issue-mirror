@@ -1,0 +1,12 @@
+{
+	"id": 195311515,
+	"body": "@mikioh sure.\r\nUsecase+Why I need multiple addresses:\r\nLet's take the following example (http://play.golang.org/p/avpRdQNaW8)\r\n\r\nI set my LocalAddr to a IPv4 Address assigned to one local interface `192.168.0.99`.\r\n```\r\nfunc main(){\r\n\r\n        localAddr := \u0026net.TCPAddr{\r\n                IP: net.ParseIP(\"192.168.0.99\"), // a secondary local IP I assigned to me\r\n        }\r\n```\r\nI configure the client to use it:\r\n```\r\n        client := \u0026http.Client{}\r\n        client.Transport = \u0026http.Transport{\r\n                Dial: (func(network, addr string) (net.Conn, error) {\r\n                        return (\u0026net.Dialer{\r\n                                Timeout:        3 * time.Second,\r\n                                LocalAddr:      nil,\r\n                                DualStack:      false,\r\n```\r\n... and decide also to accept connections to ipv6 hosts (\"tcp\" instead of \"tcp4\")\r\n```\r\n                        }).Dial(\"tcp\", addr)\r\n                }),\r\n        }\r\n\r\n        fmt.Println(\"local ip to connect\", localAddr.IP)\r\n```\r\nI connect to a IPv6 only host:\r\n```\r\n        resp,err := client.Get(\"http://6.ifcfg.me/\")\r\n        if err != nil {\r\n                fmt.Println(err)\r\n                return\r\n        }\r\n        a, err := ioutil.ReadAll(resp.Body)\r\n        if err != nil {\r\n                fmt.Println(err)\r\n        } else {\r\n                fmt.Println(\"actual ip used: \",string(a))\r\n        }\r\n}\r\n```\r\n... which succeeds (\"fallback\" to ipv6) but uses an IP address I could not choose, since I could only specify one LocalAddr for one IP family.\r\n\r\nI do not know in advance whether a host is ipv6 only and I want to prefer v4 if it's supported. I do not want to use *any* ipv6 address to connect.\r\n(The same goes for setting a v6 as LocalAddr and not wanting to connect over an arbitrary v4)\r\n\r\nTo your Question \"Does the list of addresses need to support multiple address families?\":\r\n  * Yes if we follow the design of an n-tuple of LocalAddresses from which a random one gets chosen (depending on which addressfamily is needed)\r\n\r\n",
+	"user": {
+		"login": "bong0",
+		"id": 179111,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-11T10:34:10Z",
+	"updated_at": "2016-03-11T10:40:41Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 153089548,
+	"number": 15542,
+	"state": "closed",
+	"title": "runtime, cmd/compile: sqrt support on arm",
+	"body": "According to cmd/compile/internal/gc/walk.go, we assume that ARM has hardware sqrt support:\r\n\r\n```go\r\n\t\tif n.Left.Op == ONAME \u0026\u0026 n.Left.Sym.Name == \"Sqrt\" \u0026\u0026 n.Left.Sym.Pkg.Path == \"math\" {\r\n\t\t\tif Thearch.LinkArch.InFamily(sys.AMD64, sys.ARM, sys.ARM64, sys.PPC64, sys.S390X) {\r\n\t\t\t\tn.Op = OSQRT\r\n\t\t\t\tn.Left = n.List.First()\r\n\t\t\t\tn.List.Set(nil)\r\n\t\t\t\tbreak opswitch\r\n\t\t\t}\r\n\t\t}\r\n```\r\n\r\nBut we have a runtime sqrt routine (runtime/sqrt.go), used only in runtime/softfloat_arm.go, which suggests that we are prepared for ARM not to have hardware support.\r\n\r\nIt seems like either:\r\n\r\n(1) we can delete the runtime sqrt routine and use the hardware instruction instead by adding a check to walk.go that recognizes runtime.sqrt in addition to math.Sqrt\r\n(2) we should have an extra ARM-related check somehow in walk.go\r\n(3) I'm missing something\r\n\r\nWhich is it? :)\r\n\r\ncc @davecheney @minux @cherrymui ",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-05-04T19:48:30Z",
+	"created_at": "2016-05-04T18:59:53Z",
+	"updated_at": "2016-05-04T19:48:30Z"
+}

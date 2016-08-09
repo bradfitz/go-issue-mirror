@@ -1,0 +1,12 @@
+{
+	"id": 66066626,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003emt4swm's diagnosis was exactly right.\n\nIt looks like the fix for \u003ca href=\"https://golang.org/issue/2687\"\u003eissue #2687\u003c/a\u003e may have been a bit too pragmatic.  this unittest\nreproduces the issue:\n\n// one.go\npackage one\n\n// \u003ca href=\"https://golang.org/issue/3552\"\u003eissue #3552\u003c/a\u003e\n\ntype T struct { int }\n\nfunc (t T) F() int { return t.int }\n\ntype U struct { int int }\n\nfunc (u U) F() int { return u.int }\n\ntype lint int\n\ntype V struct { lint }\n\nfunc (v V) F() int { return int(v.lint) }\n\ntype W struct { lint lint }\n\nfunc (w W) F() int { return int(w.lint) }\n\n// two.go\n\npackage two\n\nimport \"./one\"\n\nfunc use() {\n\tvar t one.T\n\tvar u one.U\n\tvar v one.V\n\tvar w one.W\n\n\t_ = t.F()\n\t_ = u.F()\n\t_ = v.F()\n\t_ = w.F()\n}\n\nfixedbugs/bug434.dir/two.go:10: one.t.int undefined (cannot refer to unexported field or\nmethod one.int)\n\n(the others work fine, i just put them in for contrast)\n\nthe export section in one.6 reads:\n\n$$  // exports\n    package one\n        import runtime \"runtime\"\n        type @\"\".T struct { ? int }\n        func (@\"\".t @\"\".T) F() (? int) { return @\"\".t.@\"\".int }\n        type @\"\".U struct { @\"\".int int }\n        func (@\"\".u @\"\".U) F() (? int) { return @\"\".u.@\"\".int }\n        type @\"\".lint int\n        type @\"\".V struct { ? @\"\".lint }\n        func (@\"\".v @\"\".V) F() (? int) { return int(@\"\".v.@\"\".lint) }\n        type @\"\".W struct { @\"\".lint @\"\".lint }\n        func (@\"\".w @\"\".W) F() (? int) { return int(@\"\".w.@\"\".lint) }\n\n\nputting a debug statement in typecheck lookdot1 shows it's looking up\nlookdot1(@\"/Users/lvd/Project/go3/test/one\".int)   and finding @\"\".int -\u003e no match.\n\nAn effective workaround is to not embed but name with the same name, eg.\n\ntype T {\n    string string\n}\n\nsince the builtin types have no methods, i think this is indistinguishable from the\noriginal (except for this bug).\u003c/pre\u003e",
+	"user": {
+		"login": "lvdlvd",
+		"id": 9462795,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-23T13:07:14Z",
+	"updated_at": "2014-12-08T10:18:41Z"
+}

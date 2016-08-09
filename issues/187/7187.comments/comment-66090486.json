@@ -1,0 +1,12 @@
+{
+	"id": 66090486,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003e\u003e I don't understand what change you are proposing.\n\nSomething like the following.\n\n--- a/src/pkg/syscall/zerrors_freebsd_amd64.go\n+++ b/src/pkg/syscall/zerrors_freebsd_amd64.go\n+\tO_CLOEXEC                         = 0x100000\n\n--- a/src/pkg/os/file_unix.go\n+++ b/src/pkg/os/file_unix.go\n+// supportsCloseOnExec reports whether the platform supports the\n+// O_CLOEXEC flag.\n+var supportsCloseOnExec bool\n+\n-\tif syscall.O_CLOEXEC == 0 || runtime.GOOS == \"darwin\" { // O_CLOEXEC not supported\n+\tif !supportsCloseOnExec {\n\n--- /dev/null\n+++ b/src/pkg/os/sys_freebsd.go\n+package os\n+\n+import \"syscall\"\n+\n+func init() {\n+\t// The O_CLOEXEC flag was introduced in FreeBSD 8.3.\n+\tif osrel, err := syscall.SysctlUint32(\"kern.osreldate\"); err == nil {\n+\t\t// See \u003ca href=\"http://www.freebsd.org/doc/en/books/porters-handbook/freebsd-versions.html\"\u003ehttp://www.freebsd.org/doc/en/books/porters-handbook/freebsd-versions.html\u003c/a\u003e.\n+\t\tif osrel \u003e= 803000 {\n+\t\t\tsupportsCloseOnExec = true\n+\t\t}\n+\t}\n+}\u003c/pre\u003e",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-23T15:20:29Z",
+	"updated_at": "2014-12-08T10:39:54Z"
+}

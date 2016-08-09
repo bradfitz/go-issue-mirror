@@ -1,0 +1,12 @@
+{
+	"id": 66070858,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eI can't reproduce.\n\nHere's what I tried\n\nnginx 1.1.19-1ubuntu0.1\n\ndaemon off;                                                                             \n \nerror_log stderr debug;\nserver {\n  ...\n  location ~ /app.* {\n        root           html;\n        fastcgi_pass   127.0.0.1:9000;\n        include        fastcgi_params;\n  }\n}\n\nGo program was:\n\n$ cat fcgi.go\npackage main\n\nimport (\n        \"log\"\n        \"net\"\n        \"net/http\"\n        \"net/http/fcgi\"\n        \"io\"\n        \"io/ioutil\"\n        \"time\"\n        \"os\"\n)\n\nfunc main() {\n        log.Printf(\"Starting server\")\n        http.HandleFunc(\"/\", func(w http.ResponseWriter, req *http.Request) {\n                io.Copy(ioutil.Discard, req.Body)\n                for i := 0; i \u0026lt; 50; i++ {\n                        w.Write([]byte(\"This is an example server.\\n\"))\n                        w.(http.Flusher).Flush()\n                }\n        })\n        l, err := net.Listen(\"tcp\", \"127.0.0.1:9000\")\n        if err != nil {\n                log.Fatal(err)\n        }\n        time.AfterFunc(10 * time.Second, func () {\n                os.Exit(0)\n        })\n        log.Fatal(fcgi.Serve(l, nil))\n}\nbradfitz@bradfitz:~$ \n\n\nRan it like:\n\n$ GOMAXPROCS=10 go run -race fcgi.go \n\n(with and without -race, and various lengths of exit times)\n\nThen attacked it with multiple shells looping this:\n\n$ while curl -f -v -d '{\"Id\":123456}' -o /dev/null \u003ca href=\"http://localhost:9999/app\"\u003ehttp://localhost:9999/app\u003c/a\u003e; do echo\npass; done\n\n(The -f to curl makes it return a failure on non-2xx status, such as a 5xx from nginx\nwhen fcgi fails)\n\n\nNo race errors from Go.\nNo non-2xx errors.\nNo output from nginx.\n\nAnd this works:\n\n$ GOMAXPROCS=10 go test -race net/http/fcgi\nok      net/http/fcgi   1.025s\n\n\nI don't know what else to try.\n\nWaiting for reply, and removing the Go1.1 label.\u003c/pre\u003e\n\n_Labels changed: removed **go1.1maybe**._\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-14T18:18:28Z",
+	"updated_at": "2014-12-22T06:19:23Z"
+}

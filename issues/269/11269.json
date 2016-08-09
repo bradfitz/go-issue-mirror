@@ -1,0 +1,33 @@
+{
+	"id": 89248019,
+	"number": 11269,
+	"state": "closed",
+	"title": "net/http: http.ServeFile and http.ServeContent Explicitly Set http.StatusOK",
+	"body": "**What version of Go are you using (go version)?**\r\ngo version go1.4.2 darwin/amd64\r\n\r\n**What operating system and processor architecture are you using?**\r\nOS X 10.10.3 x86-64\r\n\r\n**What did you do?**\r\nSet `w.WriteHeader(http.StatusInternalServerError)` prior to calling `http.ServeFile`\r\n\r\n**What did you expect to see?**\r\nA `HTTP 500` status.\r\n\r\n**What did you see instead?**\r\nA `HTTP 200` status (and the usual multiple header writes error for messing it up).\r\n\r\nCurrently `http.ServeFile` (which calls `http.ServeContent` and then eventually `http.serveContent`) implicitly sets the status code to HTTP 200 as per [this line in src/http/fs.go](http://golang.org/src/net/http/fs.go#L254)\r\n\r\nFrom what I can see, removing this line would result in `net/http` implicitly calling `w.WriteHeader(StatusOK)` as per usual (http://golang.org/src/net/http/server.go#L990) - which is the behaviour I'd expected until running into this.\r\n\r\n**Proposed Fix**\r\n\r\n* Modify `http.serveContent` to only call `w.WriteHeader(code)` on an error condition. Set `var code int` (i.e. zero value) instead of defaulting to `code := StatusOK`.\r\n* If `code` still has the zero value before we write to the ResponseWriter, then don't call `WriteHeader`. \r\n* This allows the server to either: a) write the header set by the package user or; b) write the implicit `http.StatusOK` if no header has been set by the time we're ready to write back. \r\n\r\nWriting `StatusOK` in serveContent appears to be redundant.",
+	"user": {
+		"login": "elithrar",
+		"id": 18544,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-06-24T11:34:43Z",
+	"created_at": "2015-06-18T09:48:22Z",
+	"updated_at": "2016-06-25T02:11:28Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

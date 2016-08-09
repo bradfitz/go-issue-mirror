@@ -1,0 +1,28 @@
+{
+	"id": 51277291,
+	"number": 1058,
+	"state": "closed",
+	"title": "calling Accept() on a closed AF_UNIX socket live-locks",
+	"body": "\u003cpre\u003eI noticed a few inconsistencies when calling accept() on a listening a socket after it\nhas been closed by shutdown().\n\nI would expect accept() to be interrupted and to return EINVAL - and it indeed does this\nfor TCP sockets on Linux.\n\nWith a unix socket, you get a livelock and the call to listener.Accept() never returns.\nIn net/fd.go - the underlying accept() call returns EAGAIN and fast-fails repeatedly.\n\n(strace confirms this, see the snippet below)\n\n[pid  3569] shutdown(3, 2 /* send and receive */ \u0026lt;unfinished ...\u0026gt;\n[pid  3569] \u0026lt;... shutdown resumed\u0026gt; )    = 0\n...\n[pid  3571] accept(3, 0x7faf84ab2e70, [112]) = -1 EAGAIN (Resource\ntemporarily unavailable)\n\nThe root bug may be in Linux, since EINVAL seems like the correct error.\n\nIn the short term, a fix on Linux to emulate \u0026quot;correct\u0026quot; or perhaps\n\u0026quot;desirable\u0026quot; behavior is the patch attached below.\n\ndiff -r 1fc1447ebedf src/pkg/net/fd.go\n--- a/src/pkg/net/fd.go\tSat Aug 28 07:54:16 2010 +1000\n+++ b/src/pkg/net/fd.go\tSun Aug 29 16:09:41 2010 -0700\n@@ -496,6 +496,10 @@\n \tvar s, e int\n \tvar sa syscall.Sockaddr\n \tfor {\n+\t\tif fd.closing {\n+\t\t\te = syscall.EINVAL\n+\t\t\tbreak\n+\t\t}\n \t\ts, sa, e = syscall.Accept(fd.sysfd)\n \t\tif e != syscall.EAGAIN {\n \t\t\tbreak\n\nThe attached program illustrates the issue.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1058/0/acceptbug.go\"\u003eacceptbug.go\u003c/a\u003e (902 bytes)",
+	"user": {
+		"login": "msolo",
+		"id": 5078276,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:06:51Z",
+	"created_at": "2010-08-30T01:50:33Z",
+	"updated_at": "2016-06-24T19:19:33Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66061971,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI'll disable it and see if I can reproduce it.\n\nThis is how I'm using the timeoutReader:\n\n(Including this just in case the goto could have some effect on the res.Body reader)\n\nRETRY:\n        res, err := c.Get(u)\n        if err != nil {\n                if strings.HasSuffix(err.Error(), \"Temporary failure in name resolution\") {\n                        \u0026lt;-time.After(10 * time.Second)\n                        goto RETRY\n                }\n                log.Println(\"Error opening\", u, \"-\", err)\n        } else {\n                r = Process(res.Body)\n        }\n\n...\n\nfunc Process(io.Reader) {\n        tr := timeoutReader(res.Body, time.After(10*time.Second))\n        z := html.NewTokenizer(tr)\nL:\n        for {\n            tt := z.Next()\n            switch tt {\n               case html.StartTagToken...\n               ...\n               case html.ErrorToken {\n                   break L\n               }\n            }\n        }\n\nIt's discarded after that.\n\nPerhaps a bug with Tokenizer? Best as I can tell, although its error handling is\nunconventional, readByte's change of z.err is never ignored. \n\nI'll let you know.\n\nPatrick\u003c/pre\u003e",
+	"user": {
+		"login": "patrickmn",
+		"id": 72885,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-01-25T06:04:50Z",
+	"updated_at": "2014-12-22T06:08:24Z"
+}

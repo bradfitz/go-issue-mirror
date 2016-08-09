@@ -1,0 +1,12 @@
+{
+	"id": 66093048,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eRuss,\n\nI do not see how we can properly resolve this w/o making all such objects fair heap\nallocations. For user it looks like a heap object (SetFinalizer docs say: \"allocated by\ncalling new or by taking the address of a composite literal\"), but we can't distinguish\nit from \"real\" global objects at runtime.\n\nMaking more allocations for the sake of making SetFinalizer better does not look like a\ngood trade-off, so I've prepared the following change (which removes surprising crashes):\n\u003ca href=\"https://golang.org/cl/82560043/diff/20001/src/pkg/runtime/malloc.goc\"\u003ehttps://golang.org/cl/82560043/diff/20001/src/pkg/runtime/malloc.goc\u003c/a\u003e\nThe downsides are:\n1. No \"pointer not at beginning of allocated block\" diagnostics for \"real\" global\nobjects, they are silently ignored.\n2. There is no crash, but the finalizer does not run as well.\n\nNote that this can also cause false retention in:\n\nvar Foo = \u0026Object{}\n\ntype Object struct {\n\tSomething []byte\n}\n\nfunc main() {\n\tFoo.Something = append(Foo.Something, 0)\n\tFoo = \u0026Object{}\n\t// Oops, the previous array is never collected\n\t// because the global anonymous object has a pointer to it...\n}\n\nWhat do you think?\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-31T11:42:26Z",
+	"updated_at": "2014-12-08T10:42:32Z"
+}

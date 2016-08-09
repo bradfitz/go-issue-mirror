@@ -1,0 +1,12 @@
+{
+	"id": 172011207,
+	"body": "I managed to reproduce this by repeatedly running the trybots on https://go-review.googlesource.com/#/c/18646/ and https://go-review.googlesource.com/#/c/18680/. These show runtime frames. Unfortunately, for reasons I don't understand, this didn't traceback at \"crash\" level, so some tracebacks are still hidden.\r\n\r\nSome interesting cases:\r\n\r\nhttps://storage.googleapis.com/go-build-log/390e0725/windows-amd64-gce_4122b0f2.log: Shows a cgocall mallocing and assisting and getting stuck in the assist. Interestingly, the goroutine is shown as \"runnable\", not \"GC assist wait\", which indicates we woke the goroutine but it never actually ran again. My best guess is that there's an issue with us putting that goroutine on the global run queue and never pulling it off the global run queue. However, the background sweeper is also runnable and in Gosched, which indicates a few things: GC is definitely over, at least some scheduling happened after GC started the world again, and there's almost certainly a G on a local run queue (**edit**: this is not correct; Gosched puts it on the *global* run queue). However, it also looks like the system has been wedged for at least five minutes, which is more than enough time for the background sweeper to finish, suggesting that the scheduler lost track of both the background sweeper and the assist. The scheduler isn't completely wedged, though, because it ran the timeout goroutine.\r\n\r\nhttps://storage.googleapis.com/go-build-log/763ec68b/windows-amd64-gce_7689e79d.log:  A runtime test timeout, but probably unrelated to the GC problem since GC appears to be completely idle and there are no assists running.\r\n\r\nhttps://storage.googleapis.com/go-build-log/7647f2db/windows-amd64-gce_e5e4abda.log: Same.\r\n\r\nhttps://storage.googleapis.com/go-build-log/7d903bfa/linux-amd64_d3fa644c.log: User goroutine is stuck in the GC assist wait park. There's a running background mark worker, which, unfortunately, didn't show a traceback. The stuck mark worker is presumably why the system isn't making progress.\r\n\r\nI've started the same cycle on https://go-review.googlesource.com/18681 but with the traceback level set more aggressively to crash. I'll probably add some scheduler debugging to it.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-15T16:43:02Z",
+	"updated_at": "2016-01-17T01:40:27Z"
+}

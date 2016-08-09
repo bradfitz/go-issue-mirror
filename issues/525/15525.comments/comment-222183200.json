@@ -1,0 +1,12 @@
+{
+	"id": 222183200,
+	"body": "It is in fact a double-close of an fd. The problem is that if a test does not close its own *netFD (what's inside a net.Conn or net.Listener), then a later test that makes use of forceCloseSockets will close the fd itself (using syscall.Close, not the *netFD which has all the right checks). Then when the finalizer on the *netFD eventually runs, it too will close that same numeric fd, and by then it may have been reused, leading to the kind of chain reaction I described in my previous message. Skipping the two tests that make use of forceCloseSockets makes the repro pass.\r\n\r\nSo either we just make sure to close all the *netFDs we open in the net test, or we change forceCloseSockets to call close on *netFDs not sockets, or we delete forceCloseSockets entirely (it seems like a bad idea as implemented today), or we change it to use syscall.Shutdown instead of syscall.Close, or we live with the fact that forgetting to close a *netFD blows up badly.\r\n\r\nSince it's just a bad test, its OK to fix for Go 1.7 or to leave for Go 1.8. Leaving for @mikioh.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-27T15:51:43Z",
+	"updated_at": "2016-05-27T15:51:43Z"
+}

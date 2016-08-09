@@ -1,0 +1,12 @@
+{
+	"id": 200169984,
+	"body": "I'm pretty sure this has nothing to do with #14920.  At least, the fix for that issue certainly doesn't apply here.\r\nIt looks like for ddot, anyway, the additional overhead (compared to c03ed49, about 20 days ago and just after the #14511 fix) looks like an unnecessary nil check and the associated load:\r\n\r\nbefore:\r\n```\r\n\t0x0014 00020 (ddot.go:5)\tLEAQ\t8(DX), BP\r\n\t0x0018 00024 (ddot.go:5)\tINCQ\tBX\r\n\t0x001b 00027 (ddot.go:5)\tMOVQ\t(DX), DX\r\n\t0x001e 00030 (ddot.go:6)\tADDQ\tDX, CX\r\n\t0x0021 00033 (ddot.go:5)\tMOVQ\tBP, DX\r\n\t0x0024 00036 (ddot.go:5)\tCMPQ\tBX, AX\r\n\t0x0027 00039 (ddot.go:5)\tJLT\t$0, 20\r\n```\r\nafter:\r\n```\r\n\t0x0014 00020 (ddot.go:5)\tMOVQ\t\"\".a+8(FP), BP\r\n\t0x0019 00025 (ddot.go:5)\tTESTB\tAL, (BP)\r\n\t0x001c 00028 (ddot.go:5)\tMOVQ\t(AX), SI\r\n\t0x001f 00031 (ddot.go:5)\tADDQ\t$8, AX\r\n\t0x0023 00035 (ddot.go:5)\tINCQ\tBX\r\n\t0x0026 00038 (ddot.go:6)\tADDQ\tDX, SI\r\n\t0x0029 00041 (ddot.go:6)\tMOVQ\tSI, DX\r\n\t0x002c 00044 (ddot.go:5)\tCMPQ\tBX, CX\r\n\t0x002f 00047 (ddot.go:5)\tJLT\t$0, 20\r\n```\r\nThe nil check in the \"before\" case can be removed because we have a nil check of \u0026a[i] followed by a load from that pointer.  The nil check is effectively merged into the load so you don't see it in the generated assembly.\r\n\r\nThe nil check in the \"after\" case isn't being removed because it is checking the original slice ptr \u0026a[0] each time.  The load is still from \u0026a[i] so the merging doesn't happen and the nil check must be explicit.\r\n\r\nIn either case, it is kind of dumb to do nil checks on the pointer loaded from a slice.  If the bounds check passes, the pointer is guaranteed to be non-nil.  I'll see if I can whip up a fix.  It might also be instructive to figure out what changed in the last 20 days about nil checks, I'm not sure what caused it.\r\n\r\nI don't see any difference in the inner loop between d37d3bd and tip, so I'm not sure why @btracey you saw performance improve at d37d3bd.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-23T04:33:20Z",
+	"updated_at": "2016-03-23T04:33:20Z"
+}

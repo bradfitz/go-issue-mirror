@@ -1,0 +1,12 @@
+{
+	"id": 188503349,
+	"body": "There was nothing on the TV so I tried to reproduce it with an external process reading the file but couldn't. Even with the high IO load.\r\n\r\n\tpackage main\r\n\r\n\timport (\r\n\t\t\"bufio\"\r\n\t\t\"fmt\"\r\n\t\t\"io/ioutil\"\r\n\t\t\"log\"\r\n\t\t\"os/exec\"\r\n\t)\r\n\r\n\tfunc main() {\r\n\t\tcmd := exec.Command(\"./rdr/rdr\")\r\n\r\n\t\tw, err := cmd.StdinPipe()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\r\n\t\tr, err := cmd.StdoutPipe()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\r\n\t\terr = cmd.Start()\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\r\n\t\tgo func() {\r\n\t\t\trs := bufio.NewScanner(r)\r\n\t\t\tfor i := 0; i \u003c 10000000; i++ {\r\n\t\t\t\to := []byte(fmt.Sprintf(\"foo %d\", i))\r\n\r\n\t\t\t\terr := ioutil.WriteFile(\"temp\", o, 0644)\r\n\t\t\t\tif err != nil {\r\n\t\t\t\t\tlog.Fatal(err)\r\n\t\t\t\t}\r\n\r\n\t\t\t\tfmt.Fprintln(w)\r\n\r\n\t\t\t\trs.Scan()\r\n\t\t\t\tfmt.Println(rs.Text())\r\n\r\n\t\t\t\tif rs.Text() != string(o) {\r\n\t\t\t\t\tlog.Fatal(\"not equal\", rs.Text(), string(o))\r\n\t\t\t\t}\r\n\t\t\t}\r\n\r\n\t\t\tcmd.Process.Kill()\r\n\t\t}()\r\n\r\n\t\tif err := cmd.Wait(); err != nil {\r\n\t\t\tlog.Fatal(\"EXIT \", err)\r\n\t\t}\r\n\t}\r\n\r\nReader:\r\n\r\n\tpackage main\r\n\r\n\timport (\r\n\t\t\"bufio\"\r\n\t\t\"fmt\"\r\n\t\t\"io/ioutil\"\r\n\t\t\"log\"\r\n\t\t\"os\"\r\n\t)\r\n\r\n\tfunc main() {\r\n\r\n\t\ts := bufio.NewScanner(os.Stdin)\r\n\t\tfor s.Scan() {\r\n\t\t\tr, err := ioutil.ReadFile(\"temp\")\r\n\t\t\tif err != nil {\r\n\t\t\t\tlog.Fatal(err)\r\n\t\t\t}\r\n\r\n\t\t\tfmt.Println(string(r))\r\n\t\t}\r\n\t}\r\n",
+	"user": {
+		"login": "hamaxx",
+		"id": 474896,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-24T23:06:49Z",
+	"updated_at": "2016-02-24T23:06:49Z"
+}

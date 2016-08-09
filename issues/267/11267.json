@@ -1,0 +1,27 @@
+{
+	"id": 89163814,
+	"number": 11267,
+	"state": "closed",
+	"title": "runtime: scanobject can use incorrect span metadata",
+	"body": "When scanobject looks up the span for a pointer it read from the object it's scanning, it's possible for it to get incorrect information for the span, causing it to ignore the pointer, or, much worse, attempt to mark uninitialized memory.\r\n\r\n1. scanobject loads a pointer slot out of the object it's scanning, and this happens to be one of the special pointers from the heap into a stack. Call the pointer p and suppose it points into X's stack.\r\n2. X, running on another thread, grows its stack and frees its old stack.\r\n3. The old stack happens to be large or was the last stack in its span, so X frees this span, setting it to state _MSpanFree.\r\n4. scanobject calls heapBitsForObject, which loads the span containing p, which is now in state _MSpanFree, so it ignore it. There's currently a disabled test here that would panic (issue #10591).\r\n\r\nor\r\n\r\n4\\. The span gets reused as a heap span.\r\n5\\. scanobject calls heapBitsForObject, which loads the span containing p, which is now in state _MSpanInUse, but doesn't necessarily have an object at p. The not-object at p gets marked, and at this point all sorts of things can go wrong.\r\n\r\nThis is quite easy to reproduce with a well-placed sleep:\r\n\r\n```\r\ndiff --git a/src/runtime/mbitmap.go b/src/runtime/mbitmap.go\r\nindex 146ffbf..fe36f3a 100644\r\n--- a/src/runtime/mbitmap.go\r\n+++ b/src/runtime/mbitmap.go\r\n@@ -190,6 +190,9 @@ func heapBitsForObject(p uintptr) (base uintptr, hbits heapBits, s *mspan) {\r\n        // Consult the span table to find the block beginning.\r\n        k := p \u003e\u003e _PageShift\r\n        s = h_spans[idx]\r\n+       if s != nil \u0026\u0026 s.state == _MSpanStack {\r\n+               usleep(100)\r\n+       }\r\n        if s == nil || pageID(k) \u003c s.start || p \u003e= s.limit || s.state != mSpanInUse {\r\n                if s == nil || s.state == _MSpanStack {\r\n                        // If s is nil, the virtual address has never been part of the heap.\r\n@@ -201,7 +204,7 @@ func heapBitsForObject(p uintptr) (base uintptr, hbits heapBits, s *mspan) {\r\n                // The following ensures that we are rigorous about what data\r\n                // structures hold valid pointers.\r\n                // TODO(rsc): Check if this still happens.\r\n-               if false {\r\n+               if true {\r\n                        // Still happens sometimes. We don't know why.\r\n                        printlock()\r\n                        print(\"runtime:objectstart Span weird: p=\", hex(p), \" k=\", hex(k))\r\n```\r\n\r\nWith this sleep, `GOGC=10 ./runtime.test -test.short` crashes reliably for me.\r\n\r\n@RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-06-29T15:33:54Z",
+	"created_at": "2015-06-18T00:39:00Z",
+	"updated_at": "2016-06-28T21:53:42Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

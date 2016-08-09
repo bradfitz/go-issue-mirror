@@ -1,0 +1,21 @@
+{
+	"id": 165920576,
+	"number": 16392,
+	"state": "open",
+	"title": "x/exp/inotify: silently ignores event queue overflow condition (IN_Q_OVERFLOW)",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/usr/local/git_tree/gopath_third_party:/usr/local/git_tree/gopath:/usr/local/git_tree/gopath_third_party:/usr/local/git_tree/gopath\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib64/go\"\r\nGOTOOLDIR=\"/usr/lib64/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"bytes\"\r\n        \"io/ioutil\"\r\n        \"log\"\r\n        \"os\"\r\n        \"strconv\"\r\n        \"sync\"\r\n        \"time\"\r\n\r\n        \"golang.org/x/exp/inotify\"\r\n)\r\n\r\nvar dosleep = true\r\n\r\nfunc main() {\r\n        w, err := inotify.NewWatcher()\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n\r\n        if err := w.Watch(\".\"); err != nil {\r\n                log.Fatal(err)\r\n        }\r\n\r\n        var wg sync.WaitGroup\r\n        wg.Add(1)\r\n\r\n        go func() {\r\n                for err := range w.Error {\r\n                        log.Println(err)\r\n                }\r\n        }()\r\n\r\n        go func() {\r\n                for event := range w.Event {\r\n                        if event.Mask\u0026inotify.IN_Q_OVERFLOW == inotify.IN_Q_OVERFLOW {\r\n                                log.Println(\"inotify.IN_Q_OVERFLOW\")\r\n                        }\r\n\r\n                        if dosleep {\r\n                                time.Sleep(time.Second)\r\n                        }\r\n                }\r\n        }()\r\n\r\n        go func() {\r\n                b, err := ioutil.ReadFile(\"/proc/sys/fs/inotify/max_queued_events\")\r\n                if err != nil {\r\n                        log.Fatal(err)\r\n                }\r\n\r\n                b = bytes.TrimSpace(b)\r\n                queuesize, err := strconv.Atoi(string(b))\r\n                if err != nil {\r\n                        log.Fatal(err)\r\n                }\r\n\r\n                queuesize *= 2\r\n                log.Println(\"iterating\", queuesize, \"times\")\r\n                for i := 0; i \u003c queuesize; i++ {\r\n                        if f, err := os.Create(\"_test\"); err != nil {\r\n                                log.Fatal(err)\r\n                        } else {\r\n                                f.Close()\r\n                                os.Remove(\"_test\")\r\n                        }\r\n                }\r\n\r\n                log.Println(\"stop iterating, drain queue\")\r\n                dosleep = false\r\n        }()\r\n\r\n        wg.Wait()\r\n}\r\n```\r\n\r\n\r\n4. What did you expect to see?\r\nEither a error indicating that queue got overflowed or \"inotify.IN_Q_OVERFLOW\" message\r\n\r\n5. What did you see instead?\r\nnothing\r\n",
+	"user": {
+		"login": "ikruglov",
+		"id": 4630547,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-16T08:59:06Z",
+	"updated_at": "2016-07-20T18:37:31Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

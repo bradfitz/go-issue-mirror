@@ -1,0 +1,12 @@
+{
+	"id": 95285316,
+	"body": "\u003e Perhaps, sometimes Accept takes the shared fdMutex in Listener when you call Close\r\n\r\nI don't think it's a \"sometimes\" thing. I believe that everytime there is a concurrent Close with Accept, the Close will return before the underlying socket is closed. The only thing that makes the test not fully deterministic is that Sometimes the acceptor goroutine hasn't been run yet when Close is invoked. I've modified the test to demonstrate this better\r\n\r\n```go\r\npackage foo\r\n\r\nimport (\r\n\t\"net\"\r\n\t\"testing\"\r\n)\r\n\r\nconst addr = \"127.0.0.1:12345\"\r\n\r\nfunc TestXxx(t *testing.T) {\r\n\tfor i := 0; i \u003c 100000; i++ {\r\n\t\tt.Logf(\"Iteration %d\", i+1)\r\n\t\tl, err := net.Listen(\"tcp4\", addr)\r\n\t\tif err != nil {\r\n\t\t\tt.Fatalf(\"Failed to listen on %s: %v\", addr, err)\r\n\t\t}\r\n\t\tch := make(chan struct{})\r\n\t\tgo func(l net.Listener) {\r\n\t\t\tch \u003c- struct{}{}\r\n\t\t\tfor {\r\n\t\t\t\t_, err := l.Accept()\r\n\t\t\t\tif err != nil {\r\n\t\t\t\t\treturn\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}(l)\r\n\t\t\u003c-ch\r\n\t\tif err := l.Close(); err != nil {\r\n\t\t\tt.Fatalf(\"Failed to close server: %v\", err)\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nThis ensures that the acceptor goroutine runs before Close is invoked and at least on my machine this makes it reliably fail on the second iteration.",
+	"user": {
+		"login": "ggriffiniii",
+		"id": 7447,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-22T17:59:43Z",
+	"updated_at": "2015-04-22T17:59:43Z"
+}

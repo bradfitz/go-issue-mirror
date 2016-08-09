@@ -1,0 +1,12 @@
+{
+	"id": 66089464,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003ethis is working as intended on darwin/amd64 (see comment in signal_unix.c).\n\nFor linux, this is because somehow the SIGABRT signal is blocked in the cgo\nthread.\n\nfor example, this patch could fix the problem on linux (only):\ndiff -r acad7f360212 src/pkg/runtime/signal_unix.c\n--- a/src/pkg/runtime/signal_unix.c\tThu Dec 19 21:37:44 2013 +0100\n+++ b/src/pkg/runtime/signal_unix.c\tThu Dec 19 16:19:16 2013 -0500\n@@ -112,7 +112,10 @@\n \tif(sizeof(void*) == 8)\n \t\treturn;\n #endif\n+\tSigset zero;\n+\truntime·memclr((byte *)\u0026zero, sizeof zero);\n \n+\truntime·rtsigprocmask(SIG_SETMASK, \u0026zero, \u0026old, sizeof old);\n \truntime·setsig(SIGABRT, SIG_DFL, false);\n \truntime·raise(SIGABRT);\n }\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-19T21:19:40Z",
+	"updated_at": "2014-12-08T10:38:54Z"
+}

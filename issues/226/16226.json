@@ -1,0 +1,27 @@
+{
+	"id": 163198999,
+	"number": 16226,
+	"state": "open",
+	"title": "cmd/asm: noise and bad assembly for constants on arm64",
+	"body": "**What version of Go are you using (`go version`)?**\r\n\r\ngo version go1.6.2 linux/amd64 (also happens at tip, 92ce6c20)\r\n\r\n**What operating system and processor architecture are you using (`go env`)?**\r\n\r\n```\r\nGOARCH=\"arm64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/austin/r/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/austin/.cache/gover/1.6.2\"\r\nGOTOOLDIR=\"/home/austin/.cache/gover/1.6.2/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"0\"\r\n```\r\n\r\n**What did you do?**\r\n\r\n```\r\n$ echo \"package main\" \u003e x.go\r\n$ cat \u003ex.s \u003c\u003cEOF\r\nTEXT main·main(SB), 0, $0-0\r\n        ORR\t$0x100000000, R0\r\n        ORR\t$0x10000, R0\r\n        ORR\t$0x100, R0\r\n        ORR\t$0x1, R0\r\n        RET\r\nEOF\r\n$ GOARCH=arm64 go build\r\n```\r\n\r\n**What did you expect to see?**\r\n\r\nI expected it to assembly silently and produce four ORR instructions using shifted immediates (maybe the first one would need a constant from the constant pool).\r\n\r\n**What did you see instead?**\r\n\r\nThe assembler prints the following messages:\r\n```\r\naddpool: ADDCON0 in 00032 (/home/austin/tmp/test/x.s:4)\tORR\t$256, R0 shouldn't go to default case\r\naddpool: ADDCON0 in 00040 (/home/austin/tmp/test/x.s:5)\tORR\t$1, R0 shouldn't go to default case\r\n```\r\nDespite these messages, the build succeeds. However, all four ORRs are compiled to first load the constant from the constant pool, even though most of them could clearly be encoded as immediate ORRs.\r\n\r\nWorse, the first ORR is compiled to use a 32-bit constant, which isn't even big enough for the constant, so it winds up ORR'ing 0.\r\n\r\nThis can be clearly seen in the objdump output:\r\n\r\n```\r\n0000000000011090 \u003cmain.main\u003e:\r\n   11090:       f9400b81        ldr     x1, [x28,#16]\r\n   11094:       910003e2        mov     x2, sp\r\n   11098:       eb01005f        cmp     x2, x1\r\n   1109c:       54000149        b.ls    110c4 \u003cmain.main+0x34\u003e\r\n   110a0:       180001bb        ldr     w27, 110d4 \u003cmain.main+0x44\u003e\r\n   110a4:       aa1b0000        orr     x0, x0, x27\r\n   110a8:       1800019b        ldr     w27, 110d8 \u003cmain.main+0x48\u003e\r\n   110ac:       aa1b0000        orr     x0, x0, x27\r\n   110b0:       1800017b        ldr     w27, 110dc \u003cmain.main+0x4c\u003e\r\n   110b4:       aa1b0000        orr     x0, x0, x27\r\n   110b8:       1800015b        ldr     w27, 110e0 \u003cmain.main+0x50\u003e\r\n   110bc:       aa1b0000        orr     x0, x0, x27\r\n   110c0:       d65f03c0        ret\r\n   110c4:       aa1e03e3        mov     x3, x30\r\n   110c8:       9401421a        bl      61930 \u003cruntime.morestack_noctxt\u003e\r\n   110cc:       17fffff1        b       11090 \u003cmain.main\u003e\r\n   110d0:       14000000        b       110d0 \u003cmain.main+0x40\u003e\r\n   110d4:       00000000        .inst   0x00000000 ; undefined\r\n   110d8:       00010000        .inst   0x00010000 ; undefined\r\n   110dc:       00000100        .inst   0x00000100 ; undefined\r\n   110e0:       00000001        .inst   0x00000001 ; undefined\r\n```\r\n",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "cherrymui",
+		"id": 14119929,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-06-30T15:46:08Z",
+	"updated_at": "2016-07-01T08:24:36Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 108227191,
+	"number": 12743,
+	"state": "closed",
+	"title": "x/tools/godoc/vfs/zipfs: ReadDir(\"/\") returns error \"file not found: /\"",
+	"body": "`go version go1.5 darwin/amd64`\r\n\r\nI created a [`vfs.FileSystem`](https://godoc.org/golang.org/x/tools/godoc/vfs#FileSystem) using [`zipfs`](https://godoc.org/golang.org/x/tools/godoc/vfs/zipfs) and `ReadDir(\"/\")` returns `nil, \"file not found: /\"`.\r\n\r\nI expected it to return a slice of `os.FileInfo` for the files at the root of the zip file and a `nil` error.\r\n\r\nI've written tests and a fix but need guidance on next steps. Please advise!\r\n\r\n---\r\n\r\nFull Repro Script\r\n\r\n\u003e See [jdhenke/golang-zipfs-error-repro](https://github.com/jdhenke/golang-zipfs-error-repro) to try it out yourself.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/zip\"\r\n\t\"bytes\"\r\n\t\"golang.org/x/tools/godoc/vfs/zipfs\"\r\n\t\"io\"\r\n\t\"log\"\r\n)\r\n\r\nfunc main() {\r\n\r\n\t// example files to use\r\n\tfiles := map[string]string{\"foo\": \"foo\", \"bar/baz\": \"baz\"}\r\n\r\n\t// create test zip file from above files\r\n\tb := new(bytes.Buffer)\r\n\tzw := zip.NewWriter(b)\r\n\tfor file, contents := range files {\r\n\t\tw, err := zw.Create(file)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\t_, err = io.WriteString(w, contents)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t}\r\n\tzw.Close()\r\n\r\n\t// create zipfs from zip file\r\n\tzr, err := zip.NewReader(bytes.NewReader(b.Bytes()), int64(b.Len()))\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\trc := \u0026zip.ReadCloser{\r\n\t\tReader: *zr,\r\n\t}\r\n\tfs := zipfs.New(rc, \"foo\")\r\n\r\n\t// try to list contents of root directory\r\n\t// FAILS HERE!\r\n\tinfos, err := fs.ReadDir(\"/\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tfor _, info := range infos {\r\n\t\tlog.Printf(\"Found: %v\\n\", info.Name())\r\n\t}\r\n}\r\n```\r\n\r\nCurrently results in:\r\n\r\n```\r\n2015/09/24 18:27:56 file not found: /\r\nexit status 1\r\n```\r\n\r\nWith fix, results in:\r\n\r\n```\r\n2015/09/24 19:48:53 Found: bar\r\n2015/09/24 19:48:53 Found: foo\r\n```",
+	"user": {
+		"login": "jdhenke",
+		"id": 1418690,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-11-17T21:45:56Z",
+	"created_at": "2015-09-24T22:38:16Z",
+	"updated_at": "2015-11-17T21:45:56Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

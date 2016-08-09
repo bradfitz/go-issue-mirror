@@ -1,0 +1,17 @@
+{
+	"id": 157375987,
+	"number": 15872,
+	"state": "closed",
+	"title": "cmd/compile: optimize data only init struct into writable init data field of the executable file.",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6 darwin/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n3. What did you do?\r\nI am writing a program using golang to run in background process in ios,and the ios only give me 5MB memory to run golang code.I reduce almost all memory allocations in my code part,but the golang runtime code part contains a lot memory allocations. \r\nI found init data in /usr/local/go/src/unicode/tables.go:6944 uses runtime.mallocgc to alloc some heap memory.\r\nBut following code do not alloc heap memory, it put those data into a writable init data field in the executable file,and the data is loaded into memory once by os.I think put the data into writable init data part and do not use them can reduce the memory size pressure in the ios background process(It looks like only count the memory page the has been read once and I do not use unicode),I think skip the  runtime.mallocgc process can reduce init time of the program,reduce the pressure of the gc part.(the gc can skip them).\r\n```\r\nvar uncompressDataS = `abcde\r\n// 500KB of binary data.\r\nasdfad\r\n` \r\n```\r\n\r\n4. What did you expect to see?\r\nInit data in /usr/local/go/src/unicode/tables.go:6944 should not use runtime.mallocgc to alloc heap memory. It can put into a writable/readonly init data field in the executable file.\r\n\r\n5. What did you see instead?\r\nInit data in /usr/local/go/src/unicode/tables.go:6944 uses runtime.mallocgc to alloc some heap memory.\r\n\r\nThose heap allocation can be found by GODEBUG=allocfreetrace=1",
+	"user": {
+		"login": "bronze1man",
+		"id": 1107541,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-05-29T18:02:03Z",
+	"created_at": "2016-05-29T08:43:58Z",
+	"updated_at": "2016-05-29T18:02:03Z"
+}

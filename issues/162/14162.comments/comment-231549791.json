@@ -1,0 +1,12 @@
+{
+	"id": 231549791,
+	"body": "I don't see how one can write robust applications which scale to fit their resource constraints if one insists on maintaining the illusion of an infinite free store. Aborting the programme when an unknowable memory limit is reached is a terrible experience. Is no-one else here writing code which tries to make the most out of available resources (particularly memory)?\r\n\r\nRight now one strategy we have for avoiding an OOM panic is to over-provision the VM/container. If we have a workload that has a steady-state requirement of 30 GiB, we need to provision at least 50 GiB so that we can handle demand spikes. We need significant headroom since we call other libraries we don't control which could allocate a lot of memory. We periodically check our memory consumption and call runtime.GC() to help out and if that doesn't work out we start shedding load (\"we're full, come back later\"). Determining the required headroom is basically measurement-based guesswork. We pick a number for the headroom, run the load for a few hours or a day or so and if there are no OOM panics, declare \"victory\", otherwise we try again with a higher number.\r\n\r\nThis approach is not one we're happy with. We're spending a lot of extra money on this \"safety headroom\". For many of our workloads we need to be prepared to shed load anyway, and that's just fine. And since we need to be able to shed load anyway, we'd be much better off being able to catch OOM panics so that we can abort a request rather than abort the whole programme.\r\n\r\nIf someone has a better idea for dynamic workload management which doesn't require massive over-provisioning of resources, I'd be quite interested.\r\n\r\nThe suggestion for unsafe.Allocate() and unsafe.Free() doesn't look like it would help, since we simply don't know with certainty how much memory a particular request will require. It depends on the request data and is not easily computable.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-09T18:53:31Z",
+	"updated_at": "2016-07-09T18:53:31Z"
+}

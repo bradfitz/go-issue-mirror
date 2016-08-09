@@ -1,0 +1,12 @@
+{
+	"id": 230067283,
+	"body": "@puellanivis Regarding your example https://play.golang.org/p/YlrMrkvY60 : `var a A = c` doesn't work even by the spec. The issue is exactly the issue this proposal is trying to address: The value of c is of a type that must implement A. For that to happen, the type of c which is *C, must have all the methods of A, with _identical_ signatures. It does have F, but the parameter types of F are _not identical_. One is a fmt.Stringer, the other one an unnamed interface.\r\n\r\nYour suggestion to make two interfaces identical if they have identical methods would solve this and the proposal, except for what you also have found already, the fact that the name of the interface types is currently looked at in type identity as well (which is why the above fails).\r\n\r\nIn other words, type identity would have to change such that the type name is not considered for interfaces. That's the simple-most change I can think of, but it's also the most pervasive one in terms of its effect.\r\n\r\nI don't know what the implications of such a change are. Interfaces are special, and for instance it's not possible to attach methods to interfaces the way it's done for other types; the methods are already part of the type. So the name is not so important. In fact, in most scenarios, the interface name is not important at all. The question is, can we ignore it always? It will permit programs that we cannot write now, including the ones we would like to write and cannot (hence the proposal). But does it also permit programs that we want to prevent from being written? Are there implications for reflection? (quite possibly).\r\n\r\nI don't know all these answers. One way to make progress would be for somebody to adjust the compiler's identity function for types to use the more relaxed form for interfaces; that should be a pretty straight-forward change I think. And then run all.bash and see what breaks. If nothing breaks there's a reasonably good change it's a backward-compatible language change. At that point we'd have to see how reflect should be adjusted, if at all. If it does, it may or may not violate the Go 1 compatibility guarantee (the behavior of reflect may have changed in incompatible ways).\r\n\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-01T23:24:24Z",
+	"updated_at": "2016-07-01T23:24:24Z"
+}

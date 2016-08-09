@@ -1,0 +1,27 @@
+{
+	"id": 51288226,
+	"number": 8455,
+	"state": "closed",
+	"title": "net: Happ{y,yish,ier} Eyeballs should give the preferred family a head start",
+	"body": "\u003cpre\u003eForked from \u003ca href=\"https://golang.org/issue/8453\"\u003eissue #8453\u003c/a\u003e.\n\nThe Happy Eyeballs implementation used by net.Dialer{DualStack: true} sends IPv4 and\nIPv6 SYNs simultaneously, and the resulting address family is unpredictable.\n\nThis is harmful for two reasons:\n- It increases server load in the common case, by always sending two SYNs.\n- Dual-stack clients cannot reliably use IPv6 to route around NATs.  The primary\nincentive for a network operator to deploy IPv6 is to reduce NAT load (and therefore\nsave money), but this sort of client behavior invalidates that incentive.\n\n\n\u003ca href=\"http://tools.ietf.org/html/rfc6555#section-4.1\"\u003ehttp://tools.ietf.org/html/rfc6555#section-4.1\u003c/a\u003e says:\n\n\u0026quot;\u0026quot;\u0026quot;\n   Thus, to avoid harming IPv4-only hosts, implementations MUST prefer\n   the first IP address family returned by the host's address preference\n   policy, unless implementing a stateful algorithm described in\n   Section 4.2.  This usually means giving preference to IPv6 over IPv4,\n   although that preference can be overridden by user configuration or\n   by network configuration [ADDR-SELECT].  If the host's policy is\n   unknown or not attainable, implementations MUST prefer IPv6 over\n   IPv4.\n\u0026quot;\u0026quot;\u0026quot;\n\n\nWhen the DualStack flag is true, clients should follow this algorithm:\n\n  Call getaddrinfo()\n  Note the family of address[0], and start a routine which connects to each address of that family, in order.\n  After ~300ms, start a second routine which connects to addresses *not* of that family, in order.\n  Meanwhile:\n  - If the first routine terminates before 300ms, start the second routine immediately.\n  - When one routine succeeds, cancel the other.\n\n\nThere's room for flexibility in the details, but the important point is that under\nnormal network conditions, a client should send exactly one SYN to the first address\nreported by getaddrinfo().\u003c/pre\u003e",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-06-16T02:38:32Z",
+	"created_at": "2014-07-31T04:15:14Z",
+	"updated_at": "2016-06-25T01:38:49Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

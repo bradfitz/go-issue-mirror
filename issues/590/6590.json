@@ -1,0 +1,27 @@
+{
+	"id": 51285411,
+	"number": 6590,
+	"state": "open",
+	"title": "cmd/compile: odd/inconsistent behavior with cyclic declarations",
+	"body": "\u003cpre\u003eThis applies to:\n\n$ go version\ngo version go1.1.1 linux/amd64\n\nThe following program compiles w/o errors:\n\n\tpackage p\n\n\timport \u0026quot;unsafe\u0026quot;\n\n\ttype A [unsafe.Sizeof(x)]T\n\n\ttype T interface {\n\t\tm(A)\n\t}\n\n\tvar x T\n\nAdding one extra declaration leads to a cycle error:\n\n\tpackage p\n\n\timport \u0026quot;unsafe\u0026quot;\n\n\tconst n = unsafe.Sizeof(x)  // \u0026lt;\u0026lt;\u0026lt; EXTRA DECLARATION\n\n\ttype A [unsafe.Sizeof(x)]T\n\n\ttype T interface {\n\t\tm(A)\n\t}\n\n\tvar x T\n\n$ go tool 6g x.go\nx.go:7: typechecking loop involving x\n\tx.go:7 unsafe.Sizeof(x)\n\tx.go:7 []unsafe.Sizeof(x)\n\tx.go:7 A\n\tx.go:10 \u0026lt;T\u0026gt;\n\tx.go:9 T\n\tx.go:13 x\n\tx.go:5 unsafe.Sizeof(x)\n\tx.go:5 n\n\tx.go:5 \u0026lt;node DCLCONST\u0026gt;\nx.go:7: invalid expression unsafe.Sizeof(x)\n\neven though the n is not even used (and thus cannot be part of a cycle). What is more\nsurprising even is that when moving that same declaration to the bottom of the file:\n\n\tpackage p\n\n\timport \u0026quot;unsafe\u0026quot;\n\n\ttype A [unsafe.Sizeof(x)]T\n\n\ttype T interface {\n\t\tm(A)\n\t}\n\n\tvar x T\n\n\tconst n = unsafe.Sizeof(x)  // \u0026lt;\u0026lt;\u0026lt; EXTRA DECLARATION MOVED DOWN\n\nthe program again compiles w/o errors. But top-level declarations do not depend of\nsource order in Go, so this is clearly a bug somewhere.\n\nFurthermore, using n now in the type of A:\n\n\tpackage p\n\n\timport \u0026quot;unsafe\u0026quot;\n\n\ttype A [n]T  // \u0026lt;\u0026lt;\u0026lt; USING n HERE\n\n\ttype T interface {\n\t\tm(A)\n\t}\n\n\tvar x T\n\n\tconst n = unsafe.Sizeof(x)\n\nappears to work fine (and changing this to a main package and printing out n produces\nthe correct value 16). Moving the const declaration up again, leads to the cycle error,\nhowever with a less detailed error now:\n\n\tpackage p\n\n\timport \u0026quot;unsafe\u0026quot;\n\n\tconst n = unsafe.Sizeof(x)  // \u0026lt;\u0026lt;\u0026lt; MOVED DECL UP AGAIN\n\n\ttype A [n]T\n\n\ttype T interface {\n\t\tm(A)\n\t}\n\n\tvar x T\n\n$ go tool 6g x.go\nx.go:5: constant definition loop\n\tx.go:5: n uses n\nx.go:7: invalid array bound n\n\nSummary:\n\n1) This specific program is compilable w/o a cycle since unsafe.Sizeof(x) doesn't need\nto look into the internals of the interface type of x. That said, the spec doesn't say\nanything about it, and one might argue that it's ok for a compiler to not handle this\nesoteric case. However, 6g is inconsistent in this respect here.\n\n2) Package-level declarations do not depend on source order. The behavior of the\ncompiler (error or not) should not depend on it either.\n\n(gccgo accepts all programs w/o errors).\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2013-10-15T17:56:34Z",
+	"updated_at": "2015-06-08T06:23:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

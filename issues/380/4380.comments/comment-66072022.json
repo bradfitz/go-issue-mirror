@@ -1,0 +1,12 @@
+{
+	"id": 66072022,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eHere's what needs to be done to goapi to make it faster, once this is fixed:\n\ndiff -r 821585f8baba src/cmd/api/goapi.go\n--- a/src/cmd/api/goapi.go      Fri Nov 16 11:53:26 2012 -0800\n+++ b/src/cmd/api/goapi.go      Fri Nov 16 13:15:51 2012 -0800\n@@ -353,6 +353,15 @@\n        return\n }\n \n+var parsedFileCache = make(map[string]*ast.File)\n+\n+func parseFile(filename string) (*ast.File, error) {\n+       if f, ok := parsedFileCache[filename]; ok {\n+               return f, nil\n+       }\n+       return parser.ParseFile(fset, filename, nil, 0)\n+}\n+\n // WalkPackage walks all files in package `name'.\n // WalkPackage does nothing if the package has already been loaded.\n func (w *Walker) WalkPackage(name string) {\n@@ -386,7 +395,8 @@\n \n        files := append(append([]string{}, info.GoFiles...), info.CgoFiles...)\n        for _, file := range files {\n-               f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)\n+               filename := filepath.Join(dir, file)\n+               f, err := parseFile(filename)\n                if err != nil {\n                        log.Fatalf(\"error parsing package %s, file %s: %v\", name, file, err)\n                }\n@@ -395,6 +405,8 @@\n                for _, dep := range fileDeps(f) {\n                        w.WalkPackage(dep)\n                }\n+               parsedFileCache[filename] = f\n+\n        }\n \n        if *verbose {\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-16T21:18:38Z",
+	"updated_at": "2014-12-08T10:23:14Z"
+}

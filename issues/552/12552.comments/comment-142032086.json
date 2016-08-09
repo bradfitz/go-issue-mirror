@@ -1,0 +1,12 @@
+{
+	"id": 142032086,
+	"body": "Interesting. This didn't at all show the sorts of patterns I was expecting to see, but it did show a different pattern: in every case, the bad pointer has changed between when we first read it from the object (and checked it) and when we printed the object it was found in. Furthermore, excepting the cases where it's 0 the second time, the first read is always a *zero-padded prefix* of the second read:\r\n\r\npanic.txt.103:runtime: pointer **0x4824000000** to unallocated spanidx=0x2000 span.start=0x4829326000 span.limit=0x482932a000 span.state=4\r\npanic.txt.103: *(object+8) = **0x48241811f0** \u003c==\r\n\r\npanic.txt.11:runtime: pointer **0x4825000000** to unused region of spanidx=0x2800 span.start=0x4820a8a000 span.limit=0x4820a8c000 span.state=0\r\npanic.txt.11: *(object+8) = **0x4825a62640** \u003c==\r\n\r\npanic.txt.129:runtime: pointer **0x4821f80000** to unallocated spanidx=0xfc0 span.start=0x4821f7a000 span.limit=0x4821f7e000 span.state=2\r\npanic.txt.129: *(object+296) = **0x4821f8a0c0** \u003c==\r\n\r\nWhether there are two or three bytes of prefix varies. I suspect there can also be one or four bytes of prefix, but that we don't see one because it lands outside the heap and we don't see four because it lands inside of a valid span (just not the right object in the span).\r\n\r\nAlmost certainly something is doing a byte-at-a-time copying and the garbage collector is catching it in the middle of copying a pointer. The runtime's arm64 memmove does byte copying, which could cause exactly this failure. @4ad, @minux, it looks like we need to implement doubleword memmove at least for doubleword-aligned pointers on arm64. It looks like the compiler's blockcopy does 8-byte moves, so it should be good. I'm not aware of anything else in the compiler or runtime that does bulk memory copying.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-21T16:18:08Z",
+	"updated_at": "2015-09-21T16:18:08Z"
+}

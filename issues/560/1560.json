@@ -1,0 +1,28 @@
+{
+	"id": 51277989,
+	"number": 1560,
+	"state": "closed",
+	"title": "cgo: processes started from exported function are not scheduled correctly.",
+	"body": "\u003cpre\u003eUnpack the attached archive and run gotest.\nI would expect the output to be around 1000, as both\nsleeps should sleep concurrently.\nInstead it prints around 2000 for me - the sleeps execute\nsequentially.\n\nIf GOMAXPROCS \u0026gt; 0, it works as expected.\n\n6g macos d9ff478c4ed3+ tip\n\nHere is the salient code from the archive:\n\npackage tst\n\n//#include \u0026lt;unistd.h\u0026gt;\n// extern void BackgroundSleep(int);\n// void twoSleeps(int n){\n//\tBackgroundSleep(n);\n//\tsleep(n);\n// }\nimport \u0026quot;C\u0026quot;\n\nvar sleepDone = make(chan bool)\n\nfunc ParSleep(n int){\n\tC.twoSleeps(C.int(n))\n\t\u0026lt;-sleepDone\n}\n\n//export BackgroundSleep\nfunc BackgroundSleep(n int){\n\t// This function should start running immediately,\n\t// but it actually starts after twoSleeps has returned.\n\tgo func(){\n\t\tC.sleep(C.uint(n))\n\t\tsleepDone \u0026lt;- true\n\t}()\n}\n\n\nfunc TestParSleep(t *testing.T) {\n\tt0 := time.Nanoseconds()\n\tParSleep(1)\n\tfmt.Printf(\u0026quot;%d\\n\u0026quot;, (time.Nanoseconds() - t0) / 1e6)\n}\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1560/0/tstcgo.tgz\"\u003etstcgo.tgz\u003c/a\u003e (659 bytes)",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:08:54Z",
+	"created_at": "2011-02-28T14:41:19Z",
+	"updated_at": "2016-06-24T19:25:54Z"
+}

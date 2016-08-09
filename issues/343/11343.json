@@ -1,0 +1,27 @@
+{
+	"id": 90284889,
+	"number": 11343,
+	"state": "closed",
+	"title": "runtime/pprof: weird allocation counts after reading a file of a certain minimum size",
+	"body": "[Here](https://gist.github.com/jacobsa/59f9bbfa096fd3c595dc/bbac37ff7c0a78c01a99ee30d8568c952fcafff3) is a gist containing a program that does the following:\r\n\r\n1. Set `runtime.MemProfileRate` to 1.\r\n2. Read a flag-controlled number of zeroes from `/dev/zero` using `ioutil.ReadAll` and `io.LimitReader`.\r\n3. Call `io.MultiWriter` 1024 times in a loop, encouraging it to make allocations.\r\n4. Write out a heap profile to `/tmp/mem.pprof`.\r\n\r\nWhen I run the program with the flag that tells it to read 2096128 bytes before calling `io.MultiWriter`, I see the expected number of calls in the profile:\r\n\r\n    % go build main.go \u0026\u0026 ./main --size 2096128 \u0026\u0026 grep -B 1 MultiWriter /tmp/mem.pprof\r\n    1024: 32768 [1024: 32768] @ 0x43aaf5 0x45dd38 0x400f60 0x4010a1 0x42a3ff 0x456331\r\n    #       0x45dd38        io.MultiWriter+0x48     /usr/local/google/home/jacobsa/clients/go/src/io/multi.go:58\r\n    --\r\n    996: 31872 [1024: 32768] @ 0x45dda3 0x400f60 0x4010a1 0x42a3ff 0x456331\r\n    #       0x45dda3        io.MultiWriter+0xb3     /usr/local/google/home/jacobsa/clients/go/src/io/multi.go:60\r\n\r\nHowever, with any value above this I get unreliable results (these change from run to run, but are never the full count and are often zero):\r\n\r\n    % go build main.go \u0026\u0026 ./main --size 2096129 \u0026\u0026 grep -B 1 MultiWriter /tmp/mem.pprof\r\n    0: 0 [0: 0] @ 0x45dda3 0x400f60 0x4010a1 0x42a3ff 0x456331\r\n    #       0x45dda3        io.MultiWriter+0xb3     /usr/local/google/home/jacobsa/clients/go/src/io/multi.go:60\r\n    --\r\n    0: 0 [0: 0] @ 0x43aaf5 0x45dd38 0x400f60 0x4010a1 0x42a3ff 0x456331\r\n    #       0x45dd38        io.MultiWriter+0x48     /usr/local/google/home/jacobsa/clients/go/src/io/multi.go:58\r\n\r\nThis shows up as nonsense callgraphs in pprof, containing lots of runtime frames and the wrong counts for the functions I'm interested in. Compare [this](https://gist.github.com/jacobsa/59f9bbfa096fd3c595dc/04dbd2b78f08f4e90e123492eaf6d954dbb8a1f8#file-2096128-png) one to [this](https://gist.github.com/jacobsa/59f9bbfa096fd3c595dc/04dbd2b78f08f4e90e123492eaf6d954dbb8a1f8#file-2096129-png) one. Each is from an invocation of pprof that looks like:\r\n\r\n    go tool pprof -alloc_objects ~/tmp/59f9bbfa096fd3c595dc/main /tmp/mem.pprof\r\n\r\nI have been unable to simplify the test case further. In particular, merely allocating a slice of bytes of the given size isn't good enough; it seems I have to open and read a file. I've also seen the problem when not setting `runtime.MemProfileRate` to a non-default value, but it is harder to reproduce.\r\n\r\ngo version:\r\n\r\n    go version devel +f2662f2 Tue Jun 23 03:18:52 2015 +0000 linux/amd64\r\n",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-07-27T16:30:52Z",
+	"created_at": "2015-06-23T04:34:37Z",
+	"updated_at": "2016-08-05T16:09:54Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

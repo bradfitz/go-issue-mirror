@@ -1,0 +1,22 @@
+{
+	"id": 51288102,
+	"number": 8376,
+	"state": "closed",
+	"title": "database/sql: type Stmt struct reused bug",
+	"body": "by **beyondmj0.student@sina.com**:\n\n\u003cpre\u003ego version go1.3 darwin/amd64\n\n\nwhen reuse stmt struct to do \u0026quot;Query\u0026quot;, \u0026quot;Exec\u0026quot;, \u0026quot;QueryRow\u0026quot;\nseems has bug.\n\nmysql:\nshow global status like '%stmt%';\n| Prepared_stmt_count        | 7598   |\n| Prepared_stmt_count        | 7600   |\n| Prepared_stmt_count        | 7603   |\n| Prepared_stmt_count        | 7607   |\n\n\ncan't reuse prepared statement, the prepared_stmt_count increment till exceed\nmax_prepare_stmt in mysql.\n\n\n\u003ca href=\"http://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L1338\"\u003ehttp://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L1338\u003c/a\u003e\nif all connection busy, then \n\u003ca href=\"http://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L1358\"\u003ehttp://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L1358\u003c/a\u003e\nget a connection from pool, then call prepareLocked the prepare a new stmt .\n\nbut!!!!\nif the connection in pool was just released by a another goroutine with a prepared stmt\nstored in dc.openStmt,\nthen \n\u003ca href=\"http://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L251\"\u003ehttp://golang.org/src/pkg/database/sql/sql.go?s=32373:33023#L251\u003c/a\u003e\ncreate a duplicate one....\n\ncodes:\n\u003ca href=\"http://play.golang.org/p/hxq1tyHS4e\"\u003ehttp://play.golang.org/p/hxq1tyHS4e\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:46:33Z",
+	"created_at": "2014-07-16T14:11:09Z",
+	"updated_at": "2016-06-25T01:38:07Z"
+}

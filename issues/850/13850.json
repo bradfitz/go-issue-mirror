@@ -1,0 +1,21 @@
+{
+	"id": 125303191,
+	"number": 13850,
+	"state": "open",
+	"title": "encoding/gob: Encode gives \"encoder: message too big\" when given a large map",
+	"body": "OSX / go version go1.5.1 darwin/amd64\r\n\r\nThe repro case below creates a map that's a few GB big and then attempts to encode it to a file using Encode(). Encode() fails with a \"message too big\" error. (Presumably because the full size of the map is greater than 1\u003c\u003c30, which is the value of \"tooBig\" in the gob implementation.\r\n\r\nI would expect the gob implementation to be able to handle a map that's larger than the maximum message size, since the individual elements being encoded are much smaller than the limit.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/gob\"\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n)\r\n\r\ntype File struct {\r\n\tA, B string\r\n\tV    int\r\n}\r\n\r\nfunc main() {\r\n\tf, err := ioutil.TempFile(\"\", \"foo\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\te := gob.NewEncoder(f)\r\n\r\n\tm := make(map[string][]*File)\r\n\tfor i := 0; i \u003c (1 \u003c\u003c 22); i += 1 {\r\n\t\tfl := File{\"00000000000000000000000000000000000000000000000\",\r\n\t\t\t\"11111111111111111111111111111111111111111\", 42}\r\n\t\tvar arr []*File\r\n\t\tfor j := 0; j \u003c 4; j += 1 {\r\n\t\t\tarr = append(arr, \u0026fl)\r\n\t\t}\r\n\t\tm[fmt.Sprintf(\"%d\", i)] = arr\r\n\t\tif i%(1\u003c\u003c20) == 0 {\r\n\t\t\tlog.Printf(\"i = %d / %d\", i, 1\u003c\u003c22)\r\n\t\t}\r\n\t}\r\n\r\n\tif err := e.Encode(m); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "mmp",
+		"id": 102567,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-01-07T01:37:24Z",
+	"updated_at": "2016-01-07T01:56:12Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66676500,
+	"body": "Looking at the readelf -r report more closely, there are indeed a lot of\r\ntext relocations. It's just the section name is .rel.dyn instead of .rel.text.\r\n\r\nFor example, the first entry of .rel.dyn is:\r\n Offset     Info    Type            Sym.Value  Sym. Name\r\n0010cb8c  00000017 R_ARM_RELATIVE\r\n\r\nAnd the .text section does include that address:\r\n  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al\r\n  [ 8] .text             PROGBITS        001071d8 1071d8 271a8c 00  AX  0 0  4\r\n\r\nLooking at the disassembly, we find out that there is indeed an absolute\r\naddress at 0x10cb8c:\r\n  10cb7c:       e59fb008        ldr     fp, [pc, #8]    ; 10cb8c\r\n  10cb80:       e5cb0000        strb    r0, [fp]\r\n  10cb84:       e49df004        pop     {pc}            ; (ldr pc, [sp], #4)\r\n  10cb88:       eafffffe        b       10cb88\r\n  10cb8c:       00589d6f     ;; \u003c--- this word is being relocated\r\n\r\nIt seems cmd/5l needs to know how to use GOT to access global data even for\r\nGo data when -shared is active.\r\n\r\nHowever, as the code is laid out by 5g, and 5g doesn't know the link mode\r\nyet, I don't know how to easily solve this problem. Pass -shared to 5g?\r\nThis is probably too invasive.\r\n\r\nSuggestions?",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-11T19:46:23Z",
+	"updated_at": "2014-12-11T19:52:21Z"
+}

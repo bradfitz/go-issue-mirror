@@ -1,0 +1,28 @@
+{
+	"id": 149547092,
+	"number": 15373,
+	"state": "closed",
+	"title": "encoding/asn1: Empty integer checks fail on certain OpenSSL CSRs",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go1.6`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n`Ubuntu 15.10 x86_64`\r\n\r\n3. What did you do?\r\nBuild a CSR using pre-1.0.2 OpenSSL language bindings and attempt to parse it using `x509.ParseCertificateRequest` ([Gist including short generator](https://gist.github.com/rolandshoemaker/f94d12b4ed03071c055d1b6b63d6d956)).\r\n\r\n4. What did you expect to see?\r\nNo error\r\n\r\n5. What did you see instead?\r\n`asn1: structure error: empty integer` is returned.\r\n\r\n(extra) 6. Cause\r\nThe pre-1.0.2 OpenSSL API (at least using the Python bindings) requires that the CSR version field be explicitly set otherwise it will not be populated (but the field will be included) causing the `empty integer` error.\r\n\r\nThe Let's Encrypt team ran into this when attempting to migrate from 1.5 -\u003e 1.6 and while we've been able to update our client code to solve the issue there are still a relatively large number being produced by users with old or different clients (~1.4% of CSRs we currently receive each week have this issue).\r\n\r\nRemoving the empty integer check, along the lines of the negative serial check, wouldn't be a great idea, since this is extremely useful elsewhere. One solution might be to add a workaround ASN1 tag, `brokenInt` or something, which knows how to parse an `int` in this situation (i.e. if empty just use 0).\r\n\r\ncc @bradfitz @agl ",
+	"user": {
+		"login": "rolandshoemaker",
+		"id": 5080674,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-05-17T19:28:54Z",
+	"created_at": "2016-04-19T18:41:12Z",
+	"updated_at": "2016-05-17T19:28:54Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

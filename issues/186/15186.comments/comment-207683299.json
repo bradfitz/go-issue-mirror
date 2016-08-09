@@ -1,0 +1,12 @@
+{
+	"id": 207683299,
+	"body": "I guess vm.max_kernel_address is a read-only value inside the kernel, hm, am I missing something?\r\n```\r\nvm/kern_vm.c:\r\n\r\nSYSCTL_ULONG(_vm, OID_AUTO, max_kernel_address, CTLFLAG_RD,\r\n#if defined(__arm__) || defined(__sparc64__)\r\n    \u0026vm_max_kernel_address, 0,\r\n#else\r\n    SYSCTL_NULL_ULONG_PTR, VM_MAX_KERNEL_ADDRESS,\r\n#endif\r\n    \"Max kernel address\");\r\n\r\nsys/sysctl.h:\r\n\r\n/* definitions for sysctl_req 'flags' member */\r\n#if defined(__amd64__) || defined(__ia64__) || defined(__powerpc64__) ||\\\r\n    (defined(__mips__) \u0026\u0026 defined(__mips_n64))\r\n#define SCTL_MASK32     1       /* 32 bit emulation */\r\n#endif\r\n\r\nkern/kern_sysctl.c:\r\n\r\nint\r\nsysctl_handle_long(SYSCTL_HANDLER_ARGS)\r\n{\r\n(snip)\r\nifdef SCTL_MASK32\r\n        if (req-\u003eflags \u0026 SCTL_MASK32) {\r\n                tmpint = tmplong;\r\n                error = SYSCTL_OUT(req, \u0026tmpint, sizeof(int));\r\n        } else\r\n#endif\r\n                error = SYSCTL_OUT(req, \u0026tmplong, sizeof(long));\r\n```",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-09T02:05:53Z",
+	"updated_at": "2016-04-09T02:05:53Z"
+}

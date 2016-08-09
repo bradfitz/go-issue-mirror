@@ -1,0 +1,12 @@
+{
+	"id": 155931825,
+	"body": "Proposal after talking to Russ:\r\n\r\n1. Drop the EPIPE counter.\r\n2. By default, if we get an EPIPE on os.Stdout or os.Stderr, change the SIGPIPE handler to SIG_DFL and raise SIGPIPE (that is, do what we currently do after getting 10 EPIPE errors, but do it immediately.)\r\n3. On other descriptors, simply return EPIPE to the caller of Write (as we do today, up to 10 EPIPE errors).\r\n4. If the program calls os/signal.Notify(syscall.SIGPIPE) or os/signal.Ignore(syscall.SIGPIPE), then do not handle EPIPE specially on os.Stdout/os.Stderr.\r\n\r\nWith these rules:\r\n\r\n1. A command line program writing to a pipe on Stdout or Stderr will do the right thing by default.\r\n2. A server writing to a closed socket will do the right thing by default (i.e., get an error but not crash).\r\n3. The program may look for an EPIPE error as it can today.\r\n4. The program may call os/signal.Notify to explicitly handle SIGPIPE in some other way.\r\n\r\nOf course, this should all be documented somewhere.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-11T22:39:42Z",
+	"updated_at": "2015-11-11T22:39:42Z"
+}

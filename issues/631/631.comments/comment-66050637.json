@@ -1,0 +1,12 @@
+{
+	"id": 66050637,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13 by **beoran**:\n\n\u003cpre\u003eI think that the core problem is that finalizers revive their object's reference. \nThis is not neccesary. In Ruby, the finalizer is called /after/ the object has been\ncollected. It is called without passing it any object references. \n\nYou may think, how is this useful? Well, you can make the cleanup function a closure\nthat refers to the individual object's members that need cleanup. For example, let's\nsay we  have file-like struct:\n\npackage fakefile\n\n\ntype File struct { \n  handle int\n}\n\ncloseFile(handle int) {\n  os.CloseHande(handle)\n}\n\nOpenFile(string name) (* File) {\n file := new(File)\n file.handle = os.OpenFile(name)\n\n toclose := file.handle \n cleanup := func() {\n   closeFile(toclose)\n }  \n runtime := SetFinalizer(x, cleanup)\n return file\n}\n\n...\nf := fakefile.OpenFile(\"foo\")\n\n\nNow, the finalizer will can do it's work work all without needing any references to\nthe file object itself. This avoids tons of problems, including the one found here, \nand alows te object to be collected before it's finalizer is run.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-03-08T16:28:20Z",
+	"updated_at": "2014-12-08T10:05:20Z"
+}

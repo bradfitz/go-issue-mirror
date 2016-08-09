@@ -1,0 +1,12 @@
+{
+	"id": 67238523,
+	"body": "\u003e Even if we add such support, how could we test it on the builders?\r\n\r\nI encountered the same question when working on a C networking library, and the solution was to funnel the IPV6_V6ONLY calls through a function with a test-only flag that emulates an OS without dualstack sockets:\r\n\r\n```c\r\n/* Returns 1 on success (dual-stack), 0 on failure (single-stack). */\r\nstatic int set_socket_dualstack(int fd) {\r\n  if (!forbid_dualstack_sockets_for_testing) {\r\n    const int off = 0;\r\n    return 0 == setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, \u0026off, sizeof(off));\r\n  } else {\r\n    /* Force an IPv6-only socket, for testing purposes. */\r\n    const int on = 1;\r\n    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, \u0026on, sizeof(on));\r\n    return 0;\r\n  }\r\n}\r\n```\r\n\r\nGranted, a flag is a bit unsightly, but it's an easy way to ensure coverage of the `::` to `::+0.0.0.0` fallback logic.\r\n\r\n\u003e Supporting all possible configurations is just an impossible task.\r\n\r\nI don't agree with that defeatist position; `getaddrinfo()` with a loop solves the problem for non-pathological cases, and is significantly better than \"Pick one IPv4 address.\"\r\n\r\nWhen a standard library exposes hostname-based socket interfaces, it's the library's responsibility to follow best practices, instead of taking shortcuts.  \"one hostname ⇒ one socket\" is a shortcut that's not obvious to users of the library, but which seems harmful to the networking ecosystem.\r\n\r\nPretending that no code had yet been written, I don't think a `Listen(hostname)` design that arbitrarily picks a single IP address would stand up to logical scrutiny.",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-16T21:49:02Z",
+	"updated_at": "2014-12-16T21:49:02Z"
+}

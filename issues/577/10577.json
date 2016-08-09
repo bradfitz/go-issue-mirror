@@ -1,0 +1,26 @@
+{
+	"id": 71064613,
+	"number": 10577,
+	"state": "open",
+	"title": "path/filepath: Glob matching does not work on Windows with long path workaround",
+	"body": "If you run this:\r\n```\r\npackage main\r\n\r\nimport(\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"io/ioutil\"\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main(){\r\n\tdir, err := ioutil.TempDir(\"\", \"\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tlongdir := \"\\\\\\\\?\\\\\" + dir\r\n\r\n\tfor _, file := range []string{\"foo\", \"boo\", \"moo\", \"vex\", \"rex\"} {\r\n\t\tfd, err := os.Create(filepath.Join(longdir, file))\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tfd.Close()\r\n\t}\r\n\r\n\tmatches, err := filepath.Glob(filepath.Join(dir, \"?oo\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\r\n\tlongmatches, err := filepath.Glob(filepath.Join(longdir, \"?oo\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tfmt.Println(\"Matches:\", len(matches), \"Long matches:\", len(longmatches))\r\n}\r\n```\r\n\r\nExpected output would be:\r\n`Matches: 3 Long matches: 3`\r\nActual output is:\r\n`Matches: 3 Long matches: 0`\r\n\r\nThe magical `\\\\?\\` prefix is a workaround for 252 character filepath limits on the ancient Win32 API.\r\n\r\nVerified in go 1.4.2",
+	"user": {
+		"login": "AudriusButkevicius",
+		"id": 1144861,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 6,
+	"created_at": "2015-04-26T13:06:22Z",
+	"updated_at": "2015-06-30T07:38:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

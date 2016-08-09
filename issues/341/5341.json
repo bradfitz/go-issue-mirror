@@ -1,0 +1,25 @@
+{
+	"id": 51283493,
+	"number": 5341,
+	"state": "closed",
+	"title": "io: Copy() and Stdin/Stdout/Stderr",
+	"body": "by **rich.harkins**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n======================================\nConsider the following bugged program:\n\n-=-=- test.go -=-=-\npackage main;\n\nimport \u0026quot;io\u0026quot;;\nimport \u0026quot;os\u0026quot;;\nimport \u0026quot;fmt\u0026quot;;\n\nfunc main() {\n    io.Copy(os.Stdin, os.Stdout);\n    fmt.Printf(\u0026quot;Got EOF -- bye\\n\u0026quot;);\n}\n-=-=- test.go -=-=-\n\nWhat is the expected output?\n============================\nThe /intended/ output was that input would be copied to output.  In the echo | case, the\ndata would be produced in stdout and the program terminated.\n\nWhat do you see instead?\n========================\nWhen interactive, the program /seems/ to work.  echo |, on the other hand, hangs.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n=================================================\ngo run\n\nWhich operating system are you using?\n=====================================\nLinux\n\nWhich version are you using?  (run 'go version')\n================================================\ngo version go1.0.2\n\nPlease provide any additional information below.\n================================================\nNow as pointed out, the program is bugged.  If you haven't figured out why, I'll give\nyou a sec to go back to the top and find out.\n\nGot it?  I sure didn't.\n\nNot until someone pointed out that my arguments to Copy() were backwards.  Coming from\nUNIX, DOS, etc, the instinctive copy arguments are src -\u0026gt; dest.  I have no issue with\nGo reversing those if that makes sense, and this is not really what this bug report is\nabout (though it is a little confusing to newcomers).\n\nNo, the real issue I'm raising here is that Stdin fit in the Writer hole and Stdout fit\nin the Reader hole.\n\nLooking at the docs, both Stdin and Stdout (as well as Stderr) are File's.  I can\nunderstand why this was done, but it certainly doesn't fit right with some operations\nlike Copy() that depend on the interfacing to make sure the programmer isn't surprised.\n\nI'm not sure what can be done, only that I figured that the subtlety of this bug would\nmake it worth consideration for the design and implementation teams.  Ideally, given\nthat Copy() will certainly feel odd to other newcomers besides myself (I hope I'm not\n*THAT* odd), it would seem to me that Stdin should only implement Reader and\nStdout/Stderr only implement Writer.\n\nIt's not a killer problem, but it did cause some head scratching a little while ago\nwhile trying to make a websocket command-line client work.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:28:51Z",
+	"created_at": "2013-04-23T17:45:19Z",
+	"updated_at": "2016-08-05T16:08:15Z"
+}

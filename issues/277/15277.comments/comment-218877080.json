@@ -1,0 +1,12 @@
+{
+	"id": 218877080,
+	"body": "Here's another tricky case:\r\n```\r\nfunc f(a int, p *int) int {\r\n\tt := a\r\n\ta = *p\r\n\tg()\r\n\treturn t + *p + a\r\n}\r\n```\r\nThe `t := a` assignment is a no-op for SSA, it just records that `t` takes on the value of `a` at the start of the function.  The `a=*p` assignment turns into a load.  The value loaded must be spilled across the `g()` call.  SSA knows the original value of `a` is still live at this point, so it spills the loaded value to a temporary location.  It is not until after the call that it issues the load from the argument section (to evaluate `t`) and the load from the temporary (to evaluate 'a').\r\n\r\nForcing the compiler to write back the value of `a` to the argument section at the call means we can't wait until after the call to load the original `a` value.\r\n\r\nNot sure what to do about this either.  Yet more trickiness...",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-12T20:32:38Z",
+	"updated_at": "2016-05-12T20:32:38Z"
+}

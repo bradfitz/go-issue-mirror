@@ -1,0 +1,33 @@
+{
+	"id": 51287504,
+	"number": 7990,
+	"state": "closed",
+	"title": "os/exec: stop stdin copying goroutine after process exits",
+	"body": "by **robryk**:\n\n\u003cpre\u003eWhen Cmd.Stdin is not a file, Cmd.Wait waits until a read on it unblocks. When Cmd.Stdin\nis a file, Cmd.Wait returns immediately after the command being executed completes. I\nfind it confusing that semantics of Wait depend on the kind of Reader passed as standard\ninput.\n\nWhat does 'go version' print?\ngo version devel +96cbc91bc15a Sat Apr 26 22:31:32 2014 -0700 + linux/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Run \u003ca href=\"http://play.golang.org/p/eADuSYGZ1C\"\u003ehttp://play.golang.org/p/eADuSYGZ1C\u003c/a\u003e. Notice that it exits\n   immediately.\n2. Run \u003ca href=\"http://play.golang.org/p/hh1eXk9S0E\"\u003ehttp://play.golang.org/p/hh1eXk9S0E\u003c/a\u003e. Notice that it waits\n   (in Cmd.Wait) for EOF on stdin.\n\nWhat happened?\n\nThese two programs differ in behaviour.\n\nWhat should have happened instead?\n\nThese two programs should behave identically, because the Reader passed\nto Cmd.Stdin behaves identically in both cases.\n\nPlease provide any additional information below.\n\nI find the behaviour for non-files troublesome to work with, although it seems to\nconform better to the documentation. In my usecase, I need to close the stdin Reader\nafter the process has exited (the Reader can have a user on the other end, so I can't\npredict that the input has ended). Alas, I can't use Wait() for that purpose, because\nWait() waits until my reader unblocks, which (assuming no input is forthcoming) will\nhappen only after it is closed.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2014-12-08T10:44:17Z",
+	"created_at": "2014-05-13T23:09:59Z",
+	"updated_at": "2016-06-25T01:34:12Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

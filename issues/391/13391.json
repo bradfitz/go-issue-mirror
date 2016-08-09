@@ -1,0 +1,22 @@
+{
+	"id": 118740921,
+	"number": 13391,
+	"state": "closed",
+	"title": "net: UDP broadcast client can not receive the answer message",
+	"body": "The udp server can receive and send back message with no errors, but the go version udp client can not receive the server side reply. I also write a client with python, and it works.\r\n \r\nHere is the server side code with golang:\r\n```\r\npackage main\r\n \r\nimport (\r\n    \"fmt\"\r\n    \"net\"\r\n    \"os\"\r\n)\r\n\r\nfunc CheckError(err error) {\r\n    if err  != nil {\r\n        fmt.Println(\"Error: \" , err)\r\n        os.Exit(0)\r\n    }\r\n}\r\n \r\nfunc main() {\r\n    ServerAddr,err := net.ResolveUDPAddr(\"udp\",\":2345\")\r\n    CheckError(err)\r\n \r\n    ServerConn, err := net.ListenUDP(\"udp\", ServerAddr)\r\n    CheckError(err)\r\n    defer ServerConn.Close()\r\n \r\n    buf := make([]byte, 1024)\r\n \r\n    for {\r\n        n,addr,err := ServerConn.ReadFromUDP(buf)\r\n        fmt.Println(\"Received \",string(buf[0:n]), \" from \",addr)\r\n \r\n        if err != nil {\r\n            fmt.Println(\"Error: \",err)\r\n        } \r\n        ServerConn.WriteToUDP([]byte(\"ack\"), addr)\r\n    }\r\n}\r\n```\r\n\r\nAnd the client side code:\r\n```\r\npackage main\r\n \r\nimport (\r\n    \"fmt\"\r\n    \"net\"\r\n    \"time\"\r\n    \"strconv\"\r\n)\r\n \r\nfunc CheckError(err error) {\r\n    if err  != nil {\r\n        fmt.Println(\"Error: \" , err)\r\n    }\r\n}\r\n \r\nfunc main() {\r\n    ServerAddr,err := net.ResolveUDPAddr(\"udp\",\"255.255.255.255:2345\")\r\n    CheckError(err)\r\n \r\n    LocalAddr, err := net.ResolveUDPAddr(\"udp\", \":0\")\r\n    CheckError(err)\r\n \r\n    Conn, err := net.DialUDP(\"udp\", LocalAddr, ServerAddr)\r\n    CheckError(err)\r\n \r\n    defer Conn.Close()\r\n    i := 0\r\n    for {\r\n        msg := strconv.Itoa(i)\r\n        i++\r\n        buf := []byte(msg)\r\n        _,err := Conn.Write(buf)\r\n        if err != nil {\r\n            fmt.Println(msg, err)\r\n        }\r\n        time.Sleep(time.Second * 1)\r\n        \r\n        buf = make([]byte, 1024)\r\n        n,addr,err := Conn.ReadFrom(buf)\r\n        fmt.Println(\"Received \",string(buf[0:n]), \" from \",addr)\r\n    }\r\n}\r\n```\r\n\r\nThe python version client code:\r\n```\r\n#!/usr/bin/env python\r\nimport socket, traceback\r\n\r\ns = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)\r\ns.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\r\ns.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)\r\n\r\nfor i in range(1,100):\r\n    try:\r\n        s.sendto(\"server here\",('255.255.255.255', 2345))\r\n        message, address = s.recvfrom(1024)\r\n        print \"Got data from\", address,\":\",message \r\n        # Acknowledge it.\r\n        s.sendto(\"I am here\", address)\r\n    except (KeyboardInterrupt, SystemExit):\r\n        raise\r\n    except:\r\n        traceback.print_exc()\r\n```",
+	"user": {
+		"login": "iswarezwp",
+		"id": 2082394,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-11-25T04:11:27Z",
+	"created_at": "2015-11-25T01:39:57Z",
+	"updated_at": "2015-11-25T04:58:19Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

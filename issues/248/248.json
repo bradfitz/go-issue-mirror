@@ -1,0 +1,28 @@
+{
+	"id": 51276238,
+	"number": 248,
+	"state": "closed",
+	"title": "UDP Timeout returns a os.PathError, not net.OpError",
+	"body": "by **jonathan.r.hudson**:\n\n\u003cpre\u003eUDP Readtimeout  is documented (and suggested by \u003ca href=\"https://golang.org/issue/200\"\u003eissue #200\u003c/a\u003e) to return the \nerror code via net.OpError, in fact it returns as os.PathError, as may be \nshown by the code below. (swap the comment between the \u0026quot;if e,ok := err ...\u0026quot; \nlines.\n\nWhat steps will reproduce the problem?\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;;\n        \u0026quot;net\u0026quot;;\n        \u0026quot;os\u0026quot;;\n)\n\nfunc main()\n{\n        conn, _ := net.ListenPacket(\u0026quot;udp\u0026quot;, \u0026quot;0.0.0.0:1234\u0026quot;);\n        fmt.Printf(\u0026quot;waiting on %s...\\n\u0026quot;, conn.LocalAddr().String());\n\tconn.SetReadTimeout(2 * 1000*1000*1000);\n\n        var buf [1000]byte;\n\n        for {\n                n, _, err := conn.ReadFrom(\u0026amp;buf);\n\t\tif e, ok := err.(*os.PathError); ok \u0026amp;\u0026amp; e.Error == os.EAGAIN \n{\n//\t\tif e, ok := err.(*net.OpError); ok \u0026amp;\u0026amp; e.Error == os.EAGAIN \n{\n\t\t\tfmt.Println(\u0026quot;Again\u0026quot;);\n\t\t\tcontinue\n\t\t}\n                fmt.Printf(\u0026quot;got %d bytes\\n\u0026quot;, n);\n        }\n}\n\n\nExpected net.OpError, got os.PathError.\n\n\nWhat is your $GOOS?  $GOARCH?\n\nLinux, amd64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\nchangeset:   4093:da5aa9e96aae\ntag:         tip\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Tue Nov 17 09:08:54 2009 -0800\nsummary:     codereview: discard \\r characters (sigh)\n\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:03:50Z",
+	"created_at": "2009-11-17T18:29:20Z",
+	"updated_at": "2016-06-24T19:05:27Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51281041,
+	"number": 3718,
+	"state": "closed",
+	"title": "runtime: memset/memmove clobbers r9/r10 on Linux/ARM",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. run the attached code on linux/arm \n\n% go build profilesegv.go \n% ./profilesegv \nSegmentation fault\n\nWhat is the expected output? What do you see instead?\n\nThis example is extracted from any benchmark code with -test.cpuprofile= supplied.\nGenerally rerunning the benchmark will eventually avoid the segfault, but the longer the\ntest, the less likely the results are. \n\nNo crashes are observed if cpu profiling is not requested.\n\nPlease use labels and text to provide additional information.\n\nThis occurs on go1.0.1, 1.0.2-{2,3} and +tip. \n\nRunning under gdb gives this result.\n\npando(~/src) % gdb ./profilesegv\nGNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2) 7.4-2012.04\nCopyright (C) 2012 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later \u0026lt;\u003ca href=\"http://gnu.org/licenses/gpl.html\u0026gt\"\u003ehttp://gnu.org/licenses/gpl.html\u0026gt\u003c/a\u003e;\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.  Type \u0026quot;show copying\u0026quot;\nand \u0026quot;show warranty\u0026quot; for details.\nThis GDB was configured as \u0026quot;arm-linux-gnueabihf\u0026quot;.\nFor bug reporting instructions, please see:\n\u0026lt;\u003ca href=\"http://bugs.launchpad.net/gdb-linaro/\u0026gt\"\u003ehttp://bugs.launchpad.net/gdb-linaro/\u0026gt\u003c/a\u003e;...\nReading symbols from /home/dfc/src/profilesegv...(no debugging symbols found)...done.\n(gdb) r\nStarting program: /home/dfc/src/profilesegv\n[New LWP 1157]\n\nProgram received signal SIGSEGV, Segmentation fault.\n[Switching to LWP 1157]\n0x000370a4 in runtime.sigtramp ()\n(gdb) disassemble\nDump of assembler code for function runtime.sigtramp:\n   0x00037098 \u0026lt;+0\u0026gt;:     str     lr, [sp, #-28]!\n   0x0003709c \u0026lt;+4\u0026gt;:     mov     r3, r10\n   0x000370a0 \u0026lt;+8\u0026gt;:     str     r10, [sp, #20]\n=\u0026gt; 0x000370a4 \u0026lt;+12\u0026gt;:    ldr     r10, [r9, #44]  ; 0x2c\n   0x000370a8 \u0026lt;+16\u0026gt;:    str     r0, [sp, #4]\n   0x000370ac \u0026lt;+20\u0026gt;:    str     r1, [sp, #8]\n   0x000370b0 \u0026lt;+24\u0026gt;:    str     r2, [sp, #12]\n   0x000370b4 \u0026lt;+28\u0026gt;:    str     r3, [sp, #16]\n   0x000370b8 \u0026lt;+32\u0026gt;:    bl      0x2ad9c \u0026lt;runtime.sighandler\u0026gt;\n   0x000370bc \u0026lt;+36\u0026gt;:    ldr     r10, [sp, #20]\n   0x000370c0 \u0026lt;+40\u0026gt;:    ldr     pc, [sp], #28\nEnd of assembler dump.\n(gdb) info registers\nr0             0x1b     27\nr1             0x10651c90       275061904\nr2             0x10651d10       275062032\nr3             0x0      0\nr4             0x0      0\nr5             0x0      0\nr6             0x0      0\nr7             0x0      0\nr8             0x0      0\nr9             0x0      0\nr10            0x0      0\nr11            0x0      0\nr12            0xcafebabe       3405691582\nsp             0x10651c74       0x10651c74\nlr             0x370fc  225532\npc             0x370a4  0x370a4 \u0026lt;runtime.sigtramp+12\u0026gt;\ncpsr           0x110    272\n\nWhich suggests there is a race between setting up the signal handler and ensuring m and\ng (r9 and r10) are properly populated. Or maybe somethings is overwriting them. In other\ncrashes I've seen r9/10 set to invalid values (will start collecting core files)\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3718/0/profilesegv.go\"\u003eprofilesegv.go\u003c/a\u003e (1691 bytes)",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2014-12-08T10:19:35Z",
+	"created_at": "2012-06-10T03:11:23Z",
+	"updated_at": "2016-06-24T22:20:12Z"
+}

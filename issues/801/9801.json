@@ -1,0 +1,22 @@
+{
+	"id": 56910401,
+	"number": 9801,
+	"state": "closed",
+	"title": "net: Dial only tries the first address",
+	"body": "```golang\r\npackage main\r\n\r\nimport (\r\n\t\"flag\"\r\n\t\"log\"\r\n\t\"net\"\r\n)\r\n\r\nfunc main() {\r\n\thost := flag.String(\"host\", \"\", \"host to connect\")\r\n\tflag.Parse()\r\n\r\n\tif *host == \"\" {\r\n\t\tflag.PrintDefaults()\r\n\t\treturn\r\n\t}\r\n\r\n\tips, err := net.LookupIP(*host)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tlog.Println(\"ips:\", ips)\r\n\r\n\tc, err := net.Dial(\"tcp\", *host+\":80\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tlog.Println(\"connected to:\", c.RemoteAddr())\r\n}\r\n```\r\n\r\nEverything is great when the first ip is available:\r\n\r\n```\r\n# go run /tmp/test.go -host docker-registry.s3.ceph.pretender.local\r\n2015/02/07 15:52:15 ips: [192.168.2.62 192.168.2.71 192.168.2.72 192.168.2.74 192.168.2.75 192.168.2.30 192.168.2.60 192.168.2.61]\r\n2015/02/07 15:52:15 connected to: 192.168.2.62:80\r\n```\r\n\r\nBut when ip is not available, `net.Dial` fails without retrying the next ip:\r\n\r\n```\r\n# go run /tmp/test.go -host docker-registry.s3.ceph.pretender.local\r\n2015/02/07 15:52:32 ips: [192.168.2.62 192.168.2.71 192.168.2.72 192.168.2.74 192.168.2.75 192.168.2.30 192.168.2.60 192.168.2.61]\r\n2015/02/07 15:52:32 dial tcp 192.168.2.62:80: connection refused\r\nexit status 1\r\n```\r\n\r\nHappened with docker: docker/docker#10614",
+	"user": {
+		"login": "bobrik",
+		"id": 89186,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2015-02-07T13:05:46Z",
+	"created_at": "2015-02-07T12:54:26Z",
+	"updated_at": "2016-06-25T02:00:16Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 89928142,
+	"number": 11316,
+	"state": "closed",
+	"title": "cmd/comiple, runtime: channels: performance gap",
+	"body": "Run test with N = 1,2,3,4...\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"sync\"\r\n    \"time\"\r\n)\r\n\r\nvar N = 1\r\n\r\ntype T interface{}\r\n\r\nfunc main() {\r\n    var wg sync.WaitGroup\r\n    ch := make(chan T)\r\n    wg.Add(1)\r\n    go func() {\r\n        defer wg.Done()\r\n        test(ch)\r\n    }() \r\n    for i := 0; i \u003c N; i++ {\r\n        ch \u003c- 1\r\n    }   \r\n    close(ch)\r\n    wg.Add(1)\r\n    go func() {\r\n        defer wg.Done()\r\n        test(ch)\r\n    }() \r\n    wg.Wait()\r\n}\r\n\r\nfunc test(ch chan T) T { \r\n    t := time.Now()\r\n    var v T \r\n    var ok bool\r\n    for i := 0; i \u003c N; i++ {\r\n        v, ok = \u003c-ch\r\n    }   \r\n    fmt.Printf(\"%v, closed: %v\\n\", time.Since(t), !ok)\r\n    return v\r\n}\r\n```\r\nN = 1:\r\n\u003e 705ns, closed: false\r\n\u003e 360ns, closed: true\r\n\r\nN = 2:\r\n\u003e ***6.393µs***, closed: false\r\n\u003e 324ns, closed: true\r\n\r\nN = 3: (less than N = 2. Why?)\r\n\u003e ***2.397µs***, closed: false\r\n\u003e 384ns, closed: true\r\n\r\nN = 4:\r\n\u003e ***7.476µs***, closed: false\r\n\u003e 423ns, closed: true\r\n\r\nN = 5: (less than N = 4 and N = 2. Why?)\r\n\u003e ***3.132µs***, closed: false\r\n\u003e 510ns, closed: true\r\n\r\nSystem spec:\r\n\u003e Linux 4.0.4-303.fc22.x86_64\r\n\u003e go1.4.2 linux/amd64\r\n",
+	"user": {
+		"login": "zx48",
+		"id": 4817435,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-22T02:08:46Z",
+	"created_at": "2015-06-21T16:10:44Z",
+	"updated_at": "2016-06-25T02:11:39Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 172618750,
+	"body": "Docker wasn't using CloseNotify from the right goroutine. Patch for Docker:\r\n\r\n```go\r\ndiff --git a/api/server/server.go b/api/server/server.go\r\nindex a1c57a8..e6a2957 100644\r\n--- a/api/server/server.go\r\n+++ b/api/server/server.go\r\n@@ -1091,10 +1091,11 @@ func postBuild(eng *engine.Engine, version version.Version, w http.ResponseWrite\r\n        if closeNotifier, ok := w.(http.CloseNotifier); ok {\r\n                finished := make(chan struct{})\r\n                defer close(finished)\r\n+               clientGone := closeNotifier.CloseNotify()\r\n                go func() {\r\n                        select {\r\n                        case \u003c-finished:\r\n-                       case \u003c-closeNotifier.CloseNotify():\r\n+                       case \u003c-clientGone:\r\n                                log.Infof(\"Client disconnected, cancelling job: %v\", job)\r\n                                job.Cancel()\r\n                        }\r\n```\r\n\r\nIf it worked before, it was just luck. Or it was racy. We've improved the CloseNotifier docs a bunch in this cycle.\r\n\r\nBut I'll make Go panic with a more useful error message so you and others can diagnose this earlier and more easily in the future.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-18T18:36:57Z",
+	"updated_at": "2016-01-18T18:36:57Z"
+}

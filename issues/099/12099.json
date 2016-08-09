@@ -1,0 +1,28 @@
+{
+	"id": 100152734,
+	"number": 12099,
+	"state": "closed",
+	"title": "net/http: must not copy tls.Config",
+	"body": "net/http/transport says:\n\n\t\tcfg := t.TLSClientConfig\n\t\tif cfg == nil || cfg.ServerName == \"\" {\n\t\t\thost := cm.tlsHost()\n\t\t\tif cfg == nil {\n\t\t\t\tcfg = \u0026tls.Config{ServerName: host}\n\t\t\t} else {\n\t\t\t\tclone := *cfg // shallow clone\n\t\t\t\tclone.ServerName = host\n\t\t\t\tcfg = \u0026clone\n\t\t\t}\n\t\t}\n\nBut that line `clone := *cfg` is copying the entire tls.Config, including the sync.Once. That's not okay.\n\nIn particular if you arrange things right, you can get the copy to be going on at about the same time something else is calling cfg.serverInitOnce.Do, and then the write during the mutex races with the read from the copy, causing the race detector to report a race (and it is a real race, too; the copy will never be unlocked and will cause a deadlock).\n\nReported by a race detector run in a larger Google program.\n\nNeed to fix for Go 1.5.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-08-18T00:55:33Z",
+	"created_at": "2015-08-10T19:48:21Z",
+	"updated_at": "2015-08-18T00:55:33Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

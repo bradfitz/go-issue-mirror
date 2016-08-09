@@ -1,0 +1,27 @@
+{
+	"id": 51286689,
+	"number": 7423,
+	"state": "closed",
+	"title": "crypto/tls: client-cert EKU is enforced.",
+	"body": "\u003cpre\u003eI think Go is making a mistake in assuming that client certificates\nwithout the extended usage attributes (ie most client certificates)\nshould be denied use as a client authentication.\n\nWhat steps will reproduce the problem?\n\nHere are a couple of programs and a script to demonstrate the problem\n\n\u003ca href=\"https://gist.github.com/ncw/9253562\"\u003ehttps://gist.github.com/ncw/9253562\u003c/a\u003e\n\nWhat is the expected output?\n\nWorking SSL connection\n\nWhat do you see instead?\n\ntls: client's certificate's extended key usage doesn't permit it to be used for client\nauthentication\n\nWhich operating system are you using?\n\nLinux Ubuntu 13.10\n\nWhich version are you using?  (run 'go version' or 'gccgo --version')\n\n(latest head)\n\ngo version devel +abd51e52924a Thu Feb 27 01:45:22 2014 -0800 linux/amd64\n\nPlease provide any additional information below.\n\nHere is the README from the gist\n\nThis demonstrates a bug in Go\n\nFirst generate the certificates with\n\n./makecert.sh test@test.com\n\nRun the server in one terminal\n\ngo run server.go\n\nRun the client in the other\n\ngo run client.go\n\nYou'll see an SSL negotiation failure\n\nThe Server says\n\n2014/02/27 16:33:51 server: listening\n2014/02/27 16:33:53 server: accepted from 127.0.0.1:43700\n2014/02/27 16:33:53 server: conn: type assert to TLS succeedded\n2014/02/27 16:33:53 server: handshake failed: tls: client's certificate's extended key\nusage doesn't permit it to be used for client authentication\nexit status 1\n\nAnd the Client says\n\n2014/02/27 16:33:53 client: dial: remote error: handshake failure\nexit status 1\n\nIf you then try to add the extended usage to the certificate with the -addtrust\nclientAuth (uncomment in makecert.sh) you get this from the Client\n\n2014/02/27 16:36:58 server: loadkeys: crypto/tls: failed to parse certificate PEM data\nexit status 1\n\nBecause the client can no longer read the certificate which now starts with\n\n-----BEGIN TRUSTED CERTIFICATE-----\nMIIDizCCAnMCAQEwDQYJKoZIhvcNAQEFBQAwgZExCzAJBgNVBAYTAkRFMQwwCgYD\n\nThe relevant code is in crypo/tls/handshake_server.go\n\n\t\tok := false\n\t\tfor _, ku := range certs[0].ExtKeyUsage {\n\t\t\tif ku == x509.ExtKeyUsageClientAuth {\n\t\t\t\tok = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tif !ok {\n\t\t\tc.sendAlert(alertHandshakeFailure)\n\t\t\treturn nil, errors.New(\u0026quot;tls: client's certificate's extended key usage doesn't permit it to be used for client authentication\u0026quot;)\n\t\t}\n\nI think Go is making a mistake in assuming that client certificates\nwithout the extended usage attributes (ie most client certificates)\nshould be denied use as a client authentication.\n\nSo removing this code would fix the problem or possibly Go should\nassume certificates without the extended trust attributes should be\nallowed rather than rejected.\n\nFrom the OpenSSL docs\n\n\u003ca href=\"http://www.openssl.org/docs/apps/x509.html\"\u003ehttp://www.openssl.org/docs/apps/x509.html\u003c/a\u003e\n\n\u0026gt; Trust settings currently are only used with a root CA. They allow a\n\u0026gt; finer control over the purposes the root CA can be used for. For\n\u0026gt; example a CA may be trusted for SSL client but not SSL server use.\n\u0026gt;\n\u0026gt; See the description of the verify utility for more information on\n\u0026gt; the meaning of trust settings.\n\u0026gt;\n\u0026gt; Future versions of OpenSSL will recognize trust settings on any\n\u0026gt; certificate: not just root CAs.\n\nIndicating that OpenSSL doesn't use these trust settings at all\n(confirmed with my experiments with Apache).\u003c/pre\u003e",
+	"user": {
+		"login": "ncw",
+		"id": 536803,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:41:16Z",
+	"created_at": "2014-02-27T17:04:21Z",
+	"updated_at": "2016-06-25T01:28:34Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

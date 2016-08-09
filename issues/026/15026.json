@@ -1,0 +1,28 @@
+{
+	"id": 144491779,
+	"number": 15026,
+	"state": "closed",
+	"title": "cmd/compile, reflect: StructField.PkgPath is not correctly set for unnamed struct fields",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo version devel +897dcdb Wed Mar 30 06:56:25 2016 +0000 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux/amd64\r\n\r\nThis is a regression at tip.  Here is a short repro:\r\n\r\n```\r\nkyle@eros-ubuntu-vm /tmp/go $ cat reflect_test.go\r\npackage foo\r\n\r\nimport (\r\n        \"reflect\"\r\n        \"testing\"\r\n)\r\n\r\nfunc TestReflect(t *testing.T) {\r\n        typ := reflect.TypeOf(struct{ Exported, unexported string }{})\r\n        for _, test := range []struct {\r\n                index          int\r\n                field, pkgPath string\r\n        }{\r\n                {0, \"Exported\", \"\"},\r\n                {1, \"unexported\", \"_/tmp/go\"},\r\n        } {\r\n                f := typ.Field(test.index)\r\n                if got, want := f.PkgPath, test.pkgPath; got != want {\r\n                        t.Errorf(\"Field(%d) (%q).PkgPath = %q, want %q\", test.index, test.field, got, want)\r\n                } else {\r\n                        t.Logf(\"Field(%d) (%q).PkgPath = %q [OK]\", test.index, test.field, f.PkgPath)\r\n                }\r\n        }\r\n}\r\n```\r\n\r\nHere is the behavior at head:\r\n```\r\nkyle@eros-ubuntu-vm /tmp/go $ go version\r\ngo version go1.6 linux/amd64\r\nkyle@eros-ubuntu-vm /tmp/go $ go test -test.v .\r\n=== RUN   TestReflect\r\n--- PASS: TestReflect (0.00s)\r\n        reflect_test.go:25: Field(0) (\"Exported\").PkgPath = \"\" [OK]\r\n        reflect_test.go:25: Field(1) (\"unexported\").PkgPath = \"_/tmp/go\" [OK]\r\nPASS\r\nok      _/tmp/go        0.002s\r\n```\r\n(notice that the unexported field has a non-zero PkgPath)\r\n\r\nHere is the behavior at tip:\r\n```\r\nkyle@eros-ubuntu-vm /tmp/go $ ~/gotip/bin/go version\r\ngo version devel +897dcdb Wed Mar 30 06:56:25 2016 +0000 linux/amd64\r\nkyle@eros-ubuntu-vm /tmp/go $ ~/gotip/bin/go test -test.v .\r\n=== RUN   TestReflect\r\n--- FAIL: TestReflect (0.00s)\r\n        reflect_test.go:25: Field(0) (\"Exported\").PkgPath = \"\" [OK]\r\n        reflect_test.go:23: Field(1) (\"unexported\").PkgPath = \"\", want \"_/tmp/go\"\r\nFAIL\r\nexit status 1\r\nFAIL    _/tmp/go        0.001s\r\n```\r\n(notice that the unexported field has a zero PkgPath)\r\n\r\nIt works fine for named structs even at tip.  So far a quick skim of the changes to the reflect library didn't turn up any likely suspects, though there are quite a number of them.",
+	"user": {
+		"login": "kylelemons",
+		"id": 322213,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-03-31T20:15:34Z",
+	"created_at": "2016-03-30T07:47:02Z",
+	"updated_at": "2016-03-31T20:15:34Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

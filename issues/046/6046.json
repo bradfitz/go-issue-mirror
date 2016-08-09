@@ -1,0 +1,33 @@
+{
+	"id": 51284597,
+	"number": 6046,
+	"state": "closed",
+	"title": "runtime: find uses of int32 that should be uintptr",
+	"body": "\u003cpre\u003eIn src/pkg/runtime/strings.goc, findnull uses an int32:\n\nint32\nruntime·findnull(byte *s)\n{\n        int32 l;\n\n        if(s == nil)\n                return 0;\n        for(l=0; s[l]!=0; l++)\n                ;\n        return l;\n}\n\nAnd that is called by:\n\nString\nruntime·gostring(byte *str)\n{\n        intgo l;\n        String s;\n\n        l = runtime·findnull(str);\n\ts = gostringsize(l);\n        runtime·memmove(s.str, str, l);\n        return s;\n}\n\nWhich means:\n\npackage main\n\n/*\n*/\nimport \u0026quot;C\u0026quot;\nimport \u0026quot;unsafe\u0026quot;\n\nfunc main() {\n\tprintln(\u0026quot;pre-make\u0026quot;)\n\tbuf := make([]byte, 1\u0026lt;\u0026lt;31 + 2)\n\tprintln(\u0026quot;pre-set\u0026quot;)\n\tfor i := range buf {\n\t\tbuf[i] = 'a'\n\t}\n\tbuf[len(buf)-1] = 0\n\tprintln(\u0026quot;pre-gostring\u0026quot;)\n\tprintln(len(C.GoString((*C.char)(unsafe.Pointer(\u0026amp;buf[0])))))\n}\n\n\n$ go run x.go\npre-make\npre-set\npre-gostring\nunexpected fault address 0xc190022000\nfatal error: fault\n[signal 0xa code=0x2 addr=0xc190022000 pc=0x401b7de]\n\ngoroutine 1 [running]:\nruntime.throw(0x405e0dc)\n\t/Users/bradfitz/go/src/pkg/runtime/panic.c:498 +0x69 fp=0x4210e80\nruntime.sigpanic()\n\t/Users/bradfitz/go/src/pkg/runtime/os_darwin.c:446 +0x1ed fp=0x4210e98\nruntime.findnull(0xc210022000)\n\t/Users/bradfitz/go/src/pkg/runtime/string.goc:21 +0x1e fp=0x4210ea8\nruntime.gostring(0x4210f00, 0xc210022000)\n\t/Users/bradfitz/go/src/pkg/runtime/string.goc:66 +0x27 fp=0x4210ee0\nmain._Cfunc_GoString(0xc210022000, 0xc, 0x80000002)\n\tcommand-line-arguments/_obj/_cgo_defun.c:10 +0x31 fp=0x4210ef8\nmain.main()\n\t/Users/bradfitz/x.go:19 +0x115 fp=0x4210f48\nruntime.main()\n\t/Users/bradfitz/go/src/pkg/runtime/proc.c:201 +0x113 fp=0x4210fa0\nruntime.goexit()\n\t/Users/bradfitz/go/src/pkg/runtime/proc.c:1333 fp=0x4210fa8\nexit status 2\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2015-09-10T20:48:55Z",
+	"created_at": "2013-08-05T18:24:27Z",
+	"updated_at": "2015-09-10T20:48:55Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

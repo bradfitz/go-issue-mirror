@@ -1,0 +1,27 @@
+{
+	"id": 51286109,
+	"number": 7044,
+	"state": "closed",
+	"title": "cmd/5g: optimiser corrupts float64 to float32 operations above d7",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nSee the reproduction in \u003ca href=\"https://golang.org/issue/7038\"\u003eissue #7038\u003c/a\u003e\n\nWhat is the expected output? What do you see instead?\n\npi@raspberrypi ~/src $ gdb ./issue7038\nGNU gdb (GDB) 7.4.1-debian\nCopyright (C) 2012 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later \u0026lt;\u003ca href=\"http://gnu.org/licenses/gpl.html\u0026gt\"\u003ehttp://gnu.org/licenses/gpl.html\u0026gt\u003c/a\u003e;\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.  Type \u0026quot;show copying\u0026quot;\nand \u0026quot;show warranty\u0026quot; for details.\nThis GDB was configured as \u0026quot;arm-linux-gnueabihf\u0026quot;.\nFor bug reporting instructions, please see:\n\u0026lt;\u003ca href=\"http://www.gnu.org/software/gdb/bugs/\u0026gt\"\u003ehttp://www.gnu.org/software/gdb/bugs/\u0026gt\u003c/a\u003e;...\nReading symbols from /home/pi/src/issue7038...done.\nLoading Go Runtime support.\n(gdb) r\nStarting program: /home/pi/src/issue7038 \n\nProgram received signal SIGILL, Illegal instruction.\n0x00010c90 in main.HomogRotate3D (angle=0.0500000007, axis=..., ~anon2=...) at\n/home/pi/src/issue7038.go:12\n12              s, c := float32(math.Sin(float64(angle))),\nfloat32(math.Cos(float64(angle)))\n(gdb) disassemble \nDump of assembler code for function main.HomogRotate3D:\n   0x00010c00 \u0026lt;+0\u0026gt;:     ldr     r1, [r10]\n   0x00010c04 \u0026lt;+4\u0026gt;:     cmp     sp, r1\n   0x00010c08 \u0026lt;+8\u0026gt;:     movls   r1, #104        ; 0x68\n   0x00010c0c \u0026lt;+12\u0026gt;:    movls   r2, #80 ; 0x50\n   0x00010c10 \u0026lt;+16\u0026gt;:    movls   r3, lr\n   0x00010c14 \u0026lt;+20\u0026gt;:    blls    0x2d28c \u0026lt;runtime.morestack\u0026gt;\n   0x00010c18 \u0026lt;+24\u0026gt;:    bls     0x10c00 \u0026lt;main.HomogRotate3D\u0026gt;\n   0x00010c1c \u0026lt;+28\u0026gt;:    str     lr, [sp, #-104]!        ; 0x68\n   0x00010c20 \u0026lt;+32\u0026gt;:    add     r0, sp, #112    ; 0x70\n   0x00010c24 \u0026lt;+36\u0026gt;:    add     r0, r0, #4\n   0x00010c28 \u0026lt;+40\u0026gt;:    vldr    s6, [r0]\n   0x00010c2c \u0026lt;+44\u0026gt;:    add     r0, sp, #112    ; 0x70\n   0x00010c30 \u0026lt;+48\u0026gt;:    add     r0, r0, #8\n   0x00010c34 \u0026lt;+52\u0026gt;:    vldr    s4, [r0]\n   0x00010c38 \u0026lt;+56\u0026gt;:    add     r0, sp, #112    ; 0x70\n   0x00010c3c \u0026lt;+60\u0026gt;:    add     r0, r0, #0\n   0x00010c40 \u0026lt;+64\u0026gt;:    vldr    s0, [r0]\n   0x00010c44 \u0026lt;+68\u0026gt;:    vstr    s0, [sp, #24]\n   0x00010c48 \u0026lt;+72\u0026gt;:    vstr    s6, [sp, #20]\n   0x00010c4c \u0026lt;+76\u0026gt;:    vstr    s4, [sp, #28]\n   0x00010c50 \u0026lt;+80\u0026gt;:    vldr    s0, [sp, #108]  ; 0x6c\n   0x00010c54 \u0026lt;+84\u0026gt;:    vcvt.f64.f32    d1, s0\n   0x00010c58 \u0026lt;+88\u0026gt;:    vstr    d1, [sp, #4]\n   0x00010c5c \u0026lt;+92\u0026gt;:    bl      0x303b4 \u0026lt;math.Sin\u0026gt;\n   0x00010c60 \u0026lt;+96\u0026gt;:    vldr    d0, [sp, #12]\n   0x00010c64 \u0026lt;+100\u0026gt;:   vstr    d0, [sp, #32]\n   0x00010c68 \u0026lt;+104\u0026gt;:   vldr    s0, [sp, #108]  ; 0x6c\n   0x00010c6c \u0026lt;+108\u0026gt;:   vcvt.f64.f32    d1, s0\n   0x00010c70 \u0026lt;+112\u0026gt;:   vstr    d1, [sp, #4]\n   0x00010c74 \u0026lt;+116\u0026gt;:   bl      0x303b8 \u0026lt;math.Cos\u0026gt;\n   0x00010c78 \u0026lt;+120\u0026gt;:   vldr    s14, [sp, #24]\n   0x00010c7c \u0026lt;+124\u0026gt;:   vldr    s12, [sp, #20]\n   0x00010c80 \u0026lt;+128\u0026gt;:   vldr    s10, [sp, #28]\n   0x00010c84 \u0026lt;+132\u0026gt;:   vldr    d2, [sp, #12]\n   0x00010c88 \u0026lt;+136\u0026gt;:   vldr    d0, [sp, #32]\n   0x00010c8c \u0026lt;+140\u0026gt;:   vcvt.f32.f64    s8, d0\n=\u0026gt; 0x00010c90 \u0026lt;+144\u0026gt;:   vcvt.u32.f64    d8, d8, #28\n\nPlease use labels and text to provide additional information.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:39:12Z",
+	"created_at": "2014-01-01T09:56:44Z",
+	"updated_at": "2016-06-25T01:24:48Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

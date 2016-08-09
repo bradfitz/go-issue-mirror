@@ -1,0 +1,12 @@
+{
+	"id": 236709696,
+	"body": "It turns out I prototyped part of what this issue is asking for without realizing this issue existed. Thanks to @matloob for pointing me here. I also fixed a few bugs in the old heapview code.\r\nhttps://github.com/tombergan/goheapdump\r\n\r\nI agree with Austin that the main artifact of this issue should be an API for analyzing heap dumps. I took a stab at such an API [here](https://github.com/tombergan/goheapdump/tree/master/heapdump). It would be great to unify the API for heap analysis with the API in [x/debug](https://godoc.org/golang.org/x/debug). I'm actually more excited about the idea of an automated heap checker rather than just a heap viewer (although that would be cool and useful as well). I wrote a simple http.Response leak checker [here](https://github.com/tombergan/goheapdump/blob/master/heapcheck/main.go). I have more thoughts in that file about heap checkers we could write.\r\n\r\nAlso, a big +1 to making the heapdump just a core file, possibly with extra breadcrumbs. I ran into a few problems with the current heapdump format. I [tried to fix some of them](https://github.com/tombergan/goheapdump/blob/master/runtime.heapdump.go.patch), but couldn't easily fix all of them -- I ran into similar type-matching issues for interfaces as @fjl. My initial thought was to use a core file without breadcrumbs. This way we could potentially deprecate runtime.WriteHeapDump entirely and instead use any core file. Roughly:\r\n* Use types from DWARF to bootstrap the heapdump loader. This gives you enough info to find and walk the mspans, _types, itabs, and so on.\r\n* Walk those runtime structures to learn types for the entire heap.\r\n* Walk the GC masks to enumerate all the pointers tracked by GC.\r\n* Export all of this to the client using a nice, reflect-like API.\r\n\r\nThe downside of this approach is that the runtime structures may change from release-to-release. This could be a pain to maintain.\r\n\r\nLong story short, a tool like this is something I've wanted when debugging OOMs in my day-to-day work. It's also a technically interesting problem and I'm happy to help out as needed.",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-01T21:13:35Z",
+	"updated_at": "2016-08-01T21:16:40Z"
+}

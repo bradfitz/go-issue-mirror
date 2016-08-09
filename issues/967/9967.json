@@ -1,0 +1,27 @@
+{
+	"id": 58622500,
+	"number": 9967,
+	"state": "closed",
+	"title": "cmd/ld: unsupported relocation for dynamic symbol",
+	"body": "- What version of Go are you using (go version)?\r\n``go version go1.4.2 darwin/amd64``\r\nMacOSX-10.6.8\r\n\r\n- What did you do?\r\n```sh\r\n$ cd $GOPATH/src/github.com/sbinet\r\n$ git clone git://github.com/sbinet/test-cgo\r\n$ cd test-cgo\r\n$ make\r\n/bin/rm -f pkg/my/*.so\r\n(cd pkg/my \u0026\u0026 cc -shared -o libmy.so lib.c)\r\n# github.com/sbinet/test-cgo/pcgo\r\ngithub.com/sbinet/test-cgo/pkg._Cvar_Global: unsupported relocation for dynamic symbol Global (type=1 stype=32)\r\ngithub.com/sbinet/test-cgo/pkg._Cvar_Global: unhandled relocation for Global (type 32 rtype 1)\r\nmake: *** [install] Error 2\r\n```\r\n\r\nnote that if, in ``test-cgo/pkg/my/lib.h`` I change:\r\n```C\r\n#define API_DATA(RTYPE) extern RTYPE\r\n//#define API_DATA(RTYPE) RTYPE\r\n```\r\nto:\r\n```C\r\n//#define API_DATA(RTYPE) extern RTYPE\r\n#define API_DATA(RTYPE) RTYPE\r\n```\r\n\r\neverything compiles and runs:\r\n```sh\r\n$ make \u0026\u0026 (cd ./pkg/my \u0026\u0026 pcgo)\r\n/bin/rm -f pkg/my/*.so\r\n(cd pkg/my \u0026\u0026 cc -shared -o libmy.so lib.c)\r\n\u003e\u003e\u003e\r\nGlobal: 42\r\nGlobal: 42\r\n\u003c\u003c\u003c\r\n```\r\n\r\nNote that on ``master``, I get instead:\r\n```sh\r\n$ go version devel +48469a2 Mon Feb 23 07:54:13 2015 +0000 darwin/amd64\r\n$ make \u0026\u0026 (cd ./pkg/my \u0026\u0026 pcgo)\r\n\u003e\u003e\u003e\r\nGlobal: 42\r\nfatal error: unexpected signal during runtime execution\r\n[signal 0xb code=0x1 addr=0xb01dfacedebac1e pc=0x1dbf23]\r\n\r\nruntime stack:\r\nruntime.throw(0x126e70, 0x2a)\r\n\t/Users/binet/dev/go/root/go/src/runtime/panic.go:511 +0xa0\r\nruntime.sigpanic()\r\n\t/Users/binet/dev/go/root/go/src/runtime/sigpanic_unix.go:12 +0x62\r\n\r\ngoroutine 1 [syscall, locked to thread]:\r\nruntime.cgocall_errno(0xac120, 0xc208037ed0, 0xc200000000)\r\n\t/Users/binet/dev/go/root/go/src/runtime/cgocall.go:130 +0x10c fp=0xc208037eb0 sp=0xc208037e88\r\ngithub.com/sbinet/test-cgo/pkg._Cfunc_Get(0x25ff0000077a25ff, 0x0)\r\n\t/Users/binet/dev/go/root/path/src/github.com/sbinet/test-cgo/pkg/:24 +0x3c fp=0xc208037ed0 sp=0xc208037eb0\r\ngithub.com/sbinet/test-cgo/pkg.Print()\r\n\t/Users/binet/dev/go/root/path/src/github.com/sbinet/test-cgo/pkg/pkg.go:14 +0x10c fp=0xc208037f58 sp=0xc208037ed0\r\nmain.main()\r\n\t/Users/binet/dev/go/root/path/src/github.com/sbinet/test-cgo/pcgo/main.go:11 +0x4e fp=0xc208037fa0 sp=0xc208037f58\r\nruntime.main()\r\n\t/Users/binet/dev/go/root/go/src/runtime/proc.go:88 +0x1d2 fp=0xc208037fe0 sp=0xc208037fa0\r\nruntime.goexit()\r\n\t/Users/binet/dev/go/root/go/src/runtime/asm_amd64.s:2466 +0x1 fp=0xc208037fe8 sp=0xc208037fe0\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/Users/binet/dev/go/root/go/src/runtime/asm_amd64.s:2466 +0x1\r\nzsh: exit 2     (; cd pkg/my \u0026\u0026 pcgo; )\r\n```\r\n\r\nSuch ``extern`` global symbols are heavily used in _e.g._ the ``CPython`` API.\r\n\r\nTo recap: the `pkg` builds fine, it's when somebody uses that cgo-based package that all hell breaks loose.\r\n",
+	"user": {
+		"login": "sbinet",
+		"id": 1070920,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-04-28T22:59:58Z",
+	"created_at": "2015-02-23T17:52:56Z",
+	"updated_at": "2016-06-25T02:01:45Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

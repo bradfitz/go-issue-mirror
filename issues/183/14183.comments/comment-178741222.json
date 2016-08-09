@@ -1,0 +1,12 @@
+{
+	"id": 178741222,
+	"body": "The problem seems to be that `time.Sleep` on OpenBSD is oversleeping.  It's rounding the sleep duration up to the nearest 10ms multiple (which at least makes sense due to OpenBSD's 10ms scheduler clock interval), but then it's also always sleeping an *additional* 10ms.\r\n\r\nFor example, TestLongRunningQPS's `time.Sleep(2 * time.Millisecond)` call is actually sleeping for 20ms on average (rounded up to 10ms, then plus an additional 10ms).  This limits the test to 50 attempts per second; below the 100 attempts per second rate limit the test is using.\r\n\r\nThe test can be made to work on OpenBSD by lowering the rate to below 50/s, but I think for now it makes sense to just skip it on OpenBSD while I investigate what's going on with `time.Sleep`.  I'll upload a CL.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-02T18:28:50Z",
+	"updated_at": "2016-02-02T18:28:50Z"
+}

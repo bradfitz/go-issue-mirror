@@ -1,0 +1,12 @@
+{
+	"id": 219868867,
+	"body": "My concern with adding inheritTime = true there is that I think it could lead to a scheduler loop: suppose a user goroutine has very nearly run out the quantum when it blocks; the scheduler picks a mark worker to run; the mark worker inherits the quantum, quickly runs out what's left of it, and returns to the scheduler; since the worker didn't run for very long, the scheduler picks it again, and it again inherits the quantum; since its quantum is up it gets preempted again after just 20us; and the scheduler goes into a loop picking and preempting the mark worker.\r\n\r\nYou're right, of course, that the high-priority scheduling of the GC worker is the crux of the problem. In effect, by triggering GC and blocking in an assist, user code can control which goroutine runs next *and* which goroutine runs after that, without inheriting the quantum across these executions.\r\n\r\nAnother possible solution is for the GC to always add goroutines to the end of the run queue (either a local run queue or the global run queue). Then user code can't exploit it to skip the run queue without consuming quantum.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-17T22:07:03Z",
+	"updated_at": "2016-05-17T22:07:03Z"
+}

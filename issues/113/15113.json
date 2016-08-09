@@ -1,0 +1,21 @@
+{
+	"id": 145807271,
+	"number": 15113,
+	"state": "open",
+	"title": "x/crypto/ssh: ssh.Dial can hang indefinitely",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n1.4.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux, amd64\r\n\r\n3. What did you do?\r\nCalled ssh.Dial()\r\n\r\n4. What did you expect to see?\r\nI'd expect ssh.Dial() to return either an opened client or an error within some reasonable amount of time, ideally no more than a few minutes.\r\n\r\n5. What did you see instead?\r\nssh.Dial() has been hung for more than three hours.\r\n\r\nWe [ran into this in Kubernetes](https://github.com/kubernetes/kubernetes/issues/23835). We aren't doing anything special--just SSHing to a known host and port over TCP with a specified user and public key. It appears as though the underlying problem is that a TCP connection was established (i.e. net.Dial() returned a connection), but then establishing an SSH connection using the underlying TCP connection hung. That means that #14941 wouldn't help here, since that just specifies a timeout for net.Dial(), not for establishing the client SSH connection after that.\r\n\r\nStack trace from the stuck goroutine:\r\n```\r\ngoroutine 85851 [IO wait, 178 minutes]:\r\nnet.(*pollDesc).Wait(0xc20ae2e840, 0x72, 0x0, 0x0)\r\n\t/usr/src/go/src/net/fd_poll_runtime.go:84 +0x47\r\nnet.(*pollDesc).WaitRead(0xc20ae2e840, 0x0, 0x0)\r\n\t/usr/src/go/src/net/fd_poll_runtime.go:89 +0x43\r\nnet.(*netFD).Read(0xc20ae2e7e0, 0xc20c38b2d0, 0x1, 0x1, 0x0, 0x7f20600e52a0, 0xc20c38b2d8)\r\n\t/usr/src/go/src/net/fd_unix.go:242 +0x40f\r\nnet.(*conn).Read(0xc20b7add18, 0xc20c38b2d0, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n\t/usr/src/go/src/net/net.go:121 +0xdc\r\nio.ReadAtLeast(0x7f20600eb598, 0xc20b7add18, 0xc20c38b2d0, 0x1, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n\t/usr/src/go/src/io/io.go:298 +0xf1\r\nio.ReadFull(0x7f20600eb598, 0xc20b7add18, 0xc20c38b2d0, 0x1, 0x1, 0x40, 0x0, 0x0)\r\n\t/usr/src/go/src/io/io.go:316 +0x6d\r\ngolang.org/x/crypto/ssh.readVersion(0x7f20600eb598, 0xc20b7add18, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/go/src/k8s.io/kubernetes/Godeps/_workspace/src/golang.org/x/crypto/ssh/transport.go:303 +0x167\r\ngolang.org/x/crypto/ssh.exchangeVersions(0x7f205ff485c0, 0xc20b7add18, 0xc20c38b2c0, 0xa, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/go/src/k8s.io/kubernetes/Godeps/_workspace/src/golang.org/x/crypto/ssh/transport.go:287 +0x2f1\r\ngolang.org/x/crypto/ssh.(*connection).clientHandshake(0xc20cdb9100, 0xc20bdf6380, 0x11, 0xc20b56e1e0, 0x0, 0x0)\r\n\t/go/src/k8s.io/kubernetes/Godeps/_workspace/src/golang.org/x/crypto/ssh/client.go:91 +0x132\r\ngolang.org/x/crypto/ssh.NewClientConn(0x7f20600ea500, 0xc20b7add18, 0xc20bdf6380, 0x11, 0xc20b56e140, 0x0, 0x0, 0x0, 0xe, 0x0, ...)\r\n\t/go/src/k8s.io/kubernetes/Godeps/_workspace/src/golang.org/x/crypto/ssh/client.go:74 +0x140\r\ngolang.org/x/crypto/ssh.Dial(0x1d48080, 0x3, 0xc20bdf6380, 0x11, 0xc20b56e140, 0x11, 0x0, 0x0)\r\n\t/go/src/k8s.io/kubernetes/Godeps/_workspace/src/golang.org/x/crypto/ssh/client.go:176 +0xf9\r\nk8s.io/kubernetes/pkg/ssh.(*SSHTunnel).Open(0xc20d0490e0, 0x0, 0x0)\r\n\t/go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/pkg/ssh/ssh.go:114 +0xbc\r\nk8s.io/kubernetes/pkg/ssh.(*SSHTunnelList).createAndAddTunnel(0xc208228360, 0xc2085c6720, 0xe)\r\n\t/go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/pkg/ssh/ssh.go:433 +0x331\r\ncreated by k8s.io/kubernetes/pkg/ssh.(*SSHTunnelList).removeAndReAdd\r\n\t/go/src/k8s.io/kubernetes/_output/dockerized/go/src/k8s.io/kubernetes/pkg/ssh/ssh.go:345 +0x3ae\r\n```\r\n\r\ncc @cjcullen",
+	"user": {
+		"login": "a-robinson",
+		"id": 7085343,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-04-04T21:16:25Z",
+	"updated_at": "2016-07-22T07:15:23Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

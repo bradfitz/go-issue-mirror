@@ -1,0 +1,12 @@
+{
+	"id": 66092910,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eHere is what I *think* is happening,\n\nUnder -compiler gc, the _test.go files are combined with the normal files for the\npackage under test and placed into a .a file in $WORK, then everything is linked together\n\n/home/dfc/go/pkg/tool/linux_amd64/6l -o $WORK/issue/a/_test/a.test -L\n$WORK/issue/a/_test -L $WORK -L /home/dfc/pkg/linux_amd64 -w -extld=clang\n$WORK/issue/a/_test/main.a\n$WORK/issue/a/_test/a.test\n\nyou can see that -L $WORK/issue/a/_test comes before -L $WORK so all the symbols for\nissue/a will be taken from the temporary test .a file in $WORK/issue/a/_test.\n\nBut, under -compiler gccgo we see\n\ngccgo -o $WORK/issue/a/_test/a.test $WORK/issue/a/_test/main.o -Wl,-( -m64\n$WORK/issue/a/_test/issue/liba_test.a $WORK/issue/libb.a $WORK/issue/liba.a\n$WORK/issue/a/_test/issue/liba.a -Wl,-)\n\nspecifically $WORK/issue/liba.a appears before $WORK/issue/a/_test/issue/liba.a so the\nlinker lodas issue/liba.a but can't find all the symbols it needs, so falls through to\n_test/issue/liba.a which has the additional test related symbols, but also has symbols\nthat were previously discovered in the previous liba.a.\n\nThis is all just speculation, I don't know how /usr/bin/ld does it's symbol resolution,\nbut it would make sense to defer opening a library until it's know that none of the\nprevious libraries had all the symbols you needed.\n\nThe solution would appear to be, make sure that _test/issue/liba.a comes first in the\nlinking order as it does with -compiler gc\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-25T03:29:21Z",
+	"updated_at": "2014-12-08T10:42:23Z"
+}

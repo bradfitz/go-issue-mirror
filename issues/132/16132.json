@@ -1,0 +1,28 @@
+{
+	"id": 161348205,
+	"number": 16132,
+	"state": "closed",
+	"title": "compress/flate: HuffmanOnly is sub-optimal",
+	"body": "Using `go1.7beta1`\r\n\r\n`HuffmanOnly` mode on `flate.Writer` sometimes encodes data as raw blocks instead of dynamic blocks when there is something to gain.\r\n\r\nThe attached file (repeats.bin inside the zip file) has the following byte histogram:\r\n```\r\n  |  00    01    02    03    04    05    06    07    08    09    0a    0b    0c    0d    0e    0f\r\n--+-----------------------------------------------------------------------------------------------\r\n00| 643,  364,  272,  689,  159,  116,  240,  200,  694,  584, 1364,  250,  317,  195,  654,  228,\r\n10| 245,  194, 2002,  356,  185,  300,  174,  522,  258, 3314,  199,  123,  177,  420,  164,  314,\r\n20| 287,  854,  492,  183,  183,  134,  297,  476, 1046,  283,  301,  189,  182,  186,  241,  571,\r\n30| 815,  293, 1075,  272,  159,  340,  180,  627,  234,  267,  146,  343,  148,  252,  697,  230,\r\n40| 118,  273,  252, 1139,  175,  276,  718,  205,  246,  197,  228,  205,  179,  233,  238,  113,\r\n50| 200,  615,  461,  842, 1329,  311, 1260,  207,  698,  258,  893,  346,  266,  188,  193,  276,\r\n60| 220,  311,  294, 1154,  628,  322,  198,  233,  186,  320,  177,  725,  170,  207,  263,  708,\r\n70| 246,  222,  241,  310,  316,  886,  317, 1017,  288,  193,  534,  244,  917,  175,  303,  375,\r\n80| 214,  259,  310,  308,  363,  774,  219,  170,  161,  149,  226, 1224,  245,  877,  155,  916,\r\n90| 212,  226,  266,  232,  295,  463,  385,  210,  180,  204,  372,  204,  168,  269,  219,  861,\r\na0| 290,  257,  555,  247,  968,  526,  245,  183,  267,  344,  491,  206,   70, 1067,  614,  183,\r\nb0| 331,  269,  868,  146,  233,  364,  244,  213,  208,  277,  151,  225,  169,  154,  237,  242,\r\nc0| 290,  248,  215,  308,  235,  175,  295,  312,  251,  187,  696,  298,  331,  164,  355,  304,\r\nd0| 236,  256, 1412,  664,  216,  313,  256,  713,  307,  337,  247,  327, 1133,  246,  754,  219,\r\ne0| 240, 1182,  415,  512,  149,  935,  290,  281,  280,  882,  285,  258,  185,  208,  289,  642,\r\nf0| 272,  406,  260,  662,  192,  180,  153,  290,  275,  261,  178,  271,  259,  479,  256,  356,\r\n```\r\n\r\nAs can be seen, it is not completely random, and it is clear that some symbols appear more frequently than others. Currently, on `go1.7beta1`, the `flate.Writer` on `HuffmanOnly` mode does not even attempt to encode this dataset (and resorts to outputting raw blocks).\r\n\r\nFrom an entropy perspective, we should be able to encode each symbol with 7.63 bits/symbol. With 10000 symbols, we should be able to compress this to approximately 95375 bytes. So unless the huffman table definition itself would have occupied more than 4625 bytes (unlikely), the writer should have chosen to use a dynamic block instead of a raw block.\r\n\r\nOn `HuffmanOnly` mode it may be worth exploring how we split up each block.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-23T03:14:00Z",
+	"created_at": "2016-06-21T04:41:10Z",
+	"updated_at": "2016-06-23T03:14:00Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

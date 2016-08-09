@@ -1,0 +1,26 @@
+{
+	"id": 132265786,
+	"number": 14266,
+	"state": "open",
+	"title": "cmd/compile: optimize slice access with constant upper/lower bound",
+	"body": "For example (https://golang.org/src/encoding/binary/binary.go#L69):\r\n\r\n```\r\nfunc Uint64(b []byte) uint64 {\r\n\treturn uint64(b[0]) | uint64(b[1])\u003c\u003c8 | uint64(b[2])\u003c\u003c16 | uint64(b[3])\u003c\u003c24 |\r\n\t\tuint64(b[4])\u003c\u003c32 | uint64(b[5])\u003c\u003c40 | uint64(b[6])\u003c\u003c48 | uint64(b[7])\u003c\u003c56\r\n}\r\n```\r\n\r\nGets compiled roughly to:\r\n```\r\nfunc Uint64(b []byte) (v uint64) {\r\n\tif len(b) \u003e 0 { v |= uint64(b[0])\t}  else { panic() }\r\n\tif len(b) \u003e 1 { v |= uint64(b[1]) \u003c\u003c 8 } else { panic() }\r\n\t.... and so on....\r\n\treturn\r\n}\r\n```\r\n\r\nI was wondering if that can get optimized to something more like:\r\n\r\n```\r\nfunc Uint64(b []byte) (v uint64) {\r\n\tif len(b) \u003c 8 { panic(\"index error\") }\r\n\t.....\r\n\treturn\r\n}\r\n```\r\n\r\nI tried to look at the code in `src/cmd/compile/internal/gc/cgen.go` but it was way above my head, if there's interest in that idea and no one wants to pick it up, I'll look more into learning how the code gen works and try to implement it.\r\n\r\n@randall77 you might find this interesting.",
+	"user": {
+		"login": "OneOfOne",
+		"id": 1080443,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-02-08T21:49:06Z",
+	"updated_at": "2016-02-08T23:06:19Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

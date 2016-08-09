@@ -1,0 +1,27 @@
+{
+	"id": 51282415,
+	"number": 4636,
+	"state": "closed",
+	"title": "net: unbound, unnamed socket support for UnixConn",
+	"body": "by **jeff.allen**:\n\n\u003cpre\u003eThis problem has been reported before in \u003ca href=\"https://golang.org/issue/945\"\u003eissue #945\u003c/a\u003e and \u003ca href=\"https://golang.org/issue/3875\"\u003eissue #3875\u003c/a\u003e. Each time, a related\nproblem was solved, but the previous fixes did not solve this exact problem.\n\nWhat steps will reproduce the problem?\n\n1. \u003ca href=\"http://play.golang.org/p/VUAfi_vznp\"\u003ehttp://play.golang.org/p/VUAfi_vznp\u003c/a\u003e\n\n(cannot be run on play due to need for socket access)\n\nWhat is the expected output?\n\nn: 5, addr: \u0026lt;nil\u0026gt;, err: \u0026lt;nil\u0026gt;, buf: []byte{0x1, 0x2, 0x3, 0x4, 0x5}\n\nWhat do you see instead?\n\nn: 0, addr: \u0026lt;nil\u0026gt;, err: read unixgram /tmp/sname: address family not supported by\nprotocol, buf: []byte{}\n\nBut strace -f sees this:\n\n[pid  9818] recvfrom(3, \u0026quot;\\1\\2\\3\\4\\5\u0026quot;, 1024, 0, {sa_family=AF_UNSPEC,\nsa_data=\u0026quot;\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\u0026quot;}, [0]) = 5\n\nSo there are 5 bytes received that should make it out of ReadFrom, but are lost.\n\nThe problem is in syscall.Recvfrom, when anyToSockaddr is called after the kernel told\nus the data at \u0026amp;rsa is invalid by setting len to 0.\n(man 2 recvfrom: \u0026quot;The argument addrlen is a value-result  argument, which  the \ncaller should initialize before the call to the size of the buffer associated with\nsrc_addr, and modified on return to indicate the actual  size  of the source\naddress.\u0026quot;)\n\nA CL is forthcoming, needs testing on other OSes.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nLinux\n\nWhich version are you using?  (run 'go version')\n\ngo version devel 08a1396e9aa7 Tue Jan 08 17:23:46 2013 +1100 linux/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:24:35Z",
+	"created_at": "2013-01-09T10:20:47Z",
+	"updated_at": "2016-06-24T22:30:57Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

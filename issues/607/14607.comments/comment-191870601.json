@@ -1,0 +1,12 @@
+{
+	"id": 191870601,
+	"body": "I've investigated this further and when running a Docker instance on my computer (MacBook Pro) I can't reproduce the timeout issue, but it does occur regularly on my Kubernetes pod (on Google Container Engine), so it's probably because the Go sockets can't detect that they've been shut down by Google Cloud's keep-alive timeout of 10 minutes.\r\n\r\nSomething is still not right with `transport.CloseIdleConnections()` because even if the clients are not handling any requests, they are not being shut down. I'm calling the function every 10 seconds and it's clear that the old client is still being reused.\r\n\r\nI've attached the full set of logs ([kubelogs.txt](https://github.com/golang/go/files/157285/kubelogs.txt)) from my Kubernetes pod showing how requests work and then after a while start failing with timeouts (the `client.Timeout` is set to 3 seconds), but the same client keeps being reused nonetheless. Eventually, after a very long time, the client finally dies with `Transport readFrame error: (*net.OpError) read tcp …-\u003e…: read: connection timed out` after which a new client is created and everything works again (until it doesn't).\r\n\r\nWhile this issue is for `transport.CloseIdleConnections()`, any hints on how to resolve the root cause would be appreciated (you can e-mail me at blixt@rogertalk.com to keep this issue from sidetracking).",
+	"user": {
+		"login": "blixt",
+		"id": 158591,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-03T17:22:47Z",
+	"updated_at": "2016-03-04T14:14:01Z"
+}

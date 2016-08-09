@@ -1,0 +1,28 @@
+{
+	"id": 51278597,
+	"number": 2001,
+	"state": "closed",
+	"title": "cgo: GOMAXPROCS deadlock",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nI have a gotest 6.out that calls runtime.GOMAXPROCS(0) for logging purposes shortly\nafter starting up and also has two goroutines doing blocking cgo calls started from an\ninit function.\n\nIt hangs. Sending SIGQUIT gives:\n\nSIGQUIT: quit\nPC=0x41564e\n\nruntime.futex+0x23 /home/alberts/go/src/pkg/runtime/linux/amd64/sys.s:164\n        runtime.futex()\nfutexsleep+0x50 /home/alberts/go/src/pkg/runtime/linux/thread.c:52\n        futexsleep(0x8a296c, 0x300000003, 0x4159be, 0x40f5dd)\nfutexlock+0x85 /home/alberts/go/src/pkg/runtime/linux/thread.c:120\n        futexlock(0x8a296c, 0x0)\nruntime.notesleep+0x25 /home/alberts/go/src/pkg/runtime/linux/thread.c:205\n        runtime.notesleep(0x8a296c, 0x4e048b7f)\nruntime.stoptheworld+0x68 /home/alberts/go/src/pkg/runtime/proc.c:426\n        runtime.stoptheworld()\nruntime.gc+0x15c /home/alberts/go/src/pkg/runtime/mgc0.c:593\n        runtime.gc(0xf800000000, 0x60)\nruntime.mallocgc+0x1c3 /home/alberts/go/src/pkg/runtime/malloc.c:90\n        runtime.mallocgc(0x60, 0x100000000, 0x100000001, 0x415a19, 0x40a016, ...)\nruntime.mal+0x3f /home/alberts/go/src/pkg/runtime/malloc.c:289\n        runtime.mal(0x58, 0x40f5dd)\nruntime.new+0x24 /home/alberts/go/src/pkg/runtime/malloc.c:296\n        runtime.new(0x58, 0x8a2920, 0x0, 0x411236)\nregexp.Compile+0x3e /home/alberts/go/src/pkg/regexp/regexp.go:619\n        regexp.Compile(0x7fff662f27bf, 0x40000000c, 0x0, 0x0, 0x0, ...)\nmain.matchString+0xf8 /home/alberts/next/src/cmd/session/_testmain.go:45\n        main.matchString(0x7fff662f27bf, 0xc, 0x7130fc, 0x15, 0xf840001700, ...)\ntesting.RunTests+0xbe /home/alberts/go/src/pkg/testing/testing.go:176\n        testing.RunTests(0x400c00, 0xf840019c80, 0x1a0000001a, 0x400d9c)\ntesting.Main+0x4f /home/alberts/go/src/pkg/testing/testing.go:163\n        testing.Main(0x400c00, 0xf840019c80, 0x1a0000001a, 0xf840000c00, 0x0, ...)\nmain.main+0x6d /home/alberts/next/src/cmd/session/_testmain.go:54\n        main.main()\nruntime.mainstart+0xf /home/alberts/go/src/pkg/runtime/amd64/asm.s:77\n        runtime.mainstart()\nruntime.goexit /home/alberts/go/src/pkg/runtime/proc.c:178\n        runtime.goexit()\n----- goroutine created by -----\n_rt0_amd64+0x8e /home/alberts/go/src/pkg/runtime/amd64/asm.s:64\n\ngoroutine 3 [2]:\nreturn /home/alberts/go/src/pkg/runtime/amd64/asm.s:384\n        return()\nruntime.cgocall+0x108 /home/alberts/go/src/pkg/runtime/cgocall.c:136\n        runtime.cgocall(0x535973, 0x7f01f02a5f48, 0x0, 0x53522e)\nib._Cfunc_ibv_get_async_event+0x2f /home/alberts/next/src/pkg/ib/_obj/_cgo_defun.c:364\n        ib._Cfunc_ibv_get_async_event(0x3025f20, 0xf840133c00)\nib.getAsyncEvents+0x45 /home/alberts/next/src/pkg/ib/_obj/ib.cgo1.go:204\n        ib.getAsyncEvents(0x3025f20, 0x0)\nruntime.goexit /home/alberts/go/src/pkg/runtime/proc.c:178\n        runtime.goexit()\n----- goroutine created by -----\nib.init·1+0x161 /home/alberts/next/src/pkg/ib/_obj/ib.cgo1.go:233\n\ngoroutine 2 [2]:\nreturn /home/alberts/go/src/pkg/runtime/amd64/asm.s:384\n        return()\nruntime.cgocall+0x108 /home/alberts/go/src/pkg/runtime/cgocall.c:136\n        runtime.cgocall(0x535973, 0x7f01f02a4f48, 0x40ad60, 0x53522e)\nib._Cfunc_ibv_get_async_event+0x2f /home/alberts/next/src/pkg/ib/_obj/_cgo_defun.c:364\n        ib._Cfunc_ibv_get_async_event(0x3024d30, 0xf840133800)\nib.getAsyncEvents+0x45 /home/alberts/next/src/pkg/ib/_obj/ib.cgo1.go:204\n        ib.getAsyncEvents(0x3024d30, 0x0)\nruntime.goexit /home/alberts/go/src/pkg/runtime/proc.c:178\n        runtime.goexit()\n----- goroutine created by -----\nib.init·1+0x161 /home/alberts/next/src/pkg/ib/_obj/ib.cgo1.go:233\nrax     0xfffffffffffffffc\nrbx     0x8a296c\nrcx     0xffffffffffffffff\nrdx     0x3\nrdi     0x8a296c\nrsi     0x0\nrbp     0x1f\nrsp     0x7f01f02a3c48\nr8      0x0\nr9      0x0\nr10     0x89d230\nr11     0x206\nr12     0xf84002b620\nr13     0x91\nr14     0x0\nr15     0x0\nrip     0x41564e\nrflags  0x206\ncs      0x33\nfs      0x0\ngs      0x0\n\nWhat do you see instead?\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich revision are you using?  (hg identify)\n\ntip\n\nPlease provide any additional information below.\n\nLooks like something that might not have been fixed by the fix for \u003ca href=\"https://golang.org/issue/1715\"\u003eissue #1715\u003c/a\u003e.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2014-12-08T10:10:53Z",
+	"created_at": "2011-06-24T13:07:36Z",
+	"updated_at": "2016-06-24T19:31:25Z"
+}

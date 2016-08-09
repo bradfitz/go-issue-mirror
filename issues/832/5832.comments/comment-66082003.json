@@ -1,0 +1,12 @@
+{
+	"id": 66082003,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **leterip**:\n\n\u003cpre\u003e#1 Yes, of course. The point of the bug is to demonstrate a misleading (imo) traceback.\nThe deadlock was intentional.\n\n#2 Fair enough but a couple points to maybe help you reconsider:\n\n1. This hit me in real life during one of my first forays into cgo after a C call.\nBecause the tracebacks did not have meaningful line numbers, it compounded this issue\nand caused me to believe I had done something wrong with the stacks or something to get\nit to call a function it obviously wasn't calling.\n\n2. Consider \u003ca href=\"http://play.golang.org/p/WfZAAeIozq\"\u003ehttp://play.golang.org/p/WfZAAeIozq\u003c/a\u003e\nIn this case, the traceback is actively misleading because what appears to be a normal\nfunction call is actually called from a deferred function call. I can imagine pulling my\nhair out for hours if a condition like this happened in a larger code base. \"But I\nunlocked the mutex  right above it!\"\n\n3. I asked this in #go-nuts before filing this ticket and many long timers and newcomers\nboth agreed I should file a bug. I believe the behavior is confusing.\n\nI agree with you that the information is useful and I would prefer to see the panicing\ngoroutine (and consequently how it got there) in the traceback, but perhaps it would be\nbetter to annotate the ways in which those functions were called in the defer/panic\ncase? Something like\n\n    main.Two(0x5) (defer from main.main)\n    \t/tmpfs/gosandbox-5213630e_c5b38c2f_e31419de_afd0d3f1_bf594733/prog.go:15 +0x28\n    main.One() (panic)\n    \t/tmpfs/gosandbox-5213630e_c5b38c2f_e31419de_afd0d3f1_bf594733/prog.go:11 +0x64\n    main.main()\n    \t/tmpfs/gosandbox-5213630e_c5b38c2f_e31419de_afd0d3f1_bf594733/prog.go:23 +0x67\n\nadds enough information to make it immediately clear what happened while retaining the\nsimplicity and readability of typical stack traces. If this information is otherwise\nunavailable without GOTRACEBACK=2 I feel like I am forced to run with that debug flag on\nalways, which isn't very nice.\n\nThanks.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-07-03T12:54:57Z",
+	"updated_at": "2014-12-08T10:32:02Z"
+}

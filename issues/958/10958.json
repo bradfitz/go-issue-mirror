@@ -1,0 +1,32 @@
+{
+	"id": 81098230,
+	"number": 10958,
+	"state": "open",
+	"title": "runtime: tight loops should be preemptible",
+	"body": "Currently goroutines are only preemptible at function call points. Hence, it's possible to write a tight loop (e.g., a numerical kernel or a spin on an atomic) with no calls or allocation that arbitrarily delays preemption. This can result in arbitrarily long pause times as the GC waits for all goroutines to stop.\r\n\r\nIn unusual situations, this can even lead to deadlock when trying to stop the world. For example, the runtime's TestGoroutineParallelism tries to prevent GC during the test to avoid deadlock. It runs several goroutines in tight loops that communicate through a shared atomic variable. If the coordinator that starts these is paused part way through, it will deadlock.\r\n\r\nOne possible fix is to insert preemption points on control flow loops that otherwise have no preemption points. Depending on the cost of this check, it may also require unrolling such loops to amortize the overhead of the check.\r\n\r\nThis has been a longstanding issue, so I don't think it's necessary to fix it for 1.5. It can cause the 1.5 GC to miss its 10ms STW goal, but code like numerical kernels is probably not latency-sensitive. And as far as I can tell, causing a deadlock like the runtime test can do requires looking for trouble.\r\n\r\n@RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"created_at": "2015-05-26T19:18:36Z",
+	"updated_at": "2016-06-13T15:40:42Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

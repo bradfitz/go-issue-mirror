@@ -1,0 +1,27 @@
+{
+	"id": 82336456,
+	"number": 10984,
+	"state": "closed",
+	"title": "runtime: concurrent GC causes SIGBUS, SIGSEGV",
+	"body": "We experimented with current master, and are experiencing regular crashes under reasonably high load. I haven't been able to reduce this yet, but maybe it's helpful as is? Let me know if there's something else I can provide.\r\n\r\n```\r\n$ go version\r\ngo version devel +8b186df Thu May 28 02:30:26 2015 +0000 darwin/amd64\r\n```\r\n\r\nCross-compiled to linux/amd64.\r\n\r\n```\r\nunexpected fault address 0xc2126257a0\r\nfatal error: fault\r\n[signal 0xb code=0x2 addr=0xc2126257a0 pc=0xc2126257a0]\r\n\r\ngoroutine 31 [running]:\r\nruntime.throw(0xad7840, 0x5)\r\n        /s/go/src/runtime/panic.go:527 +0x96 fp=0xc20f3eb8c0 sp=0xc20f3eb8a8\r\nruntime.sigpanic()\r\n        /s/go/src/runtime/sigpanic_unix.go:27 +0x2ae fp=0xc20f3eb910 sp=0xc20f3eb8c0\r\ncreated by realzeit.io/rtb/decision-engine/server.NewCampaign\r\n        /go/src/realzeit.io/rtb/decision-engine/server/campaign.go:40 +0x15e\r\n\r\ngoroutine 1 [select, 1 minutes]:\r\nmain.main()\r\n        /go/src/realzeit.io/rtb/one/main.go:117 +0x10e0\r\n\r\n...\r\n```\r\n\r\nThe relevant code:\r\n\r\n```\r\n    28\tfunc NewCampaign(de *bidding.DecisionEngine) *campaign {\r\n    29\t\tc := campaign{\r\n    30\t\t\tde:         de,\r\n    31\t\t\trequests:   make(chan crequest),\r\n    32\t\t\tupdCamp:    make(chan rzcampaign.Config),\r\n    33\t\t\tupdBrain:   make(chan rzcampaign.BrainConfig),\r\n    34\t\t\tdebugStats: make(chan chan DebugStats),\r\n    35\t\t}\r\n    36\t\tc.wg.Add(1)\r\n    37\t\tgo func() {\r\n    38\t\t\tc.loop()\r\n    39\t\t\tc.wg.Done()\r\n    40\t\t}()\r\n    41\t\treturn \u0026c\r\n    42\t}\r\n```\r\n",
+	"user": {
+		"login": "robx",
+		"id": 132113,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 31,
+	"closed_at": "2015-06-23T23:50:35Z",
+	"created_at": "2015-05-29T08:45:37Z",
+	"updated_at": "2016-06-25T02:09:46Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"id": 235624596,
+	"body": "@kostya-sh \r\n\r\n\u003e As far as I can see the limited types-only form of this proposal won't help with moving context package. Aliases for both variables (https://godoc.org/golang.org/x/net/context#pkg-variables) and types are required.\r\n\r\nGiven that Go programs should not be mutating those package-level variables (I think we can agree on that, right?), type aliases suffice:\r\n\r\n```go\r\n// golang.org/x/net/context\r\npackage context\r\n\r\nimport \"context\"\r\n\r\nvar (\r\n  Canceled = context.Canceled\r\n  DeadlineExceeded = context.DeadlineExceeded\r\n)\r\n\r\ntype (\r\n  CancelFunc = context.CancelFunc\r\n  Context = context.Context\r\n)\r\n\r\nfunc Background() Context { return context.Background() }\r\nfunc TODO() Context { return context.TODO() }\r\nfunc WithCancel(parent Context) (Context, CancelFunc) { return context.WithCancel(parent) }\r\n[...]  // etc.\r\n```\r\n\r\nThe only part of that that isn't possible in Go today is the `type` block.\r\n\r\nThis reveals another advantage of aliasing for functions and variables: with the approach above, we would also have to duplicate all of the documentation in `golang.org/x/net/context` so that it will appear in godoc.  With full-fledged variable and function aliases, godoc could presumably forward that documentation automatically, reducing the risk of skew between the two sets of documentation.\r\n\r\n\u003e Another observation is that alias use cases for refactoring are somewhat limited by possible circular dependecies. E.g. if I have math/big.Float and math/big.Sqrt(Float) and want to move Sqrt function into a new package bigmath and preserve math/big.Sqrt for backward compatibility I cannot use aliases for that.\r\n\r\nYou can, actually.  It would require moving the `Float` type into either `bigmath` or a (possibly-internal) third package that both `big` and `bigmath` can alias into:\r\n\r\n```go\r\npackage big\r\ntype Float = bigfloat.Float\r\nfunc Sqrt(f Float) { return bigmath.Sqrt(f) }\r\n```\r\n\r\n```go\r\npackage bigmath\r\nfunc Sqrt(f bigfloat.Float)  { [...] }\r\n```\r\n\r\n```go\r\npackage bigfloat\r\ntype Float struct { [...] }\r\n``",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-07-27T15:34:44Z",
+	"updated_at": "2016-07-27T15:36:45Z"
+}

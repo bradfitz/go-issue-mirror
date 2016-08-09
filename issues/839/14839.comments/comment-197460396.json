@@ -1,0 +1,12 @@
+{
+	"id": 197460396,
+	"body": "The code is correct, but tricky in its use of values and references to maintain the Mutex. A tentative change like this appears to also be correct, passes the tests, and also passes `go vet`:\r\n\r\n```diff\r\ndiff --git a/context/context.go b/context/context.go\r\nindex 77b64d0..19235cf 100644\r\n--- a/context/context.go\r\n+++ b/context/context.go\r\n@@ -210,13 +210,13 @@ type CancelFunc func()\r\n // call cancel as soon as the operations running in this Context complete.\r\n func WithCancel(parent Context) (ctx Context, cancel CancelFunc) {\r\n        c := newCancelCtx(parent)\r\n-       propagateCancel(parent, \u0026c)\r\n-       return \u0026c, func() { c.cancel(true, Canceled) }\r\n+       propagateCancel(parent, c)\r\n+       return c, func() { c.cancel(true, Canceled) }\r\n }\r\n\r\n // newCancelCtx returns an initialized cancelCtx.\r\n-func newCancelCtx(parent Context) cancelCtx {\r\n-       return cancelCtx{\r\n+func newCancelCtx(parent Context) *cancelCtx {\r\n+       return \u0026cancelCtx{\r\n                Context: parent,\r\n                done:    make(chan struct{}),\r\n        }\r\n@@ -259,7 +259,7 @@ func parentCancelCtx(parent Context) (*cancelCtx, bool) {\r\n                case *cancelCtx:\r\n                        return c, true\r\n                case *timerCtx:\r\n-                       return \u0026c.cancelCtx, true\r\n+                       return c.cancelCtx, true\r\n                case *valueCtx:\r\n                        parent = c.Context\r\n                default:\r\n@@ -377,7 +377,7 @@ func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc) {\r\n // implement Done and Err.  It implements cancel by stopping its timer then\r\n // delegating to cancelCtx.cancel.\r\n type timerCtx struct {\r\n-       cancelCtx\r\n+       *cancelCtx\r\n        timer *time.Timer // Under cancelCtx.mu.\r\n\r\n        deadline time.Time\r\n```\r\n\r\nI'm happy to put this into a CL.",
+	"user": {
+		"login": "bernerdschaefer",
+		"id": 193,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-16T18:03:05Z",
+	"updated_at": "2016-03-16T18:03:05Z"
+}

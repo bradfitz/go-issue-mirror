@@ -1,0 +1,12 @@
+{
+	"id": 207978113,
+	"body": "Is anyone currently working on a solution for this? I am willing to supply a fix myself, but I was asked to consolidate planning in this thread.\r\n\r\nAs evidenced by the slew of issues referencing this one, this bug is affecting people all the time. With the explosive growth of node's popularity, we can only expect the frequency of people running into this bug to grow similarly. Indeed I ran into this while using the govendor tool on a rather simple project that contains gulp: `C:\\Gopath\\src\\bitbucket.org\\xStrom\\lopya\\node_modules\\gulp\\node_modules\\gulp-util\\node_modules\\dateformat\\node_modules\\meow\\node_modules\\normalize-package-data\\node_modules\\validate-npm-package-license\\node_modules\\spdx-correct\\node_modules\\spdx-license-ids\\LICENSE`.\r\n\r\nAs mentioned in this thread, it is currently possible to supply \"\\\\\\\\?\\\\\" prepended paths to some of the `os` package functions to solve the issue. This however goes directly against the claim made in the `os` package documentation: [\"a platform-independent interface to operating system functionality\"](https://golang.org/pkg/os/). There's nothing platform-independent about an if-windows-then-prepend block before every function call.\r\n\r\nThen there's also the problem that Windows API does some magic handling of paths shorter than MAX_PATH. Replacing \"/\" with \"\\\\\" etc. So if we just start prepending \"\\\\\\\\?\\\\\" then people's existing code will start breaking, if they're using *C:/foo/bar.txt* or something similar as input.\r\n\r\nI think a reasonable solution would be to do a length check on the path name before syscalling. If the name fits MAX_PATH, then use it as is, and enjoy the extra magic. If the name exceeds MAX_PATH and doesn't already start with \"\\\\\\\\?\\\\\", then we can only benefit from prepending \"\\\\\\\\?\\\\\". This solution is backwards compatible with magic-needing paths (e.g. *C:/foo/bar.txt*) that are already being used in the wild, and is also backwards compatible with code that already has their own if-windows-then-prepend block. Yes no magic would be applied to long paths, but those magic-needing long paths don't work currently either.",
+	"user": {
+		"login": "xStrom",
+		"id": 754881,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-10T12:24:21Z",
+	"updated_at": "2016-04-10T12:24:21Z"
+}

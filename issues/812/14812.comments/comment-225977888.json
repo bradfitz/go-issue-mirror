@@ -1,0 +1,12 @@
+{
+	"id": 225977888,
+	"body": "\u003e I had to switch github.com/grafana/grafana/pkg/log to origin/metrics_reporting\r\n\r\ni'm not sure what's metrics_reporting, but the log problem is caused due to grafana recently changing up its logging mechanism, you can just checkout the last commit before that (https://github.com/grafana/grafana/commit/22cda198aedfacaa93e2666e54db963ab93825a8) and metric-tank will build fine against it.\r\n\r\nas for running it, MT (metric tank) relies on cassandra, elasticsearch and nsqd (from the nsq.io project) at runtime. the easiest (hopefully) way to get it all up and running is by using https://github.com/raintank/raintank-docker, so you can follow that readme, with a few changes:\r\n* you need to update `screens/metricTank` with\r\n```\r\n-./metric_tank \\\r\n+GODEBUG=gctrace=1,gcpacertrace=1 ./metric_tank \\\r\n```\r\n\r\n* you would also need to create a file screens/benchmark in raintank-docker with contents like the below:\r\n```\r\n#backfill an hour at 100k, wait for it, and then do realtime at 10k in background, and start http load.\r\nfake_metrics -nsqd-tcp-address nsqd:4150 -statsd-addr statsdaemon:8125 -orgs 100 -keys-per-org 100 -offset 1h -speedup 10 -stop-at-now\r\nfake_metrics -nsqd-tcp-address nsqd:4150 -statsd-addr statsdaemon:8125 -orgs 100 -keys-per-org 100  \u0026\r\ngo get github.com/raintank/raintank-metric/inspect-es\r\ngo get github.com/tsenart/vegeta\r\ninspect-es --es-addr elasticsearch:9200 -format vegeta-mt | sed 's#localhost:6063#metricTank:6063#' | vegeta attack -rate 500 -duration=120m \u003e attack.out\r\n```\r\n\r\nthese tools set up the \"contextual circumstances\": fake_metrics generates an input stream, inspect-es piped to vegeta triggers a consistent http request load.\r\n\r\nyou might hit some snags in the process of getting this all up and running though, and i would hate to have you lose much time with this. but i could hop on a call or whatever to help out.\r\n\r\nthanks.",
+	"user": {
+		"login": "Dieterbe",
+		"id": 20774,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-14T18:44:47Z",
+	"updated_at": "2016-06-14T18:44:47Z"
+}

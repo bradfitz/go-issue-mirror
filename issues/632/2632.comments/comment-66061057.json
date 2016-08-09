@@ -1,0 +1,12 @@
+{
+	"id": 66061057,
+	"body": "\u003ca id=\"c16\"\u003e\u003c/a\u003eComment 16:\n\n\u003cpre\u003eThis issue was just causing performance problems for a user inside Google. They had a\nlarge sstable with float64 []byte values. Each strconv.ParseFloat(string(value), 64) was\ngenerating garbage (which ended up being a lot of garbage)\n\nAs a medium-term hack, I showed they could do:\n\n    func unsafeString(b []byte) string {\n       return *(*string)(unsafe.Pointer(\u0026b))\n    }\n\n    freq, err := strconv.ParseFloat(unsafeString(val), 64)\n\nBut I felt bad even pointing that out.\n\nI'd really like \u003ca href=\"https://golang.org/issue/2205\"\u003eissue #2205\u003c/a\u003e to be the answer to this issue, so we don't have to add new\nAPI.\n\nThat is, I'd like this to be garbage-free:\n\n     var b []byte = ....\n     freq, err := strconv.ParseFloat(string(b), 64)\n\nThe compiler should do the equivalent unsafeString thing, if it can statically determine\nthat the string never escapes strconv.ParseFloat.\n\nYes, the strconv.ParseFloat could then observe concurrent mutations of b via its string,\nlike this:\n\n     var b []byte = ....\n     go mutateBytes(b)\n     freq, err := strconv.ParseFloat(string(b), 64)\n\nBut that was already a data race.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-04-26T16:59:25Z",
+	"updated_at": "2014-12-08T10:14:01Z"
+}

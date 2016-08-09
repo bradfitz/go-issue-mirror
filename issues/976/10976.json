@@ -1,0 +1,33 @@
+{
+	"id": 82008687,
+	"number": 10976,
+	"state": "closed",
+	"title": "runtime: shrinking the stack during a system call may cause a corrupt address",
+	"body": "This is a spinoff of #10303 .\r\n\r\nIn a function like this:\r\n\r\nfunc F() {\r\n\tvar a [10]byte\r\n\tsyscall.Read(0, a[:])\r\n}\r\n\r\na does not escape and is therefore allocated on the stack.  The call to syscall.Read may block.  If a GC occurs while it is blocking, the GC may decide to shrink the stack.  Shrinking the stack will move a.  This will cause the read call to corrupt random memory when it finally returns.\r\n\r\nThis is a supposition based on looking at the code.  I have no actual test case.\r\n\r\nWe do not want to treat pointers to syscall functions as causing the pointers to escape.  That would force values into the heap unnecessarily.  We know that syscall functions on Unix systems never cause the pointers to escape.\r\n\r\nTherefore, we need some way to prevent the stack from shrinking while the function is in a system call.  One simple approach would be to also prevent the stack from shrinking while in a cgo call: not shrink the stack if the goroutine status is Gsyscall.  I don't think that would be too bad--I doubt many goroutines hang in cgo calls with a large stack.\r\n\r\nAnyhow, this issue has to be resolved before the 1.5 release, either by deciding that it is not a problem, or by fixing it.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-05-28T16:40:26Z",
+	"created_at": "2015-05-28T16:16:26Z",
+	"updated_at": "2016-06-25T02:09:42Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

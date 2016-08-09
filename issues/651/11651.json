@@ -1,0 +1,33 @@
+{
+	"id": 94223700,
+	"number": 11651,
+	"state": "closed",
+	"title": "net/http: something about ACME letsencrypt",
+	"body": "Solution (Note to Les Googlers)\r\n==============================\r\n\r\nMy question was, as I misinterpreted the documentation.\r\n\r\n* `GetCertificate == SNICallback`\r\n* You cannot cast `net.Conn` to `http.Conn`, you can only cast `net.Listener` to `http.Listener`\r\n  * i.e. `server := \u0026http.Serve{}; server.Server(tlsListener)`\r\n\r\nSee examples at\r\n\r\n  * \u003chttps://github.com/coolaj86/golang-https-example/tree/https-server\u003e\r\n  * \u003chttps://github.com/coolaj86/golang-https-example\u003e\r\n\r\nThe crux of the issue In 68 lines:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"fmt\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n\t\"os\"\r\n\t\"path/filepath\"\r\n\t\"strconv\"\r\n\t\"strings\"\r\n)\r\n\r\ntype myHandler struct{}\r\n\r\nfunc (m *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n\tfmt.Println(r.Host)\r\n\tfmt.Println(r.Method)\r\n\tfmt.Println(r.RequestURI)\r\n\tfmt.Println(r.URL) // also has many keys, such as Query\r\n\tfor k, v := range r.Header {\r\n\t\tfmt.Println(k, v)\r\n\t}\r\n\tfmt.Println(r.Body)\r\n\r\n\t// End the request\r\n\tfmt.Fprintf(w, \"Hi there, %s %q? Wow!\\n\\nWith Love,\\n\\t%s\", r.Method, r.URL.Path[1:], r.Host)\r\n}\r\n\r\nfunc main() {\r\n\tport := uint(8443)\r\n\tcertsPath := \"/etc/letsencrypt/live\"\r\n\tdefaultHost := \"localhost.daplie.com\"\r\n\r\n\tfmt.Printf(\"Loading Certificates %s/%s/{privkey.pem,fullchain.pem}\\n\", certsPath, defaultHost)\r\n\r\n\tprivkeyPath := filepath.Join(certsPath, defaultHost, \"privkey.pem\")\r\n\tcertPath := filepath.Join(certsPath, defaultHost, \"fullchain.pem\")\r\n\tcert, err := tls.LoadX509KeyPair(certPath, privkeyPath)\r\n\tif err != nil {\r\n\t\tfmt.Fprintf(os.Stderr, \"Couldn't load default certificates: %s\\n\", err)\r\n\t\tos.Exit(1)\r\n\t}\r\n\r\n\taddr := \":\" + strconv.Itoa(int(port))\r\n\r\n\tconn, err := net.Listen(\"tcp\", addr)\r\n\tif nil != err {\r\n\t\tfmt.Fprintf(os.Stderr, \"Couldn't bind to TCP socket %q: %s\\n\", addr, err)\r\n\t\tos.Exit(1)\r\n\t}\r\n\r\n\ttlsConfig := new(tls.Config)\r\n\ttlsConfig.Certificates = []tls.Certificate{cert}\r\n\ttlsConfig.GetCertificate = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {\r\n\t\treturn \u0026cert, nil\r\n\t}\r\n\ttlsListener := tls.NewListener(conn, tlsConfig)\r\n\r\n\tserver := \u0026http.Server{\r\n\t\tAddr:    addr,\r\n\t\tHandler: \u0026myHandler{},\r\n\t}\r\n\r\n\thost := strings.ToLower(defaultHost)\r\n\tfmt.Printf(\"Listening on https://%s:%d\\n\", host, port)\r\n\tserver.Serve(tlsListener)\r\n}\r\n```\r\n\r\nOriginal Question\r\n==============\r\n\r\nhttps://LetsEncrypt.org's release is just around the corner, but it's currently not possible to dynamically retrieve and renew certificates in go with an active http server.\r\n\r\nTo do so requires fixing a tiny regression introduced sometime between the move from httputils and now. See https://golang.org/pkg/net/http/httputil/#ServerConn.\r\n\r\nWe need to re-expose http.NewConn and http.conn.Serve.\r\nSee the diff: https://github.com/coolaj86/go/commit/1a30898568d34c8cbfee25edac386c1bdc05ea25\r\n\r\nI've got a working demo of dynamically loading certificates with this change here:\r\nhttps://gist.github.com/coolaj86/16ed8fd810e19dec71be\r\n\r\nI've already signed the CLA and with a little coaching I'm sure I could turn my example into an appropriate test case, but I'm way out of my league with the 37-page explanation of how to make a pull request...\r\n\r\nSee also #11649",
+	"user": {
+		"login": "coolaj86",
+		"id": 122831,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"closed_at": "2015-07-14T06:41:44Z",
+	"created_at": "2015-07-10T06:08:55Z",
+	"updated_at": "2016-07-13T16:06:34Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

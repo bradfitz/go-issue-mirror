@@ -1,0 +1,27 @@
+{
+	"id": 51287836,
+	"number": 8203,
+	"state": "closed",
+	"title": "syscall: ParseRoutingSockaddr crushes notified network addresses",
+	"body": "by **p@google.com**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version devel +0f7c69d6c367 Mon May 12 17:19:02 2014 -0400 darwin/amd64\n\nWhat steps reproduce the problem?\n\nParse RTM_NEWADDR messages on a mac.\n\nIf possible, include a link to a program on play.golang.org. (I attached one as a file)\n\n1.  read the PF_ROUTE socket\n2.  parse messages using syscall.ParseRoutingMessage and syscall.ParseRoutingSockaddr\n3.  turn wifi off and on\n\n\nWhat happened?\n\nYou'll get back a netmask and a bogus address.\nThe pkg code is wrong, see fix below.\n\nWhat should have happened instead?\n\nYou get back a netmask and a good address.\n\nPlease provide any additional information below.\n\ngo/src/pkg/syscall/route_bsd.go:156\n\nwas:\n\t\tif m.Header.Addrs\u0026amp;rtaIfaMask\u0026amp;(1\u0026lt;\u0026lt;i) == 0 {\n\nshould be:\n\t\tif m.Header.Addrs\u0026amp;(1\u0026lt;\u0026lt;i) == 0 {\n\nOtherwise the subsequent loop gets confused about what address it is parsing, i.e, it\ndoesn't skip over the ones its trying to ignore.   Easy fix.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8203/0/broken.go\"\u003ebroken.go\u003c/a\u003e (1474 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:45:30Z",
+	"created_at": "2014-06-13T17:30:45Z",
+	"updated_at": "2016-06-25T01:36:26Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

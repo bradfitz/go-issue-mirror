@@ -1,0 +1,12 @@
+{
+	"id": 94114451,
+	"body": "I ran into the same issue today where `go version devel +6d3a7e7` was reporting ` json: unsupported type: func() time.Time` due to tls.Config data several levels down being encoded. A simplified example:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/json\"\r\n\t\"log\"\r\n\t\"time\"\r\n)\r\n\r\ntype Client struct {\r\n\t// should not encode conn or anything below it\r\n\tconn *Conn\r\n}\r\n\r\ntype Conn struct {\r\n\t// Conf *tls.Config contains\r\n\tTime func() time.Time\r\n}\r\n\r\nfunc main() {\r\n\t_, err := json.Marshal(Client{conn: \u0026Conn{}})\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n}\r\n```\r\n\r\nIt took me some time to track down that it was this issue. It turns out that logging e.String() from unsupportedTypeEncoder was quite helpful in determining the offending field.\r\n\r\nThe comment regarding this only happening in `package main` explains why I wasn't able to write a test case for this.",
+	"user": {
+		"login": "nathany",
+		"id": 4566,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-18T02:06:08Z",
+	"updated_at": "2015-04-18T02:06:45Z"
+}

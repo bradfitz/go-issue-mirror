@@ -1,0 +1,22 @@
+{
+	"id": 51285608,
+	"number": 6715,
+	"state": "closed",
+	"title": "Gccgo-produced binaries fail if working directory containins a directory with the same basename as the binary",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n: oos:aram; cd /tmp\n: oos:tmp; mkdir -p foo/bar/baz\n: oos:tmp; cd foo\n/tmp/foo\n: oos:foo; cat \u0026lt;\u0026lt;EOF \u0026gt;baz.go\n\u0026gt; package main\n\u0026gt; \n\u0026gt; func main() {\n\u0026gt; }\n\u0026gt; EOF\n: oos:foo; gccgo -o baz baz.go -lnsl -lsocket -static-libgo -static-libgcc\n: oos:foo; ./baz\n: oos:foo; PATH=/tmp/foo:$PATH\n: oos:foo; cd bar\n/tmp/foo/bar\n: oos:bar; baz\nmmap errno 19\nfatal error: mmap\n: oos:bar; cd baz\n/tmp/foo/bar/baz\n: oos:baz; baz\n: oos:baz; \n: oos:baz; \n: oos:baz; cd ..\n: oos:bar; baz\nmmap errno 19\nfatal error: mmap\n: oos:foo; \n\nWhat is the expected output?\n\nbaz should not crash.\n\nWhat do you see instead?\n\nbaz crashes.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngccgo\n\nWhich operating system are you using?\n\nSolaris\n\nWhich version are you using?\n\n: oos:foo; gccgo -v\nUsing built-in specs.\nCOLLECT_GCC=gccgo\nCOLLECT_LTO_WRAPPER=/opt/gcc482/bin/../libexec/gcc/x86_64-sun-solaris2.11/4.8.2/lto-wrapper\nTarget: x86_64-sun-solaris2.11\nConfigured with: ../src/configure --prefix=/home/aram/gcc482\n--build=x86_64-sun-solaris2.11 --host=x86_64-sun-solaris2.11 --disable-multilib\n--disable-shared --enable-threads=posix --enable-languages=c,c++,go --disable-libssp\n--disable-nls --with-gnu-as --with-gnu-ld --enable-ld --disable-gold\nThread model: posix\ngcc version 4.8.2 (GCC) \n: oos:foo; uname -a\nSunOS oos 5.11 omnios-b281e50 i86pc i386 i86pc\n: oos:foo; cat /etc/release\n  OmniOS v11 r151006\n  Copyright 2012-2013 OmniTI Computer Consulting, Inc. All rights reserved.\n  Use is subject to license terms.\n: oos:foo; \n\nPlease provide any additional information below.\n\nFrom truss:\n\n[ ... snip ...]\nopen(\u0026quot;baz\u0026quot;, O_RDONLY)\t\t\t\t= 3\nfcntl(3, F_SETFD, 0x00000001)\t\t\t= 0\nmmap(0x00000000, 4096, PROT_READ, MAP_PRIVATE, 3, 0) Err#19 ENODEV\n[ ... snip ...]\n\nStack trace at the mmap with wrong fd:\n\n: oos:bar; dtrace -c baz -n 'pid$target::mmap:entry /arg4 == 3/ { ustack(); }'\ndtrace: description 'pid$target::mmap:entry ' matched 2 probes\nmmap errno 19\nfatal error: mmap\ndtrace: pid 14047 exited with status 2\nCPU     ID                    FUNCTION:NAME\n  1  78238                       mmap:entry \n              libc.so.1`mmap\n              baz`backtrace_get_view+0x64\n              baz`elf_add+0x5f\n              baz`backtrace_initialize+0x40\n              baz`fileline_initialize+0x13d\n              baz`backtrace_pcinfo+0x2b\n              baz`unwind+0x50\n              baz`_Unwind_Backtrace+0x49\n              baz`backtrace_full+0x35\n              baz`runtime_callers+0x39\n              baz`mcommoninit+0x37\n              baz`runtime_schedinit+0x8f\n              baz`main+0x27\n              baz`_start+0x6c\n\n\n: oos:bar; \n\nStack trace at the faulty open:\n\n: oos:bar; dtrace -c baz -n 'syscall::open:entry /copyinstr(arg0) == \u0026quot;baz\u0026quot;/ {\nustack(); }'\ndtrace: description 'syscall::open:entry ' matched 1 probe\nmmap errno 19\nfatal error: mmap\ndtrace: pid 14052 exited with status 2\nCPU     ID                    FUNCTION:NAME\n  0  10248                       open:entry \n              libc.so.1`_syscall6+0x1b\n              libc.so.1`open+0x5d\n              baz`backtrace_open+0x35\n              baz`fileline_initialize+0x125\n              baz`backtrace_pcinfo+0x2b\n              baz`unwind+0x50\n              baz`_Unwind_Backtrace+0x49\n              baz`backtrace_full+0x35\n              baz`runtime_callers+0x39\n              baz`mcommoninit+0x37\n              baz`runtime_schedinit+0x8f\n              baz`main+0x27\n              baz`_start+0x6c\n\n\n: oos:bar;\u003c/pre\u003e",
+	"user": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:37:14Z",
+	"created_at": "2013-11-04T14:56:15Z",
+	"updated_at": "2016-06-25T01:21:50Z"
+}

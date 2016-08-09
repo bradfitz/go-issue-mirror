@@ -1,0 +1,28 @@
+{
+	"id": 51279000,
+	"number": 2286,
+	"state": "closed",
+	"title": "godoc:readIndex might need to wrap a bufio.Reader around the io.MultiReader ",
+	"body": "by **mt4swm**:\n\n\u003cpre\u003e[using tip: 387f8f80bf20]\n\nThis issue is rather subtle and seems normally not\nto be visible. Having godoc read a previously written search\nindex back seems to work, but might fail in some cases (haven't seen\nit with the original godoc program).\n\nBackground: Within src/cmd/godoc/index.go:(x *Index)Read()\nthree gob encoded parts are read from an io.Reader:\n - a struct \u0026quot;fileIndex\u0026quot;\n - a go/token.FileSet\n - an index/suffixarray.Index\n\nFor each part a new gob.Decoder is created from the io.Reader.\nGob.Decoder internally calls bufio.NewReader(). Since this\nbuffered reader may read more bytes from the io.Reader than\nits client (the gob decoder) actually will use, some bytes,\nwhich belong to the beginning of the next gob structure, may get\nlost. Thus, when the next part is decoded, e.g. in fset.Read,\nthe new gob.decoder will detect some kind of corruption.\n\nWhy does reading the index appear to work in godoc normally, using\nthese commands?:\n\n  godoc -write_index -index -index_files /tmp/index\n  godoc -index -index_files /tmp/index -http :6060\n\nI don't know, but I guess that the bufio.Reader either for\nsome reason doesn't read more than each decoder needs, or the bytes getting lost\n(as suggested above) don't result in a corrupted gob structure.\n\nI discovered this problem when developing a program derived\nfrom godoc, which is using the search index, but only the full\ntext index. In my case the fileIndex struct only contains\n\u0026quot;Fulltext bool\u0026quot;, i.e. it is much smaller. When reading the index, I got errors\nfrom fset.Read, like\n\n  gob: encoded unsigned integer out of range\nor\n  gob: unknown type id or corrupted data\n.\n\nThis actually can be observed in godoc too, if the attached\npatch is applied to index.go.  It reduces the size of the\nfileIndex struct. If the two commands above are repeated with\nthe modified godoc, reading the index back should fail with\na warning like:\n  error reading index: gob: encoded unsigned integer out of range\n\n\nPerhaps it would make sense to guard godoc against this kind\nof errors when reading the index back: Wrapping the io.Reader\nin godoc.go:readIndex should be sufficient.\n\n\tx := new(Index)\n-\tif err := x.Read(io.MultiReader(files...)); err != nil {\n+\tif err := x.Read(bufio.NewReader(io.MultiReader(files...))); err != nil {\n\t\treturn err\n\nThis means that if a bufio.Reader is wrapped around the io.Reader before any gob data is\ndecoded, no bytes will be lost within the\ngob decoders, since each bufio.NewReader call in gob.NewDecoder\nwill just return the bufio.Reader from outside, not allocate\na new buffered Reader.\n\nPerhaps a note within gob's documentation, near NewDecoder,\npointing out that if NewDecoder is run more than once on\nthe same Reader `r', then `r' should be a bufio.Reader to avoid\ncorruption, would be helpful.\n\nThe attached program \u0026quot;minimal.go\u0026quot; illustrates the problem\ntoo. If run without arguments, it should fail with an ERR\nmessage. If run with option \u0026quot;-buffered\u0026quot;, it should succeed\nprinting the list of files in the test FileSet (i.e. one file\nnamed \u0026quot;testfile\u0026quot;).\n\nMichael\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2286/0/index.go.patch\"\u003eindex.go.patch\u003c/a\u003e (918 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2286/0/minimal.go\"\u003eminimal.go\u003c/a\u003e (1322 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:12:18Z",
+	"created_at": "2011-09-22T00:51:27Z",
+	"updated_at": "2016-06-24T19:35:07Z"
+}

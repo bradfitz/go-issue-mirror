@@ -1,0 +1,23 @@
+{
+	"id": 139184591,
+	"number": 14703,
+	"state": "closed",
+	"title": "cmd/compile: oversized arrays",
+	"body": "@davecheney noted in https://go-review.googlesource.com/#/c/20350/ that cmd/compile's binary size shrunk by about 400kB as a result of the CL.  Investigating, it looks like this is mostly attributable to cmd/compile/internal/ppc64.varianttable:\r\n\r\n    $ nm -S compile.old | grep varianttable\r\n    0000000000d7bc40 00000000000826c0 D cmd/compile/internal/ppc64.varianttable\r\n    $ nm -S compile.new | grep varianttable\r\n    0000000000beca20 00000000000209b0 D cmd/compile/internal/ppc64.varianttable\r\n\r\nAlso, I note that table is sized for ppc64.ALAST, whereas it only needs to be sized for ppc64.ALAST \u0026 obj.AMask.  Also, all of the progtables, and cmd/internal/obj/arm64's oprange table.\r\n\r\nSo all of those tables have a bunch of empty/unused space in them.\r\n\r\narm64's oprange is probably most worth fixing, because it actually contains pointers, so even if it's unused, the GC needs to scan it.  (I think?)\r\n\r\nThe others waste disk space, but are pointer-free, so they shouldn't need to be paged in.  Also, they're all zero values, so they should compress well in the binary distributions.  (Still, probably worth fixing if someone wanted some easy low hanging fruit to look into.)",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-03-09T21:56:50Z",
+	"created_at": "2016-03-08T05:18:24Z",
+	"updated_at": "2016-03-09T21:56:50Z"
+}

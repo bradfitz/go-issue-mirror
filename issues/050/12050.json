@@ -1,0 +1,33 @@
+{
+	"id": 99407578,
+	"number": 12050,
+	"state": "closed",
+	"title": "go/build and go/types: import path bug in go1.5",
+	"body": "What version of Go are you using (go version)?\r\ngo version go1.5rc1 linux/amd64\r\n\r\nWhat operating system and processor architecture are you using?\r\ndebian jessie / amd64\r\n\r\nWhat did you do?\r\nIm trying to read package information with the go/build package, then parsing the package using the go/types package. The package i'm trying to parse has a dependency on another package, and this is where the issue lies.\r\n\r\nWhat did you expect to see?\r\nSuccessfull import of package \"bar\"\r\n\r\nWhat did you see instead?\r\nFailed to import package \"bar\"\r\n\r\nI have created a code sample which reproduces this issue: https://github.com/netbrain/importbug\r\n\r\n```\r\nnetbrain@netbox:~/dev/go/src/github.com/netbrain/importbug$ echo $GOPATH\r\n/home/netbrain/dev/go\r\nnetbrain@netbox:~/dev/go/src/github.com/netbrain/importbug$ tree\r\n.\r\n├── bar\r\n│   └── bar.go\r\n├── foo\r\n│   └── foo.go\r\n└── importbug_test.go\r\n\r\n2 directories, 4 files\r\nnetbrain@netbox:~/dev/go/src/github.com/netbrain/importbug$ go test\r\n2015/08/06 16:39:59 /home/netbrain/dev/go/src/github.com/netbrain/importbug/foo/foo.go:3:8: could not import github.com/netbrain/importbug/bar (can't find import: github.com/netbrain/importbug/bar)\r\nexit status 1\r\nFAIL\tgithub.com/netbrain/importbug\t0.002s\r\n```\r\n\r\nI tried to debug the issue with gdb, and a discovered a couple of things, when build.Import is invoked on the package \"github.com/netbrain/importbug/bar\" then on line 603 in build.go this gets resolved to \"/home/netbrain/dev/go/pkg/linux_amd64/github.com/netbrain/importbug/bar.a\", which doesn't exist.\r\n\r\nfurthermore, the for loop @ gcimporter.go:66 loops through the following filenames\r\n\"/home/netbrain/dev/go/pkg/linux_amd64/github.com/netbrain/importbug/bar.a\"\r\n\"/home/netbrain/dev/go/pkg/linux_amd64/github.com/netbrain/importbug/bar.o\"\r\n\r\nas these files doesn't exist, it simply returns a blank string. which means the package was not found. Resulting in the error displayed in the test.\r\n\r\nThe following is a backtrace of the test, showing the involved packages and function calls.\r\n```\r\n#0  go/build.(*Context).Import (ctxt=0x8b2c20 \u003cgo/build.Default\u003e, path=\"\", srcDir=\".\", \r\n    mode=3, ~r3=0x0, ~r4=...) at /home/netbrain/tools/go/src/go/build/build.go:460\r\n#1  0x000000000050b74b in go/build.Import (path=\"github.com/netbrain/importbug/bar\", \r\n    srcDir=\".\", mode=3, ~r3=0x40f446 \u003cruntime.mallocgc+1766\u003e, ~r4=...)\r\n    at /home/netbrain/tools/go/src/go/build/build.go:1002\r\n#2  0x00000000005c4084 in go/internal/gcimporter.FindPkg (\r\n    path=\"github.com/netbrain/importbug/bar\", srcDir=\".\", filename=\"\", \r\n    id=\"github.com/netbrain/importbug/bar\")\r\n    at /home/netbrain/tools/go/src/go/internal/gcimporter/gcimporter.go:47\r\n#3  0x00000000005c46f9 in go/internal/gcimporter.Import (\r\n    packages=map[string]*go/types.Package, path=\"github.com/netbrain/importbug/bar\", \r\n    pkg=0x0, err=...) at /home/netbrain/tools/go/src/go/internal/gcimporter/gcimporter.go:128\r\n#4  0x0000000000511a51 in go/importer.gcimports.Import (m=0xc820011320, \r\n    path=\"github.com/netbrain/importbug/bar\", ~r1=0x21, ~r2=...)\r\n    at /home/netbrain/tools/go/src/go/importer/importer.go:57\r\n#5  0x0000000000561777 in go/types.(*Checker).collectObjects (check=0xc82005b750)\r\n    at /home/netbrain/tools/go/src/go/types/resolver.go:178\r\n#6  0x000000000053b6f3 in go/types.(*Checker).Files (check=0xc8200a21c0, \r\n    files= []*go/ast.File = {...}, err=...)\r\n    at /home/netbrain/tools/go/src/go/types/check.go:223\r\n#7  0x000000000052b222 in go/types.(*Config).Check (conf=0xc820018f40, path=\"foo\", \r\n    fset=0xc820018d00, files= []*go/ast.File = {...}, info=0xc820075b30, ~r4=0x0, ~r5=...)\r\n    at /home/netbrain/tools/go/src/go/types/api.go:311\r\n#8  0x0000000000482098 in github.com/netbrain/importbug.TestImportBug (t=0xc82009c1b0)\r\n    at /home/netbrain/dev/go/src/github.com/netbrain/importbug/importbug_test.go:40\r\n```\r\n\r\nin gdb I had the following breakpoints set\r\n\r\nbreak resolver.go:178\r\nbreak gcimporter.go:116\r\nbreak gcimporter.go:37\r\nbreak gcimporter.go:47\r\nbreak build.go:460\r\nbreak build.go:1002\r\n",
+	"user": {
+		"login": "netbrain",
+		"id": 341643,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"closed_at": "2015-08-06T17:23:56Z",
+	"created_at": "2015-08-06T10:44:24Z",
+	"updated_at": "2016-08-08T21:04:08Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

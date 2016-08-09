@@ -1,0 +1,33 @@
+{
+	"id": 51288191,
+	"number": 8435,
+	"state": "closed",
+	"title": "cmd/gc: compiler accepts incorrect short variable declaration",
+	"body": "\u003cpre\u003eOriginally reported by Evan Kroske via e-mail to golang-dev (July 27, 2014):\n\n=================\nIn the process of working on [\u003ca href=\"https://golang.org/issue/6764\"\u003eissue #6764\u003c/a\u003e][1], I realized that gc permits declaring a\nvariable twice in the same short variable declaration if the variable is shadowing\nanother variable.\n\nFor example, gc reports an error for the following code:\n\n    a, a := 1, 2\n    _ = a\n\nHowever, gc compiles this code without complaint.\n\n    var a int8\n    {\n    \ta, a := 1, 2\n    \tprintln(a)\n    }\n    _ = a\n=================\n\nThe compiler appears to accept this 2nd short variable declaration as a redeclaration of\nthe outer a, and new declaration of the inner a:\n\n\u003ca href=\"http://play.golang.org/p/Vy0kYBj82w\"\u003ehttp://play.golang.org/p/Vy0kYBj82w\u003c/a\u003e\n\n(running this program prints 1, 2, 3).\n\n- gccgo also accepts this w/o errors.\n\n- gotype complains with an error for this program:\n\n$ gotype x.go\nx.go:7:6: a redeclared in this block\nx.go:7:3: \tother declaration of a\n\nThe spec is not 100% clear, but the compiler behavior is odd at any rate: \n\n- it is not clear which one (the 1st or the 2nd) variable is the redeclaration, and thus\nthe value of the redeclared variable is unknown from the program\n- code relying on this mechanism is likely to have bugs\n- there's no such code in the std library since gotype passes it w/o errors\n\nI think this is a compiler bug.\n\nSee also related \u003ca href=\"https://golang.org/issue/6764\"\u003eissue #6764\u003c/a\u003e.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:46:53Z",
+	"created_at": "2014-07-28T17:58:26Z",
+	"updated_at": "2016-06-25T01:38:38Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

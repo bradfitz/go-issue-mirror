@@ -1,0 +1,27 @@
+{
+	"id": 51280836,
+	"number": 3579,
+	"state": "closed",
+	"title": "cmd/godoc: simplify documenting commands",
+	"body": "by **axel.schreiner**:\n\n\u003cpre\u003egodoc binds GOPATH/src to /src/pkg;\ni.e., directories below GOPATH/src contain packages, not commands;\ni.e., HTTP requests for /cmd/FOO only work if FOO is in GOROOT/src/cmd.\n\nLooks to me like godoc cannot readily document user-written commands outside GOROOT. (I\nkludged this using -path; however, it's a very awkward, undocumented kludge.)\n\nNote that the distributed directory structure is GOROOT/src/pkg for packages and\nGOROOT/src/cmd for commands.\n\nIf godoc/main.go/main() were changed, e.g., to\n\n\t// Bind $GOPATH trees into Go root.\n\tfor _, p := range filepath.SplitList(build.Default.GOPATH) {\n\t\tfs.Bind(\u0026quot;/src/pkg\u0026quot;, OS(p), \u0026quot;/src/pkg\u0026quot;, bindAfter)\n\t\tfs.Bind(\u0026quot;/src/cmd\u0026quot;, OS(p), \u0026quot;/src/cmd\u0026quot;, bindAfter)\n\t}\n\nthen HTTP requests /pkg/FOO and /cmd/FOO would document user packages in\nGOPATH/src/pkg/FOO and commands in GOPATH/src/cmd/FOO, respectively. (This does,\nhowever, break the current interpretation of GOPATH for godoc).\n\nAlternatively,\n\n\t// Bind $GOPATH trees into Go root.\n\tfor _, p := range filepath.SplitList(build.Default.GOPATH) {\n\t\tfs.Bind(\u0026quot;/src/cmd\u0026quot;, OS(p), \u0026quot;/src/cmd\u0026quot;, bindAfter)\n\t\tfs.Bind(\u0026quot;/src/pkg\u0026quot;, OS(p), \u0026quot;/src\u0026quot;, bindAfter)\n\t}\n\nwould not break the current interpretation of GOPATH and would also document user\ncommands. (The package list in this case shows a package 'cmd' containing directories\nfor user commands.)\n\nThe option -path only applies to packages because it binds each path /FOO/BAR to\n/src/pkg/BAR,\ni.e., an HTTP request /pkg/BAR will produce documentation from /FOO/BAR.\n\nOne could add another option -cmds to godoc/godoc.go/initHandlers() to bind paths to\n/src/cmd to allow single user commands to be added to the server:\n\nvar ...\n \tcmdPath = flag.String(\u0026quot;cmds\u0026quot;, \u0026quot;\u0026quot;, \u0026quot;additional command directories (colon-separated)\u0026quot;)\n\ninitHandler...\n\n\t// Add named directories in -cmds argument as\n\t// subdirectories of src/cmd.\n\tfor _, p := range filepath.SplitList(*cmdPath) {\n\t\t_, elem := filepath.Split(p)\n\t\tif elem == \u0026quot;\u0026quot; {\n\t\t\tlog.Fatalf(\u0026quot;invalid -cmds argument: %q has no final element\u0026quot;, p)\n\t\t}\n\t\tfs.Bind(\u0026quot;/src/cmd/\u0026quot;+elem, OS(p), \u0026quot;/\u0026quot;, bindReplace)\n\t}\n\nWhich operating system are you using?\nMacOS X 10.8\n\nWhich version are you using?  (run 'go version')\ngo1\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:18:51Z",
+	"created_at": "2012-04-30T15:36:48Z",
+	"updated_at": "2016-06-24T22:18:29Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

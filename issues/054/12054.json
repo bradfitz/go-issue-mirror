@@ -1,0 +1,28 @@
+{
+	"id": 99469582,
+	"number": 12054,
+	"state": "closed",
+	"title": "cmd/compile: record which instructions clobber flags",
+	"body": "This code is currently miscompiled:\r\n\r\n```go\r\npackage main\r\n\r\nfunc f_ssa(r int64, n uint) int64 {\r\n\tswitch { // prevent inlining\r\n\t}\r\n\tx := (r \u003c\u003c n) \u003e\u003e n\r\n\treturn x\r\n}\r\n\r\nfunc main() {\r\n\tprintln(f_ssa(97, 32))\r\n}\r\n```\r\n\r\nWith tip, it correctly prints 97. With SSA, it prints 0. I found this because it caused the  `fmt` package tests to fail.\r\n\r\nDiagnosis:\r\n\r\nJust before lowering, the SSA looks good:\r\n\r\n```\r\n  b2:\r\n    v1 = Arg \u003cmem\u003e\r\n    v2 = SP \u003cuintptr\u003e\r\n    v4 = Addr \u003c*int64\u003e {r} v2\r\n    v5 = Addr \u003c*uint\u003e {n} v2\r\n    v6 = Addr \u003c*int64\u003e {~r2} v2\r\n    v10 = Zero \u003cmem\u003e [8] v6 v1\r\n    v19 = Load \u003cint64\u003e v4 v1\r\n    v21 = Load \u003cuint\u003e v5 v1\r\n    v13 = Lsh64x64 \u003cint64\u003e v19 v21\r\n    v14 = Rsh64x64 \u003cint64\u003e v13 v21\r\n    v16 = Store \u003cmem\u003e v6 v14 v10\r\n    Exit v16\r\n```\r\n\r\nThe lowered form is fine:\r\n\r\n```\r\n  b2:\r\n    v1 = Arg \u003cmem\u003e\r\n    v2 = SP \u003cuintptr\u003e\r\n    v4 = LEAQ \u003c*int64\u003e {r} v2\r\n    v5 = LEAQ \u003c*uint\u003e {n} v2\r\n    v6 = LEAQ \u003c*int64\u003e {~r2} v2\r\n    v19 = MOVQload \u003cint64\u003e {r} v2 v1\r\n    v21 = MOVQload \u003cuint\u003e {n} v2 v1\r\n    v15 = SHLQ \u003cint64\u003e v19 v21\r\n    v11 = CMPQconst \u003cflags\u003e [64] v21\r\n    v9 = CMPQconst \u003cflags\u003e [64] v21\r\n    v8 = MOVQconst \u003cint64\u003e\r\n    v10 = MOVQstore \u003cmem\u003e {~r2} v2 v8 v1\r\n    v12 = SBBQcarrymask \u003cint64\u003e v11\r\n    v18 = SBBQcarrymask \u003cuint\u003e v9\r\n    v13 = ANDQ \u003cint64\u003e v15 v12\r\n    v20 = NOTQ \u003cuint\u003e v18\r\n    v17 = ORQ \u003cuint\u003e v21 v20\r\n    v14 = SARQ \u003cint64\u003e v13 v17\r\n    v16 = MOVQstore \u003cmem\u003e {~r2} v2 v14 v10\r\n    Exit v16\r\n```\r\n\r\nHowever, lowered cse combines the two `CMPQconst` values (`v11`, `v9`), but not the two `SBBQcarrymask` instructions that use them (`v12`, `v18`), because they have different types.\r\n\r\nAs a result, the CMP occurs only once, but the first SBBQ clobbers the flags, making the second SBBQ wrong. We need to find all instructions that clobber flags, mark them as such, and teach the register allocator both about clobbering and about how to save/restore flags.\r\n\r\nFor completeness, just before codegen, the function reads:\r\n\r\n```\r\n  b2:\r\n    v2 = SP \u003cuintptr\u003e : SP\r\n    v1 = Arg \u003cmem\u003e\r\n    v9 = MOVQload \u003cint64\u003e {r} v2 v1 : AX\r\n    v6 = MOVQload \u003cuint\u003e {n} v2 v1 : CX\r\n    v5 = SHLQ \u003cint64\u003e v9 v6 : DX\r\n    v4 = CMPQconst \u003cflags\u003e [64] v6 : FLAGS\r\n    v7 = SBBQcarrymask \u003cint64\u003e v4 : BX\r\n    v3 = ANDQ \u003cint64\u003e v5 v7 : BP\r\n    v22 = SBBQcarrymask \u003cuint\u003e v4 : SI\r\n    v23 = NOTQ \u003cuint\u003e v22 : DI\r\n    v24 = ORQ \u003cuint\u003e v6 v23 : R8\r\n    v25 = Copy \u003cuint\u003e v24 : CX\r\n    v26 = SARQ \u003cint64\u003e v3 v25 : R9\r\n    v27 = MOVQconst \u003cint64\u003e : R10\r\n    v10 = MOVQstore \u003cmem\u003e {~r2} v2 v27 v1\r\n    v16 = MOVQstore \u003cmem\u003e {~r2} v2 v26 v10\r\n    Exit v16\r\n```\r\n\r\nAnd the generated assembly is:\r\n\r\n```\r\n   \t00000 (x.go:3)\tTEXT\t\"\".f_ssa(SB), $0-24\r\n   \t00001 (x.go:3)\tFUNCDATA\t$0, \"\".gcargs·0(SB)\r\n   \t00002 (x.go:3)\tFUNCDATA\t$1, \"\".gclocals·1(SB)\r\n   \t00003 (x.go:3)\tTYPE\t\"\".r(FP), $8\r\n   \t00004 (x.go:3)\tTYPE\t\"\".n+8(FP), $8\r\n   \t00005 (x.go:3)\tTYPE\t\"\".~r2+16(FP), $8\r\n   \t00006 (x.go:3)\tTYPE\t\"\".x(SP), $8\r\nv9\t00007 (x.go:3)\tMOVQ\t8(SP), AX\r\nv6\t00008 (x.go:3)\tMOVQ\t16(SP), CX\r\nv5\t00009 (x.go:7)\tMOVQ\tAX, DX\r\nv5\t00010 (x.go:7)\tSHLQ\tCX, DX\r\nv4\t00011 (x.go:7)\tCMPQ\tCX, $64\r\nv7\t00012 (x.go:7)\tSBBQ\tBX, BX\r\nv3\t00013 (x.go:7)\tMOVQ\tDX, BP\r\nv3\t00014 (x.go:7)\tANDQ\tBX, BP\r\nv22\t00015 (x.go:7)\tSBBQ\tSI, SI\r\nv23\t00016 (x.go:7)\tMOVQ\tSI, DI\r\nv23\t00017 (x.go:7)\tNOTQ\tDI\r\nv24\t00018 (x.go:7)\tMOVQ\tCX, R8\r\nv24\t00019 (x.go:7)\tORQ\tDI, R8\r\nv25\t00020 (x.go:7)\tMOVQ\tR8, CX\r\nv26\t00021 (x.go:7)\tMOVQ\tBP, R9\r\nv26\t00022 (x.go:7)\tSARQ\tCX, R9\r\nv27\t00023 (x.go:3)\tMOVQ\t$0, R10\r\nv10\t00024 (x.go:3)\tMOVQ\tR10, 24(SP)\r\nv16\t00025 (x.go:10)\tMOVQ\tR9, 24(SP)\r\nb2\t00026 (x.go:3)\tRET\r\n   \t00027 (\u003cunknown line number\u003e)\tRET\r\n```\r\n\r\nThe value v22 (instruction 15) is wrong.\r\n\r\n/cc @randall77 \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-08-17T21:14:42Z",
+	"created_at": "2015-08-06T16:05:58Z",
+	"updated_at": "2015-08-17T21:14:42Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

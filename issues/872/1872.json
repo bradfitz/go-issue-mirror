@@ -1,0 +1,22 @@
+{
+	"id": 51278419,
+	"number": 1872,
+	"state": "closed",
+	"title": "pollServer: unexpected wakeup",
+	"body": "by **lars.pensjo**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Reading from a descriptor (sockets) with a short deadline (100ms), while you do a\nsignificant amount of processing from other descriptors (sockets).\n\nWhat is the expected output?\nNo output.\n\nWhat do you see instead?\nEpoll unexpected fd=65\npollServer: unexpected wakeup for fd=65 mode=r\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nUbuntu\n\nWhich revision are you using?  (hg identify)\n95d2ce135523+ (release-branch.r57) release/release.r57.1\n\nPlease provide any additional information below.\nAnalysis, by Ian Lance Taylor, as copied from\n\u003ca href=\"https://groups.google.com/d/msg/golang-nuts/86xpg7QRj4A/c2cEFPfLazcJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/86xpg7QRj4A/c2cEFPfLazcJ\u003c/a\u003e\n\nThis means that epoll returned that file descriptor 65 is readable, but\nthe Go code doesn't expect to see any information about that file\ndescriptor.\n\nLooking at the code, I think I see a way that this could happen.  If\nsome input arrives on some other descriptor and on descriptor 65 at\nabout the same time, the call to epoll_wait may pick up both. If\nepoll_wait returns the other descriptor first, your program will start\nreading the data from that other descriptor.  This may occupy your\nprogram for some time.  If descriptor 65 has a short deadline on it,\nthen it is possible that by the time your program has finished\nprocessing the other descriptor, the deadline for descriptor 65 will\nhave passed.  That will cause the net code to remove descriptor 65 from\nthe epoll list, but the information returned by the earlier call to\nepoll_wait will still be in the queue.  This could then cause the errors you report.\n\nIs this a possible scenario for your program?  That is, are you reading\nfrom a descriptor with a short deadline, while you do a significant\namount of processing from other descriptors, and you are running with\nthe default GOMAXPROCS == 1?\n\nIf the scenario is correct then the messages are annoying but do not\nindicate a serious problem.  The cleanest fix will probably be for\npollster.DelFD to look through pollster.waitEvents and remove any\npending events for fd.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:10:19Z",
+	"created_at": "2011-05-24T05:24:42Z",
+	"updated_at": "2016-06-24T19:29:48Z"
+}

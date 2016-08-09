@@ -1,0 +1,17 @@
+{
+	"id": 138672413,
+	"number": 14658,
+	"state": "closed",
+	"title": "poor performance when using make and large reserve capacity",
+	"body": "Problem appears in (at least) versions 1.5 and 1.6 on Linux amd64\r\n\r\nWhen doing a make([]string, ....) with a large reserve capacity, the performance is poor.   It appears that a lot of  potentially unnecessary work is done.\r\n\r\nSee the following comparison between similar go and c++ programs:\r\n```\r\n$ cat xxx.go\r\npackage main\r\n\r\nimport (\r\n\t\"time\"\r\n\t\"log\"\r\n)\r\n\r\nfunc main() {\r\nfor cap := 1; cap \u003c= 100000; cap *= 10 {\r\n\tt1 := time.Now().UnixNano()\r\n\tfor count := 0; count \u003c 100000; count += 1 {\r\n\t\tstrs := make([]string, 0, cap)\r\n\t\tif len(strs) != 0 {\r\n\t\t\tlog.Printf(\"Error: %d\\n\", len(strs))\r\n\t\t}\r\n\t}\r\n\tt2 := time.Now().UnixNano()\r\n\tlog.Printf(\"Time: %d %f\\n\", cap, float64(t2 - t1) / 1000000000.0)\r\n}\r\n}\r\n$ go run xxx.go\r\n2016/03/04 19:34:07 Time: 1 0.006270\r\n2016/03/04 19:34:07 Time: 10 0.019383\r\n2016/03/04 19:34:07 Time: 100 0.071207\r\n2016/03/04 19:34:08 Time: 1000 0.474111\r\n2016/03/04 19:34:11 Time: 10000 3.924790\r\n2016/03/04 19:34:46 Time: 100000 34.735739\r\n\r\n$ cat xxx.cc\r\n#include \u003cvector\u003e\r\n#include \u003ciostream\u003e\r\n#include \u003cstdint.h\u003e\r\n#include \u003cchrono\u003e\r\n\r\nint32_t main(int32_t argc, char **argv) {\r\n   for (int32_t cap = 1; cap \u003c= 100000; cap *= 10) {\r\n      auto t1 = std::chrono::high_resolution_clock::now();\r\n      for (int32_t count = 0; count \u003c 100000; count += 1) {\r\n         std::vector\u003cstd::string\u003e strs;\r\n         strs.reserve(num);\r\n         if (strs.size() != 0) {\r\n            std::cout \u003c\u003c \"Error: \" \u003c\u003c strs.size() \u003c\u003c std::endl;\r\n         }\r\n      }\r\n      auto t2 = std::chrono::high_resolution_clock::now();\r\n      std::cout \u003c\u003c cap \u003c\u003c \" \" \u003c\u003c static_cast\u003cdouble\u003e(std::chrono::duration_cast\u003cstd::chrono::nanoseconds\u003e(t2-t1).count()) / 1000000000.0l \u003c\u003c std::endl;\r\n   }\r\n   return 0;\r\n}\r\n$ ./xxx\r\n1 0.0158139\r\n10 0.0142682\r\n100 0.0150497\r\n1000 0.0147065\r\n10000 0.0167867\r\n100000 0.0146535\r\n```\r\n\r\n\r\n",
+	"user": {
+		"login": "pjbgtnj",
+		"id": 14922076,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-03-05T15:17:16Z",
+	"created_at": "2016-03-05T12:04:22Z",
+	"updated_at": "2016-03-05T15:17:16Z"
+}

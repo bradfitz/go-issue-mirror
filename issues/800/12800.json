@@ -1,0 +1,30 @@
+{
+	"id": 109185225,
+	"number": 12800,
+	"state": "closed",
+	"title": "runtime: replace free list with direct bitmap allocation",
+	"body": "All current releases of Go up to and including Go 1.5 use a *mark-sweep* garbage collector. As of Go 1.5, this works by alternating between a mostly-concurrent mark phase and a concurrent sweep phase. The mark phase finds all reachable objects and *marks* them, leaving all unreachable objects *unmarked*. The sweep phase walks through the entire heap, finds all unmarked objects, and adds them to free lists, which the allocator in turn uses to allocate new objects.\r\n\r\nHowever, this sweep phase is, in a sense, redundant. It primarily transforms one representation of the free heap—the mark bits—into another representation of the free heap—the free lists. Not only does this take time, but the free list representation is unfriendly to modern CPUs since it is not very cacheable and accesses to it are hard to predict. Furthermore, the current mark representation is also cache-unfriendly, which adds even more to the cost of sweeping. All told, typical Go programs spend about 5% of their CPU time in the sweeper or in cache misses induced by the free list representation.\r\n\r\nI propose eliminating the sweeper by foregoing the free list representation entirely and finding free objects directly using the mark bitmap. This can be done efficiently using a dense representation for mark bits separate from the current heap bitmap that enables fast scanning and clearing. This separate mark bitmap will also make it easy to maintain multiple mark bitmaps simultaneously, which is important for future GC improvements.\r\n",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Accepted"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2016-07-19T18:29:11Z",
+	"created_at": "2015-09-30T21:41:18Z",
+	"updated_at": "2016-07-19T18:29:11Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

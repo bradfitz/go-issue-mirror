@@ -1,0 +1,22 @@
+{
+	"id": 127268334,
+	"number": 14001,
+	"state": "closed",
+	"title": "net/http: \"panic: runtime error: invalid memory address or nil pointer dereference\" when running docker tests (docker built with 1.6beta2)",
+	"body": "```\r\ntime=\"2016-01-18T16:31:37.532208479Z\" level=debug msg=\"POST /v1.22/build?buildargs=%7B%7D\u0026cgroupparent=\u0026cpuperiod=0\u0026cpuquota=0\u0026cpusetcpus=\u0026cpusetmems=\u0026cpushares=0\u0026dockerfile=Dockerfile\u0026memory=0\u0026memswap=0\u0026rm=1\u0026shmsize=0\u0026t=testbuildaddnotfound\u0026ulimits=null\" \r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x30 pc=0x7a9ad1]\r\n\r\ngoroutine 2807 [running]:\r\nnet/http.startCloseNotifyBackgroundRead(0xc820e1c080, 0xc8217cc180)\r\n        /usr/local/go/src/net/http/server.go:1560 +0x21\r\nnet/http.(*response).CloseNotify(0xc820fe8600, 0x0)\r\n        /usr/local/go/src/net/http/server.go:1553 +0x2a5\r\ngithub.com/docker/docker/api/server/router/build.(*buildRouter).postBuild.func4(0xc82150e3c0, 0x7f50a0304f58, 0xc820fe8600, 0xc820b195f0)\r\n        /go/src/github.com/docker/docker/api/server/router/build/build_routes.go:247 +0x39\r\ncreated by github.com/docker/docker/api/server/router/build.(*buildRouter).postBuild\r\n        /go/src/github.com/docker/docker/api/server/router/build/build_routes.go:251 +0x14ca\r\n```\r\n\r\nI've traced this error back to commit 99fb19194c03c618c0d8faa87b91ba419ae28ee3\r\n\r\nThe docker image itself is running Ubuntu trusty:\r\n`docker run -it --privileged docker-go1.6beta2 uname -a`\r\nLinux 4b2dfe4ce10b 4.2.8-200.fc22.x86_64 #1 SMP Tue Dec 15 16:50:23 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux\r\n\r\nHere's how to get the docker env set up to recreate (all in docker images).\r\n0) Install docker\r\n1) git clone https://github.com/docker/docker.git \u0026\u0026 cd docker\r\n2) edit Dockerfile:\r\n-ENV GO_VERSION 1.5.3\r\n+ENV GO_VERSION 1.6beta2\r\n3) docker build -t docker .\r\n4) docker run -it --privileged -v \\`pwd\\`:/go/src/github.com/docker/docker/ ./hack/make.sh binary test-integration-cli\r\n\r\nYou'll see all the docker tests start to fail with \"Cannot connect to the Docker daemon. Is the docker daemon running on this host?\"\r\n\r\nThe -v flag will volume-mount your local directory into the container, so then you can look at logs locally after the container exits. Check `less bundles/latest/test-integration-cli/docker.log` for the stack-trace I pasted above.\r\n\r\nBecause of how the tests are run it's not trivial to tell which of the tests causes the panic that kills the docker daemon, but I'm working on that.",
+	"user": {
+		"login": "clnperez",
+		"id": 4493281,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-01-18T22:11:26Z",
+	"created_at": "2016-01-18T16:57:05Z",
+	"updated_at": "2016-01-19T00:53:30Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

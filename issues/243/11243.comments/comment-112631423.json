@@ -1,0 +1,12 @@
+{
+	"id": 112631423,
+	"body": "I think it would be a mistake to export these from the runtime for the reason that Ian mentioned on golang-nuts. You basically have to disable the Go scheduler in order to use these from Go, even for the purposes of writing a resource manager, and it would be strange to add something so incompatible with the runtime to the runtime API.\r\n\r\nIan mentioned adding these to x/sys. I don't know what the policy for x/sys is, but I assume this would be a fine collection of preexisting foot-guns to add these to. :)\r\n\r\nNote that you can already get at these through syscall.RawSyscall using something like the following (untested):\r\n```\r\nfunc pinToCPU(cpu uint) error {\r\n\tconst __NR_sched_setaffinity = 203\r\n\tvar mask [1024 / 64]uint8\r\n\truntime.LockOSThread()\r\n\tmask[cpu / 64] |= 1 \u003c\u003c (cpu % 64)\r\n\t_, _, errno := syscall.RawSyscall(__NR_sched_setaffinity, 0, uintptr(len(mask) * 8), uintptr(unsafe.Pointer(\u0026mask)))\r\n\tif errno != 0 {\r\n\t\treturn errno\r\n\t}\r\n\treturn nil\r\n}\r\n```",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-17T03:02:46Z",
+	"updated_at": "2015-06-17T03:02:46Z"
+}

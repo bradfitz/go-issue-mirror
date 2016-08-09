@@ -1,0 +1,33 @@
+{
+	"id": 55144167,
+	"number": 9661,
+	"state": "open",
+	"title": "net: make some way to set socket options other than using File{Listener,Conn,PacketConn}",
+	"body": "I regret having to bring up anything related to sockets. I hate them as much as the next gopher.\r\n\r\nThere are some cases[1] where setting socket options (like `SO_REUSEPORT`) is just unavoidable. In most cases, we can pull out the `conn.File()` and set them. But those few annoying cases where the option must be set on the socket _before_ listening or dialing are impossible to handle with today's net package. (please tell me i'm wrong!)\r\n\r\n\"Setting the socket up yourself\" _is not_ a good option. Getting sockets right is not trivial-- there are bound to be dozens of tricky corner cases across platforms. [I gave it a shot](https://github.com/jbenet/go-reuseport), but I keep finding problems in various OSes. It would be much more user friendly to stick to the `net` interface which already had to do all this hard work.\r\n\r\nNow, I would even go as far as to copy the `net` package wholesale just to add this feature, but AFAIK the existence of the `runtime·` functions makes this also impossible (such a `netcopy` wont compile). Without them, we're left up to whittling down `netcopy` (and exchanging the runtime polling for `select/epoll/ugliness`) , most likely introducing more bugs.\r\n\r\nA nice way to solve this -- I think -- is to make listeners and dialers have \"tuners\", as implemented in https://github.com/benburkert/net.tune/ [3]. This approach is based on rob's [self-referential functions](http://commandcenter.blogspot.nl/2014/01/self-referential-functions-and-design.html), and manages to contain the ugly, exposing a nice interface.[4] But I imagine there are many other approaches that are even nicer and idiomatic.\r\n\r\nI know-- the stdlib is trying to contain the ugly as much as possible and prevent it from spreading. But in this type of case, the current state of affairs brings it out more for some of us.\r\n\r\n--- \r\n\r\n[1] One example: being able to dial out from the same TCP port you're listening on is a _requirement_ for some kinds of NAT traversal.\r\n\r\n[2] There's issues in this very tracker showing _years_ of tuning the use of sockets.\r\n\r\n[3] Specifically: https://github.com/benburkert/net.tune/blob/master/dial.go#L59-L63\r\n\r\n[4] It could be done with new functions -- or if the goal is to keep the interface thin, a variadic argument to the existing functions should be backwards compatible.",
+	"user": {
+		"login": "jbenet",
+		"id": 138401,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "LongTerm"
+		}
+	],
+	"comments": 14,
+	"created_at": "2015-01-22T11:48:51Z",
+	"updated_at": "2016-02-03T08:09:32Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

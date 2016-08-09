@@ -1,0 +1,27 @@
+{
+	"id": 51286866,
+	"number": 7550,
+	"state": "closed",
+	"title": "builtin: appending a two max-len []struct{} results in a slice with negative len",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version 1.2.1 windows/amd64\n\nWhat steps reproduce the problem?\nRun this minimal program:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tlength := (1 \u0026lt;\u0026lt; 63) - 1\n\ta := make([]struct{}, length/(1\u0026lt;\u0026lt;32))\n\tb := make([]struct{}, length/(1\u0026lt;\u0026lt;32))\n\ta = append(a, b...)\n\tfmt.Println(len(a), cap(a))\n}\n\nNote that this *cannot* be reproduced on the Playground. Even if you substitute the\nvalue of length with the 32-bit MaxInt (since the Playground seems to use a size of 4\ninstead of 8 for ints), you'll correctly get a panic from this operation.\n\nWhat happened?\n\nIt will print -2 7638104968020361214 (that is, the slice has len -2 and cap\n7638104968020361214).\n\nWhat should have happened instead?\n\nProbably a panic of some sort.\n\nPlease provide any additional information below.\n\nThis seems to only happen with slices of type struct{}. I tried to reproduce the error\nwith a []int, and it always panicked in some way. One other odd node, if instead of doing\n\na = append(a,b...)\n\nyou do\n\na = append(a,struct{}{})\n\nIt will correctly panic with the error:\n\npanic: runtime error:  runtime: allocation size out of range\n\nOne confusing thing is that the panic the Playground gives for these operations is:\n\npanic: runtime error: growslice: cap out of range\n\nSo that may be an additional bug, or may be expected.\u003c/pre\u003e",
+	"user": {
+		"login": "Jragonmiris",
+		"id": 3078382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:41:57Z",
+	"created_at": "2014-03-15T07:22:30Z",
+	"updated_at": "2016-06-25T01:29:53Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

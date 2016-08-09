@@ -1,0 +1,28 @@
+{
+	"id": 120966368,
+	"number": 13532,
+	"state": "closed",
+	"title": "net/http: discrepancy between HeadContentLength of \"\" in http2 vs http1",
+	"body": "HeadContentLength of \"\" in http1 returns a length of -1 but in http2 it returns 0.\r\nThe test that found this issue is through CL https://go-review.googlesource.com/17526 \r\n```diff\r\ndiff --git a/src/net/http/client_test.go b/src/net/http/client_test.go\r\nindex e59ab2c..6e20877 100644\r\n--- a/src/net/http/client_test.go\r\n+++ b/src/net/http/client_test.go\r\n@@ -765,14 +765,22 @@ func TestHTTPSClientDetectsHTTPServer(t *testing.T) {\r\n }\r\n \r\n // Verify Response.ContentLength is populated. https://golang.org/issue/4126\r\n-func TestClientHeadContentLength(t *testing.T) {\r\n+func TestClientHeadContentLength_h1(t *testing.T) {\r\n+\ttestClientHeadContentLength(t, false)\r\n+}\r\n+\r\n+func TestClientHeadContentLength_h2(t *testing.T) {\r\n+\ttestClientHeadContentLength(t, true)\r\n+}\r\n+\r\n+func testClientHeadContentLength(t *testing.T, h2 bool) {\r\n \tdefer afterTest(t)\r\n-\tts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\r\n+\tcst := newClientServerTest(t, h2, HandlerFunc(func(w ResponseWriter, r *Request) {\r\n \t\tif v := r.FormValue(\"cl\"); v != \"\" {\r\n \t\t\tw.Header().Set(\"Content-Length\", v)\r\n \t\t}\r\n \t}))\r\n-\tdefer ts.Close()\r\n+\tdefer cst.close()\r\n \ttests := []struct {\r\n \t\tsuffix string\r\n \t\twant   int64\r\n@@ -782,8 +790,8 @@ func TestClientHeadContentLength(t *testing.T) {\r\n \t\t{\"\", -1},\r\n \t}\r\n \tfor _, tt := range tests {\r\n-\t\treq, _ := NewRequest(\"HEAD\", ts.URL+tt.suffix, nil)\r\n-\t\tres, err := DefaultClient.Do(req)\r\n+\t\treq, _ := NewRequest(\"HEAD\", cst.ts.URL+tt.suffix, nil)\r\n+\t\tres, err := cst.c.Do(req)\r\n \t\tif err != nil {\r\n \t\t\tt.Fatal(err)\r\n \t\t}\r\n```\r\n\r\nwhere the test cases\r\n```go\r\n        tests := []struct {\r\n                suffix string\r\n                want   int64\r\n        }{\r\n                {\"/?cl=1234\", 1234},\r\n                {\"/?cl=0\", 0},\r\n                {\"\", -1},\r\n        }\r\n        for _, tt := range tests {\r\n                req, _ := NewRequest(\"HEAD\", cst.ts.URL+tt.suffix, nil)\r\n                res, err := cst.c.Do(req)\r\n                if err != nil {\r\n                        t.Fatal(err)\r\n                }\r\n                if res.ContentLength != tt.want {\r\n                        t.Errorf(\"Content-Length = %d; want %d\", res.ContentLength, tt.want)\r\n                }\r\n                bs, err := ioutil.ReadAll(res.Body)\r\n                if err != nil {\r\n                        t.Fatal(err)\r\n                }\r\n                if len(bs) != 0 {\r\n                        t.Errorf(\"Unexpected content: %q\", bs)\r\n                }\r\n        }\r\n```\r\n\r\nGives result\r\n\r\n```shell\r\n$ go test -cover\r\n--- FAIL: TestClientHeadContentLength_h2 (0.01s)\r\n\tclient_test.go:799: Content-Length = 0; want -1\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-09T00:22:27Z",
+	"created_at": "2015-12-08T09:19:47Z",
+	"updated_at": "2015-12-09T00:22:28Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 139985019,
+	"body": "I have written a test that reproduces this issue. The issue still exists in 1.5.1.\r\n\r\nThe proposed fix in `DB.conn` shown below allows the test to pass when `db.maxOpen+2` when added to the Go 1.5.1 tree.\r\n```go\r\n\tdb.numOpen++ // optimistically\r\n\tdb.mu.Unlock()\r\n\tci, err := db.driver.Open(db.dsn)\r\n\tif err != nil {\r\n\t\tdb.mu.Lock()\r\n\t\tdb.numOpen-- // correct for earlier optimism\r\n\t\tdb.maybeOpenNewConnections()        // \u003c--- fix\r\n\t\tdb.mu.Unlock()\r\n\t\treturn nil, err\r\n\t}\r\n```\r\n\r\n@johto Although the scenario you describe does allow a third connection to be opened, the change made in https://github.com/golang/go/commit/cce127a75f72110c045319407a652829b5a5b716 causes the extra connection to be closed before it is ever added to the pool or services any queries. Your suggestion to change\r\n```go\r\nif db.maxOpen \u003e 0 \u0026\u0026 db.numOpen \u003e= db.maxOpen\r\n```\r\nto\r\n```go\r\nif db.maxOpen \u003e 0 \u0026\u0026 (db.numOpen+db.pendingOpens) \u003e= db.maxOpen\r\n```\r\nseems correct to me. All database/sql tests still pass when I make that change.\r\n\r\n@potocnyj I don't understand how the proposed fix doesn't handle `db.maxOpen+2`. `db.maybeOpenNewConnections` can queue up multiple requests per call if needed. Could you walk us through the sequence that doesn't work? \r\n\r\nI will submit a CL with the new test and the above changes if there are no objections.",
+	"user": {
+		"login": "ChrisHines",
+		"id": 1060711,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-14T07:36:02Z",
+	"updated_at": "2015-09-14T07:36:02Z"
+}

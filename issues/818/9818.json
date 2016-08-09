@@ -1,0 +1,22 @@
+{
+	"id": 57096109,
+	"number": 9818,
+	"state": "closed",
+	"title": "spec: prevent variable aliasing in *any* way",
+	"body": "the following code\r\n\r\n```go\r\nfunc OpenLogFile(lo LogOptions) (io.WriteCloser, error) {\r\n    var logw io.WriteCloser\r\n    switch lo.LogPath {\r\n    case \"stderr\":\r\n        logw = os.Stderr\r\n    default:\r\n        logw, err := openLogFileInternal(lo)\r\n        if err != nil {\r\n            return logw, err\r\n        }\r\n    }\r\n    log.SetOutput(logw)\r\n    return logw, nil\r\n}\r\n```\r\nwill alias the `logw` variable: since `logw` is declared outside, and in the `default` switch case another `logw` is created with `:=`, every default case will return a `nil`. Fun ensues.\r\n\r\nGo should either prevent this behaviour with a panic/error/warning or should note that the variable is initialized in an external block and properly initialize it rather than creating a new one.",
+	"user": {
+		"login": "kodabb",
+		"id": 1374357,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-02-09T22:00:06Z",
+	"created_at": "2015-02-09T21:56:33Z",
+	"updated_at": "2016-06-25T02:00:25Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51279530,
+	"number": 2663,
+	"state": "closed",
+	"title": "text/template: does not recover from panics where it should",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile and run the following program:\n\npackage main\n\nimport (\n  \u0026quot;errors\u0026quot;\n  \u0026quot;fmt\u0026quot;\n  \u0026quot;os\u0026quot;\n  \u0026quot;text/template\u0026quot;\n)\n\nconst tpl = `\nAn error has occurred in {{ .Context }}! Message: {{ .Error.Error }}\n`\n\ntype Message struct {\n  Context string\n  Error error\n}\n\nfunc main() {\n  t := template.New(\u0026quot;T\u0026quot;)\n  t = template.Must(t.Parse(tpl))\n\n  err := Message{\u0026quot;context\u0026quot;, errors.New(\u0026quot;some error\u0026quot;)}\n  errT := t.Execute(os.Stderr, err)\n  if errT != nil {\n      fmt.Fprintf(os.Stderr, \u0026quot;\\ninternal template error: %s\u0026quot;, errT)\n  }\n\n  err.Error = nil\n  errT = t.Execute(os.Stderr, err)\n  if errT != nil {\n      fmt.Fprintf(os.Stderr, \u0026quot;\\ninternal template error: %s\u0026quot;, errT)\n  }\n}\n\n\nWhat is the expected output?\n\nAn error has occurred in context! Message: some error\n\nAn error has occurred in context! Message: \ninternal template error: Call of method on nil interface value\n\nWhat do you see instead?\n\nAn error has occurred in context! Message: some error\n\nAn error has occurred in context! Message: panic: Call of method on nil interface value\n[recovered]\n\tpanic: interface conversion: string is not error: missing method Error\n\ngoroutine 1 [running]:\n----- stack segment boundary -----\ntext/template.errRecover(0x7ff5ec9bbee0, 0x7ff5ec9bb100)\n\t/opt/remy/go/src/pkg/text/template/exec.go:84 +0xaf\n----- stack segment boundary -----\nreflect.Value.call(0x490650, 0xf84000d450, 0x13a, 0x4b7f54, 0x6c6c614300000004, ...)\n\t/opt/remy/go/src/pkg/reflect/value.go:367 +0x1f8\nreflect.Value.Call(0x490650, 0xf84000d450, 0x13a, 0x52f1a8, 0x0, ...)\n\t/opt/remy/go/src/pkg/reflect/value.go:330 +0x85\ntext/template.(*state).evalCall(0xf840019480, 0x4a0130, 0xf84000d440, 0x192, 0x490650,\n...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:489 +0x677\ntext/template.(*state).evalField(0xf840019480, 0x4a0130, 0xf84000d440, 0x192, 0x4d92d9,\n...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:408 +0x232\ntext/template.(*state).evalFieldChain(0xf840019480, 0x4a0130, 0xf84000d440, 0x192,\n0x490650, ...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:381 +0x194\ntext/template.(*state).evalFieldNode(0xf840019480, 0x4a0130, 0xf84000d440, 0x192,\n0xf84000d0c0, ...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:360 +0xa7\ntext/template.(*state).evalCommand(0xf840019480, 0x4a0130, 0xf84000d440, 0x192,\n0xf84000d0e0, ...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:312 +0x284\ntext/template.(*state).evalPipeline(0xf840019480, 0x4a0130, 0xf84000d440, 0x192,\n0xf8400192d0, ...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:290 +0xfd\ntext/template.(*state).walk(0xf840019480, 0x4a0130, 0xf84000d440, 0x192, 0xf8400192a0,\n...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:124 +0xde\ntext/template.(*state).walk(0xf840019480, 0x4a0130, 0xf84000d440, 0x192, 0xf8400193c0,\n...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:133 +0x5f9\ntext/template.(*Template).Execute(0xf84001e080, 0xf840019300, 0xf84001a010, 0x4a0120,\n0xf84000d440, ...)\n\t/opt/remy/go/src/pkg/text/template/exec.go:112 +0x1d3\nmain.main()\n\t/tmp/main.go:30 +0x2fa\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich revision are you using?  (hg identify)\n\n52ae6fbcc97a+ tip\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:14:11Z",
+	"created_at": "2012-01-07T08:34:02Z",
+	"updated_at": "2016-06-24T21:23:01Z"
+}

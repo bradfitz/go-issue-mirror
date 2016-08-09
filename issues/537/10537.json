@@ -1,0 +1,27 @@
+{
+	"id": 70174885,
+	"number": 10537,
+	"state": "closed",
+	"title": "runtime/pprof: memory profiles appear to undercount allocations",
+	"body": "Apologies in advance that this is vague.\r\n\r\nI was looking recently into compiler allocations, and because I wanted to know the breakdown by type, I hacked up `tracealloc` and friends in `mprof.go` to print exactly one line per allocation and nothing else (including suppressing output in `tracefree` and `tracegc`). Surprisingly, this output differs significantly from that reported by the memory profiler, even at `runtime.MemProfileRate=1`.\r\n\r\nFor example, running `go tool 6g -memprofile=mem.prof html/template/*.go` and then running `go tool pprof -alloc_objects` yields a count of 458,794 allocations, almost none of which are from `cmd/internal/gc.walkexpr`.\r\n\r\nSetting `runtime.MemProfileRate=1` and repeating the experiment turns up 607,429 allocations, 5.87% of which are from `cmd/internal/gc.walkexpr`. (The `np **Node` parameter escapes, causing an allocation of a `*Node`, which is only 8 bytes, thus the previous significant undercounting.)\r\n\r\nRunning with `GODEBUG=allocfreetrace=1 go tool 6g html/template/* 2\u003e\u00261 | grep \"tracealloc\" | wc -l` yields 1,032,392 allocations, which is 70% more than reported by the memory profiler! This number is very stable across repeated runs, with variation less than 0.01%. Only logging allocs with size \u003e 16 in `tracealloc` yields a count of 740,816 allocations, so this is probably not a tiny alloc issue.\r\n\r\nThere are probably multiple things to do here:\r\n\r\n* Understand the mismatch and fix the memory profiler.\r\n* Add a memprofilerate flag to the compiler.\r\n* Warn in pprof when `-alloc_objects` is used with memprofilerate != 1, because allocation counts can be dramatically skewed by the size of the allocation.\r\n\r\n/cc @rsc @dr2chase @dvyukov \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-04-27T22:24:15Z",
+	"created_at": "2015-04-22T16:32:25Z",
+	"updated_at": "2016-06-25T02:06:12Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

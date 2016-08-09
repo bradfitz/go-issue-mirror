@@ -1,0 +1,28 @@
+{
+	"id": 51276541,
+	"number": 480,
+	"state": "closed",
+	"title": "6prof crash when profiling  httpd",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. edit httpd.go with sample code in Effective Go,\n2. 6g httpd.go \u0026amp;\u0026amp; 6g httpd.6\n3. 6prof ./6.out\n\nWhat is the expected output? What do you see instead?\n\ndavies@boromir ~ $ 6g http.go \u0026amp;\u0026amp; 6l http.6 \u0026amp;\u0026amp; 6prof ./6.out\nfutexsleep addr=0x4aab20 val=3 returned -110\nSIGSEGV: segmentation violation\nFaulting address: 0x1005\nPC=0x43974a\n\nfutexsleep+0xc2 /home/davies/go/src/pkg/runtime/linux/thread.c:58\n        futexsleep(0x4aab20, 0x0, 0x3, 0x3)\nfutexlock+0x7a /home/davies/go/src/pkg/runtime/linux/thread.c:126\n        futexlock(0x4aab20, 0x0)\nnotesleep+0x1c /home/davies/go/src/pkg/runtime/linux/thread.c:206\n        notesleep(0x4aab20, 0x0)\nnextgandunlock+0xfc /home/davies/go/src/pkg/runtime/proc.c:350\n        nextgandunlock()\nscheduler+0xe0 /home/davies/go/src/pkg/runtime/proc.c:503\n        scheduler()\nmstart+0x47 /home/davies/go/src/pkg/runtime/proc.c:394\n        mstart()\n_rt0_amd64+0x74 /home/davies/go/src/pkg/runtime/amd64/asm.s:46\n        _rt0_amd64()\n\ngoroutine 2 [3]:\nruntime·entersyscall+0x50 /home/davies/go/src/pkg/runtime/proc.c:543\n        runtime·entersyscall()\nsyscall·Syscall6+0x5 /home/davies/go/src/pkg/syscall/asm_linux_amd64.s:41\n        syscall·Syscall6()\nsyscall·EpollWait+0x84 /home/davies/go/src/pkg/syscall/zsyscall_linux_amd64.go:1       \n                                                                     \n32\n        syscall·EpollWait(0x7, 0x2ace, 0x7a2f6a20, 0x2ace, 0x1, ...)\nnet·*pollster·WaitFD+0x2f5 /home/davies/go/src/pkg/net/fd_linux.go:118\n        net·*pollster·WaitFD(0x7a2f69b0, 0x2ace, 0x0, 0x0, 0x0, ...)\nnet·*pollServer·Run+0x9e /home/davies/go/src/pkg/net/fd.go:236\n        net·*pollServer·Run(0x7a2fe240, 0x2ace)\ngoexit /home/davies/go/src/pkg/runtime/proc.c:136\n        goexit()\n0x2ace7a2fe240 unknown pc\n\ngoroutine 1 [4]:\ngosched+0x34 /home/davies/go/src/pkg/runtime/proc.c:522\n        gosched()\nchanrecv+0x167 /home/davies/go/src/pkg/runtime/chan.c:347\n        chanrecv(0x7a31c300, 0x2ace, 0x7a301d80, 0x2ace, 0x0, ...)\nruntime·chanrecv1+0x50 /home/davies/go/src/pkg/runtime/chan.c:417\n        runtime·chanrecv1(0x7a31c300, 0x2ace)\nnet·*pollServer·WaitRead+0x49 /home/davies/go/src/pkg/net/fd.go:276\n        net·*pollServer·WaitRead(0x7a2fe240, 0x2ace, 0x7a2ff0a0, 0x2ace)\nnet·*netFD·accept+0x2e2 /home/davies/go/src/pkg/net/fd.go:512\n        net·*netFD·accept(0x7a2ff0a0, 0x2ace, 0x427e9a, 0x0, 0x7a301e80, ...)\nnet·*TCPListener·AcceptTCP+0x5a /home/davies/go/src/pkg/net/tcpsock.go:253\n        net·*TCPListener·AcceptTCP(0x7a2f50c8, 0x2ace, 0x4260a6, 0x0, 0x0, ...)\nnet·*TCPListener·Accept+0x34 /home/davies/go/src/pkg/net/tcpsock.go:263\n        net·*TCPListener·Accept(0x7a2f50c8, 0x2ace, 0x0, 0x0, 0x0, ...)\nhttp·Serve+0x66 /home/davies/go/src/pkg/http/server.go:532\n        http·Serve(0x7a2fe2c0, 0x2ace, 0x7a2f50c8, 0x2ace, 0x7a2fd7e0, ...)\nhttp·ListenAndServe+0x8e /home/davies/go/src/pkg/http/server.go:576\n        http·ListenAndServe(0x44cff8, 0x0, 0x5, 0x0, 0x0, ...)\nmain·main+0x77 /home/davies/http.go:22\n        main·main()\nmainstart+0xf /home/davies/go/src/pkg/runtime/amd64/asm.s:54\n        mainstart()\ngoexit /home/davies/go/src/pkg/runtime/proc.c:136\n        goexit()\nrax     0x1\nrbx     0x1\nrcx     0x439b10\nrdx     0x1\nrdi     0x1\nrsi     0x4932b8\nrbp     0x4932b8\nrsp     0x7fff307ee970\nr8      0x0\nr9      0x0\nr10     0x46acd8\nr11     0x202\nr12     0x250\nr13     0x7fff307eeaa0\nr14     0x4aaa78\nr15     0x4aa9d8\nrip     0x43974a\nrflags  0x10202\ncs      0x33\nfs      0x0\ngs      0x0\n7 samples (avg 2 threads)\n 42.86% clone\n 42.86% syscall·Syscall6\n 14.29% breakpoint\n 14.29% exit\n 14.29% futex\n 14.29% futexsleep\n 14.29% syscall·Syscall\n\nWhat is your $GOOS?  $GOARCH?\n\n$GOOS=linux\n$GOARCH=amd64\n\nWhich revision are you using?  (hg identify)\n\n5074575b745b+ tip\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "davies",
+		"id": 40902,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:04:46Z",
+	"created_at": "2009-12-31T15:19:38Z",
+	"updated_at": "2016-06-24T19:11:11Z"
+}

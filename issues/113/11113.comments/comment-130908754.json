@@ -1,0 +1,12 @@
+{
+	"id": 130908754,
+	"body": "```\r\n// flock acquires an advisory lock on a file descriptor.\r\nfunc flock(f *os.File, exclusive bool, timeout time.Duration) error {\r\n\tvar t time.Time\r\n\tfor {\r\n\t\t// If we're beyond our timeout then return an error.\r\n\t\t// This can only occur after we've attempted a flock once.\r\n\t\tif t.IsZero() {\r\n\t\t\tt = time.Now()\r\n\t\t} else if timeout \u003e 0 \u0026\u0026 time.Since(t) \u003e timeout {\r\n\t\t\treturn ErrTimeout\r\n\t\t}\r\n\t\tvar lock syscall.Flock_t\r\n\t\tlock.Start = 0\r\n\t\tlock.Len = 0\r\n\t\tlock.Pid = 0\r\n\t\tlock.Whence = 0\r\n\t\tlock.Pid = 0\r\n\t\tif exclusive {\r\n\t\t\tlock.Type = syscall.F_WRLCK\r\n\t\t} else {\r\n\t\t\tlock.Type = syscall.F_RDLCK\r\n\t\t}\r\n\t\terr := syscall.FcntlFlock(f.Fd(), syscall.F_SETLK, \u0026lock)\r\n\t\tif err == nil {\r\n\t\t\treturn nil\r\n\t\t} else if err != syscall.EAGAIN {\r\n\t\t\treturn err\r\n\t\t}\r\n\r\n\t\t// Wait for a bit and try again.\r\n\t\ttime.Sleep(50 * time.Millisecond)\r\n\t}\r\n}\r\n\r\n// funlock releases an advisory lock on a file descriptor.\r\nfunc funlock(f *os.File) error {\r\n\tvar lock syscall.Flock_t\r\n\tlock.Start = 0\r\n\tlock.Len = 0\r\n\tlock.Type = syscall.F_UNLCK\r\n\tlock.Whence = 0\r\n\treturn syscall.FcntlFlock(uintptr(f.Fd()), syscall.F_SETLK, \u0026lock)\r\n}\r\n```",
+	"user": {
+		"login": "akolb1",
+		"id": 4513662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-14T01:16:29Z",
+	"updated_at": "2015-08-14T01:16:29Z"
+}

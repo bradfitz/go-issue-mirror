@@ -1,0 +1,28 @@
+{
+	"id": 51282771,
+	"number": 4880,
+	"state": "closed",
+	"title": "cmd/gc: wrong error message for shift expression",
+	"body": "\u003cpre\u003e$ cat x.go\npackage main\nvar s uint\nvar x = 1\u0026lt;\u0026lt;s != 0.1\n\n$ go tool 6g x.go\nx.go:3: invalid operation: 1 \u0026lt;\u0026lt; s (shift of type float64)\n\nBut it should say instead:\n\nx.go:3: constant 0.1 truncated to integer\n\nRationale:\nThis is a non-constant shift (s is a variable) of an untyped constant (1) on the lhs,\nused in a comparison. The spec says ( \u003ca href=\"http://tip.golang.org/ref/spec#Operators\"\u003ehttp://tip.golang.org/ref/spec#Operators\u003c/a\u003e ):\n\n\u0026quot;If the left operand of a non-constant shift expression is an untyped constant, the\ntype of the constant is what it would be if the shift expression were replaced by its\nleft operand alone; the type is int if it cannot be determined from the context (for\ninstance, if the shift expression is an operand in a comparison against an untyped\nconstant).\u0026quot;\n\nThe type of the lhs constant 1 in the shift depends on the context of the shift. We are\nin a comparison, and the rhs of the comparison is another untyped constant (0.1). Thus,\nper spec, the type of 1 cannot be determined from context and is int. So 1\u0026lt;\u0026lt;s in\nthis case is an int value. It cannot be compared against 0.1 because 0.1 cannot be\nrepresented as an int.\n\nHence the error message should complain about 0.1 and not the shift. However, it appears\nas if the compiler tries to convert the 1 to the default type of 0.1, which is float64.\nComparisons are singled out as special case in shifts.\n\nHere's another example supporting this reasoning:\n\nvar s uint\nvar x = 1.0\u0026lt;\u0026lt;s != 0\n\nis accepted by 6g (this example is from the spec, same section). This is the same\nsituation but the 1.0 is not promoted to a float64 because it's within a comparison, and\nthe thus gets the type int.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:25:58Z",
+	"created_at": "2013-02-22T23:33:29Z",
+	"updated_at": "2016-06-24T22:33:45Z"
+}

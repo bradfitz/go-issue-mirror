@@ -1,0 +1,33 @@
+{
+	"id": 51282156,
+	"number": 4445,
+	"state": "closed",
+	"title": "misc/emacs: freeze when inserting a file when point is inside a comment",
+	"body": "by **serbaut**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Create the following files:\n\n::::::::::::::\nfoo.go\n::::::::::::::\n//\n\nfunc main() {}\n::::::::::::::\nbar.go\n::::::::::::::\nfunc bar() {}\n::::::::::::::\n\n2. Open foo.go in emacs\n\n3. At the first line in foo.go, M-x insert-file bar.go\n\nWhat is the expected output?\n\nfunc bar() {}\n//\n\nfunc main() {}\n\nWhat do you see instead?\nEmacs freezes.\n\nWhich operating system are you using?\nCentOS 6.3\nemacs-nox-23.1-21.el6_2.3.x86_64\n\nWhich version are you using?  (run 'go version')\ngo version devel +50a6b483af08 Sun Nov 25 11:29:06 2012 +1100\n\nPlease provide any additional information below.\n\n\u003ca href=\"https://groups.google.com/d/topic/golang-nuts/fcg-IKbeiO4/discussion\"\u003ehttps://groups.google.com/d/topic/golang-nuts/fcg-IKbeiO4/discussion\u003c/a\u003e\n\nI think the problem is that go-mode-cs returns a region before point causing\ngo-mode-font-lock-cs to loop forever.\n\nThe following patch seems to work around the problem:\n\ndiff --git a/go-mode.el b/go-mode.el\nindex d6dd644..0ee5bb3 100644\n--- a/go-mode.el\n+++ b/go-mode.el\n@@ -432,7 +432,7 @@ if no further tokens of the type exist.\u0026quot;\n       (if (or (\u0026gt;= (point) limit) (eobp))\n          (setq result nil)\n        (setq cs (go-mode-cs))\n-       (if cs\n+       (if (and cs (\u0026gt;= (car cs) (point)))\n            (if (eq (= (char-after (car cs)) ?/) comment)\n                ;; If inside the expected comment/string, highlight it.\n                (progn\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "Sajmani",
+		"id": 9734877,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:23:40Z",
+	"created_at": "2012-11-26T15:53:54Z",
+	"updated_at": "2016-06-24T22:28:49Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

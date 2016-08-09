@@ -1,0 +1,22 @@
+{
+	"id": 51281453,
+	"number": 3975,
+	"state": "closed",
+	"title": "compiler: Incorrect variable value in closure in loop",
+	"body": "by **edje@google.com**:\n\n\u003cpre\u003eGo versions:\ngo version go1.0.2 on FreeBSD, and the playground editor (play.golang.org)\n\nI was doing some tiny experiments with closures. Essentially I wanted to do the\nfollowing:\n\n- Create an array of 10 elements, holding function pointers\n- Fill each of the elements with a function that does fmt.Println(i), where i is the\nindex it has in the array.\n\nSo here's attempt number one, quite straight-forward:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tvar l [10]func()\n\t\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\tvar j int\n\t\tfmt.Println(j) // Gives 0 during every iteration\n\t\tj = i\n\t\tfmt.Println(j) // Gives 0 .. 9 */\n\t\tl[i] = func() { fmt.Println(j) }\n\t}\n\t\n\tfor j := 0; j \u0026lt; 10; j++ {\n\t\tl[j]() // Always prints 9\n\t}\n}\n\nHey... that's not what I expected. Well, I can imagine why it does that. Even though you\ncreate a `new variable' during each iteration, it is actually recycled across each\niteration, so j will simply hold 9 at the end of the loop. Indeed, if we make the loop\none too long, but bail out right after we allocate the variable, it will indeed print 0:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tvar l [10]func()\n\t\n\tfor i := 0; i \u0026lt; 11; i++ {\n\t\tvar j int\n\t\tif i \u0026lt; 10 {\n\t\t\tfmt.Println(j) // Gives 0 during every iteration\n\t\t\tj = i\n\t\t\tfmt.Println(j) // Gives 0 .. 9 */\n\t\t\tl[i] = func() { fmt.Println(j) }\n\t\t}\n\t}\n\t\n\tfor j := 0; j \u0026lt; 10; j++ {\n\t\tl[j]() // Always prints 0\n\t}\n}\n\nWell, second attempt:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tvar l [10]func()\n\t\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\tfunc(j int) {\n\t\t\tfmt.Println(j) // Gives 0 .. 9 */\n\t\t\tl[j] = func() { fmt.Println(j) }\n\t\t}(i)\n\n\t}\n\t\n\tfor j := 0; j \u0026lt; 10; j++ {\n\t\tl[j]() // Prints 9...9\n\t}\n}\n\nThis is even weirder. We invoke the function with a different number, but still it\ngenerates a function that always prints 9. Maybe the compiler tried to be smart and\nactually expanded the temporary function.\n\nWell, let's try to use a temporary variable in between:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tvar l [10]func()\n\t\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\tfunc(j int) {\n\t\t\tk := j\n\t\t\tfmt.Println(k) // Gives 0 .. 9 */\n\t\t\tl[k] = func() { fmt.Println(k) }\n\t\t}(i)\n\n\t}\n\t\n\tfor j := 0; j \u0026lt; 10; j++ {\n\t\tl[j]() // Prints 1...1\n\t}\n}\n\nThis is even more surprising. Where did the 1 come from?\n\nI hope this information helps. If not, be sure to ping me.\n\nThanks,\nEd\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 18,
+	"closed_at": "2014-12-08T10:21:05Z",
+	"created_at": "2012-08-19T20:25:03Z",
+	"updated_at": "2016-06-24T22:23:21Z"
+}

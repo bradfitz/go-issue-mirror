@@ -1,0 +1,28 @@
+{
+	"id": 68635326,
+	"number": 10465,
+	"state": "closed",
+	"title": "fmt: no padding is applied for \"%x\" or \"%X\"",
+	"body": "go version devel +9402e49 Wed Apr 15 05:03:42 2015 +0000 darwin/amd64\r\n\r\ntestcases to see no padding is applied to strings and byte slices:\r\n```\r\n{\"%04x\", []byte{1, 2, 3}, \"000100020003\"},\r\n{\"%4x\", []byte{1, 2, 3}, \"  01  02  03\"},\r\n\r\n--- FAIL: TestSprintf (0.00s)\r\n\tfmt_test.go:723: Sprintf(\"%04x\", [1 2 3]) = \"010203\" want \"000100020003\"\r\n\tfmt_test.go:723: Sprintf(\"%4x\", [1 2 3]) = \"010203\" want \"  01  02  03\"\r\n```\r\n\r\nhttps://github.com/golang/go/issues/10430\r\nhas clarified it is per element for byte slices. However after the change currently no padding seems to be applied since the loop mentioned there does not apply it. It only adds a single space for each element or \"0x\" but not a general padding. \r\n\r\nAlso strings and byte slice then as far as i understood need to be handled with differing padding logic as the strings needs to be padded as a whole not hex by hex. \r\n\r\nwould this be the intended behavior?\r\n\r\n```\r\n        {\"%x\", \"xyz\", \"78797a\"},\r\n\t{\"%X\", \"xyz\", \"78797A\"},\r\n\t{\"% x\", \"xyz\", \"78 79 7a\"},\r\n\t{\"% X\", \"xyz\", \"78 79 7A\"},\r\n\t{\"%#x\", \"xyz\", \"0x78797a\"},\r\n\t{\"%#X\", \"xyz\", \"0X78797A\"},\r\n\t{\"%# x\", \"xyz\", \"0x78 0x79 0x7a\"},\r\n\t{\"%# X\", \"xyz\", \"0X78 0X79 0X7A\"},\r\n\t{\"%20X\", \"xyz\", \"              78797A\"},\r\n\t{\"% 20X\", \"xyz\", \"            78 79 7A\"},\r\n\t{\"%#20X\", \"xyz\", \"            0X78797A\"},\r\n\t{\"%# 20X\", \"xyz\", \"      0X78 0X79 0X7A\"},\r\n\t{\"%-20X\", \"xyz\", \"78797A              \"},\r\n\t{\"% -20X\", \"xyz\", \"78 79 7A            \"},\r\n\t{\"%-#20X\", \"xyz\", \"0X78797A            \"},\r\n\t{\"%-# 20X\", \"xyz\", \"0X78 0X79 0X7A      \"},\r\n\r\n\t{\"%x\", []byte(\"xyz\"), \"78797a\"},\r\n\t{\"%X\", []byte(\"xyz\"), \"78797A\"},\r\n\t{\"% x\", []byte(\"xyz\"), \" 78 79 7a\"},\r\n\t{\"% X\", []byte(\"xyz\"), \" 78 79 7A\"},\r\n\t{\"%#x\", []byte(\"xyz\"), \"0x780x790x7a\"},\r\n\t{\"%#X\", []byte(\"xyz\"), \"0X780X790X7A\"},\r\n\t{\"%# x\", []byte(\"xyz\"), \" 0x78 0x79 0x7a\"},\r\n\t{\"%# X\", []byte(\"xyz\"), \" 0X78 0X79 0X7A\"},\r\n\t{\"%4X\", []byte(\"xyz\"), \"  78  79  7A\"},\r\n\t{\"% 4X\", []byte(\"xyz\"), \"  78  79  7A\"},\r\n\t{\"%#4X\", []byte(\"xyz\"), \"0X780X790X7A\"},\r\n\t{\"%# 4X\", []byte(\"xyz\"), \" 0X78  0X79  0X7A\"},\r\n\t{\"%-4X\", []byte(\"xyz\"), \"78  79  7A  \"},\r\n\t{\"% -4X\", []byte(\"xyz\"), \" 78  79  7A \"},\r\n\t{\"%-#6X\", []byte(\"xyz\"), \"0X78  0X79  0X7A  \"},\r\n\t{\"%-# 6X\", []byte(\"xyz\"), \" 0X78  0X79  0X7A \"}, // because Sprintf(\"%-# 6X\", 120) = \" 0X78 \"\r\n```\r\nIts a bit unclear now to me how and if both of these statements should be applied to the examples:\r\n1) \"For compound operands such as slices and structs, the format applies to the elements of each operand, recursively, not to the operand as a whole.\"\r\n2) \" String and slice of bytes:\r\n%x base 16, lower-case, two characters per byte\r\n%X base 16, upper-case, two characters per byte\"\r\n\r\nP.S.\r\nI will try to supply a patch to add padding back based on my nearly ready prepared patch to not use a buffer but adding the padding directly.",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-09-29T19:49:40Z",
+	"created_at": "2015-04-15T10:04:08Z",
+	"updated_at": "2015-09-29T19:50:25Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 165107218,
+	"number": 16334,
+	"state": "closed",
+	"title": "gccgo: improve caching for backend interface types (reduces peak memory consumption)",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version devel +5701174 Mon Jun 13 14:05:52 2016 +0000 linux/amd64\r\n\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\n\r\n\r\n3. What did you do?\r\n\r\nWhen I compile the predefined \"fmt\" package (using as a benchmark) with gccgo, the heap usage tops out at about 16MB for the compile.  \r\n\r\n4. What did you expect to see?\r\n\r\n\r\n5. What did you see instead?\r\n\r\nI have been looking at heap and execution profiles for gccgo when compiling the \"fmt\" package, to get a sense for where time + memory are being spent.\r\n\r\nAs would be expected, the front end code goes not show up at all in the cpu profile; nearly all the time is in the back end (no surprise there).\r\n\r\nThe memory profile looked a bit different, though, and I think there may be some opportunities for caching that would bring down the front end memory use.\r\n\r\nThe first attached image shows the peak heap usage from \"massif\", note the top three blue items (Interface_info_expression::do_type(), Typed_identifier_list::copy(), etc). This is suspicious.\r\n\r\nFrom looking at Interface_info_expression::do_type() in callgrind (second attached image), it looks as though there are about 800 calls to the routine for the INTERFACE_INFO_METHODS case, each results in a new type returned.\r\n\r\nAll of the calls are passing in the same type (the interface for \"fmt\"); it would be better to keep a cached of previously constructed results. I prototyped this change, looks like the memory consumption comes down to about 10mb (third attached image).\r\n\r\n\r\n![massif-snapsnot](https://cloud.githubusercontent.com/assets/12280172/16772478/6d7bf42a-4822-11e6-8cc5-64373368b9cb.png)\r\n![callgrind-snapshot](https://cloud.githubusercontent.com/assets/12280172/16772483/71f19848-4822-11e6-99e1-f4ecf73a4cbc.png)\r\n![massif-new-snapshot](https://cloud.githubusercontent.com/assets/12280172/16772485/75792dbe-4822-11e6-8ddd-f86e7af44020.png)\r\n\r\n",
+	"user": {
+		"login": "thanm",
+		"id": 12280172,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "thanm",
+		"id": 12280172,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-08-03T19:59:55Z",
+	"created_at": "2016-07-12T15:19:36Z",
+	"updated_at": "2016-08-03T19:59:55Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

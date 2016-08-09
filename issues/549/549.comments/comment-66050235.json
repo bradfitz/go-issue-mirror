@@ -1,0 +1,12 @@
+{
+	"id": 66050235,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe error message should be better.  bsdthread_create called notok (not ok) because it\ngot an error from the system \ncall.  Which error?  The register dump says AX = 0xc, so ENOMEM.  In other words, you've\nrun the system out of \nthreads.\n\nYour gocrash.txt has 2640 goroutines in total (!). \n\n; grep -c '^goroutine' gocrash.txt\n2640\n;\n\nThat's really cool - I've never seen that many goroutines in a real program before.\n\nThat wouldn't be a problem except that 2558 of them are either running or blocked in\nsystem calls, due to the many \ntime.Tickers you've created:\n\n; egrep -c '^goroutine [0-9]+ \\[[23]\\]:' gocrash.txt\n2558\n;\n\nThe system has decided that's enough OS threads for one program.  ;-)\n\nWe need to make time.Tick a little better but you'd still have a memory leak from\ncreating all the tickers.  If you're need \na tick only temporarily, you should use time.NewTicker() and then call t.Stop() when\nyou're done.  I've sent a CL to make \nt.Stop a little more robust but even in its current form it's worth using.\n\nI'll leave this issue open to track fixing the error message.\n\nHave fun!\u003c/pre\u003e\n\n\n_Owner changed to **r...@golang.org**._\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-01-19T17:43:10Z",
+	"updated_at": "2014-12-08T10:05:00Z"
+}

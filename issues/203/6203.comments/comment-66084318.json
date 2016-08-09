@@ -1,0 +1,12 @@
+{
+	"id": 66084318,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **kota85**:\n\n\u003cpre\u003eI see, thanks. FWIW the testcase works with the following amendment:\n\ndiff --git a/gotrap/lib/bar.c b/gotham/lib/bar.c\nindex 7d87133..29b9041 100644\n--- a/gotrap/lib/bar.c\n+++ b/gotham/lib/bar.c\n@@ -18,6 +18,7 @@ static ucontext_t helper_ctx;\n static ucontext_t main_ctx;\n \n static callback_t callback;\n+static int do_callback;\n \n static void __bar_run(void)\n {\n@@ -25,11 +26,17 @@ static void __bar_run(void)\n \n        while (1) {\n                pthread_mutex_lock(\u0026lock);\n+               do_callback = 1;\n                for (i = 0; i \u0026lt; times; i++) {\n                        result = result + 1;\n-                       if (callback)\n-                               callback(result);\n+                       if (callback) {\n+                               if (swapcontext(\u0026helper_ctx, \u0026main_ctx) == -1) {\n+                                       perror(\"__bar_run\");\n+                                       exit(EXIT_FAILURE);\n+                               }\n+                       }\n                }\n+               do_callback = 0;\n                pthread_mutex_unlock(\u0026lock);\n \n                if (swapcontext(\u0026helper_ctx, \u0026main_ctx) == -1) {\n@@ -76,7 +83,12 @@ int bar_init(void)\n int bar_run(int n)\n {\n        times = n;\n+ run:\n        swapcontext(\u0026main_ctx, \u0026helper_ctx);\n+       if (do_callback) {\n+               callback(result);\n+               goto run;\n+       }\n \n        return result;\n }\n\nThe overhead is tiny: two additional ucontext swaps per callback, which are very cheap.\nA quick test on the C version shows a very small slowdown: 11.7e6 callbacks per second\nvs. 12.0e6 for the original version.\n\nDoing this makes the code uglier, but I can live with it.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-21T17:31:12Z",
+	"updated_at": "2014-12-22T06:28:11Z"
+}

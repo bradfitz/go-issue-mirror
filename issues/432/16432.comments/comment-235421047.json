@@ -1,0 +1,12 @@
+{
+	"id": 235421047,
+	"body": "\u003e With go1.7rc3 plus cherry-pick of CL 24704 PS 1 plus reducing the over-assist to 64k, the inbound network activity continues at just about the same rate whether or not the GC is running. This is somewhat subjective, so we might be in the realm of tuning here.\r\n\r\nGreat. It sounds like my RPC benchmark was getting similar results to the real thing.\r\n\r\n\u003e Specifically, it looks with go1.7rc3 like allocations near the beginning of concurrent mark are very expensive. ... Because the allocations early in the cycle cost so much, there isn't much time left for less expensive ones.\r\n\r\nYes, these are the allocations I would expect to be more expensive, since nobody's built up credit at that point (Rick and I tried lots of \"accounting tricks\" to spread this out, but invariably mutators just blew through any slack we gave them and ran into the same problem). But you have an interesting point about these consuming so much of the cycle that there isn't much time to bring the average back down.\r\n\r\n\u003e In preparing CL 25155, I tried an over-assist of 1\u003c\u003c20 (as in master) and 64\u003c\u003c10 (as in PS2). I picked it because I remember you saying that the GC can scan about 1MB per second, and some old recommendations (from Dmitry Vyukov?) about splitting work into pieces that can be done in about 100µs.\r\n\r\n1MB per *millisecond*. :) But, yes, this is about right and splitting work up into 100µs chunks is generally pretty reasonable.\r\n\r\n\u003e Should the new over-assist figure be calculated more scientifically?\r\n\r\nI tried 16k, 32k, and 128k with my RPC benchmark and the differences were in the noise. \r\n\r\nFor Go 1.8, I'm considering tying assists to span acquisition, which will amortize the assist cost using a completely different mechanism. If that works, the over-assist knob will be gone anyway.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-26T22:07:51Z",
+	"updated_at": "2016-07-26T22:07:51Z"
+}

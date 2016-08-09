@@ -1,0 +1,26 @@
+{
+	"id": 115657088,
+	"number": 13182,
+	"state": "open",
+	"title": "proposal: add SetOutputFn to log.Logger",
+	"body": "## Motivation\r\nGo stdlib provides a `log.Logger` that is widely used in both Go programs and Go libraries (eg. most notably in `http.Server`) as a standardized logging component. \r\n\r\nHowever, the current implementation of the `log.Logger` enforces a specific logging format with limited flexibility which requires text parsing to allow it to be connected to any other logging system implementation through the swappable `io.Writer` interface. This adds complexity and overhead. The other alternative of directly using third party logging libraries is not very scalable both because existing libraries including components like `http.Server` in the stdlib expect `log.Logger` and because of network effects of stdlib.\r\n\r\n## Proposal\r\nThis proposes a minor change to the log package to make `log.Logger` more extensible in a fully backwards compatible by allowing `Logger.Output()` to write logs using custom logging implementations. \r\n\r\nWe do this by defining a function type called `OutputFn` with the same function signature as the current `Logger.Output()` and introducing an unexported field `outputfn` in `Logger` to hold the function that should be used for output much like we use the `out` field to hold the `io.Writer` currently. By default, `log.New()` will set the `outputfn` to the  current implementation which is moved to `Logger.DefOutputFn()`. This can be swapped to any other `OutputFn` implementation by calling `Logger.SetOutputFn()` in the same way as we currently can swap `io.Writer` by calling `Logger.SetOutput()`\r\n\r\nFor the top level `log` package, we provide `log.SetOutputFn()` and `log.SetDefOutputFn()` to set the `OutputFn` of the `log.std` logger and reset it to default.\r\n\r\n## Proof of Concept\r\nI have implemented a [proof of concept](https://github.com/srinathh/log) for this proposed change and added [an example](https://github.com/srinathh/log/blob/master/customlogger_test.go) in the test suite that demonstrates logging to a Tab Separated Variable format. While in the example i am merely writing to a Writer, the Output could be to anything including over the network etc.\r\n\r\nIf this approach looks ok, I can package this into a CL incorporating any feedback.\r\n\r\n## Rationale for the Approach\r\nMost of the actual work of logging happens in `Logger.Output()` (and in the unexported `Logger.formatHeader()` called by it) which makes it a prime candidate for flexibility. We cannot change `log.Logger` into an interface due to Go1 compatibility promise and this approach therefore allows a lot of flexibility with a very minor change.",
+	"user": {
+		"login": "srinathh",
+		"id": 2973973,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 7,
+	"created_at": "2015-11-07T10:11:07Z",
+	"updated_at": "2015-12-29T15:12:21Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

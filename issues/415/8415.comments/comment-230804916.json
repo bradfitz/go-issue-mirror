@@ -1,0 +1,12 @@
+{
+	"id": 230804916,
+	"body": "I just want to share a temporary solution to this problem. My database uses a nullable UUID for a column. I'm using github.com/twinj/uuid. I've created a wrapper called NullableUUID and instead of using `uuid.UUID` as the struct data types I'm using `NullableUUID`.\r\n\r\n```Go\r\n// NullableUUID wrapper to fix nullable UUID. See https://github.com/golang/go/issues/8415\r\ntype NullableUUID uuid.Uuid\r\n\r\n// Value implements Sql/Value so it can be converted to DB value\r\nfunc (u *NullableUUID) Value() (driver.Value, error) {\r\n\tif u == nil || len(*u) == 0 {\r\n\t\treturn nil, nil\r\n\t}\r\n\treturn u.MarshalText()\r\n}\r\n\r\n// MarshalText helps convert to value for JSON\r\nfunc (u *NullableUUID) MarshalText() ([]byte, error) {\r\n\tif u == nil || len(*u) == 0 {\r\n\t\treturn nil, nil\r\n\t}\r\n\treturn uuid.Uuid(*u).MarshalText()\r\n}\r\n\r\n// UnmarshalText helps convert to value for JSON\r\nfunc (u *NullableUUID) UnmarshalText(data []byte) error {\r\n\tif len(data) == 0 {\r\n\t\treturn nil\r\n\t}\r\n\r\n\tparsed, err := uuid.Parse(string(data))\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\r\n\t*u = NullableUUID(parsed)\r\n\treturn nil\r\n}\r\n\r\n\r\ntype opportunity struct {\r\n\tID                  *int          `json:\"id,omitempty\" db:\"OpportunityId,omitempty\"`\r\n\tGlobalOpportunityID *NullableUUID `json:\"globalOpportunityId,string,omitempty\" db:\"GlobalOpportunityId,omitempty\"`\r\n\tGlobalPartnerID     *NullableUUID `json:\"globalPartnerId,string,omitempty\" db:\"GlobalPartnerId,omitempty\"`\r\n}\r\n```",
+	"user": {
+		"login": "blockloop",
+		"id": 3022496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-06T15:18:18Z",
+	"updated_at": "2016-07-06T21:22:18Z"
+}

@@ -1,0 +1,30 @@
+{
+	"id": 140340284,
+	"number": 14790,
+	"state": "closed",
+	"title": "runtime: Go 1.6 regresses Windows performance due to timeBeginPeriod removal",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo version go1.6 windows/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n\r\n3. What did you do?\r\nRun a benchmark from my go-winio package, which uses completion ports to provide non-thread-blocking IO on top of named pipes. It regressed significantly between go 1.5.3 and go 1.6, but only when I don't call timeBeginPeriod(1000). It seems that some aspect of the go scheduler still depends on a fast timer.\r\n\r\n You can see this with:\r\n\r\n        go get github.com/Microsoft/go-winio\r\n        cd \u003cwherever\u003e; git checkout go_16_regression_test\r\n        go test -bench .\r\n        set gofasttick=1\r\n        go test -bench .\r\n\r\n4. What did you expect to see?\r\nSame performance before and after setting gofasttick=1 (which makes go-winio call timeBeginPeriod(1000) before doing any IO).\r\n\r\n5. What did you see instead?\r\n\r\n        Z:\\jostarks\\go\\src\\github.com\\Microsoft\\go-winio\u003ego test -bench .\r\n        PASS\r\n        BenchmarkPipeIo-8           2000            998036 ns/op\r\n        ok      _/Z_/jostarks/go/src/github.com/Microsoft/go-winio      2.304s\r\n\r\n        Z:\\jostarks\\go\\src\\github.com\\Microsoft\\go-winio\u003eset gofasttick=1\r\n\r\n        Z:\\jostarks\\go\\src\\github.com\\Microsoft\\go-winio\u003ego test -bench .\r\n        PASS\r\n        BenchmarkPipeIo-8           3000            517709 ns/op\r\n        ok      _/Z_/jostarks/go/src/github.com/Microsoft/go-winio      1.797s\r\n\r\nI can try to get a more minimal repro if it would be helpful. This has regressed Docker client performance significantly in Windows when operating over named pipes.",
+	"user": {
+		"login": "jstarks",
+		"id": 9548354,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 27,
+	"closed_at": "2016-04-11T00:00:09Z",
+	"created_at": "2016-03-12T03:04:10Z",
+	"updated_at": "2016-04-12T05:56:20Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

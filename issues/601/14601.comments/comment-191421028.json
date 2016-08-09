@@ -1,0 +1,16 @@
+{
+	"id": 191421028,
+	"body": "There are two separate parts to this suggestion. The first is using close as a receiver-\u003esender signal, and the second is making closes ref-counted. \r\n\r\nRegarding close by receiver as a signal to a sender, I wrote this on #11344:\r\n\r\n\u003e Closing the channel is a send-like communication from the senders to \r\n\u003e the receivers that there will be no more sends. If a sender later \r\n\u003e tries to send on the channel, then the goroutine who did the close is \r\n\u003e clearly confused. That merits a panic, whether it is part of a select \r\n\u003e or an ordinary operation.\r\n\u003e \r\n\u003e The fact that close is (like ordinary sends) a communication from \r\n\u003e sender to receiver is fundamental to its operation. It comes up \r\n\u003e repeatedly that people want to use close as a reverse signal from \r\n\u003e receivers to senders to say \"stop sending to me\". That is _not_ what \r\n\u003e it means. It would break the unidirectionality of channels. And at \r\n\u003e least nine times out of ten the people who want to do this have not \r\n\u003e completely thought through the implications of this kind of \r\n\u003e cancellation mechanism. There almost always need to be two steps in a \r\n\u003e cancellation: a request for the cancellation and an acknowledgement \r\n\u003e that work has in fact stopped. Close can serve as the latter; it \r\n\u003e cannot serve as both, and we make it as hard as possible for people \r\n\u003e to do that accidentally.\r\n\u003e \r\n\u003e This insistence that close is a sender -\u003e receiver communication and \r\n\u003e not the reverse is also the reason why you cannot close a \r\n\u003e receive-only channel.\r\n\r\nThis is still my response to trying to use close as a signal from receiver to sender. At the very least that only makes sense for unbuffered channels, and even then you still have to worry about every sender knowing that the send might fail.\r\n\r\nRef-counting the closes (on the sender side) is an interesting idea. If it were early in the language design it might be worth doing. But we fundamentally have to raise the bar for language additions as time goes on, to avoid ending up with a language that grows linearly with time since being created. If we allowed such growth, one of Go's key benefits - being small and easy to understand - would be lost. At this point in Go's development, there would need to be a compelling case that this feature is very commonly needed. I don't see evidence for that.\r\n\r\nAlso, ref-counting sender-side closes is not much code today: http://play.golang.org/p/ZPsg-tDZrR.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-03-02T20:43:13Z",
+	"updated_at": "2016-03-02T20:43:13Z"
+}

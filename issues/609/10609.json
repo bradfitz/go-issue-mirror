@@ -1,0 +1,27 @@
+{
+	"id": 71853472,
+	"number": 10609,
+	"state": "closed",
+	"title": "runtime: cpu profile is not useful due to systemstack",
+	"body": "When profiling my program with pprof, I see that 80% of time is spent in runtime.memclr called from runtime._System. This is not useful. I have to attach gdb and sample stacks to figure out that the guilty call stack is:\r\n\r\n#0  runtime.memclr () at src/runtime/memclr_amd64.s:13\r\n#1  0x0000000000425b2a in runtime.heapBits.initSpan (h=..., size=131072, n=1, total=131072) at src/runtime/mbitmap.go:284\r\n#2  0x0000000000423d27 in runtime.largeAlloc (size=124063, flag=1, ~r2=0x7f6e0004c7d8) at src/runtime/malloc.go:715\r\n#3  0x000000000045faba in runtime.mallocgc.func3 () at src/runtime/malloc.go:631\r\n#4  0x000000000046aa59 in runtime.systemstack () at src/runtime/asm_amd64.s:262\r\n#5  0x0000000000441a10 in runtime.starttheworld () at src/runtime/proc1.go:643\r\n\r\nBut it is still unclear who is calling mallocgc.\r\nSimilar situation is possible for e.g. defers, for which one won't even get a hint from heap profile.\r\n\r\nCpu profiler should unwind through systemstack.\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-05-11T19:36:07Z",
+	"created_at": "2015-04-29T11:45:20Z",
+	"updated_at": "2016-06-25T02:06:47Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

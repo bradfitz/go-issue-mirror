@@ -1,0 +1,22 @@
+{
+	"id": 104154382,
+	"number": 12423,
+	"state": "closed",
+	"title": "cmd/doc: issues related to vendor ambiguity",
+	"body": "Test case:\n\n\tgo get rsc.io/pdf\n\tgo doc pdf.Text\n\nI get:\n\n\t$ go doc pdf.Text\n\tpackage pdf // import \"rsc.io/pdf\"\n\t\n\tWARNING: package source is installed in \"golang.org/x/arch/vendor/rsc.io/pdf\"\n\ttype Text struct {\n\t\tFont     string  // the font used\n\t\tFontSize float64 // the font size, in points (1/72 of an inch)\n\t\tX        float64 // the X coordinate, in points, increasing left to right\n\t\tY        float64 // the Y coordinate, in points, increasing bottom to top\n\t\tW        float64 // the width of the text, in points\n\t\tS        string  // the actual UTF-8 text\n\t}\n\t\n\t    A Text represents a single piece of text drawn on a page.\n\t$\n\nThere are three issues.\n\nFirst, import comments are no-ops in vendor source trees, so the WARNING should be omitted.\n\nSecond, the import statement on the first line should probably give the full path of the selected package (golang.org/x/arch/vendor/rsc.io/pdf). Even though that's not how a source file would import it, the expanded path is what the tools like \"go list\" show. Perhaps to avoid confusion the line could drop the \"import\", so not: \n\n\tpackage pdf // import \"golang.org/x/arch/vendor/rsc.io/pdf\"\n\nbut instead:\n\n\tpackage pdf // golang.org/x/arch/vendor/rsc.io/pdf\n\nThird, there should be some kind of prioritization that depends on where in the source tree \"go doc\" is run. If run in $GOPATH/src/golang.org/x/arch/x86, then absolutely that package is a good resolution for \"go doc pdf.Text\". But outside $GOPATH/src/golang.org/x/arch, that package is not importable, so if there is non-vendored copy or a closer vendored copy, that should be preferred. In my case, plain $GOPATH/src/rsc.io/pdf should take priority over the vendored arch copy, again possibly unless run inside the arch subtree.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-12-17T02:16:47Z",
+	"created_at": "2015-08-31T23:39:19Z",
+	"updated_at": "2015-12-17T02:16:47Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

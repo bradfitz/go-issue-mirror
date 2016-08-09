@@ -1,0 +1,17 @@
+{
+	"id": 108658976,
+	"number": 12772,
+	"state": "closed",
+	"title": "cmd/compile: problem in typed switch statement (type * has no field or method)",
+	"body": "I've made 2 custom error types that implement `error` interface: `customErr1` and `customErr2`. They both have a `Message` property.\r\n\r\nThe `inspect(error)` function checks for types using a typed `switch` statement and, if the error object is either of `customErr` or `customErr2` type, accesses their `Message` property.\r\n\r\n**What I expected to see**: typed `switch` statement compiled.\r\n\r\n**What I saw instead:** compilation error:\r\n\r\n```\r\nprog.go:24: e.Message undefined (type error has no field or method Message)\r\n```\r\n\r\n* * *\r\n\r\nThe problematic line below is\r\n\r\n```go\r\ncase *customErr1, *customErr2:\r\n```\r\n\r\nWhat's weird is that **the program works if the list is reduced to 1 item, i.e. one of the types is removed**. However if the `case` list contains 2 items, the program doesn't compile and complains that \"type error has no field or method Message\". It's true that `error` doesn't implement Message, but that was the purpose of my type check in the first place.\r\n\r\n[Full example on Go playground](http://play.golang.org/p/NCFdEI03Vp), inlined here:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\ntype customErr1 struct {\r\n\tMessage string\r\n}\r\n\r\nfunc (err *customErr1) Error() string {\r\n\treturn \"Error() 1\"\r\n}\r\n\r\ntype customErr2 struct {\r\n\tMessage string\r\n}\r\n\r\nfunc (err *customErr2) Error() string {\r\n\treturn \"Error() 2\"\r\n}\r\n\r\nfunc inspect(err error) {\r\n\tswitch e := err.(type) {\r\n\tcase *customErr1, *customErr2:    // PROBLEMATIC LINE\r\n\t\tfmt.Println(e.Message)\r\n\tdefault:\r\n\t\tfmt.Println(e.Error())\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tinspect(\u0026customErr1{Message: \"hello from error 1\"})\r\n\tinspect(\u0026customErr2{Message: \"hello from error 2\"})\r\n}\r\n```\r\n\r\ngo version go1.5.1 darwin/amd64",
+	"user": {
+		"login": "mislav",
+		"id": 887,
+		"type": "User",
+		"site_admin": true
+	},
+	"comments": 4,
+	"closed_at": "2015-09-28T13:59:46Z",
+	"created_at": "2015-09-28T13:33:53Z",
+	"updated_at": "2015-09-28T14:49:13Z"
+}

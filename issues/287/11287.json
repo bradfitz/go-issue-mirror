@@ -1,0 +1,33 @@
+{
+	"id": 89540724,
+	"number": 11287,
+	"state": "closed",
+	"title": "image/gif: LoopCount changes on round trip",
+	"body": "The following program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"image/gif\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"GIF89a000\\x00000,0\\x00\\x00\\x00\\n\\x00\" +\r\n\t\t\"\\n\\x00\\x80000000\\x02\\b\\xf01u\\xb9\\xfdal\\x05\\x00;\")\r\n\timg, err := gif.DecodeAll(bytes.NewReader(data))\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\tw := new(bytes.Buffer)\r\n\terr = gif.EncodeAll(w, img)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\timg1, err := gif.DecodeAll(w)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Printf(\"LoopCount: %v -\u003e %v\\n\", img.LoopCount, img1.LoopCount)\r\n}\r\n```\r\nprints:\r\n```\r\nLoopCount: 0 -\u003e -1\r\n```\r\n\r\nImage should be preserved after Encode/Decode round trip. A more consistent behavior would be to:\r\n- return error from first Decode for LoopCount=0\r\n- encode image with LoopCount=0\r\n- patch LoopCount from 0 to -1 in Decode\r\n\r\nCan't find anything definitive in the GIF spec on this.\r\n\r\ngo version devel +514014c Thu Jun 18 15:54:35 2015 +0200 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-06-23T05:51:15Z",
+	"created_at": "2015-06-19T11:26:38Z",
+	"updated_at": "2016-06-25T02:11:33Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 70645242,
+	"number": 10569,
+	"state": "closed",
+	"title": "x/crypto/ssh - interoperability with SSH encoding of certificates with critical options (values encoding)",
+	"body": "Currently the Go ssh library generates certificates that cannot be read by OpenSSH \"ssh-keygen -L\" command if any of the critical options (\"force-command\" or \"source-address\" or both) are included in the certificate.  See http://lists.mindrot.org/pipermail/openssh-unix-dev/2015-April/033849.html and http://lists.mindrot.org/pipermail/openssh-unix-dev/2015-April/033844.html for more details and examples/hexdumps.  In summary, Go's ssh library encodes the values of the critical options (\"data\" in the \u003cname, data\u003e tuples of the PROTOCOL.certkeys spec http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.certkeys?rev=HEAD, ) as a plain string (with **one** length prefix) but SSH expects a \"double-prefixed\" string - data is supposed to be a composite field that itself contains a string, therefore with **two** length prefixes [1st: len(s)+4, 2nd: len(s)].  When \"ssh-keygen -L\" attempts to read a Go-generated certificate with critical options, it ends up up reading the first four bytes of the string proper as the expected second length prefix and obviously fails (\"string too large\").\r\n\r\nThe other direction - from certificates generated with \"ssh-keygen -s \" to Go's ssh unmarshaling  - happens to work (due to the reflection unwrapping magic).\r\n\r\nin http://lists.mindrot.org/pipermail/openssh-unix-dev/2015-April/033849.html Damien Miller says that \"Go's implementation is incorrect here\" but also admits that the PROTOCOL.certkeys spec could be improved to prevent confusion (and I would say confusion is very easy here based on my reading of the spec and talking to several experienced engineers).  I opened https://bugzilla.mindrot.org/show_bug.cgi?id=2389 to improve the spec wording in that part.\r\n\r\nWe should also add tests to generate and validate certificates that include critical options.  Besides verifying interoperability with SSH, they would also be useful as examples and bootstarting help for developers using that functionality. ",
+	"user": {
+		"login": "dmitris",
+		"id": 31205,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-05-05T13:00:43Z",
+	"created_at": "2015-04-24T09:55:24Z",
+	"updated_at": "2016-06-25T02:06:26Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 155762637,
+	"number": 15749,
+	"state": "open",
+	"title": "crypto/x509: CentOS 7 \"x509: failed to load system roots and no roots provided\" issues.",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n1.6.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nI am running go 1.6.2 from the official docker container with CentOS7 as the hosting os.\r\n\r\n3. What did you do?\r\nI was using the http.Client and I did a request to a https:// endpoint. \r\n\r\n4. What did you expect to see?\r\nI was expecting to get a 200OK request. If I did the same request with curl or wget it worked like a charm so it wasnt any problems with the certs on the OS.\r\n\r\n5. What did you see instead?\r\nWhen I was doing the request I got the following error: \"x509: failed to load system roots and no roots provided\"\r\n\r\n**Solution:**\r\nSo since other tools worked with https on the host I knew that it was not any problems with the certificates. I checked where the ca bundle was located on the host system and compared it with the following file:\r\n\r\nhttps://github.com/golang/go/blob/master/src/crypto/x509/root_linux.go\r\n\r\nOn CentOS 7 the certificate bundle is located at the following path:\r\n`/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem`\r\n\r\nThen there are a link to that file on the following path:\r\n`/etc/ssl/ca-bundle.crt` \r\n\r\nNote that it is `.crt`instead of `.pem`as in the `root_linux.go`file.\r\n\r\nSo I tried to run my container to link the `/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem` to `/etc/ssl/ca-bundle.pem` and everything works. It was a work around to get my application to work but I would prefer it if we can add the `/etc/ssl/ca-bundle.crt` to the paths in root_linux.go.\r\n\r\nHope this is possible! Thanks!\r\n",
+	"user": {
+		"login": "mckn",
+		"id": 172951,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-05-19T15:15:32Z",
+	"updated_at": "2016-06-02T15:47:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

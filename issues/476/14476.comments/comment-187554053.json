@@ -1,0 +1,12 @@
+{
+	"id": 187554053,
+	"body": "I tried two programs.\n\nbin/go fails in runtime.sched_getaffinity (the very first syscall):\n(gdb) r\nStarting program: /root/go.git/bin/go\n\nProgram received signal SIGSEGV, Segmentation fault.\n0x00000000 in ?? ()\n(gdb) bt\n#0  0x00000000 in ?? ()\n#1  0x0810cfa8 in runtime.sched_getaffinity () at\n/root/go.git/src/runtime/sys_linux_386.s:483\n#2  0x080e15df in runtime.getproccount (~r0=-1073742492)\n    at /root/go.git/src/runtime/os1_linux.go:88\n#3  0x080e180a in runtime.osinit () at\n/root/go.git/src/runtime/os1_linux.go:172\n#4  0x08109e13 in runtime.rt0_go () at\n/root/go.git/src/runtime/asm_386.s:147\n#5  0x00000001 in ?? ()\n#6  0xbffffd64 in ?? ()\nBacktrace stopped: previous frame inner to this frame (corrupt stack?)\n\nIt's because musl doesn't put vsyscall entry point in %gs:0x10.\n\n\nAn externally linked hello world program couldn't even start:\n(gdb) r\nStarting program: /root/go.git/src/hello\n\nProgram received signal SIGSEGV, Segmentation fault.\n0xb7f98656 in do_relocs (dso=dso@entry=0xb7ffd660 \u003capp\u003e, rel=0x80000910,\nrel_size=145784, stride=2)\n    at src/ldso/dynlink.c:407\n407 src/ldso/dynlink.c: No such file or directory.\n(gdb) bt\n#0  0xb7f98656 in do_relocs (dso=dso@entry=0xb7ffd660 \u003capp\u003e,\nrel=0x80000910, rel_size=145784,\n    stride=2) at src/ldso/dynlink.c:407\n#1  0xb7f98ea7 in reloc_all (p=p@entry=0xb7ffd660 \u003capp\u003e) at\nsrc/ldso/dynlink.c:1115\n#2  0xb7f9a5e3 in __dls3 (sp=0xbffffd60) at src/ldso/dynlink.c:1598\n#3  0xb7f99e5c in __dls2 (base=0xb7f7b000 \"\\177ELF\\001\\001\\001\",\nsp=0xbffffd60)\n    at src/ldso/dynlink.c:1389\n#4  0xb7f97ec5 in _dlstart_c (sp=0xbffffd60, dynv=0xb7ffcef8) at\nsrc/ldso/dlstart.c:147\n#5  0xb7f97dbb in _dlstart () from /lib/ld-musl-i386.so.1\n\n\nSomething is wrong with the relocations.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-23T06:05:22Z",
+	"updated_at": "2016-02-23T06:05:22Z"
+}

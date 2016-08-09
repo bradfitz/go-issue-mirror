@@ -1,0 +1,22 @@
+{
+	"id": 52318143,
+	"number": 9373,
+	"state": "closed",
+	"title": "database/sql: permit large uint64 as parameters",
+	"body": "The following program, which assumes a local MySQL server and a specific table with one column, will fail.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n   \"database/sql\"\r\n   _ \"github.com/go-sql-driver/mysql\"\r\n   \"log\"\r\n)\r\n\r\nfunc main() {\r\n   db, err := sql.Open(\"mysql\", \"root:@tcp(:3306)/\")\r\n   if err != nil {\r\n      log.Fatal(err)\r\n   }\r\n   defer db.Close()\r\n\r\n   var i uint64 = 1 \u003c\u003c 63\r\n   _, err = db.Exec(\"INSERT INTO test.hello VALUES(?)\", i)\r\n   if err != nil {\r\n      log.Fatal(err)\r\n   }\r\n}\r\n```\r\n\r\nThe error message is\r\n\r\n    sql: converting Exec argument #0's type: uint64 values with high bit set are not supported\r\n\r\nI am not sure why this is enforced, although #6113 gives some hints and says if it's a problem, then it should be discussed. Let's discuss.\r\n\r\nI'll start. I believe it *is* a problem, and quite a serious one. A lot of applications will start out small and [eventually need 64-bit counters](http://arstechnica.com/business/2014/12/gangnam-style-overflows-int_max-forces-youtube-to-go-64-bit/). People who have been bitten by this a few times will anticipate it and just start out with 64-bit counters, and what the heck, why not use 64-bit unsigned while we're at it. Or, people will use `uint64` to store 64-bit checksums or other 64-bit pieces of data. In the application I work on, we have them all over the place, and a lot of them set the most significant bit. In any case, the problem is that things start out working just fine, and later they explode without warning.\r\n\r\nWe work around this by wrapping those parameters in `fmt.Sprint()` but\r\n\r\n1. This is ugly and it smells\r\n2. We still occasionally miss an instance of such a call and we find out after it gets into production\r\n\r\nAnd this will probably never be a solved problem as long as the behavior still exists.\r\n\r\nI don't know what to suggest to fix this, since I do not understand what `defaultValueConverter` is used for -- I gather it has a lot of functionality in different contexts.",
+	"user": {
+		"login": "xaprb",
+		"id": 279875,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-04-10T04:20:01Z",
+	"created_at": "2014-12-18T02:19:08Z",
+	"updated_at": "2016-06-25T01:56:47Z"
+}

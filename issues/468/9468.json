@@ -1,0 +1,22 @@
+{
+	"id": 53077823,
+	"number": 9468,
+	"state": "closed",
+	"title": "git-codereview: use fully specified branch names",
+	"body": "To back up my work without having to mail it, I use a git mirror. I forked the Go repo on GitHub, and ran the equivalent of:\r\n\r\n```bash\r\n$ git clone https://go.googlesource.com/go\r\n$ cd go\r\n$ git remote add --mirror=push j git@github.com:josharian/go.git\r\n$ git push j\r\n```\r\n\r\nThis has as a consequence that many of my branch names are ambiguous:\r\n\r\n```bash\r\n$ git rev-parse 9370\r\nwarning: refname '9370' is ambiguous.\r\nadfd5e448109a491adee3afeccb7efcf0cd045c0\r\n$ git show-ref 9370\r\nadfd5e448109a491adee3afeccb7efcf0cd045c0 refs/heads/9370\r\nadfd5e448109a491adee3afeccb7efcf0cd045c0 refs/remotes/j/9370\r\n```\r\n\r\nThis causes `git sync` to misbehave, and possibly other commands as well.\r\n\r\nRunning `git sync` on an unsubmitted change moves `HEAD` to `origin/master` (losing the change description), and leaves the actual changes unstaged in the working directory.\r\n\r\nDiagnosis:\r\n\r\n`Branch.Submitted` looks for any output from `git log --grep` to determine whether a change has been submitted:\r\n\r\n```bash\r\n$ git log --grep \"Change-Id: I7c4555950bcd6406ee5c613be1f2128da2c9a2b7\" 9370..origin/master\r\nwarning: refname '9370' is ambiguous.\r\n```\r\n\r\nThe warning here causes `git sync` to believe that this change has been submitted, which makes the following `git reset` command very wrong.\r\n\r\nThere are multiple fixes, all of which we should make here:\r\n\r\n* `Branch.Submitted` should look only at stdout, not stdout+stderr.\r\n* `Branch.Submitted` should check that stdout includes the Change-Id that it is looking for.\r\n* We should use fully specified branch names wherever possible. In this case, that means using `refs/heads/9370` instead of `9370` and `refs/remotes/origin/master` instead of `origin/master` in the `git log --grep` command.\r\n\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-02-04T00:42:32Z",
+	"created_at": "2014-12-29T22:37:40Z",
+	"updated_at": "2016-06-25T01:57:30Z"
+}

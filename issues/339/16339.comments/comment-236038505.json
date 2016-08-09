@@ -1,0 +1,12 @@
+{
+	"id": 236038505,
+	"body": "Using this BiqQuery table https://bigquery.cloud.google.com/table/fh-bigquery:github_extracts.contents_go provide by @campoy, I tried a simple \"starts with alias\" query.\r\n\r\n```sql\r\nSELECT line, count(*) as n\r\nFROM (\r\n SELECT SPLIT(content, '\\n') as line\r\n FROM [fh-bigquery:github_extracts.contents_go]\r\n HAVING LEFT(line, 6) = 'alias '\r\n)\r\nGROUP BY line\r\nORDER BY n DESC\r\nLIMIT 10\r\n```\r\n\r\n```\r\nrow | line                          | n\r\n----|-------------------------------|--\r\n1   | alias = \"spf13\"               | 8\r\n2   | alias iga='hf -cmd=\"git add\"'\t| 1\r\n3   | alias dazing holomorphy #69\t| 1\r\n```\r\n\r\n### UPDATE: here's a better query with 7016 matches for `alias`\r\n\r\n(there are some false positives)\r\n\r\n```sql\r\nSELECT 'https://github.com/' + sample_repo_name + '/blob/master/' + sample_path as url, line \r\nFROM (\r\n  -- remove \"quoted text\" including \\\" escapes\r\n  SELECT *, REGEXP_REPLACE(REGEXP_REPLACE(nocomment, r'\\\\\"', ''), r'\".*?\"', '') nostrings\r\n  FROM (\r\n    -- remove to the end of the line for // comments\r\n    SELECT *, REGEXP_REPLACE(line, r'\\s*//.*', '') nocomment\r\n    FROM (\r\n      -- remove /* multi-line comments */ and split lines\r\n      SELECT sample_repo_name, sample_path, SPLIT(REGEXP_REPLACE(content, r'/\\*.*?\\*/', ''), '\\n') as line\r\n      FROM [fh-bigquery:github_extracts.contents_go]\r\n      WHERE content CONTAINS 'alias'\r\n    )\r\n   )\r\n  -- alias followed by a non-word character\r\n  HAVING REGEXP_MATCH(nostrings, r'.*alias\\W')\r\n)\r\n```\r\n\r\nResults: [Google Sheets](https://docs.google.com/a/nathany.com/spreadsheets/d/1GIOE847M_YJBCmiiamdHqHGW1ym1Q-ASNT2YJlXlFeE/edit?usp=sharing)\r\n\r\nGo 2.0 🎉 \r\n\r\nChanging that last REGEXP to `HAVING REGEXP_MATCH(nostrings, r'\\Walias\\W')` returns 6618 results. It removes false positives but I think it is missing some cases where alias is at the very beginning or very end.",
+	"user": {
+		"login": "nathany",
+		"id": 4566,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-28T22:00:58Z",
+	"updated_at": "2016-07-29T04:12:18Z"
+}

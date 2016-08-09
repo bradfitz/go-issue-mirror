@@ -1,0 +1,12 @@
+{
+	"id": 66074212,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eI bet you are using a Linux kernel before version 2.6.28, without Accept4. Then this\ncode:\n\nfunc accept(fd int) (int, syscall.Sockaddr, error) {\n\tnfd, sa, err := syscall.Accept4(fd, syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC)\n\t// The accept4 system call was introduced in Linux 2.6.28.  If\n\t// we get an ENOSYS error, fall back to using accept.\n\tif err == nil || err != syscall.ENOSYS {\n\t\treturn nfd, sa, err\n\t}\n\n\t// See ../syscall/exec_unix.go for description of ForkLock.\n\t// It is okay to hold the lock across syscall.Accept\n\t// because we have put fd.sysfd into non-blocking mode.\n\tsyscall.ForkLock.RLock()\n\tnfd, sa, err = syscall.Accept(fd)\n\tif err == nil {\n\t\tsyscall.CloseOnExec(nfd)\n\t}\n\tsyscall.ForkLock.RUnlock()\n\tif err != nil {\n\t\treturn -1, nil, err\n\t}\n\tif err = syscall.SetNonblock(nfd, true); err != nil {\n\t\tsyscall.Close(nfd)\n\t\treturn -1, nil, err\n\t}\n\treturn nfd, sa, nil\n}\n\nwill fall back to the ordinary Accept system call. But since you have invoked the File\nmethod on the listener, it is now blocking, not non-blocking. So the comment's rationale\nno longer holds. This accept blocks while holding the RLock, making the ForkLock\nimpossible to lock properly. I guess we have to accept the race and remove the RLock.\nNewer kernels won't have it because they'll use Accept4.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-05T20:28:42Z",
+	"updated_at": "2014-12-08T10:25:09Z"
+}

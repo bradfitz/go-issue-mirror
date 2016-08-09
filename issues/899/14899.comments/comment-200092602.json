@@ -1,0 +1,12 @@
+{
+	"id": 200092602,
+	"body": "So I've got a patch, but I'm seeing something really weird that I can't figure out.  I'm bootstrapping with Go 1.6 and I get a segfault in `runtime.sigaction + 33 (sys_darwin_amd64.s:212)` while compiling.  I've narrowed it down to what causes it, but I have no idea why.  I defined another `sigtable` flag so that we can easily lookup which default handlers are fatal on each OS.  If I set the flag for SIGKILL to anything other than 0, I get the segfault in the build process (even if that's the only change).\r\n\r\nAny idea what might cause this?  A search through the codebase tells me that the field is only checked against specific bits.  Setting additional flags shouldn't cause a problem...\r\n\r\n```go\r\nTEXT runtime·sigaction(SB),NOSPLIT,$0-24\r\n        MOVL    mode+0(FP), DI          // arg 1 sig\r\n        MOVQ    new+8(FP), SI           // arg 2 act\r\n        MOVQ    old+16(FP), DX          // arg 3 oact\r\n        MOVQ    old+16(FP), CX          // arg 3 oact\r\n        MOVQ    old+16(FP), R10         // arg 3 oact\r\n        MOVL    $(0x2000000+46), AX     // syscall entry\r\n        SYSCALL\r\n        JCC     2(PC)\r\n        MOVL    $0xf1, 0xf1  // crash \u003c- crashing here because the syscall fails\r\n        RET\r\n```",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-23T00:26:43Z",
+	"updated_at": "2016-03-23T00:28:10Z"
+}

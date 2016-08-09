@@ -1,0 +1,27 @@
+{
+	"id": 58692904,
+	"number": 9980,
+	"state": "closed",
+	"title": "x/tools/go/types: Eval scope is insufficient",
+	"body": "types.Eval claims to let you evaluate an expression in a given scope, but it's much more restricted than it appears.\r\n\r\nIn particular, in the terminology of the spec, it appears that there is a *types.Scope for each _block_, and it represents the scope at the end of that block. If you want to use a scope in the middle of that block, I don't see any easy way to pass it in. For example, suppose I have this program:\r\n\r\n\t{\r\n\t\tconst x = 1\r\n\t\t{\r\n\t\t\tconst y = 2\r\n\t\t\t/* MARK */\r\n\t\t\tconst x = 3\r\n\t\t\tuse(x)\r\n\t\t\tuse(y)\r\n\t\t}\r\n\t\tuse(x)\r\n\t}\r\n\r\nI would like to evaluate \"x\" at the mark. If I walk the AST and the scope tree I can find out that the ** is in the inner block, but evaluating \"x\" in types.Scopes[that block] will give me 3. Since x has not yet been defined, the inner block's *Scope is not the right one. Maybe I could figure out a way to use an outer block to get the right \"x\". \r\n\r\nBut then suppose I want to evaluate \"x + y\" at the mark. I think that's impossible with the current API. My choices are to evaluate \"x+y\" at any closing brace of my choice. No closing brace gives me the value of x+y at the mark.\r\n\r\nI think there's a simple fix. If there were an EvalPos that got both a *Scope and a token.Pos, then it could use the token.Pos of the identifiers it finds to filter out the ones that appear later in the scope than that position (in that case the search would walk outer scopes).\r\n\r\nSimilarly it might be nice to have a Scope.LookupPos that let you do the lookup at a given Pos within the scope.\r\n\r\n@griesemer \r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-06-15T20:11:46Z",
+	"created_at": "2015-02-24T04:42:37Z",
+	"updated_at": "2016-06-25T02:01:51Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

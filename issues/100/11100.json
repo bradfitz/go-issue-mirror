@@ -1,0 +1,25 @@
+{
+	"id": 85767283,
+	"number": 11100,
+	"state": "open",
+	"title": "runtime: support dlclose with -buildmode=c-shared",
+	"body": "```go\r\npackage main\r\n\r\nimport (\r\n\t\"C\"\r\n\t\"fmt\"\r\n)\r\n\r\nvar (\r\n\tc chan string\r\n)\r\n\r\nfunc init() {\r\n\tc = make(chan string)\r\n\tgo func() {\r\n\t\tn := 1\r\n\t\tfor {\r\n\t\t\tswitch {\r\n\t\t\tcase n%15 == 0:\r\n\t\t\t\tc \u003c- \"FizzBuzz\"\r\n\t\t\tcase n%3 == 0:\r\n\t\t\t\tc \u003c- \"Fizz\"\r\n\t\t\tcase n%5 == 0:\r\n\t\t\t\tc \u003c- \"Buzz\"\r\n\t\t\tdefault:\r\n\t\t\t\tc \u003c- fmt.Sprint(n)\r\n\t\t\t}\r\n\t\t\tn++\r\n\t\t}\r\n\t}()\r\n}\r\n\r\n//export fizzbuzz\r\nfunc fizzbuzz() *C.char {\r\n\treturn C.CString(\u003c-c)\r\n}\r\n\r\nfunc main() {\r\n}\r\n```\r\n\r\nbuild this with\r\n```\r\n$ go build -buildmode=c-shared -o libfizzbuzz.so libfizzbuzz.go\r\n```\r\nthen go\r\n```python\r\nfrom ctypes import *\r\nimport _ctypes\r\nlib = CDLL(\"./libfizzbuzz.so\")\r\nlib.fizzbuzz.restype = c_char_p\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\n_ctypes.dlclose(lib._handle)\r\n```\r\n\r\n```\r\n1\r\n2\r\nFizz\r\n4\r\nBuzz\r\nFizz\r\nSegmentation fault\r\n```\r\n",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"created_at": "2015-06-06T15:14:42Z",
+	"updated_at": "2015-11-05T19:13:08Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

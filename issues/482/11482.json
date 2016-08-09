@@ -1,0 +1,22 @@
+{
+	"id": 91969597,
+	"number": 11482,
+	"state": "closed",
+	"title": "runtime: disabling inlining breaks on arm64, ppc64",
+	"body": "For example:\r\n\r\n```shellsession\r\n(vivid)mwh@rugby:~/go/src$ go install -a  -gcflags -l -installsuffix=noinl cmd/pack\r\n(vivid)mwh@rugby:~/go/src$ /home/mwh/go/pkg/tool/linux_arm64/pack tv ../pkg/linux_arm64/runtime.a\r\nruntime: newstack sp=0x4820041b60 stack=[0x4820040000, 0x4820041fc0]\r\n        morebuf={pc:0x45970 sp:0x4820041b60 lr:0x0}\r\n        sched={pc:0x4e3a8 sp:0x4820041b60 lr:0x45970 ctxt:0x0}\r\nsyscall.Syscall6(0x38, 0xffffffffffffff9c, 0x482000e160, 0x80000, 0x0, 0x0, 0x0, 0x234cc, 0x1e1c00, 0x30)\r\n        /home/mwh/go/src/syscall/asm_linux_arm64.s:36 +0x8\r\nsyscall.openat(0xffffffffffffff9c, 0x7ff883a7a8, 0x1c, 0x80000, 0x0, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/syscall/zsyscall_linux_arm64.go:40 +0xa0\r\nsyscall.Open(0x7ff883a7a8, 0x1c, 0x80000, 0x0, 0x481ffff5f6, 0x0, 0x0)\r\n        /home/mwh/go/src/syscall/syscall_linux.go:51 +0x58\r\nos.OpenFile(0x7ff883a7a8, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/os/file_unix.go:93 +0x70\r\nos.Open(0x7ff883a7a8, 0x1c, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/os/file.go:246 +0x4c\r\nmain.existingArchive(0x7ff883a7a8, 0x1c, 0x4820041e18)\r\n        /home/mwh/go/src/cmd/pack/pack.go:181 +0x38\r\nmain.archive(0x7ff883a7a8, 0x1c, 0x0, 0x482000a360, 0x0, 0x0, 0x202bd0)\r\n        /home/mwh/go/src/cmd/pack/pack.go:149 +0x34\r\nmain.main()\r\n        /home/mwh/go/src/cmd/pack/pack.go:74 +0x83c\r\nfatal error: runtime: stack split at bad time\r\n\r\nruntime stack:\r\nruntime.throw(0x1586d0, 0x20)\r\n        /home/mwh/go/src/runtime/panic.go:527 +0x80\r\nruntime.newstack()\r\n        /home/mwh/go/src/runtime/stack1.go:675 +0x4c4\r\nruntime.morestack()\r\n        /home/mwh/go/src/runtime/asm_arm64.s:300 +0x5c\r\n\r\ngoroutine 1 [syscall]:\r\nruntime.reentersyscall(0xce9b8, 0x4820041bb0)\r\n        /home/mwh/go/src/runtime/proc1.go:1831 +0x140 fp=0x4820041b90 sp=0x4820041b60\r\nruntime.entersyscall(0x0)\r\n        /home/mwh/go/src/runtime/proc1.go:1855 +0x38 fp=0x4820041bb0 sp=0x4820041b90\r\nsyscall.Syscall6(0x38, 0xffffffffffffff9c, 0x482000e160, 0x80000, 0x0, 0x0, 0x0, 0x234cc, 0x1e1c00, 0x30)\r\n        /home/mwh/go/src/syscall/asm_linux_arm64.s:36 +0x8 fp=0x4820041bc0 sp=0x4820041bb0\r\nsyscall.openat(0xffffffffffffff9c, 0x7ff883a7a8, 0x1c, 0x80000, 0x0, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/syscall/zsyscall_linux_arm64.go:40 +0xa0 fp=0x4820041c30 sp=0x4820041bc0\r\nsyscall.Open(0x7ff883a7a8, 0x1c, 0x80000, 0x0, 0x481ffff5f6, 0x0, 0x0)\r\n        /home/mwh/go/src/syscall/syscall_linux.go:51 +0x58 fp=0x4820041c80 sp=0x4820041c30\r\nos.OpenFile(0x7ff883a7a8, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/os/file_unix.go:93 +0x70 fp=0x4820041cf0 sp=0x4820041c80\r\nos.Open(0x7ff883a7a8, 0x1c, 0x0, 0x0, 0x0)\r\n        /home/mwh/go/src/os/file.go:246 +0x4c fp=0x4820041d30 sp=0x4820041cf0\r\nmain.existingArchive(0x7ff883a7a8, 0x1c, 0x4820041e18)\r\n        /home/mwh/go/src/cmd/pack/pack.go:181 +0x38 fp=0x4820041db0 sp=0x4820041d30\r\nmain.archive(0x7ff883a7a8, 0x1c, 0x0, 0x482000a360, 0x0, 0x0, 0x202bd0)\r\n        /home/mwh/go/src/cmd/pack/pack.go:149 +0x34 fp=0x4820041e50 sp=0x4820041db0\r\nmain.main()\r\n        /home/mwh/go/src/cmd/pack/pack.go:74 +0x83c fp=0x4820041f40 sp=0x4820041e50\r\nruntime.main()\r\n        /home/mwh/go/src/runtime/proc.go:111 +0x2c0 fp=0x4820041f90 sp=0x4820041f40\r\nruntime.goexit()\r\n        /home/mwh/go/src/runtime/asm_arm64.s:1012 +0x4 fp=0x4820041f90 sp=0x4820041f90\r\n(vivid)mwh@rugby:~/go/src$ \r\n```\r\n\r\nI guess something that is usually inlined needs to be marked nosplit?",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-11-24T02:33:22Z",
+	"created_at": "2015-06-30T03:43:52Z",
+	"updated_at": "2015-11-24T02:33:22Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

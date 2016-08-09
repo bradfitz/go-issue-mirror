@@ -1,0 +1,12 @@
+{
+	"id": 219217009,
+	"body": "Simple reproducer:\r\n\r\nrand.go:\r\n```go\r\npackage rand\r\n\r\n/*\r\n#include \u003cstdlib.h\u003e\r\n*/\r\nimport \"C\"\r\n\r\nfunc Random() int {\r\n\treturn int(C.random())\r\n}\r\n\r\nfunc Seed(i int) {\r\n\tC.srandom(C.uint(i))\r\n}\r\n```\r\n\r\nrand_test.go:\r\n```go\r\npackage rand_test\r\n\r\nimport (\r\n\t\"testing\"\r\n\r\n\t\"github.com/ALTree/rand\"\r\n)\r\n\r\nfunc TestRandom(t *testing.T) {\r\n\tx := rand.Random()\r\n\tif x \u003c 0 {\r\n\t\tt.Fatalf(\"%d \u003c 0\\n\", x)\r\n\t}\r\n}\r\n```\r\n\r\n`go test -cover` gives 0.0% **if and only if the tests are  in a separate package** (in this case, `rand_test`). If the package declaration in rand_test.go is changed to `package rand`, `-cover` reports a correct value; and that is the reason the test introduced in [CL 71230049](https://github.com/golang/go/commit/9abcd53eda0629d009941027ffa2dc680b5f1d00) by rsc didn't catch the problem (that test has `package p` for both the cgo file and the `_test` file).\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-14T12:11:38Z",
+	"updated_at": "2016-05-14T12:11:38Z"
+}

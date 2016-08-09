@@ -1,0 +1,28 @@
+{
+	"id": 130437106,
+	"number": 14176,
+	"state": "closed",
+	"title": "cmd/go: object mismatch error switching between 1.6beta2 and rc1",
+	"body": "It's my understanding that changing Go versions should rebuild package objects as necessary. Today, I got an error like this:\r\n\r\n```\r\nimport /Users/dan.peterson/Projects/go/pkg/darwin_amd64/github.com/sclasen/swfsm/migrator.a: object is [darwin amd64 go1.6beta2 X:none] expected [darwin amd64 go1.6rc1 X:none]\r\n```\r\n\r\nPut together a repro:\r\n\r\n```\r\nrebuild-issue % pwd\r\n/Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue\r\nrebuild-issue % go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/dan.peterson/Projects/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\nrebuild-issue % rm -rf /usr/local/go        \r\nrebuild-issue % rm -rf $GOPATH/pkg \r\nrebuild-issue % curl -s https://storage.googleapis.com/golang/go1.6beta2.darwin-amd64.tar.gz | tar -C /usr/local -zxf -\r\nrebuild-issue % go install -x ./...                                                                                 \r\nWORK=/var/folders/5b/rh45nd3n5sz5phl9s2kx8vwhng20hp/T/go-build805043701\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/foo/_obj/\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/\r\ncd /Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue/foo\r\n/usr/local/go/pkg/tool/darwin_amd64/compile -o $WORK/github.com/dpiddy/rebuild-issue/foo.a -trimpath $WORK -p github.com/dpiddy/rebuild-issue/foo -complete -buildid d3f5d07e80004854bdeba17217c73860f45300cb -D _/Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue/foo -I $WORK -pack ./bar.go\r\nmkdir -p /Users/dan.peterson/Projects/go/pkg/darwin_amd64/github.com/dpiddy/rebuild-issue/\r\nmv $WORK/github.com/dpiddy/rebuild-issue/foo.a /Users/dan.peterson/Projects/go/pkg/darwin_amd64/github.com/dpiddy/rebuild-issue/foo.a\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/_obj/\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/_obj/exe/\r\ncd /Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue\r\n/usr/local/go/pkg/tool/darwin_amd64/compile -o $WORK/github.com/dpiddy/rebuild-issue.a -trimpath $WORK -p main -complete -buildid 7f5babab889da2eb8522eb8afff090695f0b3427 -D _/Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue -I $WORK -I /Users/dan.peterson/Projects/go/pkg/darwin_amd64 -pack ./main.go\r\ncd .\r\n/usr/local/go/pkg/tool/darwin_amd64/link -o $WORK/github.com/dpiddy/rebuild-issue/_obj/exe/a.out -L $WORK -L /Users/dan.peterson/Projects/go/pkg/darwin_amd64 -extld=clang -buildmode=exe -buildid=7f5babab889da2eb8522eb8afff090695f0b3427 $WORK/github.com/dpiddy/rebuild-issue.a\r\nmkdir -p /Users/dan.peterson/Projects/go/bin/\r\nmv $WORK/github.com/dpiddy/rebuild-issue/_obj/exe/a.out /Users/dan.peterson/Projects/go/bin/rebuild-issue\r\nrebuild-issue % rm -rf /usr/local/go                                                                                \r\nrebuild-issue % curl -s https://storage.googleapis.com/golang/go1.6rc1.darwin-amd64.tar.gz | tar -C /usr/local -zxf -\r\nrebuild-issue % rm $GOPATH/bin/rebuild-issue \r\nrebuild-issue % go install -x ./...                                                                               \r\nWORK=/var/folders/5b/rh45nd3n5sz5phl9s2kx8vwhng20hp/T/go-build507762940\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/_obj/\r\nmkdir -p $WORK/github.com/dpiddy/rebuild-issue/_obj/exe/\r\ncd /Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue\r\n/usr/local/go/pkg/tool/darwin_amd64/compile -o $WORK/github.com/dpiddy/rebuild-issue.a -trimpath $WORK -p main -complete -buildid 7f5babab889da2eb8522eb8afff090695f0b3427 -D _/Users/dan.peterson/Projects/go/src/github.com/dpiddy/rebuild-issue -I $WORK -I /Users/dan.peterson/Projects/go/pkg/darwin_amd64 -pack ./main.go\r\n# github.com/dpiddy/rebuild-issue\r\n./main.go:3: import /Users/dan.peterson/Projects/go/pkg/darwin_amd64/github.com/dpiddy/rebuild-issue/foo.a: object is [darwin amd64 go1.6beta2 X:none] expected [darwin amd64 go1.6rc1 X:none]\r\nrebuild-issue % grep -r . .\r\n./foo/bar.go:package foo\r\n./foo/bar.go:func Bar() {}\r\n./main.go:package main\r\n./main.go:import foo \"github.com/dpiddy/rebuild-issue/foo\"\r\n./main.go:func main() {\r\n./main.go:\tfoo.Bar()\r\n./main.go:}\r\n```\r\n\r\n@dominikh noted the buildids for `rebuild-issue.a` were the same and also produced this:\r\n\r\n```\r\ndominikh-pc ~ $ grep -a \"build id\" /tmp/rc1/go/pkg/darwin_amd64/runtime.a \r\nbuild id \"f5389452ffe6b0c06ad11e3fc2dddaa807ba04a5\"\r\ndominikh-pc ~ $ grep -a \"build id\" /tmp/b2/go/pkg/darwin_amd64/runtime.a \r\nbuild id \"f5389452ffe6b0c06ad11e3fc2dddaa807ba04a5\"\r\n```\r\n\r\nPerhaps this is a release process issue?",
+	"user": {
+		"login": "dpiddy",
+		"id": 2182,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 26,
+	"closed_at": "2016-02-09T20:36:26Z",
+	"created_at": "2016-02-01T18:06:41Z",
+	"updated_at": "2016-02-09T20:36:26Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51286563,
+	"number": 7342,
+	"state": "closed",
+	"title": "crypto/tls: default tls.Config does not seem to verify the server certificate matches the hostname",
+	"body": "by **willchan@chromium.org**:\n\n\u003cpre\u003eI'm not sure if I'm reading this correctly, but AFAICT, the default tls.Config does not\nverify the certificate matches the server hostname. It seems that the hostname\nverification is enabled by setting tls.Config.ServerName. Did I get that right? It seems\nnon-obvious that tls.Config.ServerName would do this, as the comments say:\n\u0026quot;\u0026quot;\u0026quot;\n// ServerName is included in the client's handshake to support virtual\n// hosting.\n\u0026quot;\u0026quot;\u0026quot;\n\nMy expectation on reading that comment was that tls.Config.ServerName only controlled\nSNI. But, AFAICT, this is also used for controlling certificate hostname verification:\n\n\u003ca href=\"http://golang.org/src/pkg/crypto/tls/handshake_client.go\"\u003ehttp://golang.org/src/pkg/crypto/tls/handshake_client.go\u003c/a\u003e:\n   126 if !c.config.InsecureSkipVerify {\n   127 opts := x509.VerifyOptions{\n   128 Roots:         c.config.RootCAs,\n   129 CurrentTime:   c.config.time(),\n   130 DNSName:       c.config.ServerName,\n   131 Intermediates: x509.NewCertPool(),\n   132 }\n\nSo, VerifyOptions{DNSName} comes from tls.Config.ServerName.\n\n\u003ca href=\"http://golang.org/src/pkg/crypto/x509/verify.go\"\u003ehttp://golang.org/src/pkg/crypto/x509/verify.go\u003c/a\u003e:\n   228 if len(opts.DNSName) \u0026gt; 0 {\n   229 err = c.VerifyHostname(opts.DNSName)\n   230 if err != nil {\n   231 return\n   232 }\n   233 }\n\nAFAICT, this means that if tls.Config.ServerName is empty (which I think is the\ndefault), then server host verification is disabled. Am I understanding the code\ncorrectly?\n\nAssuming that's correct, then my next question is that is this intended? It does indeed\nmake sense that tls.Config.ServerName must be empty by default. That said, it seems like\nit'd be nice to encourage people to enable certificate hostname verification, perhaps by\nerroring out when it's not enabled and tls.Config.InsecureSkipVerify isn't set. It seems\nlike an easy error to make (spoken from personal experience).\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:40:50Z",
+	"created_at": "2014-02-17T01:20:09Z",
+	"updated_at": "2016-06-25T01:27:44Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

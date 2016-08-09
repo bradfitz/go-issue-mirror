@@ -1,0 +1,12 @@
+{
+	"id": 108721430,
+	"body": "\u003e I'm sorry I don't follow that argument. On unix environment variables are used by the binary being run. Are they put to some other use on windows?\r\n\r\nI don't know about UNIX, but on Windows your program calls syscalls. Syscalls are just C functions that live inside system DLLs. These can (and do) use any environment variable. Simplest example is GetTempPath:\r\n```\r\nC:\\go\\path\\mine\\src\\foo\u003etype main.go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"os\"\r\n)\r\n\r\nfunc main() {\r\n        fmt.Println(os.TempDir())\r\n        os.Clearenv()\r\n        fmt.Println(os.TempDir())\r\n}\r\n\r\nC:\\go\\path\\mine\\src\\foo\u003ego run main.go\r\nC:\\DOCUME~1\\brainman\\LOCALS~1\\Temp\r\n\r\n\r\nC:\\go\\path\\mine\\src\\foo\u003e\r\n```\r\nbut there are others. Like I said earlier, we have seen (as far as I remember) one of Windows syscalls that responsible for generating \"random data\" fail because we cleared environment and the syscall was expecting some variable to be set. It would happen only on some versions of Windows, but not on others (thus making debugging harder).\r\n\r\nIn general you cannot even rely on \"system DLLs\" to be the same everywhere. Some products (that people install) modify system DLLs if they need access to some functionality that otherwise unavailable. Like antivirus and similar. These can do things you never expect.\r\n\r\nAlso you need to consider every child process of src/cmd/dist today and in the future.\r\n\r\nI don't think it is worth the risk. If you leave environment as you've found it no one can blame you.\r\n\r\n\u003e rather than gomobile build interfering with people's go tool setup\r\n\r\nI agree with that argument of yours. You should try and change as little as possible of user environment. And that includes not clearing all environment variables.\r\n\r\nAlex\r\n",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-04T04:55:03Z",
+	"updated_at": "2015-06-04T04:55:03Z"
+}

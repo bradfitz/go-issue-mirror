@@ -1,0 +1,30 @@
+{
+	"id": 51278241,
+	"number": 1743,
+	"state": "closed",
+	"title": "cmd/gc: embedding of unexported fields/methods",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile the attached two files\n2. Run the main program\n\nWhat is the expected output?\n\nThe program should print:\n\nObject.f\nObject.f\n\nWhat do you see instead?\n\nObject.f\npanic: interface conversion: *main.MyObject is not foo.Fer: missing method f\n\nruntime.panic+0xac /Users/zenger/Development/Tools/go/src/pkg/runtime/proc.c:1034\n\truntime.panic(0x60610, 0xf84001fd90)\nitab+0x101 /Users/zenger/Development/Tools/go/src/pkg/runtime/iface.c:134\n\titab(0x54f18, 0x40740, 0x100000000, 0x1, 0x0, ...)\nruntime.convT2I+0x55 /Users/zenger/Development/Tools/go/src/pkg/runtime/iface.c:201\n\truntime.convT2I(0x40740, 0x54f18, 0xf8400013d0, 0xf84000f600)\nmain.main+0xa6 /Users/zenger/Development/bug/main/main.go:12\n\tmain.main()\nruntime.mainstart+0xf /Users/zenger/Development/Tools/go/src/pkg/runtime/amd64/asm.s:77\n\truntime.mainstart()\nruntime.goexit /Users/zenger/Development/Tools/go/src/pkg/runtime/proc.c:178\n\truntime.goexit()\n----- goroutine created by -----\n_rt0_amd64+0x8e /Users/zenger/Development/Tools/go/src/pkg/runtime/amd64/asm.s:64\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nMac OS X 10.6.7\n\nWhich revision are you using?  (hg identify)\n574ea59129da tip\n\nPlease provide any additional information below.\nI think the language spec is very thin when it comes to embedding semantics. It was not\nclear to me that the private method should get promoted. Russ and Ian confirmed this on\ngo-nuts. Here's my post:\n\nI'm currently trying to understand the semantics of package-private methods (methods\nwith lowercase names) in the context of embedding anonymous fields in structs. It\ndoesn't look like this is defined in the language specification and the compiler simply\ngenerates code that crashes — which indicates there is currently a hole in the type\nsystem.\n\nHere is an example. Assume we have a package foo defining the following abstractions:\n\n  package foo\n\n  import \u0026quot;fmt\u0026quot;\n\n  type Fer interface {\n    f() string\n  }\n\n  type Object struct {}\n\n  func (this *Object) f() string {\n    return \u0026quot;Object.f\u0026quot;\n  }\n\n  func PrintFer(fer Fer) {\n    fmt.Println(fer.f())\n  }\n\nIn my main program, I now define a struct MyObject in which I would like to embed a\nfoo.Fer field in order to \u0026quot;inherit\u0026quot; its methods. Later on, I then create an\ninstance of MyObject and pass it to foo.PrintFer. Here's the code:\n\n  package main\n\n  import \u0026quot;foo\u0026quot;\n\n  type MyObject struct {\n    foo.Fer\n  }\n\n  func main() {\n    var b foo.Fer = \u0026amp;foo.Object{}\n    foo.PrintFer(b)\n    var c foo.Fer = \u0026amp;MyObject{b}\n    foo.PrintFer(c)\n  }\n\nThis code compiles, so my assumption was that MyObject would inherit f() implicitly, but\nwithout clients being able to access it in the main package. It doesn't look like this\nis the case. Instead, it seems like f() does not get promoted, but the type system\nsomehow assumes it's there. Therefore, foo.PrintFer crashes in the following way:\n\n  Object.f\n  panic: interface conversion: *main.MyObject is not foo.Fer: missing method f\n  \n  runtime.panic+0xa7 /Users/zenger/Development/Tools/go/src/pkg/runtime/proc.c:1023\n    \truntime.panic(0x51ce4, 0xf800025d90)\n  itab+0xff /Users/zenger/Development/Tools/go/src/pkg/runtime/iface.c:125\n    \titab(0x54c04, 0x50ffc, 0x100000000, 0x1, 0x0, ...)\n  runtime.convT2I+0x55 /Users/zenger/Development/Tools/go/src/pkg/runtime/iface.c:192\n    \truntime.convT2I(0x50ffc, 0x54c04, 0xf8000013d0, 0xf800016600)\n  main.main+0xa6 /Users/zenger/bug/main/main.go:12\n    \tmain.main()\n  runtime.mainstart+0xf /Users/zenger/Development/Tools/go/src/pkg/runtime/amd64/asm.s:77\n    \truntime.mainstart()\n  runtime.goexit /Users/zenger/Development/Tools/go/src/pkg/runtime/proc.c:149\n    \truntime.goexit()\n\nNow, I am wondering what the right semantics of this embedding of foo.Fer is? Should f()\nget promoted (in an inaccessible way), or should c not have type foo.Fer? I couldn't\ninfer this from the language spec.\n\nThanks,\n  Matthias\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1743/0/main.go\"\u003emain.go\u003c/a\u003e (179 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1743/0/buffer.go\"\u003ebuffer.go\u003c/a\u003e (194 bytes)",
+	"user": {
+		"login": "objecthub",
+		"id": 6752200,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:09:42Z",
+	"created_at": "2011-04-26T23:07:19Z",
+	"updated_at": "2016-06-24T19:28:09Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"id": 160376746,
+	"number": 16070,
+	"state": "open",
+	"title": "runtime: map memory usage grows as it changes even though number of entries does not grow",
+	"body": "Hi,\r\n\r\nI have an issue with growing memory usage for a simple map without pointers. The map contains not small amount of entries, keys are fully random. Entries to the map are added and removed but the number of entries is on the same high level. Here is a gist reproducing the issue: [Gist](https://gist.github.com/druminski/5e529d6c2ada12cb0a99fd5e8e3c3f8e)\r\n\r\nWhen provided example is run then at the beginning heap size is less than 500MB and memory in use looks like this:\r\n\r\n```\r\nROUTINE ======================== main.main in /map_leak.go\r\n  350.48MB   350.98MB (flat, cum)   100% of Total\r\n         .          .     20:func main() {\r\n         .          .     21:\tgo func () {\r\n         .          .     22:\t\tlog.Println(http.ListenAndServe(\"localhost:6060\", nil))\r\n         .          .     23:\t}()\r\n         .          .     24:\r\n     176MB      176MB     25:\thashmap := make(map[uint64]bool, entries)\r\n   76.30MB    76.30MB     26:\thashes := make([]uint64, entries)\r\n         .          .     27:\r\n         .          .     28:\tfor repeat := 0; repeat \u003c repeats; repeat++ {\r\n         .          .     29:\t\tfmt.Printf(\"==== \\nRepeat: %6d \\n\", repeat)\r\n         .          .     30:\t\tfmt.Printf(\"Number of elements: %6d \\n\", len(hashmap))\r\n         .          .     31:\t\tprintAllocs()\r\n         .          .     32:\t\tfor index := 0; index \u003c entries - 1; index++ {\r\n         .   512.03kB     33:\t\t\tkey := generateKey()\r\n         .          .     34:\t\t\thashes[index] = key\r\n   98.18MB    98.18MB     35:\t\t\thashmap[key] = true\r\n         .          .     36:\t\t\tdelete(hashmap, hashes[index + 1])\r\n         .          .     37:\t\t}\r\n         .          .     38:\t\tkey := generateKey()\r\n         .          .     39:\t\thashes[entries - 1] = key\r\n         .          .     40:\t\thashmap[entries - 1] = true\r\n```\r\n\r\nAfter few hours of run (~ 700 repeats) heap size is around 1GB and memory in use looks like this\r\n```\r\nROUTINE ======================== main.main in /map_leak.go\r\n     483MB      483MB (flat, cum)   100% of Total\r\n         .          .     20:func main() {\r\n         .          .     21:\tgo func () {\r\n         .          .     22:\t\tlog.Println(http.ListenAndServe(\"localhost:6060\", nil))\r\n         .          .     23:\t}()\r\n         .          .     24:\r\n     176MB      176MB     25:\thashmap := make(map[uint64]bool, entries)\r\n   76.30MB    76.30MB     26:\thashes := make([]uint64, entries)\r\n         .          .     27:\r\n         .          .     28:\tfor repeat := 0; repeat \u003c repeats; repeat++ {\r\n         .          .     29:\t\tfmt.Printf(\"==== \\nRepeat: %6d \\n\", repeat)\r\n         .          .     30:\t\tfmt.Printf(\"Number of elements: %6d \\n\", len(hashmap))\r\n         .          .     31:\t\tprintAllocs()\r\n         .          .     32:\t\tfor index := 0; index \u003c entries - 1; index++ {\r\n         .          .     33:\t\t\tkey := generateKey()\r\n         .          .     34:\t\t\thashes[index] = key\r\n  230.71MB   230.71MB     35:\t\t\thashmap[key] = true\r\n         .          .     36:\t\t\tdelete(hashmap, hashes[index + 1])\r\n         .          .     37:\t\t}\r\n         .          .     38:\t\tkey := generateKey()\r\n         .          .     39:\t\thashes[entries - 1] = key\r\n         .          .     40:\t\thashmap[entries - 1] = true\r\n```\r\n\r\nAs you can see memory usage grows in line 35 where entry is added to the map (https://golang.org/src/runtime/hashmap.go line 429). This is because of how map works under the hood.\r\nI am aware that map in Go is an implementation of hash table. Basing on a `hash(key)`, `bucket` and `cell` is picked. If it doesn't exist it is created.\r\nHowever I am wondering why memory usage in the map grows (and how can I prevent it, fully random keys are one of my requirement), because I assume that unussed cells/buckets should be removed. Also I am expecting rather stable and predictable memory usage when number of entries is known.\r\n\r\nBefore I start study and debug how exaclty map works under the hood I decided to describe my issue here. Maybe you are already familiar with it and can provide some hints on it. This issue was produced on go1.6.2 darwin/amd64.\r\n\r\nThanks,\r\nLuke",
+	"user": {
+		"login": "druminski",
+		"id": 4473056,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-06-15T09:25:50Z",
+	"updated_at": "2016-07-19T21:00:23Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

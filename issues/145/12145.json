@@ -1,0 +1,30 @@
+{
+	"id": 100892330,
+	"number": 12145,
+	"state": "closed",
+	"title": "proposal: testing: find and run TestXxx methods on structs that embed *testing.T",
+	"body": "The testing package [establishes a simple convention](http://golang.org/pkg/testing/#pkg-overview) for declaring tests for `go test` to find and run:\r\n\r\n```\r\nfunc TestXxx(t *testing.T) {\r\n}\r\n```\r\n\r\nConsider this group of example test functions:\r\n\r\n```\r\nfunc TestFoo(*testing.T) {\r\n    state = NewSomethingToTest()\r\n    if !state.Foo() {\r\n        t.Error(...)\r\n    }\r\n}\r\n\r\nfunc TestBar(*testing.T) {\r\n    state = NewSomethingToTest()\r\n    if !state.Bar() {\r\n        t.Error(...)\r\n    }\r\n}\r\n\r\nfunc TestBaz(*testing.T) {\r\n    state = NewSomethingToTest()\r\n    if !state.Baz() {\r\n        t.Error(...)\r\n    }\r\n}\r\n```\r\n\r\nProvided all goes well, running the tests produces something akin to the following output:\r\n\r\n```\r\n$ go test -v\r\n=== RUN TestFoo\r\n--- PASS: TestFoo (0.01s)\r\n=== RUN TestBar\r\n--- PASS: TestBar (0.02s)\r\n=== RUN TestBaz\r\n--- PASS: TestBaz (0.03s)\r\nPASS\r\nok  my/package/name  0.06s\r\n```\r\n\r\nI'd like to see the following convention also allowed:\r\n\r\n```\r\ntype MyTests struct {\r\n    *testing.T // embed all the goodness offered by *testing.T (t.Error(), t.Skip, etc...)\r\n\r\n    state SomethingToTest\r\n}\r\n\r\n// Setup would be invoked before each Test method on *MyTests.\r\nfunc (t *MyTests) Setup() {\r\n\tt.state = NewSomethingToTest()\r\n}\r\n\r\nfunc (t *MyTests) TestFoo() {\r\n    if !t.state.Foo() {\r\n        t.Error(...)\r\n    }\r\n}\r\n\r\nfunc (t *MyTests) TestBar() {\r\n    if !t.state.Bar() {\r\n        t.Error(...)\r\n    }\r\n}\r\n\r\nfunc (t *MyTests) TestBaz() {\r\n    if !t.state.Baz() {\r\n        t.Error(...)\r\n    }\r\n}\r\n```\r\n\r\nWhich could produce something like the following output:\r\n\r\n```\r\n$ go test -v\r\n=== RUN Test_MyFixture_Foo\r\n--- PASS: Test_MyFixture_Foo (0.01s)\r\n=== RUN Test_MyFixture_Bar\r\n--- PASS: Test_MyFixture_Bar (0.02s)\r\n=== RUN Test_MyFixture_Baz\r\n--- PASS: Test_MyFixture_Baz (0.03s)\r\nPASS\r\nok  my/package/name  0.06s\r\n```\r\n\r\n\r\nIncluded in this addition (as seen in the example above) would be optionally defined setup and teardown methods to be run before and after (respectively) each test method. (In an ideal implementation each test method would be invoked on a unique instance of MyFixture which is created just for that test method.)\r\n\r\nI've already [implemented something very close to this](https://github.com/smartystreets/gunit). The only thing I don't like about my implementation is that in order for `go test` to find and run the test methods on the test structs, I have to run `go generate` first, which calls a command I've also written as part of that project which generates compatible Test functions that instantiate the struct and then call the test methods (along with defined setups and teardowns). I'd like to be rid of the `go generate` step to achieve struct-scoped test methods. One benefit here is that you can trivially extract other useful methods on that struct that are called from the test methods. It is trivial because you don't have to pass in any local state to those methods--all the state is already declared on the struct as fields.\r\n\r\nFurther reading and examples:\r\n\r\n- [more complete example](https://gist.github.com/mdwhatcott/03986dc2341c603db6c0)\r\n- [gunit project readme](https://github.com/smartystreets/gunit/blob/master/README.md) (the project mentioned above)\r\n- [gunit examples](https://github.com/smartystreets/gunit/blob/master/advanced_examples/bowling_game_test.go)\r\n\r\nThanks for providing us the testing package and `go test`, and for your consideration of this idea.",
+	"user": {
+		"login": "mdwhatcott",
+		"id": 202910,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-10-30T16:41:57Z",
+	"created_at": "2015-08-13T23:32:43Z",
+	"updated_at": "2015-10-30T16:46:04Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

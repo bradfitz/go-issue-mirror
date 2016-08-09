@@ -1,0 +1,12 @@
+{
+	"id": 130936156,
+	"body": "@rin01, I agree that for the most (if not all) financial computations decimal128 is enough. This is approach is used by .NET. `System.Decimal` is decimal128 though I am not sure how closely it follows IEEE 754-2008.\r\n\r\nHowever I think that arbitrary precision `big.Decimal` type is a better fit for the inclusion in the Go standard library as it supports more use cases than decimal128. For example:\r\n\r\n- Non-financial use-cases. E.g. `big.Float` to string conversion.\r\n- Representing arbitrary precision numbers that are supported in other systems such as SQL databases. For example [PostgreSQL decimal](http://www.postgresql.org/docs/9.1/static/datatype-numeric.html) can store up to 131072 digits before the decimal point and up to 16383 digits after the decimal point.\r\n\r\n`big.Decimal` API should probably be very similar to `big.Float` API for consistency. This means that `big.Decimal` will be mutable and its methods will be defined using pointers. To address some of your concerns:\r\n\r\n- **Mutable vs immutable**. I believe this is a matter of user preference. Some users find surprising that calling `a.add(b, context)` in Java doesn't modify `a`. From the performance point of view mutable values leave more space for optimization, at least as far as memory usage is concerned.\r\n- **Values vs Pointers**. It would be good to be able to work with large number of decimals without any GC overhead. While it won't be possible to avoid it in all cases (because of arbitrary precision) I believe that for the most common usecase when precision is small GC can be avoided completely by using `uint64` instead of `big.Int` as `big.Decimal` internal representation. Go compiler should take care of allocating `big.Decimal` instances on the stack when possible using escape analysis.\r\n",
+	"user": {
+		"login": "kostya-sh",
+		"id": 7126275,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-14T02:59:07Z",
+	"updated_at": "2015-08-14T02:59:07Z"
+}

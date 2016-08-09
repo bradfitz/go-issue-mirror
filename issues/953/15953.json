@@ -1,0 +1,22 @@
+{
+	"id": 158443639,
+	"number": 15953,
+	"state": "closed",
+	"title": "x/crypto/ssh/agent: when adding a cert to the agent, constraints are ignored for non-rsa key types",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo1.6.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\ndarwin/amd64\r\n\r\n3. What did you do?\r\nTry to add a ssh certificate to the agent with a time limit. The time limit is honored for certs added with an rsa private key, ignored for others (ecdsa, ed25519...)\r\nhttps://gist.github.com/nsheridan/e67bd4d26860b6db46f9d8caa0fbaad9\r\n\r\n\r\n4. What did you expect to see?\r\n```\r\n% date \u0026\u0026 go run key_expiry.go \u0026\u0026 ssh-add -l\r\nFri  3 Jun 2016 20:53:19 IST\r\n2048 SHA256:8yWp2quo0pXpU1+RkO5FRnGsL7FahlFNNSEQEs7Dgro  (RSA-CERT)\r\n384 SHA256:c5dmdgIV4LOHlLd89aBi1m7YnfT6GR+1FtuOSSoHYG4  (ECDSA-CERT)\r\n% date \u0026\u0026 ssh-add -l\r\nFri  3 Jun 2016 20:53:29 IST\r\nThe agent has no identities.\r\n```\r\n\r\n5. What did you see instead?\r\n```\r\n% date \u0026\u0026 go run key_expiry.go \u0026\u0026 ssh-add -l\r\nFri  3 Jun 2016 20:53:19 IST\r\n2048 SHA256:8yWp2quo0pXpU1+RkO5FRnGsL7FahlFNNSEQEs7Dgro  (RSA-CERT)\r\n384 SHA256:c5dmdgIV4LOHlLd89aBi1m7YnfT6GR+1FtuOSSoHYG4  (ECDSA-CERT)\r\n% date \u0026\u0026 ssh-add -l\r\nFri  3 Jun 2016 20:53:29 IST\r\n384 SHA256:c5dmdgIV4LOHlLd89aBi1m7YnfT6GR+1FtuOSSoHYG4  (ECDSA-CERT)\r\n```\r\n\r\n\r\nThe issue appears to be that `client.insertCert()` sets the constraints only if the key type is rsa:\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L579\r\nwhile constraints are not set for other key types:\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L586\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L593\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L601\r\n\r\nThe only impacts ssh certificates. keys are handled correctly:\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L453\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L464\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L474\r\nhttps://github.com/golang/crypto/blob/master/ssh/agent/client.go#L482\r\n",
+	"user": {
+		"login": "nsheridan",
+		"id": 422772,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-06T13:33:11Z",
+	"created_at": "2016-06-03T20:00:51Z",
+	"updated_at": "2016-06-06T13:33:11Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

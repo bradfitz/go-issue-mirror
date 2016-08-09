@@ -1,0 +1,21 @@
+{
+	"id": 151935353,
+	"number": 15492,
+	"state": "open",
+	"title": "gc/ssa.go contains some Intel-flavored idioms (and maybe an error)",
+	"body": "Cherry spotted this, came to me for a sanity check.  In insertWBmove and insertWBstore this code appears:\r\n\r\n```\r\n\tflagaddr := s.newValue1A(ssa.OpAddr, Ptrto(Types[TUINT32]), aux, s.sb)\r\n\t// TODO: select the .enabled field. It is currently first, so not needed for now.\r\n\t// Load word, test byte, avoiding partial register write from load byte.\r\n\tflag := s.newValue2(ssa.OpLoad, Types[TUINT32], flagaddr, s.mem())\r\n\tflag = s.newValue1(ssa.OpTrunc64to8, Types[TBOOL], flag)\r\n```\r\n\r\nNote the 32-bit-load followed by a Trunc64to8 -- as far as we know, not a bug, but not quite what was intended.  The Intel flavoring is the wide load followed by truncate; on other platforms a load byte is going to work just fine because they lack the partial-register craziness.\r\n\r\nSince this is in writebarrier code, we actually care.\r\n",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-04-29T18:08:48Z",
+	"updated_at": "2016-05-06T18:00:17Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

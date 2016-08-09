@@ -1,0 +1,12 @@
+{
+	"id": 166081020,
+	"body": "I assumed the OP meant this code:\r\n\r\npackage main\r\n/*\r\n#include \u003cstdio.h\u003e\r\n#include \u003csetjmp.h\u003e\r\nvoid Print() {\r\n   jmp_buf c;\r\n   if (setjmp(c) == 0)\r\n      longjmp(c,1);\r\n   else\r\n      printf(\"receive an exception\\n\");\r\n}\r\n*/\r\nimport \"C\"\r\nfunc main() {\r\n   C.Print()\r\n}\r\n\r\nwill panic on windows.\r\n\r\nI tried to reproduce it on windows/amd64, external linking works,\r\nbut internal linker fails.\r\n\r\nC:\\go\\src\u003e..\\bin\\go run -ldflags \"-linkmode internal\" x.go\r\nException 0xc0000005 0x8 0xfffffffff9058d48 0xfffffffff9058d48\r\nPC=0xfffffffff9058d48\r\nsignal arrived during external code execution\r\n\r\nmain._Cfunc_Print()\r\n        command-line-arguments/_obj/_cgo_gotypes.go:43 +0x38\r\nmain.main()\r\n        x.go:19 +0x1b\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        C:/go/src/runtime/asm_amd64.s:1998 +0x1\r\n\r\nrax     0x459466\r\nrbx     0xc082027f38\r\nrcx     0x22fdd0\r\nrdi     0xc082027f38\r\nrsi     0x4c4c00\r\nrbp     0x22fed0\r\nrsp     0x22fda8\r\nr8      0x45941a\r\nr9      0xc082027ee0\r\nr10     0x11\r\nr11     0x0\r\nr12     0x5\r\nr13     0x4957a5\r\nr14     0x1\r\nr15     0x8\r\nrip     0xfffffffff9058d48\r\nrflags  0x10246\r\ncs      0x33\r\nfs      0x53\r\ngs      0x2b\r\nexit status 2\r\n\r\n\r\nI'm not convinced that we need to fix internal linking as external linking\r\nis the default now.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-20T08:05:24Z",
+	"updated_at": "2015-12-20T08:07:46Z"
+}

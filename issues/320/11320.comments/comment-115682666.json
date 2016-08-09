@@ -1,0 +1,12 @@
+{
+	"id": 115682666,
+	"body": "@dvyukov When I look for low diffs between ticks on my VM I can find them in the range of 1-40 (never zero). The host machine is always 97. The is what I used to determine this:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"runtime\"\r\n\t\"time\"\r\n)\r\n\r\nfunc cputicks() uint64\r\n\r\nconst (\r\n\tskipThreashold = 40\r\n\ttimeoutMilli   = 1000\r\n)\r\n\r\nfunc main() {\r\n\tif skip() {\r\n\t\tfmt.Println(\"SKIP PPROF\")\r\n\t\tos.Exit(1)\r\n\t}\r\n}\r\n\r\nfunc skip() bool {\r\n\tdone := make(chan struct{})\r\n\ttime.AfterFunc(time.Millisecond*timeoutMilli, func() {\r\n\t\tclose(done)\r\n\t})\r\n\tmin := thrash(done)\r\n\tfmt.Println(min)\r\n\treturn min \u003c skipThreashold\r\n}\r\n\r\nfunc nextDiffMilli() uint64 {\r\n\tlast := cputicks()\r\n\tfor {\r\n\t\tnext := cputicks()\r\n\t\tif last != next {\r\n\t\t\treturn next - last\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc thrash(done chan struct{}) uint64 {\r\n\truntime.LockOSThread()\r\n\tdefer runtime.UnlockOSThread()\r\n\r\n\tvar diff, min uint64\r\n\tmin = 100000000\r\n\tfor {\r\n\t\tselect {\r\n\t\tcase \u003c-done:\r\n\t\t\treturn min\r\n\t\tdefault:\r\n\t\t\tdiff = nextDiffMilli()\r\n\t\t\tif diff \u003c min {\r\n\t\t\t\tmin = diff\r\n\t\t\t}\r\n\t\t\tif min \u003c skipThreashold {\r\n\t\t\t\treturn min\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-26T13:23:21Z",
+	"updated_at": "2015-06-26T13:23:21Z"
+}

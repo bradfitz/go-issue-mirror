@@ -1,0 +1,28 @@
+{
+	"id": 92504866,
+	"number": 11506,
+	"state": "closed",
+	"title": "runtime: make sure blocked channels run operations in FIFO order",
+	"body": "I've had mail conversations with two different projects using Go recently, both centered around the surprise that if many goroutines are blocked on a particular channel, and that channel becomes available, it is still possible for running goroutines who \"drive by\" at the right time to get their operation in before the goroutines that are blocked, and it is possible for the goroutines who are blocked to be reordered as a result. If this happens repeatedly, the effect is that the blocked goroutines can block arbitrarily long even though the channel is known to be ready at regular intervals. I wonder if we should adjust the channel implementation to ensure that when a channel does become available for sending or receiving, blocked operations take priority over \"drive by\" operations. It seems to me that this can be done by completing the blocked operation as part of the operation that unblocks it.\n\nSends and receives on unbuffered channels already behave this way: a send with blocked receivers picks the first receiver goroutine off the queue, delivers the value to it, readies it (puts it on a run queue), and continues execution. That is, the send completes the blocked operation. Receives on unbuffered channels similarly complete blocked sends.\n\nSends and receives on buffered channels do not behave this way:\n\nA send into a buffered channel with blocked receivers stores the value in the buffer, wakes up a receiver, and continues executing. When the receiver is eventually scheduled, it checks the channel, and maybe it gets lucky and the value is still there. But maybe not, in which case it goes to the end of the queue. \n\nA receive out of a buffered channel copies a value out of the buffer, wakes a blocked sender, and continues. When the sender is eventually scheduled, it checks the channel, and maybe it gets lucky and there is still room in the buffer for the send. But maybe not, in which case it goes to the end of the queue.\n\nIt seems to me that it would be easy and symmetric with the unbuffered channel operations for a send with blocked receivers to deliver the value straight to a receiver, completing the first pending receive operation. Similarly a receive with blocked senders could take its own value out of the channel buffer and then complete the send into the newly emptied space. That would be the only operation of the four that needs to transfer a pair of values instead of just one.\n\nIt doesn't seem to me that it would hurt performance to do this, and in fact it might help, since there would not be all the unnecessary wakeups that happen now. It would give much more predictable behavior when goroutines queue up on a stuck channel: once queued, that's the order they're going to be served, guaranteed.\n\nFrom a \"happens before\" point of view, I'm talking nonsense. There is no \"happens before\" for two different goroutines blocking on the same channel, and so there is no difference between all the execution orders. I understand that. But from a \"what actually happens\" point of view, there certainly is a difference: if you know that the goroutines have been stacking up one per minute for an hour before the channel finally gets unblocked and they all complete, you know what order they blocked and might reasonably expect them to unblock in that same order. This remains roughly as true at shorter time scales.\n\nEspecially since so many Go programs care about latency, making channels first come, first served seems worth doing. And it looks to me like it can be done trivially and at no performance cost. The current behavior looks more like a bug than an intended result.\n\nI'm not talking about a language change, just a change to our implementation.\n\nThoughts?\n\n@robpike @dvyukov @randall77 @aclements",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"closed_at": "2015-11-05T15:41:27Z",
+	"created_at": "2015-07-01T23:14:37Z",
+	"updated_at": "2015-11-05T15:41:27Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

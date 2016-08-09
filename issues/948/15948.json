@@ -1,0 +1,28 @@
+{
+	"id": 158344086,
+	"number": 15948,
+	"state": "closed",
+	"title": "net/http: TimeoutHandler: 200 OK should be sent if not specified",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\n1.6.2 and 1.4.3\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux, amd64\r\n\r\n### What did you do?\r\n\r\nMinimal example server (main.go):\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tlog.Fatal(http.ListenAndServe(\":9999\", http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t}), time.Second, \"timeout\")))\r\n}\r\n```\r\n\r\nThen:\r\n\r\n```\r\ngo run main.go\r\ncurl -i \"http://127.0.0.1:9999\"\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nI expect 200 OK because it is consistent with the default behavior without the TimeoutHandler.\r\n\r\n```\r\nHTTP/1.1 200 OK\r\n.......\r\n```\r\n\r\n### What did you see instead?\r\n\r\n```\r\nHTTP/1.1 0 status code 0\r\n......\r\n```\r\n\r\n### Solution\r\n\r\nIn `func (h *timeoutHandler) ServeHTTP` in `net/http/server.go`, change the code from:\r\n\r\n```go\r\nw.WriteHeader(tw.code)\r\n```\r\n\r\nTo:\r\n\r\n```go\r\nif tw.code == 0 {\r\n    tw.code = StatusOK\r\n}\r\nw.WriteHeader(tw.code)\r\n```",
+	"user": {
+		"login": "h12w",
+		"id": 2070104,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-06-06T21:17:17Z",
+	"created_at": "2016-06-03T11:10:05Z",
+	"updated_at": "2016-06-06T21:17:17Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

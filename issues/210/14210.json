@@ -1,0 +1,27 @@
+{
+	"id": 131077752,
+	"number": 14210,
+	"state": "open",
+	"title": "cmd/cgo: cgo pointer checking panic on address of slice from function call",
+	"body": "Testing our code on go 1.6rc1 I ran into an unexpected cgo pointer check panic calling a write-like C function.\r\nThe case is reproducible using the following code:\r\n\r\n```go\r\npackage main\r\n\r\n//#include \u003cunistd.h\u003e\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"os\"\r\n\t\"unsafe\"\r\n)\r\n\r\n// This functions panics with\r\n// panic: runtime error: cgo argument has Go pointer to Go pointer\r\nfunc crash() {\r\n\tvar buf bytes.Buffer\r\n\tbuf.Write([]byte(\"Hello, cgo!\\n\"))\r\n\tC.write(1, unsafe.Pointer(\u0026buf.Bytes()[0]), C.size_t(buf.Len()))\r\n}\r\n\r\n// This function works as expected.\r\nfunc ok() {\r\n\tvar buf bytes.Buffer\r\n\tbuf.Write([]byte(\"Hello, cgo!\\n\"))\r\n\tslice := buf.Bytes()\r\n\tC.write(1, unsafe.Pointer(\u0026slice[0]), C.size_t(len(slice)))\r\n}\r\n\r\nfunc main() {\r\n\tif len(os.Args) \u003e= 2 \u0026\u0026 os.Args[1] == \"crash\" {\r\n\t\tcrash()\r\n\t} else {\r\n\t\tok()\r\n\t}\r\n}\r\n```\r\n\r\nMy expectation was that they would run the same. But the crash function panics while the ok function does not. The different between them is that in ok I first assign the buf.Bytes() return value to a temporary variable, instead of calling the C function with the return value directly.\r\n\r\nGo version: `go1.6rc1 linux/amd64` binary download from golang.org\r\nSteps to reproduce: `go run code.go crash`\r\nExpected result: `Hello, cgo!` written on stdout\r\nActual result: `panic: runtime error: cgo argument has Go pointer to Go pointer`",
+	"user": {
+		"login": "perj",
+		"id": 224521,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-02-03T16:32:34Z",
+	"updated_at": "2016-06-02T01:07:49Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

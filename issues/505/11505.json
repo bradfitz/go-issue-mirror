@@ -1,0 +1,33 @@
+{
+	"id": 92504428,
+	"number": 11505,
+	"state": "closed",
+	"title": "x/crypto/openpgp: ReadMessage(): Panic on invalid input in math/big.nat.div() (division by zero)",
+	"body": "The following program panics:\r\n\r\n```Go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/hex\"\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"os\"\r\n\r\n\t\"golang.org/x/crypto/openpgp\"\r\n)\r\n\r\n// An empty Keyring\r\ntype emptyKR struct {\r\n}\r\n\r\nfunc (kr emptyKR) KeysById(id uint64) []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nfunc (kr emptyKR) DecryptionKeys() []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nfunc (kr emptyKR) KeysByIdUsage(uint64, byte) []openpgp.Key {\r\n\treturn nil\r\n}\r\n\r\nvar data = \"9c3004303030300100000011303030000000000000010130303030303030303030303030303030303030303030303030303030303030303030303030303030303030\"\r\n\r\nfunc main() {\r\n\tbuf, err := hex.DecodeString(data)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tmd, err := openpgp.ReadMessage(bytes.NewBuffer(buf), emptyKR{},\r\n\t\tfunc([]openpgp.Key, bool) ([]byte, error) {\r\n\t\t\treturn []byte(\"insecure\"), nil\r\n\t\t}, nil)\r\n\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\t_, err = io.Copy(os.Stdout, md.UnverifiedBody)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tif md.SignatureError != nil {\r\n\t\tlog.Fatalln(\"integrity check failed\")\r\n\t}\r\n}\r\n```\r\nwith  the trace:\r\n\r\n```\r\npanic: division by zero\r\n\r\ngoroutine 1 [running]:\r\nmath/big.nat.div(0x0, 0x0, 0x0, 0xc20803c570, 0x0, 0x5, 0x0, 0x0, 0x0, 0xc20803c570, ...)\r\n\t/opt/go/src/math/big/nat.go:503 +0xcb\r\nmath/big.(*Int).QuoRem(0xc208020320, 0xc2080200e0, 0xc2080202e0, 0xc2080202e0, 0x1, 0x5)\r\n\t/opt/go/src/math/big/int.go:224 +0xb6\r\nmath/big.(*Int).Mod(0xc2080202e0, 0xc2080200e0, 0xc2080202e0, 0xc2080202e0)\r\n\t/opt/go/src/math/big/int.go:255 +0x15c\r\ncrypto/rsa.(*PrivateKey).Precompute(0xc208068000)\r\n\t/opt/go/src/crypto/rsa/rsa.go:376 +0x1ba\r\ngolang.org/x/crypto/openpgp/packet.(*PrivateKey).parseRSAPrivateKey(0xc208040000, 0xc208066000, 0x22, 0x600, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/private_key.go:266 +0x520\r\ngolang.org/x/crypto/openpgp/packet.(*PrivateKey).parsePrivateKey(0xc208040000, 0xc208066000, 0x22, 0x600, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/private_key.go:234 +0x6c\r\ngolang.org/x/crypto/openpgp/packet.(*PrivateKey).parse(0xc208040000, 0x7f5e808d1bc0, 0xc208020080, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/private_key.go:103 +0x3f8\r\ngolang.org/x/crypto/openpgp/packet.Read(0x7f5e808d1b60, 0xc2080120e0, 0x7f5e808d1be8, 0xc208040000, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/packet.go:375 +0x152\r\ngolang.org/x/crypto/openpgp/packet.(*Reader).Next(0xc20803c330, 0x0, 0x0, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/packet/reader.go:37 +0x10c\r\ngolang.org/x/crypto/openpgp.ReadMessage(0x7f5e808d1b60, 0xc2080120e0, 0x7f5e808d1b88, 0x68c0a8, 0x5f0860, 0x0, 0xc208062000, 0x0, 0x0)\r\n\t/home/marebri/devel/go/src/golang.org/x/crypto/openpgp/read.go:101 +0x206\r\nmain.main()\r\n\t/home/marebri/devel/lab/go/crypto/openpgp/issues/50eccec52/main.go:40 +0x285\r\n\r\ngoroutine 2 [runnable]:\r\nruntime.forcegchelper()\r\n\t/opt/go/src/runtime/proc.go:90\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 3 [runnable]:\r\nruntime.bgsweep()\r\n\t/opt/go/src/runtime/mgc0.go:82\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n\r\ngoroutine 4 [runnable]:\r\nruntime.runfinq()\r\n\t/opt/go/src/runtime/malloc.go:712\r\nruntime.goexit()\r\n\t/opt/go/src/runtime/asm_amd64.s:2232 +0x1\r\n```\r\n\r\nFound using gofuzz. You may assign this issue to me.",
+	"user": {
+		"login": "marete",
+		"id": 2327361,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "marete",
+		"id": 2327361,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-07-29T16:52:20Z",
+	"created_at": "2015-07-01T23:11:47Z",
+	"updated_at": "2016-08-05T16:10:05Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

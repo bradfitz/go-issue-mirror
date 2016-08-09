@@ -1,0 +1,28 @@
+{
+	"id": 51283469,
+	"number": 5323,
+	"state": "closed",
+	"title": "database/sql: prepared statements leak connections with high concurrency",
+	"body": "\u003cpre\u003eWhen using database/sql with prepared statements and concurrency higher that\nMaxIdleConns connections are leaked and recreated until database cannot accept anymore.\nSee \u003ca href=\"https://groups.google.com/d/msg/golang-nuts/-YbB2Qjg41g/Afuaf8nSmGEJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/-YbB2Qjg41g/Afuaf8nSmGEJ\u003c/a\u003e for a related\ndiscussion.\n\nThe problem is that all connections that have ever been used by Stmt are marked as\ndependent on that Stmt, and that dependency is only removed when Stmt is closed. When\nconnection, that was over MaxIdleConns limit, is returned, it is not actually closed,\nbecause it is still used by Stmt. Later, when Stmt tries to find a free connection, is\nsees that connection is not free and doesn't use it. This causes database/sql to create\ndriver connections over and over again, until underlying database refuses and replies\nwith errors.\n\nI think dependency should only be added in Stmt.connStmt and removed in releaseConn\ncallbacks, because prepared statements don't really appear to \u0026quot;use\u0026quot; the\nconnection, merely \u0026quot;cache\u0026quot; it. On the other hand such solution would mean that\ndrivers's Stmt.Close is never called.\u003c/pre\u003e",
+	"user": {
+		"login": "snaury",
+		"id": 53117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2014-12-08T10:28:44Z",
+	"created_at": "2013-04-20T11:36:00Z",
+	"updated_at": "2016-06-24T22:38:30Z"
+}

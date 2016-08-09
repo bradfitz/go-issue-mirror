@@ -1,0 +1,12 @@
+{
+	"id": 177695257,
+	"body": "@vdobler I am confused now. Your last error messages says: `net_windows_test.go:515: getmac lists ...`, but current net_windows_test.go:515 line cannot output this error. You must have changed the net_windows_test.go file. Your original error also says: `net_windows_test.go:528: getmac lists ...`, which seems correct to me - just another indication that you have changed the code.\r\n\r\nBut regardless of you changed the code. I don't see how TestInterfaceHardwareAddrWithGetmac is at fault here. The test has found \"Bluetooth Network Connection\" in the output of `getmac /fo list /v` command. Please check manually that \"Bluetooth Network Connection\" is listed in the output of `getmac /fo list /v` command. If \"Bluetooth Network Connection\" is listed by getmac command, it surely has to be returned by net.Interfaces function (see net_windows_test.go:459), and, it seems like, it is not. The only possible glitch in TestInterfaceHardwareAddrWithGetmac is that it ignores interfaces with net.FlagLoopback not set. But \"Bluetooth Network Connection\" should not be one of those. Can you, please, remove thse lines:\r\n```\r\ndiff --git a/src/net/net_windows_test.go b/src/net/net_windows_test.go\r\nindex 095a339..e54199b 100644\r\n--- a/src/net/net_windows_test.go\r\n+++ b/src/net/net_windows_test.go\r\n@@ -462,10 +462,6 @@ func TestInterfaceHardwareAddrWithGetmac(t *testing.T) {\r\n \t}\r\n \thave := make(map[string]string)\r\n \tfor _, ifi := range ift {\r\n-\t\tif ifi.Flags\u0026FlagLoopback != 0 {\r\n-\t\t\t// no MAC address for loopback interfaces\r\n-\t\t\tcontinue\r\n-\t\t}\r\n \t\thave[ifi.Name] = ifi.HardwareAddr.String()\r\n \t}\r\n```\r\nto see if it makes TestInterfaceHardwareAddrWithGetmac PASS? If TestInterfaceHardwareAddrWithGetmac is still broken, show us output of `getmac /fo list /v` command. Does \"Bluetooth Network Connection\" have non-blank MAC address there. If it does, surely net package should return the MAC too.\r\n\r\nThank you.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-01T01:52:22Z",
+	"updated_at": "2016-02-01T01:52:22Z"
+}

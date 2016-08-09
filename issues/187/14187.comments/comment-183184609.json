@@ -1,0 +1,12 @@
+{
+	"id": 183184609,
+	"body": "\u003e Well, yes, once the main window is closed, the program should exit, but I'm not familiar enough with Win32 to know what the mechanism should be.\r\n\r\nhttps://msdn.microsoft.com/en-us/library/windows/desktop/ms632598(v=vs.85).aspx#destroying_win illustrates what normally happens on Windows. But we need to consider 3 separate concepts here:\r\n- an app window is getting closed;\r\n- a message pump is exited (one pump occupy single thread and can service many windows);\r\n- an app exits (one app can have as many message pumps as required).\r\n(shiny/driver/internal/win32.Main implements one single message pump that services all our windows).\r\n\r\n\u003e On Win32, the OS is presumably sending the Windows' equivalent of X11's WM_DELETE_WINDOW, call it a Foo event, and the windriver should convert that to a shiny lifecycle.StageDead event. \r\n\r\nHow does closing message by clicking on it (we'll get WM_CLOSE event in our window procedure) translates into app exiting? We cannot hard wire WM_CLOSE into sending lifecycle.StageDead, there might be other windows still opened. Is there event for \"window closing\" that app has to act upon?\r\n\r\n\u003e For the gldriver, on Mac, grep the source code for windowWillClose and follow the trail. ...\r\n\r\nYes, we also need to make sure window.Realese really closes the window. And close the app, if that follows.\r\n\r\n\u003e Fixing this may involve the shiny/driver/internal/win32 package instead of the windriver package, possibly involving a missing LifecycleEvent call on the appropriate message, but I'm only guessing.\r\n\r\nI am happy to try and fix it in shiny/driver/internal/win32, but I still don't understand how to convert \"close window\" event into \"exit app\".\r\n\r\nThank you.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-12T05:24:41Z",
+	"updated_at": "2016-02-12T05:24:41Z"
+}

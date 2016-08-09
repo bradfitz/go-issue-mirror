@@ -1,0 +1,33 @@
+{
+	"id": 79485933,
+	"number": 10933,
+	"state": "closed",
+	"title": "x/mobile/bind/seq: Seq can throw \"java.lang.RuntimeException: unknown java Ref\" when a legitimate Java object is passed to Go",
+	"body": "#### Summary\r\nWhen a Java stub object instance is passed into Go, and then Go's garbage collection runs, and then the same Java object is passed into Go again, an exception is thrown in go.Seq.java and the Android app crashes.\r\n\r\n#### Test setup\r\n* Go tip: 91191e7b7bc8c0e1a6d49c7a9b3adeb1ab39a423\r\n* golang.org/x/mobile: 73e04c3da0a52c9bc644e1bf696712facae30488\r\n* Android 5.1 on a Nexus 5\r\n* Build using `gomobile bind` and import resulting AAR into an Android Studio project\r\n* Sample code follows; based on golang.org/x/mobile/example/libhello/hi. This is a contrived example with an explicit GC() call, but I've also hit this exception -- eventually -- in real code.\r\n\r\nAs best as I can tell, the problem may be a lifetime mismatch in the go.Seq.Ref reference counting. The constructor of the Stub creates a reference. When the Java object reference is passed to Go, the reference is scheduled for deletion using runtime.SetFinalizer [here](https://github.com/golang/mobile/blob/6d80e5a85f2385fb9a65e1d3303ed61b3e8943c8/bind/seq/buffer.go#L147). The SetFinalizer handler [signals](https://github.com/golang/mobile/blob/master/bind/java/Seq.java#L117) the Java reference manager to delete the reference. But since the reference is only added in the Java Stub object constructor, there's no valid reference when the Java object is used again after the SetFinalizer signal and the exception will be thrown.\r\n\r\nThe docs on [passing foreign language objects to Go](https://godoc.org/golang.org/x/mobile/cmd/gobind#hdr-Passing_foreign_language_objects_to_Go) don't indicate that this reuse of a Java Stub object is not supported.\r\n\r\nOne workaround is to create a new, proxy Java object each time you wish to pass the same long-lived Java object into Go.\r\n\r\n#### Exception\r\n```\r\n05-21 15:52:16.957    2280-2313/ca.psiphon.androidgolanghello E/RECEIVER-HELLO﹕ Hello, a!\r\n05-21 15:52:16.958    2280-2313/ca.psiphon.androidgolanghello E/RECEIVER-HELLO﹕ Hello, b!\r\n05-21 15:52:16.961    2280-2313/ca.psiphon.androidgolanghello E/AndroidRuntime﹕ FATAL EXCEPTION: pool-1-thread-1\r\n    Process: ca.psiphon.androidgolanghello, PID: 2280\r\n    java.lang.RuntimeException: unknown java Ref: 42\r\n            at go.Seq$RefTracker.get(Seq.java:252)\r\n            at go.Seq$1.run(Seq.java:126)\r\n            at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1112)\r\n            at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:587)\r\n            at java.lang.Thread.run(Thread.java:818)\r\n```\r\n#### Sample Go package\r\n```Go\r\npackage hirecv\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"runtime\"\r\n)\r\n\r\ntype Receiver interface {\r\n\tHello(message string)\r\n}\r\n\r\nfunc Hello(r Receiver, name string) {\r\n\tr.Hello(fmt.Sprintf(\"Hello, %s!\\n\", name))\r\n}\r\n\r\nfunc GarbageCollect() {\r\n\truntime.GC()\r\n}\r\n```\r\n#### Sample Android app using the Go package\r\n```Java\r\npublic class MainActivity extends ActionBarActivity {\r\n\r\n    static class Receiver extends Hirecv.Receiver.Stub {\r\n        @Override\r\n        public void Hello(String s) {\r\n            android.util.Log.e(\"RECEIVER-HELLO\", s);\r\n        }\r\n    }\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_main);\r\n\r\n        Go.init(this);\r\n\r\n        Receiver receiver = new Receiver();\r\n        Hirecv.Hello(receiver, \"a\");\r\n        Hirecv.Hello(receiver, \"b\");\r\n        Hirecv.GarbageCollect();\r\n        try {\r\n            Thread.sleep(5000);\r\n        } catch (InterruptedException e) {\r\n        }\r\n        Hirecv.Hello(receiver, \"c\");\r\n    }\r\n...\r\n```",
+	"user": {
+		"login": "rod-hynes",
+		"id": 488643,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-06-04T16:53:28Z",
+	"created_at": "2015-05-22T14:55:45Z",
+	"updated_at": "2016-06-25T02:09:22Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

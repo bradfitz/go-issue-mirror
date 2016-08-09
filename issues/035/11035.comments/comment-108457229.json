@@ -1,0 +1,12 @@
+{
+	"id": 108457229,
+	"body": "@dr2chase The values being put into the channel are normal Go values.\r\nSee my comment above to @ianlancetaylor on where the subgraphs are\r\nconstructed.\r\n\r\nFor clarity, when things get put into the B+Tree they have to first be\r\nseralized into a byte slice. The byte slice is ultimately *copied* into\r\nthe mmap area. In code:\r\n\r\n1. [Serialization](https://github.com/timtadh/goiso/blob/2d01f3b5b705ea98e1df990508bda3651e1c1e29/subgraph.go#L334)\r\n2. [BpTree.Add()](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L46)\r\n3. [Varchar.Alloc call (for values)](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L15) \r\n4. [Copy value into varchar](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L20)\r\n5. [Varchar.Alloc call (for keys)](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L196)\r\n6. [Copy key into varchar](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L196)\r\n\r\nIn the case that keys/values are fixed size instead of variable sized\r\nthey get copied here:\r\n\r\n1. [leaf nodes](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/insert.go#L264)\r\n2. [internal nodes](https://github.com/timtadh/fs2/blob/59ab97e7d3b6b76908852374658a153d876aa30d/bptree/internal.go#L292)\r\n\r\n",
+	"user": {
+		"login": "timtadh",
+		"id": 38620,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-03T14:33:19Z",
+	"updated_at": "2015-06-03T14:33:19Z"
+}

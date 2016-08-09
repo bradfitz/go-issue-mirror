@@ -1,0 +1,22 @@
+{
+	"id": 128212920,
+	"number": 14072,
+	"state": "closed",
+	"title": "net: DNS resolution can use the wrong server in race condition (resolv.conf stale information)",
+	"body": "There can be a race condition on reading resolv.conf that can allow go programs to contain stale information to perform DNS lookups.\r\n\r\nresolv.conf is read in net/conf.go initConfVal() and stored in systemConf().resolv\r\nhttps://github.com/golang/go/blob/1b6d55acab9199e09f9134ff3ac359647767f741/src/net/conf.go#L99\r\n\r\nIn dnsclient_unix.go the \"init\" function will get that information from systemConf().\r\nhttps://github.com/golang/go/blob/1b6d55acab9199e09f9134ff3ac359647767f741/src/net/dnsclient_unix.go#L244\r\n\r\nThe function then does a stat on the file to set what the conf.modTime is to check for updates to the file.\r\nhttps://github.com/golang/go/blob/1b6d55acab9199e09f9134ff3ac359647767f741/src/net/dnsclient_unix.go#L249\r\n\r\nThe race can occur if /etc/resolv.conf is written to between when conf.go reads the file and when the stat() is done in the init() function because the saved modification time of the conf file is set on the first time we call tryUpdate, but not when we call the initConfVal() function mentioned above.\r\nhttps://github.com/golang/go/blob/1b6d55acab9199e09f9134ff3ac359647767f741/src/net/dnsclient_unix.go#L262\r\n\r\nThe tryUpdate() function will now not re-read /etc/resolv.conf until it changes again.\r\n\r\nWe are working around this by setting GODEBUG=netdns=cgo which does not cache the resolv.conf information.",
+	"user": {
+		"login": "andrew-edgar",
+		"id": 12702547,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-02-20T10:04:12Z",
+	"created_at": "2016-01-22T18:19:08Z",
+	"updated_at": "2016-02-20T10:04:12Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

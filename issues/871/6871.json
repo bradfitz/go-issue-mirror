@@ -1,0 +1,30 @@
+{
+	"id": 51285851,
+	"number": 6871,
+	"state": "closed",
+	"title": "reflect: MakeFunc functions cannot use the nil error return idiom",
+	"body": "by **kin.wilson.za**:\n\n\u003cpre\u003e(This is not 1.2 specific, confirmed the same result on 1.1.2)\n\nSince the (documented) type of an interface is \u0026lt;nil\u0026gt;, reflection crashes when\nattempting to coerce a nil interface{}, or a more commonly used nil error.\n\nSee TestMadeFunc below.\n\nI have also confirmed that Convert() also crashes.\n\nSee TestConvert below.\n\nCould this be \u0026quot;special-cased\u0026quot; since returning a nil error a preferred idiom?\n\n---\n\npackage a\n\nimport . \u0026quot;reflect\u0026quot;\nimport \u0026quot;testing\u0026quot;\nimport \u0026quot;errors\u0026quot;\n\nfunc TestNormalFunc(t *testing.T) {\n\tf := func() (ret error) { return }\n\tr := f()\n\tt.Logf(\u0026quot;%T %v\\n\u0026quot;, r, r)\n}\n\n// panic: runtime error: invalid memory address or nil pointer dereference [recovered]\n// \tpanic: runtime error: invalid memory address or nil pointer dereference\n// [signal 0xc0000005 code=0x0 addr=0x14 pc=0x489f31]\n//\n// goroutine 3 [running]:\n// runtime.panic(0x4d1b40, 0x5f284f)\n// \tD:/Go1.2/src/pkg/runtime/panic.c:266 +0xa6\n// testing.func·005()\n// \tD:/Go/src/pkg/testing/testing.go:385 +0xd9\n// runtime.panic(0x4d1b40, 0x5f284f)\n// \tD:/Go1.2/src/pkg/runtime/panic.c:248 +0xe8\n// reflect.callReflect(0x10d72190, 0x30e55584)\n// \tD:/Go1.2/src/pkg/reflect/value.go:547 +0x361\n//\n//\t544 if v.typ != typ {\n//\t545 \tpanic(\u0026quot;reflect: function created by MakeFunc using \u0026quot; + funcName(f) +\n//\t546 \t\t\u0026quot; returned wrong type: have \u0026quot; +\n//\t547\t\t\tout[i].typ.String() + \u0026quot; for \u0026quot; + typ.String())\n//\t548 }\n//\n// runtime: unknown argument frame size for reflect.makeFuncStub called from 0x420764\n[runtime.call16]\n// reflect.makeFuncStub()\n// \tD:/Go1.2/src/pkg/reflect/asm_386.s:15 +0x20\n// reflect.Value.call(0x4b6420, 0x10d72190, 0x130, 0x4e2be8, 0x4, ...)\n// \tD:/Go1.2/src/pkg/reflect/value.go:474 +0xad7\n// reflect.Value.Call(0x4b6420, 0x10d72190, 0x130, 0x30e55760, 0x0, ...)\n// \tD:/Go1.2/src/pkg/reflect/value.go:345 +0x73\n// github.com/tHinqa/a.TestMadeFunc(0x10d961e0)\n// \tD:/myGo/src/github.com/tHinqa/a/a_test.go:52 +0xd5\n// testing.tRunner(0x10d961e0, 0x5f132c)\n// \tD:/Go/src/pkg/testing/testing.go:391 +0x87\n// created by testing.RunTests\n// \tD:/Go/src/pkg/testing/testing.go:471 +0x6d2\n//\n// goroutine 1 [chan receive]:\n// testing.RunTests(0x514eb8, 0x5f1320, 0x3, 0x3, 0x1)\n// \tD:/Go/src/pkg/testing/testing.go:472 +0x6ed\n// testing.Main(0x514eb8, 0x5f1320, 0x3, 0x3, 0x5f4da0, ...)\n// \tD:/Go/src/pkg/testing/testing.go:403 +0x6a\n// main.main()\n// \tgithub.com/tHinqa/a/_test/_testmain.go:51 +0x82\nfunc TestMadeFunc(t *testing.T) {\n\tvar x func() error\n\tf := MakeFunc(ValueOf(x).Type(), func([]Value) []Value {\n\t\tvar T error\n\t\treturn []Value{ValueOf(T)}\n\t})\n\tf.Call([]Value{})\n}\n\n// panic: runtime error: invalid memory address or nil pointer dereference [recovered]\n// \tpanic: runtime error: invalid memory address or nil pointer dereference\n// [signal 0xc0000005 code=0x0 addr=0x84 pc=0x48db6c]\n//\n// goroutine 3 [running]:\n// runtime.panic(0x4d0020, 0x5ed82f)\n// \tD:/Go1.2/src/pkg/runtime/panic.c:266 +0xa6\n// testing.func·005()\n// \tD:/Go/src/pkg/testing/testing.go:385 +0xd9\n// runtime.panic(0x4d0020, 0x5ed82f)\n// \tD:/Go1.2/src/pkg/runtime/panic.c:248 +0xe8\n// reflect.convertOp(0x4cc640, 0x0, 0x10d602a0)\n//\tD:/Go1.2/src/pkg/reflect/value.go:2218 +0x26\n// reflect.Value.Convert(0x0, 0x0, 0x0, 0x0, 0x0, ...)\n// \tD:/Go1.2/src/pkg/reflect/value.go:2208 +0x6c\n//\n//\t2204 func (v Value) Convert(t Type) Value {\n//\t2205 \tif v.flag\u0026amp;flagMethod != 0 {\n//\t2206 \t\tv = makeMethodValue(\u0026quot;Convert\u0026quot;, v)\n//\t2207 \t}\n//\t2208 \top := convertOp(t.common(), v.typ)\n//\t2209 \tif op == nil {\n//\t2210 \t\tpanic(\u0026quot;reflect.Value.Convert: value of type \u0026quot; + v.typ.String() +\n\u0026quot; cannot be converted to type \u0026quot; + t.String())\n//\t2211 \t}\n//\t2212 \treturn op(v, t)\n//\t2213 }\n//  ...\n//\t2217 func convertOp(dst, src *rtype) func(Value, Type) Value {\n//\t2218\tswitch src.Kind() {\n//\t2219\tcase Int, Int8, Int16, Int32, Int64:\n//\n// github.com/tHinqa/a.TestConvert(0x10d861e0)\n// \tD:/myGo/src/github.com/tHinqa/a/a_test.go:66 +0x86\n// testing.tRunner(0x10d861e0, 0x5eabec)\n// \tD:/Go/src/pkg/testing/testing.go:391 +0x87\n// created by testing.RunTests\n// \tD:/Go/src/pkg/testing/testing.go:471 +0x6d2\n//\n// goroutine 1 [chan receive]:\n// testing.RunTests(0x512750, 0x5eabe0, 0x2, 0x2, 0x1)\n// \tD:/Go/src/pkg/testing/testing.go:472 +0x6ed\n// testing.Main(0x512750, 0x5eabe0, 0x2, 0x2, 0x5efd80, ...)\n// \tD:/Go/src/pkg/testing/testing.go:403 +0x6a\n// main.main()\n// \tgithub.com/tHinqa/a/_test/_testmain.go:49 +0x82\nfunc TestConvert(t *testing.T) {\n\tValueOf(error(nil)).Convert(TypeOf(error(errors.New(\u0026quot;error\u0026quot;))))\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:38:14Z",
+	"created_at": "2013-12-02T13:19:36Z",
+	"updated_at": "2016-06-25T01:23:19Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

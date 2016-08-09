@@ -1,0 +1,12 @@
+{
+	"id": 147858764,
+	"body": "Your nm still got cut off, but I put together a rough call stack below. Note that some of these are probably stray values that look like return RIPs, but aren't (like github.com/vsdutka/otasker.Describe.func1). But overall this looks pretty believable.\r\n\r\n```\r\n0000000000453dc0 runtime.writebarrierptr_nostore1.func1\r\n000000000045f565 runtime.systemstack\r\n000000000041442c runtime.writebarrierptr_nostore1\r\n0000000000453cb0 runtime.writebarrierptr_nostore1.func1\r\n000000000041451b runtime.writebarrierptr\r\n000000000044b7d2 runtime.funcspdelta\r\n0000000000410f40 runtime.convI2E\r\n000000000042e296 runtime.panicindex\r\n000000000045283b runtime.gentraceback\r\n00000000004be07a github.com/vsdutka/otasker.Describe.func1\r\n0000000000408db4 runtime.(*cpuProfile).evict\r\n0000000000408ad5 runtime.(*cpuProfile).add\r\n00000000004be07a github.com/vsdutka/otasker.Describe.func1\r\n000000000056df65 ???\r\n000000000045f620 runtime.stackBarrier\r\n000000000043a67c runtime.sigprof\r\n0000000000405aa7 runtime.cgocall\r\n0000000000405aa7 runtime.cgocall\r\n0000000000560003 ???\r\n0000000000566553 ???\r\n000000000056df65 ???\r\n000000000042daf1 runtime.stdcall2\r\n000000000042de92 runtime.profilem\r\n```\r\n\r\nThe most obvious possibility is that `runtime.(*cpuProfile).evict` is running without a P (which can certainly happen), and invoked a write barrier (which would be bad). However, evict doesn't have any write barriers, nor do any of the functions it calls. Likewise for `runtime.(*cpuProfile).add`.\r\n\r\nA more complex but likely possibility is that something went wrong in `add` or `evict` and it called `panicindex` and, after a few more layers, this invoked a write barrier. In this case, the panic about write barriers is masking the real panic about some out-of-bounds index.\r\n\r\n@vsdutka, can you attach your binary (the one you used with gdb to dump the stack) to the issue? I should be able to work out exactly where the real panic happened using that and the stack dump. If you can't, then please send the output of \"go tool objdump -s 'cpuProfile..(add|evict)|panicindex' \u003cbinary\u003e\", since that's most likely to tell me what I need to know. Thanks!",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-13T21:26:29Z",
+	"updated_at": "2015-10-13T21:26:29Z"
+}

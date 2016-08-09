@@ -1,0 +1,12 @@
+{
+	"id": 157062583,
+	"body": "I'm sorry, but I didn't really understand the playground code. I think I do understand what you're saying about the initial snippet, though. Here is a variant on it that prints \"short sleep\" on each iteration that gets a stale value on t.C:\r\n\r\n\tpackage main\r\n\t\r\n\timport (\r\n\t\t\"fmt\"\r\n\t\t\"math/rand\"\r\n\t\t\"time\"\r\n\t)\r\n\t\r\n\tfunc main() {\r\n\t\tconst timeout = 1 * time.Millisecond\r\n\t\tt := time.NewTimer(timeout)\r\n\t\tfor i := 0; i \u003c 100; i++ {\r\n\t\t\tt2 := timeout + time.Duration(rand.Intn(100)-50)*timeout/100 // t2 in [0.5,1.5)*timeout\r\n\t\t\tstart := time.Now()\r\n\t\t\tselect {\r\n\t\t\tcase \u003c-time.After(t2):\r\n\t\t\tcase \u003c-t.C:\r\n\t\t\t}\r\n\t\t\telapsed := time.Since(start)\r\n\t\t\tif elapsed \u003c timeout/4 {\r\n\t\t\t\tfmt.Println(\"short sleep:\", elapsed)\r\n\t\t\t}\r\n\t\t\tt.Reset(timeout)\r\n\t\t}\r\n\t}\r\n\r\nAnd here is the same program corrected, by using the return value of t.Reset and tracking whether the receive from t.C has happened already:\r\n\r\n\tpackage main\r\n\t\r\n\timport (\r\n\t\t\"fmt\"\r\n\t\t\"math/rand\"\r\n\t\t\"time\"\r\n\t)\r\n\t\r\n\tfunc main() {\r\n\t\tconst timeout = 1 * time.Millisecond\r\n\t\tt := time.NewTimer(timeout)\r\n\t\tfor i := 0; i \u003c 100; i++ {\r\n\t\t\tt2 := timeout + time.Duration(rand.Intn(100)-50)*timeout/100 // t2 in [0.5,1.5)*timeout\r\n\t\t\tstart := time.Now()\r\n\t\t\tsawTimeout := false // NEW\r\n\t\t\tselect {\r\n\t\t\tcase \u003c-time.After(t2):\r\n\t\t\tcase \u003c-t.C:\r\n\t\t\t\tsawTimeout = true // NEW\r\n\t\t\t}\r\n\t\t\telapsed := time.Since(start)\r\n\t\t\tif elapsed \u003c timeout/4 {\r\n\t\t\t\tfmt.Println(\"short sleep:\", elapsed)\r\n\t\t\t}\r\n\t\t\tif !t.Reset(timeout) \u0026\u0026 !sawTimeout { // NEW\r\n\t\t\t\t\u003c-t.C // NEW\r\n\t\t\t} // NEW\r\n\t\t}\r\n\t}\r\n\r\n\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-16T15:12:11Z",
+	"updated_at": "2015-11-16T15:12:11Z"
+}

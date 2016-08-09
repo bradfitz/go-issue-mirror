@@ -1,0 +1,27 @@
+{
+	"id": 51289026,
+	"number": 9048,
+	"state": "closed",
+	"title": "runtime: MHeap_ReclaimList undercounts reclaimed pages",
+	"body": "\u003cpre\u003eMHeap_ReclaimList is asked to reclaim at least npages pages, but it counts the number of\nspans reclaimed, not the number of pages reclaimed. The number of spans reclaimed is\nstrictly larger than the number of pages, so this is not wrong, but it may be forcing\nmore reclamation than was intended by the caller. The offending line is:\n\n\t\t\tn += runtime·MSpan_Sweep(s, false);\n\nThis is adding a bool (whether the span was completely freed) to the page count n. It\nshould instead be adding the number of pages in the span, if MSpan_Sweep returns true.\n\nThis appears to have been introduced in Feb 2014 as part of the concurrent sweep code. \n\u003ca href=\"https://golang.org/cl/46430043\"\u003ehttps://golang.org/cl/46430043\u003c/a\u003e\n\nWorking well enough for Go 1.4 but maybe worth tightening up for Go 1.5.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 0,
+	"closed_at": "2015-04-14T20:57:16Z",
+	"created_at": "2014-11-02T22:07:10Z",
+	"updated_at": "2016-06-25T01:44:03Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

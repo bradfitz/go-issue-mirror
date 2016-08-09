@@ -1,0 +1,27 @@
+{
+	"id": 158177318,
+	"number": 15942,
+	"state": "open",
+	"title": "cmd/cgo: missing pointer check for struct passed through a union type",
+	"body": "I was thinking some more about the examples in #14210.  Here's a more realistic false-negative example that does \"follow the rules\", but still manages to leak a Go pointer into C undetected.  It's not unlike what you might find in a program using, say, the SDL API.\r\n\r\nIt doesn't do any iffy casting in C, and its only iffy casting in Go is due to language support - this is exactly the code you end up writing if you have to deal with a C API with unions.\r\n\r\n```go\r\npackage main\r\n\r\n/*\r\ntypedef enum {\r\n  DIRECT,\r\n  INDIRECT,\r\n} kind;\r\n\r\ntypedef struct {\r\n  kind k;\r\n} header;\r\n\r\ntypedef struct {\r\n  header hdr;\r\n  int payload;\r\n} direct;\r\n\r\ntypedef struct {\r\n  header hdr;\r\n  int *payload;\r\n} indirect;\r\n\r\ntypedef union {\r\n  header hdr;\r\n  direct d;\r\n  indirect i;\r\n} either;\r\n\r\nint get_payload(either *e) {\r\n  switch (e-\u003ehdr.k) {\r\n  case DIRECT:\r\n    return e-\u003ed.payload;\r\n  case INDIRECT:\r\n    return *(e-\u003ei.payload);\r\n  default:\r\n    return -1;\r\n  }\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"unsafe\"\r\n)\r\n\r\nfunc main() {\r\n\tvar escapee C.int = 42\r\n\ti := C.indirect{\r\n\t\thdr:     C.header{k: C.INDIRECT},\r\n\t\tpayload: \u0026escapee,\r\n\t}\r\n\r\n\tescaped := C.get_payload((*C.either)(unsafe.Pointer(\u0026i)))\r\n\tfmt.Println(escaped)\r\n}\r\n```\r\n\r\nWith go version go1.6.1 linux/amd64, this program outputs `42` and exits with code 0.  It should instead panic with a cgo pointer violation.",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-06-02T15:58:17Z",
+	"updated_at": "2016-06-02T19:42:10Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51284251,
+	"number": 5830,
+	"state": "closed",
+	"title": "go uses lstat instead of stat to test date of files",
+	"body": "by **richard.wm.jones**:\n\n\u003cpre\u003ego uses lstat instead of stat to test the date of some files when decided what to\nrecompile.  As a result, it is broken if symlinks are used in packaged installs.\n\nWe are trying to diagnose this bug in Fedora:\n\ngo install errors: open /usr/lib64/golang/pkg/linux_amd64/errors.a: permission denied\n\nWhen stracing the go process we see:\n\nstat(\u0026quot;/usr/lib64/golang/pkg/linux_amd64/errors.a\u0026quot;, {st_mode=S_IFREG|0644,\nst_size=6940, ...}) = 0\n\n^ this is correct, but later ...\n\nstat(\u0026quot;/usr/lib64/golang/src/pkg/errors\u0026quot;, {st_mode=S_IFDIR|0755, st_size=4096,\n..\n.}) = 0\nopen(\u0026quot;/usr/lib64/golang/src/pkg/errors\u0026quot;, O_RDONLY|O_CLOEXEC) = 3\ngetdents64(3, /* 5 entries */, 4096)    = 160\ngetdents64(3, /* 0 entries */, 4096)    = 0\nlstat(\u0026quot;/usr/lib64/golang/src/pkg/errors/errors.go\u0026quot;, {st_mode=S_IFLNK|0777,\nst_size=52, ...}) = 0\nlstat(\u0026quot;/usr/lib64/golang/src/pkg/errors/example_test.go\u0026quot;,\n{st_mode=S_IFLNK|0777, st_size=58, ...}) = 0\nlstat(\u0026quot;/usr/lib64/golang/src/pkg/errors/errors_test.go\u0026quot;,\n{st_mode=S_IFLNK|0777, st_size=57, ...}) = 0\n\n^ these are wrong\n\nclose(3)                                = 0\nopen(\u0026quot;/usr/lib64/golang/src/pkg/errors/errors.go\u0026quot;, O_RDONLY|O_CLOEXEC) = 3\nread(3, \u0026quot;// Copyright 2011 The Go Authors\u0026quot;..., 4096) = 499\nclose(3)                                = 0\nopen(\u0026quot;/usr/lib64/golang/src/pkg/errors/errors_test.go\u0026quot;, O_RDONLY|O_CLOEXEC) = 3\nread(3, \u0026quot;// Copyright 2011 The Go Authors\u0026quot;..., 4096) = 1271\nclose(3)                                = 0\nopen(\u0026quot;/usr/lib64/golang/src/pkg/errors/example_test.go\u0026quot;, O_RDONLY|O_CLOEXEC) =\n3\nread(3, \u0026quot;// Copyright 2012 The Go Authors\u0026quot;..., 4096) = 692\nclose(3)                                = 0\n\nIn the Fedora package, the source files are replaced by symlinks\nto an architecture-neutral /usr/share directory:\n\n$ ls -l /usr/lib64/golang/src/pkg/errors/\ntotal 0\nlrwxrwxrwx. 1 root root 52 Jul  1 12:04 errors.go -\u0026gt;\n../../../../../share/golang/src/pkg/errors/errors.go\nlrwxrwxrwx. 1 root root 57 Jul  1 12:04 errors_test.go -\u0026gt;\n../../../../../share/golang/src/pkg/errors/errors_test.go\nlrwxrwxrwx. 1 root root 58 Jul  1 12:04 example_test.go -\u0026gt;\n../../../../../share/golang/src/pkg/errors/example_test.go\n\nUnfortunately because the symlinks are \u0026quot;new\u0026quot; (the actual source files\nare dated fine), go always tries (and fails) to recompile them.\n\nUsing stat instead of lstat would fix this.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:31:59Z",
+	"created_at": "2013-07-02T08:18:09Z",
+	"updated_at": "2016-06-24T22:51:20Z"
+}

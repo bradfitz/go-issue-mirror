@@ -1,0 +1,12 @@
+{
+	"id": 123135987,
+	"body": "This is a write barrier being called to write 3 to the slot:\n\n\truntime.writebarrierptr(0xc82b3ee008, 0x3)\n\t\t/tmp/workdir/go/src/runtime/mbarrier.go:134 +0x70 fp=0xc821071200 sp=0xc8210711d0\n\nBecause init was called with an io.Writer interface holding a 3 instead of a pointer:\n\n\tcompress/flate.(*compressor).init(0xc820070240, 0xc8210481b0, 0x3, 0x9, 0x0, 0x0)\n\t\t/tmp/workdir/go/src/compress/flate/deflate.go:398 +0xdab fp=0xc821071398 sp=0xc821071200\n\nBecause NewWriter was called with that same io.Writer (and level = 9):\n\n\tcompress/flate.NewWriter(0xc8210481b0, 0x3, 0x9, 0x0, 0x0, 0x0)\n\t\t/tmp/workdir/go/src/compress/flate/deflate.go:487 +0x64 fp=0xc8210713d8 sp=0xc821071398\n\nBut testSync was called with t=0xc8210481b0 and level=0x3:\n\n\tcompress/flate.testSync(0xc8210481b0, 0x3, 0xc82b414000, 0x0, 0x0, 0x5b00f0, 0xe)\n\t\t/tmp/workdir/go/src/compress/flate/deflate_test.go:458 +0xaf fp=0xc821071a60 sp=0xc8210713d8\n\tcompress/flate.testToFromWithLevelAndLimit(0xc8210481b0, 0x3, 0xc82b414000, 0x186a3, 0x188a3, 0x5b00f0, 0xe, 0xc7ce)\n\t\t/tmp/workdir/go/src/compress/flate/deflate_test.go:302 +0xac1 fp=0xc821071d10 sp=0xc821071a60\n\nIt is as if the (t, level) pair was copied directly to the NewWriter argument slots instead of the result of io.MultiWriter. Obviously the compiler isn't doing this all the time, or bad things would be happening.\n\nMaybe a stack barrier at the wrong time, or a bad stack copy?",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-21T03:05:50Z",
+	"updated_at": "2015-07-21T03:05:50Z"
+}

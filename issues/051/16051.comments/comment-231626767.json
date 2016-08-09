@@ -1,0 +1,12 @@
+{
+	"id": 231626767,
+	"body": "\u003e And this is the result on my PC:\r\n\u003e Syscall: 4.0056ms\r\n\u003e CGO: 3.0032ms\r\n\r\nThank you for the source. But I don't think you run test for long enough. I did\r\n\r\n```\r\nc:\\dev\\src\\issues\\issue16051\u003etype foo.go\r\npackage issue16051\r\n\r\nimport (\r\n        \"syscall\"\r\n)\r\n\r\n/*\r\n#include \u003cwindows.h\u003e\r\n#include \u003cmmsystem.h\u003e\r\n\r\n#cgo LDFLAGS: -lwinmm\r\n*/\r\nimport \"C\"\r\n\r\nfunc Call_timeGetTime_CGO() uint32 {\r\n        return uint32(C.timeGetTime())\r\n}\r\n\r\nvar (\r\n        winmm        = syscall.MustLoadDLL(\"winmm.dll\")\r\n        ftimeGetTime = winmm.MustFindProc(\"timeGetTime\")\r\n)\r\n\r\nfunc Call_timeGetTime_Syscall() uint32 {\r\n        ret, _, _ := syscall.Syscall(ftimeGetTime.Addr(), 0, 0, 0, 0)\r\n        return uint32(ret)\r\n}\r\n\r\nc:\\dev\\src\\issues\\issue16051\u003etype foo_test.go\r\npackage issue16051_test\r\n\r\nimport (\r\n        \"testing\"\r\n\r\n        \"issues/issue16051\"\r\n)\r\n\r\nfunc BenchmarkTimeGetTimeSyscall(b *testing.B) {\r\n        for i := 0; i \u003c b.N; i++ {\r\n                issue16051.Call_timeGetTime_Syscall()\r\n        }\r\n}\r\n\r\nfunc BenchmarkTimeGetTimeCGO(b *testing.B) {\r\n        for i := 0; i \u003c b.N; i++ {\r\n                issue16051.Call_timeGetTime_CGO()\r\n        }\r\n}\r\n\r\nc:\\dev\\src\\issues\\issue16051\u003ego test -run=none -bench=.\r\ntesting: warning: no tests to run\r\nBenchmarkTimeGetTimeSyscall     10000000               228 ns/op\r\nBenchmarkTimeGetTimeCGO         10000000               229 ns/op\r\nPASS\r\nok      issues/issue16051       5.087s\r\n\r\nc:\\dev\\src\\issues\\issue16051\u003e\r\n```\r\n\r\nand I see not much difference between syscall and cgo.\r\n\r\nAlex\r\n\r\nPS: On Windows you cannot even measure it if it is less than 15ms",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-11T02:00:07Z",
+	"updated_at": "2016-07-11T02:00:07Z"
+}

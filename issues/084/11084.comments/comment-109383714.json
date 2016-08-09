@@ -1,0 +1,12 @@
+{
+	"id": 109383714,
+	"body": "@rsc and I are pretty sure we've found the problem. This test creates a map and a map bucket on the stack. When map assignment happens, writes are being done in the runtime map code to a higher stack frame using typedmemmove. This typedmemmove doesn't generate write barriers because the destination is on the stack. But this violates the assumption made by stack barriers that pointer writes to higher stack frames will always have write barriers. If these updated pointers are above the next stack barrier, then the stack rescan won't see them and the garbage collector will collect them.\r\n\r\nI'm working on a fix to make typedmemmove detect when its argument is on the stack and remove any stack barriers below (hence forcing the stack re-scan to re-scan what's being updated). The alternative would be to make typedmemmove generate write barriers for stack writes, but this is complicated because we may not have a GC bitmap in this case.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-05T18:12:36Z",
+	"updated_at": "2015-06-05T18:12:36Z"
+}

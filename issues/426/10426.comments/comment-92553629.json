@@ -1,0 +1,12 @@
+{
+	"id": 92553629,
+	"body": "It seems there's two issues with that DEFLATE sequence.  One is that the dynamic Huffman block header is bogus, and two is that the dynamic Huffman block body is bogus.\r\n\r\nThe first issue causes f.codebits to become [3 0 0 0 0 0 0 1 2 0 0 0 0 0 0 0 5 4 4], which when passed to h.init instructs it to assign a 1-bit code to 7, a 2-bit code to 8, a 3-bit code to 0, two 4-bit code to 17 and 18, and a 5-bit code to 16.  However, by time we get to 16, there aren't any prefix-free codes left to assign.\r\n\r\nWhat compress/flate currently does in this case is it assigns \"0\" to 7 and \"00000\" to 16.  (It actually assigns 0x20 to 16, but when it gets reversed and cropped to 5 bits, it becomes all zeros.)  This results in a sort of lookahead decoding behavior: if a 0 bit happens to be followed by 4 more 0 bits, then it will be decoded as 16, otherwise it gets decoded as 7.  (Notably, 16 only takes priority over 7 like this because it comes later in the \"for i, n := range bits\" loop in (*huffmanDecoder).init.)\r\n\r\nThe second issue is as I described in https://go-review.googlesource.com/#/c/8893/: \"Dmitry's test case is using dynamic huffman coding, but with a non-optimal encoding.  There are only 16 symbols, but it's assigning length 7 and 8 codes to each of them, which leaves a bunch of invalid prefixes.  Later when one of those prefixes is used, the corresponding h.chunks entry will still be 0, which huffSym will misinterpret to mean it found a 0 length code.\"\r\n\r\nFinding a 0 length code causes it to consume 0 bits of input and then try again, which of course means it will find the same code again and again.`",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-14T01:25:35Z",
+	"updated_at": "2015-04-14T01:25:35Z"
+}

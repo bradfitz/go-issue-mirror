@@ -1,0 +1,17 @@
+{
+	"id": 141968600,
+	"number": 14869,
+	"state": "closed",
+	"title": "cmd/compile: SSA sometimes generates far more write barriers",
+	"body": "I did a comparison of the write barriers produced when compiling cmd/compile with and without SSA. Sometimes it generates dramatically more write barriers than the old backend. Here are the top movers:\r\n\r\n+235 cmd/internal/obj/ppc64.buildop(SB)\r\n+72 cmd/internal/obj/mips.buildop(SB)\r\n+55 cmd/internal/obj/arm.buildop(SB)\r\n+14 cmd/compile/internal/amd64.ssaGenBlock(SB)\r\n+10 cmd/compile/internal/ssa.rewriteValuegeneric_OpStructSelect(SB)\r\n+9 cmd/compile/internal/ssa.decomposeBuiltIn(SB)\r\n+8 cmd/compile/internal/ssa.nilcheckelim(SB)\r\n+6 runtime.getitab(SB)\r\n+5 runtime.(*TypeAssertionError).Error(SB)\r\n+4 runtime.assertI2T(SB)\r\n+4 reflect.Value.MapKeys(SB)\r\n+4 fmt.(*pp).printReflectValue(SB)\r\n+4 cmd/compile/internal/ssa.(*Value).LongString(SB)\r\n+4 cmd/compile/internal/ssa.(*edgeState).setup(SB)\r\n+3 runtime.assertE2T(SB)\r\n+3 reflect.(*structType).FieldByNameFunc(SB)\r\n+3 cmd/internal/obj.Linknew(SB)\r\n+3 cmd/compile/internal/gc.typecheck1(SB)\r\n+3 cmd/compile/internal/gc.Main(SB)\r\n\r\nI looked into a few of these and it looks like the old backend is generating one call to typedmemmove in cases where SSA is generating a huge number of calls to writebarrierptr. In the smaller movers like runtime.getitab this may actually be the right thing; if there are just a few pointers, writebarrierptr is better. But 235 more write barriers is probably not the right thing.\r\n\r\nThis was generated with the following script:\r\n\r\n```\r\n#!/bin/bash\r\n\r\nawk '\r\nfunction dump() {\r\n  if (fn != \"\")\r\n    counts[fn][file] = n\r\n}\r\n/^TEXT/ { dump(); fn=$2; n=0 }\r\n/CALL runtime.writebarrierptr/ { n++ }\r\nEND {\r\n  dump();\r\n  for (fn in counts) {\r\n    printf(\"%+d %s\\n\", counts[fn][\"b\"] - counts[fn][\"a\"], fn)\r\n  }\r\n}\r\n' file=a \u003c(go tool objdump \"$1\") file=b \u003c(go tool objdump \"$2\") | sort -gr\r\n```\r\n\r\n/cc @khr @dr2chase ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-03-29T21:32:11Z",
+	"created_at": "2016-03-18T20:21:28Z",
+	"updated_at": "2016-03-29T21:32:11Z"
+}

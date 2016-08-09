@@ -1,0 +1,22 @@
+{
+	"id": 51284895,
+	"number": 6244,
+	"state": "closed",
+	"title": "json encoding of a map - order of members in an object",
+	"body": "by **janh4lfar**:\n\n\u003cpre\u003eObject members should not be ordered:\n\nFrom \u003ca href=\"http://www.ietf.org/rfc/rfc4627.txt?number=4627\"\u003ehttp://www.ietf.org/rfc/rfc4627.txt?number=4627\u003c/a\u003e\n\n\u0026quot;... An object is an unordered collection of zero or more name/value\npairs, where a name is a string and a value is a string, number,\nboolean, null, object, or array. ...\u0026quot;\n\nIn other words - do not object members by their names.\n\nExpected behaviour as implemented in nodejs, php, chrome and firefox as reference:\n\n\u0026gt; var test = {\u0026quot;BBB\u0026quot;:\u0026quot;b\u0026quot;, \u0026quot;AAA\u0026quot; : \u0026quot;a\u0026quot;,\n\u0026quot;CCC\u0026quot; : \u0026quot;c\u0026quot;}\nundefined\n\u0026gt; test\n{ BBB: 'b', AAA: 'a', CCC: 'c' }\n\u0026gt; JSON.stringify(test)\n'{\u0026quot;BBB\u0026quot;:\u0026quot;b\u0026quot;,\u0026quot;AAA\u0026quot;:\u0026quot;a\u0026quot;,\u0026quot;CCC\u0026quot;:\u0026quot;c\u0026quot;}'\n\nA little go snippet:\n\ntestMap := make(map[string]string)\noriginalJsonBytes := []byte(`{\u0026quot;BBB\u0026quot;:\u0026quot;b\u0026quot;, \u0026quot;AAA\u0026quot; :\n\u0026quot;a\u0026quot;, \u0026quot;CCC\u0026quot; : \u0026quot;c\u0026quot;}`)\njson.Unmarshal(originalJsonBytes, \u0026amp;testMap)\njsonBytes, _ := json.Marshal(testMap)\nfmt.Println(testMap, string(jsonBytes))\n\n// current output: json members are sorted by their name:\nmap[BBB:b AAA:a CCC:c]\n{\u0026quot;AAA\u0026quot;:\u0026quot;a\u0026quot;,\u0026quot;BBB\u0026quot;:\u0026quot;b\u0026quot;,\u0026quot;CCC\u0026quot;:\u0026quot;c\u0026quot;}\n\n// right output to ensure interoperability - imho it should look like this:\nmap[BBB:b AAA:a CCC:c]\n{\u0026quot;BBB\u0026quot;:\u0026quot;b\u0026quot;,\u0026quot;AAA\u0026quot;:\u0026quot;a\u0026quot;,\u0026quot;CCC\u0026quot;:\u0026quot;c\u0026quot;}\n\nThe solution of the bug seems to be very simple - just remove sort.Sort(sv) in\nsrc/pkg/encoding/json/encode.go in mapEncoder.encode() - obviously that might not be the\nonly place to look for ;)\n\nJust by the way - I love this package!\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:34:21Z",
+	"created_at": "2013-08-25T15:51:26Z",
+	"updated_at": "2016-06-25T01:17:15Z"
+}

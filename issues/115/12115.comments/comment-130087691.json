@@ -1,0 +1,12 @@
+{
+	"id": 130087691,
+	"body": "So after further investigation, I've come to the conclusion that the real issue is not so much the test, as the fact that there seems to be no way to control when and how LDFLAGS are applied during the build process.\r\n\r\nSome flags should only be applied when performing the linking step for a shared library or executable, etc.  In other contexts, they're either invalid, or meaningless to apply (so should not be specified).\r\n\r\nGo already manipulates the linker flags used depending on context, so perhaps something like this is sufficient:\r\n```\r\ndiff --git a/src/cmd/go/build.go b/src/cmd/go/build.go\r\nindex 718edd2..fdf00f3 100644\r\n--- a/src/cmd/go/build.go\r\n+++ b/src/cmd/go/build.go\r\n@@ -2972,6 +2972,12 @@ func (b *builder) cgo(p *Package, cgoExe, obj string, pcCFLAGS, pcLDFLAGS, cgofi\r\n                // See issue 8788 for details.\r\n                case strings.HasPrefix(f, \"-fsanitize=\"):\r\n                        continue\r\n+               // runpath flags not applicable unless building a shared\r\n+               // library; see issue 12115 for details. Since rpath expects an\r\n+               // argument, both it and the following argument are skipped.\r\n+               case buildBuildmode != \"c-shared\" \u0026\u0026 strings.HasPrefix(f, \"-Wl,-rpath\"):\r\n+                       i+= 2\r\n+                       continue\r\n                default:\r\n                        bareLDFLAGS = append(bareLDFLAGS, f)\r\n                }\r\n```\r\n\r\nHowever, it seems like there's a larger issue -- namely, that Go should likely offer finer control over when LDFLAGS are applied.\r\n\r\nI welcome any feedback or suggestions others might have.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-11T21:46:35Z",
+	"updated_at": "2015-08-11T21:46:35Z"
+}

@@ -1,0 +1,25 @@
+{
+	"id": 51282921,
+	"number": 4977,
+	"state": "closed",
+	"title": "bufio: race condition when misusing ReadSlice",
+	"body": "by **striginsv@yandex.ru**:\n\n\u003cpre\u003eThere is a problem using []byte channel when processing large amount of data.\n$ wc -l bigfile.txt\n3601800 bigfile.txt\n\npackage main\n\nimport (\n\t\u0026quot;bufio\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n)\n\nvar ch chan []byte\n\nfunc reader(fname string, ch chan []byte) {\n\tf, err := os.Open(fname)\n\tif err != nil {\n\t\treturn\n\t}\n\tdefer f.Close()\n\tr := bufio.NewReader(f)\n\n\tfor {\n\t\ts, ok := r.ReadSlice('\\n')\n\t\tif ok != nil {\n\t\t\tclose(ch)\n\t\t\tbreak\n\t\t}\n\t\tch \u0026lt;- (s)\n\t}\n}\n\nfunc main() {\n\truntime.GOMAXPROCS(runtime.NumCPU())\n\n\tch := make(chan []byte)\n\n\tif len(os.Args) != 2 {\n\t\tfmt.Printf(\u0026quot;Usage: %s \u0026lt;filename\u0026gt;\\n\u0026quot;, os.Args[0])\n\t\treturn\n\t}\n\tfname := os.Args[1]\n\n\tgo reader(fname, ch)\n\t// num := 0\n\tfor s := range ch {\n\t\t_ = s\n\t\t// num++\n\t\tfmt.Print(string(s))\n\t}\n\t// fmt.Println(\u0026quot;Lines number :\u0026quot;, num)\n}\n\n$ go run counter.go | wc -l\n3601787\nBut if we uncomment counter, the output will be right:\nLines number : 3601800\n\nThe problem disappears if we change channel type to string, or disable GOMAXPROCS.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:26:30Z",
+	"created_at": "2013-03-04T20:06:50Z",
+	"updated_at": "2016-06-24T22:34:51Z"
+}

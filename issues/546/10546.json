@@ -1,0 +1,33 @@
+{
+	"id": 70196148,
+	"number": 10546,
+	"state": "closed",
+	"title": "runtime: does not traceback goroutine in systemstack",
+	"body": "Run the following program:\r\n```\r\npackage main\r\n\r\nfunc main() {\r\n\tfor {\r\n\t\t_ = make([]byte, 1\u003c\u003c20)\r\n\t}\r\n}\r\n```\r\nand kill it with SIGABRT. Most of the it crashes as follows. I.e. stack of the main goroutine is not unwound.\r\n```\r\nSIGABRT: abort\r\nPC=0x447b71 m=0\r\n\r\ngoroutine 0 [idle]:\r\nruntime.futex(0x4af628, 0x0, 0x0, 0x0, 0x0, 0x4af140, 0x0, 0x0, 0x4077dd, 0x4af628, ...)\r\n\t?:0 +0x21 fp=0x7fff603b11b8 sp=0x7fff603b11b0\r\nruntime.futexsleep(0x4af628, 0x0, 0xffffffffffffffff)\r\n\tsrc/runtime/os1_linux.go:40 +0x53 fp=0x7fff603b1200 sp=0x7fff603b11b8\r\nruntime.notesleep(0x4af628)\r\n\tsrc/runtime/lock_futex.go:142 +0xad fp=0x7fff603b1228 sp=0x7fff603b1200\r\nruntime.stopm()\r\n\tsrc/runtime/proc1.go:1059 +0x127 fp=0x7fff603b1250 sp=0x7fff603b1228\r\nruntime.exitsyscall0(0xc208000a00)\r\n\tsrc/runtime/proc1.go:2017 +0x16e fp=0x7fff603b1278 sp=0x7fff603b1250\r\nruntime.mcall(0x7fff603b12a0)\r\n\tsrc/runtime/asm_amd64.s:204 +0x5e fp=0x7fff603b1288 sp=0x7fff603b1278\r\n\r\ngoroutine 1 [running]:\r\n\tgoroutine running on other thread; stack unavailable\r\n```\r\n\r\nThe main goroutine is actually at this point:\r\n```\r\ngoroutine 1 [running]:\r\nruntime.systemstack_switch()\r\n\tsrc/runtime/asm_amd64.s:216 fp=0xc20802dde0 sp=0xc20802ddd8\r\nruntime.mallocgc(0x100000, 0x4516a0, 0x1, 0xc209254000)\r\n\tsrc/runtime/malloc.go:632 +0x8d9 fp=0xc20802deb0 sp=0xc20802dde0\r\nruntime.newarray(0x4516a0, 0x100000, 0xc209354000)\r\n\tsrc/runtime/malloc.go:742 +0xce fp=0xc20802def0 sp=0xc20802deb0\r\nruntime.makeslice(0x44ea00, 0x100000, 0x100000, 0x0, 0x0, 0x0)\r\n\tsrc/runtime/slice.go:32 +0x16c fp=0xc20802df40 sp=0xc20802def0\r\nmain.main()\r\n\tcrash.go:5 +0x3c fp=0xc20802df90 sp=0xc20802df40\r\n```\r\n\r\nThis makes it very hard to debug hanging programs. The stack must be unwound.\r\n\r\nWe leave g in running status during systemstack. This is probably part of the problem. Another part is why the goroutine does not return from systemstack during freezetheworld.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-05-05T15:12:13Z",
+	"created_at": "2015-04-22T18:09:50Z",
+	"updated_at": "2016-06-29T21:01:29Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

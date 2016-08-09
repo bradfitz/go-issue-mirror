@@ -1,0 +1,12 @@
+{
+	"id": 102132301,
+	"body": "We've found one cause of this: holding worldsema is not enough to prevent gomaxprocs from changing because we always release worldsema before calling starttheworld. Swapping the release to be after the starttheworld in all places dramatically reduces the probability of this failing. It doesn't eliminate it, though.\r\n\r\nI'm almost positive this has the same root cause as the \"fatal error: forEachP: not stopped\" failures we've also been seeing. What appears to be happening is that our stopwait accounting is sometimes off by one. When this happens, the *second* to last P to run the safe point function decrements stopwait to 0 and wakes up forEachP. Depending on when the actual last P runs the safe point function, we either see that stopwait is -1, or we see that the last P hasn't run its safe point function yet.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-14T18:43:59Z",
+	"updated_at": "2015-05-14T18:43:59Z"
+}

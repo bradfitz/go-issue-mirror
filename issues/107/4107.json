@@ -1,0 +1,27 @@
+{
+	"id": 51281650,
+	"number": 4107,
+	"state": "closed",
+	"title": "debug/dwarf: invalid string values due to incorrect strp offsets",
+	"body": "\u003cpre\u003ecgo on OpenBSD/amd64 is currently unable to generate correct z-files, due to what\nappears to be a bug in our debug/dwarf package. Attached is a minimal types_openbsd.go\nfile and the corresponding .o file that gcc creates. The sample dwarf.go should produce\nthe following output for struct timeval:\n\n  Name: timeval\n  Name: tv_sec\n  Name: tv_usec\n\nHowever, it currently produces:\n\n  Name: timeval\n  Name: it_interval\n  Name: tv_usec\n\nDue to duplication tv_sec is encoded as a strp, however debug/dwarf ends up determining\nthat it has an offset of 0x0 instead of the correct 0xc, which obviously results in the\nincorrect value.\n\nIt is possible that this is compiler related, however I doubt that this is the case\nsince readelf is able to correctly process the .o file on multiple platforms (in this\ncase linux/amd64):\n\n$ readelf --debug-dump _cgo_.o | grep -A 10 :\\ timeval\n    \u0026lt;b80\u0026gt;   DW_AT_name        : timeval\t\n    \u0026lt;b88\u0026gt;   DW_AT_byte_size   : 16\t\n    \u0026lt;b89\u0026gt;   DW_AT_decl_file   : 6\t\n    \u0026lt;b8a\u0026gt;   DW_AT_decl_line   : 90\t\n    \u0026lt;b8b\u0026gt;   DW_AT_sibling     : \u0026lt;0xbb0\u0026gt;\t\n \u0026lt;2\u0026gt;\u0026lt;b8f\u0026gt;: Abbrev Number: 14 (DW_TAG_member)\n    \u0026lt;b90\u0026gt;   DW_AT_name        : (indirect string, offset: 0xc): tv_sec\t\n    \u0026lt;b94\u0026gt;   DW_AT_decl_file   : 7\t\n    \u0026lt;b95\u0026gt;   DW_AT_decl_line   : 50\t\n    \u0026lt;b96\u0026gt;   DW_AT_type        : \u0026lt;0x361\u0026gt;\t\n    \u0026lt;b9a\u0026gt;   DW_AT_data_member_location: 2 byte block: 23 0 \t(DW_OP_plus_uconst: 0)\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4107/0/types_openbsd.go\"\u003etypes_openbsd.go\u003c/a\u003e (392 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4107/0/dwarf.go\"\u003edwarf.go\u003c/a\u003e (476 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4107/0/_cgo_.o\"\u003e_cgo_.o\u003c/a\u003e (6544 bytes)",
+	"user": {
+		"login": "4a6f656c",
+		"id": 8142769,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:21:49Z",
+	"created_at": "2012-09-19T15:49:51Z",
+	"updated_at": "2016-06-24T22:24:59Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

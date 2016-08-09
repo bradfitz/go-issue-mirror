@@ -1,0 +1,12 @@
+{
+	"id": 66078257,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eok, i understand what's happening here.\n\nat the time of second http.Get(), the readLoop goroutine of the first\npersistConn is runable but doesn't have a chance to run because of\nthe new scheduler favor the currently running goroutine (the main goroutine),\nso the goroutine can't mark the connection as broken.\n\nThen the 2nd http.Get will reuse that already-broken-but-not-marked-\nas-so connection, and get an error immediately (EOF or sending on\nbroken connection).\n\nThis explains why these \"solutions\" superficially fixes the issue:\n1. set GOMAXPROCS to 2 or higher\n2. add a sleep between the two Get()'s\n3. put a runtime.Gosched() between the two Get()'s\n\nI don't yet know how to fix this problem, but I think this issue will\naffect valid Go 1 programs.\n\ncc: +brad and dvyukov, what's your opinion?\u003c/pre\u003e\n\n_Labels changed: added **go1.1**._",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-05-01T16:41:26Z",
+	"updated_at": "2014-12-08T10:28:41Z"
+}

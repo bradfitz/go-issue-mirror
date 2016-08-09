@@ -1,0 +1,12 @@
+{
+	"id": 205371628,
+	"body": "@ianlancetaylor Thanks for getting back to me! Sorry, I didn't properly read the issue. I agree with what you said earlier. [The call](https://github.com/golang/go/blob/master/src/database/sql/convert.go#L49) on the nil value happens in a loop that builds and returns an array so I think the proper solution is to add the value into the array. \r\n\r\nI changed the code to check if the value is nil between the cast to a `driver.Valuer` and the call to `Value`:\r\n\r\n``` go\r\nif svi, ok := arg.(driver.Valuer); ok {\r\n  svk := reflect.TypeOf(svi).Kind()\r\n  canCheckNil := svk == reflect.Interface || svk == reflect.Ptr\r\n  if canCheckNil \u0026\u0026 reflect.ValueOf(arg).IsNil() {\r\n    arg = svi // new code\r\n    //arg = nil \u003c-- can't do this\r\n  } else {\r\n    // do current approach\r\n    sv, err := svi.Value()\r\n```\r\n\r\nFor whatever reason it wouldn't take a nil value. It seems like it is indented behaviour for it to not take a nil value, but it sort of seems odd that it would take a typed nil but not a straight up nil. ",
+	"user": {
+		"login": "ConnorFoody",
+		"id": 1727309,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-04T16:13:51Z",
+	"updated_at": "2016-04-04T18:05:47Z"
+}

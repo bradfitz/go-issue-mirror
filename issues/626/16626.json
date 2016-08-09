@@ -1,0 +1,26 @@
+{
+	"id": 169765253,
+	"number": 16626,
+	"state": "open",
+	"title": "crypto/tls: customized selection of a client cert during handshake with server",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.3 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/opt/go/ext\"\r\nGORACE=\"\"\r\nGOROOT=\"/opt/go/golang\"\r\nGOTOOLDIR=\"/opt/go/golang/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n3. Feature request:\r\nRequirement for a customized selection of a client certificate during TLS handshake with a server. The current implementation in crypto/tls/handshake_client.go uses the first certificate that is signed by an acceptable CA. The application cannot set the client cert in tls.Config.Certificates based on user selection before calling conn.Handshake(), because it has no way to tell which CAs will be accepted by a server in a handshake.\r\n\r\nThe problem was locally fixed by cloning crypto/tls and applying the following changes. If the requirement is considered legit and usually useful, feel free to use and modify it as you see fit:\r\n\r\n**crypto/tls/common.go:**\r\n\r\n    // ServerHelloInfo contains information from a ServerHello message in order to\r\n    // guide certificate selection in the GetClientCertificate callback.\r\n    type ServerHelloInfo struct {\r\n        // CertCAs lists the CA root certificates accepted for successful\r\n        // client authentication.\r\n        CertCAs [][]byte\r\n    \r\n        // CertTypes lists the supported certificate types for each CA cert.\r\n        CertTypes []byte\r\n    }\r\n    :\r\n    type Config struct {\r\n        :\r\n        // GetClientCertificate returns a Certificate based on the given\r\n        // ServerHelloInfo. It will only be called if the server requests\r\n        // client authentication and if Certificates is empty.\r\n        //\r\n        // If GetClientCertificate is nil or returns nil, no client certificate\r\n        // is send to the server as a response.\r\n        GetClientCertificate func(serverHello *ServerHelloInfo) (*Certificate, error)\r\n        :\r\n    }\r\n\r\n**crypto/tls/handshake_client.go(doFullHandshake):**\r\n\r\n    :\r\n    // If no client certs are available in Config and the\r\n    // GetClientCertificate callback is defined, get a\r\n    // certificate from the callback function.\r\n    //\r\n    // It is the responsibility of the callback to return\r\n    // an appropriate certificate.\r\n    if c.config.Certificates == nil \u0026\u0026 c.config.GetClientCertificate != nil {\r\n        hello := \u0026ServerHelloInfo{\r\n            CertCAs:   certReq.certificateAuthorities,\r\n            CertTypes: certReq.certificateTypes,\r\n        }\r\n        if chainToSend, err = c.config.GetClientCertificate(hello); err != nil {\r\n            return err\r\n        }\r\n    } else {\r\n        // We need to search our list of client certs for one\r\n        // where SignatureAlgorithm is acceptable to the server and the\r\n        // Issuer is in certReq.certificateAuthorities\r\n        findCert:\r\n            for i, chain := range c.config.Certificates {\r\n                :\r\n            }\r\n    }\r\n\r\n**crypto/tls/tls_test.go(TestClone):**\r\n\r\n    :\r\n    case \"Time\", \"GetCertificate\", \"GetClientCertificate\":\r\n    :\r\n",
+	"user": {
+		"login": "bfix",
+		"id": 1093540,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FeatureRequest"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-08-06T20:33:07Z",
+	"updated_at": "2016-08-08T19:34:33Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"id": 96833446,
+	"number": 11843,
+	"state": "open",
+	"title": "cmd/vet: shadow false positive when using exported function",
+	"body": "`go tool vet --shadow` returns a false positive when the variable being shadowed is declared from the return of an exported user function from another package. That's a mouthful, so here's some code:\r\n\r\n./other/other.go:\r\n```go\r\npackage other\r\n\r\nfunc Foo() (int, error) {\r\n\treturn 0, nil\r\n}\r\n```\r\n\r\n./shadow_test.go:\r\n```go\r\npackage shadow\r\n\r\nimport (\r\n\t\"errors\"\r\n\t\"testing\"\r\n\r\n\t\"github.com/tamird/shadow/other\"\r\n)\r\n\r\nfunc foo() (int, error) {\r\n\treturn 0, nil\r\n}\r\n\r\nfunc TestVetShadow(t *testing.T) {\r\n\t// Local varibles: this passes.\r\n\t// a, err := \"a\", errors.New(\"Foo\")\r\n\r\n\t// Function from same package: this passes.\r\n\t// a, err := foo()\r\n\r\n\t// Function from standard library: this passes.\r\n\t// r := \u0026bytes.Buffer{}\r\n\t// a, err := r.Read(nil)\r\n\r\n\t// Function from different package: this triggers shadowing warning.\r\n\ta, err := other.Foo()\r\n\r\n\tif err != nil {\r\n\r\n\t}\r\n\r\n\tif _, err := other.Foo(); err != nil {\r\n\t}\r\n\r\n\tb, err := \"b\", errors.New(\"Foo\")\r\n\tif err != nil {\r\n\t}\r\n\r\n\t_, _ = a, b\r\n}\r\n```\r\n\r\nThe comments in the code describe the problem. Use `other.Foo()` and you get a false positive; use any of the others (local function, local variables, exported method from the stdlib) and the warning goes away. Weird!\r\n\r\nAll the code is also available here: https://github.com/tamird/shadow\r\n\r\ncc @mberhault",
+	"user": {
+		"login": "tamird",
+		"id": 1535036,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-07-23T14:55:39Z",
+	"updated_at": "2015-07-23T22:22:45Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 140582723,
+	"number": 14812,
+	"state": "open",
+	"title": "runtime: GC causes latency spikes",
+	"body": "Hello,\r\nwhile running the program at https://github.com/raintank/raintank-metric/tree/master/metric_tank\r\nI'm seeing mark-and-scan times of ~15s cpu time, 2000~2500 ms clock time. (8 core system) for a heap of about 6.5GB\r\n(STW pauses are fine and ~1ms)\r\nI used https://circleci.com/gh/raintank/raintank-metric/507 to obtain the data below.\r\n\r\n```\r\n$ metric_tank --version\r\nmetrics_tank (built with go1.6, git hash 8897ef4f8f8f1a2585ee88ecadee501bfc1a4139)\r\n$ go version\r\ngo version go1.6 linux/amd64\r\n$ uname -a #on the host where the app runs\r\nLinux metric-tank-3-qa 3.19.0-43-generic #49~14.04.1-Ubuntu SMP Thu Dec 31 15:44:49 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux\r\n```\r\n\r\nI know the app is currently not optimized for GC workload: while i've gotten allocations down in various parts of the program there are currently probably about a million or more live pointers referencing pieces of data. I was going to work on optimizing this when Dave Cheney suggested there's a problem with the runtime and I should file a bug (https://groups.google.com/forum/#!topic/golang-nuts/Q0rXKYjy1cg)\r\nHere's the log with gctrace and schedtrace enabled: https://gist.githubusercontent.com/Dieterbe/18453451c5af0cdececa/raw/9c4f2abd85bb7a815c6cda5c1828334d3d29817d/log.txt\r\n\r\nat http://dieter.plaetinck.be/files/go/mt3-qa-gc-vs-no-gc.zip you'll find a zip containing this log, the binary, a cpu profile taken during gc run 1482, and a cpu and heap profile in between run 1482 and 1483\r\n\r\nI also have these two dashboards that seem useful. (they both end just after the spike induced by GC run 1482)\r\nhttps://snapshot.raintank.io/dashboard/snapshot/MtLqvc4F6015zbs4iMQSPzfizvG7OQjC\r\nshows memory usage, GC runs and STW pause times. it also shows that incoming load (requests) of the app is constant so this conveys to me that any extra load is caused by GC, not by changing workload\r\nhttps://snapshot.raintank.io/dashboard/snapshot/c2zwTZCF7BmfyzEuGF6cHN9GX9aM1V99\r\nthis shows the system stats. note the cpu spikes corresponding to the GC workload.\r\n\r\nlet me know if there's anything else I can provide,\r\nthanks,\r\nDieter.",
+	"user": {
+		"login": "Dieterbe",
+		"id": 20774,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"created_at": "2016-03-14T05:54:13Z",
+	"updated_at": "2016-07-23T06:00:19Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

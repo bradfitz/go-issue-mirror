@@ -1,0 +1,12 @@
+{
+	"id": 66060271,
+	"body": "\u003ca id=\"c22\"\u003e\u003c/a\u003eComment 22:\n\n\u003cpre\u003eLooking at the proposed patch, it looks like the code is run on every request whether\nyou need it or not. How about something like this:\n\ntype HandleBlocker interface {\n\tBlockHandler(release chan bool)\n}\n\nfunc (r *response) BlockHandler(release chan bool) {\n\tpeeked := make(chan bool)\n\n\tgo func() {\n\t\tbs, _ := c.buf.Reader.Peek(1)\n\t\t\n\t\tif len(bs) == 0 {\n\t\t\tpeeked \u0026lt;- true\n\t\t}\n\t}()\n\n\tselect {\n\tcase \u0026lt;-peeked:\n\tcase \u0026lt;-release:\n\t}\n}\n\n\nWith that I should be able to do something like this:\n\n\nfunc lpHandler(w http.ResponseWriter, req *http.Request) {\n\t//... write chan string, read chan string, etc...\n\n\trelease := make(chan bool)\n\n\tgo func() {\n\t\tm := \u0026lt;-write\n\t\tio.WriteString(w, m)\n\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase m := write\n\t\t\t\tio.WriteString(w, m)\n\t\t\tdefault\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\n\t\trelease \u0026lt;- true\n\t}()\n\n\tw.(HandleBlocker).BlockHandler(release)\n}\n\n\nWhat do you think?\u003c/pre\u003e",
+	"user": {
+		"login": "lukescott",
+		"id": 486224,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-05-24T00:43:13Z",
+	"updated_at": "2014-12-22T06:04:47Z"
+}

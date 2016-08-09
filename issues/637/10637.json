@@ -1,0 +1,23 @@
+{
+	"id": 72161069,
+	"number": 10637,
+	"state": "closed",
+	"title": "cmd/compile: missed peephole optimizations",
+	"body": "```go\r\nfunc S16(a uint64) uint64 {\r\n        return a \u003c\u003c 8 \u003c\u003c 8 \u003c\u003c 0\r\n}\r\n```\r\n\r\nThe generated assembly is:\r\n```\r\n\"\".S16 t=1 size=32 value=0 args=0x10 locals=0x0\r\n        0x0000 00000 (source/test/a.go:3)  TEXT    \"\".S16(SB), $0-16\r\n        0x0000 00000 (source/test/a.go:3)  NOP\r\n        0x0000 00000 (source/test/a.go:3)  NOP\r\n        0x0000 00000 (source/test/a.go:3)  FUNCDATA        $0, gclocals·2fccd208efe70893f9ac8d682812ae72(SB)\r\n        0x0000 00000 (source/test/a.go:3)  FUNCDATA        $1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n        0x0000 00000 (source/test/a.go:4)  MOVQ    \"\".a+8(FP), BX\r\n        0x0005 00005 (source/test/a.go:4)  SHRQ    $8, BX\r\n        0x0009 00009 (source/test/a.go:4)  SHRQ    $8, BX\r\n        0x000d 00013 (source/test/a.go:4)  SHRQ    $0, BX\r\n        0x0011 00017 (source/test/a.go:4)  MOVQ    BX, \"\".~r1+16(FP)\r\n        0x0016 00022 (source/test/a.go:4)  RET\r\n```\r\n\r\nS16 should generate a single right shift (SHRQ), not three. Moreover, ```SHRQ    $0, BX``` is a nop and shouldn't be generated at all. Same goes for SHLQ, ADDQ, SUBQ.\r\n\r\nFor multiplication is a bit better, but deadstores are not detected.\r\n\r\n```go\r\nfunc M1(a uint64) uint64 {\r\n        return a * 8 * 8 * 1\r\n}\r\nfunc M2(a uint64) uint64 {\r\n        return a * 8 * 8 * 0\r\n}\r\n```\r\n\r\nGenerates the following assembly:\r\n\r\n```\r\n\"\".M1 t=1 size=32 value=0 args=0x10 locals=0x0\r\n        0x0000 00000 (source/test/a.go:7)  TEXT    \"\".M1(SB), $0-16\r\n        0x0000 00000 (source/test/a.go:7)  NOP\r\n        0x0000 00000 (source/test/a.go:7)  NOP\r\n        0x0000 00000 (source/test/a.go:7)  FUNCDATA        $0, gclocals·2fccd208efe70893f9ac8d682812ae72(SB)\r\n        0x0000 00000 (source/test/a.go:7)  FUNCDATA        $1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n        0x0000 00000 (source/test/a.go:8)  MOVQ    \"\".a+8(FP), BX\r\n        0x0005 00005 (source/test/a.go:8)  SHLQ    $3, BX\r\n        0x0009 00009 (source/test/a.go:8)  SHLQ    $3, BX\r\n        0x000d 00013 (source/test/a.go:8)  MOVQ    BX, \"\".~r1+16(FP)\r\n        0x0012 00018 (source/test/a.go:8)  RET\r\n\r\n\"\".M2 t=1 size=32 value=0 args=0x10 locals=0x0\r\n        0x0000 00000 (source/test/a.go:10) TEXT    \"\".M2(SB), $0-16\r\n        0x0000 00000 (source/test/a.go:10) NOP\r\n        0x0000 00000 (source/test/a.go:10) NOP\r\n        0x0000 00000 (source/test/a.go:10) FUNCDATA        $0, gclocals·2fccd208efe70893f9ac8d682812ae72(SB)\r\n        0x0000 00000 (source/test/a.go:10) FUNCDATA        $1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n        0x0000 00000 (source/test/a.go:11) MOVQ    \"\".a+8(FP), BX\r\n        0x0005 00005 (source/test/a.go:11) SHLQ    $3, BX\r\n        0x0009 00009 (source/test/a.go:11) SHLQ    $3, BX\r\n        0x000d 00013 (source/test/a.go:11) MOVQ    $0, \"\".~r1+16(FP)\r\n        0x0016 00022 (source/test/a.go:11) RET\r\n```\r\n\r\nMultiplication with 0 is eliminated, but the dead stores are not.\r\nMultiplication with 1 is eliminated, but the two multiplications by 8 are not coalesced.\r\n\r\n\r\nEverything was build with the latest version.\r\n```\r\n% go version\r\ngo version devel +cfb8b18 Thu Apr 30 08:33:29 2015 +0000 linux/amd64\r\n```",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-02-22T22:57:39Z",
+	"created_at": "2015-04-30T13:31:04Z",
+	"updated_at": "2016-02-22T22:57:39Z"
+}

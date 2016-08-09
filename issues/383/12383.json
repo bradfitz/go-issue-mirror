@@ -1,0 +1,21 @@
+{
+	"id": 103750695,
+	"number": 12383,
+	"state": "open",
+	"title": "database/sql: add support to explicitly set input parameter types and result column types",
+	"body": "Right now database/sql infers input parameter types and omits database column level types,\r\n\r\nThis can be hard to support do to each database vendor supporting different types or different variants of types, however I believe a practical solution exists.\r\n\r\nThere are two parts to this (1) support setting input parameter types and (2) fetching result column types.\r\n1) Input parameter values cannot always be correctly inferred and often databases will complain if types don't align with existing table types.\r\n\r\nFor example Oracle has both \"varchar(N), varchar2(N), and char(N) data types. In greenfield work you will probably work with and use varchar2(N) type. Legacy systems may have any of those. For each one of those setting the length of the parameter can be, though is not always, meaningful.\r\n\r\nIn MS SQL Server there are several different time types as well as text types: You may need a Time, Date, DateTime, DateTime2, or DateTimeOffset. For text you may need a text, ntext, char(N), varchar(N), or nvarchar(N) type. Some of the data types, such as \"ntext\" vs \"nvarchar(N)\" or DateTime2 vs DateTimeOffset are important and impossible to auto-discover.\r\n\r\n2) The need for knowing exactly what column type a return value is is less pronounced, but present, especially with the default behavior where strings are returned as []byte. When creating a framework that supports ad-hoc queries it is often important to keep at least the \"generic\" datatype with the column, even when no results are returned. I've felt this need when creating reporting modules and when doing automatic marshalling where there isn't a direct representation. For instance I marshal (Timestap,DateTime2) different then (Timestampz, DateTimeOffset) when the transport is JSON. And the difference is important for the client (it get's interpreted differently).\r\n\r\n...\r\n\r\nFor types I recommend a two tier approach: have a set of common types defined: sql.Text, sql.Timestamp, sql.Timestampz, sql.Int, sql.Decimal, sql.Float, but allow drivers to also register types like: or.Varchar2, ms.Nvarchar, pg.Array.\r\n\r\nThe driver then documents how the sql generic types map onto the database types. Most often the generic types can be used (or simply inferred), but when the a specific type is needed it is only a quick parameter set away. I have implemented something like this and I am pleased with the result.",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-08-28T16:24:48Z",
+	"updated_at": "2015-08-29T15:16:30Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

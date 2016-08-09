@@ -1,0 +1,12 @@
+{
+	"id": 225237966,
+	"body": "The basic problem is that there is nothing keeping `lpSubKey` and `lpValue` live.  The call to `regGetValue.Call` doesn't keep them live, because they are converted to `uintptr`, so the pointer values are gone.  Since they are not live, the garbage collector can collect them.\r\n\r\nThis doesn't happen when you call `syscall.Syscall9` directly because there is an exception for functions implemented in assembler: they explicitly keep `uintptr` values live.  This was implemented in https://golang.org/cl/18584 for issue #13372.\r\n\r\nBasically, the `syscall.Proc.Call` method is hard to use correctly.  Code has to explicitly ensure that values remain live after the call.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-10T16:59:52Z",
+	"updated_at": "2016-06-10T16:59:52Z"
+}

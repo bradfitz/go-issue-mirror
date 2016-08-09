@@ -1,0 +1,12 @@
+{
+	"id": 154238614,
+	"body": "Hmmm, that's true, but I definitely don't believe we should expose any of this pooled compressor stuff to the public API of zip.\r\n\r\nIt may make more sense to define:\r\n```go\r\ntype CompressResetter interface { Reset(io.Writer) }\r\n```\r\n\r\nAnd basically, say in the API that if the compressor satisfies the CompressResetter interface, then an internal pool will be used. Otherwise, the compressor function will be called for every call to Writer.Create or Writer.CreateHeader.\r\n\r\nPersonally, I even vote to have CompressResetter be an unexported interface and just say that if the compressor contains the Reset(io.Writer) method, then it will use an internal compressor pool. This helps keep the zip documentation cleaner; but we can see what other people think.\r\n\r\nFor example:\r\n```go\r\n// RegisterCompressor registers custom compressors for a specific method ID.\r\n// If no compressors are registered, Writer will default to using the\r\n// compressors defined at the package level.\r\n// If the compressor returned by enc also contains a Reset(io.Writer) method,\r\n// then an internal compressor pool will be used for higher performance.\r\n(*Writer) RegisterCompressor(method uint16, enc Compressor)\r\n```\r\n\r\nAs a side note, I am a little surprised that a pool is not used for decompression since each DEFLATE reader allocates more than 32KiB for it's internal dictionary and state.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-06T00:02:22Z",
+	"updated_at": "2015-11-06T00:04:42Z"
+}

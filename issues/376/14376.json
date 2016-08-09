@@ -1,0 +1,26 @@
+{
+	"id": 134467036,
+	"number": 14376,
+	"state": "closed",
+	"title": "crypto/tls: TLS should dynamically tune record size for better HTTP performance",
+	"body": "Currently, the crypto/tls package sends all data records using a max payload size of 16 KB, which is the maximum allowed by the TLS spec. This is optimal for throughput-sensitive applications, but not for latency-sensitive applications, such as web browsing, because the entire 16KB record must be downloaded and decrypted before any of the plaintext can be processed by the application layer. On slow 2G connections this can easily add a 500-1000ms latency to web page load time, since the browser cannot start fetching subresources until that first 16KB record has been fully decrypted.\r\n\r\nA simple heuristic that works well in practice is to use small records for the first ~1MB of data, then switch to 16KB records for subsequent data, then switch back to smaller records after the connection goes idle. Ideally, the smaller records should fit exactly within one TCP packet.\r\n\r\nFor more background reading, see:\r\nhttps://www.igvita.com/2013/10/24/optimizing-tls-record-size-and-buffering-latency/\r\nhttp://chimera.labs.oreilly.com/books/1230000000545/ch04.html#TLS_RECORD_SIZE\r\nhttps://issues.apache.org/jira/browse/TS-2503\r\n\r\nI have an implementation sketch here:\r\nhttps://go-review.googlesource.com/#/c/19591/\r\n\r\nI can demonstrate the latency improvement in a simple test environment:\r\n- Go HTTPS server\r\n- Chrome client browser\r\n- Simulated cellular network (bandwidth = ~200kbps)\r\n\r\nWithout this change, I notice a ~500ms delay between the time that Chrome receives the first byte of the HTTP response and the time Chrome sends the first request for a subresource. With this change, that difference drops to ~10ms.\r\n\r\nIf the general approach looks good, I can mail the change for review. +@bradfitz and +@agl for TLS expertise.",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-03-12T00:47:34Z",
+	"created_at": "2016-02-18T02:55:20Z",
+	"updated_at": "2016-03-12T00:47:34Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"id": 107376837,
+	"number": 12700,
+	"state": "open",
+	"title": "cmd/go: dylib built as buildmode=c-shared causes 'overlapping segments' after codesign by Xcode on OS X",
+	"body": "\u003e Go 1.5.1 on OS X 10.10.5 with Xcode 7\r\n\r\n1. Save test code as `dy.go`\r\n ```go\r\n package main\r\n\r\n import \"C\"\r\n\r\n import (\r\n     \"fmt\"\r\n )\r\n \r\n //export PrintHello\r\n func PrintHello() {\r\n      fmt.Println(\"hello\")\r\n }\r\n \r\n func main() {\r\n }\r\n```\r\n2. Build\r\n \r\n ```\r\ngo build -v -o dy.dylib -buildmode=c-shared dy.go\r\n```\r\n3. Use it in an Xcode app project\r\n \r\n Add `dy.dylib` to an Xcode app project for linking and setup the project in `TARGETS \u003e [targetname] \u003e Build Phases`\r\n \u003cimg width=\"1029\" alt=\"dy.lib to be bundled in Xcode\" src=\"https://cloud.githubusercontent.com/assets/640151/9979555/ec025372-5fa5-11e5-8bb5-885e10f60e53.png\"\u003e\r\n Notice that the option `Code Sign on Copy` is selected, otherwise the whole bundle cannot pass code sign. In the screenshot, the text for `Run Script` is\r\n ```\r\n install_name_tool -change dy.dylib @loader_path/../Frameworks/dy.dylib \"$TARGET_BUILD_DIR/$TARGET_NAME.app/Contents/MacOS/$PRODUCT_NAME\"\r\n```\r\n4. Build the Xcode project successfully and run it\r\n Here is the error,\r\n \r\n ```\r\n dyld: Library not loaded: @loader_path/../Frameworks/dy.dylib\r\n   Referenced from: /Users/albert/Library/Developer/Xcode/DerivedData/qr-cavcmuynmurgdxafrfnfvdoaxezo/Build/Products/Debug/qr.app/Contents/MacOS/qr\r\n   Reason: no suitable image found.  Did find:\r\n\t/Users/albert/Library/Developer/Xcode/DerivedData/qr-cavcmuynmurgdxafrfnfvdoaxezo/Build/Products/Debug/qr.app/Contents/MacOS/../Frameworks/dy.dylib: overlapping segments\r\n\t/Users/albert/Library/Developer/Xcode/DerivedData/qr-cavcmuynmurgdxafrfnfvdoaxezo/Build/Products/Debug/qr.app/Contents/MacOS/../Frameworks/dy.dylib: overlapping segments\r\n```",
+	"user": {
+		"login": "albertjin",
+		"id": 640151,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 7,
+	"created_at": "2015-09-20T06:58:47Z",
+	"updated_at": "2016-04-24T15:19:39Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 72612527,
+	"body": "```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"runtime\"\r\n\t\"strings\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\truntime.GOMAXPROCS(runtime.NumCPU())\r\n\tn := 1\r\n\tgo func() {\r\n\t\tfor {\r\n\t\t\tos.Setenv(\"FOO\", \"GOL\"+strings.Repeat(\"O\", n)+\"NG\")\r\n\t\t\tif n++; n \u003e 5000 {\r\n\t\t\t\tn = 1\r\n\t\t\t}\r\n\t\t}\r\n\t}()\r\n\r\n\ttime.Sleep(1e9)\r\n\r\n\tfor {\r\n\t\ts := os.Getenv(\"FOO\")\r\n\t\tif !strings.HasSuffix(s, \"ONG\") {\r\n\t\t\tpanic(fmt.Sprintf(\"BUG(%d): %s\", n, s))\r\n\t\t}\r\n\t}\r\n}\r\n```\r\nhttp://play.golang.org/p/srvhu31O1r\r\n\r\nI could make this crash on windows easily... :-1: \r\n```\r\npanic: BUG(228):\r\n\r\ngoroutine 1 [running]:\r\nmain.main()\r\n        C:/dev/envrace.go:28 +0x274\r\n\r\ngoroutine 4 [runnable]:\r\nsyscall.UTF16FromString(0x118d9d10, 0xf0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/syscall/syscall_windows.go:42 +0xf7\r\nsyscall.UTF16PtrFromString(0x118d9d10, 0xf0, 0xf0, 0x0, 0x0)\r\n        c:/go/src/syscall/syscall_windows.go:66 +0x40\r\nsyscall.Setenv(0x4cebe0, 0x3, 0x118d9d10, 0xf0, 0x0, 0x0)\r\n        c:/go/src/syscall/env_windows.go:35 +0x40\r\nos.Setenv(0x4cebe0, 0x3, 0x118d9d10, 0xf0, 0x0, 0x0)\r\n        c:/go/src/os/env.go:87 +0x50\r\nmain.funcﾂｷ001()\r\n        C:/dev/envrace.go:16 +0x96\r\ncreated by main.main\r\n        C:/dev/envrace.go:21 +0x90\r\nexit status 2\r\n```\r\nGetEnvironmentVariable is not thread-safe!?\r\n\r\n",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-03T08:33:19Z",
+	"updated_at": "2015-02-03T08:33:19Z"
+}

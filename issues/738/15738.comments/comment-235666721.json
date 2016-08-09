@@ -1,0 +1,12 @@
+{
+	"id": 235666721,
+	"body": "I have a tentative fix for this problem in https://go-review.googlesource.com/25301.\r\n\r\nOne thing that I ran into is that you can have pseudo-cycles in the import graph when building tests for go core packages. For example, $GOROOT/src/regexp/onepass_test.go is part of package \"regexp\" and also imports \"testing\", but \"testing\" imports \"regexp\" (hmm).  My code handles this, but I am wondering if I need to worry about cycles elsewhere as well.\r\n\r\nThe other weird thing is that for gccgo there are references to the \"internal/race\" package but as far as I can tell there is no exports file for that package produced as part of the regular build:\r\n\r\n$ dump-gccgo-obj-goexports.py /s/gcc-trunk/cross/lib64/go/7.0.0/x86_64-pc-linux-gnu/sync.gox   | head\r\nv1;\r\npackage sync;\r\npkgpath sync;\r\npriority 2;\r\n**import race internal/race \"internal/race\";**\r\nimport runtime runtime \"runtime\";\r\nimport atomic sync/atomic \"sync/atomic\";\r\nimport unsafe unsafe \"unsafe\";\r\ninit sync sync..import 2 runtime runtime..import 1;\r\n$ find  /s/gcc-trunk/cross/lib64/go/7.0.0/x86_64-pc-linux-gnu -name \"race.gox\" -print\r\n$\r\n\r\nI have a special case to handle this at the moment but I'm not sure what the best long-term solution should be.\r\n",
+	"user": {
+		"login": "thanm",
+		"id": 12280172,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-27T17:55:51Z",
+	"updated_at": "2016-07-27T17:55:51Z"
+}

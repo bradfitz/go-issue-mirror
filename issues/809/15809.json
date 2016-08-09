@@ -1,0 +1,26 @@
+{
+	"id": 156405947,
+	"number": 15809,
+	"state": "open",
+	"title": "cmd/compile: pointless strength reduction",
+	"body": "```\r\nvar t [256]byte\r\n\r\nfunc f(b *[16]byte) {\r\n\tfor i, v := range b {\r\n\t\tb[i] = t[v]\r\n\t}\r\n}\r\n```\r\ncompiles to:\r\n```\r\n\t0x000f 00015 (tmp1.go:7)\tMOVBLZX\t(AX), DX\r\n\t0x0012 00018 (tmp1.go:7)\tLEAQ\t\"\".t(SB), BX\r\n\t0x0019 00025 (tmp1.go:7)\tMOVBLZX\t(BX)(DX*1), DX\r\n\t0x001d 00029 (tmp1.go:7)\tMOVQ\t\"\".b+8(FP), BX\r\n\t0x0022 00034 (tmp1.go:7)\tMOVB\tDL, (BX)(CX*1)\r\n\t0x0025 00037 (tmp1.go:6)\tINCQ\tAX\r\n\t0x0028 00040 (tmp1.go:6)\tINCQ\tCX\r\n\t0x002b 00043 (tmp1.go:6)\tCMPQ\tCX, $16\r\n\t0x002f 00047 (tmp1.go:6)\tJLT\t$0, 15\r\n```\r\nIt looks like we strength-reduced the index into `b` into a pointer increment.  But the terminating condition still uses the integer, so we end up having 2 induction variables instead of one.  We should either compute the terminating condition using an end pointer (and throw away the induction variable CX), or throw away the pointer induction variable (AX) and use an indexed load.\r\n\r\n@brtzsnr ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-05-24T02:17:21Z",
+	"updated_at": "2016-05-24T16:14:05Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

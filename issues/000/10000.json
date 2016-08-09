@@ -1,0 +1,28 @@
+{
+	"id": 58948263,
+	"number": 10000,
+	"state": "closed",
+	"title": "cmd/gc: optimize switch statements with string literal cases",
+	"body": "Consider the following benchmark:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"testing\"\r\n)\r\n\r\nvar words = []string{\"super\", \"califragi\", \"listic\", \"expiali\", \"docius\"}\r\nvar wlen = len(words)\r\n\r\nfunc BenchmarkSwitch(b *testing.B) {\r\n\tm := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tswitch words[i%wlen] {\r\n\t\tcase \"super\":\r\n\t\t\tm++\r\n\t\tcase \"califragi\":\r\n\t\t\tm++\r\n\t\tcase \"listic\":\r\n\t\t\tm++\r\n\t\tcase \"expiali\":\r\n\t\t\tm++\r\n\t\tcase \"docius\":\r\n\t\t\tm++\r\n\t\t}\r\n\t}\r\n\tfmt.Println(m)\r\n}\r\n\r\nfunc BenchmarkIf(b *testing.B) {\r\n\tm := 0\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tw := words[i%wlen]\r\n\t\tif w == \"super\" {\r\n\t\t\tm++\r\n\t\t} else if w == \"califragi\" {\r\n\t\t\tm++\r\n\t\t} else if w == \"listic\" {\r\n\t\t\tm++\r\n\t\t} else if w == \"expiali\" {\r\n\t\t\tm++\r\n\t\t} else if w == \"docius\" {\r\n\t\t\tm++\r\n\t\t}\r\n\t}\r\n\tfmt.Println(m)\r\n}\r\n```\r\n\r\nOn my machine, this gives\r\n```\r\n$ go test -bench . -benchtime 30s\r\nBenchmarkSwitch\r\n2000000000\t        29.2 ns/op\r\nBenchmarkIf\r\n2000000000\t        22.9 ns/op\r\nok  \tx\t109.375s\r\n```\r\n\r\nDespite the switch statement having more opportunity for optimization, it is consistently slower than the if variant. After a brief discussion on [golang-nuts](https://groups.google.com/forum/#!topic/golang-nuts/wILXHTBdEig), it was pointed out that Go will move to a binary search for switch statements with more than three constant cases. Firstly, this threshold seems too low, as `runtime.eqstring` ([because of length checks](https://github.com/golang/go/issues/1161)) is often an order of magnitude faster than `runtime.cmpstring`. Second, other optimizations can probably also be implemented here by the compiler. @josharian mentions a few in the golang-nuts thread:\r\n\r\n\u003e I think that there can be significant improvement here, e.g. using diverge indices and lengths for the binary search followed by a final call to `eqstring`.",
+	"user": {
+		"login": "jonhoo",
+		"id": 176295,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-03-18T21:39:16Z",
+	"created_at": "2015-02-25T18:31:14Z",
+	"updated_at": "2016-06-25T02:01:59Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 124554405,
+	"number": 13797,
+	"state": "closed",
+	"title": "x/net proposal: Add XMPP helpers starting with a JID implementation",
+	"body": "I'd like to begin adding some experimental helpers for XMPP implementations under `golang.org/x/net/xmpp`.\r\n\r\nI thought it might be nice to start with a simple Jabber Identifier (JID) implementation. I've been working on one ([docs](https://godoc.org/bitbucket.org/mellium/xmpp/jid)), but the API isn't very Go-like right now and probably needs to be changed. I'm thinking that if it were to become a part of x/net I'd do something like the following:\r\n\r\n```go\r\ntype JID struct {\r\n// Nothing exported\r\n}\r\nSplitJID(j string) (localpart, domainpart, resourcepart string, err error)\r\nParseJID(j string) (JID, error)\r\nUnsafeParseJID(j string) (JID, error) // Fast, but no PRECIS enforcement, eg. for trusted JIDs loaded from a database that were already enforced before being saved.\r\nJIDFromParts(localpart, domainpart, resourcepart string) (JID, error)\r\nUnsafeJIDFromParts(localpart, domainpart, resourcepart string) (JID, error)\r\n(j JID) Bare() JID // Returns a copy of the JID without the resourcepart\r\n(j JID) String() JID\r\n(j JID) Localpart() string\r\n(j JID) Domainpart() string\r\n(j JID) Resourcepart() string\r\n(j JID) MarshalAttr(…) // Satisfies xml.MarshalerAttr, not a pointer so that pointers and normal JIDs marshal the same way… is this idiomatic or does it just make things inconsistant?\r\n(j *JID) UnmarshalAttr(…) // Satisfies xml.UnmarshalerAttr\r\n```\r\n\r\nIt might be more idiomatic to just export the parts, but I like the idea of having JIDs be (effectively) immutable (unless you unmarshal into them; maybe this is just confusing though?). The other part I'm not sure about is how to distinguish between a JID that has been verified for validity (via the PRECIS enforcement step) and one that hasn't.\r\n\r\nI've also considered either making it satisfy the `net.Addr` interface, or having a separate `XMPPAddr` that holds a JID and satisfies the `net.Addr` interface itself, but I'm not sure how useful that would be and it could come later in a separate revision.\r\n\r\nWould this be an appropriate fit for the net package?",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-01-21T18:10:12Z",
+	"created_at": "2016-01-01T18:14:18Z",
+	"updated_at": "2016-01-21T18:10:12Z"
+}

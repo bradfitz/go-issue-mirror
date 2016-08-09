@@ -1,0 +1,12 @@
+{
+	"id": 173120914,
+	"body": "The compiler is stuck in a O(N) loop on array bounds to generate\npointer bitmaps. See\nhttp://tip.golang.org/src/cmd/compile/internal/gc/plive.go#L945\n\nwe can optimize for this trivial case, but if I really don't think this\nmatters. The real problem is that the stack pointer maps are\nnot encoded, so it's O(N) bits for array [N]. Even if we fix the\ncompiler to not looping over array bound (by replicating the\npointer map for one array entry), the underlying problem is\nstill there: GC still need to traverse the huge pointer map, and\nwe still need to emit this huge pointer map to binary.\n\nWithout fixing this problem, making compiler compile this edge\ncase fast will just make it easier for Go to produce 1GB binaries\nwhich will then trigger other problems in the toolchain (we can't\nhandle static data bigger than 2GB in the linker.)\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-20T07:48:25Z",
+	"updated_at": "2016-01-20T07:48:25Z"
+}

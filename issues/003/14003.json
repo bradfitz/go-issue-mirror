@@ -1,0 +1,28 @@
+{
+	"id": 127286864,
+	"number": 14003,
+	"state": "closed",
+	"title": "net/http: http2 negative content length",
+	"body": "Hi,\r\n\r\nI was testing Go1.6-beta2 and found a strange behavior with HTTP2. I developed a simple server that only prints the request content-length. When tested with Go1.5 it works fine (content-length greater or equal to zero), but when I submit some content in Go1.6 using HTTP2 (TLS) the server prints -1.\r\n\r\nServer:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc main() {\r\n\thttp.HandleFunc(\"/bar\", func(w http.ResponseWriter, r *http.Request) {\r\n\t\tfmt.Printf(\"LENGTH: %d\\n\", r.ContentLength)\r\n\t})\r\n\r\n\tlog.Fatal(http.ListenAndServeTLS(\":8080\", \"cert.pem\", \"key.pem\", nil))\r\n}\r\n```\r\n\r\nClient:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"fmt\"\r\n\t\"net/http\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc main() {\r\n\tclient := http.Client{\r\n\t\tTransport: \u0026http.Transport{\r\n\t\t\tTLSClientConfig: \u0026tls.Config{\r\n\t\t\t\tInsecureSkipVerify: true,\r\n\t\t\t},\r\n\t\t},\r\n\t}\r\n\r\n\tresp, err := client.Post(\"https://127.0.0.1:8080/bar\", \"text/plain\", strings.NewReader(\"TEST!\"))\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t\treturn\r\n\t}\r\n\tdefer resp.Body.Close()\r\n}\r\n```",
+	"user": {
+		"login": "rafaeljusto",
+		"id": 611469,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-18T23:36:13Z",
+	"created_at": "2016-01-18T18:33:49Z",
+	"updated_at": "2016-01-18T23:36:13Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

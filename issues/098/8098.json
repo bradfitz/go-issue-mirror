@@ -1,0 +1,27 @@
+{
+	"id": 51287670,
+	"number": 8098,
+	"state": "closed",
+	"title": "cmd/gc: dwarf info for code lines really bad in go1.3: gdb breakpoints completely busted inside function literals and can produce segfaults",
+	"body": "\u003cpre\u003ego version go1.3beta2 linux/amd64\n\nIt seems that the dwarf information (which has always been a bit spotty for local\nvariables through go1.2.1, but was reliable for line/breakpoint mapping) has now gotten\nworse for source code locations. Breakpoints inside function literals in go1.3beta2 are\nnow completely ignored (presumably because the dwarf info is quite wrong now). Two\nsimple examples, the second one inducing a seg fault in gdb.\n\nexample one:\njaten@i7:~/t$ cat m_test.go\npackage main\n\nimport (\n    \u0026quot;fmt\u0026quot;\n    \u0026quot;testing\u0026quot;\n)\n\nfunc TestBreakpointsInsideFunctionLiteral(t *testing.T) {\n\n    func() {\n        fmt.Printf(\u0026quot;a line inside a closure.\\n\u0026quot;) // line 11\n    }()\n}\njaten@i7:~/t$ cat m.go  # can be any main, the m_test.go shows the problem in example one\npackage main\n\nimport (\n    \u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n    fmt.Printf(\u0026quot;first line\\n\u0026quot;)\n    fmt.Printf(\u0026quot;main ran okay.\\n\u0026quot;)\n}\njaten@i7:~/t$go test -c -gcflags \u0026quot;-N -l\u0026quot; -v\njaten@i7:~/t$ ls -alFtrh \ntotal 4.6M\n-rw-rw-r--   1 jaten jaten  109 May 25 23:45 m.go~\n-rw-rw-r--   1 jaten jaten  316 May 25 23:49 m_test.go~\ndrwxr-xr-x 141 jaten jaten  24K May 25 23:50 ../\n-rw-rw-r--   1 jaten jaten  163 May 25 23:53 m_test.go\n-rw-rw-r--   1 jaten jaten   97 May 25 23:57 m.go\n-rwxrwxr-x   1 jaten jaten 1.8M May 25 23:57 t*\n-rwxr-xr-x   1 jaten jaten 2.8M May 25 23:58 t.test*\ndrwxrwxr-x   2 jaten jaten 4.0K May 25 23:58 ./\njaten@i7:~/t$ gdb t.test\nGNU gdb (GDB) 7.6.2\nCopyright (C) 2013 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later \u0026lt;\u003ca href=\"http://gnu.org/licenses/gpl.html\u0026gt\"\u003ehttp://gnu.org/licenses/gpl.html\u0026gt\u003c/a\u003e;\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.  Type \u0026quot;show copying\u0026quot;\nand \u0026quot;show warranty\u0026quot; for details.\nThis GDB was configured as \u0026quot;x86_64-unknown-linux-gnu\u0026quot;.\nFor bug reporting instructions, please see:\n\u0026lt;\u003ca href=\"http://www.gnu.org/software/gdb/bugs/\u0026gt\"\u003ehttp://www.gnu.org/software/gdb/bugs/\u0026gt\u003c/a\u003e;...\nReading symbols from /home/jaten/t/t.test...done.\nLoading Go Runtime support.\n(gdb) break m_test.go:11  # set a breakpoint\nBreakpoint 1 at 0x49ef45: file /home/jaten/t/m_test.go, line 11.\n(gdb) run\nStarting program: /home/jaten/t/t.test\nwarning: no loadable sections found in added symbol-file system-supplied DSO at\n0x7ffff7ffd000\na line inside a closure.\nPASS\n[Inferior 1 (process 11309) exited normally]\n(gdb) # breakpoint at line line 11 was completely ignored\n\n################\n# a second example, using just main() and not t.test, that segfaults instead:\n################\n\njaten@i7:~/t$ cat m2.go\npackage main\n\nimport (\n    \u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n    func() {\n        fmt.Printf(\u0026quot;main ran okay.\\n\u0026quot;) // line 9\n    }()\n}\njaten@i7:~/t$ go build\njaten@i7:~/t$ ./t\nmain ran okay.\njaten@i7:~/t$ gdb t\nGNU gdb (GDB) 7.6.2\nCopyright (C) 2013 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later \u0026lt;\u003ca href=\"http://gnu.org/licenses/gpl.html\u0026gt\"\u003ehttp://gnu.org/licenses/gpl.html\u0026gt\u003c/a\u003e;\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.  Type \u0026quot;show copying\u0026quot;\nand \u0026quot;show warranty\u0026quot; for details.\nThis GDB was configured as \u0026quot;x86_64-unknown-linux-gnu\u0026quot;.\nFor bug reporting instructions, please see:\n\u0026lt;\u003ca href=\"http://www.gnu.org/software/gdb/bugs/\u0026gt\"\u003ehttp://www.gnu.org/software/gdb/bugs/\u0026gt\u003c/a\u003e;...\nReading symbols from /home/jaten/t/t...done.\nLoading Go Runtime support.\n(gdb) break 9\nBreakpoint 1 at 0x400c3f: file /home/jaten/t/m2.go, line 9.\n(gdb) run\nStarting program: /home/jaten/t/t\nwarning: no loadable sections found in added symbol-file system-supplied DSO at\n0x7ffff7ffd000\n\nProgram received signal SIGSEGV, Segmentation fault.\n0x0000000000400c4b in main.func·001 () at /home/jaten/t/m2.go:9\n9           fmt.Printf(\u0026quot;main ran okay.\\n\u0026quot;)\n(gdb) bt\n#0  0x0000000000400c4b in main.func·001 () at /home/jaten/t/m2.go:9\n#1  0x00007ffff7fc91b0 in ?? ()\n#2  0x000000c208000140 in ?? ()\n#3  0x0000000000000041 in ?? ()\n#4  0x0000000000000041 in ?? ()\n#5  0x0000000000000000 in ?? ()\n(gdb)\u003c/pre\u003e",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:44:54Z",
+	"created_at": "2014-05-26T07:06:24Z",
+	"updated_at": "2016-06-25T01:35:19Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

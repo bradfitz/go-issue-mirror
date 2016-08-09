@@ -1,0 +1,26 @@
+{
+	"id": 51284193,
+	"number": 5792,
+	"state": "open",
+	"title": "net/rpc: data race on non-net transport",
+	"body": "\u003cpre\u003eHere is the reproducer:\n\u003ca href=\"https://golang.org/cl/10613043/diff/3001/src/pkg/net/rpc/server_test.go\"\u003ehttps://golang.org/cl/10613043/diff/3001/src/pkg/net/rpc/server_test.go\u003c/a\u003e\n\nReport is below.\n\nThe gist: it's impossible to use net/rpc client/server with any non-thread-safe\ntransport as pipe or socketpair. It's inevitably produces races between read/write and\nclose. Such races corrupt arbitrary files and write data to random network connections.\n\n=== RUN TestUnixPipe\n==================\nWARNING: DATA RACE\nRead by goroutine 59:\n  os.(*File).read()\n      src/pkg/os/file_unix.go:175 +0x5b\n  os.(*File).Read()\n      src/pkg/os/file.go:95 +0xb9\n  bufio.(*Reader).fill()\n      src/pkg/bufio/bufio.go:119 +0x272\n  bufio.(*Reader).Read()\n      src/pkg/bufio/bufio.go:187 +0x3b1\n  io.ReadAtLeast()\n      src/pkg/io/io.go:284 +0x11a\n  io.ReadFull()\n      src/pkg/io/io.go:302 +0x7c\n  encoding/gob.decodeUintReader()\n      src/pkg/encoding/gob/decode.go:65 +0xba\n  encoding/gob.(*Decoder).recvMessage()\n      src/pkg/encoding/gob/decoder.go:73 +0x81\n  encoding/gob.(*Decoder).decodeTypeSequence()\n      src/pkg/encoding/gob/decoder.go:159 +0x92\n  encoding/gob.(*Decoder).DecodeValue()\n      src/pkg/encoding/gob/decoder.go:223 +0x124\n  encoding/gob.(*Decoder).Decode()\n      src/pkg/encoding/gob/decoder.go:202 +0x227\n  net/rpc.(*gobClientCodec).ReadResponseHeader()\n      src/pkg/net/rpc/client.go:218 +0x5d\n  net/rpc.(*Client).input()\n      src/pkg/net/rpc/client.go:106 +0x118\n\nPrevious write by goroutine 57:\n  os.(*file).close()\n      src/pkg/os/file_unix.go:110 +0x164\n  os.(*File).Close()\n      src/pkg/os/file_unix.go:99 +0x43\n  net/rpc.(*gobClientCodec).Close()\n      src/pkg/net/rpc/client.go:226 +0x48\n  net/rpc.(*Client).Close()\n      src/pkg/net/rpc/client.go:280 +0xc6\n  net/rpc.TestUnixPipe()\n      src/pkg/net/rpc/server_test.go:567 +0x3d5\n  testing.tRunner()\n      src/pkg/testing/testing.go:361 +0x10c\n\nGoroutine 59 (running) created at:\n  net/rpc.NewClientWithCodec()\n      src/pkg/net/rpc/client.go:196 +0xd5\n  net/rpc.NewClient()\n      src/pkg/net/rpc/client.go:186 +0x18d\n  net/rpc.TestUnixPipe()\n      src/pkg/net/rpc/server_test.go:566 +0x3c7\n  testing.tRunner()\n      src/pkg/testing/testing.go:361 +0x10c\n\nGoroutine 57 (running) created at:\n  testing.RunTests()\n      src/pkg/testing/testing.go:441 +0xaef\n  testing.Main()\n      src/pkg/testing/testing.go:373 +0xab\n  main.main()\n      net/rpc/_test/_testmain.go:74 +0xda\n==================\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 20,
+	"created_at": "2013-06-26T14:23:41Z",
+	"updated_at": "2015-07-15T03:28:44Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

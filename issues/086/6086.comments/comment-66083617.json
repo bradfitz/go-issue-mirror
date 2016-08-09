@@ -1,0 +1,12 @@
+{
+	"id": 66083617,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI would expect something like this to be problematic:\n\npackage main\n\nimport (\n\"bufio\"\n\"strings\"\n\"fmt\"\n)\n\nfunc main() {\nr := bufio.NewReader(strings.NewReader(\"hello world\\n\"))\nl, _ := r.ReadSlice('\\n')\nr.ReadByte() // sees EOF, kills buffer\n r1 := bufio.NewReader(strings.NewReader(\"hello world\\n\"))\nl1, _ := r1.ReadSlice('\\n')\ncopy(l, []byte(\"xxxxxxxxxxxx\"))\nfmt.Printf(\"%s\", l1) // prints xxxxxxxxx because l1 == l\n}\n\nThat said, it looks to me like the only possible way for the buffer reuse\nto trigger in bufio is for a reader to return n \u003e 0 and io.EOF at the same\ntime. Since strings.NewReader doesn't do this, the buffer is not reused and\nthe example behaves correctly.\n\nWhen you checked in the reader change you said that BenchmarkReaderEmpty\nwent from 3 allocs to 2. It is back at 3.\n\nEspecially given that the code is not triggering and therefore not being\ndepended upon, I think we should revert it.\n\nIn the Writer case, ReadFrom exposes the buffer slice.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-09T02:24:07Z",
+	"updated_at": "2014-12-08T10:33:28Z"
+}

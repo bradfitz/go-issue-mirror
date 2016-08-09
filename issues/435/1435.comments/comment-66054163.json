@@ -1,0 +1,12 @@
+{
+	"id": 66054163,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eThe syscall is doing what it advertises: it invokes\nthe Linux system call.  And the Linux system call only\naffects the calling thread (!), confirmed by reading the\nsources.\n\nI was surprised to find that setuid works when called\nfrom a C Linux pthreads (NPTL) program, though.\nSo I investigated further.\n\nIt turns out that glibc's setuid sends a signal to every\nother thread to cause them to invoke the system call too.\n\n\u003ca href=\"http://goo.gl/8zf3C\"\u003ehttp://goo.gl/8zf3C\u003c/a\u003e - called by setuid\n\u003ca href=\"http://goo.gl/CcXyX\"\u003ehttp://goo.gl/CcXyX\u003c/a\u003e - signal handler\n\nI suppose Go is going to need to do this at some point,\nas part of implementing os.Setuid, os.Setgid, etc.\nWhat a crock.\n\nFor now you can work around this by calling runtime.LockOSThread.\nThat locks the goroutine onto its current OS thread, so that\nit only runs in that thread and that thread only runs that goroutine.\nThen you can call Setuid Setgid etc and also ForkExec.\u003c/pre\u003e\n\n\n\n_Status changed to **LongTerm**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-01-21T20:57:25Z",
+	"updated_at": "2014-12-08T10:08:19Z"
+}

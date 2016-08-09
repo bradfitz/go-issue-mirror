@@ -1,0 +1,26 @@
+{
+	"id": 144723522,
+	"number": 15031,
+	"state": "open",
+	"title": "cmd/compile: unnecessary branching",
+	"body": "```\r\ntype T struct {\r\n\tx, y, z int\r\n}\r\nfunc f(x interface{}) int {\r\n\tt, ok := x.(*T)\r\n\tif ok \u0026\u0026 t != nil {\r\n\t\treturn 7\r\n\t}\r\n\treturn 3\r\n}\r\n```\r\nThe SSA compiler for this function generates some extra branching logic that seems unnecessary.\r\n```\r\n\t0x0000 00000 (bin.go:12)\tLEAQ\ttype.*\"\".T(SB), AX\r\n\t0x0007 00007 (bin.go:8)\tMOVQ\t\"\".x+8(FP), CX\r\n\t0x000c 00012 (bin.go:8)\tCMPQ\tAX, CX\r\n\t0x000f 00015 (bin.go:8)\tJNE\t$0, 49\r\n\t0x0011 00017 (bin.go:7)\tMOVQ\t\"\".x+16(FP), AX\r\n\t0x0016 00022 (bin.go:9)\tJNE\t29\r\n\t0x0018 00024 (bin.go:9)\tTESTQ\tAX, AX\r\n\t0x001b 00027 (bin.go:9)\tJNE\t$0, 39\r\n\t0x001d 00029 (bin.go:12)\tMOVQ\t$3, \"\".~r1+24(FP)\r\n\t0x0026 00038 (bin.go:12)\tRET\r\n\t0x0027 00039 (bin.go:10)\tMOVQ\t$7, \"\".~r1+24(FP)\r\n\t0x0030 00048 (bin.go:10)\tRET\r\n\t0x0031 00049 (bin.go:8)\tMOVQ\t$0, AX\r\n\t0x0038 00056 (bin.go:9)\tJMP\t22\r\n```\r\nThe 4th line there could be JNE directly to line 29.  Instead it goes to 49/56, rejoins the main flow at 22, and then goes to 29.\r\nSomething wrong with the shortcircuit pass, maybe?\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-03-30T21:22:59Z",
+	"updated_at": "2016-04-07T15:57:15Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

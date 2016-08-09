@@ -1,0 +1,30 @@
+{
+	"id": 51282034,
+	"number": 4369,
+	"state": "closed",
+	"title": "net: data race on fd.sysfd",
+	"body": "\u003cpre\u003e14836:38937a8d0911 tip\n\nIt's not yet reproducible with tip race detector (obtained with experimental version),\nbut the bug is definitely there.\nAt least it can lead to non-deterministic error value returned from\n(*TCPListener).Accept(), which in turn leads to non-deterministic return value from\nhttp.Serve(). I can imagine it makes some tests flaky.\n\nWARNING: DATA RACE\nWrite by goroutine 48:\n  net.(*netFD).decref()\n      src/pkg/net/fd_unix.go:382 +0x10b\n  net.(*netFD).Close()\n      src/pkg/net/fd_unix.go:399 +0x11e\n  net.(*TCPListener).Close()\n      src/pkg/net/tcpsock_posix.go:271 +0x64\n  net/http/httptest.(*historyListener).Close()\n      src/pkg/net/http/httptest/recorder.go:0 +0x48\n  net/http/httptest.(*Server).Close()\n      src/pkg/net/http/httptest/server.go:153 +0x4e\n  net/http_test.TestRedirectCookiesOnRequest()\n      src/pkg/net/http/client_test.go:325 +0x194\n  testing.tRunner()\n      src/pkg/testing/testing.go:301 +0x8f\n\nPrevious read by goroutine 49:\n  net.(*TCPListener).AcceptTCP()\n      src/pkg/net/tcpsock_posix.go:245 +0x87\n  net.(*TCPListener).Accept()\n      src/pkg/net/tcpsock_posix.go:258 +0x56\n  net/http/httptest.(*historyListener).Accept()\n      src/pkg/net/http/httptest/server.go:43 +0x72\n  net/http.(*Server).Serve()\n      src/pkg/net/http/server.go:1088 +0x97\n\nGoroutine 48 (running) created at:\n  testing.RunTests()\n      src/pkg/testing/testing.go:377 +0xb1a\n  testing.Main()\n      src/pkg/testing/testing.go:313 +0xcd\n  main.main()\n      net/http/_test/_testmain.go:301 +0xda\n  runtime.main()\n      src/pkg/runtime/proc.c:248 +0x91\n\nGoroutine 49 (running) created at:\n  net/http/httptest.(*Server).Start()\n      src/pkg/net/http/httptest/server.go:102 +0x3cb\n  net/http/httptest.NewServer()\n      src/pkg/net/http/httptest/server.go:77 +0x4f\n  net/http_test.TestRedirectCookiesOnRequest()\n      src/pkg/net/http/client_test.go:315 +0x62\n  testing.tRunner()\n      src/pkg/testing/testing.go:301 +0x8f\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:23:12Z",
+	"created_at": "2012-11-08T16:51:04Z",
+	"updated_at": "2016-06-24T22:27:58Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

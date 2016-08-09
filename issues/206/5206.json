@@ -1,0 +1,27 @@
+{
+	"id": 51283281,
+	"number": 5206,
+	"state": "closed",
+	"title": "runtime: Hang acquiring semaphore. ",
+	"body": "\u003cpre\u003eMy app hangs acquiring a semaphore (within RWMutex).\n(Simple workaround is to add a field to sync.RWMutex struct.)\n\nThis problem has been happening for about a week. \nThere were some bugs in the runtime being chased \nat the time, so I hoped this was a duplicate. \n\nI switched back to 1.0.3 in which my app runs fine.\n\nThat bug was:\n  \u003ca href=\"https://golang.org/issue/5120\"\u003ehttps://golang.org/issue/5120\u003c/a\u003e\n\nAfter that bug was fixed, I tried again and it still \nhangs, and the same symptoms occur.\n\nI'd define symptoms below.\n\nWhenever I run my application, it hangs at a certain \npoint acquiring a semaphore. \n(I used kill -SIGABRT to get the stacktrace).\n\n  goroutine 17 [semacquire]:\n  sync.runtime_Semacquire(0x7fc24a701370)\n\t/opt/go-contrib/src/pkg/runtime/zsema_linux_amd64.c:165 +0x2e\n  sync.(*RWMutex).Lock(0x7fc24a701368)\n\t/opt/go-contrib/src/pkg/sync/rwmutex.go:80 +0x81\n  ugorji.net/util.(*SafeStore).putAll(0x7fc24a701360, 0x0, 0x1, 0x0, 0x149682c01495c0, ...)\n\t/home/ugorji/depot/golang/src/ugorji.net/util/safe_store.go:148 +0x88\n\nHowever, I got it past that point simply by adding a \nfield to RWMutex ie I added \u0026quot;Ugorji bool\u0026quot; as last\nfield in sync.RWMutex. And we're fine; no more hanging.\n(Hopefully this gives a hint of what is causing this).\n\nI tried applying Remy's patch but that didn't help (pulling straws here).\n  \u003ca href=\"https://golang.org/cl/8287043/\"\u003ehttps://golang.org/cl/8287043/\u003c/a\u003e\n\nI've been trying to isolate the issue for a week now. \nI even wrote standalone programs that simulate what \nI am doing, but they all work fine.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux 3.5.0-26-generic #42-Ubuntu SMP Fri Mar 8 23:18:20 UTC 2013 x86_64 GNU/Linux\n\nWhich version are you using?  (run 'go version')\ngo version devel +d646225cb410 Wed Apr 03 17:03:42 2013 -0700 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "ugorji",
+		"id": 1222082,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 19,
+	"closed_at": "2014-12-08T10:27:56Z",
+	"created_at": "2013-04-04T16:08:52Z",
+	"updated_at": "2016-06-24T22:37:11Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

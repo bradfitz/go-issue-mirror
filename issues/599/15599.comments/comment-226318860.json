@@ -1,0 +1,12 @@
+{
+	"id": 226318860,
+	"body": "This last happened with commit 6662897 on June 9th. A few commits later was cbc2686, which fixed a bug with GDB backtraces. There haven't been enough commits since 6662897 to be statistically sure that this is fixed, but I suspect it is.\r\n\r\n```\r\n$ greplogs -dashboard -E \"Attempt to assign to an unmodifiable value\" -l | findflakes -paths -dir ~/.cache/fetchlogs/rev\r\nFirst observed e833749 26 Apr 23:39 2016 (554 commits ago)\r\nLast observed  6662897 09 Jun 15:30 2016 (30 commits ago)\r\n15% chance failure is still happening\r\n6.1% failure probability (33 of 525 commits)\r\nLikely culprits:\r\n    6% e833749 runtime: free dead G stacks concurrently\r\n    6% 1a2cf91 runtime: split gfree list into with-stacks and without-stacks\r\n    5% 3b0efa6 cmd/compile: a rule's line number is at its -\u003e\r\n    5% 8d075be cmd/compile: lazily initialize litbuf\r\n    5% 19912e1 cmd/dist: sort entries in zcgo.go generated file for deterministic build\r\n    4% e607abb unicode: improve SimpleFold performance for ascii\r\n    4% 6e4a861 gc: use AbsFileLine for deterministic binary export data\r\n    4% 17db07f cmd/compile: don't discard inlineable but empty functions with binary export format\r\n    4% 3a72d62 cmd/link: pass -no-pie (if supported) when creating a race-enabled executable.\r\n    3% 55154cf cmd/link: fix gdb backtrace on architectures using a link register\r\nNo known past failures\r\n```\r\n\r\nCL 23481 did capture a stack at the failure:\r\n\r\n```\r\n--- FAIL: TestGdbPython (2.57s)\r\n\truntime-gdb_test.go:50: gdb version 7.10\r\n\truntime-gdb_test.go:177: goroutine 2 bt failed: Traceback (most recent call last):\r\n\t\t  File \"/tmp/workdir/go/src/runtime/runtime-gdb.py\", line 454, in invoke\r\n\t\t    gdb.parse_and_eval('$sp = {0}'.format(str(sp)))\r\n\t\tgdb.error: Attempt to assign to an unmodifiable value.\r\n\t\tError occurred in Python command: Attempt to assign to an unmodifiable value.\r\nFAIL\r\nFAIL\truntime\r\n```\r\n\r\nThis is also right where cbc2686 changed things.\r\n\r\nI'm trying to reproduce this using gomote to confirm the fix, but not having any luck.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-15T21:01:29Z",
+	"updated_at": "2016-06-15T21:01:29Z"
+}

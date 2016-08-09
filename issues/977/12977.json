@@ -1,0 +1,17 @@
+{
+	"id": 112029832,
+	"number": 12977,
+	"state": "closed",
+	"title": "net/http: reconsider request.Body",
+	"body": "Go Version: 1.5\r\nOS: Linux x86\r\n\r\nI'd like to see that the concept of request.Body is reconsidered. While on the server side(you have http.ResponseWriter and you only need to read the reqest.Body) it may be good to use It's annoying for the client side.\r\n\r\nA request send from a client always requirs a reader to read from, but this is critical and expensive in multiple ways. Especially if you may upload larger data(ex: a large encoded json, a generated image) you kinda need to find a good encode logic(either you use 2 goroutines or some state machine which can encode up to N bytes per Write call) or you allocate a large buffer encode to it and send the data.\r\n\r\nExample:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"net/http\"\r\n)\r\n\r\ntype SimpleBufWriter []byte\r\n\r\nfunc (s *SimpleBufWriter) Write(w io.Writer) (int, error) {\r\n\treturn w.Write([]byte(*s))\r\n}\r\n\r\nfunc main() {\r\n\tvar (\r\n\t\tbuf  = bytes.NewBuffer(nil)\r\n\t\tdata = SimpleBufWriter([]byte{0, 1})\r\n\t)\r\n\r\n\t//Tmp buffer is created\r\n\tif _, err := data.Write(buf); err != nil {\r\n\t\tfmt.Println(\"data.Write:\", err)\r\n\t\treturn\r\n\t}\r\n\r\n\t/*\r\n\t\tBody can be only a io.ReadCloser It would be so much easier to just pass a writer here\r\n\t\tOr something like http.BodyWriter(w) with basicly returns errors for Read and Close but is forwarding Write just for the underlying writer\r\n\t*/\r\n\treq, err := http.NewRequest(\"POST\", \"http://example.ex/post\", buf)\r\n\tif err != nil {\r\n\t\tfmt.Println(\"NewRequest:\", err)\r\n\t\treturn\r\n\t}\r\n\r\n\tresp, err := http.DefaultClient.Do(req)\r\n\tif err != nil {\r\n\t\tfmt.Println(\"Do:\", err)\r\n\t\treturn\r\n\t}\r\n\r\n\tdefer resp.Body.Close()\r\n}\r\n```\r\n",
+	"user": {
+		"login": "JonasZ95",
+		"id": 9949536,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-10-18T17:25:12Z",
+	"created_at": "2015-10-18T17:06:24Z",
+	"updated_at": "2015-10-18T22:35:56Z"
+}

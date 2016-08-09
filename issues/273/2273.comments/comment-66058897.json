@@ -1,0 +1,12 @@
+{
+	"id": 66058897,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eMy original note was too terse and assumed a New() function but didn't put one in.\n\nAnd the pattern is clearly common since it is exactly what is done in hash/adler32: an\nunexported struct (digest) and and exported API (hash.Hash).\n\nIn adler32 the unexported digest struct has many public methods, Reset, Size, Write,\nSum, and Sum32. But none of these show up in the documentation, and this is what I'm\nsuggesting is a bug.\n\nThe situation I have is essentially this:\n\ntype x struct {\n    i int\n    f func(int) bool\n}\n\nfunc NewX(i int, f func(int) bool) *x {\n    return \u0026x{i, f}\n}\n\nfunc (x *x) Check(y int) bool {\n    return x.f(y)\n}\n\nThe x type must not be created using var a x or a := \u0026x{} because that would leave f at\nnil which is not acceptable for this type. So my solution is to force the user to use a\nNew function and to make the x type unexported. This way only valid x's can be created.\nIf I need to be able to pass an x I can create an interface:\n\ntype Xer interface { Check(int) bool }\n\nand now I can pass Xer's around and the internals of x are not exposed anywhere.\n\nHowever, the *documentation* for x's methods do not appear in godoc. (Just as the\ndocumentation for adler32's digest's exported method's docs don't appear.)\n\nOr are you saying that this pattern is wrong and that it should be done differently?\n(And if so, why doesn't hash/adler32 do it differently?)\u003c/pre\u003e",
+	"user": {
+		"login": "mark-summerfield",
+		"id": 1773348,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-09-19T16:14:58Z",
+	"updated_at": "2014-12-08T10:12:15Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 172398051,
+	"body": "We're unfortunately not able to share the source code for the program. There's no cgo in this program outside of the core net and runtime/race packages. The packet processing is done on UDP packets in pure Go, not on SOCK_RAW with libpcap. The race detector has not found any data races in the program.\r\n\r\nThe program crashes with SIGSEGV in runtime.sigtrampgo, apparently because either g.m or g.m.gsignal is nil. The `sig` argument to sigtrampgo is 11, indicating that it was called in response to a SIGSEGV from elsewhere in the program. The ctx argument should point to a runtime.sigcontext struct, so we look at the memory it points to. The `rip` field in the core dumps is indeed a pointer, but not to a valid instruction. We have an example of it pointing into the .rodata section (to the string \"GC worker (idle)\"), and an example of it pointing to a runtime.g value (with 0xfffffffffffffade showing up after 16 bytes, where we'd expect the runtime.g's stackguard0 field to be).\r\n\r\nI suspect that the instruction pointer for the first SIGSEGV is being accurately reported; that is, the original SIGSEGV is caused by an attempt to execute non-executable memory. I think this is likely due to memory corruption in the scheduler's datastructures.\r\n\r\nHow can we hunt down corruption in the scheduler's memory? Does corruption there sound like a plausible explanation for the crashes we see?",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-18T00:07:11Z",
+	"updated_at": "2016-01-18T00:07:11Z"
+}

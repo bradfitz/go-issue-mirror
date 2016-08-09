@@ -1,0 +1,12 @@
+{
+	"id": 186640670,
+	"body": "Copy of my comment CL/19722 (which uses unsafe to directly cast a string as a []byte in io.WriteString):\r\n\r\nAs much as I love seeing performance improve, I object against this because it breaks memory safety. In an ideal world, it probably would be okay to directly convert a string to a []byte. However, this CL relies on the fact that every implementation of io.Writer perfectly obeys the documented rules that the Writer never mutates the input slice. Reality is, I have seen buggy Writers that did alter the input for short period (yes, that's wrong), but this change would make the presence of those types of Writers worse. I certainly don't think this should be done at the level of the standard level.\r\n\r\nI am aware of this method used in other packages, like [CockroadDB](https://github.com/cockroachdb/cockroach/blob/d058e3205ac2495814545714254c85af421b3288/util/encoding/encoding.go#L476-L493). But, at least in their use, they have a firm understanding that the concrete underlying method does not alter the input. However, io.WriteString cannot make that assumption safely.\r\n\r\nAs a secondary argument against it, there's a warning in the reflect package against the use of [StringHeader](https://github.com/golang/go/blob/8d31a86a1e7be5f84af9df8aeb36bc1e157d50eb/src/reflect/value.go#L1736-L1737) or SliceHeader for portability reason. I think it be wise to respect those warnings.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-20T16:26:53Z",
+	"updated_at": "2016-02-20T16:32:52Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51288142,
+	"number": 8406,
+	"state": "closed",
+	"title": "net/http/httputil: ReverseProxy doesn't forward Close notifications",
+	"body": "by **peter@scraperwiki.com**:\n\n\u003cpre\u003eThis is a follow-up to\n\u003ca href=\"https://groups.google.com/d/topic/golang-dev/-pPRjs46QIk/discussion\"\u003ehttps://groups.google.com/d/topic/golang-dev/-pPRjs46QIk/discussion\u003c/a\u003e.\n\nWith the following code:\n\n\u003ca href=\"http://play.golang.org/p/Qrqg2XmuRz\"\u003ehttp://play.golang.org/p/Qrqg2XmuRz\u003c/a\u003e\n\nConsider a long running http handler (L19) which hypothetically uses (e.g, CPU)\nresources until the connection is closed. The handler is aware of connection closure\nthrough: w.(http.CloseNotifier).CloseNotify().\n\nIf we proxy to that handler via a http.ReverseProxy, closes don't make it to the target\nserver (and it keeps consuming resources indefinitely).\n\nOne can see the correct behaviour when querying the original internal handler directly\nand if line 72 (useExternal=true) is uncommented, the demo deadlocks.\n\nThe deadlock is because the internal server is waiting forever, since it never received\na close notification.\n\nOne can observe the same behaviour with the same demo application by using cURL from the\nconsole and aborting cURL. If aborting against the internal server, then \u0026quot;[server]\nClose Notified!\u0026quot; is seen. If aborting against the external, it is never seen.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-01-09T19:45:10Z",
+	"created_at": "2014-07-22T14:32:44Z",
+	"updated_at": "2016-06-25T01:38:25Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

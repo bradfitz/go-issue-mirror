@@ -1,0 +1,12 @@
+{
+	"id": 66092888,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI discovered last night that the needzero stuff in the compiler is incorrect as\ncurrently structured. The problem is that it expects this sequence of events:\n\n1. Determine what needs zeroing.\n2. Sort locals in stack frame so the zeroed things are all together.\n3. Emit code to zero that chunk in the prologue.\n\nRight now we are zeroing everything with a pointer (accidentally). The intent was to use\nthe liveness analysis for step 1, but the liveness analysis also generates the liveness\nbitmaps, which encode the locations of variables in the stack frame, so the liveness\nanalysis must happen after step 2. (Also, step 2 sorts the pointers together, so that\nthe liveness bitmaps can completely omit ignore pure-data variables such as large byte\nbuffers. That's another reason liveness needs to happen after step 2.) Clearly liveness\ncannot happen in step 1 and after step 2, unless we run it twice, which is possible but\nseems like overkill.\n\nI am trying a new sequence of events:\n\n1. Sort locals in stack frame so pointers are all together (this makes liveness bitmaps\nsmaller).\n2. Run liveness analysis, which marks certain things as needing to be zeroed on entry.\n3. Emit code to zero those things individually.\n\nThis doesn't work yet, apparently due to bugs in the liveness analysis. Any effort spent\non the old ggen.c code now is wasted effort.\n\nI filed \u003ca href=\"https://golang.org/issue/7646\"\u003eissue #7646\u003c/a\u003e for the other zeroing optimization we have discussed. \n\nThis bug is now blocked on fixing the liveness code. Once that's working again, it will\nbe worth revisiting the zeroing in the prologue to see what mix of individual stores and\nblock zeroing works best.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-26T15:24:07Z",
+	"updated_at": "2014-12-08T10:42:23Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 126183460,
+	"body": "Thanks for the confirmation. The root cause comes from the current corner-cutting socktest package implementation. It tries to track socket calls with socket descriptor numbers as a key for testing, and has no care about \"quick socket descriptor number recycling\" for simplicity. Therefore it may confuse socket descriptors in a situation like the following:\r\n```\r\nG1  CALL socket\r\nG1  RET socket = 3\r\nG1  socktest.register(3)\r\nG1  CALL close(3)\r\nG2  CALL socket\r\nG2  RET socket = 3\r\nG2  socktest.register(3) // eviction\r\nG1  RET close\r\nG1  socktest.unregister(3) // eviction\r\nG2  CALL connect(3, ...)\r\nG2  socktest.connect(3, ...) // socktest.switch redirects the call to syscall and results \"dial tcp 127.0.0.1:0 getsockopt: connection refused\" error\r\n```\r\nThis may happen in selfConnect, in the case of TCP simultaneous open, and Linux is one of the platforms that can make TCP simultaneous open happen easily.",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-30T04:56:39Z",
+	"updated_at": "2015-07-30T04:56:39Z"
+}

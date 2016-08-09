@@ -1,0 +1,12 @@
+{
+	"id": 216466826,
+	"body": "FWIW this is worse than I thought originally. Just closing the body after the request is enough to trigger the race. For example, the race detector shows a data race in the following innocuous looking code which tries to PUT a body from an open file, then closes the file.\r\n\r\nIt's common defensive practice to \"defer close\" a file - this code looks alright even knowing that Post will close the file, because closing a file twice isn't a problem. The fact that net/http asynchronously closes the file after the Do has completed is unfortunate.\r\n\r\n\tpackage main\r\n\t\r\n\timport (\r\n\t\t\"log\"\r\n\t\t\"net/http\"\r\n\t\t\"net/http/httptest\"\r\n\t\t\"os\"\r\n\t)\r\n\t\r\n\tconst largeFile = \"/mnt/syn/rog/movies/TheLongHope.mov\"\r\n\t\r\n\tfunc main() {\r\n\t\tsrv := httptest.NewServer(http.HandlerFunc(http.NotFound))\r\n\t\tf, err := os.Open(largeFile)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\tdefer f.Close()\r\n\t\tresp, err := http.Post(srv.URL, \"text/plain\", f)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\tlog.Printf(\"resp: %v\", resp.Status)\r\n\t}\r\n",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-03T08:26:40Z",
+	"updated_at": "2016-05-03T08:26:40Z"
+}

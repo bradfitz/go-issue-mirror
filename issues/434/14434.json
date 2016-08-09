@@ -1,0 +1,21 @@
+{
+	"id": 135128939,
+	"number": 14434,
+	"state": "open",
+	"title": "runtime: details of Linux SIGPROF delivery may cause very skewed profiles",
+	"body": "I've initially spotted this in gperftools as this affects all users of SIGPROF. The problem is that SIGPROF is delivered to process, which translates to \"any thread that isn't blocking SIGROF\". Luckily for us, in practice it becomes \"thread that is running now\". But if there are several running threads something within kernel is making it choose one thread more often than another.\r\n\r\nThe test program at https://gist.github.com/alk/568c0465f4f208196d8b makes it very easy to reproduce. This program spawns two goroutines that do nothing but burn CPU.\r\n\r\nWhen profiled with perf:\r\n\r\n$ perf record ./goprof-test; perf report\r\n\r\nI see correct 50/50 division of profiling ticks between two goroutines, since on multicore machine go runtime runs two goroutines on two OS threads which kernel run in parallel on two different cores.\r\n\r\nWhen profiling with runtime/pprof:\r\n\r\n$ CPUPROFILE=goprof-test-prof ./goprof-test ; pprof --web ./goprof-test ./goprof-test-prof\r\n\r\nI see as much skew as 80/20.\r\n\r\nThis is exactly same behavior that I've seen with gperftools (and google3's profiler).\r\n\r\nFor most programs it apparently doesn't matter. But for programs that have distinct pools of threads doing very different work, this may cause real problems. Particularly, I've seen this (with gperftools) to cause very skewed profiles for Couchbase's memcached binary where they have small pool of network worker threads and another pool of IO worker threads.\r\n\r\nIn gperftools I've implemented workaround which creates per-thread timers that \"tick\" on corresponding thread's cpu time. But I don't think it's scalable enough to be made default (and another problem but arguably specific for gperftools is that all threads have to call ProfilerRegisterThread again). You can see my implementation at: https://github.com/gperftools/gperftools/blob/master/src/profile-handler.cc (parts that are under HAVE_LINUX_SIGEV_THREAD_ID defined)\r\n\r\nI've seen this behavior on FreeBSD VMs too, but don't know about other OSes.\r\n\r\nMaybe there is better way to avoid this skew or maybe we should just ask kernel folks to change SIGPROF signal delivery to avoid this skew. In any case this is bug worth tracking.\r\n\r\nThis is somewhat related, but distinct issue from #13841 \r\n",
+	"user": {
+		"login": "alk",
+		"id": 14850,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-02-20T22:29:07Z",
+	"updated_at": "2016-05-18T01:21:42Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

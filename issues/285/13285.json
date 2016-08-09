@@ -1,0 +1,17 @@
+{
+	"id": 117298884,
+	"number": 13285,
+	"state": "closed",
+	"title": "Suggestion: slice pointer bug is not noob-friendly, variable declaration is 1off",
+	"body": "Hi all.  I've written a simple slice function moveIdxToFront, and I'm getting the slice pointer bug, where I cannot reassign a slice. I thought I would ask what to do and leave a humble suggestion.\r\n\r\nThe premise: \r\n\r\n    idxstomove := []int{4,3}\r\n    for i,v := range s {\r\n         for j,k := range idsxtomove {\r\n                  // move idxs to front of s\r\n                  s = ?\r\n     }}\r\n\r\nThe bug: matter what you do the 2nd time you modify `s` it pulls the value from the original `s` so your results come out wrong\r\n\r\nWhy it should be different: (Just for arguments sake)\r\n* The code looks like it should work, but does not.\r\n* The code is almost un-debuggable. Had I not remembered \"that one time\" a year ago I read about the slice gotchas I would not be able to debug this code\r\n* This is a common paradigm. I've gotten this bug twice this week.\r\n* I dont think users should want to spend 30-60 minutes debugging/rewriting this function that code should work, and compiles, but returns the wrong data.\r\n* It's not very noob friendly code to write. I don't think it would even be possible for a new go-dev to write a func like this\r\n  * Its hard for a new user to write stuff like Slice tricks wiki's delete, which might be how I should have written this function:\r\n\r\n    copy(a[i:], a[i+1:])\r\n    a[len(a)-1] = nil // or the zero value of T\r\n    a = a[:len(a)-1]\r\n  * maybe the solution is a larger standard library with more slice functions (humble suggestion)\r\n\r\nIts almost a bug because even if i do `tmp = append(a[:i],a[i:])` then `a = tmp` it still ignores the new `a` values.\r\n\r\nCode: https://play.golang.org/p/LMVtVWxHkP\r\nIf you want to show me how you would do this I would like to see it also. Its deceptively complex. Sorry the code isnt that good!\r\n\r\n    package main\r\n    import \"fmt\"\r\n    func main() {\r\n    \tfmt.Println( moveValsToFrontFromRight([]int{1,2,3,2,1}, 2,1) )\r\n    }\r\n    \r\n    func moveValsToFrontFromRight(a []int, vals ...int) []int {\r\n    \tfor _, val := range vals {\r\n    \t\tfor i := len(a)-1; i \u003e= 0; i-- {\r\n    \t\t\tif val == a[i] {\r\n    \t\t\t\tfmt.Println(\"debug:\", []int{a[i]}, a[:i], a[i+1:])\r\n    \t\t\t\ta = append([]int{a[i]}, append(a[:i], a[i+1:]...)...)\r\n    \t\t\t\tbreak\r\n    \t\t\t}\r\n    \t\t}\r\n    \t}\r\n    \treturn a\r\n    }\r\n    \r\n    // output: [1 1 1 2 1]  (or something)\r\n    // should be [2 3 1 2 1]\r\n\r\n\r\nMy second suggestion is fix this for the next version if its not hard:\r\n\r\n    length,half := len(s), length / 2\r\n      ^                    // ^------ Compiler error: Length is undefined\r\n    //^------- It's right there.\r\n\r\n\r\nThanks.",
+	"user": {
+		"login": "falafflepotatoe",
+		"id": 10060419,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-11-17T07:26:56Z",
+	"created_at": "2015-11-17T07:17:18Z",
+	"updated_at": "2015-11-17T16:39:43Z"
+}

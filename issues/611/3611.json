@@ -1,0 +1,28 @@
+{
+	"id": 51280884,
+	"number": 3611,
+	"state": "closed",
+	"title": "math/rand: document that math.Rand is not safe for concurrent use",
+	"body": "by **gar3ts**:\n\n\u003cpre\u003eI have a project that as an aside calls rand.Intn() many times with different values. My\nproject frequently causes rng.Int63() to panic due to an out of range index:\n\nmath/rand.(*rngSource).Int63(0xf84006a400, 0xf8412cc2a0, 0xf840050ab0, 0xf84006a400)\n        C:/Go/src/pkg/math/rand/rng.go:243 +0x7e\nmath/rand.(*Rand).Int63(0xf84003d5e0, 0x200027bb78, 0x42e0eb, 0xf84003d5e0)\n        C:/Go/src/pkg/math/rand/rand.go:37 +0x46\nmath/rand.(*Rand).Int31(0xf84003d5e0, 0x414b1b, 0x444369, 0x27bb60)\n        C:/Go/src/pkg/math/rand/rand.go:43 +0x28\nmath/rand.(*Rand).Int31n(0xf84003d5e0, 0x3, 0x27bb60, 0x43c9c1, 0x20, ...)\n        C:/Go/src/pkg/math/rand/rand.go:72 +0x79\nmath/rand.(*Rand).Intn(0xf84003d5e0, 0xf800000003, 0xf84104a5c8, 0xf841e9b160,\n0xf84244e300, ...)\n        C:/Go/src/pkg/math/rand/rand.go:86 +0x70\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngo run\n\nWhich operating system are you using?\n\nWindows7\n\nWhich version are you using?  (run 'go version')\n\n1.0.1 but 1.0 had the same problem\n\nPlease provide any additional information below.\n\nit only happens when I'm using multiple procs, i.e.:\n\nruntime.GOMAXPROCS(2)\n\nThe calls to rand are made from various of 1000's of goroutine instances.\n\nI instrumented Int63() to capture useful values in a recover() then downloaded MinGW and\ncompiled Go for amd64. Here's some of the captured state:\n\nseed: 1336714659800372000  \ncount: 1003446 // number of calls to Int63()\nrng.feed: 330\nrng.tap: 1212\n\nanother:\n\nseed: 1336715957940621400\ncount: 726597\nrng.feed: 333\nrng.tap: 1212\n\nanother:\n\nseed: 1336716097220587700\ncount: 478936\nrng.feed: 327\nrng.tap:  1212\n\n\nnote that len(rng.vec) is 607\nrng.fee and rng.tap are used as indexes into that array so for the above examples it is\nclear that rng.tap is the problem. What is unclear is how it manages to get out of range.\n\nThe following are captures from an index out of range panic but without the values being\nout of range somehow:\n\nrng.seed: 1336716288342519300\ncount: 390314\nrng.feed: 337\nrng.tap: 604\n\nand:\n\nrng.seed: 1336717800504010000\ncount: 143252\nrng.feed: 334\nrng.tap: 606\n\nThis looks like a thread safety problem but \u003ca href=\"http://golang.org/pkg/math/rand/\"\u003ehttp://golang.org/pkg/math/rand/\u003c/a\u003e doesn't\nmention it. Also, I don't get a panic in my project when I substitute a cryptographic\nrandom number generator.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:19:04Z",
+	"created_at": "2012-05-11T07:32:50Z",
+	"updated_at": "2016-06-24T22:18:54Z"
+}

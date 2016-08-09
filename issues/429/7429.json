@@ -1,0 +1,35 @@
+{
+	"id": 51286696,
+	"number": 7429,
+	"state": "open",
+	"title": "spec: file and package scope interact in odd ways",
+	"body": "\u003cpre\u003eThis is just a reminder to revisit the interactions between file and package scope at\nsome point in the future.\n\nAt the moment we have the following rule:\n\n\u0026quot;... no identifier may be declared in both the file and package block.\u0026quot; (\n\u003ca href=\"http://tip.golang.org/ref/spec#Declarations_and_scope\"\u003ehttp://tip.golang.org/ref/spec#Declarations_and_scope\u003c/a\u003e )\n\nThe reason for this rule is that we don't want to, say, import package math, and also\nhave a - in the same file - a package level variable math, and the import would then\nhide the variable because the file block is inside the package block, and not have any\nvisible nesting (in fact the nesting is \u0026quot;inside out\u0026quot; in this case).\n\nHowever, as a consequence, other odd behavior follows. Assume a package p consisting of\ntwo files a.go, b.go, with a.go importing package math, and b.go not importing anything.\n\nIn b.go, the identifier math is not visible (it is in a.go's file scope), yet it is not\npossible to declare a package-level variable math in b.go w/o an error because of the\nabove-cited rule. This is counter-intuitive.\n\nOne could imagine an alternative approach that satisfies the same intent, namely avoids\nthat both an import of an identifier x hides a package-level identifier x in the same\nfile:\n\n- File blocks are nested inside the package block as before.\n- Each import and also each top-level declaration in a file go into the file block.\n- Additionally, each non-imported identifier also goes into the package block.\n\nThis way, all non-imported top-level identifiers are visible in all files. Imports\nremain only visible in the file containing the import. Imports and file-level\ndeclarations cannot conflict (this is the main purpose of the above rule).\n\nImplementation-wise there may be different approaches to obtain the desired behavior. A\ndirect implementation of these new rules might lead to the (possibly undesired) property\nthat non-import file-level declarations end up both in a compiler's file and package\nscope, that is, an object belongs to two scopes simultaneously.\n\nThe new rules would be a backward-compatible language change.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LanguageChange"
+		},
+		{
+			"name": "LongTerm"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2014-02-27T22:24:11Z",
+	"updated_at": "2015-04-14T19:45:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

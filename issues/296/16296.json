@@ -1,0 +1,21 @@
+{
+	"id": 164501684,
+	"number": 16296,
+	"state": "open",
+	"title": "net/http: multipart ReadForm fails to remove temporary files on io.Copy error",
+	"body": "I upload a rather large file to a http.Server as a value of a form in a http POST request. The server is a basic http.Server, set with its Server.ReadTimeout and Server.WriteTimeout at one second, i.e. way too short to handle the request. I am trying to get the file by calling\r\n```func (r *Request) FormFile(key string)```\r\n\r\nThe function fails with a timeout error, which is perfectly expected, but it leaves in the temporary folder multipart-xxxxxx files. I think I have traced it back to mime\\multipart\\formdata.go, l 74:\r\n\r\n```\r\nfile, err := ioutil.TempFile(\"\", \"multipart-\")\r\n\t\t\tif err != nil {\r\n\t\t\t\treturn nil, err\r\n\t\t\t}\r\n\t\t\tdefer file.Close()\r\n\t\t\t_, err = io.Copy(file, io.MultiReader(\u0026b, p))\r\n\t\t\tif err != nil {\r\n\t\t\t\tos.Remove(file.Name())\r\n\t\t\t\treturn nil, err\r\n\t\t\t}\r\n```\r\n\r\nWe notice that in this case, if io.Copy fails (which is what happens with my short timeouts) we are going to call os.Remove BEFORE calling file.Close, leading to a os.Remove failure. I confirmed this by adding some logs :\r\n\r\n```\r\nfile, err := ioutil.TempFile(\"\", \"multipart-\")\r\n\t\t\tif err != nil {\r\n\t\t\t\tlog.Printf(\"Error at Tempfile: %+v\\n\", err)\r\n\t\t\t\treturn nil, err\r\n\t\t\t}\r\n\t\t\tdefer func() {\r\n\t\t\t\tlog.Printf(\"File Closing : %s\\n\", file.Name())\r\n\t\t\t\tif fileCloseErr := file.Close(); fileCloseErr != nil {\r\n\t\t\t\t\tlog.Printf(\"File close failed : %+v\\n\", fileCloseErr)\r\n\t\t\t\t}\r\n\t\t\t}()\r\n\t\t\t_, err = io.Copy(file, io.MultiReader(\u0026b, p))\r\n\t\t\tif err != nil {\r\n\t\t\t\tlog.Printf(\"Error at io.Copy: %v\\n\", err)\r\n\t\t\t\tif osRemoveErr := os.Remove(file.Name()); osRemoveErr != nil {\r\n\t\t\t\t\tlog.Printf(\"os Remove failed: %+v\\n\", osRemoveErr)\r\n\t\t\t\t}\r\n\t\t\t\treturn nil, err\r\n\t\t\t}\r\n```\r\n\r\nand this does confirm the error :\r\n\r\n```\r\n[2016-07-08 12:00:17] \u003cServer\u003e Error at io.Copy: multipart: Part Read: WSARecv tcp 127.0.0.1:8084: i/o timeout\r\n[2016-07-08 12:00:17] \u003cServer\u003e os Remove failed: remove C:\\cygwin64\\tmp\\multipart-183404555: Le processus ne peut pas accéder au fichier car ce fichier est utilisé par un autre processus.\r\n[2016-07-08 12:00:17] \u003cServer\u003e File Closing : C:\\cygwin64\\tmp\\multipart-183404555\r\n```\r\n\r\nFirst line is the expected timeout error\r\nSecond line is the attempt to remove the file (French part on second line being the classic Windows error \"The process cannot access the file because it is being used by another process\")\r\nThird line is defered function closing the file after we tried to delete it.\r\n\r\n\r\n\r\n\r\n\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo 1.6.2 windows/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nwindows 10 64 bits\r\n```set GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows```\r\n\r\n3. What did you do?\r\nTried to parse a file sent through a HTTP POST rquest with func `(r *Request) FormFile(key string)` on a http.Server with timeouts too short for the operation to suceed.\r\n\r\n4. What did you expect to see?\r\nmultipart temporary files deleted\r\n\r\n5. What did you see instead?\r\nmultipart files remain in temp folder.\r\n\r\n",
+	"user": {
+		"login": "Egojard",
+		"id": 13238230,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-07-08T10:21:19Z",
+	"updated_at": "2016-07-08T15:54:01Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

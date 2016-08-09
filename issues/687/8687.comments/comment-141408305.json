@@ -1,0 +1,12 @@
+{
+	"id": 141408305,
+	"body": "@randomascii I agree, we need to understand why benchmarks are slow. I looked at BenchmarkAppendGrowByte, and it does not do much - appending bytes to a slice. How do you propose I understand why BenchmarkAppendGrowByte is slow?\r\n\r\nFor the record, I started with d5fe165ca. I ran:\r\n```\r\ngo test -run=none -bench=AppendGrowByte -cpu=1,1,1,1,1,2,2,2,2,2,3,3,3,3,3 runtime \u003eold\r\n```\r\ncommand. Then I made this change:\r\n```\r\ndiff --git a/src/runtime/os1_windows.go b/src/runtime/os1_windows.go\r\nindex f608b4a..be5a4b2 100644\r\n--- a/src/runtime/os1_windows.go\r\n+++ b/src/runtime/os1_windows.go\r\n@@ -154,7 +154,7 @@ func osinit() {\r\n\r\n        stdcall2(_SetConsoleCtrlHandler, funcPC(ctrlhandler), 1)\r\n\r\n-       stdcall1(_timeBeginPeriod, 1)\r\n+       //stdcall1(_timeBeginPeriod, 1)\r\n\r\n        ncpu = getproccount()\r\n```\r\nand I ran the same test again:\r\n```\r\ngo test -run=none -bench=AppendGrowByte -cpu=1,1,1,1,1,2,2,2,2,2,3,3,3,3,3 runtime \u003enew\r\n```\r\nAnd then I compared results with rsc.io/benchstat command:\r\n```\r\nc:\\Users\\Alex\\go\\go\\src\\runtime\u003e%GOPATH%\\bin\\benchstat old new\r\nname              old time/op  new time/op   delta\r\nAppendGrowByte    5.10ms ± 2%   4.94ms ± 0%    -3.19%  (p=0.016 n=5+4)\r\nAppendGrowByte-2  7.59ms ±14%  36.40ms ±12%  +379.45%  (p=0.008 n=5+5)\r\nAppendGrowByte-3  7.10ms ± 4%  39.54ms ± 7%  +457.18%  (p=0.008 n=5+5)\r\n```\r\nHere https://gist.github.com/alexbrainman/badfbe3b1e20d3f2d1b2 are my old and new files (for reference). I use Windows 7 with Intel Core2 Duo CPU E8400 (pretty average pc these days).\r\n\r\nI suspect it has something to do with GC. But I don't even know where to start. @aclements can you suggest what to try? Thank you.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-18T09:57:23Z",
+	"updated_at": "2015-09-18T09:57:23Z"
+}

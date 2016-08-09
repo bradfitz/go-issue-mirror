@@ -1,0 +1,27 @@
+{
+	"id": 51282561,
+	"number": 4737,
+	"state": "closed",
+	"title": "syscall: ForkLock held during Accept",
+	"body": "by **patrick.allen.higgins**:\n\n\u003cpre\u003eSorry that this is so wordy and without a simple test case. I haven't been able to\nnarrow it down to a simpler one yet, and may not have the time to do so. The tl;dr\nversion is that GDB clearly shows syscall.ForkLock as being locked when I don't believe\nit should be.\n\nI have a program which consists of a master which spawns slaves.\n\nThe master opens three net.Listener sockets and then spawns the first slave, passing it\nthe listener FDs.\n\nOn receipt of SIGHUP, the master spawns a new slave, passing it the listener FDs.\n\nWhen a slave finishes initialization and starts serving HTTP requests on the 3\nlisteners, it sends a SIGUSR1 to the master.\n\nOn receipt of SIGUSR1, the master sends a SIGTERM to all but the most recently spawned\nslave.\n\nOn receipt of SIGTERM, a slave closes all three of its listeners and then exits.\n\nThe master has a goroutine for each slave waiting for them to exit.\n\nBy running a \u0026quot;kill -HUP $master_pid\u0026quot; several times in rapid succession from\nthe shell (by hand, not a script), eventually I notice that the slaves do not exit.\n\nUsing lsof shows that one of the listeners is being closed, even though I close it.\n\nI tried to insert code to run lsof at key points in the slave lifecycle and find that it\nwon't run at a certain point because it is waiting to acquire the syscall.ForkLock:\n\n(gdb) gor 1 bt\n#0  0x000000000041bf3c in runtime.gosched () at\n/home/phiggins/go-tip/src/pkg/runtime/proc.c:967\n#1  0x000000000041bfa6 in runtime.park (unlockf=void, lock=void, reason=void) at\n/home/phiggins/go-tip/src/pkg/runtime/proc.c:979\n#2  0x0000000000423ca6 in semacquireimpl (addr=void, profile=void) at\n/home/phiggins/go-tip/src/pkg/runtime/sema.goc:1479\n#3  0x0000000000423eae in sync.runtime_Semacquire (addr=void) at\n/home/phiggins/go-tip/src/pkg/runtime/sema.goc:1533\n#4  0x00000000004c2101 in sync.(*RWMutex).Lock (rw=0x916a98) at\n/home/phiggins/go-tip/src/pkg/sync/rwmutex.go:80\n#5  0x00000000004c9f51 in syscall.forkExec (argv0=\u0026quot;/usr/sbin/lsof\u0026quot;, argv=\n[]string = {...}, attr=0xc2008370a0, pid=128849834000, err=0)\n    at /home/phiggins/go-tip/src/pkg/syscall/exec_unix.go:183\n#6  0x00000000004ca547 in syscall.StartProcess (argv0=\u0026quot;/usr/sbin/lsof\u0026quot;, argv=\n[]string = {...}, attr=0xc2008370a0, pid=2, handle=4, err=0)\n    at /home/phiggins/go-tip/src/pkg/syscall/exec_unix.go:244\n#7  0x00000000004bcd27 in os.startProcess (name=\u0026quot;/usr/sbin/lsof\u0026quot;, argv=\n[]string = {...}, attr=0xc200837050, p=0xc200091d80, err=0)\n    at /home/phiggins/go-tip/src/pkg/os/exec_posix.go:45\n#8  0x00000000004bbf9c in os.StartProcess (name=\u0026quot;/usr/sbin/lsof\u0026quot;, argv=\n[]string = {...}, attr=0xc200837050, noname=void)\n    at /home/phiggins/go-tip/src/pkg/os/doc.go:24\n#9  0x00000000004c3f72 in os/exec.(*Cmd).Start (c=void, noname=void) at\n/home/phiggins/go-tip/src/pkg/os/exec/exec.go:262\n#10 0x00000000004c39a5 in os/exec.(*Cmd).Run (c=0xc200838000, noname=void) at\n/home/phiggins/go-tip/src/pkg/os/exec/exec.go:229\n#11 0x00000000004039de in main.lsof (msg=\u0026quot;pre-close\u0026quot;) at\n/home/phiggins/src/RecommendationEngine/go/src/recserv/lsof.go:15\n#12 0x00000000004073f3 in main.slave (config=0xc2001060e0) at\n/home/phiggins/src/RecommendationEngine/go/src/recserv/slave.go:79\n#13 0x0000000000406ab2 in main.main () at\n/home/phiggins/src/RecommendationEngine/go/src/recserv/recserv.go:66\n\nYou can see that ForkLock is actually locked:\n\n(gdb) p 'syscall.ForkLock'\n$3 = {w = {state = 1, sema = 0}, writerSem = 0, readerSem = 0, readerCount =\n-1073741823, readerWait = 1}\n\nThe full gdb session is attached.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4737/0/recserv-gdb-session.txt\"\u003erecserv-gdb-session.txt\u003c/a\u003e (13883 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 20,
+	"closed_at": "2014-12-08T10:25:09Z",
+	"created_at": "2013-01-31T22:04:45Z",
+	"updated_at": "2016-06-24T22:32:05Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

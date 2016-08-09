@@ -1,0 +1,12 @@
+{
+	"id": 66062993,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eFloating point numbers cannot represent Pi or Pi/2 completely precisely.\nIf you print a float64 with the %.1000g format, it will show the exact\ndecimal number that _is_ being represented.\n\nIf we adjust your program thus:\n\n\npackage main\n\nimport (\n\t\"fmt\"\n\t\"math\"\n)\n\nfunc main() {\n\tv := 0.5 * math.Pi\n\tfmt.Printf(\"%.1000g\\n%.1000g\\n\", v, 2*v)\n\tfmt.Printf(\"%.1000g\\n\", math.Cos(v))\n}\n\nthen it prints\n\n1.5707963267948965579989817342720925807952880859375\n3.141592653589793115997963468544185161590576171875\n6.123031769111886291057089692912995815277099609375e-17\n\nIt turns out that Pi/2 is closer to\n1.5707963267948966192313216916397514420985846996875529\n\nThe difference between this real Pi/2 and the closest\nfloat64 (as printed by the program) is about\n0.0000000000000000612323399573, or 6.123e-17\n\nThus, you're not actually calling Cos(Pi/2), because that\nis impossible: you're calling Cos(Pi/2 - 6.123e-17), and\nfor small x, Cos(Pi/2 - x) is approximately x, so Cos\nis actually returning an appropriate answer.\n\nJust to double-check, we can take that Pi/2 value that\nwas printed by the Go program and ask Wolfram Alpha what \nit's cosine is:\n\n\u003ca href=\"http://www.wolframalpha.com/input/?i=Cos%5B1.5707963267948965579989817342720925807952880859375%5D\"\u003ehttp://www.wolframalpha.com/input/?i=Cos%5B1.5707963267948965579989817342720925807952880859375%5D\u003c/a\u003e\nsays\n6.123233995736765886130329661375001 × 10^-17\n\nThe output you got:\n6.123233995736757e-17\nis thus remarkably accurate.  The output I showed above\nwas for a run using the 386 compiler, which uses the x87\ncosine instruction, which is less accurate.  Either is\nmore accurate than returning 0, though.\n\nIf you need to get an actual 0 for some input, then I suggest\nusing Sin(x-Pi/2) as your function instead of Cos(x).\u003c/pre\u003e\n\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-12T22:20:18Z",
+	"updated_at": "2014-12-08T10:15:41Z"
+}

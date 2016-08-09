@@ -1,0 +1,12 @@
+{
+	"id": 99725084,
+	"body": "I can see make.bat process gets killed, but none of its children are. cmd/dist.exe process runs to completion even after gomote is disconnected. That is why you saw \"remove C:\\workdir\\go\\src\\cmd\\dist\\dist.exe: Access is denied.\" message, because you tried to rebuild executable for process that is still running - this is not allowed on Windows. But then cmd/dist.exe completes (it takes minute or so), and you can rebuild it then.\r\n\r\nOur mistake. We all (mainly me) assumed that killing process kills all its children. But that is not true on Windows. Not by default. I can come up with 2 ways to implement process tree killing.\r\n\r\nWe can enumerate all processes on the system and kill all children of a process. See syscall.Getppid for something similar.\r\n\r\nOr we can use \"recommended\" way - associate our process with a job object https://msdn.microsoft.com/en-us/library/ms684161(VS.85).aspx  We already used job objects before to gather performance stats on windows (golang.org/x/benchmarks/driver/driver_windows.go).\r\n\r\nI don't know how important it is to kill all children here in buildlet. All these computers are rebooted often anyway. Brad?\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-07T05:31:35Z",
+	"updated_at": "2015-05-07T05:31:35Z"
+}

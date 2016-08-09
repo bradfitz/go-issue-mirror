@@ -1,0 +1,28 @@
+{
+	"id": 98850433,
+	"number": 12006,
+	"state": "closed",
+	"title": "cmd/compile: Improve escape analysis for variadic arguments with pointers",
+	"body": "Using go1.5beta3.\r\nUsing a variadic argument with pointers incurs an allocation for every item even if elements of the variadic argument never escape.\r\n\r\nExample:\r\n```go\r\npackage foo\r\n\r\nimport \"testing\"\r\n\r\nfunc Foo2(a, b *int) (s int) {\r\n\tfor _, v := range []*int{a, b} {\r\n\t\ts += *v\r\n\t}\r\n\treturn s\r\n}\r\n\r\nfunc FooN(vals ...*int) (s int) {\r\n\tfor _, v := range vals {\r\n\t\ts += *v\r\n\t}\r\n\treturn s\r\n}\r\n\r\nfunc BenchmarkFoo2(b *testing.B) {\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tvar i, j int\r\n\t\tFoo2(\u0026i, \u0026j)\r\n\t}\r\n}\r\n\r\nfunc BenchmarkFooN(b *testing.B) {\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tvar i, j int\r\n\t\tFooN(\u0026i, \u0026j)\r\n\t}\r\n}\r\n```\r\n\r\nCurrently I see:\r\n```\r\n$ go test -bench . -benchmem\r\nBenchmarkFoo1-4\t300000000\t         5.09 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkFooN-4\t30000000\t        69.6 ns/op\t      32 B/op\t       2 allocs/op\r\n```\r\n\r\nI expect to see 0 allocs/op for BenchmarkFooN.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-10-04T20:46:02Z",
+	"created_at": "2015-08-03T22:32:15Z",
+	"updated_at": "2015-10-04T20:46:02Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

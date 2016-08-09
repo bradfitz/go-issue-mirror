@@ -1,0 +1,26 @@
+{
+	"id": 51280859,
+	"number": 3594,
+	"state": "open",
+	"title": "net/http/httputil: add sort by quality",
+	"body": "by **raul.san@sent.com**:\n\n\u003cpre\u003eThere is an usefull method which could be added to the type Request in package\n\u0026quot;net/http\u0026quot;\n\ntype Reverse struct {\n\t// This embedded Interface permits Reverse to use the methods of\n\t// another Interface implementation.\n\tsort.Interface\n}\n\n// Less returns the opposite of the embedded implementation's Less method.\nfunc (r Reverse) Less(i, j int) bool {\n\treturn r.Interface.Less(j, i)\n}\n\n// parseQualityValues returns the fields sorted by its greater quality level.\n// Returns nil if there are no values associated with the header.\n//\n// [HTTP spec](\u003ca href=\"http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html)\"\u003ehttp://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html)\u003c/a\u003e\n// [Quality Values](\u003ca href=\"http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.9)\"\u003ehttp://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.9)\u003c/a\u003e\nfunc parseQualityValues(r *http.Request, header string) []string {\n\tvalHeader := r.Header.Get(header)\n\tif len(valHeader) == 0 {\n\t\treturn nil\n\t}\n\n\tqValues := make(map[float64][]string)\n\tqSorted := make([]float64, 0)\n\tresult := make([]string, 0)\n\n\t// Example of string to parse for the header Accept-Language:\n\t//   da, en-gb;q=0.8, en;q=0.7\n\tfor _, f := range strings.Split(valHeader, \u0026quot;,\u0026quot;) {\n\t\tlang := \u0026quot;\u0026quot;\n\t\tq := 1.0 // default\n\n\t\tif strings.ContainsRune(f, ';') {\n\t\t\tq_ := strings.Split(f, \u0026quot;=\u0026quot;)[1]\n\t\t\tq_ = strings.Trim(q_, \u0026quot; \u0026quot;)\n\n\t\t\tq, _ = strconv.ParseFloat(q_, 64)\n\t\t\tif q == 0 { // content not acceptable for the client\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tlang = strings.Split(f, \u0026quot;;\u0026quot;)[0]\n\t\t\tlang = strings.Trim(lang, \u0026quot; \u0026quot;)\n\t\t} else {\n\t\t\tlang = strings.Trim(f, \u0026quot; \u0026quot;)\n\t\t}\n\n\t\tif _, ok := qValues[q]; !ok {\n\t\t\tqValues[q] = make([]string, 0)\n\t\t}\n\t\tqValues[q] = append(qValues[q], lang)\n\t\tqSorted = append(qSorted, q)\n\t}\n\n\tsort.Sort(Reverse{sort.Float64Slice(qSorted)})\n\n\tfor _, v := range qSorted {\n\t\tresult = append(result, qValues[v]...)\n\t}\n\treturn result\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 20,
+	"created_at": "2012-05-06T10:31:07Z",
+	"updated_at": "2015-04-14T19:45:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

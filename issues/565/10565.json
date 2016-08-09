@@ -1,0 +1,21 @@
+{
+	"id": 70575026,
+	"number": 10565,
+	"state": "open",
+	"title": "net: File{Conn,PacketConn} cannot accept AF_NETLINK, AF_ROUTE or other sockets",
+	"body": "For example, attached fails with \"file file+net netlink: protocol not supported.\" When we want to know some status of network, routing information updates like \"interface is going down\", talking to a kernel by using netlink/route sockets  is a only way to achieve it, and for handling chatty, sometimes massive events from/to the kernel we need support of runtime-integrated network poller.\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net\"\r\n\t\"os\"\r\n\t\"syscall\"\r\n)\r\n\r\nfunc main() {\r\n\ts, err := syscall.Socket(syscall.AF_NETLINK, syscall.SOCK_RAW, syscall.NETLINK_ROUTE)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlsa := syscall.SockaddrNetlink{Family: syscall.AF_NETLINK}\r\n\tif err := syscall.Bind(s, \u0026lsa); err != nil {\r\n\t\tsyscall.Close(s)\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tf := os.NewFile(uintptr(s), \"netlink\")\r\n\tc, err := net.FilePacketConn(f)\r\n\tf.Close()\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlog.Println(c.LocalAddr())\r\n\tc.Close()\r\n}\r\n``",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2015-04-24T03:28:11Z",
+	"updated_at": "2016-03-28T18:10:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

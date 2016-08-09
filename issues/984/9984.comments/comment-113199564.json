@@ -1,0 +1,12 @@
+{
+	"id": 113199564,
+	"body": "\u003e The following looks like a good scheme to solve these races:\r\n\u003e\r\n\u003e * Issue release barrier at the end of mallocgc for no-noscan objects (as you did in the cl). This provides visibility over bitmap and zero object state for no-noscan objects. For noscan objects bitmap must be already in proper state, and that state is visible to GC due to sweep-\u003emark ordering (which must be ensured elsewhere).\r\n\u003e * Issue release barrier at the end of heap alloc. This provides visibility over the slot in h_spans, and part of visibility for arena_used (because there is no data-dependency on the pointer value on reader size).\r\n\r\nI had been thinking we would just do the release barrier at the end of mallocgc for both scan and noscan objects, but this works, too, and is probably slightly cheaper since the release barrier at the end of heap alloc won't happen on every allocation (even though this means two barriers on scan allocations that also allocate a span). The h_spans part of bullet 2 was the intent of https://go-review.googlesource.com/#/c/11081/, but you seemed to think that wasn't sufficient to deal with accesses to h_spans.\r\n\r\nYou're right that there's no data dependency on arena_used. I'd overlooked that.\r\n\r\n\u003e * Do the reload-if-invalid trick for arena_used in GC thread.\r\n\r\nI'm not convinced that this part is necessary. It's okay if the GC thread comes across a pointer and incorrectly rejects it because it has a stale value of arena_used. The thread that published the pointer will invoke the write barrier, which will mark the object (there is a window between when the pointer is published and it is marked, but this is okay as long as it is eventually marked and this window cannot be preempted). This seems fairly fundamental to a Dijkstra-style write barrier.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-18T15:53:43Z",
+	"updated_at": "2015-06-18T15:53:43Z"
+}

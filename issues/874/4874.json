@@ -1,0 +1,27 @@
+{
+	"id": 51282762,
+	"number": 4874,
+	"state": "closed",
+	"title": "cmd/gc: optimizer changes context register when calling function pointer",
+	"body": "\u003cpre\u003eCompile the following program on tip:\n\npackage main\n\nfunc main() {\n        var f func()\n        for {\n                f()\n        }\n}\n\nThis compiles to the following assembly\n\n--- prog list \u0026quot;main\u0026quot; ---\n0000 (main.go:3) TEXT    main+0(SB),$4-0\n0001 (main.go:3) LOCALS  ,\n0002 (main.go:4) MOVL    $0,f+-4(SP)\n0003 (main.go:6) MOVL    f+-4(SP),BX\n0004 (main.go:6) MOVL    (BX),BX\n0005 (main.go:6) CALL    ,BX\n0006 (main.go:5) JMP     ,3\n0007 (main.go:8) RET     ,\n\nThe AX register should contain the address of the funcval struct, but doesn't.\n\nRight now this error is benign, but when closures start looking at AX, this will become\na bigger problem.\n\nThis might just be a matter of setting indirect call instructions as using the AX\nregister in regopt.\u003c/pre\u003e",
+	"user": {
+		"login": "DanielMorsing",
+		"id": 545573,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:25:57Z",
+	"created_at": "2013-02-22T10:52:52Z",
+	"updated_at": "2016-06-24T22:33:40Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

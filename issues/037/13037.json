@@ -1,0 +1,22 @@
+{
+	"id": 113100315,
+	"number": 13037,
+	"state": "closed",
+	"title": "cmd/go: custom import paths not processed from https resource that 404",
+	"body": "```console\r\n$ go version\r\ngo version go1.5.1 linux/amd64\r\n\r\n# FAILS\r\n$ go get -v bosun.org/cmd/bosun/cache\r\nFetching https://bosun.org/cmd/bosun/cache?go-get=1\r\nignoring https fetch with status code 404\r\nParsing meta tags from https://bosun.org/cmd/bosun/cache?go-get=1 (status code 404)\r\nimport \"bosun.org/cmd/bosun/cache\": parsing bosun.org/cmd/bosun/cache: http: read on closed response body\r\npackage bosun.org/cmd/bosun/cache: unrecognized import path \"bosun.org/cmd/bosun/cache\"\r\n\r\n# WORKS\r\n$ go get -v -insecure bosun.org/cmd/bosun/cache\r\nFetching https://bosun.org/cmd/bosun/cache?go-get=1\r\nignoring https fetch with status code 404\r\nFetching http://bosun.org/cmd/bosun/cache?go-get=1\r\nParsing meta tags from http://bosun.org/cmd/bosun/cache?go-get=1 (status code 404)\r\nget \"bosun.org/cmd/bosun/cache\": found meta tag main.metaImport{Prefix:\"bosun.org\", VCS:\"git\", RepoRoot:\"https://github.com/bosun-monitor/bosun.git\"} at http://bosun.org/cmd/bosun/cache?go-get=1\r\nget \"bosun.org/cmd/bosun/cache\": verifying non-authoritative meta tag\r\nFetching https://bosun.org?go-get=1\r\nParsing meta tags from https://bosun.org?go-get=1 (status code 200)\r\nbosun.org (download)\r\n...\r\n\r\n$ curl -s 'https://bosun.org/cmd/bosun/cache?go-get=1' |grep go-import\r\n\t\u003cmeta name=\"go-import\" content=\"bosun.org git https://github.com/bosun-monitor/bosun.git\"\u003e\r\n```\r\n\r\nSame thing happens with `bazil.org/fuse/fs/fstestutil`, which is a 404 but with the correct meta tag.\r\n\r\nLooks like an unintended side effect of\r\n\r\n```\r\n932c8ddb (Brad Fitzpatrick    2012-03-05 22:36:15 -0800  85)    urlStr, res, err := fetch(\"https\")\r\n932c8ddb (Brad Fitzpatrick    2012-03-05 22:36:15 -0800  86)    if err != nil || res.StatusCode != 200 {\r\n```\r\n\r\nwhere the expected action would be to parse even a 404 page for meta tags, because that's what the plaintext version does.\r\n\r\nIf this is not fixed, one cannot easily serve those meta tags from a secure static site; updating the website every time a package is created, just to avoid the 404, is brittle and just unnecessary busywork.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-12-17T20:28:27Z",
+	"created_at": "2015-10-23T21:05:39Z",
+	"updated_at": "2015-12-17T20:28:27Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

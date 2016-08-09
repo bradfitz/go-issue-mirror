@@ -1,0 +1,12 @@
+{
+	"id": 66075273,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eYou just don't want to look at it, Brad :-)\n\n# hg diff .\ndiff -r 33d3e7bbd3ef src/pkg/database/sql/fakedb_test.go\n--- a/src/pkg/database/sql/fakedb_test.go       Mon Feb 25 10:37:17 2013 +1100\n+++ b/src/pkg/database/sql/fakedb_test.go       Tue Feb 26 12:13:51 2013 +1100\n@@ -388,6 +388,7 @@\n }\n\n func (c *fakeConn) Prepare(query string) (driver.Stmt, error) {\n+       fmt.Printf(\"*fakeConn(%p).Prepare(%s)\\n\", c, query)\n        c.numPrepare++\n        if c.db == nil {\n                panic(\"nil c.db; conn = \" + fmt.Sprintf(\"%#v\", c))\ndiff -r 33d3e7bbd3ef src/pkg/database/sql/sql_test.go\n--- a/src/pkg/database/sql/sql_test.go  Mon Feb 25 10:37:17 2013 +1100\n+++ b/src/pkg/database/sql/sql_test.go  Tue Feb 26 12:13:51 2013 +1100\n@@ -708,3 +708,21 @@\n                t.Errorf(\"error = %q; want %q\", err.Error(), want)\n        }\n }\n+\n+func TestPrepareCount(t *testing.T) {\n+       db := newTestDB(t, \"people\")\n+       defer closeDB(t, db)\n+       prepares0 := numPrepares(t, db)\n+       stmt, err := db.Prepare(\"INSERT|people|name=?,age=?\")\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       defer stmt.Close()\n+       _, err = stmt.Exec(\"Alice\", 10)\n+       if err != nil {\n+               t.Fatal(err)\n+       }\n+       if prepares := numPrepares(t, db) - prepares0; prepares != 1 {\n+               t.Errorf(\"executed %d Prepare statements; want 1\", prepares)\n+       }\n+}\n# go test -run=Prepare\n*fakeConn(0x183457e0).Prepare(WIPE)\n*fakeConn(0x183457e0).Prepare(CREATE|people|name=string,age=int32,photo=blob,dead=bool,bdate=datetime)\n*fakeConn(0x183457e0).Prepare(INSERT|people|name=Alice,age=?,photo=APHOTO)\n*fakeConn(0x183457e0).Prepare(INSERT|people|name=Bob,age=?,photo=BPHOTO)\n*fakeConn(0x183457e0).Prepare(INSERT|people|name=Chris,age=?,photo=CPHOTO,bdate=?)\n*fakeConn(0x183457e0).Prepare(INSERT|people|name=?,age=?)\n*fakeConn(0x18345bc0).Prepare(INSERT|people|name=?,age=?)\n--- FAIL: TestPrepareCount (0.00 seconds)\n        sql_test.go:726: executed -4 Prepare statements; want 1\nFAIL\nexit status 1\nFAIL    database/sql    0.007s\n#\n\nSee how \"INSERT|people|name=?,age=?\" gets prepared twice (on two different connections)?\nWhy so?\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-26T01:19:47Z",
+	"updated_at": "2014-12-08T10:26:06Z"
+}

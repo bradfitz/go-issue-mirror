@@ -1,0 +1,21 @@
+{
+	"id": 158964997,
+	"number": 15992,
+	"state": "open",
+	"title": "cmd/compile: compiler does not allow \"direct binding\" of function return values to `copy` arguments",
+	"body": "go version devel +2f08888 Tue Jun 7 06:04:23 2016 +0000 linux/amd64\r\n\r\nThe spec allows \"forwarding\"/\"direct binding\" of return values to function arguments \r\nhttps://golang.org/ref/spec#Calls\r\n\r\n\u003e As a special case, if the return values of a function or method g are equal in number and individually\r\n\u003e assignable to the parameters of another function or method f, then the call f(g(parameters_of_g)) will\r\n\u003e invoke f after binding the return values of g to the parameters of f in order. \r\n\r\nFor the following program (https://play.golang.org/p/YEJSEfQLA8):\r\n```Go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n)\r\n\r\nfunc f(a []byte) ([]byte, []byte) {\r\n\treturn a, []byte(\"abc\")\r\n}\r\n\r\nfunc g(a []byte) ([]byte, string) {\r\n\treturn a, \"abc\"\r\n}\r\n\r\nfunc main() {\r\n\ta := []byte{1, 2, 3}\r\n\tn := copy(f(a))\r\n\tfmt.Println(n, a)\r\n\r\n\tb := []byte{1, 2, 3}\r\n\tn = copy(f(b))\r\n\tfmt.Println(n, b)\r\n}\r\n```\r\n\r\nthe compiler issues messages\r\n\r\n\u003e prog.go:17: missing arguments to copy\r\n\u003e prog.go:21: missing arguments to copy\r\n\r\nThe same program passes when compiled via `gotypes` and `gccgo`.\r\n",
+	"user": {
+		"login": "momchil-velikov",
+		"id": 5541560,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-07T16:17:01Z",
+	"updated_at": "2016-06-07T21:10:18Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

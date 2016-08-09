@@ -1,0 +1,12 @@
+{
+	"id": 66073072,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003ei think add an untyped exported symbol to any non-test file in src/pkg with initial\nvalue of false will trigger this.\n(e.g. `var VariableName = false`)\n\nthis issue will be fixed when cmd/api make use of go/types to do proper type checking.\n\nFor now, the following patch could temporarily fix this issue, but as this issue doesn't\naffect the official build,\ni'm inclined to leave this as is, and wait until go/types is ready.\ndiff -r e61b6119272b src/cmd/api/goapi.go\n--- a/src/cmd/api/goapi.go\tThu Dec 13 19:08:51 2012 +0800\n+++ b/src/cmd/api/goapi.go\tThu Dec 13 20:28:50 2012 +0800\n@@ -558,6 +558,11 @@\n \ttoken.IMAG:   \"complex128\",\n }\n \n+var predeclaredType = map[string]string{\n+\t\"true\":  \"bool\",\n+\t\"false\": \"bool\",\n+}\n+\n var errTODO = errors.New(\"TODO\")\n \n func (w *Walker) constValueType(vi interface{}) (string, error) {\n@@ -671,7 +676,11 @@\n \tcase *ast.Ident:\n \t\tnode, _, ok := w.resolveName(v.Name)\n \t\tif !ok {\n-\t\t\treturn \"\", fmt.Errorf(\"unresolved identifier: %q\", v.Name)\n+\t\t\ttyp, ok := predeclaredType[v.Name]\n+\t\t\tif !ok {\n+\t\t\t\treturn \"\", fmt.Errorf(\"unresolved identifier: %q\", v.Name)\n+\t\t\t}\n+\t\t\treturn typ, nil\n \t\t}\n \t\treturn w.varValueType(node)\n \tcase *ast.BinaryExpr:\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-13T12:29:15Z",
+	"updated_at": "2014-12-08T10:24:09Z"
+}

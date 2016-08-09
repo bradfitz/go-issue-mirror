@@ -1,0 +1,33 @@
+{
+	"id": 75827757,
+	"number": 10796,
+	"state": "closed",
+	"title": "net/internal/socktest: Data race in net/internal/socktest/switch.go",
+	"body": "When I add the following to `net/dial_test.go`:\r\n```go\r\nfunc TestRace(t *testing.T) {\r\n  done := make(chan bool, 2)\r\n  f := func() {\r\n    Dial(\"tcp\", \"127.0.0.1:9\")\r\n    done \u003c- true\r\n  }\r\n  go f()\r\n  go f()\r\n  \u003c-done\r\n  \u003c-done\r\n}\r\n```\r\n\r\nThis race is detected:\r\n```\r\n$ ../bin/go test net -race -run=TestRace            \r\n==================\r\nWARNING: DATA RACE\r\nRead by goroutine 7:\r\n  net/internal/socktest.(*Switch).Socket()\r\n      /home/pmarks/src/go/src/net/internal/socktest/sys_unix.go:15 +0x15f\r\n  net/internal/socktest.(*Switch).Socket-fm()\r\n      /home/pmarks/src/go/src/net/main_unix_test.go:23 +0x60\r\n  net.sysSocket()\r\n      /home/pmarks/src/go/src/net/sock_cloexec.go:20 +0x94\r\n  net.socket()\r\n      /home/pmarks/src/go/src/net/sock_posix.go:38 +0x71\r\n  net.internetSocket()\r\n      /home/pmarks/src/go/src/net/ipsock_posix.go:137 +0x159\r\n  net.dialTCP()\r\n      /home/pmarks/src/go/src/net/tcpsock_posix.go:176 +0x131\r\n  net.dialSingle()\r\n      /home/pmarks/src/go/src/net/dial.go:243 +0x453\r\n  net.(*Dialer).Dial.func2()\r\n      /home/pmarks/src/go/src/net/dial.go:177 +0x1a6\r\n  net.dial()\r\n      /home/pmarks/src/go/src/net/fd_unix.go:41 +0x7c\r\n  net.(*Dialer).Dial()\r\n      /home/pmarks/src/go/src/net/dial.go:180 +0x71b\r\n  net.Dial()\r\n      /home/pmarks/src/go/src/net/dial.go:147 +0xcf\r\n  net.TestRace.func1()\r\n      /home/pmarks/src/go/src/net/dial_test.go:254 +0x5e\r\n\r\nPrevious write by goroutine 8:\r\n  net/internal/socktest.(*Switch).addLocked.func1()\r\n      /home/pmarks/src/go/src/net/internal/socktest/switch_unix.go:25 +0x78\r\n  sync.(*Once).Do()\r\n      /home/pmarks/src/go/src/sync/once.go:44 +0xf9\r\n  net/internal/socktest.(*Switch).addLocked()\r\n      /home/pmarks/src/go/src/net/internal/socktest/switch_unix.go:25 +0x7e\r\n  net/internal/socktest.(*Switch).Socket()\r\n      /home/pmarks/src/go/src/net/internal/socktest/sys_unix.go:36 +0x6dd\r\n  net/internal/socktest.(*Switch).Socket-fm()\r\n      /home/pmarks/src/go/src/net/main_unix_test.go:23 +0x60\r\n  net.sysSocket()\r\n      /home/pmarks/src/go/src/net/sock_cloexec.go:20 +0x94\r\n  net.socket()\r\n      /home/pmarks/src/go/src/net/sock_posix.go:38 +0x71\r\n  net.internetSocket()\r\n      /home/pmarks/src/go/src/net/ipsock_posix.go:137 +0x159\r\n  net.dialTCP()\r\n      /home/pmarks/src/go/src/net/tcpsock_posix.go:176 +0x131\r\n  net.dialSingle()\r\n      /home/pmarks/src/go/src/net/dial.go:243 +0x453\r\n  net.(*Dialer).Dial.func2()\r\n      /home/pmarks/src/go/src/net/dial.go:177 +0x1a6\r\n  net.dial()\r\n      /home/pmarks/src/go/src/net/fd_unix.go:41 +0x7c\r\n  net.(*Dialer).Dial()\r\n      /home/pmarks/src/go/src/net/dial.go:180 +0x71b\r\n  net.Dial()\r\n      /home/pmarks/src/go/src/net/dial.go:147 +0xcf\r\n  net.TestRace.func1()\r\n      /home/pmarks/src/go/src/net/dial_test.go:254 +0x5e\r\n\r\nGoroutine 7 (running) created at:\r\n  net.TestRace()\r\n      /home/pmarks/src/go/src/net/dial_test.go:257 +0xcd\r\n  testing.tRunner()\r\n      /home/pmarks/src/go/src/testing/testing.go:454 +0xfb\r\n\r\nGoroutine 8 (running) created at:\r\n  net.TestRace()\r\n      /home/pmarks/src/go/src/net/dial_test.go:258 +0xe3\r\n  testing.tRunner()\r\n      /home/pmarks/src/go/src/testing/testing.go:454 +0xfb\r\n==================\r\nPASS\r\nSocket statistical information:\r\n(inet4, stream|0x80800, default): opened=2, connected=0, listened=0, accepted=0, closed=2, openfailed=0, connectfailed=2, listenfailed=0, acceptfailed=0, closefailed=0\r\n\r\nFound 1 data race(s)\r\nFAIL    net     1.040s\r\n```",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		},
+		{
+			"name": "Testing"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-13T21:38:47Z",
+	"created_at": "2015-05-13T03:27:36Z",
+	"updated_at": "2016-06-25T02:08:17Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

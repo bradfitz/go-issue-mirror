@@ -1,0 +1,25 @@
+{
+	"id": 51286769,
+	"number": 7481,
+	"state": "closed",
+	"title": "cmd/gofmt: incorrect comment alignment with double-width runes",
+	"body": "by **travis.cardwell**:\n\n\u003cpre\u003eThe gofmt command does not take into account the width of runes when calculating the\nalignment for comments.  I ran into the issue in a program that has rune constants, some\nof which are single-width and some of which are double-width, but the issue is more\napparent in the following (contrived) example:\n\nWhat does 'go version' print?\n\n$ go version\ngo version go1.2.1 linux/amd64\n\nWhat steps will reproduce the problem?\n\n$ cat fmttest.go\npackage fmttest\n\nconst (\n\tmsgEn = \u0026quot;This is a test.\u0026quot;    // English\n\tmsgJa = \u0026quot;これはテストです。\u0026quot; // Japanese\n)\n\n$ gofmt -d fmttest.go\ndiff fmttest.go gofmt/fmttest.go\n--- /tmp/gofmt819271649\t2014-03-06 14:13:28.000000000 +0900\n+++ /tmp/gofmt002870220\t2014-03-06 14:13:28.000000000 +0900\n@@ -1,6 +1,6 @@\n package fmttest\n \n const (\n-\tmsgEn = \u0026quot;This is a test.\u0026quot;    // English\n-\tmsgJa = \u0026quot;これはテストです。\u0026quot; // Japanese\n+\tmsgEn = \u0026quot;This is a test.\u0026quot; // English\n+\tmsgJa = \u0026quot;これはテストです。\u0026quot;       // Japanese\n )\n\nThe issue is not clear in this web interface [with my font settings] because spaces do\nnot have the same constant width as non-spaces, but it is clear if you copy the above\nexample into a file and run the gofmt command in a terminal.\n\nWhat happened?\n\nThe alignment for comments is calculated based on the maximum width of code in the\nblock.  Currently, all runes are assumed to have a width of 1.  With tabwidth=8, the\nwidth of the msgEn code is 33 columns, and the width of the msgJa code is incorrectly\ncalculated as 27 columns.  Comments are therefore calculated to start on column 35.  The\nmsgEn comment is offset from the code by one space, and the msgJa comment is offset from\nthe code by 7 spaces.  The result is not aligned properly.  The original alignment was\nexpected to be correct.\n\nWhat should have happened instead?\n\nInstead, the width of runes should be taken into account when calculating alignment. \nWith tabwidth=8, the width of the msgJa code should be calculated as 36 columns, as all\n9 runes in the string are double-width.  Comments should then be calculated to start on\ncolumn 38, resulting in the original alignment.\n\nPlease provide any additional information below.\n\nNote that the length of a rune (in bytes) is unrelated to the width of a rune (in\ncolumns).  When testing, I highly recommend including troublesome cases.  For example,\nthe following rune is commonly used in Japanese yet causes issues in some software:\n\n\u003ca href=\"http://decodeunicode.org/u+203B\"\u003ehttp://decodeunicode.org/u+203B\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2014-12-08T10:41:33Z",
+	"created_at": "2014-03-06T05:56:04Z",
+	"updated_at": "2016-06-25T01:29:10Z"
+}

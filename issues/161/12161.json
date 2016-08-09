@@ -1,0 +1,22 @@
+{
+	"id": 101265866,
+	"number": 12161,
+	"state": "closed",
+	"title": "misc/cgo/testcshared: cgo testp2 fails on OS X",
+	"body": "With commit 467a2cb73ca867ccdb1dd22be220fa51b6d52491, the ../misc/cgo/testcshared test fails on MacOS 10.10.5 (14F27).\r\n\r\nThe problem is that testp2 gives random output instead of PASS. It seems like fd 10 is open and used by MacOS for something else at the time we read from it, so we get that garbage instead of the data that libgo2 is trying to send on it. When I change to fd 100, the problem goes away.\r\n\r\nNot saying this is a real fix, just that this points to what the problem is.\r\n\r\n```\r\ndiff --git a/misc/cgo/testcshared/main2.c b/misc/cgo/testcshared/main2.c\r\nindex 4023383..fbdbc48 100644\r\n--- a/misc/cgo/testcshared/main2.c\r\n+++ b/misc/cgo/testcshared/main2.c\r\n@@ -9,7 +9,7 @@\r\n #include \u003ctime.h\u003e\r\n #include \u003cunistd.h\u003e\r\n \r\n-#define fd (10)\r\n+#define fd (100)\r\n \r\n // Tests libgo2.so, which does not export any functions.\r\n // Read a string from the file descriptor and print it.\r\ndiff --git a/misc/cgo/testcshared/src/libgo2/libgo2.go b/misc/cgo/testcshared/src/libgo2/libgo2.go\r\nindex 6096860..6e513f0 100644\r\n--- a/misc/cgo/testcshared/src/libgo2/libgo2.go\r\n+++ b/misc/cgo/testcshared/src/libgo2/libgo2.go\r\n@@ -21,7 +21,7 @@ import (\r\n // that the C code can also use.\r\n \r\n const (\r\n-\tfd = 10\r\n+\tfd = 100\r\n )\r\n \r\n func init() {\r\n```",
+	"user": {
+		"login": "jeffallen",
+		"id": 1131456,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-12-05T03:56:43Z",
+	"created_at": "2015-08-16T13:42:33Z",
+	"updated_at": "2015-12-05T03:56:43Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

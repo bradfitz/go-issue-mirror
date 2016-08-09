@@ -1,0 +1,12 @@
+{
+	"id": 100012882,
+	"body": "In the reverse buildlet healthcheck, this channel receive is blocking for 33+ minutes while holding the mutex:\r\n\r\n```go\r\n// reverseHealthCheck requests the status page of each idle buildlet.                                                                                              \r\n// If the buildlet fails to respond promptly, it is removed from the pool.                                                                                         \r\nfunc (p *reverseBuildletPool) reverseHealthCheck() {\r\n        p.mu.Lock()\r\n        responses := make(map[*reverseBuildlet]chan error)\r\n        for _, b := range p.buildlets {\r\n                if b.inUseAs == \"health\" { // sanity check                                                                                                         \r\n                        panic(\"previous health check still running\")\r\n                }\r\n                if b.inUseAs != \"\" {\r\n                        continue // skip busy buildlets                                                                                                            \r\n                }\r\n                b.inUseAs = \"health\"\r\n                res := make(chan error, 1)\r\n                responses[b] = res\r\n                client := b.client\r\n                go func() {\r\n                        _, err := client.Status()\r\n                        res \u003c- err\r\n                }()\r\n        }\r\n        p.mu.Unlock()\r\n        time.Sleep(5 * time.Second) // give buildlets time to respond                                                                                              \r\n        p.mu.Lock()\r\n\r\n        var buildlets []*reverseBuildlet\r\n        for _, b := range p.buildlets {\r\n                res := responses[b]\r\n                if b.inUseAs != \"health\" || res == nil {\r\n                        // buildlet skipped or registered after health check                                                                                       \r\n                        buildlets = append(buildlets, b)\r\n                        continue\r\n                }\r\n                b.inUseAs = \"\"\r\n                err, done := \u003c-res     // \u003c------------ HERE\r\n```\r\n\r\n(that final line)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-07T20:43:02Z",
+	"updated_at": "2015-05-07T20:43:02Z"
+}

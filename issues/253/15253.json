@@ -1,0 +1,27 @@
+{
+	"id": 147809952,
+	"number": 15253,
+	"state": "closed",
+	"title": "net/http: HTTP/1 transport connection broken: readLoopPeekFailLocked: \u003cnil\u003e",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1) What version of Go are you using (`go version`)?\r\n\r\n```\r\n$ go version\r\ngo version go1.6 linux/amd64\r\n```\r\n\r\n2) What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3) What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nProxying requests using `httputil.ReverseProxy` with a default `http.Transport`. A simplified version of the code is [here](https://play.golang.org/p/fL69O3CWxB).\r\n\r\n4) What did you expect to see?\r\n\r\nWe expect everything to run fine. \r\n\r\n5) What did you see instead?\r\n\r\nThere were errors `net/http: HTTP/1 transport connection broken: readLoopPeekFailLocked: \u003cnil\u003e`. The error happened *occasionally* and seemed to only happen to backend services that responds in gzip. This is [the code](https://github.com/golang/go/blob/dfded57819dd9111afffc25360cd3e147859d354/src/net/http/transport.go#L1292) that emitted the error.\r\n\r\nAfter some investigation, we thought it might be related to keep alive that when all the buffers line up alright but EOF was seen (like from the gzip reader) and the connection was thought to be free again and was put back in the pool. Then when the next request uses that connection it saw the end of the chunked encoding. We disabled keel alive by setting `DisableKeepAlives` on the transport and the errors hasn't happened for the past 24 hours. We also dug around and thought it might be related to https://github.com/golang/go/commit/18072adbca7ee2cb2019704577a8f3f142010ba7 (but don't quote us on that).\r\n\r\nLet us know if you need more info.\r\n\r\n/cc @dpiddy @spofdamon\r\n\r\n",
+	"user": {
+		"login": "jingweno",
+		"id": 169064,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "WaitingForInfo"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2016-05-13T23:32:40Z",
+	"created_at": "2016-04-12T16:44:13Z",
+	"updated_at": "2016-05-13T23:32:40Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

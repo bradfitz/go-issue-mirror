@@ -1,0 +1,28 @@
+{
+	"id": 51277640,
+	"number": 1315,
+	"state": "closed",
+	"title": "cmd/6c: compiler bug",
+	"body": "\u003cpre\u003ewreck=; cat x.c\ntypedef unsigned long long uint64;\ntypedef unsigned int uint32;\n\nvoid\nf(char *b)\n{\n\tuint32 off;\n\t\n\toff = (uint32)(uint64)b \u0026amp; 7;\n\tif(off) {\n\t\tb += 8 - off;\n\t}\n\tf(b);\n}\n\nwreck=; 6c -S x.c\n(x.c:5)\tTEXT\tf+0(SB),$32-8\n(x.c:5)\tMOVQ\tb+0(FP),!!DX\n(x.c:9)\tMOVL\tDX,!!CX\n(x.c:9)\tANDL\t$7,!!CX\n(x.c:10)\tCMPL\tCX,$0-0\n(x.c:10)\tJEQ\t,!!4(PC)\n(x.c:11)\tMOVL\t$8,!!AX\n(x.c:11)\tSUBL\tCX,!!AX\n(x.c:11)\tADDQ\tAX,!!DX\n(x.c:13)\tMOVQ\tDX,!!(SP)\n(x.c:13)\tCALL\t,!!f+0(SB)\n(x.c:13)\tRET\t,!!\n(x.c:13)\tEND\t,!!\nwreck=; \n\nThat's correct, but note the MOVL DX, CX at x.c:9.\nIt is doing the \u0026amp; in CX so that DX (= b) can be used later\nin the call to f.\n\nwreck=; 6c -S x.c | grep :$(grep -n '(uint32)(uint64)' x.c | awk -F: '{print $1}')\n(x.c:9)\tMOVL\tDX,!!CX\n(x.c:9)\tANDL\t$7,!!CX\nwreck=; \n\nIf we make the function more complicated, the MOVL\nturns around, so that the original register gets used\nfor the \u0026amp; and the \u0026quot;copy\u0026quot; (only copying the bottom 32 bits)\ngets used later as b.\n\nwreck=; cat y.c\ntypedef unsigned char byte;\ntypedef int int32;\ntypedef unsigned long long uint64;\ntypedef unsigned int uint32;\n\nvoid throw(char*);\nbyte *p[2];\n\nvoid\nf(byte *b)\n{\n\tint32 off;\n\tuint64 *bitp;\n\tuint64 woff;\n\tvoid **vp;\n\n\toff = (uint32)(uint64)b \u0026amp; 7;\n\tif(off)\n\t\tb++;\n\n\tvp = (void**)b;\n\tb = vp[1];\n\twoff = (uint64*)b - (uint64*)p[0];\n\tbitp = (uint64*)p[0] - woff/2 - 1;\n\tif((byte*)bitp \u0026lt; (byte*)p[1] || (byte*)bitp \u0026gt;= (byte*)p[0])\n\t\tthrow(\u0026quot;bad bit pointer\u0026quot;);\n}\nwreck=; 6c -S y.c | grep :$(grep -n '(uint32)(uint64)' y.c | awk -F: '{print $1}')\n(y.c:17)\tMOVL\tAX,!!DX\n(y.c:17)\tANDL\t$7,!!AX\nwreck=; \n\nThe \u0026quot;saved\u0026quot; DX gets used later, having lost the top 32 bits.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ken",
+		"id": 9967170,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:07:46Z",
+	"created_at": "2010-11-30T23:41:35Z",
+	"updated_at": "2016-06-24T19:22:48Z"
+}

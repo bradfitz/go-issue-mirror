@@ -1,0 +1,12 @@
+{
+	"id": 118683590,
+	"body": "There are two ways to revert to the previous behavior:\r\n```\r\ndiff --git a/src/runtime/syscall_windows.go b/src/runtime/syscall_windows.go\r\nindex 8e069cd..2d22992 100644\r\n--- a/src/runtime/syscall_windows.go\r\n+++ b/src/runtime/syscall_windows.go\r\n@@ -103,6 +103,12 @@ func syscall_loadlibrary(filename *uint16) (handle, err uintptr) {\r\n        return\r\n }\r\n\r\n+var fdh uintptr\r\n+\r\n+func init() {\r\n+       fdh = stdcall1(_GetStdHandle, ^uintptr(10))\r\n+}\r\n+\r\n //go:linkname syscall_getprocaddress syscall.getprocaddress\r\n //go:nosplit\r\n func syscall_getprocaddress(handle uintptr, procname *byte) (outhandle, err uintptr) {\r\n@@ -110,6 +116,7 @@ func syscall_getprocaddress(handle uintptr, procname *byte) (outhandle, err uint\r\n        c.fn = getGetProcAddress()\r\n        c.n = 2\r\n        c.args = uintptr(noescape(unsafe.Pointer(\u0026handle)))\r\n+       stdcall5(_WriteFile, fdh, 0, 0, 0, 0)\r\n        cgocall(asmstdcallAddr, unsafe.Pointer(c))\r\n        outhandle = c.r1\r\n        if outhandle == 0 {\r\n```\r\n\r\nor\r\n\r\n```\r\ndiff --git a/src/runtime/syscall_windows.go b/src/runtime/syscall_windows.go\r\nindex 8e069cd..218108d 100644\r\n--- a/src/runtime/syscall_windows.go\r\n+++ b/src/runtime/syscall_windows.go\r\n@@ -108,7 +108,7 @@ func syscall_loadlibrary(filename *uint16) (handle, err uintptr) {\r\n func syscall_getprocaddress(handle uintptr, procname *byte) (outhandle, err uintptr) {\r\n        c := \u0026getg().m.syscall\r\n        c.fn = getGetProcAddress()\r\n-       c.n = 2\r\n+       c.n = 5\r\n        c.args = uintptr(noescape(unsafe.Pointer(\u0026handle)))\r\n        cgocall(asmstdcallAddr, unsafe.Pointer(c))\r\n        outhandle = c.r1\r\n```\r\n\r\nHowever in both cases they cause the current exception handler to work and cause the _AddVectoredContinueHandler to stop working.\r\n\r\n...\r\n\r\nHas the go team published guidelines for interacting with cgo memory, especially in windows? I've heard talk of that but haven't seen anything, and I lack the understanding to derive it unfortunately.",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-06T00:57:25Z",
+	"updated_at": "2015-07-06T00:57:25Z"
+}

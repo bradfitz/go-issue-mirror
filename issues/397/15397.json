@@ -1,0 +1,26 @@
+{
+	"id": 149961932,
+	"number": 15397,
+	"state": "open",
+	"title": "cmd/compile: ephemeral slicing doesn't need protection against next object pointers",
+	"body": "```\r\nfunc f(b []byte) byte {\r\n\tb = b[3:]\r\n\treturn b[4]\r\n}\r\n```\r\nWe compile this to something like (bounds checks omitted):\r\n```\r\n    p = b.ptr\r\n    inc = 3\r\n    if b.cap == 3 {\r\n        inc = 0\r\n    }\r\n    p += inc\r\n    return *(p+4)\r\n```\r\nThe `if` in the middle is there to make sure we don't manufacture a pointer to the next object in memory.  But the resulting pointer is never exposed to the garbage collector, so that `if` is unnecessary.  Manufacturing a pointer to the next object in memory is ok if that pointer is never spilled at a safe point.  (Bounds checks will make sure such a pointer is never actually used.)\r\n\r\nUnfortunately, I don't see an easy way to do this optimization in the current compiler.  Marked as unplanned.\r\n\r\nSee #14849 ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 0,
+	"created_at": "2016-04-21T04:23:19Z",
+	"updated_at": "2016-04-21T04:23:19Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

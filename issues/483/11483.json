@@ -1,0 +1,27 @@
+{
+	"id": 91998701,
+	"number": 11483,
+	"state": "open",
+	"title": "cmd/compile: redundant checks for nil pointers when calling an inlined method",
+	"body": "(This is an issue about less than ideal generated code. I don't know if the project accepts such issues?)\r\n\r\nIn real programs, I've observed some redundant checks for nil pointers that I think the compiler should be able to optimize away. They seem to have to do with inlined methods.\r\n\r\nHere is a reduced test case that panics due to a nil pointer dereference:\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"bytes\"\r\n  \r\ntype Foo struct {\r\n  buf bytes.Buffer\r\n} \r\n  \r\nfunc (f *Foo) size() uint32 {\r\n  return uint32(f.buf.Len())\r\n}\r\n  \r\nfunc main() {\r\n  var f *Foo\r\n  f.size()\r\n} \r\n```\r\n\r\nThe segfault looks like this in GDB (with Intel syntax):\r\n\r\n```\r\nDump of assembler code for function main.main:\r\n   0x0000000000400c00 \u003c+0\u003e:     xor    eax,eax\r\n   0x0000000000400c02 \u003c+2\u003e:     cmp    rax,0x0\r\n   0x0000000000400c06 \u003c+6\u003e:     je     0x400c16 \u003cmain.main+22\u003e\r\n   0x0000000000400c08 \u003c+8\u003e:     mov    rbp,QWORD PTR [rax+0x8]\r\n   0x0000000000400c0c \u003c+12\u003e:    mov    rbx,QWORD PTR [rax+0x18]\r\n   0x0000000000400c10 \u003c+16\u003e:    sub    rbp,rbx\r\n   0x0000000000400c13 \u003c+19\u003e:    mov    ebx,ebp\r\n   0x0000000000400c15 \u003c+21\u003e:    ret    \r\n=\u003e 0x0000000000400c16 \u003c+22\u003e:    mov    DWORD PTR [rax],eax\r\n   0x0000000000400c18 \u003c+24\u003e:    jmp    0x400c08 \u003cmain.main+8\u003e\r\n```\r\n\r\nThe code checks `f` for being nil, and intentionally segfaults if so. But I believe it doesn't need to: the compiler knows the minimum page size on the architecture, and knows that `Foo` is less than a page long. Therefore if `f` is nil, then `f+0x8` will be on the same unmapped page as `0x0`, and should segfault just the same as the write to `0x0` that the generated code uses. In other words: the branch need not exist, because the instruction at `+8` will already segfault if `f` is nil.\r\n\r\nIndeed when a member of `Foo` is instead read directly, this fact appears to be used:\r\n\r\n```Go\r\npackage main\r\n\r\ntype Foo struct {\r\n  i uint32\r\n  j uint32\r\n} \r\n  \r\nfunc (f *Foo) size() uint32 {\r\n  return f.j\r\n}\r\n  \r\nfunc main() {\r\n  var f *Foo\r\n  f.size()\r\n} \r\n```\r\n\r\n```\r\nDump of assembler code for function main.main:\r\n   0x0000000000400c00 \u003c+0\u003e:     xor    eax,eax\r\n=\u003e 0x0000000000400c02 \u003c+2\u003e:     mov    ebp,DWORD PTR [rax+0x4]\r\n   0x0000000000400c05 \u003c+5\u003e:     ret    \r\n```\r\n\r\nGo version:\r\n\r\n```\r\n% go version\r\ngo version devel +3b7841b Mon Jun 29 01:49:05 2015 +0000 linux/amd64\r\n```",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-06-30T06:18:35Z",
+	"updated_at": "2015-11-04T20:52:48Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 181803890,
+	"body": "Thanks Ian for the clear description!\r\n\r\nNow I think I understand another strange thing: with \r\ns := struct { p C.ub4, q *GoObj }\r\nC.f(\u0026s.p)\r\ndoes not work, but (!) with \r\ns := struct{ p [1]C.ub4, q *GoObj },\r\nC.f(\u0026s.p[0])\r\ndoes work - here we encapsulated the referent, so cgo does not check q.\r\n\r\n\r\nBack to the original issue: this understanding allows a not-too-ugly workaround:\r\n\r\n        i := i % int(n)\r\n        carr := arr[i : i+1 : i+1]\r\n        i = (i + 100) % int(n)\r\n        darr := arr[i : i+1 : i+1]\r\n        //C.call(\u0026arr[i%int(n)], \u0026arr[(i+100)%int(n)])\r\n        C.call(\u0026carr[0], \u0026darr[0])\r\n \r\nBy calling with a one-element-length array (capped), it works:\r\n\r\n    :tgulacsi@tgulacsi-Aspire-V3-371: ~/src/github.com/tgulacsi/go/cgo22\r\n    ! GODEBUG=cgocheck=0 go test  -run=X -bench=.\r\n    testing: warning: no tests to run\r\n    PASS\r\n    BenchmarkCGONaive-4      3000000               494 ns/op\r\n    BenchmarkCGOSliced-4     3000000               501 ns/op\r\n    BenchmarkCGOCapped-4     3000000               507 ns/op\r\n    ok      github.com/tgulacsi/go/cgo22    6.400s\r\n    :tgulacsi@tgulacsi-Aspire-V3-371: ~/src/github.com/tgulacsi/go/cgo22\r\n    $ GODEBUG=cgocheck=1 go test  -run=X -bench=.\r\n    testing: warning: no tests to run\r\n    PASS\r\n    BenchmarkCGONaive-4          100          18490218 ns/op\r\n    BenchmarkCGOSliced-4         100          18211666 ns/op\r\n    BenchmarkCGOCapped-4     3000000               568 ns/op\r\n    ok      github.com/tgulacsi/go/cgo22    6.305s\r\n\r\nHere the \"Naive\" is the old version, the \"Sliced\" is the carr := arr[i:i+1] version, and the \"Capped\" is the above carr := arr[i:i+1:i+1] version.\r\n\r\n(same repo has the new code).\r\n\r\n\r\nI think at least we should document it more explicitly, that the cgo checker checks all reachable pointers in the struct/array/slice level.\r\n",
+	"user": {
+		"login": "tgulacsi",
+		"id": 256074,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-09T10:29:31Z",
+	"updated_at": "2016-02-09T10:30:09Z"
+}

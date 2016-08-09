@@ -1,0 +1,12 @@
+{
+	"id": 66055748,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11 by **tarmigan**:\n\n\u003cpre\u003eYes, there are 20 goroutines which go through the ~3000 urls.  No, they should not be\nsharing *bufio.Readers.  Each goroutine does its own http.Get() and then keeps some\nslices of the data Read() from response.Body and passes a struct with those slices on a\nchannel.  By the time the data is passed on the channel the response.Body should be\nclosed.  I did try to copy() the slices to reduce fragmentation and maybe fix the\nproblem, but that did not seem to make a difference.\n\nBut, note that I am not the direct creator (or user) of the *bufio.Reader.  That is\nsomething in the http code.  See the first backtrace of the first goroutine in the\npanic.  I do wonder if there is anything in http.*persistConn·readLoop that might share\na pool or something?\n\nThe failures did seem to often come up 1500-2500 urls in.  At the time I reported it, I\nalso tried to run with GOGC=off and it ran out of memory after about 1600 urls if I\nremember right.  On the other hand, I have reproduced it on amd64 which I believe has a\nmore reliable GC than i386.  Also I did see it occur once after about 100 or 200 urls.\n\nI can also reproduce \u003ca href=\"https://golang.org/issue/1650\"\u003eissue #1650\u003c/a\u003e with godoc, so if you find a fix for 1650, I can see if\nit fixes this issue.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-04-26T06:25:48Z",
+	"updated_at": "2014-12-08T10:09:36Z"
+}

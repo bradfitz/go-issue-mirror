@@ -1,0 +1,31 @@
+{
+	"id": 51284037,
+	"number": 5690,
+	"state": "open",
+	"title": "regexp: no way to replace submatches with a function",
+	"body": "by **denys.seguret**:\n\n\u003cpre\u003eReplaceAllStringFunc is useful when you need to process the match to compute the\nreplacement, but sometimes you need to match a bigger string than the one you want to\nreplace. A similar function able to replace submatch(es) seems necessary.\n\nLet's say you have strings like\n\n    input := `bla b:foo=\u0026quot;hop\u0026quot; blabla b:bar=\u0026quot;hu?\u0026quot;`\n\nand you want to replace the part between quotes in b:foo=\u0026quot;hop\u0026quot; and\nb:bar=\u0026quot;hu?\u0026quot; using a function.\n\nIt's easy to build a regular expression to get the match and submatch, for example\n\n    r := regexp.MustCompile(`\\bb:\\w+=\u0026quot;([^\u0026quot;]+)\u0026quot;`)\n\nbut when you use ReplaceAllStringFunc, the callback is only provided the whole match,\nnot the submatch, and must return the whole string. Practically this means you need to\nexecute the regexp (or another one) in the callback, for example like this :\n\n        input := `bla bla b:foo=\u0026quot;hop\u0026quot; blablabla b:bar=\u0026quot;hu?\u0026quot;`\n        r := regexp.MustCompile(`(\\bb:\\w+=\u0026quot;)([^\u0026quot;]+)`)\n        fmt.Println(r.ReplaceAllStringFunc(input, func(m string) string {\n                parts := r.FindStringSubmatch(m)\n                return parts[1] + complexFunc(parts[2])\n        }))\n\nI think a function ReplaceAllStringSubmatchFunc would be useful and would avoid the\nsecond pass. The callback would receive the submatch and return the replacement of the\nsubmatch. The last example would be rewritten as\n\n        input := `bla bla b:foo=\u0026quot;hop\u0026quot; blablabla b:bar=\u0026quot;hu?\u0026quot;`\n        r := regexp.MustCompile(`\\bb:\\w+=\u0026quot;([^\u0026quot;]+)\u0026quot;`)\n        fmt.Println(r.ReplaceAllStringSubmatchFunc(input, complexFunc))\n        \nA similar function (ReplaceAllStringSubmatchSliceFunc ?) could be designed to give the\ncallback an array of strings that the callback would change. In fact it could be decided\nthat only this last function is really necessary.\n\nLinks :\n\n - \u0026quot;How-to\u0026quot; question on Stack-Overflow : \u003ca href=\"http://stackoverflow.com/q/17065465/263525\"\u003ehttp://stackoverflow.com/q/17065465/263525\u003c/a\u003e\n - Playground link : \u003ca href=\"http://play.golang.org/p/I6Pg8OUeTj\"\u003ehttp://play.golang.org/p/I6Pg8OUeTj\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2013-06-12T16:42:41Z",
+	"updated_at": "2015-07-22T16:42:54Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

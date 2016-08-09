@@ -1,0 +1,27 @@
+{
+	"id": 160775634,
+	"number": 16088,
+	"state": "open",
+	"title": "go/types: Importers should create missing Packages",
+	"body": "We should change the go/types.Importer contract so that implementations are encouraged to return a Package always, even if they also return an error.  This would enable the type checker to do a better job when imported packages are missing.  For example, it would avoid many secondary \"undeclared name\" errors.\r\n\r\nConsider this code:\r\n\r\n```\r\npackage main\r\nimport \"encoding/json\"\r\nvar x json.Marshaler\r\n```\r\n\r\nAssume that the importer cannot find \"encoding/json\" for some reason.  If it nonetheless returned a Package (named \"json\") along with a \"no such package\" error, the type checker would know that the json identifier on line 3 was a reference to the (missing) package imported on line 2, avoiding an \"undefined: json\" error.\r\n\r\nAnother reason to implement this change: While adding a new check to the vet command, I rediscovered how tricky it is to use go/types when imports may be missing.  The new vet check needs to identify calls to the function context.WithCancel and it inspects each ast.SelectorExpr in turn. When imports succeed, we can look up the .Sel identifier in the Uses map; when imports fail, this identifier is obviously not in the map, but it's easy enough to see that it is spelled \"WithCancel\".  The situation for the package name is trickier: if the import failed, the \"context\" identifier is not present in the Uses map either, forcing us to use the more fragile heuristic that its name is spelled \"context\".  This heuristic is reasonable for a single-segment name, but what if the package was called \"foo/context\" (as is the case for Google's version of Context, for some value of foo)?  There is no connection between the identifier and the import declaration, and we're left guessing.  Had the importer returned a Package for the missing import, the type checker could have created a PkgName object and inserted it into the Uses map, making it easier to identify the import from a SelectorExpr.\r\n\r\nBTW: The binary importers already do something like this.  They create packages when they are first referenced by the export data of another package, even if they later turn out not to be importable.  Indeed, they must create \"phantom\" objects for references that precede declarations, to ensure that objects are unique and canonical.  And for this reason, the creation of phantoms must occur in the importer---it can't be done in the type checker itself.\r\n\r\nI'm happy to make the change if you agree it's worthwhile.  It is backward-compatible.",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-16T22:29:29Z",
+	"updated_at": "2016-06-16T22:31:21Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

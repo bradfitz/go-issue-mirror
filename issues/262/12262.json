@@ -1,0 +1,22 @@
+{
+	"id": 102441974,
+	"number": 12262,
+	"state": "closed",
+	"title": "net/http/httptest: race on Server.Close and long-running requests",
+	"body": "httptest.Server races between requests coming into its mux, and Server.Close. Normal usage doesn't typically trigger the race detector, but when a test client timeouts (we do this intentionally in letsencrypt/boulder to test how boulder fails) and moves on to teardown the test with Close, a race is found easily.\r\n\r\nThis code has a client that always times out when making a request to the server and reliably has a race detected: https://play.golang.org/p/aC0YTPBYGn\r\n\r\nThis is its output when run with the race detector:\r\n\r\n    GET error: Get http://127.0.0.1:61653: net/http: request canceled (Client.Timeout exceeded while awaiting headers)\r\n    ==================\r\n    WARNING: DATA RACE\r\n    Write by main goroutine:\r\n      sync.raceWrite()\r\n          /Users/jmhodges/projects/go/src/sync/race.go:41 +0x2e\r\n      sync.(*WaitGroup).Wait()\r\n          /Users/jmhodges/projects/go/src/sync/waitgroup.go:124 +0xf9\r\n      net/http/httptest.(*Server).Close()\r\n          /Users/jmhodges/projects/go/src/net/http/httptest/server.go:168 +0x80\r\n      main.main()\r\n          /Users/jmhodges/projects/foo.go:35 +0x1fb\r\n    \r\n    Previous read by goroutine 10:\r\n      sync.raceRead()\r\n          /Users/jmhodges/projects/go/src/sync/race.go:37 +0x2e\r\n      sync.(*WaitGroup).Add()\r\n          /Users/jmhodges/projects/go/src/sync/waitgroup.go:66 +0xfa\r\n      net/http/httptest.(*waitGroupHandler).ServeHTTP()\r\n          /Users/jmhodges/projects/go/src/net/http/httptest/server.go:198 +0x5c\r\n      net/http.serverHandler.ServeHTTP()\r\n          /Users/jmhodges/projects/go/src/net/http/server.go:1862 +0x206\r\n      net/http.(*conn).serve()\r\n          /Users/jmhodges/projects/go/src/net/http/server.go:1361 +0x117c\r\n    \r\n    Goroutine 10 (running) created at:\r\n      net/http.(*Server).Serve()\r\n          /Users/jmhodges/projects/go/src/net/http/server.go:1910 +0x464\r\n    ==================\r\n    Found 1 data race(s)\r\n\r\nIt seems the race detector is saying that between Server.Close closing the listener and Server.Close calling WaitGroup.Wait, a new Request could be pulled off the listener, but that the new Request could then only get to waitGroupHandler.ServeHTTP's WaitGroup.Add after the Wait is called.",
+	"user": {
+		"login": "jmhodges",
+		"id": 598,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-12-04T00:10:46Z",
+	"created_at": "2015-08-21T18:50:50Z",
+	"updated_at": "2016-01-07T18:32:13Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

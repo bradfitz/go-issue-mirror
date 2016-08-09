@@ -1,0 +1,22 @@
+{
+	"id": 125881048,
+	"number": 13905,
+	"state": "closed",
+	"title": "database/sql: all named []byte types get driver memory like RawBytes",
+	"body": "* Go version: 1.4.3, 1.5.2, and git\r\n* OS: Linux x86_64\r\n\r\nI added this test to [src/database/sql/convert_test.go](https://github.com/golang/go/blob/master/src/database/sql/convert_test.go):\r\n\r\n```go\r\nfunc TestUserDefinedBytes(t *testing.T) {\r\n\ttype userDefinedBytes []byte\r\n\tvar u userDefinedBytes\r\n\tv := []byte(\"foo\")\r\n\r\n\tconvertAssign(\u0026u, v)\r\n\tif \u0026u[0] == \u0026v[0] {\r\n\t\tt.Fatal(\"userDefinedBytes got potentially dirty driver memory\")\r\n\t}\r\n}\r\n```\r\n\r\n* I expected this test to pass, but\r\n* It fails\r\n\r\nThe problem is [line 207 of convert.go](https://github.com/golang/go/blob/master/src/database/sql/convert.go#L207);  in this case, dest is assignable the src pointer, so it just assigns it instead of cloning it.  The documentation doesn't actually make any promises about where memory is going to come from when you call `Scan`, but it seems obvious from the code that RawBytes was supposed to be treated specially as it gets driver memory via a different code path.  Having that behavior inadvertently for non-RawBytes named `[]byte` types seems like an oversight.\r\n\r\nThis patch fixes it, though it may potentially be present for other types or in line 217.\r\n\r\n```diff\r\ndiff --git a/src/database/sql/convert.go b/src/database/sql/convert.go\r\nindex bba5a88..fda6293 100644\r\n--- a/src/database/sql/convert.go\r\n+++ b/src/database/sql/convert.go\r\n@@ -204,7 +204,12 @@ func convertAssign(dest, src interface{}) error {\r\n \r\n        dv := reflect.Indirect(dpv)\r\n        if sv.IsValid() \u0026\u0026 sv.Type().AssignableTo(dv.Type()) {\r\n-               dv.Set(sv)\r\n+               switch b := src.(type) {\r\n+               case []byte:\r\n+                       dv.Set(reflect.ValueOf(cloneBytes(b)))\r\n+               default:\r\n+                       dv.Set(sv)\r\n+               }\r\n                return nil\r\n        }\r\n```\r\n\r\nI signed the CLA and wouldn't mind going through the contribution process, though I've never done so.",
+	"user": {
+		"login": "jmoiron",
+		"id": 218132,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-04-30T18:41:01Z",
+	"created_at": "2016-01-11T06:23:04Z",
+	"updated_at": "2016-04-30T18:41:01Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

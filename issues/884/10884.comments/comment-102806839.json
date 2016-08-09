@@ -1,0 +1,12 @@
+{
+	"id": 102806839,
+	"body": "if the docs be amended to say \"returns a non-EOF error for a Read up to the limit\", we can change \r\nmaxBytesReader.Read(p []byte) (n int, err error) to this:\r\n\r\nand I think this is better\r\n\r\n```Go\r\nfunc (l *maxBytesReader) Read(p []byte) (n int, err error) {\r\n\tif l.n \u003c= 0 {\r\n\t\tif !l.stopped {\r\n\t\t\tl.stopped = true\r\n\t\t\tif res, ok := l.w.(*response); ok {\r\n\t\t\t\tres.requestTooLarge()\r\n\t\t\t}\r\n\t\t}\r\n\t\treturn 0, errors.New(\"http: request body too large\")\r\n\t}\r\n\tif int64(len(p)) \u003e l.n {\r\n\t\tp = p[:l.n]\r\n\t}\r\n\tn, err = l.r.Read(p)\r\n\tl.n -= int64(n)\r\n\tif l.n \u003c= 0 {\r\n\t\tif !l.stopped {\r\n\t\t\tl.stopped = true\r\n\t\t\tif res, ok := l.w.(*response); ok {\r\n\t\t\t\tres.requestTooLarge()\r\n\t\t\t}\r\n\t\t}\r\n\t\terr = errors.New(\"http: request body too large\")\r\n\t\treturn\r\n\t}\r\n\treturn\r\n}\r\n```",
+	"user": {
+		"login": "chanxuehong",
+		"id": 3416908,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-17T14:13:04Z",
+	"updated_at": "2015-07-08T15:03:40Z"
+}

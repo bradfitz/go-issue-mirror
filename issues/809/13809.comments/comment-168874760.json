@@ -1,0 +1,12 @@
+{
+	"id": 168874760,
+	"body": "As I understood @jonjaylward's report, specifically this stack trace:\r\n\r\n```\r\ngoroutine 1 [running]:\r\nmain.main()\r\n    /Users/me/git/go_apps/src/test/main.go:24 +0x65\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n    /usr/local/Cellar/go/1.5.1/libexec/src/runtime/asm_amd64.s:1696 +0x1\r\n```\r\n\r\nI believe the objection is to seeing /Users/me/git/go_apps, not to /usr/local/Cellar/go/1.5.1/libexec. (Please correct me if I am wrong.)\r\n\r\nThe GOROOT_FINAL variable would change /usr/local/Cellar/go/1.5.1/libexec to something else, but it has no effect on code in GOPATH, like /Users/me/git/go_apps/....\r\n\r\nAs for the request to hide GOPATH in the source file information, we won't remove that by default. It's actually incredibly useful, even in production, to see the full path used to build the software. I certainly want to preserve that.\r\n\r\nHowever, if your local setup is such that removing the GOPATH prefix makes sense, the thing to do is to compile with\r\n\r\n    go build -gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH\r\n\r\nThat would turn the above stack trace into:\r\n\r\n```\r\ngoroutine 1 [running]:\r\nmain.main()\r\n    src/test/main.go:24 +0x65\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n    /usr/local/Cellar/go/1.5.1/libexec/src/runtime/asm_amd64.s:1696 +0x1\r\n```\r\n\r\nGiven this solution I don't think we need to reopen the issue. But I'm happy to do so if I misunderstood the request.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-05T02:30:35Z",
+	"updated_at": "2016-01-05T02:30:35Z"
+}

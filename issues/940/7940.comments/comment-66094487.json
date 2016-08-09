@@ -1,0 +1,12 @@
+{
+	"id": 66094487,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI agree. The cgi executable would be started by IIS, and would be running under \"Local\nSystem\" (or similar) system account. So it wouldn't have access to any \"user profile\".\nFrom \u003ca href=\"http://support.microsoft.com/kb/238187\"\u003ehttp://support.microsoft.com/kb/238187\u003c/a\u003e:\n\u0026gt;\u0026gt;\u0026gt;\nFor these examples, CRYPT_MACHINE_KEYSET is used because the security context in which\nthe application is running does not have access to a user profile.\n\u0026lt;\u0026lt;\u0026lt;\n\nI made this change:\n\ndiff --git a/src/pkg/crypto/rand/rand_windows.go b/src/pkg/crypto/rand/rand_windows.go\n--- a/src/pkg/crypto/rand/rand_windows.go\n+++ b/src/pkg/crypto/rand/rand_windows.go\n@@ -27,7 +27,7 @@\n \tr.mu.Lock()\n \tif r.prov == 0 {\n \t\tconst provType = syscall.PROV_RSA_FULL\n-\t\tconst flags = syscall.CRYPT_VERIFYCONTEXT | syscall.CRYPT_SILENT\n+\t\tconst flags = syscall.CRYPT_VERIFYCONTEXT | syscall.CRYPT_SILENT |\nsyscall.CRYPT_MACHINE_KEYSET\n \t\terr := syscall.CryptAcquireContext(\u0026r.prov, nil, nil, provType, flags)\n \t\tif err != nil {\n \t\t\tr.mu.Unlock()\n\nand all tests still pass. (gloume, can you please see if it helps your case?)\n\nBut I am not convinced it is safe to simply add syscall.CRYPT_MACHINE_KEYSET in general\ncase. See syscall.CRYPT_MACHINE_KEYSET description in\n\u003ca href=\"http://msdn.microsoft.com/en-us/library/windows/desktop/aa379886(v=vs.85).aspx\"\u003ehttp://msdn.microsoft.com/en-us/library/windows/desktop/aa379886(v=vs.85).aspx\u003c/a\u003e for\ndetails. Perhaps I'm mistaken.\n\nAlternatively, we can try and include syscall.CRYPT_MACHINE_KEYSET selectively. We can\ndetect, if we're running as service like so\n\u003ca href=\"http://godoc.org/code.google.com/p/winsvc/svc#IsAnInteractiveSession\"\u003ehttp://godoc.org/code.google.com/p/winsvc/svc#IsAnInteractiveSession\u003c/a\u003e, and include\nsyscall.CRYPT_MACHINE_KEYSET only then. But it complicates things for everyone.\n\nLooking for suggestions.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-06T01:00:58Z",
+	"updated_at": "2014-12-22T06:34:20Z"
+}

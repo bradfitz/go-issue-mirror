@@ -1,0 +1,28 @@
+{
+	"id": 51278176,
+	"number": 1693,
+	"state": "closed",
+	"title": "6g code generation bug: value in variable gets changed without assignment",
+	"body": "by **kenliz@cruzio.com**:\n\n\u003cpre\u003eI've found a rather complex code generation bug, where a value returned as part of a\nmulti-value return is good for one print statement, but then goes bad for two other\nprint statements, without any other assignment.\n\nIt doesn't matter if the variable is local variable, or is moved to global scope outside\nthe func. It also doesn't matter if variable grouped with other \u0026quot;small\u0026quot;\nvariables, or placed between larger variables.\n\nI've also found a rather sensitive \u0026quot;hack-around\u0026quot; where the introduction of new\nvariable, which is used only to set the original variable, can prevent the errors,\nproviding the assignment is done at the right spot.\n\nI will try to cut this down to a smaller program with the same failure, but that will\ntake some time. In the meantime. I thought the source listing, and assembly listings\nmight be of some use. So I've attached them below.\n\nThe function with the failure is:\n func (gamT *GameTree) AddTeachingPattern(szCol ah.ColValue, szRow ah.RowValue , ha int, pattTree *GameTree, pattType ah.PatternType, moveLimit int) (err os.Error, trans ah.BoardTrans, upPattTree *GameTree) {\n...\n}\nThe variable that is initially good, then goes bad is:\n\tvar nodColr ah.PointStatus = ah.White\nI've included a version of the file: game.go with just this function, and the function\nthat returns the value that is initially good, but later goes bad: \nfunc (gamT *GameTree)GetMove(n TreeNode) (nl ah.NodeLoc, c ah.PointStatus, err os.Error) \n\nThe \u0026quot;Hack-around\u0026quot; variable that preserves the good value is newNodColr. The\nlines which use or omit this \u0026quot;helper\u0026quot; variable are pairs of lines, one\nincluded, one commented out:\n\t\t\t\tnodLoc, newNodColr, err := gamT.GetMove(nod)\n//\t\t\t\tnodLoc, nodColr, err = gamT.GetMove(nod)\n\t\t\t\tif (err != nil) {\n\t\t\t\t\treturn err, trans, upPattTree\n\t\t\t\t}\n\t\t\t\tif (nMoves == 1) \u0026amp;\u0026amp; (firstMoveColor == newNodColr) {\n//\t\t\t\tif (nMoves == 1) \u0026amp;\u0026amp; (firstMoveColor == nodColr) {\n\t\t\t\t\tnodColr = newNodColr\n\nNote: if the assignment:\n\t\t\t\t\tnodColr = newNodColr\nis done earlier, either before or after the test of err for nil, the\n\u0026quot;Hack-around\u0026quot; does not work.\n\nWhat steps will reproduce the problem?\n1. Set the commented lines to omit the variable newNodColr\n    recompile packages ah, sgf, gogod, and the main program. run the program. diff output with old output.\n    The varialbe nodColr will have the correct value for one Printf, then change value.\n2. \u0026quot;Hack-around: Set the commented lines to include and use the variable newNodColr.\n    recompile packages ah, sgf, gogod, and the main program. run the program. diff output with old output.\n    The varialbe nodColr will retain the correct value for all uses.\n\nWhat is the expected output?\n\nThere should be three consecutive Printf outputs with the same move and color, such as:\nfound first move qf nodColr White\n newNodLoc: qf nodColr: White\nfindOrAdd: curPatt 2 newNL qf nodColr: White\n\nWhat do you see instead?\n\nInsted, nodColr changes value, even though there are no other assignments to it...\nfound first move qf nodColr White\n newNodLoc: qf nodColr: Black\nfindOrAdd: curPatt 2 newNL qf nodColr: Black\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nGOOS=darwin GOARCH=amd64\n\nWhich revision are you using?  (hg identify)\n\t1db528dd8dc6+ tip \n        used since \tWed Apr 13 09:56:16 PDT 2011 (to verify behavior not fixed)\nalso happened with:\n\tc5c62aeb6267+ release.r56/weekly.2011-03-07.1/release\n        used since \tTue Apr 12 22:55:09 PDT 2011\nand with:\n\t867d37fb41a4+ release.2011-02-01.1/release\n\tused since \tMon Feb  7 16:29:21 PST 2011\n\nPlease provide any additional information below.\n        The project has 3 packages and a large test main() program.\nI will try to simplify, while preserving the error.\nIn the meantime, I'm attaching the problematic source code, and the assembly listings of\nthe original and the \u0026quot;Hack-around\u0026quot; code.\n\nThis bug may be related to supporting smaller alignment and data sizes, as there are\nmany 1byte and 2byte data types being used. I asked for that better packing support. ;-)\n\nKen Friedenbach\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1693/0/gameForGoLangReport.go\"\u003egameForGoLangReport.go\u003c/a\u003e (10682 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1693/0/custMakeExtraVarTipUpdateList.txt\"\u003ecustMakeExtraVarTipUpdateList.txt\u003c/a\u003e (72334 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1693/0/custMakeNoExtraVarTipUpdateList.txt\"\u003ecustMakeNoExtraVarTipUpdateList.txt\u003c/a\u003e (71903 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:09:27Z",
+	"created_at": "2011-04-13T19:00:51Z",
+	"updated_at": "2016-06-24T19:27:31Z"
+}

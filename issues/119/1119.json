@@ -1,0 +1,28 @@
+{
+	"id": 51277375,
+	"number": 1119,
+	"state": "closed",
+	"title": "mime.ParseMediaType can't handle non-ASCII filename",
+	"body": "by **maddogfyg**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1.Upload a file from \u0026lt;input type=\u0026quot;file\u0026quot; name=\u0026quot;someinput\u0026quot; ......\n2.If the file name include non-ASCII character(such as \u0026quot;付云阁.jpg\u0026quot;, my\nchinese name), the post data is like:\n\nContent-Disposition: form-data; name=\u0026quot;someinput\u0026quot;;\nfilename=\u0026quot;ä»äºé.jpg\u0026quot;\n\nBut mime.ParseMediaType just return \u0026quot;\u0026quot;,nil\n\n\nIn mime package, two funcs cause this problem:\n\nfunc consumeValue(v string) (value, rest string) {\n    if !strings.HasPrefix(v, `\u0026quot;`) {\n        return consumeToken(v)\n    }\n\n    // parse a quoted-string\n    rest = v[1:] // consume the leading quote\n    buffer := new(bytes.Buffer)\n    var idx, rune int\n    var nextIsLiteral bool\n    for idx, rune = range rest {\n        switch {\n        case nextIsLiteral:\n            if rune \u0026gt;= 0x80 {\n                return \u0026quot;\u0026quot;, v\n            }\n            buffer.WriteRune(rune)\n            nextIsLiteral = false\n        case rune == '\u0026quot;':\n            return buffer.String(), rest[idx+1:]\n        case IsQText(rune):\n            buffer.WriteRune(rune)\n        case rune == '\\\\':\n            nextIsLiteral = true\n        default:\n            return \u0026quot;\u0026quot;, v\n        }\n    }\n    return \u0026quot;\u0026quot;, v\n}\n\n// IsQText returns true if rune is in 'qtext' as defined by RFC 822.\nfunc IsQText(rune int) bool {\n    // CHAR        =  \u0026lt;any ASCII character\u0026gt;        ; (  0-177,  0.-127.)\n    // qtext       =  \u0026lt;any CHAR excepting \u0026lt;\u0026quot;\u0026gt;,     ; =\u0026gt; may be folded\n    //                \u0026quot;\\\u0026quot; \u0026amp; CR, and including\n    //                linear-white-space\u0026gt;\n    switch rune {\n    case '\u0026quot;', '\\\\', '\\r':\n        return false\n    }\n    //return rune \u0026lt; 0x80\n    return true\n}\n\nThe RFC 822 is published in 1982, it just designed for ASCII-base system. Now\n\u0026quot;Go\u0026quot; can handle utf8 very well, the 0x80 limitation is unnecessary.\nSo the last sentence in func IsQText, \u0026quot;return rune \u0026lt; 0x80\u0026quot;, should be\n\u0026quot;return true\u0026quot;.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:07:03Z",
+	"created_at": "2010-09-17T17:05:17Z",
+	"updated_at": "2016-06-24T19:20:20Z"
+}

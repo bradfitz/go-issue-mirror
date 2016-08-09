@@ -1,0 +1,12 @@
+{
+	"id": 66521344,
+	"body": "This test still fails, even though optimization now works on ppc64, but it fails for a completely different reason.  Because R0 is a constant 0, ppc64's peephole optimizer effectively does constant propagation of 0 for free.  As a result, after peep this looks like:\r\n\r\n    0:00041 (nilptr3.go:62)        TEXT      \"\".f2(SB),$0-0\r\n    0:00042 (nilptr3.go:62)\tFUNCDATA\t$0,\"\".gcargs·2(SB)\r\n    0:00043 (nilptr3.go:62)\tFUNCDATA\t$1,\"\".gclocals·3(SB)\r\n    0:00069 (nilptr3.go:74)\tCHECKNIL\tR0,\r\n    0:00071 (nilptr3.go:75)\tCHECKNIL\tR0,\r\n    0:00073 (nilptr3.go:76)\tCHECKNIL\tR0,\r\n    0:00075 (nilptr3.go:77)\tCHECKNIL\tR0,\r\n    0:00077 (nilptr3.go:78)\tCHECKNIL\tR0,\r\n    0:00079 (nilptr3.go:79)\tCHECKNIL\tR0,\r\n    0:00081 (nilptr3.go:80)\tCHECKNIL\tR0,\r\n    0:00083 (nilptr3.go:81)\tCHECKNIL\tR0,\r\n    0:00085 (nilptr3.go:82)\tCHECKNIL\tR0,\r\n    0:00087 (nilptr3.go:83)\tCHECKNIL\tR0,\r\n    0:00089 (nilptr3.go:84)\tCHECKNIL\tR0,\r\n    0:00091 (nilptr3.go:85)\tCHECKNIL\tR0,\r\n    0:00092 (nilptr3.go:86)\tRETURN\t,\r\n\r\nHowever, the CHECKNILs *still* don't get eliminated because regtyp(R0) returns 0 (because R0 isn't a normal register), so they aren't even considered for elimination.  It's possible regtyp could return 1 for R0, but then it would fail the test in the other direction because ppc64 would eliminate CHECKNILs more effectively than other platforms.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-10T20:49:14Z",
+	"updated_at": "2014-12-10T20:49:14Z"
+}

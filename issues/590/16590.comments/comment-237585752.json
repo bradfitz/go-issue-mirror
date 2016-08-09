@@ -1,0 +1,12 @@
+{
+	"id": 237585752,
+	"body": "Actually, the bug is not in ```typesEqual```. It correctly identifies the equality and builds the module typeMap properly.\r\n\r\nIt's something to do with the ```typemap map[typeOff]*_type``` as called via typeOff via additab. Under some conditions, md.typemap[off] returns the *_type, sometimes it returns nil. When it returns nil, I can range over the map, find the key and the value is correct!\r\n\r\nThat is, the following (absurd) patch fixes the example programs above:\r\n\r\n```\r\ndiff --git a/src/runtime/type.go b/src/runtime/type.go\r\nindex 5ef11a4..7a3ab10 100644\r\n--- a/src/runtime/type.go\r\n+++ b/src/runtime/type.go\r\n@@ -224,8 +224,10 @@ func (t *_type) typeOff(off typeOff) *_type {\r\n                }\r\n                return (*_type)(res)\r\n        }\r\n-       if t := md.typemap[off]; t != nil {\r\n-               return t\r\n+       for moff, mres := range md.typemap {\r\n+               if moff == off {\r\n+                       return mres\r\n+               }\r\n        }\r\n        res := md.types + uintptr(off)\r\n        if res \u003e md.etypes {\r\n```",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-04T15:17:56Z",
+	"updated_at": "2016-08-04T15:17:56Z"
+}

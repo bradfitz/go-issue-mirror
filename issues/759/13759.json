@@ -1,0 +1,30 @@
+{
+	"id": 124144691,
+	"number": 13759,
+	"state": "open",
+	"title": "proposal: Add a Partial Deadlock Detector For Go",
+	"body": "# The Proposal\r\nDeadlock's make programs fail. Partial deadlocks (where a subset of the goroutines in a system are deadlocked) are difficult to find and debug. While predicting the occurrences of these deadlocks is not computable, detecting them when they occur is. Adding in a partial deadlock detector would be a powerful tool in debugging our concurrent programs.\r\n\r\nLike the race detector, a flag-able deadlock detector would use environment variables to log, or exit on detected deadlocks. The deadlock detector would _not_ detect all deadlocks, or potential deadlocks, only a subset of those that are occurring.\r\n\r\nThe goal of this proposal is to see if such a feature is desirable, and present a plausible implementation. If it is desirable a detailed design doc will follow.\r\n\r\n## Is this the Halting Problem?\r\nNo. If the [necessary conditions are met](https://en.wikipedia.org/wiki/Deadlock#Necessary_conditions) the program will not continue.\r\n\r\n# Proposed Implementation\r\n## High Level\r\nIn short the proposed implementation is to \"hook\" into the garbage collector, and use it's mark phase to build a [wait-for graph](https://en.wikipedia.org/wiki/Wait-for_graph). Then use [Tarjan's algorithm](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm) to find deadlock cycles. That is the strongly connect components with no edges to non deadlocked components.\r\n\r\n## More Detailed\r\nAs go uses a _mark-sweep_ garbage collector most of the computationally expensive work necessary for dead lock detection is _already being done_. Here is how the proposed detector would work (in very high level terms):\r\n\r\n1. At the beginning of the mark phase all goroutines in a wait state are examined, along with the object they are waiting on.\r\n2. As objects are marked (colored black or gray) from the various roots, if the object is one one of the \"waited on\" resources, it can be added as an edge in our wait for graph.\r\n3. Any resource which is not referenced from another root will be added as an edge to a \"nothing\" node.\r\n4. At the end of the mark phase (e.g. post stop the world) run Tarjan's (or similar) to determine the strongly connected components.\r\n5. If we have a strongly connected component with no edges to a non deadlocked component, the involved goroutines are deadlocked.\r\n\r\n## Notes\r\nI have intentionally glossed over:\r\n* Dealing with timers (interruptible waits) and globally referenced resources\r\n* That an object referenced by multiple roots may contain a reference to a waited on object in another root (paths to the waited on object would have to be stored and examined when previously colored nodes are addressed)\r\n* Send and receive mechanics on channels\r\n for simplicity's sake.",
+	"user": {
+		"login": "rfliam",
+		"id": 718129,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 2,
+	"created_at": "2015-12-29T00:26:42Z",
+	"updated_at": "2016-01-21T18:14:18Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

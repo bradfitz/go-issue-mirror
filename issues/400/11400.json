@@ -1,0 +1,33 @@
+{
+	"id": 91023427,
+	"number": 11400,
+	"state": "closed",
+	"title": "runtime: Caller returns wrong line number inside composite literals ",
+	"body": "This is a behavior change since Go 1.4.\r\n\r\nCalling runtime.Caller inside a composite literal returns the line number at the end of the literal instead of the line where it is called.  Here is a patch that adds a test for this to runtime/symtab_test.go, followed by its output:\r\n\r\n```\r\ndiff --git a/src/runtime/symtab_test.go b/src/runtime/symtab_test.go\r\nindex bd9fe18..d94de04 100644\r\n--- a/src/runtime/symtab_test.go\r\n+++ b/src/runtime/symtab_test.go\r\n@@ -45,3 +45,55 @@ func testCallerBar(t *testing.T) {\r\n                }\r\n        }\r\n }\r\n+\r\n+func lineNumber() int {\r\n+       _, _, line, _ := runtime.Caller(1)\r\n+       return line // return 0 for error\r\n+}\r\n+\r\n+// Do not add/remove lines in this block without updating the line numbers.\r\n+var firstLine = lineNumber() // 0\r\n+var (                        // 1\r\n+       lineVar1             = lineNumber()               // 2\r\n+       lineVar2a, lineVar2b = lineNumber(), lineNumber() // 3\r\n+)                        // 4\r\n+var compLit = []struct { // 5\r\n+       lineA, lineB int // 6\r\n+}{ // 7\r\n+       { // 8\r\n+               lineNumber(), lineNumber(), // 9\r\n+       }, // 10\r\n+       { // 11\r\n+               lineNumber(), // 12\r\n+               lineNumber(), // 13\r\n+       }, // 14\r\n+       { // 15\r\n+               lineB: lineNumber(), // 16\r\n+               lineA: lineNumber(), // 17\r\n+       }, // 18\r\n+} // 19\r\n+// Modifications below this line are okay.\r\n+\r\n+func TestLineNumber(t *testing.T) {\r\n+       for _, test := range []struct {\r\n+               name string\r\n+               val  int\r\n+               want int\r\n+       }{\r\n+               {\"firstLine\", firstLine, 0},\r\n+               {\"lineVar1\", lineVar1, 2},\r\n+               {\"lineVar2a\", lineVar2a, 3},\r\n+               {\"lineVar2b\", lineVar2b, 3},\r\n+               {\"compLit[0].lineA\", compLit[0].lineA, 9},\r\n+               {\"compLit[0].lineB\", compLit[0].lineB, 9},\r\n+               {\"compLit[1].lineA\", compLit[1].lineA, 12},\r\n+               {\"compLit[1].lineB\", compLit[1].lineB, 13},\r\n+               {\"compLit[2].lineA\", compLit[2].lineA, 17},\r\n+               {\"compLit[2].lineB\", compLit[2].lineB, 16},\r\n+       } {\r\n+               if got := test.val - firstLine; got != test.want {\r\n+                       t.Errorf(\"%s on firstLine+%d want firstLine+%d (firstLine=%d, val=%d)\",\r\n+                               test.name, got, test.want, firstLine, test.val)\r\n+               }\r\n+       }\r\n+}\r\n\r\n$ go test -short runtime\r\n--- FAIL: TestLineNumber (0.00s)\r\n\tsymtab_test.go:96: compLit[0].lineA on firstLine+19 want firstLine+9 (firstLine=55, val=74)\r\n\tsymtab_test.go:96: compLit[0].lineB on firstLine+19 want firstLine+9 (firstLine=55, val=74)\r\n\tsymtab_test.go:96: compLit[1].lineA on firstLine+19 want firstLine+12 (firstLine=55, val=74)\r\n\tsymtab_test.go:96: compLit[1].lineB on firstLine+19 want firstLine+13 (firstLine=55, val=74)\r\n\tsymtab_test.go:96: compLit[2].lineA on firstLine+19 want firstLine+17 (firstLine=55, val=74)\r\n\tsymtab_test.go:96: compLit[2].lineB on firstLine+19 want firstLine+16 (firstLine=55, val=74)\r\nFAIL\r\nFAIL\truntime\t11.072s\r\n```",
+	"user": {
+		"login": "Sajmani",
+		"id": 9734877,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-07-07T21:31:14Z",
+	"created_at": "2015-06-25T17:18:03Z",
+	"updated_at": "2016-07-11T22:38:06Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

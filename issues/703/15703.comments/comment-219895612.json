@@ -1,0 +1,12 @@
+{
+	"id": 219895612,
+	"body": "Actually, I had misread your repro code the first time. This is working as intended.\r\n\r\nThe lack of connection of reuse (that I see 40-60% of the time with your repo) isn't due to chunked encoding, but because the handler hasn't yet finished when you call `resp.Body.Close()`.\r\n\r\nIf you put a `time.Sleep(10 * time.Millisecond)` or even shorter after your flush and before the handler, you can see that it it doesn't reuse the connection 100% of the time.\r\n\r\nAnd if you move the `rw.(http.Flusher).Flush()` call to before the JSON write (so you're still sending chunked encoding), then you see it reuses the connection 100% of the time.\r\n\r\nThe race you're seeing is because depending on goroutine scheduling.\r\n\r\nYou have two goroutines, S(erver) and C(lient):\r\n\r\n* S: write, flush, send EOF (at handler func return)\r\n* C: decode, close\r\n\r\nYou're seeing them sometimes scheduled like this:\r\n\r\n* S: write\r\n* C: decode\r\n* C: close (at it hasn't seen EOF yet, so it's right to close the connection and not reuse it)\r\n* S: flush / send EOF (neither of which matter, since the client has hung up on us anyway)\r\n\r\nThat is a valid result.\r\n\r\nI recommend you remove the flush.\r\n\r\nI've added a new test in https://golang.org/cl/23200 to guarantee the existing behavior when the flush is in the right spot.\r\n\r\nPlease let me know if I misunderstand something.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-18T00:44:30Z",
+	"updated_at": "2016-05-18T00:44:30Z"
+}

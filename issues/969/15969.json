@@ -1,0 +1,28 @@
+{
+	"id": 158611291,
+	"number": 15969,
+	"state": "closed",
+	"title": "cmd/compile: Dtrace can't catch the return probe if go version is above 1.6",
+	"body": "\u003e OS: darwin_amd64, OS X 10.11.4\r\n\r\nDtrace can't catch the `return` probe if go version is above 1.6, will it be fixed in the future versions?\r\n\r\n\r\n----\r\n\r\nsource code:\r\n```go\r\n// code.go\r\npackage main\r\n\r\nimport \"time\"\r\n\r\nfunc go1() {\r\n\r\n}\r\n\r\nfunc main() {\r\n\tfor _ = range time.Tick(time.Second) {\r\n\t\tgo1()\r\n\t}\r\n}\r\n```\r\n\r\nthen run it by\r\n```shell\r\n$ go run -gcflags -l code.go\r\n(press ctrl+T to get its pid)\r\nload: 1.46  cmd: code 63460 running 0.00u 0.00s\r\n```\r\n\r\nrun dtrace in another terminal\r\n```\r\ndtrace -n 'pid$1::main.go1:' 63460\r\n```\r\n\r\n----\r\n\r\nIn `go version go1.4.2 darwin/amd64`:\r\n```\r\ndtrace: description 'pid$1::main.go1:' matched 11 probes\r\nCPU     ID                    FUNCTION:NAME\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n^C\r\n```\r\n\r\nIn `go version go1.5.2 darwin/amd64`:\r\n```\r\ndtrace: description 'pid$1::main.go1:' matched 11 probes\r\nCPU     ID                    FUNCTION:NAME\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n  0 1042341                   main.go1:entry\r\n  0 1042342                       main.go1:0\r\n  0 1042340                  main.go1:return\r\n^C\r\n```\r\n\r\nIn `go version go1.6.1 darwin/amd64`:\r\n```\r\ndtrace: description 'pid$1::main.go1:' matched 1 probe\r\nCPU     ID                    FUNCTION:NAME\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n^C\r\n```\r\n\r\nIn `go version go1.7beta1 darwin/amd64`:\r\n```\r\ndtrace: description 'pid$1::main.go1:' matched 1 probe\r\nCPU     ID                    FUNCTION:NAME\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n  0 1042340                   main.go1:entry\r\n^C\r\n```\r\n",
+	"user": {
+		"login": "chzyer",
+		"id": 1464115,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2016-06-13T14:07:21Z",
+	"created_at": "2016-06-06T06:52:17Z",
+	"updated_at": "2016-06-13T14:07:21Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

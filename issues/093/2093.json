@@ -1,0 +1,28 @@
+{
+	"id": 51278717,
+	"number": 2093,
+	"state": "closed",
+	"title": "net/http: Denial of Service Protection in Go HTTP Servers",
+	"body": "by **tav@espians.com**:\n\n\u003cpre\u003eDirectly exposing a web server written with Go's http package is extremely risky\nat the moment as you can be easily subject to denial of service attacks.\n\nThe most obvious attack vectors for a web server are:\n\n* Request/header lines being too long\n* Header size being too large\n* Request body being too large\n\nRight now, only the first of these seems to be handled by the http package. As\nfar as I can figure out, the textproto.Reader.readLineSlice calls used by the\nhttp.ReadRequest implicitly returns an error for lines over the length of the\nunderlying bufio.Reader (4096 bytes?). Whilst this seems perfectly adequate for\nmy own needs, it would be nice if this were documented somewhere.\n\nHowever, there seems to be no protection against a large header with a bazillion\nlines though. A configurable field, e.g. MaxHeaderLines, on the http.Server struct\nwould be very handy for this. This could then be passed along to the\ntextproto.Reader.ReadMIMEHeader call made by http.ReadRequest, and it in\nturn could return an error if the number of lines exceeds the given length.\n\nAs for the request.Body, the maximum size of the request body needs to be\nconfigurable on a per request basis. Right now, there are implicit limits of 10MB\nfor application/x-www-form-urlencoded forms. It would be nice if this was\ndocumented somewhere — sorry if I missed it.\n\nBut, even the 10MB limit doesn't seem to completely help, because request.Body\nas set in http.readTransfer is only limited to the Content-Length provided by the\nrequest. And in the body.Close call, any remaining content in the request body\nis copied to ioutil.Discard. So it seems a malicious party could send an extremely\nlarge request body and use up the CPU cycles on a server.. ?\n\nThe maxMemory parameter to http.Request.ParseMultipartForm doesn't seem to\nreally offer much protection. Because, at best, an attacker could just use up all\navailable disk space by sending large request bodies. But, worse, it seems that\nmemory could also be exhausted because the multipart.Part.populateHeaders\ncall makes use of textproto.Reader.ReadMIMEHeader which could be of arbitrary\nsize...\n\nIt would be nice if a LimitRequestBody function field could be added to the\nhttp.Server struct. An ideal signature for it would be:\n\n    func(req *http.Request, contentLength int64) (limit int64, error []byte)\n\nThen, inside http.readTransfer calls, LimitRequestBody could be called with the\ncurrent request and Content-Length value. If the function returned an error []byte,\nthen a HTTP \u0026quot;400 Bad Request\u0026quot; would be sent with the given error as the body.\nElse, the returned limit would be used to limit the new \u0026amp;body{} object. And if\nLimitRequestBody wasn't set, perhaps limit it to some arbitrary size, e.g. 2GB?\n\nHaving such a configurable function would both provide protection against denial\nof service attacks as well as allow for limits to be set on a per request basis, e.g.\nperhaps you want to allow authenticated users to upload 1GB files, but deny all\nanonymous users from sending any request bodies...\n\nIn summary, extending http.Server with:\n\n    MaxHeaderLines int\n    LimitRequestBody func(*http.Request, int64) (int64, []byte)\n\nAnd making the respective changes to http.ReadRequest, http.readTransfer, and\ntextproto.Reader.ReadMIMEHeader should provide significantly better protection\nagainst denial of service attacks.\n\nAnd, finally, perhaps the order of these two blocks http.Request.ParseMultipartForm\nshould be reversed?\n\n\tif r.MultipartForm != nil {\n\t\treturn nil\n\t}\n\tif r.MultipartForm == multipartByReader {\n\t\treturn os.NewError(\u0026quot;http: multipart handled by MultipartReader\u0026quot;)\n\t}\n\nI'm using 2d7eda309c95 tip.\n\n-- \nThanks for hearing me out, tav\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2014-12-08T10:11:17Z",
+	"created_at": "2011-07-23T05:55:01Z",
+	"updated_at": "2016-06-24T19:32:35Z"
+}

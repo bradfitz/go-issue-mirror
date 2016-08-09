@@ -1,0 +1,27 @@
+{
+	"id": 157538814,
+	"number": 15894,
+	"state": "open",
+	"title": "x/mobile/exp/audio: Windows support",
+	"body": "# The problem\r\n\r\nThe [current al implementation](https://github.com/golang/mobile/tree/master/exp/audio/al) does not allow for Windows builds.  A while ago I posted [this](https://groups.google.com/forum/#!topic/golang-nuts/mfaRRJc1-gI) on the forums. \r\n\r\n# The fix\r\n\r\nThis feels a bit hacky, but I managed to update the C-import stuff to this (on both the `al_notandroid.go` and `alc_notandroid.go` file, and updating all build tags to include Windows):\r\n\r\n```C\r\n#cgo darwin   CFLAGS:  -DGOOS_darwin\r\n#cgo linux    CFLAGS:  -DGOOS_linux\r\n#cgo windows  CFLAGS:  -DGOOS_windows -I E:/src/golang.org/x/mobile/exp/audio/al/include/\r\n#cgo darwin         LDFLAGS: -framework OpenAL\r\n#cgo linux          LDFLAGS: -lopenal\r\n#cgo windows,386    LDFLAGS: E:/src/golang.org/x/mobile/exp/audio/al/bin/Win32/soft_oal.dll\r\n#cgo windows,amd64  LDFLAGS: E:/src/golang.org/x/mobile/exp/audio/al/bin/Win64/soft_oal.dll\r\n\r\n#ifdef GOOS_darwin\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cOpenAL/alc.h\u003e\r\n#endif\r\n\r\n#ifdef GOOS_linux\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cAL/alc.h\u003e\r\n#endif\r\n\r\n#ifdef GOOS_windows\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cAL/alc.h\u003e\r\n#endif\r\n```\r\n\r\n# The caveats\r\n\r\n1. I have no idea how to replace `E:` by something like `$GOPATH` (since `GOPATH == E:`), maybe someone knows? \r\n2. Those `bin` and `include` directories that are expected to be within the directory, are those from the binaries from https://github.com/kcat/openal-soft . Not sure if we can safely redistribute those? (licensing etc.) \r\n3. If Go cannot redistribute those files (I dunno, could be the case), would there be *any* way to allow people to do this themselves? Without having to fork the al implementation? Or could we reference some kind of path and expect Windows-developers to put those files there? \r\n\r\nI don't need any attribution, therefore there's no PR associated, but it would be nice to let this \"fix\" be part of Go, instead of having to fork it. ",
+	"user": {
+		"login": "EtienneBruines",
+		"id": 3962174,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-05-30T17:48:04Z",
+	"updated_at": "2016-06-02T22:21:18Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 1,
+		"heart": 1,
+		"hooray": 1
+	}
+}

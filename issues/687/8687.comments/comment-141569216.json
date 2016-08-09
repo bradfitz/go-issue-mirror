@@ -1,0 +1,12 @@
+{
+	"id": 141569216,
+	"body": "I thought that the benchmark might be stopping/starting the timers multiple times within the benchmark. If not then the maximum error should, as you observed, be quite small.\r\n\r\n\u003e fall back to short sleeps (e.g., 100us)\r\n\r\nUnfortunately I am not aware of a way to sleep for 100us on Windows. Sleep(0) (or WaitForSingleObject with a zero timeout) returns immediately. Sleep(1) returns in somewhere between 1 ms and 15.625 ms, depending on OS version and timer frequency and where you are relative to the next interrupt. Specifically, it will return on the next interrupt or perhaps the one after that. It's a mess and yes, it can be a lot more expensive than it would appear. And I don't know of a way around it other than don't call Sleep(1) if you care about running fast, or Sleep(0) ever.\r\n\r\nI suspect that reading from that magic address is equivalent to timeGetTime() - it reads from a counter that is updated by the timer interrupt.\r\n\r\nIn short, it sounds like #12041 will solve the problem. An ETW trace records every context switch of every thread in every process so it is easy to see if a CPU core is running continuously or constantly sleeping. It sounds like the GC is calling Sleep(1) frequently in both cases, and those are more expensive with a lower timer frequency. Avoiding that will cause the benchmark to run faster in both cases.",
+	"user": {
+		"login": "randomascii",
+		"id": 10800041,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-18T21:08:04Z",
+	"updated_at": "2015-09-18T21:08:04Z"
+}

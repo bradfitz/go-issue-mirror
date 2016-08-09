@@ -1,0 +1,12 @@
+{
+	"id": 66071580,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eThe reason for the misalignment is due to the change of filename in the position\ninformation of the created example:\n\nBecause the created example is made up from nodes from different files (and nodes that\nhave no position information), the printer sees various transitions of file names in the\nposition information. For instance, when printing the imports, it sees the following\nfile name transitions (in the [] boxes):\n\nimport [-\u0026gt;/src/pkg/image/format.go](\u0026gt;\u0026gt;\u0026gt;\n\t\"fmt\"\n\t\"image\"\n\t\"log\"\n\t\"os\"\n\n\t[/src/pkg/image/format.go-\u0026gt;/src/pkg/image/decode_example_test.go]// Package image/jpeg is not used explicitly in the code below,\n// but is imported for its initialization side-effect, which allows\n// image.Decode to understand JPEG formatted images. Uncomment these\n// two lines to also understand GIF and PNG images:\n// _ \"image/gif\"\n// _ \"image/png\"\n_ \"image/jpeg\"\u0026lt;\u0026lt;\u0026lt;\n[/src/pkg/image/decode_example_test.go-\u0026gt;/src/pkg/image/format.go])\n\n(The \u0026gt;\u0026gt;\u0026gt; and \u0026lt;\u0026lt;\u0026lt; markers show increases/decreases of indentation).\n\nAt the moment, each time the file name changes in the position information, the printer\nassumes that the formatting state should be reset - basically it assumes that we are not\nbuilding ASTs that contain pieces of different files within a single declaration.\nHowever this is the case here.\n\nWhen the formatting state is reset, the indentation goes to zero; hence the\nmisalignment. In fact, before the end of the import declaration, the indentation goes to\n-1, and in debug mode (go/printer/printer.go:22 debug = true) we get a respective panic.\n\nThe offensive line is go/printer/printer.go:228 p.indent = 0. Commenting that line out\nwill resolve the issue.\nSee: \u003ca href=\"http://golang.org/cl/6849066\"\u003ehttp://golang.org/cl/6849066\u003c/a\u003e .\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-16T21:00:46Z",
+	"updated_at": "2014-12-22T06:20:26Z"
+}

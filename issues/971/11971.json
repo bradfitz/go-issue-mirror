@@ -1,0 +1,22 @@
+{
+	"id": 98451127,
+	"number": 11971,
+	"state": "closed",
+	"title": "runtime: embrace write barriers during scan",
+	"body": "It was with some trepidation that we enabled the write barrier during the concurrent scan phase (commits 1303957 and b0532a9). At the time, this was the simplest way of fixing lost write barriers with stack barriers, but there's a big TODO in func gc about other ways to fix the problem.\r\n\r\nWhile there are other solutions to this particular problem, enabling the write barrier earlier has another very important property: it lets us enable mutator assists during all concurrent phases of the GC. This is important for avoiding over-allocation. The other alternative is to block user goroutines when they allocate too much during concurrent scan, which runs contrary to the whole purpose of concurrent GC.\r\n\r\nWe should embrace enabling the write barrier during concurrent scan. We should clean up code that originally dealt with enabling write barriers later, such as the whole \"install write barrier\" step that no longer actually installs the write barrier. We should also start background marking during scan (there's effectively no difference between the scan and mark phases any more), which will also improve the performance of assists by building up background mark credit and probably simplify the state machine approach advanced by #11970.\r\n\r\n@RLH @rsc",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-10-21T16:26:45Z",
+	"created_at": "2015-07-31T18:57:17Z",
+	"updated_at": "2015-10-21T16:26:45Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

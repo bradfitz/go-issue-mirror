@@ -1,0 +1,12 @@
+{
+	"id": 67924608,
+	"body": "It seems like there are two options.\r\n\r\n1. Fix the code manipulating the struct memory never to point past the end.\r\n2. Add more memory to the struct so that all the existing manipulation code becomes correct.\r\n\r\nI believe that since zero-size types are excluded from the problem, we've narrowed the problem to very rare cases. The best solution is probably the one that introduces the fewest new corner cases where bugs can hide. There are many fewer places that decide struct layout and allocation than there are things that walk structs, which means we should favor choice 2. (Another point in favor of choice 2: choice 1 may require changes to code we don't even control; what if something like goprotobuf broke these rules?)\r\n\r\nIn #9384, Keith proposed a new type flag to indicate that the memory footprint ends in a zero-length field, so that allocation would add just a little more room after that. That would probably work, but given the previous argument, I think that's more subtle than this problem warrants. I want something that's dead simple. I worry that if new(T) sometimes (but almost never) allocates \u003e T.size bytes, that will create a space for bugs.\r\n\r\nI propose the dumber solution that if a non-zero-sized struct ends in a zero-length field, we add 1 byte of padding to end of the struct before aligning the final struct size. That is, given:\r\n\r\n    type T1 struct {\r\n        X byte\r\n        Y [0]byte\r\n    }\r\n\r\n    type T2 struct {\r\n        X uint32\r\n        Y struct{}\r\n    }\r\n\r\nT1 would have size 2 (= 1 + 0 + 1) and T2 would have size 8 (= 4 + 0 + 1 + padding to 4-byte alignment for field X). \r\n\r\nIn cases where this padding is a problem, it can be avoided by manual rearrangement or removal of the zero-length fields, as Keith did in the fix for #9384. \r\n\r\nI think all the things making structs at runtime have to build gcProgs, and there are only two mentions of gcProg in package reflect: bucketOf and funcLayout. bucketOf is already fixed. funcLayout could just add regSize to the total size any time the total size is not 0. This would also make safe the use of frame+retOffset when functions have arguments but no results. ",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-23T06:06:19Z",
+	"updated_at": "2014-12-23T06:06:19Z"
+}

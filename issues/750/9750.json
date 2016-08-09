@@ -1,0 +1,22 @@
+{
+	"id": 56206172,
+	"number": 9750,
+	"state": "closed",
+	"title": "runtime: Strange behavior about GOMAXPROCS and GOMAXPROCS in environment",
+	"body": "I met a problem about the different behavior about runtime.GOMAXPROCS and GOMAXPROCS in environment.\r\nThe golang version I use is: \r\n\r\n    go version go1.4.1 linux/amd64\r\n\r\nThe OS is:\r\n\r\n    Linux  3.13.0-44-generic #73-Ubuntu SMP x86_64 x86_64 x86_64 GNU/Linux\r\n\r\nThe test code I use is as follow:\r\n\r\n    package main\r\n \r\n    import (\r\n            \"fmt\"\r\n            \"runtime\"\r\n            \"time\"\r\n    )\r\n       \r\n    func f1() {\r\n            for {\r\n            }\r\n    }      \r\n       \r\n    func f2() {\r\n            for {\r\n                    fmt.Println(\"foo\")\r\n                    time.Sleep(time.Second)\r\n            }\r\n    }      \r\n       \r\n    func main() {\r\n            runtime.GOMAXPROCS(runtime.NumCPU())\r\n            go f1()\r\n            go f2()\r\n            for {\r\n                    fmt.Println(\"main\")\r\n                    time.Sleep(time.Second)\r\n            }\r\n    }      \r\n\r\nWhen I set GOMAXPROCS using runtime.GOMAXPROCS，the result of this program is it hang on \r\n\r\n    go f2()\r\n\r\nBut if I set GOMAXPROCS using\r\n\r\n    export GOMAXPROCS=4\r\n\r\nit works just fine.\r\n\r\nSo I turn on the GODEBUG macro and set schedtrace=1000, run the program again, I got different log.\r\n\r\nUsing environment:\r\n\r\n    SCHED 0ms: gomaxprocs=4 idleprocs=3 threads=2 spinningthreads=0 idlethreads=0 runqueue=0 [1 0 0 0]\r\n    main\r\n    foo\r\n    main\r\n    foo\r\n    SCHED 1007ms: gomaxprocs=4 idleprocs=3 threads=5 spinningthreads=0 idlethreads=2 runqueue=0 [0 0 0 0]\r\n    foo\r\n    main\r\n    SCHED 2014ms: gomaxprocs=4 idleprocs=3 threads=5 spinningthreads=0 idlethreads=2 runqueue=0 [0 0 0 0]\r\n    foo\r\n    main\r\n    SCHED 3020ms: gomaxprocs=4 idleprocs=3 threads=5 spinningthreads=0 idlethreads=2 runqueue=0 [0 0 0 0]\r\n\r\nUsing runtime.GOMAXPROCS:\r\n\r\n   SCHED 0ms: gomaxprocs=1 idleprocs=0 threads=2 spinningthreads=0 idlethreads=0 runqueue=0 [1]\r\n   SCHED 1000ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n   SCHED 2006ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n   SCHED 3011ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n   SCHED 4019ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n   SCHED 5024ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n   SCHED 6030ms: gomaxprocs=4 idleprocs=0 threads=5 spinningthreads=0 idlethreads=2 runqueue=1 [0 0 0 0]\r\n\r\nSometimes, runtime.GOMAXPROCS will cause whole program spining. I can't find any suggestions about this situation I met, maybe it's a bug?",
+	"user": {
+		"login": "denghongcai",
+		"id": 1433247,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2015-02-02T21:34:46Z",
+	"created_at": "2015-02-02T07:59:31Z",
+	"updated_at": "2016-06-25T01:59:50Z"
+}

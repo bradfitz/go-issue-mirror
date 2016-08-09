@@ -1,0 +1,12 @@
+{
+	"id": 84060358,
+	"body": "I took a peek at it, but this is my first dive into RFC4880 so some things are still unclear to me.\r\nLooking at the yubikey stub in the secring, if I skip the first 272 bytes, I get directly to the S2K value, which is set to `0xff`:\r\n```\r\n$ hexdump -s 272 -C 000015-005.secret_key\r\n00000110  ff 00 65 00 47 4e 55 02  10 d2 76 00 01 24 01 02  |..e.GNU...v..$..|\r\n00000120  00 00 00 00 00 00 01 00  00                       |.........|\r\n00000129\r\n```\r\n`0xff` indicates an encrypted private key. In the code [1], `(pk *PrivateKey) parse()` tries to read the next byte to guess the encryption algorithm, but that next byte is set to `00` which doesn't map to any valid cipher.\r\nThen, entering `s2k.Parse()`, the following 2 bytes are read (`0x6500`), and the second byte (`0x00`) is used in `s2k.HashIdToHash()`. But `0` is not a valid hash id, and the function returns error `openpgp: unsupported feature: hash for S2K function: 0`. The error is silenced is `openpgp.ReadKeyRing` [2].\r\n\r\nI could do the analysis, but I'm afraid writing a patch is beyond my understand of the OpenPGP standard at this point...\r\n\r\n[1] https://github.com/golang/crypto/blob/master/openpgp/packet/private_key.go#L67-L80\r\n[2] https://github.com/golang/crypto/blob/master/openpgp/keys.go#L258",
+	"user": {
+		"login": "jvehent",
+		"id": 415617,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-20T16:22:54Z",
+	"updated_at": "2015-03-20T16:22:54Z"
+}

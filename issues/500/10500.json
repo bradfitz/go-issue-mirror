@@ -1,0 +1,33 @@
+{
+	"id": 69458838,
+	"number": 10500,
+	"state": "closed",
+	"title": "cmd/go: go test -i runtime/race installs race-enabled cmd/cgo",
+	"body": "The runtime race tests during run.bash do:\n\n\tif err := t.dirCmd(\".\", \"go\", \"test\", \"-race\", \"-i\", \"runtime/race\", \"flag\", \"os/exec\").Run(); err != nil {\n\t\treturn err\n\t}\n\tif err := t.dirCmd(\".\", \"go\", \"test\", \"-race\", \"-run=Output\", \"runtime/race\").Run(); err != nil {\n\t\treturn err\n\t}\n\tif err := t.dirCmd(\".\", \"go\", \"test\", \"-race\", \"-short\", \"flag\", \"os/exec\").Run(); err != nil {\n\t\treturn err\n\t}\n\nAt some point during this, most likely during \"go test -race -i runtime/race flag os/exec\", the installed cmd/cgo binary becomes a race-enabled cmd/cgo with tsan linked into it.\n\nThe most obvious effect of linking tsan is that cmd/cgo becomes unable to run in under 1 second. It looks like there is a 1-second sleep in the tsan finalizers (for a good reason I assume, but cc @dvyukov).\n\nTo be clear, the bug here is not the 1-second sleep but the fact that the go command is installing a race-enabled cgo.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-07-15T04:27:32Z",
+	"created_at": "2015-04-19T20:00:58Z",
+	"updated_at": "2016-07-18T19:45:56Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

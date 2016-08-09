@@ -1,0 +1,22 @@
+{
+	"id": 58172778,
+	"number": 9928,
+	"state": "closed",
+	"title": "path/filepath: Split should trim trailing path separator else a Split stalemate occurs.",
+	"body": "1. What version of Go are you using (go version)?\r\n2. What operating system and processor architecture are you using?\r\n```\r\ngo version go1.2.1 linux/386\r\nLinux emmanuel-HP-G50-Notebook-PC 3.13.0-39-generic #66-Ubuntu SMP Tue Oct 28 13:31:23 UTC 2014 i686 athlon i686 GNU/Linux\r\n```\r\n\r\n```\r\ngo version go1.3 darwin/amd64\r\nDarwin 14.1.0 Darwin Kernel Version 14.1.0: Mon Dec 22 23:10:38 PST 2014; root:xnu-2782.10.72~2/RELEASE_X86_64 x86_64\r\n```\r\nfilepath.Split returns a dir and base when given a path 'p'. If the path has no trailing separator, it behaves as expected producing dir and base. If p has a trailing path separator e.g 'p/', filepath.Split should return 'p' as the dir, and '' as the base. However, filepath.Split always returns the original value as the dir and '' as the base value, instead of 'p', '' e.g in http://play.golang.org/p/fswqGij8Hu\r\n\r\nThis behaviour causes an infinite loop when walking up a path. My use case is trying to find the least non existant path starting from the end of a path. In the code excerpt below:\r\n+ The first function is my work-around to solve the problem by always trimming the excess '/'.\r\n+ The second function illustrates the issue and  never exits since it is stuck at the original path being the dir. \r\n* Assumption is that a \"\" signifies no existant path was found.\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"os\"\r\n    \"path/filepath\"\r\n    \"strings\"\r\n)\r\n\r\nvar PathSeparator = fmt.Sprintf(\"%c\", os.PathSeparator)\r\n\r\nfunc leastNonExistantRootPatched(p string) string {\r\n\tlast := \"\"\r\n\tfor p != \"\" {\r\n\t\tfInfo, _ := os.Stat(p)\r\n\t\tif fInfo != nil {\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tlast = p\r\n\t\tp, _ = filepath.Split(strings.TrimRight(p, PathSeparator))\r\n\t\tfmt.Println(\"Still spinning: \", p)\r\n\t}\r\n\treturn last\r\n}\r\n\r\nfunc leastNonExistantRootInfinite(p string) string {\r\n\tlast := \"\"\r\n\tfor p != \"\" {\r\n\t\tfInfo, _ := os.Stat(p)\r\n\t\tif fInfo != nil {\r\n\t\t\tbreak\r\n\t\t}\r\n\t\tlast = p\r\n\t\tp, _ = filepath.Split(p)\r\n\t\tfmt.Println(\"Still spinning: \", p)\r\n\t}\r\n\treturn last\r\n}\r\n\r\nfunc main() {\r\n    leastNonExistantRootPatched(\"/mnt/ghosting/symver/projects/gophers/alophering/change.go\")\r\n    leastNonExistantRootInfinite(\"/mnt/ghosting/symver/projects/gophers/alophering/change.go/\")\r\n}\r\n```\r\nPlease contrast this with the behaviour of Python\r\n```python\r\n\u003e\u003e\u003e import os\r\n\u003e\u003e\u003e os.path.split('/mnt/ghosting/gophers/alophering/change.go/')\r\n('/mnt/ghosting/gophers/alophering/change.go', '') # Notice the trailing slash was removed\r\n\u003e\u003e\u003e os.path.split('/mnt/ghosting/gophers/alophering/change.go')\r\n('/mnt/ghosting/gophers/alophering', 'change.go')\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-02-19T06:38:10Z",
+	"created_at": "2015-02-19T06:28:05Z",
+	"updated_at": "2016-06-25T02:01:16Z"
+}

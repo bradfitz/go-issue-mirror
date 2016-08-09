@@ -1,0 +1,12 @@
+{
+	"id": 66055273,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eI just got bit in a real-world server by this.\n\nI have a slab allocator, and my slab code was giving out sub-regions of its 1MB []byte\nto another part of the code.\n\nAfter a fair bit of debugging, I found the slab code was fine but some other code was\nslicing past its allowed []byte subregion.\n\nIn a nutshell:\n\n        slab := make([]byte, 6)  // in reality, 1MB\n\titem := slab[0:2]            // I wish I could say slab[0:2:2] or something here\n\tkeyMem := item[2:4]     // bug, which I wish would've blow up at runtime, with 4 being out of range.\n\tkey := []byte(\"some key\")\n\tn := copy(keyMem, key)  // should've never made it this far, but this overwrote memory in another item.\n\nThis could've been worse if I weren't the author of both pieces of code. As a\nprogramming-at-large defensive measure, it'd be nice if library authors could set the\ncaps on memory they give out, pushing blame \u0026 run-time explosions to the real buggy part.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-11T18:25:02Z",
+	"updated_at": "2014-12-08T10:09:13Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66097867,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eNo need to apologize! I didn't know I'd need it so soon.\n\nI managed to hack in a horrible workaround that will unblock me (CL 125510043). I'd\nstill love your help with this, though, since it's not clear to me what the right fix is.\n\nThe problem is that SETxx is not marked as working on byte registers. We could convert\nautomatically from (say) AX to AL during encoding, but I don't know whether that will\ncause problems elsewhere. (Incorrect expectation that AH will be cleared? False\naliasing?) We could insist that that SETxx be given a byte register explicitly, and\nmaybe rename them to SETBxx, although that will be a bit more annoying during codegen.\n\nInput requested.\n\n\nFWIW, CL 125510043 does the former:\n\n$ cat x.s\nTEXT ·TestSetCC(SB),$0\n\tSETEQ ,BPB\n\tSETEQ ,BP\n\tSETEQ ,CH\n\tSETEQ ,CL\n\tSETEQ ,CX\n\n$ go tool 6a -S x.s\n\"\".TestSetCC t=1 size=32 value=0 args=0xffffffff80000000 locals=0x0\n\t0x0000 00000 (rex.s:1)\tTEXT\t\"\".TestSetCC+0(SB),4,$0--2147483648\n\t0x0000 00000 (rex.s:2)\tSETEQ\t,BPB\n\t0x0004 00004 (rex.s:3)\tSETEQ\t,BPB\n\t0x0008 00008 (rex.s:4)\tSETEQ\t,CH\n\t0x000b 00011 (rex.s:5)\tSETEQ\t,CL\n\t0x000e 00014 (rex.s:6)\tSETEQ\t,CL\n\t0x0000 40 0f 94 c5 40 0f 94 c5 0f 94 c5 0f 94 c1 0f 94  @...@...........\n\t0x0010 c1                                               .\n\nNote that BP is mapped to BPB, CX is mapped to CL, and rex prefixes are applied\nappropriately.\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-08-19T18:18:26Z",
+	"updated_at": "2014-12-08T10:47:29Z"
+}

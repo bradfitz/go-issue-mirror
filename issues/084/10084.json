@@ -1,0 +1,27 @@
+{
+	"id": 59872493,
+	"number": 10084,
+	"state": "closed",
+	"title": "math/big: Binomial can be be twice as fast on average by using symetry",
+	"body": "\r\nThe current implementation of `Binomial(n, k int64) *Int` performs `2*k` `big.nat` multiplications. This can be much improved for any `k\u003en/2`, since math gives us `Binomial(n,k) == Binomial(n,n-k)`.\r\n\r\nThis is trivial to implement and gives on average an substantive improvement both in CPU and memory consumption.\r\n\r\nOn a shiny Intel Core i7 processor:\r\n\r\n\t$ go test -bench=.\r\n\tPASS\r\n\tBenchmarkStd-2  \t     500\t   2889379 ns/op\r\n\tBenchmarkFancy-2\t    1000\t   1384765 ns/op\r\n\tok  \t_/home/intel\t3.289s\r\n\t\r\n\t[go version devel +122384e 2015-03-04 20:55:55 +0000 linux/amd64]\r\n\r\nOn a raspberry pi 1 Model B rev. 2:\r\n\r\n\t$ go test -bench=.\r\n\tPASS\r\n\tBenchmarkStd  \t      20\t  74138648 ns/op\r\n\tBenchmarkFancy\t      50\t  37191099 ns/op\r\n\tok  \t_/home/pi\t3.744s\r\n\t\r\n\t[go version devel +5432b4d Sun Mar 1 18:38:21 2015 +0000 linux/arm]\r\n\r\n```go\r\n/* save the following as binomial_test.go */\r\npackage main\r\n\r\nimport (\r\n\t\"math/big\"\r\n\t\"testing\"\r\n)\r\n\r\ntype binomialFunc func(n, k int) *big.Int\r\n\r\n// nearly the same as big.Binomial\r\nfunc stdBinomial(n, k int) *big.Int {\r\n\tvar res big.Int\r\n\treturn res.Binomial(int64(n), int64(k))\r\n}\r\n\r\n// a improved function which takes advantage of symetry\r\nfunc fancyBinomial(n, k int) *big.Int {\r\n\tif k \u003e n/2 {\r\n\t\treturn stdBinomial(n, n-k)\r\n\t}\r\n\treturn stdBinomial(n, k)\r\n}\r\n\r\nfunc proofEquality(t *testing.T, f, g binomialFunc, n int) {\r\n\tfor k := 0; k \u003c= n; k++ {\r\n\t\ta := f(n, k)\r\n\t\tb := g(n, k)\r\n\t\tif a.Cmp(b) != 0 {\r\n\t\t\tt.Errorf(\"binom(%d, %d) = %s ≠ %s\\n\", n, k, a, b)\r\n\t\t}\r\n\t}\r\n}\r\n\r\n// Test if the improved function calculates the same values as the old one\r\nfunc TestEquality(t *testing.T) {\r\n\tproofEquality(t, stdBinomial, fancyBinomial, 100) // 100 == ∞ ;)\r\n}\r\n\r\n// Calculates all values of binomial(n,k) for a given n and test if the symetry holds\r\nfunc doSymmetry(b *testing.B, binom binomialFunc, n int) {\r\n\tupto := n / 2\r\n\tfor k := 0; k \u003c upto; k++ {\r\n\t\tl := binom(n, k)\r\n\t\tu := binom(n, n-k)\r\n\r\n\t\tif l.Cmp(u) != 0 {\r\n\t\t\tb.Fatalf(\"binom(%d, %d) = %s ≠ %s = binom(%d, %d)\\n\", n, k, l, u, n, n-k)\r\n\t\t}\r\n\t}\r\n\tif (n % 2) == 0 {\r\n\t\tbinom(n, upto+1) // a lonely ›true‹ middle point is only symetric to itself\r\n\t}\r\n}\r\n\r\nfunc BenchmarkStd(t *testing.B) {\r\n\tfor i := 0; i \u003c t.N; i++ {\r\n\t\tdoSymmetry(t, stdBinomial, 100)\r\n\t}\r\n}\r\n\r\nfunc BenchmarkFancy(t *testing.B) {\r\n\tfor i := 0; i \u003c t.N; i++ {\r\n\t\tdoSymmetry(t, fancyBinomial, 100)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "zephyr",
+		"id": 161678,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-04-01T19:36:13Z",
+	"created_at": "2015-03-04T22:24:32Z",
+	"updated_at": "2016-06-25T02:02:41Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

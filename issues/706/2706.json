@@ -1,0 +1,33 @@
+{
+	"id": 51279594,
+	"number": 2706,
+	"state": "closed",
+	"title": "go/parser: No way to produce correct offsets when doing partial parsing",
+	"body": "\u003cpre\u003eNow it is suggested that everyone who uses ParseDeclList and such can and should produce\na simple wrapper like ParseExpr does. The problem is that the ParseExpr example is\nbroken. Let me remind you how it's implemented:\n\nfile, err := ParseFile(token.NewFileSet(), \u0026quot;\u0026quot;, \u0026quot;package p;func\n_(){_=\\n//line :1\\n\u0026quot;+x+\u0026quot;;}\u0026quot;, 0)\n\n1. \u0026quot;//line :1\u0026quot; is nice, but what for? There is no access to the corresponding\ntoken.FileSet, and therefore there is no access to line information.\n\n2. In that example the bytes offset of the expression is broken, it will say that\nexpression starts with file offset of 33 bytes (minimum). But by definition the real\nminimum is 0.\n\nAnd unfortunately, with current interface, there is no way to produce correct offset for\npartial parsing. I'm sorry, but my program was relying on correct offsets. And now I\nhave to do patches like this, where I fix every offset usage taking another offset\n(introduced by a wrapper) into account:\n\n\u003ca href=\"https://github.com/nsf/gocode/commit/805066f926889a4f118cf65aff598fc3ccdf398a#diff-1\"\u003ehttps://github.com/nsf/gocode/commit/805066f926889a4f118cf65aff598fc3ccdf398a#diff-1\u003c/a\u003e\n\n\nI hate clang for this, it doesn't provide a way to do partial parsing and now I have to\nhate your parser too? :(\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:14:25Z",
+	"created_at": "2012-01-16T03:18:19Z",
+	"updated_at": "2016-06-24T21:23:32Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

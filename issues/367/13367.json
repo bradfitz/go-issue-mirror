@@ -1,0 +1,22 @@
+{
+	"id": 118374971,
+	"number": 13367,
+	"state": "closed",
+	"title": "archive/zip: ignore malformed Zip64 info in Extra field",
+	"body": "Some zip packers seem to put bogus value 8 in the Zip64 extended information extra field's size, which results in the reader returning `ErrFormat` errors for all the archived files after the first 4 GiB. Both zip 3.x and unzip 6.x, on the other hand, see no problem with such archives, because they ignore the specified size of the zip64 extra block and just read the compressed size, uncompressed size and the local header offset if the corresponding values in the local or central directory record are set to `0xffff` or `0xffffffff`. This is in accordance with [the spec](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT):\r\n\r\n\u003e The order of the fields in the zip64 extended information record is fixed, but the fields MUST only appear if the corresponding Local or Central directory record field is set to 0xFFFF or 0xFFFFFFFF.\r\n\r\n`archive/zip` [doesn't check this](https://github.com/golang/go/blob/041787280976d0bad15c646fc7c7bbfef76d7ee5/src/archive/zip/reader.go#L272-L284), assuming that the specified size is correct and reading the `UncompressedSize64`, `CompressedSize64` and `headerOffset` one by one as though they all must be there. It should instead check if the `CompressedSize`, `UncompressedSize` and previously read `headerOffset` are set to `0xffffffff`, and then and only then read the corresponding 64-bit values; the specified size of the zip64 extra block should be ignored.",
+	"user": {
+		"login": "opennota",
+		"id": 5520115,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-07T00:44:22Z",
+	"created_at": "2015-11-23T12:54:54Z",
+	"updated_at": "2016-01-07T00:44:22Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

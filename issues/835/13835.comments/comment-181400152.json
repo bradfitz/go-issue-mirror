@@ -1,0 +1,12 @@
+{
+	"id": 181400152,
+	"body": "I've experienced needing to handle this at Bitly, so i'll add my 2cents. \r\n\r\nI think url.Parse should not handle IDN/Punycode conversion, as an IDN formatted Host is a valid URL format, and a URL struct constructed with an IDN Host (without using Parse) should also work. Changing round trip semantics of `url.Parse(u).String()` also seems like a backwards incompatible change of the type that's hard to detect. The Host just needs to be ascii safe when used in a HTTP Host header, which implies to me `net/http` responsibility. That means, as suggested, calling `idna.ToASCII()` before sending the Host header or TLS SNI where appropriate.\r\n\r\nAlso, as a side note, the same IDN/Punycode issue also applies to the construction of the `Referer` host header in [`refererForURL`](https://golang.org/src/net/http/client.go#L107) as that should also be ascii safe for use in a header.\r\n\r\nWhen handling requests on the server side, I think the Host header should be left as-is (presumably in punycode if from a well behaved browser/client, but we all know that isn't always the case), but `ToUnicode` would also be reasonable.\r\n\r\nIt's unclear to me what, if any, restriction net.Dial should have on unicode or IDN domains as DNS as i believe punycode is a DNS convention not a requirement (i need to do some RFC reading to be better informed on this one).",
+	"user": {
+		"login": "jehiah",
+		"id": 45028,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-08T14:39:58Z",
+	"updated_at": "2016-02-08T14:39:58Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 73877462,
+	"number": 10741,
+	"state": "open",
+	"title": "archive/zip: need new api to support local file name encoding",
+	"body": "The `archive/zip` can't support gbk filename on chinese windows.\r\n\r\nThis is a simple test (`test-gbk-zip.go`):\r\n\r\n```Go\r\n// only for go1.4\r\n\r\n// Go output on Chinese Win7/64bit\r\n// go run test-gbk-zip.go\r\n//\r\n// File name(%s): ����/���¶���.txt\r\n// File name(%q): \"\\xc0\\xee\\xb0\\xd7/\\xd4\\xc2\\xcf¶\\xc0\\xd7\\xc3.txt\"\r\n// File name(%s): �Ÿ�/\r\n// File name(%q): \"\\xb6Ÿ\\xa6/\"\r\n//\r\n\r\n// 7z output on Chinese Win7/64bit\r\n//\r\n// 7z l -r 中文-测试.zip\r\n//\r\n// 7-Zip [64] 9.25 alpha  Copyright (c) 1999-2011 Igor Pavlov  2011-09-16\r\n//\r\n// Listing archive: 中文-测试.zip\r\n//\r\n// --\r\n// Path = 中文-测试.zip\r\n// Type = zip\r\n// Physical Size = 483\r\n//\r\n//    Date      Time    Attr         Size   Compressed  Name\r\n// ------------------- ----- ------------ ------------  ------------------------\r\n//                     .....          282          228  李白\\月下独酌.txt\r\n//                     D....            0            5  杜甫\r\n// ------------------- ----- ------------ ------------  ------------------------\r\n//                                    282          233  1 files, 1 folders\r\n\r\npackage main\r\n\r\nimport (\r\n\t\"archive/zip\"\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"os\"\r\n\r\n\t\"golang.org/x/text/encoding/simplifiedchinese\"\r\n)\r\n\r\ntype ZipTest struct {\r\n\tName string\r\n\tFile []ZipTestFile\r\n}\r\n\r\ntype ZipTestFile struct {\r\n\tName string\r\n\tBody string\r\n}\r\n\r\nfunc main() {\r\n\tmakeGbkTestfile()\r\n\r\n\tr, err := zip.OpenReader(gbkZipTest.Name)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tdefer r.Close()\r\n\r\n\tfor _, f := range r.File {\r\n\t\tfmt.Printf(\"File name(%%s): %s\\n\", f.Name)\r\n\t\tfmt.Printf(\"File name(%%q): %q\\n\", f.Name)\r\n\t}\r\n}\r\n\r\nfunc makeGbkTestfile() {\r\n\tfile, err := os.Create(gbkZipTest.Name)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tdefer file.Close()\r\n\r\n\twzip := zip.NewWriter(file)\r\n\tdefer func() {\r\n\t\tif err := wzip.Close(); err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t}()\r\n\r\n\tfor _, file := range gbkZipTest.File {\r\n\t\tlocalGbkName, _ := utf8ToGBK(file.Name) // 文件名转换为 GBK编码\r\n\t\tf, err := wzip.Create(localGbkName)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\t_, err = f.Write([]byte(file.Body))\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc utf8ToGBK(text string) (string, error) {\r\n\tdst := make([]byte, len(text)*2)\r\n\ttr := simplifiedchinese.GB18030.NewEncoder()\r\n\tnDst, _, err := tr.Transform(dst, []byte(text), true)\r\n\tif err != nil {\r\n\t\treturn text, err\r\n\t}\r\n\treturn string(dst[:nDst]), nil\r\n}\r\n\r\nvar gbkZipTest = ZipTest{\r\n\tName: \"中文-测试.zip\",\r\n\tFile: []ZipTestFile{\r\n\t\t{\r\n\t\t\tName: \"李白/月下独酌.txt\",\r\n\t\t\tBody: `月下独酌 - 李白\r\n\r\n花间一壶酒，独酌无相亲。\r\n举杯邀明月，对影成三人。\r\n月既不解饮，影徒随我身。\r\n暂伴月将影，行乐须及春。\r\n我歌月徘徊，我舞影零乱。\r\n醒时同交欢，醉后各分散。\r\n永结无情游，相期邈云汉。\r\n`,\r\n\t\t},\r\n\t\t{\r\n\t\t\tName: \"杜甫/\",\r\n\t\t\tBody: \"\",\r\n\t\t},\r\n\t},\r\n}\r\n\r\n```\r\n\r\nSo i create [CL9381](https://go-review.googlesource.com/#/c/9381/) try to fix this poblem.\r\nBut [CL9381](https://go-review.googlesource.com/#/c/9381/) can only support utf8 encoding,\r\nit can't create local gbk encoding zip.\r\n\r\nI think we need new api for user defined filename encoding:\r\n\r\n```\r\nfunc OpenReaderEx(name string, decoder func(x string)(utf8Name string)) (*ReadCloser, error)\r\nfunc (w *Writer) CreateEx(name string, encoder func(x string)(localName string)) (io.Writer, error)\r\n```\r\n\r\nIf the `decoder` or `encoder` is `nil`, the local encoding is `utf8`.\r\n\r\nThe `func (w *Writer) Create(name string) (io.Writer, error)` force use utf8 encoding.\r\n\r\n",
+	"user": {
+		"login": "chai2010",
+		"id": 2295542,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2015-05-07T07:20:29Z",
+	"updated_at": "2015-11-26T17:10:09Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

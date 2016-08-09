@@ -1,0 +1,33 @@
+{
+	"id": 51286865,
+	"number": 7549,
+	"state": "closed",
+	"title": "runtime: false retention from strings \u0026 slices on the stack",
+	"body": "\u003cpre\u003es := make([]byte, 64)\ns = s[64:]\n\nThe pointer in s may now be pointing at the start of the following object in memory\n(whatever gets allocated just past the 64-byte backing array for s).  During GC, there\nis no pointer pointing to the original backing array for s, so it may get collected. \nThat is ok, as it can never be accessed from the empty s.  But the following object may\nget falsely retained.\n\nRuss recently fixed this for strings in the data segment and the heap. \n\u003ca href=\"https://code.google.com/p/go/source/detail?r=b1e34388854eb8dea514b9590b1aa9cb0fcea388\"\u003ehttps://code.google.com/p/go/source/detail?r=b1e34388854eb8dea514b9590b1aa9cb0fcea388\u003c/a\u003e\n\nIt was always fixed for slices in the data segment and the heap (since GC programs went\nin in Go 1.1).\n\nIt is still a problem for strings and slices on the stack.  For the stack case, we don't\nget the overcollection problem because the stack scanner doesn't know the pointer is a\nstring pointer and thus doesn't use markonly.  But we still get false retention.\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2014-12-08T10:41:57Z",
+	"created_at": "2014-03-15T06:21:34Z",
+	"updated_at": "2016-06-25T01:29:53Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

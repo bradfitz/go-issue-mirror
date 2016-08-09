@@ -1,0 +1,26 @@
+{
+	"id": 51285669,
+	"number": 6751,
+	"state": "open",
+	"title": "runtime: windows callback on non-Go thread fails",
+	"body": "\u003cpre\u003eThis test\n\ndiff --git a/src/pkg/runtime/syscall_windows_test.go\nb/src/pkg/runtime/syscall_windows_test.go\n--- a/src/pkg/runtime/syscall_windows_test.go\n+++ b/src/pkg/runtime/syscall_windows_test.go\n@@ -240,5 +240,35 @@\n }\n \n func TestCallbackInAnotherThread(t *testing.T) {\n-\t// TODO: test a function which calls back in another thread: QueueUserAPC() or\nCreateThread()\n+\td := GetDLL(t, \u0026quot;kernel32.dll\u0026quot;)\n+\n+\tf := func(p uintptr) uintptr {\n+\t\treturn p\n+\t}\n+\tr, _, err := d.Proc(\u0026quot;CreateThread\u0026quot;).Call(0, 0, syscall.NewCallback(f), 123,\n0, 0)\n+\tif r == 0 {\n+\t\tt.Fatalf(\u0026quot;CreateThread failed: %v\u0026quot;, err)\n+\t}\n+\th := syscall.Handle(r)\n+\tdefer syscall.CloseHandle(h)\n+\n+\tswitch s, err := syscall.WaitForSingleObject(h, 100); s {\n+\tcase syscall.WAIT_OBJECT_0:\n+\t\tbreak\n+\tcase syscall.WAIT_TIMEOUT:\n+\t\tt.Fatal(\u0026quot;timeout waiting for thread to exit\u0026quot;)\n+\tcase syscall.WAIT_FAILED:\n+\t\tt.Fatalf(\u0026quot;WaitForSingleObject failed: %v\u0026quot;, err)\n+\tdefault:\n+\t\tt.Fatalf(\u0026quot;WaitForSingleObject returns unexpected value %v\u0026quot;, s)\n+\t}\n+\n+\tvar ec uint32\n+\tr, _, err = d.Proc(\u0026quot;GetExitCodeThread\u0026quot;).Call(uintptr(h),\nuintptr(unsafe.Pointer(\u0026amp;ec)))\n+\tif r == 0 {\n+\t\tt.Fatalf(\u0026quot;GetExitCodeThread failed: %v\u0026quot;, err)\n+\t}\n+\tif ec != 123 {\n+\t\tt.Fatalf(\u0026quot;expected 123, but got %d\u0026quot;, ec)\n+\t}\n }\n\nfails with\n\nC:\\\u0026gt;u:\\test -test.v -test.run=Another\n=== RUN TestCallbackInAnotherThread\n--- FAIL: TestCallbackInAnotherThread (0.11 seconds)\n        syscall_windows_test.go:259: timeout waiting for thread to exit\nFAIL\n\nhg id is 39c724dd7f25\n\nAlex\n\nPS: for after Go 1.2\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 12,
+	"created_at": "2013-11-12T01:40:07Z",
+	"updated_at": "2015-04-15T01:41:06Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

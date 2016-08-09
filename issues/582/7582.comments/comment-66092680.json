@@ -1,0 +1,12 @@
+{
+	"id": 66092680,
+	"body": "\u003ca id=\"c15\"\u003e\u003c/a\u003eComment 15:\n\n\u003cpre\u003eAfter some digging, I'm fairly certain that this is just ephemeral port exhaustion. OSX\nonly allocates  16k ports for dynamic use, as compared to ~32k on linux.\n\nLinux:\n\njonallie@foo:~$ cat /proc/sys/net/ipv4/ip_local_port_range\n32768   61000\n\nOSX\n\njonallie-macbookpro2:gophercon jonallie$ sysctl net.inet.ip.portrange\nnet.inet.ip.portrange.lowfirst: 1023\nnet.inet.ip.portrange.lowlast: 600\nnet.inet.ip.portrange.first: 49152\nnet.inet.ip.portrange.last: 65535\nnet.inet.ip.portrange.hifirst: 49152\nnet.inet.ip.portrange.hilast: 65535\n\nTellingly, the repro script runs ~100 loops that open 200 connections each..and usually\nfails (for me) around loop 80. Increasing the port range via:\n\njonallie-macbookpro$ sudo sysctl -w net.inet.ip.portrange.first=32768\nnet.inet.ip.portrange.first: 49152 -\u003e 32768\njonallie-macbookpro$ sudo sysctl -w net.inet.ip.portrange.hifirst=32768\nnet.inet.ip.portrange.hifirst: 49152 -\u003e 32768\n\nallows the test script to complete a full 100 loops, and increasing it to 200 loops\ncauses it to fail as expected.\u003c/pre\u003e",
+	"user": {
+		"login": "ja30278",
+		"id": 6035,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-28T20:50:31Z",
+	"updated_at": "2014-12-08T10:42:09Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66048213,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **eden.li**:\n\n\u003cpre\u003eAgreed, cgo already renders some types using Opaque() which turns unknown types into\na byte array of fixed size.  Maybe we can just treat types with invalid byte sizes as\n0-length byte arrays?  It seems Go wouldn't be able to copy the object if this is the\ncase.\n\nHere's a patch which works for me for when consuming libmysql.\n\ndiff -r 1d9d926b1aa7 src/cmd/cgo/gcc.go\n--- a/src/cmd/cgo/gcc.go\tThu Nov 12 23:38:48 2009 -0800\n+++ b/src/cmd/cgo/gcc.go\tFri Nov 13 10:01:45 2009 -0800\n@@ -315,11 +315,15 @@\n \tt.Size = dtype.Size();\n \tt.Align = -1;\n \tt.C = dtype.Common().Name;\n+\tc.m[dtype] = t;\n+\n \tif t.Size \u0026lt; 0 {\n-\t\tfatal(\"dwarf.Type %s reports unknown size\", dtype)\n+\t\t// Treat unsized types as [0]byte\n+\t\tt.Size = 0;\n+\t\tt.Go = c.Opaque(0);\n+\t\treturn t;\n \t}\n \n-\tc.m[dtype] = t;\n \tswitch dt := dtype.(type) {\n \tdefault:\n \t\tfatal(\"unexpected type: %s\", dtype)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2009-11-13T18:03:38Z",
+	"updated_at": "2014-12-22T05:44:21Z"
+}

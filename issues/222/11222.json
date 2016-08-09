@@ -1,0 +1,32 @@
+{
+	"id": 88500255,
+	"number": 11222,
+	"state": "open",
+	"title": "runtime: on PPC64x, arm64, mips64x time.Now precision is in microseconds, not nanoseconds",
+	"body": "libgo/runtime/go-nanotime.c calls gettimeofday which only provides microsecond precision, not the nanosecond precision that is documented for Time.\r\n\r\nHere is a testcase that demonstrates the problem.  I built it using gccgo from the latest gcc5 branch, and I can see the libgo code for go-nanotime.c is the same in trunk so would expect the same behavior there.  The problem occurs on ppc64le and x86 with gccgo; did not try ppc64 but would expect that behavior there too.   Problem does not occur with golang.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"time\"\r\n)\r\n\r\nconst (\r\n        defaultTimeOut = 30\r\n)\r\n\r\nfunc abort(start time.Time, timeOff time.Duration) bool {\r\n        since := time.Since(start)\r\n        now := time.Now()\r\n        fmt.Printf(\"start: %s since: %d now: %s\\n\", start.String(), since, now.String())\r\n        return timeOff.Nanoseconds()+time.Since(start).Nanoseconds() \u003e (time.Duration(defaultTimeOut) * time.Second).Nanoseconds()\r\n}\r\n\r\nfunc main() {\r\n        cases := []struct {\r\n                timeOff  time.Duration\r\n                expAbort bool\r\n        }{\r\n                {time.Duration(1), false},\r\n                {time.Duration(2), false},\r\n                {time.Duration(10), false},\r\n                {time.Duration(30), true},\r\n                {time.Duration(40), true},\r\n        }\r\n\r\n        for _, c := range cases {\r\n                s := c.timeOff * time.Second\r\n                if a := abort(time.Now(), s); a != c.expAbort {\r\n                        fmt.Printf(\"Duration %v, expected %v, was %v\\n\", c.timeOff, s, a)\r\n                }\r\n        }\r\n\r\n}\r\n```\r\n\r\n```\r\nstart: 2015-06-15 13:09:04.675845 -0500 CDT since: 7000 now: 2015-06-15 13:09:04.675856 -0500 CDT\r\nstart: 2015-06-15 13:09:04.676307 -0500 CDT since: 0 now: 2015-06-15 13:09:04.676307 -0500 CDT\r\nstart: 2015-06-15 13:09:04.67633 -0500 CDT since: 0 now: 2015-06-15 13:09:04.676331 -0500 CDT\r\nstart: 2015-06-15 13:09:04.676351 -0500 CDT since: 1000 now: 2015-06-15 13:09:04.676352 -0500 CDT\r\nstart: 2015-06-15 13:09:04.676373 -0500 CDT since: 0 now: 2015-06-15 13:09:04.676374 -0500 CDT\r\n```\r\n\r\nThe value of 0 occurs intermittently for the \"since\" value in the output due to the lack of precision.\r\n\r\nCould clock_gettime be called instead to get nanosecond precision?",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Linux"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-06-15T18:12:54Z",
+	"updated_at": "2016-08-02T18:55:06Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 149690808,
+	"number": 15381,
+	"state": "closed",
+	"title": "syscall: wrong addrlen passed to bind()/connect()/sendto() for SockaddrUnix",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go version go1.6 darwin/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nCompiled on `darwin/amd64` for `linux/386`, where it's running.\r\n\r\n3. What did you do?\r\nTried to connect a Go client to a C++ server using a UNIX domain socket\r\n\r\n4. What did you expect to see?\r\nThe client connecting successfully\r\n\r\n5. What did you see instead?\r\n`dial unix @/Foo/bar1234: connection refused`\r\n\r\nThe C++ server looks like this:\r\n\r\n```c++\r\nint fd = socket(AF_UNIX, SOCK_STREAM, 0);\r\nfcntl(fd, F_SETFD, FD_CLOEXEC);\r\nstruct sockaddr_un sun;\r\nmemset(\u0026sun, 0, sizeof(sun));\r\nsun.sun_family = AF_UNIX;\r\nstrncpy(sun.sun_path, \"@/Foo/bar1234\", sizeof(sun.sun_path));\r\nsun.sun_path[0] = '\\0';\r\nbind(fd, (sockaddr *) \u0026sun, sizeof(sun));\r\nlisten(fd, 255);\r\n```\r\n\r\nwhile the Go client simply does:\r\n```go\r\nnet.Dial(\"unix\", \"@/Foo/bar1234\")\r\n```\r\n\r\nIf I apply the following diff to the C++ code, it works:\r\n\r\n```diff\r\n@@ -4,6 +4,7 @@\r\n memset(\u0026sun, 0, sizeof(sun));\r\n sun.sun_family = AF_UNIX;\r\n strncpy(sun.sun_path, \"@/Foo/bar1234\", sizeof(sun.sun_path));\r\n+int sun_len = strlen(sun.sun_path);\r\n sun.sun_path[0] = '\\0';\r\n-bind(fd, (sockaddr *) \u0026sun, sizeof(sun));\r\n+bind(fd, (sockaddr *) \u0026sun, sun_len + sizeof(sun.sun_family));\r\n listen(fd, 255);\r\n```\r\n\r\nAccording to [bind(2)](http://man7.org/linux/man-pages/man2/bind.2.html):\r\n\u003e `addrlen` specifies the size, in bytes, of the address structure pointed to by `addr`\r\n\r\nSo it appears that the C++ code is correct without the change. On the Go side, I see a comment in the `sockaddr()` implementation for `SockaddrUnix` dating back to 602a446b74083ac027f1d0740d1e724534222a10:\r\n\r\n```go\r\n// length is family (uint16), name, NUL.\r\n```\r\n\r\nbut that's about all the context I could find. Shouldn't `sockaddr()` return something like this instead?\r\n\r\n```diff\r\ndiff --git a/src/syscall/syscall_linux.go b/src/syscall/syscall_linux.go\r\nindex 73a16f8..37a2f25 100644\r\n--- a/src/syscall/syscall_linux.go\r\n+++ b/src/syscall/syscall_linux.go\r\n@@ -314,7 +314,7 @@ func (sa *SockaddrUnix) sockaddr() (unsafe.Pointer, _Socklen, error) {\r\n                sl--\r\n        }\r\n \r\n-       return unsafe.Pointer(\u0026sa.raw), sl, nil\r\n+       return unsafe.Pointer(\u0026sa.raw), unsafe.Sizeof(sa.raw), nil\r\n }\r\n \r\n type SockaddrLinklayer struct {\r\n```",
+	"user": {
+		"login": "7AC",
+		"id": 734659,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-04-21T19:28:12Z",
+	"created_at": "2016-04-20T07:59:03Z",
+	"updated_at": "2016-04-21T19:28:12Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

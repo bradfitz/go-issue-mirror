@@ -1,0 +1,33 @@
+{
+	"id": 68474304,
+	"number": 10457,
+	"state": "closed",
+	"title": "net/http: possible readloop goroutine leak",
+	"body": "## What we meet\r\n\r\nWe encountered this goroutine leak in our own project(https://github.com/coreos/etcd) when using the function to check the goroutine that is still running after test finishes:\r\n\r\n```\r\n\tz_last_test.go:97: Test appears to have leaked a Transport:\r\n\t\tnet/http.(*persistConn).readLoop(0xc20858c0b0)\r\n\t\t\t/usr/local/go/src/net/http/transport.go:858 +0x4eb\r\n\t\tcreated by net/http.(*Transport).dialConn\r\n\t\t\t/usr/local/go/src/net/http/transport.go:660 +0x10d4\r\n\r\n\t\ttesting.RunTests(0x6bb550, 0x838980, 0x1a, 0x1a, 0x11800)\r\n\t\t\t/usr/local/go/src/testing/testing.go:556 +0xdc3\r\n\t\ttesting.(*M).Run(0xc20802e140, 0x843160)\r\n\t\t\t/usr/local/go/src/testing/testing.go:485 +0xe1\r\n\t\tmain.main()\r\n\t\t\tgithub.com/coreos/etcd/integration/_test/_testmain.go:102 +0x28d\r\n```\r\n\r\nThe error is under go 1.4.2\r\n\r\nThe case is writeLoop is closed, but readLoop is still there, and hangs on `rc := \u003c-pc.reqch` forever.\r\n\r\n## What we have found\r\n\r\nAfter digging into it, @xiang90 find this, and we think that is the root cause of the leak.\r\n\r\n(All codes are excerpted from \"pkg/net/http/transport.go\" in go1.4)\r\n\r\n### Bug case\r\n\r\n`dialConn` inits a `persistConn`, and `go readLoop()`\r\n\r\n`roundTrip` is called. It adds 1 to `pc.numExpectedResponses` and sends a `requestAndChan` to `reqch`, and the loop in `readLoop` receives and handles it.\r\n\r\n`roundTrip` has not received the response, and is blocked at `WaitResponse` block.\r\n\r\n`readLoop` reads the response from `pc.br`, and no error. It has no body and pushes the response into channel. Then it wait on `pc.br.Peek(1)` again.\r\n\r\n`pc.br` is closed by remote target, and returns io.EOF.\r\n\r\n`pc.br.Peek(1)` in `readLoop` returns error io.EOF.\r\n\r\nThe loop in `readLoop` finds that `pc.numExpectedResponses == 0` is false, then waits on `reqCh`.\r\n\r\n`roundTrip` receives the response and exits.\r\n\r\nNo further `roundTrip` comes, and the persistConn is `closed`. So no one will push `requestAndChan` to `reqCh` in the future, and `reqCh` will not be closed.\r\n\r\nThe `readLoop` goroutine waits on `reqCh` forever.\r\n\r\n### Init\r\n\r\n```\r\nfunc (t *Transport) dialConn(cm connectMethod) (*persistConn, error) {\r\n\tpconn := \u0026persistConn{\r\n\t\tt:          t,\r\n\t\tcacheKey:   cm.key(),\r\n\t\treqch:      make(chan requestAndChan, 1),\r\n\t\twritech:    make(chan writeRequest, 1),\r\n\t\tclosech:    make(chan struct{}),\r\n\t\twriteErrCh: make(chan error, 1),\r\n\t}\r\n...\r\n\tpconn.br = bufio.NewReader(noteEOFReader{pconn.conn, \u0026pconn.sawEOF})\r\n...\r\n\tgo pconn.readLoop()\r\n```\r\n\r\n### persistConn.readLoop\r\n\r\n```\r\nfunc (pc *persistConn) readLoop() {\r\n\talive := true\r\n\r\n\tfor alive {\r\n\t\tpb, err := pc.br.Peek(1)\r\n\r\n\t\tpc.lk.Lock()\r\n\t\tif pc.numExpectedResponses == 0 {\r\n\t\t\tif !pc.closed {\r\n\t\t\t\tpc.closeLocked()\r\n\t\t\t\tif len(pb) \u003e 0 {\r\n\t\t\t\t\tlog.Printf(\"Unsolicited response received on idle HTTP channel starting with %q; err=%v\",\r\n\t\t\t\t\t\tstring(pb), err)\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tpc.lk.Unlock()\r\n\t\t\treturn\r\n\t\t}\r\n\t\tpc.lk.Unlock()\r\n\r\n\t\trc := \u003c-pc.reqch\r\n\r\n\t\tvar resp *Response\r\n\t\tif err == nil {\r\n\t\t\tresp, err = ReadResponse(pc.br, rc.req)\r\n\t\t\tif err == nil \u0026\u0026 resp.StatusCode == 100 {\r\n\t\t\t\t// Skip any 100-continue for now.\r\n\t\t\t\t// TODO(bradfitz): if rc.req had \"Expect: 100-continue\",\r\n\t\t\t\t// actually block the request body write and signal the\r\n\t\t\t\t// writeLoop now to begin sending it. (Issue 2184) For now we\r\n\t\t\t\t// eat it, since we're never expecting one.\r\n\t\t\t\tresp, err = ReadResponse(pc.br, rc.req)\r\n\t\t\t}\r\n\t\t}\r\n...\r\n   }\r\n}\r\n```\r\n\r\n### persistConn.roundTrip\r\n\r\n```\r\nfunc (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err error) {\r\n\tpc.t.setReqCanceler(req.Request, pc.cancelRequest)\r\n\tpc.lk.Lock()\r\n\tpc.numExpectedResponses++\r\n\theaderFn := pc.mutateHeaderFunc\r\n\tpc.lk.Unlock()\r\n...\r\n\tresc := make(chan responseAndError, 1)\r\n\tpc.reqch \u003c- requestAndChan{req.Request, resc, requestedGzip}\r\n...\r\nWaitResponse:\r\n...\r\n\tpc.lk.Lock()\r\n\tpc.numExpectedResponses--\r\n\tpc.lk.Unlock()\r\n...\r\n   return re.res, re.err\r\n}\r\n```\r\n\r\n### persistConn.close\r\n\r\n```\r\nfunc (pc *persistConn) close() {\r\n\tpc.lk.Lock()\r\n\tdefer pc.lk.Unlock()\r\n\tpc.closeLocked()\r\n}\r\n```\r\n\r\n## Can we reproduce it?\r\n\r\nI can get the leak when running etcd integration tests once in five round in race mode.\r\n\r\nI have done my best to reproduce it in a simple go program(2-3 full days), but i failed to make it happen because it is really hard to let the code run in the order that is described in bug case.\r\n\r\ni hope that you can read over the bug case, and i can help on testing whether this is fixed.",
+	"user": {
+		"login": "yichengq",
+		"id": 2976232,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-04-22T10:30:16Z",
+	"created_at": "2015-04-14T19:23:58Z",
+	"updated_at": "2016-06-25T02:05:41Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

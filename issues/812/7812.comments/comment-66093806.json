@@ -1,0 +1,12 @@
+{
+	"id": 66093806,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eAdded logging to ioutil.ReadFile: it's not panicing. It's an error from\nbytes.Buffer.ReadFrom.\n\nAdding more logging there:\n\n                m, e := r.Read(b.buf[len(b.buf):cap(b.buf)])\n                if e != nil {\n                        log.Printf(\"Read error from %T for read %d to %d: %d, %v\", r, len(b.buf), cap(b.buf), m, \\\ne)\n                }\n                b.buf = b.buf[0 : len(b.buf)+m]\n                n += int64(m)\n                if e == io.EOF {\n                        break\n                }\n                if e != nil {\n\t\t\treturn n, e\n                }\n\nAnd I get:\n\n2014/04/21 15:07:37 Read error from *os.File for read 2147483136 to 4294966784: 0, read\n/Users/bradfitz/Downloads/many-ubuntu.iso: invalid argument\n\nThat offset is 512 bytes shy of 2 GiB.  512 bytes is probably bytes.MinRead (also 512).\n\nWhy is the slice capacity even getting up to 4GB?\n\nOh, because ReadFile does:\n\n        if fi, err := f.Stat(); err == nil {\n                // Don't preallocate a huge buffer, just in case.\n                if size := fi.Size(); size \u0026lt; 1e9 {\n                        n = size\n                }\n        }\n\nSo the doubling keeps going, even beyond the os.Stat size.\n\nSo then why the invalid argument from *os.File?\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-21T22:13:08Z",
+	"updated_at": "2014-12-22T06:34:02Z"
+}

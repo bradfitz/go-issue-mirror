@@ -1,0 +1,28 @@
+{
+	"id": 51278846,
+	"number": 2179,
+	"state": "closed",
+	"title": "When using jsonrpc, bad input from client can cause infinite loop ",
+	"body": "\u003cpre\u003eGiven a minimal bare socket based jsonrpc, as shown below, malformed input will cause\nthe ServeConn goroutine to loop infinitely. This can be reproduced by compiling and\nrunning the jsonrpc server below, then running the following shell command:\n\necho '{id:1}' | nc localhost 5090\n\nNotice the double quotes have been elided, which is invalid json. The server will\ninfinitely repeat the following:\n\n2011/08/24 00:19:42 rpc: rpc: server cannot decode request: invalid character 'i'\nlooking for beginning of object key string\n\nThis was discovered in the latest weekly:\n\n$ hg identify\n6eb2b9dbe489 weekly/weekly.2011-08-17\n\nAnd reproduced this on the tip as well:\n\n$ hg id\n43a8f5250576 tip\n\nOS:\n\nDarwin xxx 10.8.0 Darwin Kernel Version 10.8.0: Tue Jun  7 16:32:41 PDT 2011;\nroot:xnu-1504.15.3~1/RELEASE_X86_64 x86_64\n\n---\npackage main\n\nimport (\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;rpc\u0026quot;\n\t\u0026quot;rpc/jsonrpc\u0026quot;\n)\n\ntype Hello int\n\nfunc (h *Hello) Hello(arg *string, reply *string) os.Error {\n\tlog.Println(\u0026quot;received:\u0026quot;, *arg)\n\t*reply = \u0026quot;hello\u0026quot;\n\treturn nil\n}\n\nfunc main() {\n\tl, err := net.Listen(\u0026quot;tcp\u0026quot;, \u0026quot;127.0.0.1:5090\u0026quot;)\n\tdefer l.Close()\n\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\n\tlog.Print(\u0026quot;listening:\u0026quot;, l.Addr())\n\n\thello := new(Hello)\n\trpc.Register(hello)\n\n\tfor {\n\t\tlog.Print(\u0026quot;waiting for connections...\u0026quot;)\n\t\tc, err := l.Accept()\n\n\t\tif err != nil {\n\t\t\tlog.Printf(\u0026quot;accept error: %s\u0026quot;, c)\n\t\t\tcontinue\n\t\t}\n\n\t\tlog.Printf(\u0026quot;connection started: %v\u0026quot;, c.RemoteAddr())\n\t\tgo jsonrpc.ServeConn(c)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "stevvooe",
+		"id": 120601,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:11:42Z",
+	"created_at": "2011-08-24T07:30:19Z",
+	"updated_at": "2016-06-24T19:33:43Z"
+}

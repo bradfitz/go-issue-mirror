@@ -1,0 +1,29 @@
+{
+	"id": 51288342,
+	"number": 8537,
+	"state": "open",
+	"title": "os: uid_t and gid_t are unsigned 32-bit on Linux, yet os.Chown takes (signed) int",
+	"body": "\u003cpre\u003eHi. I don't necessarily expect anything to change, but I wanted to record my\nconfusion/surprise in a place where others are likely to find it.\n\nchown(2) takes takes uid_t and gid_t, which on Linux are unsigned 32-bit:\n\u003ca href=\"http://serverfault.com/questions/105260/how-big-in-bits-is-a-unix-uid\"\u003ehttp://serverfault.com/questions/105260/how-big-in-bits-is-a-unix-uid\u003c/a\u003e\n\nI have some code that deals with low-level kernel interfaces, where uids and gids are\nmost definitely uint32, and making those interact with os.Chown is what triggered this\nissue.\n\nGo will be confusing to use with userids 2147483648..4294967294. If you think nobody\nwill have that many users, consider containers and user namespaces; uids will not be\nconsumed in-order, like on traditional UNIX boxes.\n\nAnd on 64-bit platforms, int is 64-bit, but uid values are only 32-bit, and that gets\nsilly too.\n\nBackground: In C, -1, when cast into uid_t (that is, uint32_t), is just 0xffffffff, the\nhighest possible unsigned value; it's not really signed, but just a shorthand for\n\u0026quot;all bits set\u0026quot;. In Go, trying to pass -1 as uint32 is a compiler error. This\nsounds like the motivation for making the argument an int.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		},
+		{
+			"name": "LongTerm"
+		}
+	],
+	"comments": 2,
+	"created_at": "2014-08-16T00:19:00Z",
+	"updated_at": "2015-04-14T19:45:24Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

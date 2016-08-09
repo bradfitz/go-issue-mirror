@@ -1,0 +1,12 @@
+{
+	"id": 235224925,
+	"body": "This is a bug in Outlook's streaming response when they gzip it. They're not flushing their flate blocks.\r\n\r\nYour curl command-line isn't equivalent because it's not doing \"Accept-Encoding: gzip\".\r\n\r\nThat endpoints sends a keep-alive JSON value every 15 seconds. It works fine if you do:\r\n\r\n```go\r\n        c := \u0026http.Client{\r\n                Transport: \u0026http.Transport{\r\n                        DisableCompression: true,\r\n                },\r\n        }\r\n        resp, err := c.Do(req)\r\n```\r\n\r\nBut the default Go behavior is to request gzipped responses, and Outlook is responding with a gzipped response, but their heartbeats every 15 seconds don't include any flate flush (Z_SYNC_FLUSH) so Go can't decode any flate blocks and can't yield any data. Or at least can't yield any data for a very long time (15 seconds * small keep-alive chunks will eventually fill a block).\r\n\r\nI recommend you disable compression on Go's side and/or file a bug with Microsoft.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-26T10:05:28Z",
+	"updated_at": "2016-07-26T10:05:28Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 132821186,
+	"number": 14294,
+	"state": "open",
+	"title": "x/exp/shiny/driver/gldriver: deadlock when creating multiple windows on darwin",
+	"body": "I am attempting to create multiple windows, to avoid having to write any layout or windowing code myself.\r\n\r\n```go\r\nfunc main() {\r\n\tdriver.Main(func(s screen.Screen) {\r\n\t\tw, err := s.NewWindow(nil)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\tw2, err := s.NewWindow(nil)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\t_, _ = w, w2\r\n\t})\r\n}\r\n```\r\n\r\nThis hangs at the second call to `NewWindow`. Backtrace:\r\n\r\n```\r\nSIGQUIT: quit\r\nPC=0x405bacb m=0\r\nsignal arrived during cgo execution\r\n\r\ngoroutine 1 [chan receive, locked to thread]:\r\nruntime.mach_semaphore_wait(0xc800001003, 0x4228e00, 0x4031592, 0x40e1d00, 0x7fff5fbfd480, 0x4228e00, 0x404fb79, 0xffffffffffffffff, 0x419aba0, 0x7fff5fbfd494, ...)\r\n\t$GOROOT/src/runtime/sys_darwin_amd64.s:411 +0xb fp=0x7fff5fbfd428 sp=0x7fff5fbfd420\r\nruntime.semasleep1(0xffffffffffffffff, 0x419aba0)\r\n\t$GOROOT/src/runtime/os1_darwin.go:423 +0xdf fp=0x7fff5fbfd460 sp=0x7fff5fbfd428\r\nruntime.semasleep.func1()\r\n\t$GOROOT/src/runtime/os1_darwin.go:439 +0x29 fp=0x7fff5fbfd480 sp=0x7fff5fbfd460\r\nruntime.systemstack(0x7fff5fbfd498)\r\n\t$GOROOT/src/runtime/asm_amd64.s:307 +0xab fp=0x7fff5fbfd488 sp=0x7fff5fbfd480\r\nruntime.semasleep(0xffffffffffffffff, 0x0)\r\n\t$GOROOT/src/runtime/os1_darwin.go:440 +0x36 fp=0x7fff5fbfd4b8 sp=0x7fff5fbfd488\r\nruntime.notesleep(0x4229248)\r\n\t$GOROOT/src/runtime/lock_sema.go:166 +0xed fp=0x7fff5fbfd4f0 sp=0x7fff5fbfd4b8\r\nruntime.stoplockedm()\r\n\t$GOROOT/src/runtime/proc.go:1682 +0xae fp=0x7fff5fbfd510 sp=0x7fff5fbfd4f0\r\nruntime.schedule()\r\n\t$GOROOT/src/runtime/proc.go:2030 +0x6e fp=0x7fff5fbfd548 sp=0x7fff5fbfd510\r\nruntime.park_m(0xc820000180)\r\n\t$GOROOT/src/runtime/proc.go:2137 +0x18b fp=0x7fff5fbfd570 sp=0x7fff5fbfd548\r\nruntime.mcall(0x4059e1a)\r\n\t$GOROOT/src/runtime/asm_amd64.s:233 +0x5b fp=0x7fff5fbfd580 sp=0x7fff5fbfd570\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t$GOROOT/src/runtime/asm_amd64.s:1998 +0x1\r\n\r\ngoroutine 19 [syscall, locked to thread]:\r\ngolang.org/x/exp/shiny/driver/gldriver._Cfunc_doNewWindow(0x30000000400, 0x0)\r\n\tgolang.org/x/exp/shiny/driver/gldriver/_obj/_cgo_gotypes.go:200 +0x42\r\ngolang.org/x/exp/shiny/driver/gldriver.newWindow(0x0, 0x413f320, 0x0, 0x0)\r\n\tgolang.org/x/exp/shiny/driver/gldriver/cocoa.go:62 +0x63\r\ngolang.org/x/exp/shiny/driver/gldriver.(*screenImpl).NewWindow(0x4228a40, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\tgolang.org/x/exp/shiny/driver/gldriver/screen.go:125 +0x4c\r\nmain.main.func1(0x5aab2b8, 0x4228a40)\r\n\tmain.go:35 +0x14f\r\ngolang.org/x/exp/shiny/driver/gldriver.driverStarted.func1()\r\n\tgolang.org/x/exp/shiny/driver/gldriver/cocoa.go:102 +0x47\r\ncreated by golang.org/x/exp/shiny/driver/gldriver.driverStarted\r\n\tgolang.org/x/exp/shiny/driver/gldriver/cocoa.go:104 +0x2b\r\n\r\ngoroutine 20 [select, locked to thread]:\r\ngolang.org/x/exp/shiny/driver/gldriver.drawLoop(0xc820092000, 0x1)\r\n\tgolang.org/x/exp/shiny/driver/gldriver/cocoa.go:147 +0x482\r\ncreated by golang.org/x/exp/shiny/driver/gldriver.preparedOpenGL\r\n\tgolang.org/x/exp/shiny/driver/gldriver/cocoa.go:80 +0x117\r\n```\r\n\r\nThe interesting goroutine is goroutine 19, which is blocked in the cgo `doNewWindow` call, at `dispatch_sync(dispatch_get_main_queue(), ...`. I've confirmed that at the time of the call, the current thread and the main thread are different. So either (a) the main thread is blocked somewhere else, (b) the main thread's run loop is stopped, or (c) the main thread's run loop is in the wrong mode.\r\n\r\nWorkaround suggestions would be very welcome, no matter how hacky.\r\n\r\n/cc @nigeltao @crawshaw \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-02-10T21:22:41Z",
+	"updated_at": "2016-02-12T20:43:10Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

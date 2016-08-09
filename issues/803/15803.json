@@ -1,0 +1,28 @@
+{
+	"id": 156334598,
+	"number": 15803,
+	"state": "closed",
+	"title": "x/exp/io: distinguish transport layer config from protocol required config",
+	"body": "Currently, in order to keep the driver implementations extendible enough, driver.Opener interfaces requires no arguments. But it is creating barriers in the reusability of certain configuration fields.\r\n\r\nI implemented the following high-level Grove LCD package and running it against i2c.Devfs and a custom driver that talks through a web service.\r\n```\r\npackage grovelcd\r\n\r\nimport  \"golang.org/x/exp/io/i2c/driver\"\r\nfunc New(o driver.Opener) (*GroveLCD, error) \r\n```\r\n\r\n```\r\nglcd, err := grovelcd.New(\u0026grovelcd.WebProxy{\r\n\tURL: \"http://192.168.159.121:8080\",\r\n})\r\n\r\nglcd, err := grovelcd.New(\u0026i2c.Devfs{Dev: \"/dev/i2c-1\", Addr: 0x62})\r\n```\r\n\r\nWhat is not nice is that grovelcd package cannot embed the I2C address required by the device at the device library level since Addr needs to be injected by the transport layer, i2c.Devfs.\r\n\r\nWe should distinguish such arguments from the driver implementation configurations to allow libraries to encapsulate the protocol details from the users.\r\n\r\nThe new i2c.Driver should look like:\r\n\r\n```\r\ntype Opener interface {\r\n    Open(addr int) (Conn, error)\r\n}\r\n```\r\n\r\nAnd the user should only care about opening the right bus, address will be embedded in grovelcd package. \r\n\r\n```\r\nglcd, err := grovelcd.New(\u0026i2c.Devfs{Dev: \"/dev/i2c-1\"})\r\n```\r\n\r\nThoughts?\r\n\r\n/cc @minux @proppy",
+	"user": {
+		"login": "rakyll",
+		"id": 108380,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rakyll",
+		"id": 108380,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-06-24T20:33:14Z",
+	"created_at": "2016-05-23T18:23:21Z",
+	"updated_at": "2016-06-24T20:33:14Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

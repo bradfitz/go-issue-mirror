@@ -1,0 +1,12 @@
+{
+	"id": 130215037,
+	"body": "@ianlancetaylor \r\n\u003e Do you have a need for pinning beyond passing pointers between Go and C?\r\n\r\nYes I do. I'm looking into a cgo alternative which translates, when possible, C code to Go code with equivalent semantics. The translated code uses the `unsafe` package, yet it has only the same inherent memory unsafeness of the original C code, nothing to lose here; but the call-into-C overhead is gone. Also, installing such translated-to-Go C library is as easy as `go get`.\r\n\r\nIn this scenario, `p = malloc(n);` can be translated to something like `p = unsafe.Pointer(\u0026make([]byte, n)[0])`, plus keeping `p` reachable. `*p` escapes and will not be put in the stack and thus not moved by the current Go compilers, AFAIK. But there are no guarantees that the same will hold for any future/other Go implementations.\r\n\r\nI assume that moving the backing array of the above example by the Go runtime at GC is actually fine as long as `p` stays as a translated-from-C variable only - then it would get correctly updated. The problem arises when `p` itself is stored in the C heap space, now a Go byte slice backing array, and becomes invisible to the Go runtime wrt to updating due to moving heap items around, which is so far a completely legal thing to do. ",
+	"user": {
+		"login": "cznic",
+		"id": 729580,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-12T08:27:03Z",
+	"updated_at": "2015-08-12T08:27:03Z"
+}

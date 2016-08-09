@@ -1,0 +1,30 @@
+{
+	"id": 128063216,
+	"number": 14067,
+	"state": "closed",
+	"title": "runtime/cgo: fatal error: runtime: split stack overflow",
+	"body": "/cc @ianlancetaylor\r\n\r\ngit rev-parse: HEAD a4599efcfb1ca5345efbb4c185ac0094b312f472 on dragonfly 4.4-RELEASE x86_64.\r\n\r\nTestCthread in misc/cgo/cgo_test.go crashes like the following:\r\n```\r\ncd $GOROOT/misc/cgo/test\r\ngo test -v run=TestCthread\r\n\r\nruntime: newstack sp=0xc820034ea8 stack=[0xc820038000, 0xc820038fd0]\r\n        morebuf={pc:0x4bcc48 sp:0xc820034eb8 lr:0x0}\r\n        sched={pc:0x443dd0 sp:0xc820034eb0 lr:0x0 ctxt:0x0}\r\nruntime: gp=0xc820000600, gp-\u003estatus=0x4\r\n runtime: split stack overflow: 0xc820034ea8 \u003c 0xc820038000\r\nfatal error: runtime: split stack overflow\r\n\r\nruntime stack:\r\nruntime.throw(0x632cc0, 0x1d)\r\n        /go/src/runtime/panic.go:530 +0x90\r\nruntime.newstack()\r\n        /go/src/runtime/stack.go:892 +0x899\r\nruntime.morestack()\r\n        /go/src/runtime/asm_amd64.s:359 +0x7f\r\n\r\ngoroutine 17 [stack growth, locked to thread]:\r\nruntime.sigpanic()\r\n        /go/src/runtime/sigpanic_unix.go:9 fp=0xc820034eb8 sp=0xc820034eb0\r\n_/go/misc/cgo/test.Add(0x1)\r\n        /go/misc/cgo/test/cthread.go:29 +0x68 fp=0xc820034ed0 sp=0xc820034eb8\r\n_/go/misc/cgo/test._cgoexpwrap_bfd130227f24_Add(0x1)\r\n        ??:0 +0x21 fp=0xc820034ee0 sp=0xc820034ed0\r\nruntime.call32(0x0, 0x7ffffeff8f08, 0x7ffffeff8f90, 0x8)\r\n        /go/src/runtime/asm_amd64.s:472 +0x3e fp=0xc820034f08 sp=0xc820034ee0\r\nruntime.cgocallbackg1()\r\n        /go/src/runtime/cgocall.go:267 +0x10c fp=0xc820034f40 sp=0xc820034f08\r\nruntime.cgocallbackg()\r\n        /go/src/runtime/cgocall.go:180 +0xd7 fp=0xc820034fa0 sp=0xc820034f40\r\nruntime.cgocallback_gofunc(0x0, 0x0, 0x0)\r\n        /go/src/runtime/asm_amd64.s:716 +0x60 fp=0xc820034fb0 sp=0xc820034fa0\r\nruntime.goexit()\r\n        /go/src/runtime/asm_amd64.s:1998 +0x1 fp=0xc820034fb8 sp=0xc820034fb0\r\n\r\ngoroutine 1 [chan receive]:\r\ntesting.RunTests(0x652748, 0x713f00, 0x3d, 0x3d, 0x433601)\r\n        /go/src/testing/testing.go:583 +0x8d2\r\ntesting.(*M).Run(0xc820049ef8, 0x406e95)\r\n        /go/src/testing/testing.go:515 +0x81\r\nmain.main()\r\n        _/go/misc/cgo/test/_test/_testmain.go:176 +0x117\r\n\r\ngoroutine 20 [syscall]:\r\nos/signal.signal_recv(0x0)\r\n        /go/src/runtime/sigqueue.go:116 +0x132\r\nos/signal.loop()\r\n        /go/src/os/signal/signal_unix.go:22 +0x18\r\ncreated by os/signal.init.1\r\n        /go/src/os/signal/signal_unix.go:28 +0x37\r\n\r\ngoroutine 34 [syscall, locked to thread]:\r\n_/go/misc/cgo/test._Cfunc_doAdd(0x60000000a)\r\n        ??:0 +0x3a\r\n_/go/misc/cgo/test.testCthread(0xc8200ce000)\r\n        /go/misc/cgo/test/cthread.go:34 +0x39\r\n_/go/misc/cgo/test.TestCthread(0xc8200ce000)\r\n        /go/misc/cgo/test/cgo_test.go:39 +0x21\r\ntesting.tRunner(0xc8200ce000, 0x714170)\r\n        /go/src/testing/testing.go:473 +0x98\r\ncreated by testing.RunTests\r\n        /go/src/testing/testing.go:582 +0x892\r\n\r\ngoroutine 50 [running, locked to thread]:\r\n        goroutine running on other thread; stack unavailable\r\n\r\ngoroutine 51 [running, locked to thread]:\r\n        goroutine running on other thread; stack unavailable\r\n\r\ngoroutine 52 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        /go/src/runtime/asm_amd64.s:1998 +0x1\r\nexit status 2\r\n```\r\nAt the same time the kernel warns about the trapped frame corruption like the follwoing:\r\n```\r\ntail /var/log/message (or dmesg)\r\n\r\nkernel: T_PAGEFLT: Warning %rip == 0\r\nkernel: last message repeated 3 times\r\n```",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Dragonfly"
+		},
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2016-01-25T02:51:07Z",
+	"created_at": "2016-01-22T01:48:06Z",
+	"updated_at": "2016-01-25T02:51:07Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

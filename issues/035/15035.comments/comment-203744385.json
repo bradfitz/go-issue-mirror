@@ -1,0 +1,12 @@
+{
+	"id": 203744385,
+	"body": "This snippet fails in a similar way, using the go1.6 release:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"log\"\r\n        \"net\"\r\n        \"time\"\r\n)\r\n\r\nfunc main() {\r\n        cancel := make(chan struct{})\r\n        c, err := (\u0026net.Dialer{Cancel: cancel}).Dial(\"tcp\", \"golang.org:80\")\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        close(cancel)\r\n        defer c.Close()\r\n        time.Sleep(3 * time.Second)\r\n        req := []byte(\"GET /robots.txt HTTP/1.0\\r\\nHost: golang.org\\r\\n\\r\\n\")\r\n        if _, err := c.Write(req); err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        log.Println(\"done\")\r\n}\r\n```\r\n\r\nThe `Dialer` documentation says:\r\n```\r\n// Cancel is an optional channel whose closure indicates that\r\n// the dial should be canceled. \r\n```\r\n\r\nI would interpret \"the dial should be canceled\" to mean that after `Dial` returns, closing the channel has no effect.  Instead, it seems to travel back in time to kill the existing connection.\r\n\r\nWas `Cancel` intended to apply just to the `Dial` operation, or to the entire lifetime of the connection?",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-31T04:16:42Z",
+	"updated_at": "2016-03-31T04:16:42Z"
+}

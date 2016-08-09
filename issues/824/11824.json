@@ -1,0 +1,22 @@
+{
+	"id": 96651549,
+	"number": 11824,
+	"state": "closed",
+	"title": "net/http/fcgi: panic on malformed fastcgi params record",
+	"body": "Package \"net/http/fcgi\" of Go 1.5beta2 suffers from a panic of \"slice out of range\".\r\nYou can reproduce the panic by the following FastCGI server and FastCGI client programs:\r\n\r\ns.go\r\n=========\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"net\"\r\n\t\"net/http/fcgi\"\r\n)\r\n\r\nfunc main() {\r\n\tl, e := net.Listen(\"tcp\", \":9999\")\r\n\tif e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tfcgi.Serve(l, nil)\r\n}\r\n```\r\n\r\nc.go\r\n=======\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"net\"\r\n)\r\n\r\n// beginRequest, requestId=1, contentLength=8, role=1, keepConn=1\r\nvar r1 = []byte{1, 1, 0, 1, 0, 8, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0}\r\n// params, requestId=1, contentLength=10, k1Len=50, v1Len=50 (malformed, in fact there are only 10 bytes in total\r\nvar r2 = []byte{1, 4, 0, 1, 0, 10, 0, 0, 50, 50, 3, 4, 5, 6, 7, 8, 9, 10}\r\n// end of params\r\nvar r3 = []byte{1, 4, 0, 1, 0, 0, 0, 0}\r\n\r\nfunc main() {\r\n\tc, e := net.Dial(\"tcp\", \"127.0.0.1:9999\")\r\n\tif e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tdefer c.Close()\r\n\tif _, e := c.Write(r1); e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tif _, e := c.Write(r2); e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tif _, e := c.Write(r3); e != nil {\r\n\t\tpanic(e)\r\n\t}\r\n\tprintln(\"sent\")\r\n}\r\n```\r\n\r\nThe result\r\n=========\r\n```\r\nD:\\home\u003es\r\npanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 5 [running]:\r\nnet/http/fcgi.(*request).parseParams(0xc082027200)\r\n        c:/go/src/net/http/fcgi/child.go:60 +0x386\r\nnet/http/fcgi.(*child).handleRecord(0xc0820648d0, 0xc08207c000, 0x0, 0x0)\r\n        c:/go/src/net/http/fcgi/child.go:208 +0xb12\r\nnet/http/fcgi.(*child).serve(0xc0820648d0)\r\n        c:/go/src/net/http/fcgi/child.go:153 +0x12e\r\ncreated by net/http/fcgi.Serve\r\n        c:/go/src/net/http/fcgi/child.go:326 +0x599\r\n\r\ngoroutine 1 [IO wait]:\r\nnet.runtime_pollWait(0x3954d0, 0x72, 0xc082004c80)\r\n        c:/go/src/runtime/netpoll.go:157 +0x67\r\nnet.(*pollDesc).Wait(0xc08201abf0, 0x72, 0x0, 0x0)\r\n        c:/go/src/net/fd_poll_runtime.go:73 +0x41\r\nnet.(*ioSrv).ExecIO(0xc082024028, 0xc08201aae0, 0x750490, 0x8, 0xc082002e20, 0xc\r\n08201af00, 0x0, 0x0)\r\n        c:/go/src/net/fd_windows.go:182 +0x177\r\nnet.(*netFD).acceptOne(0xc08201aa80, 0xc08207a0e0, 0x2, 0x2, 0xc08201aae0, 0x0,\r\n0x0, 0x0)\r\n        c:/go/src/net/fd_windows.go:564 +0x26c\r\nnet.(*netFD).accept(0xc08201aa80, 0x0, 0x0, 0x0)\r\n        c:/go/src/net/fd_windows.go:594 +0x173\r\nnet.(*TCPListener).AcceptTCP(0xc082024038, 0xc082057d60, 0x0, 0x0)\r\n        c:/go/src/net/tcpsock_posix.go:249 +0x54\r\nnet.(*TCPListener).Accept(0xc082024038, 0x0, 0x0, 0x0, 0x0)\r\n        c:/go/src/net/tcpsock_posix.go:259 +0x44\r\nnet/http/fcgi.Serve(0x394550, 0xc082024038, 0x395590, 0xc082064330, 0x0, 0x0)\r\n        c:/go/src/net/http/fcgi/child.go:321 +0x3a0\r\nmain.main()\r\n        D:/home/s.go:13 +0xbe\r\n```\r\n\r\nAnalysis\r\n========\r\n\r\nFastCGI records use name-value binary format to represent a key-value pair. The method (*request).parseParams() in net/http/fcgi/child.go doesn't check whether there is exactly bytes in buffer for key length plus value length (which are provided by client) and blindly use them to index the buffer slice, so the \"out of range\" panic occurs. The codes follow:\r\n\r\n```go\r\n// parseParams reads an encoded []byte into Params.\r\nfunc (r *request) parseParams() {\r\n\ttext := r.rawParams\r\n\tr.rawParams = nil\r\n\tfor len(text) \u003e 0 {\r\n\t\tkeyLen, n := readSize(text)\r\n\t\tif n == 0 {\r\n\t\t\treturn\r\n\t\t}\r\n\t\ttext = text[n:]\r\n\t\tvalLen, n := readSize(text)\r\n\t\tif n == 0 {\r\n\t\t\treturn\r\n\t\t}\r\n\t\ttext = text[n:]\r\n\t\tkey := readString(text, keyLen)\r\n\t\ttext = text[keyLen:] // will panic here\r\n\t\tval := readString(text, valLen)\r\n\t\ttext = text[valLen:] // and here\r\n\t\tr.params[key] = val\r\n\t}\r\n}\r\n```\r\n\r\nSolution\r\n=======\r\n\r\nEnsure the keyLen + ValueLen small then the size of the buffer left.\r\n",
+	"user": {
+		"login": "diogin",
+		"id": 371642,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-09-27T06:57:15Z",
+	"created_at": "2015-07-22T20:00:00Z",
+	"updated_at": "2015-09-27T06:57:15Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

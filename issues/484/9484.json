@@ -1,0 +1,25 @@
+{
+	"id": 53213237,
+	"number": 9484,
+	"state": "closed",
+	"title": "database/sql: lock contentions in DB, Stmt",
+	"body": "When using same prepared statement in concurrently.  I confirmed with 128 concurrent http access.\r\n\r\nIssue happened here: https://github.com/TechEmpower/FrameworkBenchmarks/pull/1164\r\nAnd stackdump: https://gist.github.com/methane/dd3c3f8de8128730bd63\r\n\r\nThere are some issues:\r\n\r\n## 1. db.mu contention\r\nstmt.Query() uses addDep and removeDep.  It locks db.mu.\r\nstmt.connStmt() calls db.connIfFree() multiple times.  Each call lock and unlock db.mu.\r\n\r\n## 2. stmt.connStmt() hold stmt.mu long\r\nStmt.css may be bit long (e.g. 128).\r\nhttps://github.com/golang/go/blob/master/src/database/sql/sql.go#L1375-L1388\r\nThis loop take bit long time.\r\nMoving db.mu from DB.connIfFree to before the loop makes bit faster.\r\n\r\nBut I think moving Stmt.css to driverConn is more better.",
+	"user": {
+		"login": "methane",
+		"id": 199592,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 20,
+	"closed_at": "2015-01-24T09:57:11Z",
+	"created_at": "2015-01-01T05:17:26Z",
+	"updated_at": "2016-06-25T01:57:36Z"
+}

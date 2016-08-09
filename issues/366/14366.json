@@ -1,0 +1,30 @@
+{
+	"id": 134366685,
+	"number": 14366,
+	"state": "open",
+	"title": "cmd/compile: optimize for byte swaps",
+	"body": "Using ```go1.5.3```\r\n\r\nThe following code segments all do byte swapping:\r\n```go\r\nfunc bswap64a(n uint64) uint64 {\r\n\treturn 0 |\r\n\t\t((n \u0026 0xff) \u003c\u003c 56) |\r\n\t\t((n \u0026 0xff00) \u003c\u003c 40) |\r\n\t\t((n \u0026 0xff0000) \u003c\u003c 24) |\r\n\t\t((n \u0026 0xff000000) \u003c\u003c 8) |\r\n\t\t((n \u0026 0xff00000000) \u003e\u003e 8) |\r\n\t\t((n \u0026 0xff0000000000) \u003e\u003e 24) |\r\n\t\t((n \u0026 0xff000000000000) \u003e\u003e 40) |\r\n\t\t((n \u0026 0xff00000000000000) \u003e\u003e 56)\r\n}\r\n\r\nfunc bswap64b(n uint64) uint64 {\r\n\tn = (n\u00260xff00ff00ff00ff00)\u003e\u003e8 | (n\u00260x00ff00ff00ff00ff)\u003c\u003c8\r\n\tn = (n\u00260xffff0000ffff0000)\u003e\u003e16 | (n\u00260x0000ffff0000ffff)\u003c\u003c16\r\n\tn = (n\u00260xffffffff00000000)\u003e\u003e32 | (n\u00260x00000000ffffffff)\u003c\u003c32\r\n\treturn n\r\n}\r\n\r\nfunc bswap64c(n uint64) (x uint64) {\r\n\tfor i := 0; i \u003c 8; i++ {\r\n\t\tx \u003c\u003c= 8\r\n\t\tx |= n \u0026 0xff\r\n\t\tn \u003e\u003e= 8\r\n\t}\r\n\treturn x\r\n}\r\n```\r\n\r\nIt would be nice if the compiler can recognize at least one of these (probably the top one?) as byte swapping and use the BYTESWAP instruction or some equivalent.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-02-17T18:53:35Z",
+	"updated_at": "2016-05-08T00:51:55Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

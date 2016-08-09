@@ -1,0 +1,26 @@
+{
+	"id": 117317927,
+	"number": 13288,
+	"state": "open",
+	"title": "regexp: case-insensitive MatchString performance",
+	"body": "I was investigating why https://github.com/dimroc/etl-language-comparison/blob/517507b033dbb938dd1e83401914cbd4dd9a79bc/golang/search.go#L160 ends up significantly slower with regular expression.\r\n\r\n```\r\nstrings.Contains(strings.ToLower(message), \"knicks\") // 7.8s\r\n// versus\r\nrx := regexp.MustCompile(\"(?i)knicks\") // won't be done multiple times\r\nrx.MatchString(message) // 21.7s\r\n```\r\n\r\nProfiling the etl example lead me to:\r\n\r\n```\r\n152.84s of 158.97s total (96.14%)\r\nDropped 167 nodes (cum \u003c= 0.79s)\r\n      flat  flat%   sum%        cum   cum%\r\n    61.12s 38.45% 38.45%     61.25s 38.53%  unicode.SimpleFold\r\n    22.62s 14.23% 52.68%    121.64s 76.52%  regexp.(*machine).tryBacktrack\r\n    18.76s 11.80% 64.48%     18.76s 11.80%  regexp.(*bitState).push\r\n    10.41s  6.55% 71.03%     71.66s 45.08%  regexp/syntax.(*Inst).MatchRunePos\r\n     8.99s  5.66% 76.68%      9.41s  5.92%  regexp.(*inputString).step\r\n     8.94s  5.62% 82.30%    135.55s 85.27%  regexp.(*machine).backtrack\r\n     5.76s  3.62% 85.93%      5.76s  3.62%  runtime.osyield\r\n     3.48s  2.19% 88.12%     75.14s 47.27%  regexp/syntax.(*Inst).MatchRune\r\n```\r\n\r\nWhich lead me to: https://github.com/golang/go/blob/master/src/regexp/syntax/prog.go#L213\r\n\r\nI assume that there is a good reason for using `unicode.SimpleFold`, i.e. some special `unicode` symbols. When I changed it:\r\n\r\n```\r\nfor r1 := unicode.SimpleFold(r0); r1 != r0; r1 = unicode.SimpleFold(r1) {\r\n// into\r\nif r1 := unicode.ToLower(r0); r1 == r || r1 == unicode.ToLower(r) {\r\n```\r\n\r\nIt didn't break any tests... also I created `easy0i  = \"(?i)ABCDEFGHIJKLMNOPQRSTUVWXYZ$\"` in https://github.com/golang/go/blob/master/src/regexp/exec_test.go#L674 to measure the performance change:\r\n\r\n```\r\n// old\r\nBenchmarkMatchEasy0i_32-8                 500000              2860 ns/op          11.19 MB/s\r\nBenchmarkMatchEasy0i_1K-8                  20000             84204 ns/op          12.16 MB/s\r\nBenchmarkMatchEasy0i_32K-8                   500           3346191 ns/op           9.79 MB/s\r\nBenchmarkMatchEasy0i_1M-8                     10         107206130 ns/op           9.78 MB/s\r\nBenchmarkMatchEasy0i_32M-8                     1        3424195900 ns/op           9.80 MB/s\r\n// new\r\nBenchmarkMatchEasy0i_32-8                1000000              1831 ns/op          17.48 MB/s\r\nBenchmarkMatchEasy0i_1K-8                  30000             56369 ns/op          18.17 MB/s\r\nBenchmarkMatchEasy0i_32K-8                  1000           2276130 ns/op          14.40 MB/s\r\nBenchmarkMatchEasy0i_1M-8                     20          73004175 ns/op          14.36 MB/s\r\nBenchmarkMatchEasy0i_32M-8                     1        2334133500 ns/op          14.38 MB/s\r\n```\r\n\r\nSo, is there a reason why `unicode.SimpleFold` is used instead of something else, such as `unicode.ToLower`? Either way, there might be some significant performance gains here for case-insensitive matches.",
+	"user": {
+		"login": "egonelbre",
+		"id": 192964,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 14,
+	"created_at": "2015-11-17T09:44:25Z",
+	"updated_at": "2016-07-14T20:31:33Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

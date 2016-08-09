@@ -1,0 +1,12 @@
+{
+	"id": 66094926,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eI think I see the problem.  f() leaves a reference to the slice on the stack when it\nunwinds.  Then main calls time.Sleep, which calls runtime.tsleep.  runtime.tsleep is not\nwritten in Go, it is C code.  The garbage collector has to conservatively scan C frames.\n The tsleep's frame overlaps where f's frame used to be, so the pointer appears to still\nbe alive.\n\nlocals of runtime.tsleep\n  0x0\n  0x136f520a643e6c37\n  0x0\n  0x15e928\n  0x2081fa000    \u0026lt;- this is the ptr to the big slice\n  0x2081a6120\n\nLong story short, this is \"expected behavior\".  We hope to fix this sometime soon but\nnot for 1.3.\u003c/pre\u003e\n\n_Labels changed: added **release-go1.4**._",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-18T05:54:42Z",
+	"updated_at": "2014-12-22T06:34:48Z"
+}

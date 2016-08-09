@@ -1,0 +1,27 @@
+{
+	"id": 51288669,
+	"number": 8771,
+	"state": "closed",
+	"title": "cmd/cgo: C functions that return values fail if they call a Go callback that copies the stack",
+	"body": "\u003cpre\u003eCgo uses a wrapper function that calls C code, passing the address of the stack frame.\n This wrapper function is compiled by GCC, and it calls the real function written by\nthe user.  The user's function is permitted to call Go callbacks.  Those Go callbacks\nwill run on the stack of the original caller.  They may cause a stack copy.\n\nIf the stack gets copied during a Go callback, then the caller of the GCC-compiled\nwrapper is running in a different location.  The stack frame pointer used by the\nGCC-compiled wrapper is not updated, since of course the stack copier knows nothing\nabout GCC-compiled code.  I don't think this is a problem for the arguments to the\nfunction; they have already been copied out of the stack frame when the wrapper calls\nthe real function.\n\nHowever, it is a problem for C functions that return a value.  The wrapper will take the\nvalue returned by the C function, and store it using its pointer to the stack frame. \nThat pointer will not have been updated if a stack copy occurs.  In other words, the\nwrapper may store the return value on the old stack, not the new one.\n\nThere is a test case demonstrating the problem in\n\u003ca href=\"https://golang.org/cl/145130043\"\u003ehttps://golang.org/cl/145130043\u003c/a\u003e.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:48:31Z",
+	"created_at": "2014-09-18T16:33:51Z",
+	"updated_at": "2016-06-25T01:41:48Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

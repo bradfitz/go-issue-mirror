@@ -1,0 +1,12 @@
+{
+	"id": 66090643,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003e\"go env\" doesn't print it, because the go tool doesn't know about GOARM at all. It's\na toolchain setting (5g/5a/5c/5l uses it, but not the go tool.)\nIt's the dist tool that detects the GOARM when doing native build, so \"go tool dist env\"\nwill show the current setting.\n\nDecoding a suitable GOARM value from a running process it's easy. Open /proc/self/auxv\nand parse the auxv for HWCAP. if HWCAP_VFPv3 is set, then it's 7, otherwise if only\nHWCAP_VFP is set, it's 6; if neither is set, GOARM=5.\n\nYou can also grep for vfp and vfpv3 in /proc/cpuinfo. But the auxv is used directly by\nthe runtime to determine the compatibility of GOARM settings and the host system,\nso it's more reliable. (I don't know if the hardware supports vfp, but kernel disables\nvfp, should it be displayed in cpuinfo. I guess not, but it's better to use auxv for\nsure.)\n\nParsing the auxv is easy, read src/runtime/os_linux_arm.c.\n\nTo get the goarm setting for current process, you need to read runtime.goarm, an\nuint8 variable. It's possible if you know the trick (e.g. use assembly).\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-01T09:20:40Z",
+	"updated_at": "2014-12-08T10:40:02Z"
+}

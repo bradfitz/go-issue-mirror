@@ -1,0 +1,25 @@
+{
+	"id": 51282404,
+	"number": 4626,
+	"state": "closed",
+	"title": "Allow type declarations based on static type of variables or struct or interface elements",
+	"body": "by **RIrelan**:\n\n\u003cpre\u003eGo allows the static type of a newly declared-and-defined variable to be inferred from\nthe expression initializing the variable using the \u0026quot;:=\u0026quot; operator, as in\n\n    a := 4  // Now \u0026quot;a\u0026quot; has type \u0026quot;int\u0026quot;\n    b := a  // \u0026quot;b\u0026quot; also has type \u0026quot;int\u0026quot;\n\nHowever, it is otherwise impossible to declare the static type of a variable, array\nentry, or map key or value without hardcoding its type. Specifically, as described in\nthis Stack Overflow post\n(\u003ca href=\"http://stackoverflow.com/questions/14191043/get-static-type-of-struct-element/14191310#14191310)\"\u003ehttp://stackoverflow.com/questions/14191043/get-static-type-of-struct-element/14191310#14191310)\u003c/a\u003e,\nI was writing a tool that determines the combined size of all the files under a\ndirectory, like the `du -s` command, that remembers the inodes that it has visited so\nthat hard-linked files don't have their sizes counted twice. I intended to keep track of\nthe inodes using a map from the type of syscall.Stat_t.Ino (which is uint64) to a struct\ndefined as\n\n    type ino_entry struct {\n        st    *syscall.Stat_t\n        nodes []string\n    }\n\nwhere `nodes` contains the names of all the files hard-linked to the inode.\n\nHowever, to make this map, it's required to hardcode the type of syscall.Stat_t.Ino into\nthe declaration of the map, as in\n\n    make(map [uint64] ino_entry)\n\nwhereas it might be useful to be able to declare this as\n\n    make(map [typeof(syscall.Stat_t.Ino)] ino_entry)\n\nwhere `typeof` would obtain the static type of a variable, struct member, or interface\nmember (I'm not so sure that this would be useful, since only functions may be declared\nas parts of interfaces).\n\nWith this change, the following declarations would all become legal (given that `st` is\na variable of type `*syscall.Stat_t`):\n\n    entmap := make(map [typeof(syscall.Stat_t.Ino)] ino_entry)  // Works on elements of a struct type\n    var ino1 typeof(st.Ino)  // as well as elements of a struct variable\n    ino1 = 0\n    inoa := []typeof(ino1){0, 1, 2}\n    inop := new(typeof(ino1))\n    ino2 := *inop  // ino2 == ino\n    for i, ino := range inoa {\n        fmt.Printf(\u0026quot;inoa[%v] = %v\\n\u0026quot;, i, ino)  // prints inoa[0] = 0, etc.\n    }\n\n    // We can assign to maps too\n    for i := 0; i != len(inoa); i++ {\n\tentp := new(ino_entry)\n\tentmap[inoa[i]] = *entp\n    }\n\nIn general, any function that today takes an argument of generic type (i.e., type T)\ncould obtain that type from typeof() as well.\n\nRight now, as far as I can tell, the only way to avoid hardcoding the type in these\nsituations is to use reflection, whereas all of the above could be done statically. One\nwrinkle that I can see is that it might be useful to access the static type of the keys\nand values of a map, or that of the elements of an array or slice, separately from the\ntype of the map or slice as a whole, whereas there's no syntax for that right now in the\ngeneral case (although it's possible if you already have an index into the slice or map\nusing `typeof(my_slice[idx])`, `typeof(key)`, and `typeof(my_map[key])`). Also, the\nsyntax for this is just a suggestion, although I avoided `x.(type)` since that's already\nassociated with switching on the type of an interface.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:24:33Z",
+	"created_at": "2013-01-07T19:10:03Z",
+	"updated_at": "2016-06-24T22:30:52Z"
+}

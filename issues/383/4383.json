@@ -1,0 +1,27 @@
+{
+	"id": 51282054,
+	"number": 4383,
+	"state": "closed",
+	"title": "runtime: signal_recv can throw spuriously",
+	"body": "\u003cpre\u003e14850:34142c2654fd tip\n\nThe code is:\n\nbool\nruntime·sigsend(int32 s)\n{\n\tuint32 bit, mask;\n\n\tif(!sig.inuse || s \u0026lt; 0 || s \u0026gt;= 32*nelem(sig.wanted) || !(sig.wanted[s/32]\u0026amp;(1U\u0026lt;\u0026lt;(s\u0026amp;31))))\n\t\treturn false;\n\tbit = 1 \u0026lt;\u0026lt; (s\u0026amp;31);\n\tfor(;;) {\n\t\tmask = sig.mask[s/32];\n\t\tif(mask \u0026amp; bit)\n\t\t\tbreak;\t\t// signal already in queue\n\t\tif(runtime·cas(\u0026amp;sig.mask[s/32], mask, mask|bit)) { // (1-0), (9-2)\n\t\t\t// Added to queue.\n\t\t\t// Only send a wakeup if the receiver needs a kick.\n\t\t\tif(runtime·cas(\u0026amp;sig.kick, 1, 0)) // (3-0), (10-2)\n\t\t\t\truntime·notewakeup(\u0026amp;sig); // (8-0), (11-2)\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn true;\n}\n\n// Called to receive the next queued signal.\n// Must only be called from a single goroutine at a time.\nfunc signal_recv() (m uint32) {\n\tstatic uint32 recv[nelem(sig.mask)];\n\tint32 i, more;\n\t\n\tfor(;;) {\n\t\t// Serve from local copy if there are bits left.\n\t\tfor(i=0; i\u0026lt;NSIG; i++) { // (0-1)\n\t\t\tif(recv[i/32]\u0026amp;(1U\u0026lt;\u0026lt;(i\u0026amp;31))) {\n\t\t\t\trecv[i/32] ^= 1U\u0026lt;\u0026lt;(i\u0026amp;31);\n\t\t\t\tm = i;\n\t\t\t\tgoto done;\n\t\t\t}\n\t\t}\n\n\t\t// Get a new local copy.\n\t\t// Ask for a kick if more signals come in\n\t\t// during or after our check (before the sleep).\n\t\tif(sig.kick == 0) {\n\t\t\truntime·noteclear(\u0026amp;sig);\n\t\t\truntime·cas(\u0026amp;sig.kick, 0, 1); // (2-1), (6-1)\n\t\t}\n\n\t\tmore = 0;\n\t\tfor(i=0; i\u0026lt;nelem(sig.mask); i++) {\n\t\t\tfor(;;) {\n\t\t\t\tm = sig.mask[i];\n\t\t\t\tif(runtime·cas(\u0026amp;sig.mask[i], m, 0)) // (4-1)\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t\trecv[i] = m;\n\t\t\tif(m != 0)\n\t\t\t\tmore = 1;\n\t\t}\n\t\tif(more)\n\t\t\tcontinue; // (5-1)\n\n\t\t// Sleep waiting for more.\n\t\truntime·entersyscall();\n\t\truntime·notesleep(\u0026amp;sig); // (7-1)\n\t\truntime·exitsyscall();\n\t}\n\ndone:;\n\t// goc requires that we fall off the end of functions\n\t// that return values instead of using our own return\n\t// statements.\n}\n\nConsider that the code is executed by 3 threads as shown in comments. The notation is\n(x-y) -\u0026gt; execution order x, executed by thread y. All variables are initially 0.\nI.e. first thread 1 checks for signals:\n\t\tfor(i=0; i\u0026lt;NSIG; i++) { // (0-1)\nthen thread 0 sets a signal bit:\n\t\tif(runtime·cas(\u0026amp;sig.mask[s/32], mask, mask|bit)) { // (1-0), (9-2)\nthen thread 1 sets kick:\n\t\t\truntime·cas(\u0026amp;sig.kick, 0, 1); // (2-1), (6-1)\nand so on.\nIt will lead to runtime·throw(\u0026quot;notewakeup - double wakeup\u0026quot;).\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:23:17Z",
+	"created_at": "2012-11-14T09:22:23Z",
+	"updated_at": "2016-06-24T22:28:07Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

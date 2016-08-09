@@ -1,0 +1,12 @@
+{
+	"id": 111306412,
+	"body": "@bradfitz: Thanks for the background. I see, it makes a lot more sense when you view it from the lens of wanting to cancel once you've already received the response headers and are still reading the body. I came at it from \"wanting to cancel at any time\".\r\n\r\nI'm sure you're aware that setting a timeout up-front is less satisfying than being able to cancel at an arbitrary time, especially when you're trying to bridge a context.Context API with net/http. But it's still helpful of course, since it bounds your latency from \"context is cancelled\" to \"I actually return from my function that calls into net/http\". Still, it has the same trouble you mentioned: how do I choose the timeout?\r\n\r\nHere are two concrete proposals:\r\n\r\n1.  Add a callback that lets me know when the request becomes cancellable, so I can synchronize on that. (As you said, this might tie in with #9194.)\r\n\r\n2.  Add a `chan struct{}` field to http.Request. Approximately the same semantics of Context.Done: closing it means the request is regarded is cancelled, nil means not cancellable in this manner.\r\n\r\n\r\nI personally like (2). The cost is that it would require net/http to maintain a background goroutine with a list of cancellation channels for in-flight requests (if any had ever been made), calling reflect.Select to wait for one of them to be closed or for a request to be finished. But this is [what users have to do](https://github.com/jacobsa/gcloud/blob/75820d08bdcabb482e77ce9ad38ea63afaba043f/httputil/do.go#L118) today if they want to support cancellation in the context.Context style, and they would still need to do it if (1) were chosen.",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-11T23:33:41Z",
+	"updated_at": "2015-06-11T23:33:41Z"
+}

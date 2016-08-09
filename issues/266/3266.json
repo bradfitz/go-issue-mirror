@@ -1,0 +1,28 @@
+{
+	"id": 51280341,
+	"number": 3266,
+	"state": "closed",
+	"title": "transport.CloseIdleConnections() nils map, putIdleConn() doesn't check for nil and panics",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Running a heavily utilized network service, like a crawler with 100 threads.\n2. Call transport.CloseIdleConnections(), which nils the idleConn member.\n3. At some point the transport's putIdleConn() function is called, resulting in a\nruntime panic because the map is nil.\n\nWhat is the expected output?\n\nNot to panic - putIdleConn() should recreate the map like getIdleConn() does.\n\nWhat do you see instead?\n\npanic: runtime error: assignment to entry in nil map\n\ngoroutine 65 [running]:\nnet/http.(*Transport).putIdleConn(0xf8400bcdc0, 0xf8401c7f00, 0x0, 0xf8404edca6,\n0xf84025cf18, ...)\n\t/home/michael/go/src/pkg/net/http/transport.go:263 +0x1c7\nnet/http._func_009(0xf84025cf18, 0xf84025ccf8, 0xf84025cb18, 0x44a2ce, 0xf840de81c0, ...)\n\t/home/michael/go/src/pkg/net/http/transport.go:575 +0x33\nnet/http.(*bodyEOFSignal).Close(0xf8405bb3c0, 0x0, 0x0, 0x0)\n\t/home/michael/go/src/pkg/net/http/transport.go:719 +0xb6\nmain.(*FilePoster).posterThread(0xf84008f780, 0xf8400ee780, 0xf80000003d, 0x0, 0x0, ...)\n\t/home/michael/gocode/src/concur/autoposter/httppost.go:94 +0x1b29\ncreated by main.(*FilePoster).Start\n\t/home/michael/gocode/src/concur/autoposter/fileposter.go:64 +0x349\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nUbuntu Linux\n\nWhich revision are you using?  (hg identify)\n\nf4470a54e6db weekly/weekly.2012-03-04\n\nPlease provide any additional information below.\n\nI inspected the latest version of /src/pkg/net/http/transport.go and noticed the issue\nwhile investigating the panic. The panic does not occur if you don't call\nCloseIdleConnections().\n\nIf you add:\n\nif t.idleConn == nil {\n  t.idleConn = make(map[string][]*persistConn)\n}\n\nat line 247 in transport.go I believe it will fix it.\u003c/pre\u003e",
+	"user": {
+		"login": "ancientlore",
+		"id": 729108,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:16:59Z",
+	"created_at": "2012-03-09T23:08:29Z",
+	"updated_at": "2016-06-24T21:30:30Z"
+}

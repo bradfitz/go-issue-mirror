@@ -1,0 +1,12 @@
+{
+	"id": 221060679,
+	"body": "This is happening because we're greying an unallocated object, so sweep sees an object that was marked by the last GC cycle but not before that and detects that the \"allocated object\" count has increased.\r\n\r\nThe following is with a tweak to set the alloc bit on allocation and check it in greyobject:\r\n\r\n```\r\nruntime: greying unallocated object 0xc420838180 (3) in span 0x7f4a33e2ed60\r\nbase=0xc4205d34a0 k=0x62102e9 s.base()=0xc4205d2000 s.limit=0xc4205d3fe0 s.sizeclass=16 s.elemsize=240\r\n *(base+0) = 0x68520b\r\n *(base+8) = 0x3\r\n *(base+16) = 0xc420838180 \u003c==\r\n *(base+24) = 0x686127\r\n *(base+32) = 0x8\r\n *(base+40) = 0x1\r\n *(base+48) = 0x1\r\n *(base+56) = 0xc420844060\r\n *(base+64) = 0x0\r\n *(base+72) = 0x0\r\n *(base+80) = 0x0\r\n *(base+88) = 0x0\r\n *(base+96) = 0x0\r\n *(base+104) = 0x0\r\n *(base+112) = 0x0\r\n *(base+120) = 0xc420834087\r\n *(base+128) = 0xf\r\n *(base+136) = 0x0\r\n *(base+144) = 0x0\r\n *(base+152) = 0x0\r\n *(base+160) = 0x0\r\n *(base+168) = 0x0\r\n *(base+176) = 0x0\r\n *(base+184) = 0x0\r\n *(base+192) = 0x0\r\n *(base+200) = 0x0\r\n *(base+208) = 0xc4206acfc0\r\n *(base+216) = 0x0\r\n *(base+224) = 0x0\r\n *(base+232) = 0x0\r\nobj=0xc420838180 k=0x621041c s.base()=0xc420838000 s.limit=0xc42083a000 s.sizeclass=9 s.elemsize=128\r\n *(obj+0) = 0xc420834080\r\n *(obj+8) = 0x4\r\n *(obj+16) = 0x0\r\n *(obj+24) = 0x0\r\n *(obj+32) = 0x0\r\n *(obj+40) = 0xc420834087\r\n *(obj+48) = 0xf\r\n *(obj+56) = 0x0\r\n *(obj+64) = 0x0\r\n *(obj+72) = 0x0\r\n *(obj+80) = 0x0\r\n *(obj+88) = 0x0\r\n *(obj+96) = 0x0\r\n *(obj+104) = 0x0\r\n *(obj+112) = 0x0\r\n *(obj+120) = 0x0\r\nruntime: nelems=64 nfree=51 nalloc=13 previous allocCount=12 nfreed=65535\r\nspan=0x7f4a33e2ed60 base=0xc420838000 elemsize=128\r\n0xff 0x1f 0x0 0x0 0x0 0x0 0x0 0x0 \r\n0xf7 0x1f 0x0 0x0 0x0 0x0 0x0 0x0 \r\nfatal error: sweep increased allocation count\r\n```\r\n\r\nIt typically occurs with elemsize=128, but not always. I think when it doesn't occur with elemsize=128, it's occurring because the \"base\" object shown above is itself not allocated and we're finding that.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-23T18:50:10Z",
+	"updated_at": "2016-05-23T18:50:10Z"
+}

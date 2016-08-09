@@ -1,0 +1,28 @@
+{
+	"id": 51286173,
+	"number": 7086,
+	"state": "closed",
+	"title": "database/sql: Lock contention in func (rs *Rows) Scan",
+	"body": "\u003cpre\u003eWhile doing profiling of one tool I found what function Rows.Scan() is suffering from\nlock contention. The reason is what function convertAssign() use fmt.Sprintf() to\nconvert rows data to desired type.\nSo if you read a lot of data from database and use num processors \u0026gt; 1 you can get\nresult like in attached before.svg. I see there 2 problems:\n1. Lock contention in function fmt.newPrinter()/free()\n2. A lot of time spend inside fmt.doPrintf()\n\nThis issue is not about fmt package itself, my proposal is to use functions from strconv\npackage instead of calling fmt.Sprintf(\u0026quot;%v\u0026quot;, src). As you can see on the\nsecond profiling, after replacing fmt.Sprintf() to\nstrconv.FormatBool/FormatFloat/FormatInt performance of Scanf increased about 2 times. \n\nI can submit my patch for this improvement if you would like to accept this issue.\n\nEnvironment: \nOS: RHEL 6.5\nGo version: 1.2 and development\n24 CPU's\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7086/0/before.svg\"\u003ebefore.svg\u003c/a\u003e (98258 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7086/0/after.svg\"\u003eafter.svg\u003c/a\u003e (105460 bytes)",
+	"user": {
+		"login": "yvasiyarov",
+		"id": 889406,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:39:26Z",
+	"created_at": "2014-01-09T12:26:06Z",
+	"updated_at": "2016-06-25T01:25:15Z"
+}

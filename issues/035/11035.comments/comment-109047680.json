@@ -1,0 +1,12 @@
+{
+	"id": 109047680,
+	"body": "I can reproduce the memory growth you are seeing (with 1.4.2).  But it is not the Go heap.  The Go heap remains constant-sized at around 8MB, as you can see in your gctrace=1 output.  Something else is growing.\r\n\r\nDiffing two instances of /proc/pid/maps, I see lots of instances like this:\r\n\r\n    \u003c 7f6670000000-7f667238e000 rw-p 00000000 00:00 0 \r\n    \u003c 7f667238e000-7f6674000000 ---p 00000000 00:00 0 \r\n    ---\r\n    \u003e 7f6670000000-7f66724e7000 rw-p 00000000 00:00 0 \r\n    \u003e 7f66724e7000-7f6674000000 ---p 00000000 00:00 0 \r\n\r\nwhich means larger portions of existing anonymous mappings are acquiring backing store.  In this case, ~1.4MB extra in a 64MB mapping.\r\n\r\n1. Are you sure you are unmmapping everything you mmap?\r\n2. Are you using lots of C stack?  These mappings might be C stack, although I think the default Linux stack is 8MB, not 64MB.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-04T20:55:02Z",
+	"updated_at": "2015-06-04T20:55:18Z"
+}

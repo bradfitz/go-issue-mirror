@@ -1,0 +1,28 @@
+{
+	"id": 119132256,
+	"number": 13415,
+	"state": "closed",
+	"title": "cmd/compile: wrong line number in error message",
+	"body": "At master, the Go source below produces an error message about line 6:\r\n\r\n    /tmp/x.go:6: x repeated on left side of :=\r\n\r\nHowever, the error actually originates on line 5, and this was correctly reported at least in Go 1.4.2.\r\n\r\n    package foo\r\n    \r\n    func f() {\r\n        select {\r\n        case x, x := \u003c-func() chan int {\r\n                c := make(chan int)\r\n                return c\r\n        }():\r\n        }\r\n    }\r\n\r\nThe problem is (*parser).case_ doesn't access p.op (which is storing the LCOLAS token's line number) until after the p.expr() call, which might invalidate p.op if it contains another LCOLAS or LASOP token.\r\n\r\nBest fix seems to be to just save lineno before calling p.next() like case LCOLAS in (*parser).simple_stmt.  Then _yylex doesn't need to save lexlineno in yylval.i either.\r\n\r\nCC @griesemer ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-28T03:36:18Z",
+	"created_at": "2015-11-27T05:04:47Z",
+	"updated_at": "2015-11-28T03:36:18Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

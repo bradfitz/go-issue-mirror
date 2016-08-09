@@ -1,0 +1,22 @@
+{
+	"id": 130582923,
+	"number": 14190,
+	"state": "closed",
+	"title": "x/tools/godoc/vfs: missing root directory listing when mounting vfs.NameSpace via httpfs and serving by http.FileServer",
+	"body": "I'm trying to mount a few folders into a virtual file system via `vfs.NameSpace` and serving them using `http.FileServer` through a `httpfs.New()`. I am unable to see a listing of the root folder of `NameSpace` and get a `404 page not found`.\r\n\r\nInterestingly, when i do `NameSpace.ReadDir(\"/\")` on the NameSpace and loop through the results, i see the expected folders. There are also no problems getting a directory listing via either `http.Dir()` or `httpfs.New(vfs.OS(\"FolderName\"))`. \r\n\r\nAlso when I directly browse the mounted folders (as explained below), I see the folders mounted properly. Only the root directory is not listing.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"golang.org/x/tools/godoc/vfs\"\r\n\t\"golang.org/x/tools/godoc/vfs/httpfs\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\t// Binding two folders to the namespace\r\n\tns := vfs.NameSpace{}\r\n\tns.Bind(\"/music\", vfs.OS(\"Folder1\"), \"/\", vfs.BindReplace)\r\n\tns.Bind(\"/videos\", vfs.OS(\"Folder2\"), \"/\", vfs.BindReplace)\r\n\r\n\t// Reading the root of the namespace. This works as expected and prints \"music\" and \"videos\"\r\n\tfis, err := ns.ReadDir(\"/\")\r\n\tif err != nil {\r\n\t\tlog.Println(err)\r\n\t\tos.Exit(1)\r\n\t}\r\n\r\n\tfor _, fi := range fis {\r\n\t\tlog.Println(fi.Name())\r\n\t}\r\n\r\n\t// This works when browsing http://127.0.0.1:9090/music/ or http://127.0.0.1:9090/videos/\r\n\t// but produces a 404 not found when browsing http://127.0.0.1:9090/. The expected behavior\r\n\t// should be that a directory listing showing the folders music and videos should be displayed.\r\n\thttp.Handle(\"/\", http.FileServer(httpfs.New(ns)))\r\n\thttp.ListenAndServe(\":9090\", http.DefaultServeMux)\r\n}\r\n```",
+	"user": {
+		"login": "srinathh",
+		"id": 2973973,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-03-21T00:49:13Z",
+	"created_at": "2016-02-02T05:50:54Z",
+	"updated_at": "2016-03-21T00:49:13Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

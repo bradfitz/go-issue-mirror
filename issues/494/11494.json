@@ -1,0 +1,28 @@
+{
+	"id": 92328375,
+	"number": 11494,
+	"state": "closed",
+	"title": "cmd/link: R_AARCH64_RELATIVE relocations are not right for gcprog for bss/data",
+	"body": "(this is mostly a note to myself)\r\n\r\nTo construct the gcprog for the data or bss segment of a dynamically linked module, when confronted with a type defined in a separate module, cmd/link reads the type date out of the module, finds the address of the prog/mask and uses that to then read the mask or prog itself. This works on intel because even though there is a relocation against the address of the mask/prog, the mask/prog is defined as a local symbol and so the relocation is R_X86_64_RELATIVE, which works by adjusting the address that's already in the relocated place by the difference between where the shared library expected to end up in memory and where it did.\r\n\r\nHowever, on arm64, the R_AARCH64_RELATIVE relocation doesn't work like this: it stores the address to be adjusted in the addend of the relocation, and the relocated place contains 0. So the gcprog for the dynamically linked module's bss and data end up being completely wrong and things that should be kept alive by pointers in there are not and the world falls in on itself.\r\n\r\nI guess to solve this I need to process the relocations from the shared library to look for the relocations that touch the part of the type data that defines the gcdata. I was trying really hard to avoid doing this because I assumed it would be really slow, I guess now I get to find out if that's right.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-20T06:56:30Z",
+	"created_at": "2015-07-01T09:33:11Z",
+	"updated_at": "2015-11-20T06:56:38Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 69515183,
+	"body": "More preliminary results:\r\n\r\nThe reason the fix to #5056 doesn't fix this issue is that\r\nthe function comes from imported functions, so it's not\r\non xtop, but in importlist. And also, it doesn't have nbody,\r\nas its body is saved in inl.\r\n\r\nHowever, the imported functions are incomplete in that\r\nthey don't have PPARAMOUTs in their dcl list, so we can't\r\njust call escapes(importlist). (After fixing the ONAME to be\r\nOFUNCDCL).\r\n\r\nWe can't do escape analysis at genwrapper after inlcalls\r\neither without changing the escape analysis code a lot.\r\n\r\nFor example, escape analysis makes the assumption that\r\nit won't analyze functions that have already been analyzed,\r\nbut this isn't true here.\r\n\r\nThe escape analysis code can't handle temporary assignment\r\nin ORETURN (it assumes every assignment in ORETURN is\r\nto the PPARAMOUT). But it's possible here, as the bufio\r\npackage has this kind of RETURN node:\r\n.   RETURN l(154) tc(1)\r\n.   RETURN-list\r\n.   .   AS l(154) tc(1)\r\n.   .   .   NAME-bufio.autotmp_0041 u(1) a(1) l(154) x(0+0) class(PAUTO) esc(N) tc(1) error\r\n.   .   .   NAME-bufio.ErrNegativeCount u(1) a(1) l(25) x(0+0) class(PEXTERN) tc(1) used(1) error\r\n\r\n.   .   AS u(2) l(154) tc(1)\r\n.   .   .   NAME-bufio.discarded u(1) a(1) g(1) l(152) x(16+0) class(PPARAMOUT) f(1) tc(1) used(1) int\r\n.   .   .   LITERAL-0 u(1) a(1) l(154) tc(1) int\r\n\r\n.   .   AS u(2) l(154) tc(1)\r\n.   .   .   NAME-bufio.err u(1) a(1) g(2) l(152) x(24+0) class(PPARAMOUT) f(1) tc(1) used(1) error\r\n.   .   .   NAME-bufio.autotmp_0041 u(1) a(1) l(154) x(0+0) class(PAUTO) esc(N) tc(1) error\r\n\r\nI haven't explored the possibilities of moving genwrappers\r\nbefore the main escapes(xtop) yet. That should be the most\r\ncorrect solution, but it will require a lot of code reorganization,\r\nthat's for sure.\r\n\r\nFor 1.4.1, the minimum and absolutely safe fix is still disabling\r\nthe inlining of wrappers.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-11T22:32:10Z",
+	"updated_at": "2015-01-11T22:38:18Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 84312486,
+	"number": 11042,
+	"state": "closed",
+	"title": "runtime: crash with \"fatal error: runtime: sudog with non-nil selectdone\"",
+	"body": "```\r\n$ go version\r\ngo version devel +8cd191b Sat May 30 12:21:56 2015 +0000 linux/amd64\r\n$ uname -a | awk '$2=\"host\"'\r\nLinux host 3.13.0-52-generic #86~precise1-Ubuntu SMP Tue May 5 18:08:21 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux\r\n```\r\n\r\nI have a process that receives data over a few hundred concurrent TCP connections and writes them to files. It's been crashing on recent versions of tip (it was stable on 1.4.1).\r\n\r\nI'm working on reproducing this (and the other recent crashes I've seen), I don't have a minimal test case or bisect yet. They may all be due to the same memory corruption bug.\r\n\r\n```\r\nfatal error: runtime: sudog with non-nil selectdone\r\n\r\ngoroutine 3476 [running]:\r\nruntime.throw(0x8e1430, 0x26)\r\n\t/usr/local/go/src/runtime/panic.go:527 +0x96 fp=0xc208b4a4d8 sp=0xc208b4a4c0\r\nruntime.releaseSudog(0xc20f958cc0)\r\n\t/usr/local/go/src/runtime/proc.go:244 +0x5f fp=0xc208b4a570 sp=0xc208b4a4d8\r\nruntime.chansend(0x718740, 0xc2080c4240, 0xc208b4a7a0, 0xc209032001, 0x405abe, 0x1000)\r\n\t/usr/local/go/src/runtime/chan.go:243 +0x8e6 fp=0xc208b4a640 sp=0xc208b4a570\r\nruntime.chansend1(0x718740, 0xc2080c4240, 0xc208b4a7a0)\r\n\t/usr/local/go/src/runtime/chan.go:92 +0x43 fp=0xc208b4a678 sp=0xc208b4a640\r\nredacted(0xc2081280a0, 0x7ff4aea62a38, 0xc20b336978, 0xc2080c4240)\r\n\t/redacted.go:105 +0x25e fp=0xc208b4a7c0 sp=0xc208b4a678\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_amd64.s:1670 +0x1 fp=0xc208b4a7c8 sp=0xc208b4a7c0\r\ncreated by redacted\r\n\t/redacted.go:81 +0x21e\r\n\r\ngoroutine 1 [chan receive, 38 minutes]:\r\nmain.main()\r\n\t/redacted.go:230 +0xe7b\r\n\r\ngoroutine 5 [chan send]:\r\nredacted(0xc2080ae000)\r\n\t/redacted.go:199 +0x1f0\r\ncreated by redacted.init.1\r\n\t/redacted.go:184 +0x6e\r\n\r\n[snip]\r\n```\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-06-23T05:29:05Z",
+	"created_at": "2015-06-03T02:13:34Z",
+	"updated_at": "2016-06-25T02:10:06Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

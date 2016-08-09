@@ -1,0 +1,27 @@
+{
+	"id": 160019313,
+	"number": 16054,
+	"state": "open",
+	"title": "runtime: possible deadlock when asynchronous signal occurs on C thread",
+	"body": "This is the general case of issue #15994, which focused on `SIGPROF`.\r\n\r\nA somewhat unlikely deadlock is possible when an asynchronous signal occurs on a C thread.  Here a C thread means a thread started by calling `pthread_create` or equivalent.  This will lead to a series of calls:\r\n\r\n    cgoSigtramp\r\n    sigtramp\r\n    sigtrampgo\r\n    sigfwdgo (which will return false if there is no C signal handler)\r\n    badsignal\r\n    cgocallback\r\n    badsignalgo\r\n\r\nThe call to `cgocallback` may cause the Go runtime to wait for a thread to be available to run `badsignalgo` in a goroutine.  In some case this may cause the runtime to start a new thread.  Starting a new thread in a cgo-using program means calling `_cgo_thread_start`, which calls `malloc`.\r\n\r\nIn other words, we've called `malloc` in a signal handler, which is not a good idea.  If the asynchronous signal occurred while the C thread was itself running `malloc`, the whole program can deadlock at this point.\r\n\r\nWe may be able to fix this by simply removing the call to `cgocallback`.  It was introduced in https://golang.org/cl/10757044, but with the knowledge that we are running on the system stack, and some care, it may be possible to avoid it.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-13T18:51:45Z",
+	"updated_at": "2016-06-13T18:51:45Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

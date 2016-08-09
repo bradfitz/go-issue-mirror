@@ -1,0 +1,22 @@
+{
+	"id": 51277287,
+	"number": 1055,
+	"state": "closed",
+	"title": "fmt: scan functions reading from io.Reader consume the Rune following the last scanned item",
+	"body": "by **mt4swm**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nCompile the following go and C programs, and\nfeed them, for example, with the line ‘123αb’\non stdin. The programs will first try to scan an\ninteger, then read the rest and print the integer\nand the remaining part on stdout again.\n\n\tpackage main\n\t\n\timport (\n\t\t\u0026quot;fmt\u0026quot;\n\t\t\u0026quot;os\u0026quot;\n\t)\n\t\n\tfunc main() {\n\t\tvar i int\n\t\n\t\tf := os.Stdin\n\t\tif _, e := fmt.Fscanf(f, \u0026quot;%d\u0026quot;, \u0026amp;i); e != nil {\n\t\t\tpanic(e)\n\t\t}\n\t\n\t\tb := make([]byte, 16)\n\t\tf.Read(b)\n\t\tfmt.Printf(\u0026quot;i:%d rest:%s\u0026quot;, i, b)\n\t}\n\n-----\n\n\t#include \u0026lt;stdio.h\u0026gt;\n\t\n\tint\n\tmain(void)\n\t{\n\t\tchar buf[16];\n\t\tint i;\n\t\n\t\tfscanf(stdin, \u0026quot;%d\u0026quot;, \u0026amp;i);\n\t\tbuf[0] = '\\0';\n\t\tfgets(buf, sizeof buf, stdin);\n\t\tprintf(\u0026quot;i:%d rest:%s\u0026quot;, i, buf);\n\t}\n\n\nWhat is the expected output?\ni:123 rest:αb\n\nWhat do you see instead?\nFrom the output of the Go version of the program\nthe α character is missing:\ni:123 rest:b\n\nWhat is your $GOOS?  $GOARCH?\nlinux/386\n\nWhich revision are you using?  (hg identify)\n6111/2ace88bde3a0\n\nPlease provide any additional information below.\nThe reason of this slight difference between C-stdio\nfscanf and Go fmt/Fscanf is that the latter relies\non io.Reader, which does not allow an Unget, while\nstdio/fscanf runs on top of buffered FILE streams.\n\nThe simplest fix would be to add a note to the package\ndocumentation, that a Rune might get skipped after\nthe last verb has been read. In most cases the skipped\nRune likely will be white space, so this won't hurt.\n\nIt would be more involving to make fmt.Fscanf behave\nsimilar to C fscanf in this regard. It seems necessary\nto have something like an io.UngetReader interface,\nwhich allows not only to Read(), but also to unget one\nRune. Probably bufio could implement that interface.\nThose who don't mind losing the delimiting Rune, could\nwrap a type around e.g. os.Stdin, implementing an\nempty UngetRune method.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:06:49Z",
+	"created_at": "2010-08-28T14:33:52Z",
+	"updated_at": "2016-06-24T19:19:31Z"
+}

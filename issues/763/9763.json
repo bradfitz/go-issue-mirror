@@ -1,0 +1,28 @@
+{
+	"id": 56432421,
+	"number": 9763,
+	"state": "closed",
+	"title": "net/http: impossible to use both CloseNotify and Hijack in the same Server",
+	"body": "The existing implementation makes it impossible to run a Server with keep-alive that both gets notified about disconnecting clients and is capable of handling upgrade requests (such as to websocket protocol).\r\n\r\nFor example, consider the recent change to utilize CloseNotifier within the httputil.ReverseProxy: https://github.com/golang/go/commit/ececbe89d4d5ab151333cbadae725619c0ad9dd8\r\n\r\nThat's an important change for a reverse proxy because it allows upstream servers to stop doing work for clients that have gone away. Without that behavior, servers are much more vulnerable to resource exhaustion by misbehaving clients that disconnect immediately after making a request.\r\n\r\nHowever, suppose that a Server not only wanted to defend against disconnecting clients, but also wanted to be able to handle HTTP Upgrade (or websocket) requests. That can only be implemented in http.Server by using the ResponseWriter's Hijacker interface to hijack the underlying net.Conn.\r\n\r\nHowever, those two features are [explicitly blocked from being used together](https://github.com/golang/go/blob/027e47b7b105a71eb6fe375166ee807d5d06e40d/src/net/http/server.go#L146). There's a good underlying reason for that: once CloseNotify() is called, [there's an io.Copy](https://github.com/golang/go/blob/027e47b7b105a71eb6fe375166ee807d5d06e40d/src/net/http/server.go#L174) reading from the underlying net.Conn that cannot be cleanly interrupted.\r\n\r\nI think it's important to be able to use both of these features together in the same Server. One could imagine adding websocket or more general HTTP Upgrade support to the ReverseProxy, or simply supporting such features from a Server that also wants to know when clients go away on normal requests.\r\n\r\n##### What version of Go are you using (go version)?\r\n\r\ngo1.4.1\r\n\r\n##### What operating system and processor architecture are you using?\r\n\r\nDarwin amd64\r\n\r\n##### What did you do?\r\n\r\nI attempted to `Hijack()` on a re-used server connection, one that had been setup for `CloseNotify()` on a previous request.\r\n\r\n##### What did you expect to see?\r\n\r\nI expected to be able to hijack the connection, even though in a previous request I had asked to be notified about disconnecting clients.\r\n\r\n##### What did you see instead?\r\n\r\n`http: Hijack is incompatible with use of CloseNotifier`",
+	"user": {
+		"login": "bgentry",
+		"id": 114033,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"closed_at": "2015-12-15T21:02:13Z",
+	"created_at": "2015-02-03T20:29:32Z",
+	"updated_at": "2015-12-15T21:02:13Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

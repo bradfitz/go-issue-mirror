@@ -1,0 +1,12 @@
+{
+	"id": 66062315,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eI made a mistake in \u003ca href=\"https://golang.org/issue/2866?c=9\"\u003ehttps://golang.org/issue/2866?c=9\u003c/a\u003e - my program is\nbuggy. I intended to do:\n\npackage main\n\nimport (\n\t\"os/exec\"\n\t\"io/ioutil\"\n\t\"log\"\n\t\"os\"\n\t\"path/filepath\"\n)\n\nfunc main() {\n\tlog.SetFlags(0)\n\tconst prog = \"ipconfig\"\n\tprogpath, err := exec.LookPath(prog)\n\tif err != nil {\n\t\tlog.Fatalf(\"LookPath(%s): %v\", prog, err)\n\t}\n\ttmpexe := filepath.Join(os.TempDir(), \"tmp.exe\")\n\tos.Remove(tmpexe)\n\tf, err := os.Create(tmpexe)\n\tif err != nil {\n\t\tlog.Fatalf(\"Create(%s): %v\", tmpexe, err)\n\t}\n\tbuf, err := ioutil.ReadFile(progpath)\n\tif err != nil {\n\t\tlog.Fatalf(\"ReadFile(%s): %v\", progpath, err)\n\t}\n\t_, err = f.Write(buf)\n\tif err != nil {\n\t\tlog.Fatalf(\"Write(%s): %v\", tmpexe, err)\n\t}\n\tf.Close()\n\tcmd := exec.Command(tmpexe)\n\tout, err := cmd.CombinedOutput()\n\tif err != nil {\n\t\tlog.Fatalf(\"%s failed: %s: %s\\n\", tmpexe, err, out)\n\t}\n\terr = cmd.Process.Release()\n\tif err != nil {\n\t\tlog.Fatalf(\"cmd.Process.Release(%s): %v\", tmpexe, err)\n\t}\n\terr = os.Remove(tmpexe)\n\tif err != nil {\n\t\tlog.Fatalf(\"Remove(%s): %v\", tmpexe, err)\n\t}\n}\n\nThis program specifically closes process handle before attempting to delete binary of\njust finished process. The program fails on my windows xp computer with:\n\nRemove(C:\\DOCUME~1\\brainman\\LOCALS~1\\Temp\\tmp.exe): remove\nC:\\DOCUME~1\\brainman\\LOCALS~1\\Temp\\tmp.exe: Access is denied.\n\nso it is in line with originally reported issue.\n\nOn the other hand - this program runs fine on other computers windows 2000 and windows\n7. I tend to agree more and more that return from syscall.WaitForSingleObject for\nprocess handle is sometimes too early to be able to remove process binary.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-23T23:51:45Z",
+	"updated_at": "2014-12-08T10:15:05Z"
+}

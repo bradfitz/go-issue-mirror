@@ -1,0 +1,27 @@
+{
+	"id": 51276384,
+	"number": 360,
+	"state": "closed",
+	"title": "x/net/websocket: test hangs (sometimes) with GOMAXPROCS=1 ; spins eating CPU",
+	"body": "by **cw@f00f.org**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. build the code, sometimes the websocket test hangs\n2. if it doesn't, cd src/pkg/websocket/\n\n  make test\n  \u0026lt;watch\u0026gt;\n\nusually only a few attempts is needed for me; f.e.:\n\n  cw@lysdexia:~/wk/go/go.hg/src/pkg/websocket$ for t in {1..100} ; do ./6.out ; done\n  [...]\nhangs within a few iterations\n\nthis never hangs:\n  cw@lysdexia:~/wk/go/go.hg/src/pkg/websocket$ for t in {1..100} ; do GOMAXPROCS=2 ./6.out ; done\n  [...]\n\n\nWhat is your $GOOS?  $GOARCH?\n\nlinux amd64\n\n\n\nWhich revision are you using?  (hg identify)\n\n6ccdfb494664+ tip\n\n\n\nFWIW, the hang is inside \u0026quot;ws.Close();\u0026quot; at the end of websocket_test.go though\nit's not clear why \nto be looking at this.  The hang is not in the main thread of execution as you can see:\n\n  write(7, \u0026quot;\\0hello, world\\n\\377\u0026quot;..., 15) = 15\n  read(7, \u0026quot;\\0hello, world\\n\\377\u0026quot;..., 4096) = 15\n  fcntl(7, F_GETFL)                       = 0x802 (flags O_RDWR|O_NONBLOCK)\n  fcntl(7, F_SETFL, O_RDWR)               = 0\n  write(5, \u0026quot;\\0\u0026quot;..., 1)                    = 1\n  close(7)                                = 0\n  futex(0x4aae48, FUTEX_WAIT, 3, {1073741824, 0}\n\nand another (OS) thread is burning all the CPU.  That thread is not making any system\ncalls (I \nthought perhaps the socket close was causing some goroutine to spin on an error, but\nthat would \nshow up tracing the thread that's consuming all the CPU cycles).\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:04:16Z",
+	"created_at": "2009-11-30T17:44:55Z",
+	"updated_at": "2016-08-05T16:07:54Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

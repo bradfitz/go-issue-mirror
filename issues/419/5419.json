@@ -1,0 +1,22 @@
+{
+	"id": 51283600,
+	"number": 5419,
+	"state": "closed",
+	"title": "cmd/cc: pragma textflag 7 is not obeyed when the function contains static data",
+	"body": "\u003cpre\u003ethis is the root cause of \u003ca href=\"https://golang.org/issue/5337\"\u003eissue #5337\u003c/a\u003e.\n\n$ cat splitstack.c\n#pragma textflag 7\nvoid testfunc() {\n\tstatic int x = 1;\n}\n$ go tool 6c -S splitstack.c \n(splitstack.c:3)\tDATA\tx$1\u0026lt;\u0026gt;+0(SB)/4,$1\n(splitstack.c:2)\tTEXT\ttestfunc+0(SB),$0-0\n(splitstack.c:3)\tRET\t,\n(splitstack.c:3)\tGLOBL\tx$1\u0026lt;\u0026gt;+0(SB),$4\n(splitstack.c:3)\tEND\t,\n$ go tool 6c -S -D static=\u0026quot;\u0026quot; splitstack.c \n(splitstack.c:2)\tTEXT\ttestfunc+0(SB),7,$8-0\n(splitstack.c:3)\tRET\t,\n(splitstack.c:3)\tEND\t,\n\n\nthis is because textflag and dataflag is sharing the same variable in cmd/cc,\nand the textflag is in fact regarded as dataflag for the static variable.\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:29:19Z",
+	"created_at": "2013-05-07T02:18:52Z",
+	"updated_at": "2016-06-24T22:39:30Z"
+}

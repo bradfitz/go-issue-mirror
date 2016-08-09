@@ -1,0 +1,27 @@
+{
+	"id": 51282632,
+	"number": 4782,
+	"state": "closed",
+	"title": "cmd/8l: unexpected GOT reloc for non-dynamic symbol",
+	"body": "by **happyalu**:\n\n\u003cpre\u003eWhen using cgo to compile for linux/386 on a linux/amd64 host, I get this error:\nunexpected GOT reloc for non-dynamic symbol. \n\nSmall Code to reproduce the error is at \u003ca href=\"http://play.golang.org/p/WfasIPKzKH\"\u003ehttp://play.golang.org/p/WfasIPKzKH\u003c/a\u003e\n\nRunning:\n$ GOARCH=386 go build\n\nproduces:\nunexpected GOT reloc for non-dynamic symbol x\n\nThe reloc in question here is a R_386_GOT32 reloc for the global 'x'.\n\n--- Disassembly Snippet\n00000020 \u0026lt;g\u0026gt;:\n\n  20:\t53                   \tpush   %ebx\n  21:\te8 fc ff ff ff       \tcall   22 \u0026lt;g+0x2\u0026gt;\n\t\t\t22: R_386_PC32\t__x86.get_pc_thunk.bx\n  26:\t81 c3 02 00 00 00    \tadd    $0x2,%ebx\n\t\t\t28: R_386_GOTPC\t_GLOBAL_OFFSET_TABLE_\n  2c:\t83 ec 08             \tsub    $0x8,%esp\n  2f:\te8 fc ff ff ff       \tcall   30 \u0026lt;g+0x10\u0026gt;\n\t\t\t30: R_386_PLT32\tf\n  34:\t3b 83 00 00 00 00    \tcmp    0x0(%ebx),%eax\n\t\t\t36: R_386_GOT32\tx\n  3a:\t0f 94 c0             \tsete   %al\n  3d:\t83 c4 08             \tadd    $0x8,%esp\n  40:\t0f b6 c0             \tmovzbl %al,%eax\n  43:\t5b                   \tpop    %ebx\n  44:\tc3                   \tret    \n\n---\n\ncmd/8l/asm.c seems to handle only the MOVL instruction for R_386_GOT32 reloc of\nnon-dynamic symbols. The instruction this code generates is CMP.\n\nI was able to work around this problem by basically adding a GOT entry for the symbol,\nas if it were a dynamic symbol. That seemed to work both for this minimal example and\nthe real code I was trying to get working. \n\nBut I not quite sure what the actual fix here is :)\n\nWhich version are you using?  (run 'go version')\ngo version devel +7cb3730e3f37 Fri Feb 08 19:24:50 2013 +0400 linux/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:25:23Z",
+	"created_at": "2013-02-10T05:23:09Z",
+	"updated_at": "2016-06-24T22:32:39Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

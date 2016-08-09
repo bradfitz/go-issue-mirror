@@ -1,0 +1,22 @@
+{
+	"id": 104382365,
+	"number": 12443,
+	"state": "closed",
+	"title": "cmd/link: Cross-compiled binaries using cgo selects incorrect ld-linux",
+	"body": "I am trying to use a Yocto toolchain to build cross-platform binaries for a Gumstix targte using the cgo bindings with the following code:\r\n\r\n```\r\npackage binding\r\n\r\n// #include \u003cstdlib.h\u003e\r\n// #include \u003cstdio.h\u003e\r\n/*\tvoid myprint(char* s) {\r\n\t\tprintf(\"%s\", s);\r\n\t}\r\n*/\r\nimport \"C\"\r\n\r\nfunc Random() int {\r\n\treturn int(C.random())\r\n}\r\n\r\nfunc PrintHello() {\r\n\tC.myprint(C.CString(\"Hello\\n\"))\r\n}\r\n\r\nfunc Seed(i int) {\r\n\tC.srandom(C.uint(i))\r\n}\r\n...\r\npackage main\r\nimport (\r\n\t\"./binding\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\tbinding.PrintHello()\r\n\tbinding.Seed(1)\r\n\tfmt.Println(binding.Random())\r\n\tbinding.Seed(2)\r\n\tfmt.Println(binding.Random())\r\n\tbinding.Seed(3)\r\n\tfmt.Println(binding.Random())\r\n}\r\n\r\n```\r\n\r\nI built it using the following:\r\n```\r\nnick@bignick:~/demo/cgodemo$ CC=arm-poky-linux-gnueabi-gcc CGO_CFLAGS=\"-march=armv7-a -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 --sysroot=/opt/poky/1.7.1/sysroots/cortexa8hf-vfp-neon-poky-linux-gnueabi\" CGO_ENABLED=1 GOOS=linux GOARCH=arm GOARM=5 go build -o Foo_ARM *.go\r\n```\r\n\r\nWhen trying to run the executable on target you groan and see:\r\n```\r\nroot@target:~# ./Foo_ARM\r\n-sh: ./Foo_ARM: No such file or directory\r\n```\r\nThe issue seems to be that the runtime loader used is incorrect\r\nIf you run readelf you can see it's embedding ld-linux.so.3 as the linux loader but the toolchain is configured for ld-linux-armhf.so.3\r\n```\r\nnick@bignick:~/demo/cgodemo$ arm-poky-linux-gnueabi-readelf Foo_ARM -a | grep ld-\r\n  [ 3] .note.gnu.build-i NOTE            00008188 000188 000024 00   A  0   0  4\r\n      [Requesting program interpreter: /lib/ld-linux.so.3]\r\n```\r\n\r\nI'm not sure why this has happened as those CC and CFLAGS are exactly that used to produce other binaries which don't have this issue i.e.:\r\n```\r\nnick@bignick:~/demo/cgodemo$ arm-poky-linux-gnueabi-readelf  NormalCrossCompiledHelloWorld -a | grep ld-\r\n  [ 3] .note.gnu.build-i NOTE            00008170 000170 000024 00   A  0   0  4\r\n      [Requesting program interpreter: /lib/ld-linux-armhf.so.3]\r\n   03     .interp .note.ABI-tag .note.gnu.build-id .gnu.hash .dynsym .dynstr .gnu.version .gnu.version_r .rel.dyn .rel.plt .init .plt .text .fini .rodata .ARM.exidx .eh_frame \r\n   06     .note.ABI-tag .note.gnu.build-id \r\n 0x00000001 (NEEDED)                     Shared library: [ld-linux-armhf.so.3]\r\n  000000: Version: 1  File: ld-linux-armhf.so.3  Cnt: 1\r\n```\r\nAfter a bit of faffing and checking out the binaries a suggested workaround is simply to create a softlink between the two but this should ideally be fixed when building:\r\n```\r\nln -s /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3\r\nroot@target:/lib# ~/Foo_ARM \r\nHello\r\n1804289383\r\n1505335290\r\n1205554746\r\n```\r\n\r\nAny suggestions?",
+	"user": {
+		"login": "17twenty",
+		"id": 379176,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2015-09-03T00:06:47Z",
+	"created_at": "2015-09-02T00:48:34Z",
+	"updated_at": "2015-10-23T21:54:30Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

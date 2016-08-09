@@ -1,0 +1,27 @@
+{
+	"id": 121333777,
+	"number": 13554,
+	"state": "open",
+	"title": "cmd/compile: runs out of memory allocating 12k + items in a map at init, works as literal map",
+	"body": "On Ubuntu 14.04, Go 1.4.1 64 bits code compiles fine, with 1.5.2 64 bits I get the following error:\r\n\r\n        # command-line-arguments\r\n        fatal error: runtime: out of memory\r\n\r\n        runtime stack:\r\n        runtime.throw(0x843f10, 0x16)\r\n                /usr/local/go/src/runtime/panic.go:527 +0x90\r\n        runtime.sysMap(0xc8fc0c0000, 0xf6d0000, 0x44a600, 0xdab818)\r\n                /usr/local/go/src/runtime/mem_linux.go:203 +0x9b\r\n        runtime.mHeap_SysAlloc(0xc95400, 0xf6d0000, 0x0)\r\n                /usr/local/go/src/runtime/malloc.go:426 +0x160\r\n        runtime.mHeap_Grow(0xc95400, 0x7b68, 0x0)\r\n                /usr/local/go/src/runtime/mheap.go:628 +0x63\r\n        runtime.mHeap_AllocSpanLocked(0xc95400, 0x7b63, 0x0)\r\n                /usr/local/go/src/runtime/mheap.go:532 +0x5f1\r\n        runtime.mHeap_Alloc_m(0xc95400, 0x7b63, 0x100000000, 0xc81982ccff)\r\n                /usr/local/go/src/runtime/mheap.go:425 +0x1ac\r\n        runtime.mHeap_Alloc.func1()\r\n                /usr/local/go/src/runtime/mheap.go:484 +0x41\r\n        runtime.systemstack(0xc82003dee0)\r\n                /usr/local/go/src/runtime/asm_amd64.s:278 +0xab\r\n        runtime.mHeap_Alloc(0xc95400, 0x7b63, 0x100000000, 0xc820022720)\r\n                /usr/local/go/src/runtime/mheap.go:485 +0x63\r\n        runtime.largeAlloc(0xf6c6000, 0x3, 0x0)\r\n                /usr/local/go/src/runtime/malloc.go:748 +0xb3\r\n        runtime.mallocgc.func3()\r\n                /usr/local/go/src/runtime/malloc.go:637 +0x33\r\n        runtime.systemstack(0xc820021500)\r\n                /usr/local/go/src/runtime/asm_amd64.s:262 +0x79\r\n        runtime.mstart()\r\n                /usr/local/go/src/runtime/proc1.go:668\r\n\r\n        goroutine 1 [running]:\r\n        runtime.systemstack_switch()\r\n                /usr/local/go/src/runtime/asm_amd64.s:216 fp=0xc8b55892c8 sp=0xc8b55892c0\r\n        runtime.mallocgc(0xf6c6000, 0x0, 0x3, 0xc8efa66000)\r\n                /usr/local/go/src/runtime/malloc.go:638 +0x9c4 fp=0xc8b5589398 sp=0xc8b55892c8\r\n        runtime.rawmem(0xf6c6000, 0xc8b55893d8)\r\n                /usr/local/go/src/runtime/malloc.go:791 +0x32 fp=0xc8b55893c0 sp=0xc8b5589398\r\n        runtime.growslice(0x785c20, 0xc8efa66000, 0xc56a000, 0xc56a000, 0xc56a001, 0x0, 0x0, 0x0)\r\n                /usr/local/go/src/runtime/slice.go:92 +0x233 fp=0xc8b5589430 sp=0xc8b55893c0\r\n        cmd/internal/obj.Symgrow(0xc8200aa000, 0xc8309ec1e0, 0xc56a001)\r\n                /usr/local/go/src/cmd/internal/obj/data.go:52 +0x23b fp=0xc8b55894f0 sp=0xc8b5589430\r\n        cmd/internal/obj.Setuintxx(0xc8200aa000, 0xc8309ec1e0, 0xc56a000, 0x0, 0x1, 0xc56a000)\r\n                /usr/local/go/src/cmd/internal/obj/data.go:126 +0x76 fp=0xc8b5589548 sp=0xc8b55894f0\r\n        cmd/compile/internal/gc.duintxx(0xc8309a5100, 0xc56a000, 0x0, 0x1, 0xc56a000)\r\n                /usr/local/go/src/cmd/compile/internal/gc/obj.go:178 +0x97 fp=0xc8b5589630 sp=0xc8b5589548\r\n        cmd/compile/internal/gc.duint8(0xc8309a5100, 0xc56a000, 0x12b00, 0xc56a000)\r\n                /usr/local/go/src/cmd/compile/internal/gc/obj.go:182 +0x3e fp=0xc8b5589660 sp=0xc8b5589630\r\n        cmd/compile/internal/gc.onebitwritesymbol(0xc8bcc82000, 0x63df, 0x7600, 0xc8309a5100)\r\n                /usr/local/go/src/cmd/compile/internal/gc/plive.go:1747 +0x19b fp=0xc8b55896e8 sp=0xc8b5589660\r\n        cmd/compile/internal/gc.liveness(0xc8201fcc60, 0xc8214de000, 0xc8309a5080, 0xc8309a5100)\r\n                /usr/local/go/src/cmd/compile/internal/gc/plive.go:1815 +0x3ba fp=0xc8b55897c8 sp=0xc8b55896e8\r\n        cmd/compile/internal/gc.compile(0xc8201fcc60)\r\n                /usr/local/go/src/cmd/compile/internal/gc/pgen.go:528 +0xe07 fp=0xc8b5589a38 sp=0xc8b55897c8\r\n        cmd/compile/internal/gc.funccompile(0xc8201fcc60)\r\n                /usr/local/go/src/cmd/compile/internal/gc/dcl.go:1484 +0x1c9 fp=0xc8b5589ab0 sp=0xc8b5589a38\r\n        cmd/compile/internal/gc.Main()\r\n                /usr/local/go/src/cmd/compile/internal/gc/lex.go:473 +0x1f08 fp=0xc8b5589db0 sp=0xc8b5589ab0\r\n        cmd/compile/internal/amd64.Main()\r\n                /usr/local/go/src/cmd/compile/internal/amd64/galign.go:127 +0x58d fp=0xc8b5589e18 sp=0xc8b5589db0\r\n        main.main()\r\n                /usr/local/go/src/cmd/compile/main.go:26 +0x189 fp=0xc8b5589ef0 sp=0xc8b5589e18\r\n        runtime.main()\r\n                /usr/local/go/src/runtime/proc.go:111 +0x2b0 fp=0xc8b5589f40 sp=0xc8b5589ef0\r\n        runtime.goexit()\r\n                /usr/local/go/src/runtime/asm_amd64.s:1721 +0x1 fp=0xc8b5589f48 sp=0xc8b5589f40\r\n\r\nAs a side note, after compiling this example I saw that the executable had around 500 MB in size! So I realized that I should've just made it a literal map, and that brought it back to 8MB. And it compiled in both 1.4.1 and 1.5.2.\r\n\r\n[noram.go](https://github.com/golang/go/files/57320/noram.go.txt)",
+	"user": {
+		"login": "pindamonhangaba",
+		"id": 1778376,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-12-09T20:38:21Z",
+	"updated_at": "2016-04-29T05:01:28Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

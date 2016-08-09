@@ -1,0 +1,22 @@
+{
+	"id": 51276788,
+	"number": 674,
+	"state": "closed",
+	"title": "encoding/xml: parser gives \"unexpected EOF\" error on trailing whitespace",
+	"body": "by **consalus**:\n\n\u003cpre\u003eI'm not actually sure this is a bug; it might be a case of the parser being \nmore strict than other parsers I've been using. Might just be a feature \nrequest.\n\n\n\nWhat steps will reproduce the problem?\n1. Try to parse any XML with a trailing newline or space.\n\nExample test case for xml_test.go:\n\nfunc TestTrailing(t *testing.T) {\n\tinput := `\u0026lt;FOO\u0026gt;\u0026lt;/FOO\u0026gt; `\n\tp := NewParser(StringReader(input))\n\tvar err os.Error\n\tfor _, err = p.Token(); err == nil; _, err = p.Token() {\n\t}\n\tif err != os.EOF {\n\t\tt.Fatalf(\u0026quot;Should've gotten EOF, got %#v\u0026quot;, err)\n\t}\n}\n\n\nWhat is the expected output? What do you see instead?\n\nThe above test fails. I would expect it to pass.\n\n\nWhat is your $GOOS?  $GOARCH?\n\ndarwin 386\n\n\nWhich revision are you using?  (hg identify)\n6d84eccc9c31+ tip\n\nPlease provide any additional information below.\n\nThe issue seems to be that Parser.text() assumes a text section (even when \nnot quoted or cdata) to be terminated by something other than an EOF. If \nthere is trailing whitespace, the text() call from RawToken() will just keep \nparsing it with mustgetc() until mustgetc() fails. If indeed this is \nundesirable behavior, the mustgetc() could be replaced with just getc(), \nthen special case to not throw a syntax error and instead return nil, os.EOF \nwhen we aren't in a quote or a cdata.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:05:28Z",
+	"created_at": "2010-03-18T17:06:25Z",
+	"updated_at": "2016-06-24T19:14:37Z"
+}

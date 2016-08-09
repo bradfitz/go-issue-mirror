@@ -1,0 +1,12 @@
+{
+	"id": 228801905,
+	"body": "\u003e x86 doesn't have so many modes, but I think it has the read/modify/write instructions?\r\n\r\nThe SSA backend encodes each addressing mode in a separate opcode.  So for integer loads, we already already have:\r\nMOVBload, MOVBQSXload, MOVWload, MOVWQSXload, MOVLload, MOVLQSXload, MOVQload, MOVOload, MOVBloadidx1, MOVWloadidx1, MOVWloadidx2, MOVLloadidx1, MOVLloadidx4, MOVQloadidx1, MOVQloadidx8.\r\nSimilarly for stores.  And that's not all the loads, for instance we haven't implemented MOVWloadix4 yet.\r\nThat's just the MOV opcode.  Multiply that by ADD,SUB,AND,OR,XOR,MUL,DIV,NOT,NEG, and probably others.  It gets pretty unwieldy pretty quickly.\r\n\r\nI'd like to solve this problem at some point.  Maybe we bite the bullet and just do all those opcodes (and corresponding rewrite rules).  Maybe we autogenerate somehow.  It's low priority at the moment because I don't think it buys a whole lot (it's the same microops, just encoded more efficiently) and it's only x86.  It's not needed for all the other architectures, and those are higher priority at the moment.\r\n\r\n\u003e Regarding addressing complexity, all the addressing modes are already used by the LEA instruction, although the execution time assessments don't seem quite right yet; it you solve that one, then the read/modify/write is solved except for latency.\r\n\r\n\u003e Your concern about OR (BX),AX is misplaced I think, as latency is just dependent on whether the memory is in the cache or not, as for all memory accesses; the OR AX,(BX) is more of a concern only if the destination is in the dependency chain, then it is quite long, but almost always shorter or about the same time as separate MOV (BX),AX/XOR DX,AX/MOV AX,(BX) instructions. Note that 1) there is a latency of the first MOV, but the manipulations of the AX register can hide it, and 2) the use of the instructions is usually is this order where there is no dependency on the final (BX) destination.\r\n\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-27T16:40:02Z",
+	"updated_at": "2016-06-27T16:40:02Z"
+}

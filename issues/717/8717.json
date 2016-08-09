@@ -1,0 +1,32 @@
+{
+	"id": 51288598,
+	"number": 8717,
+	"state": "open",
+	"title": "cmd/compile: random performance fluctuations after unrelated changes",
+	"body": "\u003cpre\u003eWe see constant performance fluctuations after unrelated changes on the perf dashboard.\nFor example:\n\u003ca href=\"http://build.golang.org/perfdetail?commit=96c713ab6c6f2a4b2a8a0bb2e8d674637b6ce596\u0026amp\"\u003ehttp://build.golang.org/perfdetail?commit=96c713ab6c6f2a4b2a8a0bb2e8d674637b6ce596\u0026amp\u003c/a\u003e;commit0=fee5fcd5f87e75235d93fb297123feb15a59ae38\u0026amp;builder=linux-amd64-perf\u0026amp;benchmark=json\n\u003ca href=\"http://build.golang.org/perfdetail?commit=455042166f1366b147e1249b8d5639be7d67bfce\u0026amp\"\u003ehttp://build.golang.org/perfdetail?commit=455042166f1366b147e1249b8d5639be7d67bfce\u0026amp\u003c/a\u003e;commit0=0a5fafdd2343b083457d0baf6487dfce0f01e25f\u0026amp;builder=windows-amd64-perf\u0026amp;benchmark=json\n\u003ca href=\"http://build.golang.org/perfdetail?commit=ad5d9f8f9be743e72f89d85d8bd6348807bdac90\u0026amp\"\u003ehttp://build.golang.org/perfdetail?commit=ad5d9f8f9be743e72f89d85d8bd6348807bdac90\u0026amp\u003c/a\u003e;commit0=fc588981a45afa430a2d2cd29d234403cb86e1bd\u0026amp;builder=windows-amd64-perf\u0026amp;benchmark=json\n\nI can reproduce it locally as well. I've took 2 consecutive commits:\nchangeset:   21142:91110f70916a\nsummary:     runtime: allow crash from gsignal stack\nchangeset:   21141:0768bb1fd027\nsummary:     net: fix inconsistent behavior across platforms in SetKeepAlivePeriod\n\nand run go.benchmarks binary as:\n./bench -bench=json -benchtime=3s -benchnum=100\nalternating old and new binaries.\n\nThe results are:\nGOPERF-METRIC:time=91998310\nGOPERF-METRIC:time=91863644\nGOPERF-METRIC:time=91491272\nGOPERF-METRIC:time=91988322\n\nnew:\nGOPERF-METRIC:time=93191495\nGOPERF-METRIC:time=93222905\nGOPERF-METRIC:time=93224972\nGOPERF-METRIC:time=93140395\n\nThe difference is now that big (probably because my processors panilizes less what is\nbeing penalized), but clearly observable.\n\nIt looks like code alignment issue. Probably loops are not 16-byte aligned or something\nlike this.\n\nI guess this also penalizes user binaries in the same random and unpredictable way.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2014-09-12T21:56:36Z",
+	"updated_at": "2016-08-02T15:12:46Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

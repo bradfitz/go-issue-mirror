@@ -1,0 +1,12 @@
+{
+	"id": 66088671,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **thomas.e.zander**:\n\n\u003cpre\u003ektrace shows the difference between write to a file and direct write to a character\ndevice.\n\nWriting 10 MiB blocks to a file shows the following ktrace dump:\n... (omitting the successful previous writes) ...\nRET   write 10485760/0xa00000\nCALL  write(0x3,0xc201ec9000,0xa00000)\nRET   write -1 errno 28 No space left on device\n\n\nWriting to the character device shows:\n... (omitting the successful previous writes) ...\nCALL  write(0x3,0xc2014b8000,0xa00000)\nRET   write 8388608/0x800000\nCALL  write(0x3,0xc201cb8000,0x200000)\nRET   write 0\n\n\nThe difference is:\n- For a regular file on a file system, the syscall returns -1 if the write cannot\ncomplete and sets errno 28\n- For a short write at the end of a character device, the syscall returns the number of\nbytes successfully written. In subsequent attempts to write to that device, zero is\nreturned (as can be seen above). Never -1 gets returned and never any errno is set.\n\nFreeBSD base system tools, dd for instance, check for a short write on a device due to\nthis behaviour of write(2).\n\nIf os.File.Write() is supposed to behave like the documentation suggests, the method\nmust be extended such that it actually does set err a non-nil error when n != len(b).\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-01T15:16:14Z",
+	"updated_at": "2014-12-08T10:38:10Z"
+}

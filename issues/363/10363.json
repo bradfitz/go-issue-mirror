@@ -1,0 +1,22 @@
+{
+	"id": 66986319,
+	"number": 10363,
+	"state": "closed",
+	"title": "cmd/goimports: Running goimports removes an import path that should be preserved",
+	"body": "The origin of this issue is a related bug filed under the LiteIde project:\r\nhttps://github.com/visualfc/liteide/issues/278\r\n\r\nIn that issue, the user claims that running of the goimports tool on their working code results in an import path for github.com/stathat/go being removed incorrectly.\r\n\r\nWhile the github.com/stathat/go packages does violate two conventions (it uses /go/ in the import path, and the name of the package does not match the name of the containing directory), the code works and appears to be technically correct.\r\n\r\nTo reproduce:\r\n```\r\n$ cd /Users/jbuberel\r\n$ mkdir gi\r\n$ export GOPATH=/Users/jbuberel/gi\r\n$ echo $GOPATH\r\n/Users/jbuberel/gi\r\n$ go get golang.org/x/tools/cmd/goimports\r\n$ ls -la ~/bin/goimports \r\n-rwxr-xr-x  1 jbuberel  eng  4947056 Apr  7 11:18 /Users/jbuberel/bin/goimports\r\n$ mkdir src/myprogram\r\n$ touch src/myprogram/mymain.go\r\n```\r\n**[ create source file mymain.go with these contents: ]**\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"github.com/stathat/go\"\r\n    \"golang.org/x/tools/present\"\r\n)\r\n\r\nfunc main() {\r\n    fmt.Println(\"Hello World\")\r\n    err := stathat.PostEZValue(\"test\", \"test\", 1)\r\n    if err != nil {\r\n      fmt.Printf(\"Error: %v\\n\", err)\r\n    }\r\n\r\n    link := present.Link{\r\n      Label: \"Foobar\",\r\n    }\r\n\r\n    fmt.Printf(\"L: %v\\n\", link.Label)\r\n}\r\n```\r\n**[ now run the program, expecting it to fail ]**\r\n```\r\n$ go run src/myprogram/mymain.go \r\nsrc/myprogram/mymain.go:5:5: cannot find package \"github.com/stathat/go\" in any of:\r\n\t/usr/local/go/src/github.com/stathat/go (from $GOROOT)\r\n\t/Users/jbuberel/gi/src/github.com/stathat/go (from $GOPATH)\r\n```\r\n**[ manually goget stathat/go and tools/present and run the app ]**\r\n```\r\n$ go get github.com/stathat/go golang.org/x/tools/present\r\n$ go run src/myprogram/mymain.go \r\nHello World\r\nL: Foobar\r\n```\r\n**[ forcibly remove stathat/go and tools/present ]**\r\n```\r\n$ rm -rf src/github.com/ src/golang.org/\r\n$ go run src/myprogram/mymain.go \r\nsrc/myprogram/mymain.go:5:5: cannot find package \"github.com/stathat/go\" in any of:\r\n\t/usr/local/go/src/github.com/stathat/go (from $GOROOT)\r\n\t/Users/jbuberel/gi/src/github.com/stathat/go (from $GOPATH)\r\nsrc/myprogram/mymain.go:6:5: cannot find package \"golang.org/x/tools/present\" in any of:\r\n\t/usr/local/go/src/golang.org/x/tools/present (from $GOROOT)\r\n\t/Users/jbuberel/gi/src/golang.org/x/tools/present (from $GOPATH)\r\n```\r\n**[ run goimports on the source, see that stathat/go import statement is removed, while tools/present was retained ]**\r\n```\r\n$ ~/bin/goimports src/myprogram/mymain.go \r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\r\n\t\"golang.org/x/tools/present\"\r\n)\r\n\r\nfunc main() {\r\n\tfmt.Println(\"Hello World\")\r\n\terr := stathat.PostEZValue(\"test\", \"test\", 1)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"Error: %v\\n\", err)\r\n\t}\r\n\r\n\tlink := present.Link{\r\n\t\tLabel: \"Foobar\",\r\n\t}\r\n\r\n\tfmt.Printf(\"L: %v\\n\", link.Label)\r\n}\r\n$ \r\n```\r\n \r\n\r\n\r\n",
+	"user": {
+		"login": "jbuberel",
+		"id": 1711364,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-04-08T06:45:24Z",
+	"created_at": "2015-04-07T20:45:17Z",
+	"updated_at": "2016-06-25T02:04:52Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 145544265,
+	"number": 15090,
+	"state": "open",
+	"title": "cmd/compile: weird double-jump in code generation",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version devel +ac8d97b Sat Apr 2 12:38:00 2016 +0000 darwin/amd64\r\n\r\n1. What did you do?\r\n```go\r\npackage main\r\n\r\nconst (\r\n\tcRadixWidth = 8\r\n\r\n\tcRadixNumNodes   = 1 \u003c\u003c cRadixWidth\r\n\tcRadixStartShift = 32 - cRadixWidth\r\n\tcRadixMask       = (1 \u003c\u003c cRadixWidth) - 1\r\n)\r\n\r\ntype radixNode struct {\r\n\tchildren [cRadixNumNodes]interface{}\r\n}\r\n\r\ntype radixTree struct {\r\n\troot radixNode\r\n}\r\n\r\nfunc (t *radixTree) Search(key uint32) interface{} {\r\n\tvar ok bool\r\n\tnode := \u0026t.root\r\n\tfor {\r\n\t\tk := uint8(key \u003e\u003e cRadixStartShift)\r\n\t\tc := node.children[k]\r\n\t\tif c == nil {\r\n\t\t\treturn nil\r\n\t\t}\r\n\t\tif node, ok = c.(*radixNode); !ok {\r\n\t\t\treturn c\r\n\t\t}\r\n\t\tkey \u003c\u003c= cRadixWidth\r\n\t}\r\n}\r\n```\r\n\r\nFinal generated code for `(*radixTree).Search`, as dumped by `go tool objdump`:\r\n\r\n```\r\n\tradix.go:25\t0x4096ca0\t4883ec08\t\tSUBQ $0x8, SP\r\n\tradix.go:29\t0x4096ca4\t488b4c2410\t\tMOVQ 0x10(SP), CX\r\n\tradix.go:29\t0x4096ca9\t8401\t\t\tTESTL AL, 0(CX)\r\n\tradix.go:30\t0x4096cab\t8b542418\t\tMOVL 0x18(SP), DX\r\n\tradix.go:31\t0x4096caf\t89d3\t\t\tMOVL DX, BX\r\n\tradix.go:31\t0x4096cb1\tc1eb18\t\t\tSHRL $0x18, BX\r\n\tradix.go:32\t0x4096cb4\t8401\t\t\tTESTL AL, 0(CX)\r\n\tradix.go:32\t0x4096cb6\t0fb6c3\t\t\tMOVZX BL, AX\r\n\tradix.go:32\t0x4096cb9\t48c1e004\t\tSHLQ $0x4, AX\r\n\tradix.go:32\t0x4096cbd\t488b5c0108\t\tMOVQ 0x8(CX)(AX*1), BX\r\n\tradix.go:32\t0x4096cc2\t48891c24\t\tMOVQ BX, 0(SP)\r\n\tradix.go:32\t0x4096cc6\t488b0c01\t\tMOVQ 0(CX)(AX*1), CX\r\n\tradix.go:33\t0x4096cca\t4885c9\t\t\tTESTQ CX, CX\r\n\tradix.go:33\t0x4096ccd\t7432\t\t\tJE 0x4096d01\r\n\tradix.go:39\t0x4096ccf\t488d05cad11f00\t\tLEAQ 0x1fd1ca(IP), AX\r\n\tradix.go:36\t0x4096cd6\t4839c1\t\t\tCMPQ AX, CX\r\n\tradix.go:36\t0x4096cd9\t751d\t\t\tJNE 0x4096cf8\r\n\tradix.go:36\t0x4096cdb\t7508\t\t\tJNE 0x4096ce5\r\n\tradix.go:39\t0x4096cdd\tc1e208\t\t\tSHLL $0x8, DX\r\n\tradix.go:36\t0x4096ce0\t4889d9\t\t\tMOVQ BX, CX\r\n\tradix.go:31\t0x4096ce3\tebca\t\t\tJMP 0x4096caf\r\n\tradix.go:37\t0x4096ce5\t48894c2420\t\tMOVQ CX, 0x20(SP)\r\n\tradix.go:37\t0x4096cea\t488b0c24\t\tMOVQ 0(SP), CX\r\n\tradix.go:37\t0x4096cee\t48894c2428\t\tMOVQ CX, 0x28(SP)\r\n\tradix.go:37\t0x4096cf3\t4883c408\t\tADDQ $0x8, SP\r\n\tradix.go:37\t0x4096cf7\tc3\t\t\tRET\r\n\tradix.go:36\t0x4096cf8\t48c7c300000000\t\tMOVQ $0x0, BX\r\n\tradix.go:36\t0x4096cff\tebda\t\t\tJMP 0x4096cdb\r\n\tradix.go:34\t0x4096d01\t48c744242000000000\tMOVQ $0x0, 0x20(SP)\r\n\tradix.go:34\t0x4096d0a\t48c744242800000000\tMOVQ $0x0, 0x28(SP)\r\n\tradix.go:34\t0x4096d13\t4883c408\t\tADDQ $0x8, SP\r\n\tradix.go:34\t0x4096d17\tc3\t\t\tRET\r\n\tradix.go:34\t0x4096d18\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d19\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1a\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1b\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1c\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1d\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1e\tcc\t\t\tINT $0x3\r\n\tradix.go:34\t0x4096d1f\tcc\t\t\tINT $0x3\r\n```\r\n\r\nI see the following issues:\r\n\r\n * double jump at 0x4096cd9\r\n * ~~unused test at 0x4096ca9~~ (it is a nilcheck)\r\n * inefficient spill at 0x4096cc2\r\n * constant at 0x4096ccf could be hoisted before the loop\r\n\r\n\r\n",
+	"user": {
+		"login": "rasky",
+		"id": 1014109,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 11,
+	"created_at": "2016-04-03T21:50:22Z",
+	"updated_at": "2016-04-07T15:39:40Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

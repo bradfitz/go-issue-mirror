@@ -1,0 +1,27 @@
+{
+	"id": 111544822,
+	"number": 12948,
+	"state": "open",
+	"title": "x/mobile/cmd/gomobile: c++ library on mac",
+	"body": "hi,\r\nI am working on build c/c++ library with cgo into ios platform (by gomobile)\r\nwhen I run go bind -target=ios, you actually build three environments:\r\nhttps://github.com/golang/mobile/blob/master/cmd/gomobile/bind_iosapp.go#L49\r\n```\r\nfor _, env := range [][]string{darwinArmEnv, darwinArm64Env, darwinAmd64Env} {\r\n\t\tarch := archClang(getenv(env, \"GOARCH\"))\r\n\t\tpath, err := goIOSBindArchive(name, mainFile, env)\r\n\t\tif err != nil {\r\n\t\t\treturn fmt.Errorf(\"darwin-%s: %v\", arch, err)\r\n\t\t}\r\n\t\tcmd.Args = append(cmd.Args, \"-arch\", arch, path)\r\n\t}\r\n```\r\nand it turns out that \"by default\" darwinArmEnv and darwinArm64Env use libc++ library, while darwinAmd64Env use libstdc++. \r\n\r\nthe following workaround works for me:\r\n```\r\ndiff --git a/cmd/gomobile/env.go b/cmd/gomobile/env.go\r\nindex dcb79eb..98371f4 100644\r\n--- a/cmd/gomobile/env.go\r\n+++ b/cmd/gomobile/env.go\r\n@@ -154,8 +154,8 @@ func envInit() (err error) {\r\n                \"GOARCH=amd64\",\r\n                \"CC=\" + clang,\r\n                \"CXX=\" + clang,\r\n-               \"CGO_LDFLAGS=\" + cflags + \" -mios-simulator-version-min=6.1 -arch x86_64\",\r\n+               \"CGO_LDFLAGS=\" + cflags + \" -mios-simulator-version-min=6.1 -arch x86_64 -stdlib=libc++\",\r\n                \"CGO_ENABLED=1\",\r\n        }\r\n\r\n```\r\nI think it is better to allow CXXFLAGS can be passed when build.\r\n",
+	"user": {
+		"login": "hsinhoyeh",
+		"id": 2792682,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rakyll",
+		"id": 108380,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-10-15T04:52:07Z",
+	"updated_at": "2015-10-29T06:02:40Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

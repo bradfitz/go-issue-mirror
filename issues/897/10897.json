@@ -1,0 +1,33 @@
+{
+	"id": 77733318,
+	"number": 10897,
+	"state": "closed",
+	"title": "cmd/gc: memory corruption at \"optimize append + write barrier\"",
+	"body": "Starting at 8552047a32cccccc1c376e49048c5a22494b7611 (optimize append + write barrier), Camlistore's camput randomly crashes, and pretty reliably.\r\n\r\nI haven't reduced it down to a minimal repro yet, but you can reproduce by hand with:\r\n\r\n```\r\n$ go get camlistore.org/dev/devcam\r\n$ cd $GOPATH/src/camlistore.org  # assuming a single path in GOPATH\r\n$ rm -rf tmp/build* bin/camput\r\n\r\n$ devcam server --mini --wipe \u0026    # and wait for it to compile and start up\r\n$ devcam put file --filenodes /path/to/photos/*.jpg \r\n```\r\n\r\nMy set of photos was 630 JPEGs, ~2GB total. They don't have to be JPEGs. Files of random size (around the same size on average) and contents would work just as well.\r\n\r\nIn my experience, it crashes or fails in one of 3 ways, usually in FileWriter / span.size code, but sometimes with an assertion that the schema blob must contain either a bytesref part or blobref part.\r\n\r\nRepeated from the email to golang-dev:\r\n\r\nNo usage of unsafe.\r\n\r\nGo 1.4 race: no races.\r\nGo tip race: no races.\r\nGo 1.4: works\r\nGo tip: 3 or so different crashes very soon after uploading between 0 and a few files\r\nGo tip w/ GOGC=off: works\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-05-19T15:28:39Z",
+	"created_at": "2015-05-18T17:16:25Z",
+	"updated_at": "2016-06-25T02:09:08Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

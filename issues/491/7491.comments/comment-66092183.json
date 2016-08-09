@@ -1,0 +1,12 @@
+{
+	"id": 66092183,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eI am not sure whether it's the same bug, but I've just discovered and fixed memory\ncorruption and memory leak in recursive panic handling. I will send a fix soon.\n\nReproducer is:\n\nfunc main() {\n\tfunc() {\n\t\tdefer func() {\n\t\t\tfmt.Println(recover())\n\t\t}()\n\t\tvar x [8192]byte\n\t\tfunc(x [8192]byte) {\n\t\t\tdefer func() {\n\t\t\t\tif err := recover(); err != nil {\n\t\t\t\t\tpanic(\"1: \" + err.(string))\n\t\t\t\t}\n\t\t\t}()\n\t\t\tfunc(x [8192]byte) {\n\t\t\t\tdefer func() {\n\t\t\t\t\tif err := recover(); err != nil {\n\t\t\t\t\t\tpanic(\"2: \" + err.(string))\n\t\t\t\t\t}\n\t\t\t\t}()\n\t\t\t\tpanic(\"bad\")\n\t\t\t}(x)\n\t\t}(x)\n\t}()\n\tpanic(\"again\")\n}\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-07T15:03:59Z",
+	"updated_at": "2014-12-08T10:41:37Z"
+}

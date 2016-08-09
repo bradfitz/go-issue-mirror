@@ -1,0 +1,12 @@
+{
+	"id": 188880130,
+	"body": "As far as I can tell, this has nothing to do with crypto/tls or Go 1.6. The Go 1.6 http2 path would still verify hostnames in the same way. You're not even hitting the Go 1.6 http2 path because your Transport sets the TLSConfig explicitly. Your repro with x/net/http2.Transport is valid, so I've retitled this bug.\r\n\r\nThis appears to be the difference, in `x/net/http2/transport.go`:\r\n\r\n```go\r\nfunc (t *Transport) newTLSConfig(host string) *tls.Config {\r\n        cfg := new(tls.Config)\r\n        if t.TLSClientConfig != nil {\r\n                *cfg = *t.TLSClientConfig\r\n        }\r\n        cfg.NextProtos = []string{NextProtoTLS} // TODO: don't override if already in list                                                                                             \r\n        cfg.ServerName = host\r\n        return cfg\r\n}\r\n```\r\n\r\nThe `cfg.ServerName` is being unconditionally set to `host, even if `t.TLSClientConfig` was non-nil.\r\n\r\nBut in the standard library's `transport.go`:\r\n\r\n```go\r\n                cfg := cloneTLSClientConfig(t.TLSClientConfig)\r\n                if cfg.ServerName == \"\" {\r\n                        cfg.ServerName = cm.tlsHost()\r\n                }\r\n```\r\n\r\nWe can make that same change in x/net/http2.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-25T17:05:41Z",
+	"updated_at": "2016-02-25T17:05:41Z"
+}

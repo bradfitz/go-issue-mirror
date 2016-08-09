@@ -1,0 +1,27 @@
+{
+	"id": 120313637,
+	"number": 13476,
+	"state": "closed",
+	"title": "net: The result of net.Interfaces in go1.5.2 is different from go1.4.3 on windows",
+	"body": "1.What version of Go are you using ( go version )?\r\ngo1.5.2 vs go1.4.3\r\n\r\n2.What operating system and processor architecture are you using?\r\nwindows 10 pro\r\namd64\r\n\r\n3.What did you do?\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n)\r\n\r\nfunc main() {\r\n\tinterfaces, err := net.Interfaces()\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t\treturn\r\n\t}\r\n\tfor _, itf := range interfaces {\r\n\t\tfmt.Println(itf.Index, itf.Name, itf.Flags, itf.HardwareAddr, itf.MTU)\r\n\t\tfmt.Println(itf.Addrs())\r\n\t\tfmt.Println()\r\n\t}\r\n}\r\n```\r\n4.What did you expect to see?\r\nthe same result\r\n\r\n5.What did you see instead?\r\ngo1.4.3:\r\n1. can't gets name\r\n2. can't gets ipv6\r\n3. if the interface is down, can't gets others flags\r\n```\r\n7 {2DF95280-F517-4E59-B5C4-9B3EC1664A70} up|broadcast|multicast a4:db:30:fe:d8:e1 1500\r\n[192.168.1.80] \u003cnil\u003e\r\n\r\n4 {18CABAEB-989A-44AF-8487-56FB9B6AC23A} 0 28:d2:44:2b:99:02 1500\r\n[0.0.0.0] \u003cnil\u003e\r\n\r\n16 {F28FF002-5F7A-41B6-8301-A1E883AE419A} 0 b0:05:94:fe:6a:dd 1500\r\n[0.0.0.0] \u003cnil\u003e\r\n```\r\n\r\ngo1.5.2:\r\n1. if the interface is down, can't gets.\r\n```\r\n7 无线网络连接 up|broadcast|multicast a4:db:30:fe:d8:e1:00:00 1500\r\n[fe80::511e:c13a:2d03:aced/28 192.168.1.80/16] \u003cnil\u003e\r\n\r\n1 Loopback Pseudo-Interface 1 up|loopback|multicast 00:00:00:00:00:00:00:00 4294967295\r\n[::1/28 127.0.0.1/16] \u003cnil\u003e\r\n```\r\n\r\nmy interfaces config:\r\n```\r\nC:\\Users\\chan\u003eipconfig /all\r\n\r\nWindows IP 配置\r\n\r\n   主机名  . . . . . . . . . . . . . : chan-PC\r\n   主 DNS 后缀 . . . . . . . . . . . :\r\n   节点类型  . . . . . . . . . . . . : 混合\r\n   IP 路由已启用 . . . . . . . . . . : 是\r\n   WINS 代理已启用 . . . . . . . . . : 否\r\n\r\n以太网适配器 本地连接:\r\n\r\n   媒体状态  . . . . . . . . . . . . : 媒体已断开连接\r\n   连接特定的 DNS 后缀 . . . . . . . :\r\n   描述. . . . . . . . . . . . . . . : Realtek PCIe GBE Family Controller\r\n   物理地址. . . . . . . . . . . . . : 28-D2-44-2B-99-02\r\n   DHCP 已启用 . . . . . . . . . . . : 是\r\n   自动配置已启用. . . . . . . . . . : 是\r\n\r\n无线局域网适配器 无线网络连接:\r\n\r\n   连接特定的 DNS 后缀 . . . . . . . :\r\n   描述. . . . . . . . . . . . . . . : 1x1 11b/g/n 无线局域网 PCI Express Half Mini Card 适配器\r\n   物理地址. . . . . . . . . . . . . : A4-DB-30-FE-D8-E1\r\n   DHCP 已启用 . . . . . . . . . . . : 否\r\n   自动配置已启用. . . . . . . . . . : 是\r\n   本地链接 IPv6 地址. . . . . . . . : fe80::511e:c13a:2d03:aced%7(首选)\r\n   IPv4 地址 . . . . . . . . . . . . : 192.168.1.80(首选)\r\n   子网掩码  . . . . . . . . . . . . : 255.255.255.0\r\n   默认网关. . . . . . . . . . . . . : 192.168.1.1\r\n   DHCPv6 IAID . . . . . . . . . . . : 312793904\r\n   DHCPv6 客户端 DUID  . . . . . . . : 00-01-00-01-1C-4B-A4-0B-28-D2-44-2B-99-02\r\n   DNS 服务器  . . . . . . . . . . . : 202.102.213.68\r\n                                       61.132.163.68\r\n   TCPIP 上的 NetBIOS  . . . . . . . : 已启用\r\n\r\n以太网适配器 Bluetooth 网络连接:\r\n\r\n   媒体状态  . . . . . . . . . . . . : 媒体已断开连接\r\n   连接特定的 DNS 后缀 . . . . . . . :\r\n   描述. . . . . . . . . . . . . . . : Bluetooth Device (Personal Area Network)\r\n   物理地址. . . . . . . . . . . . . : B0-05-94-FE-6A-DD\r\n   DHCP 已启用 . . . . . . . . . . . : 是\r\n   自动配置已启用. . . . . . . . . . : 是\r\n\r\n隧道适配器 Teredo Tunneling Pseudo-Interface:\r\n\r\n   连接特定的 DNS 后缀 . . . . . . . :\r\n   描述. . . . . . . . . . . . . . . : Microsoft Teredo Tunneling Adapter\r\n   物理地址. . . . . . . . . . . . . : 00-00-00-00-00-00-00-E0\r\n   DHCP 已启用 . . . . . . . . . . . : 否\r\n   自动配置已启用. . . . . . . . . . : 是\r\n   IPv6 地址 . . . . . . . . . . . . : 2001:0:9d38:6ab8:487:1bd:dbc0:8d96(首选) \r\n   本地链接 IPv6 地址. . . . . . . . : fe80::487:1bd:dbc0:8d96%17(首选)\r\n   默认网关. . . . . . . . . . . . . : ::\r\n   DHCPv6 IAID . . . . . . . . . . . : 335544320\r\n   DHCPv6 客户端 DUID  . . . . . . . : 00-01-00-01-1C-4B-A4-0B-28-D2-44-2B-99-02\r\n   TCPIP 上的 NetBIOS  . . . . . . . : 已禁用\r\n\r\n隧道适配器 isatap.{2DF95280-F517-4E59-B5C4-9B3EC1664A70}:\r\n\r\n   媒体状态  . . . . . . . . . . . . : 媒体已断开连接\r\n   连接特定的 DNS 后缀 . . . . . . . :\r\n   描述. . . . . . . . . . . . . . . : Microsoft ISATAP Adapter #2\r\n   物理地址. . . . . . . . . . . . . : 00-00-00-00-00-00-00-E0\r\n   DHCP 已启用 . . . . . . . . . . . : 否\r\n   自动配置已启用. . . . . . . . . . : 是\r\n```\r\n",
+	"user": {
+		"login": "chanxuehong",
+		"id": 3416908,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2015-12-10T08:04:25Z",
+	"created_at": "2015-12-04T01:44:08Z",
+	"updated_at": "2016-02-02T21:20:41Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

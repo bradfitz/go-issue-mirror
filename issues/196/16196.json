@@ -1,0 +1,27 @@
+{
+	"id": 162462858,
+	"number": 16196,
+	"state": "open",
+	"title": "image/png: Encode is not as efficient as zlib-based encoders",
+	"body": "Paletted PNGs like this map tile (http://a.tile.openstreetmap.org/13/4404/2688.png) will increase by 20-30% in size when encoded with image/png.Encode.\r\nSee https://gist.github.com/olt/022a206444f20c147c4bc9a54fd1a433 for example re-encoder.\r\n\r\nThe size does not change much when I re-encode the image with Image Magick (convert) or Python Image Library (PIL/Pillow):\r\n\r\n    % curl': curl \"http://a.tile.openstreetmap.org/13/4404/2688.png\" -o orig.png\r\n    % convert orig.png image-magick.png\r\n    % python -c 'from PIL import Image; Image.open(\"orig.png\").save(\"pil.png\")'\r\n    % go run convert.go\r\n    % ls -l *.png\r\n    -rw-r--r--  1 olt  staff  44099 Jun 27 15:25 go.png\r\n    -rw-r--r--  1 olt  staff  34583 Jun 27 15:21 image-magick.png\r\n    -rw-r--r--  1 olt  staff  34491 Jun 27 15:21 orig.png\r\n    -rw-r--r--  1 olt  staff  34521 Jun 27 15:22 pil.png\r\n\r\nChanging the compression level in Go does not make any huge difference. \r\n\r\nzlib allows to set different compress strategies. One of the strategies is Z_FILTERED, which is optimized for filtered data as found in PNGs.\r\n\r\nFrom http://www.zlib.net/manual.html:\r\n\r\n\u003e The strategy parameter is used to tune the compression algorithm. Use the value ... Z_FILTERED for data produced by a filter (or predictor),...\r\n\u003e The effect of Z_FILTERED is to force more Huffman coding and less string matching; it is somewhat intermediate between Z_DEFAULT_STRATEGY and Z_HUFFMAN_ONLY.\r\n\r\nPIL allows to select the strategy and it gives file sizes in the range of 34521 to 45117:\r\n\r\n    % python -c 'from PIL import Image; Image.open(\"orig.png\").save(\"pil.png\", compress_type=Image.HUFFMAN_ONLY)'\r\n\r\nImplementing a Z_FILTERED-like strategy should give much smaller files and it should have more impact than #15622.\r\n",
+	"user": {
+		"login": "olt",
+		"id": 235174,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-06-27T14:17:15Z",
+	"updated_at": "2016-06-30T15:18:45Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

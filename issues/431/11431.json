@@ -1,0 +1,21 @@
+{
+	"id": 91341832,
+	"number": 11431,
+	"state": "open",
+	"title": "encoding/xml: loss of xmlns= in encoding since Go 1.4",
+	"body": "It's not obvious at first glance how, but https://golang.org/cl/2660 changed the behavior of the XML marshaler for people who were generating xmlns attributes \"by hand\". For example:\n\n\tpackage main\n\t\n\timport (\n\t\t\"encoding/xml\"\n\t\t\"fmt\"\n\t\t\"log\"\n\t)\n\t\n\ttype T struct {\n\t\tNs   string `xml:\"xmlns,attr\"`\n\t\tBody string\n\t}\n\t\n\tfunc main() {\n\t\tt := \u0026T{Ns: \"http://example.com/ns\", Body: \"hello world\"}\n\t\tx, err := xml.Marshal(t)\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tfmt.Printf(\"%s\\n\", x)\n\t}\n\nIn Go 1.4 this program printed:\n\n\t\u003cT xmlns=\"http://example.com/ns\"\u003e\u003cBody\u003ehello world\u003c/Body\u003e\u003c/T\u003e\n\nAfter this CL it prints:\n\n\t\u003cT\u003e\u003cBody\u003ehello world\u003c/Body\u003e\u003c/T\u003e\n\nIn the absence of compelling justification for a breaking change, I think we should try to continue to support this way of setting the default xmlns.\n\nI've seen tests break due to this change, and presumably real programs would break too, if the xmlns= were important.\n\nWhat can we do to interpret these old programs correctly in the new more-namespace-aware world for Go 1.5?\n\n@rogpeppe @nigeltao",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-06-26T19:33:22Z",
+	"updated_at": "2016-05-18T00:31:26Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

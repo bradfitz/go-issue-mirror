@@ -1,0 +1,22 @@
+{
+	"id": 51287903,
+	"number": 8244,
+	"state": "closed",
+	"title": "cmd/go: run and build with path outside of $GOPATH doesn't rebuild out of date installed packages",
+	"body": "by **ej@evanjones.ca**:\n\n\u003cpre\u003eSummary: If you use go run or go build with a path outside of $GOPATH it doesn't check\nif installed packages in $GOPATH are out of date and should be rebuilt. This happens for\nboth go run/build of a command (example.go), or a relative package (./relativepkg). I\nbelieve it should, so that the results are the same as if you had not run \u0026quot;go\ninstall\u0026quot;.\n\ngo version go1.3 darwin/amd64\n\n\nThe following bash script can be run to reproduce this. It shows that after adding an\nerror to an installed package, go run of a script outside the path doesn't report the\nerror until the installed packages are removed.\n\n\nmkdir -p newgopath/src/pathpackage\nexport GOPATH=`pwd`/newgopath\ncat \u0026gt; newgopath/src/pathpackage/pkg.go \u0026lt;\u0026lt;HERE\npackage pathpackage\n\nfunc Exported() {}\nHERE\ngo install pathpackage\ncat \u0026gt; cmd.go \u0026lt;\u0026lt;HERE\npackage main\n\nimport \u0026quot;pathpackage\u0026quot;\n\nfunc main() {\n  pathpackage.Exported()\n}\nHERE\n# Build and run this program that depends on a package installed in $GOPATH: works\ngo run cmd.go; echo \u0026quot;run outside GOPATH code $?\u0026quot;\n# Copy it into GOPATH: also works\nmkdir -p newgopath/src/pathcmd\ncp cmd.go newgopath/src/pathcmd\ngo run newgopath/src/pathcmd/cmd.go; echo \u0026quot;run in GOPATH code $?\u0026quot;\ngo build pathcmd; echo \u0026quot;build pathcmd code $?\u0026quot;\n\n# Now add an error to the package: outside of GOPATH doesn't rebuild\necho \u0026quot;ADDING ERROR\u0026quot;\nsleep 1 # sleep to make sure timestamp is different from go install\necho error \u0026gt;\u0026gt; newgopath/src/pathpackage/pkg.go\ngo run cmd.go; echo \u0026quot;run outside GOPATH code $?\u0026quot;\ngo run newgopath/src/pathcmd/cmd.go; echo \u0026quot;run in GOPATH code $?\u0026quot;\ngo build pathcmd; echo \u0026quot;build in GOPATH code $?\u0026quot;\n\n# Remove the installed packages and all fail\necho \u0026quot;REMOVING INSTALLED PACKAGES\u0026quot;\nrm -rf newgopath/pkg\ngo run cmd.go; echo \u0026quot;run outside GOPATH code $?\u0026quot;\ngo run newgopath/src/pathcmd/cmd.go; echo \u0026quot;run in GOPATH code $?\u0026quot;\ngo build pathcmd; echo \u0026quot;build in GOPATH code $?\u0026quot;\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:45:45Z",
+	"created_at": "2014-06-19T22:04:03Z",
+	"updated_at": "2016-06-25T01:36:50Z"
+}

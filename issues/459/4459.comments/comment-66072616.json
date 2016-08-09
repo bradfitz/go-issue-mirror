@@ -1,0 +1,12 @@
+{
+	"id": 66072616,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eHello,\nFor the sqlite driver, I've found where the issue comes from:\nThe prepared statements are closed twice:\n - when the Tx is committed, the underlying conn is closed and the sqlite driver tries to close dangling statements,\n - with the deferred Stmt.Close.\nJust comment out the following block in the sqlite driver to do a quick and dirty fix:\nfunc (c *SQLiteConn) Close() error {\n\t/*s := C.sqlite3_next_stmt(c.db, nil)\n\tfor s != nil {\n\t\tC.sqlite3_finalize(s)\n\t\ts = C.sqlite3_next_stmt(c.db, s)\n\t}*/\n\trv := C.sqlite3_close(c.db)\n\nI will attempt to fix the driver.\nRegards.\u003c/pre\u003e",
+	"user": {
+		"login": "gwenn",
+		"id": 45554,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-01-12T19:48:34Z",
+	"updated_at": "2014-12-08T10:23:44Z"
+}

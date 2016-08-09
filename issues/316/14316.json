@@ -1,0 +1,17 @@
+{
+	"id": 133380082,
+	"number": 14316,
+	"state": "closed",
+	"title": "path/filepath: filepath.Clean() does not ensure newlines are stripped.",
+	"body": "I have a Go program that's being used for some queue management functions for Postfix.  I'm getting the queue_directory value from postconf and then passing it into filepath.Clean() to return a valid path.  Unfortunately, when I stat this it fails because it ends in a newline character.  My understanding is that since a newline character is not a valid path character it should be stripped via filepath.Clean().\r\n\r\ngetQueueDir()\r\n```Go\r\nfunc getQueueDir(config *Config) (string, error) {\r\n\tvar (\r\n\t\tout      []byte\r\n\t\terr      error\r\n\t\tqueuedir string\r\n\t\there     bool\r\n\t)\r\n\targs := []string{\"-h\", \"queue_directory\"}\r\n\tif out, err = exec.Command(\"postconf\", args...).Output(); err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tqueuedir = filepath.Clean(string(out))\r\n\tif config.Verbose {\r\n\t\tfmt.Println(\"Queue dir retrieved from postconf.\")\r\n\t\tfmt.Println(queuedir)\r\n\t}\r\n\tif here, err = util.Exists(queuedir); err != nil {\r\n\t\treturn queuedir, err\r\n\t} else if here != true {\r\n\t\treturn queuedir, ErrQueueDirectoryMissing\r\n\t}\r\n\treturn queuedir, nil\r\n}\r\n```\r\n\r\nutil.Exists()\r\n```Go\r\nfunc Exists(dirorfile string) (bool, error) {\r\n\tif _, err := os.Stat(dirorfile); err != nil {\r\n\t\tif os.IsNotExist(err) {\r\n\t\t\treturn false, nil\r\n\t\t}\r\n\t\treturn true, err\r\n\t}\r\n\treturn true, nil\r\n}\r\n```\r\n\r\n`strace` shows the issue:\r\n\r\n```\r\n[pid 17402] stat(\"/var/spool/postfix\\n\", 0xc208060240) = -1 ENOENT (No such file or directory)\r\n[pid 17402] write(1, \"UNKNOWN: Process Terminated: The\"..., 105UNKNOWN: Process Terminated: The queue directory configured for Postfix is either missing or unreadable.\r\n) = 105\r\n```\r\n\r\nI can get around this in the interim by passing the string through `strings.TrimSuffix()`",
+	"user": {
+		"login": "tduzan",
+		"id": 2156877,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-02-13T01:03:37Z",
+	"created_at": "2016-02-13T00:53:48Z",
+	"updated_at": "2016-02-13T02:12:05Z"
+}

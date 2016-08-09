@@ -1,0 +1,12 @@
+{
+	"id": 135517515,
+	"body": "For posterity, the program I used to reproduce this is below. The failure mode is somewhat different from the other reports in this issue, and it's timing-dependent, though it tries hard not to be too sensitive. It should be run with GODEBUG=gcstackbarrierall=1.\r\n\r\n```\r\npackage main\r\n\r\n/*\r\nextern void GoCallback(int);\r\nextern void GoCheckstack(void);\r\n\r\nstatic void renest() {\r\n  // Wait for GC to finish. We should have a stack barrier in our sched.pc.\r\n  sleep(2);\r\n  // Call back in to Go so we put sched.pc back as the return IP.\r\n  GoCheckstack();\r\n}\r\n\r\nstatic void CNest(int n) {\r\n  GoCallback(n);\r\n  if (n == 10)\r\n    renest();\r\n}\r\n\r\nstatic void CFunc(void) {\r\n  while(1)\r\n    CNest(20);\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"runtime\"\r\n\t\"time\"\r\n)\r\n\r\nvar garbage *tree\r\nvar x []*byte\r\n\r\n//export GoCallback\r\nfunc GoCallback(n C.int) {\r\n\tif n == 0 {\r\n\t\tfmt.Println(\"triggering GC\")\r\n\t\tx = make([]*byte, 100\u003c\u003c20)\r\n\t\tfmt.Println(\"waiting for stack barriers\")\r\n\t\ttime.Sleep(100 * time.Millisecond)\r\n\t\tfmt.Println(\"unwinding\")\r\n\t} else {\r\n\t\tC.CNest(n - 1)\r\n\t}\r\n}\r\n\r\n//export GoCheckstack\r\nfunc GoCheckstack() {\r\n\tpcs := make([]uintptr, 100)\r\n\truntime.Callers(0, pcs)\r\n}\r\n\r\ntype tree struct {\r\n\tl, r *tree\r\n}\r\n\r\nfunc makeGarbage(depth int) *tree {\r\n\tif depth == 0 {\r\n\t\treturn new(tree)\r\n\t}\r\n\treturn \u0026tree{makeGarbage(depth - 1), makeGarbage(depth - 1)}\r\n}\r\n\r\nfunc main() {\r\n\tgarbage = makeGarbage(25)\r\n\tC.CFunc()\r\n}\r\n```",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-27T18:36:30Z",
+	"updated_at": "2015-08-27T18:36:30Z"
+}

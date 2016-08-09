@@ -1,0 +1,25 @@
+{
+	"id": 51288612,
+	"number": 8728,
+	"state": "open",
+	"title": "time: unable to parse UTC leap seconds",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.3.1 linux/amd64\n\nWhat steps reproduce the problem?\n\nAttempting to parse any valid leap second, such as \u0026quot;2005-12-31T23:59:60Z\u0026quot;.\n\u003ca href=\"http://play.golang.org/p/lBYHT8mwbb\"\u003ehttp://play.golang.org/p/lBYHT8mwbb\u003c/a\u003e\n\nWhat happened?\n\nparse error: parsing time \u0026quot;2005-12-31T23:59:60Z\u0026quot;: second out of range\n\nWhat should have happened instead?\n\nparsed as: 2005-12-31T23:59:60Z\n\nPlease provide any additional information below.\n\n\u003ca href=\"http://golang.org/src/pkg/time/format.go\"\u003ehttp://golang.org/src/pkg/time/format.go\u003c/a\u003e has the immediate bug at lines 818-822:\n  case stdSecond, stdZeroSecond:\n    sec, value, err = getnum(value, std == stdZeroSecond)\n    if sec \u0026lt; 0 || 60 \u0026lt;= sec {\n      rangeErrString = \u0026quot;second\u0026quot;\n    }\n\nIt seems that there's a fundamental restriction in the time package, where it repeats\nthe expensive POSIX mistake of assuming that you can ignore leap seconds if you're not\ndoing high-precision radio astronomy. Since leap seconds don't go away just because you\ncan't represent them in the most convenient time datatype, this makes the time package\nuseless for programs that are supposed to continue to run without crashing during a leap\nsecond.\n\nSuggested fixes:\n1. Full support for conversion between monotonic counter (TAI) \u0026lt;=\u0026gt; wall time (UTC)\n\u0026lt;=\u0026gt; POSIX time_t. The API is already flexible enough for this, but the\nimplementation would need to become aware of leap seconds.\n2. Change the package documentation so it gives fair warning that \u0026quot;UTC\u0026quot;\ndoesn't mean real UTC, but has undefined behavior for leap seconds.\n3. Abolish leap seconds. There may be politics involved.\n4. Declare this behavior \u0026quot;working as intended\u0026quot;. Make it someone else's problem\nto cope with the next leap-second production crisis (scheduled for 2015). Deplore the\nhorrible hacks they perpetrate to keep the site up, eg:\n\u003ca href=\"http://googleblog.blogspot.com/2011/09/time-technology-and-leaping-seconds.html\"\u003ehttp://googleblog.blogspot.com/2011/09/time-technology-and-leaping-seconds.html\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "aecolley",
+		"id": 6503649,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2014-09-14T22:36:22Z",
+	"updated_at": "2015-11-24T18:43:39Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

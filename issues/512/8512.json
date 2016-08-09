@@ -1,0 +1,27 @@
+{
+	"id": 51288304,
+	"number": 8512,
+	"state": "closed",
+	"title": "fmt: ScanState.ReadRune returns wrong size if Reader is not a io.RuneReader",
+	"body": "by **kwalsh@holycross.edu**:\n\n\u003cpre\u003eWhat does 'go version' print? go version go1.3 linux/amd64\n\nWhat steps reproduce the problem?\n\nExample here: \u003ca href=\"http://play.golang.org/p/H-KFkROfOJ\"\u003ehttp://play.golang.org/p/H-KFkROfOJ\u003c/a\u003e\n1. Call fmt.Sscanf(\u0026quot;Hello\u0026quot;, \u0026quot;%s\u0026quot;, \u0026amp;x) where x implements Scanner.\n2. Within x's Scan() function, call r, n, err := state.ReadRune().\n\nWhat happened?\nReadRune() returns 'H', 0, nil\n\nWhat should have happened instead?\nReadRune() should have returned 'H', 1, nil\n\nPlease provide any additional information below.\npkg/fmt/scan.go contains this code:\n   356\tfunc (r *readRune) ReadRune() (rr rune, size int, err error) {\n   357\t\tr.buf[0], err = r.readByte()\n   358\t\tif err != nil {\n   359\t\t\treturn 0, 0, err\n   360\t\t}\n   361\t\tif r.buf[0] \u0026lt; utf8.RuneSelf { // fast check for common ASCII case\n   362\t\t\trr = rune(r.buf[0])\n   363\t\t\treturn\n   364\t\t}\nThe fast case needs to set the size, e.g.:\n   size = utf8.RuneLen(rr)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:17Z",
+	"created_at": "2014-08-11T22:22:49Z",
+	"updated_at": "2016-06-25T01:39:27Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

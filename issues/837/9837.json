@@ -1,0 +1,33 @@
+{
+	"id": 57275444,
+	"number": 9837,
+	"state": "closed",
+	"title": "spec: clarify redeclaration of result variables",
+	"body": "In the section on [short variable declarations][short-decls], the spec says:\r\n\r\n\u003e a short variable declaration may redeclare variables provided they were originally declared earlier in the same block with the same type\r\n\r\n[Blocks][block] are defined as sequences of declarations and statements within matching brace brackets. Therefore my reading is that short variable declarations in a function body are _not_ in the same block as the declaration of result variables, although they are explicitly in the [scope][] of the latter.\r\n\r\nBut this program demonstrates that short variable declarations allow for assignment to result variables (i.e. redeclaring them) without introducing a new variable:\r\n\r\n```Go\r\npackage main\r\n\r\nimport (\r\n  \"errors\"\r\n  \"fmt\"\r\n) \r\n\r\n// Always returns an error.\r\nfunc g() (interface{}, error) {\r\n  return nil, errors.New(\"blah\")\r\n}\r\n\r\nfunc f() (err error) {\r\n  // Is 'err' new here, or does it assign to the result variable?\r\n  foo, err := g()\r\n  if err != nil {\r\n    return err\r\n  } \r\n  \r\n  fmt.Println(\"Shouldn't get here. foo:\", foo)\r\n  return\r\n} \r\n\r\nfunc main() {\r\n  fmt.Println(\"Result:\", f())\r\n} \r\n```\r\n\r\nThe output on my system:\r\n\r\n    % go version\r\n    go version go1.4.1 darwin/amd64\r\n    % go run *.go\r\n    Result: blah\r\n\r\nI imagine this is intended behavior. Perhaps the spec should be updated to specify that variables are redeclared if they were declared in an enclosing scope (not crossing the function body boundary?) rather than in an enclosing block.\r\n\r\n[short-decls]: http://golang.org/ref/spec#Short_variable_declarations\r\n[block]: http://golang.org/ref/spec#Blocks\r\n[scope]: http://golang.org/ref/spec#Declarations_and_scope",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-08-05T17:01:26Z",
+	"created_at": "2015-02-11T04:27:31Z",
+	"updated_at": "2016-08-05T16:09:06Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

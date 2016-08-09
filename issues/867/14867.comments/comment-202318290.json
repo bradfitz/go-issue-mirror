@@ -1,0 +1,12 @@
+{
+	"id": 202318290,
+	"body": "I thought about this over the weekend and I don't think compress/flate should be changed since this changes some subtle behavior with regard to how flushing works. By convention, a DEFLATE reader stops reading when it encounters an [empty, raw block] as a signal that all data read so far should be flushed to the user. \r\n\r\nConsider the following DEFLATE stream:\r\n```\r\n[non-empty N=10, raw block] [empty, raw block] [final, empty, fixed block]\r\n                                              ^\r\n                              Read must stop here, by flushing semantics;\r\n                              But can't report EOF, since that's in the next block\r\n```\r\n                                                         \r\n\r\nIn this situation, suppose you read exactly 10 bytes (knowing that was the length of the stream), in order for the DEFLATE to know that EOF was encountered, it must read through all empty blocks until it either 1) hits another block with data, or 2) hits an empty block with the final bit set. However, this might break some network protocols that have subtle dependencies on flushing (for example, that the read offset of the underlying reader was left immediately after the distinctive `0x0000ffff` marker of empty raw blocks).\r\n\r\nLet's just document this situation.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-28T09:19:11Z",
+	"updated_at": "2016-03-28T09:34:25Z"
+}

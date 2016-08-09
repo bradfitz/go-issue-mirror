@@ -1,0 +1,22 @@
+{
+	"id": 51277233,
+	"number": 1008,
+	"state": "closed",
+	"title": "changeset 4a1fcee4b6e8 causes CC propagated through make to break build",
+	"body": "by **pod@nervous-energy.org.uk**:\n\n\u003cpre\u003e\u0026gt; What steps will reproduce the problem?\n\nshell$ hg pull -u\nshell$ CC=gcc; export CC\nshell$ (cd src \u0026amp;\u0026amp; bash all.bash;)\n\n\u0026gt; What is the expected output?\n\nSuccessful completion of build.\n\n\u0026gt; What do you see instead?\n\nBuild terminates early with output:\n\n[...]\n--- cd ../misc/cgo/stdio\nrm -rf *.o *.a *.[568vq] [568vq].out hello fib chain run.out *.cgo1.go *.cgo2.c\n_cgo_defun.c _cgo_gotypes.go _cgo_export.* *.so _obj _test _testmain.go\nCGOPKGPATH= /home/pod/net/vcs/hg/g/go/go-latest/bin/cgo --  align.go file.go test.go \nexec 6c: no such file or directory\nmake: *** [_cgo_defun.c] Error 2\n\n\u0026gt; What is your $GOOS?  $GOARCH?\n\nGOARCH=amd64\nGOOS=linux\n\n\u0026gt; Which revision are you using?  (hg identify)\n\nshell$ hg identify\n12d3d5576b0d tip\n\n\u0026gt; Please provide any additional information below.\n\nBisection indicates the problem was introduced by\n\nshell$ hg log -v -r 4a1fcee4b6e8 \nchangeset:   5828:4a1fcee4b6e8\nuser:        Ian Lance Taylor \u0026lt;iant@golang.org\u0026gt;\ndate:        Fri Jul 16 11:01:04 2010 -0700\nfiles:       src/cmd/cgo/gcc.go\ndescription:\ncgo: If CC is set in environment, use it rather than \u0026quot;gcc\u0026quot;.\n\nR=rsc\nCC=golang-dev\n\u003ca href=\"http://golang.org/cl/1842042\"\u003ehttp://golang.org/cl/1842042\u003c/a\u003e\n\nI can confirm that building *without* CC set in the environment is\nsuccessful.  The problem appears to be that when CC is set in the\nenvironment make (or at least GNU make) overrides the value of CC by\nvirtue of src/Make.$(GOARCH) and then re-exports it when running rules.\nThis value of CC (CC=6c for example) is not valid for cgo in this\ncontext.\n\nIf CC is not set in the environment then (GNU) make appears not to export\nCC to its children at all.  Changeset 4a1fcee4b6e8 therefore results in a\nchange of behaviour since after this change cgo really cares about the\nvalue of CC from the environment.\n\nThe following patch gets things working again but feels like little more\nthan a bandaid.\n\nshell$ hg diff\ndiff -r 4a1fcee4b6e8 misc/cgo/stdio/Makefile\n--- a/misc/cgo/stdio/Makefile   Fri Jul 16 11:01:04 2010 -0700\n+++ b/misc/cgo/stdio/Makefile   Sat Aug 07 13:48:13 2010 +0100\n@@ -3,6 +3,7 @@\n # license that can be found in the LICENSE file.\n \n include ../../../src/Make.$(GOARCH)\n+unexport CC\n \n TARG=stdio\n CGOFILES=\\\n\nshell$ env | grep -e ^CC\nCC=gcc\nshell$ (cd src \u0026amp;\u0026amp; bash all.bash;)\n[...]\n--- cd ../test\n1 known bugs; 0 unexpected bugs\nshell$\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:06:40Z",
+	"created_at": "2010-08-07T12:57:07Z",
+	"updated_at": "2016-06-24T19:18:51Z"
+}

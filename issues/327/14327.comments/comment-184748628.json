@@ -1,0 +1,12 @@
+{
+	"id": 184748628,
+	"body": "Thanks! I was able to find the necessary places in cmd/go/build.go, cmd/link/internal/ld/lib.go such that a build passed the current tests. But I am having trouble finding what needs to be changed in cmd/dist/test.go\r\n\r\nDisregarding the lack of tests, and after the build succeeded, trying to compile with the shared buildmode resulted in a compiler error saying the \"_rt0_amd64_freebsd_lib\" symbol doesn't exist. I copied \"_rt0_amd64_linux_lib\" from runtime/rt0_linux_amd64.s into runtime/rt0_freebsd_amd64.s with the necessary dependencies and names. This is way out of my league and I recognize there's not necessarily any reason this code copied from Linux should work at all on Freebsd. However, at this point, compiling with buildmode shared succeeded, but attempting to dlopen and call the symbol produced a segfault:\r\n\r\n```\r\n(gdb) run\r\n(no debugging symbols found)...(no debugging symbols found)...[New LWP 101284]\r\n(no debugging symbols found)...(no debugging symbols found)...(no debugging symbols found)...(no debugging symbols found)...(no debugging symbols found)...(no debugging symbols found)...(no debugging symbols found)...[New Thread 802008c00 (LWP 101390/a.out)]\r\n\r\nProgram received signal SIGSEGV, Segmentation fault.\r\n[Switching to Thread 802008c00 (LWP 101390/a.out)]\r\nruntime.printlock () at /home/phil/vendor/go/src/runtime/print.go:34\r\n34              mp.locks++ // do not reschedule between printlock++ and lock(\u0026debuglock).\r\nCurrent language:  auto; currently minimal\r\n(gdb) bt\r\n#0  runtime.printlock () at /home/phil/vendor/go/src/runtime/print.go:34\r\n#1  0x0000000800abc080 in pthread_getspecific () from /lib/libthr.so.3\r\nPrevious frame inner to this frame (corrupt stack?)\r\n```\r\n\r\nPerhaps this all would be clearer if the right tests are enabled.\r\n\r\nI realize that it is hard to discuss this without the changes I made, but I am confused about the best way to share my changes because I don't want to submit a code review for broken code. Maybe link to a forked repository?",
+	"user": {
+		"login": "eatonphil",
+		"id": 3925912,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-16T16:09:59Z",
+	"updated_at": "2016-02-16T16:14:22Z"
+}

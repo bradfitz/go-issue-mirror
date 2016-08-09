@@ -1,0 +1,12 @@
+{
+	"id": 66088068,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eSo here is what I think is going on (it's a little confusing).\n\nThe prerequisites are this:\n\n * a package, lets call it foo\n * another package, bar, that depends on foo\n * foo has file \"internal_test.go\" that says \"package foo\"\n * foo has another file \"external_test.go\" that says \"package foo_test\" that depends on bar\n * you've run go install -compiler gccgo foo (or go test -i -compiler gccgo foo)\n\nWhen you run \"go test -compiler gccgo foo\", it first builds libfoo.a in $WORK including\ninternal_test.go.  When it builds the foo.test executable and it looks up the\ndependencies of bar and finds the installed libfoo.a (this, I think, is the bug).\n\nBoth libfoo.a files are passed to the link command and the order varies (I presume due\nto the order things come out of a hash, but I haven't verified this).\n\nIf the newly built libfoo.a comes first, it contains all needed symbols so the installed\nlibfoo.a is never examined by the linker and the link succeeds.  If the installed\nlibfoo.a comes first, it does not contain the symbols defined by internal_test.go and so\nboth .a files are included by the linker, leading to duplicate symbols.\u003c/pre\u003e",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-11-17T21:54:52Z",
+	"updated_at": "2014-12-08T10:37:37Z"
+}

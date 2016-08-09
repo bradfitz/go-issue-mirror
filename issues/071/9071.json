@@ -1,0 +1,27 @@
+{
+	"id": 51289055,
+	"number": 9071,
+	"state": "closed",
+	"title": "net: crypto/tls.(*Conn).SetReadDeadline consumes CPU",
+	"body": "by **david.birdsong**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3.3 linux/amd64\n\nWhat steps reproduce the problem?\nbuild listener, no deps:\n\u003ca href=\"https://github.com/davidbirdsong/go-tls-woes/blob/master/listener.go\"\u003ehttps://github.com/davidbirdsong/go-tls-woes/blob/master/listener.go\u003c/a\u003e\n\n\n1. connect 8 clients to the tls port on port 5114\n2. connect 1 client on the raw port on 5566\n3. send basic tcp handshakes to the tls port every 3 seconds ( a tcp ping from a load\nbalancer)\n4. send ~5Mb/s of traffic to either port for 5-40 mins\n\n\nWhat happened?\nafter random intervals after start, user cpu consumes or comes close to consuming cores\nfor GOMAXPROCS. \ncall graph shows \ntls.(*Conn).SetReadDeadline executing suspiciously during a majority of the samples\n(svg) \u003ca href=\"http://f.cl.ly/items/24352O0E1j3c3U3Z1G1F/tls_cpu_burn.svg\"\u003ehttp://f.cl.ly/items/24352O0E1j3c3U3Z1G1F/tls_cpu_burn.svg\u003c/a\u003e\n\nit appears that any goroutine executing tls.(*Conn).SetReadDeadline pegs a CPU core\n\nWhat should have happened instead?\nnot sure, but user cpu should not increase so much.\n\nPlease provide any additional information below.\nthis code sample is ripped out of a larger server. in the larger server (heka),\nthroughput for the server is severely hampered by the increase in user cpu. In this\ncontrived example, only user CPU increases, but throughput is maintained.\n\nThis code snippet will reproduce this condition at random times. We have a TCP proxy\nlistening for syslog data from our vendor that connects to the TLS port. We also have\nunencrypted data flowing over the raw TCP port. The trigger is unknow--sometimes it\ntakes 5 mins for CPU to jump and throughput to drop, other times ~30-40 minutes.\n\nI can try to get tcpdumps if that's needed.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-06T19:18:20Z",
+	"created_at": "2014-11-08T03:09:11Z",
+	"updated_at": "2016-06-25T01:44:12Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

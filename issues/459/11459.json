@@ -1,0 +1,30 @@
+{
+	"id": 91694271,
+	"number": 11459,
+	"state": "closed",
+	"title": "cmd/go: TestShadowingLogic fails on windows xp",
+	"body": "```\r\nC:\\dev\\go\\src\\cmd\\go\u003ego test -run=TestShadowingLogic\r\n--- FAIL: TestShadowingLogic (0.78s)\r\n        go_test.go:238: running testgo [list -f ({{.ImportPath}}) ({{.ConflictDir}}) ./testdata/shadow/root1/src/math]\r\n        go_test.go:253: standard output:\r\n        go_test.go:254: (_/c_/dev/go/src/cmd/go/testdata/shadow/root1/src/math) (C:\\dev\\go\\src\\math)\r\n\r\n        go_test.go:1513: shadowed math is not shadowed; looking for (_/c_/dev/go/src/cmd/go/testdata/shadow/root1/src/math) (c:\\dev\\go\\src\\math)\r\n        go_test.go:238: running testgo [list -f ({{.ImportPath}}) ({{.ConflictDir}}) ./testdata/shadow/root1/src/foo]\r\n        go_test.go:253: standard output:\r\n        go_test.go:254: (foo) ()\r\n\r\n        go_test.go:238: running testgo [list -f ({{.ImportPath}}) ({{.ConflictDir}}) ./testdata/shadow/root2/src/foo]\r\n        go_test.go:253: standard output:\r\n        go_test.go:254: (_/c_/dev/go/src/cmd/go/testdata/shadow/root2/src/foo) (c:\\dev\\go\\src\\cmd\\go\\testdata\\shadow\\root1\\src\\foo)\r\n\r\n        go_test.go:238: running testgo [install ./testdata/shadow/root2/src/foo]\r\n\r\n        go_test.go:257: standard error:\r\n        go_test.go:258: go install: no install location for c:\\dev\\go\\src\\cmd\\go\\testdata\\shadow\\root2\\src\\foo: hidden by c:\\dev\\go\\src\\cmd\\go\\testdata\\shadow\\root1\\src\\foo\r\n\r\n        go_test.go:277: testgo failed as expected: exit status 1\r\nFAIL\r\nexit status 1\r\nFAIL    cmd/go  8.104s\r\n\r\nC:\\dev\\go\\src\\cmd\\go\u003ego version\r\ngo version devel +0bafe0e Mon Jun 29 03:54:33 2015 +0000 windows/386\r\n\r\nC:\\dev\\go\\src\\cmd\\go\u003ego env\r\nset GOARCH=386\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=386\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=c:\\dev\r\nset GORACE=\r\nset GOROOT=c:\\dev\\go\r\nset GOTOOLDIR=c:\\dev\\go\\pkg\\tool\\windows_386\r\nset CC=gcc\r\nset GOGCCFLAGS=-m32 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n\r\nC:\\dev\\go\\src\\cmd\\go\u003e\r\n```\r\n\r\nTest fails because go list output of {{.ConflictDir}} (C:\\dev\\go\\src\\math) does not match runtime.GOROOT()+... (c:\\dev\\go\\src\\math). It is the drive letter case that is different. My GOROOT is set to c:\\dev\\go, so I would expect go list output to be the same. It seems go list is using runtime.defaultGoroot, because TestMain clears GOROOT environment variable. And runtime.defaultGoroot strangely is set to C:\\dev\\go.\r\n\r\nI use this batch file to set my environment:\r\n```\r\nset GOROOT=c:\\dev\\go\r\nset GOROOT_BOOTSTRAP=c:\\dev\\go1.4\r\nset GOPATH=c:\\dev\r\nset PATH=%PATH%;c:\\dev\\mingw\\bin;c:\\dev\\my\\bin\\;%GOROOT%\\bin\r\ncd %GOROOT%\\src\r\nCMD\r\n```\r\nthis is what I see when I run it:\r\n```\r\nC:\\Documents and Settings\\brainman\\Desktop\u003eset GOROOT=c:\\dev\\go\r\n\r\nC:\\Documents and Settings\\brainman\\Desktop\u003eset GOROOT_BOOTSTRAP=c:\\dev\\go1.4\r\n\r\nC:\\Documents and Settings\\brainman\\Desktop\u003eset GOPATH=c:\\dev\r\n\r\nC:\\Documents and Settings\\brainman\\Desktop\u003eset PATH=C:\\Program Files\\...\r\n\r\nC:\\Documents and Settings\\brainman\\Desktop\u003ecd c:\\dev\\go\\src\r\n\r\nC:\\dev\\go\\src\u003eCMD\r\nMicrosoft Windows XP [Version 5.1.2600]\r\n(C) Copyright 1985-2001 Microsoft Corp.\r\n\r\nC:\\dev\\go\\src\u003e\r\n```\r\nNote how command.com ignores my \"cd c:\\dev\\go\\src\" command and sets prompt to \"C:\\dev\\go\\src\". I can confirm this with:\r\n```\r\nC:\\dev\\go\\src\u003eecho %CD%\r\nC:\\dev\\go\\src\r\n\r\nC:\\dev\\go\\src\u003e\r\n```\r\nOur make.bat uses %CD% to setup GOROOT_FINAL, and GOROOT_FINAL is used to setup runtime.defaultGoroot.\r\n\r\nThis only breaks on windows xp. My windows 7 current directory keeps drive letter case as specified.\r\n\r\nI am wandering if I should adjust the test or there is something more sinister that we need to deal with.\r\n\r\nAlex\r\n\r\ncc @rsc",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-07-12T23:59:01Z",
+	"created_at": "2015-06-29T04:40:52Z",
+	"updated_at": "2016-07-11T22:38:12Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

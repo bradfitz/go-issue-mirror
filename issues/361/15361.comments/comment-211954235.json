@@ -1,0 +1,12 @@
+{
+	"id": 211954235,
+	"body": "\u003e Tracking the stats on that is somewhat subtle, which is why we don't do it right now, but it's definitely doable.\r\n\r\nBut it should be positive without stats. Threads will do useful work instead of switching goroutines.\r\n\r\n\u003e We used to do this and then I worked very hard to eliminate this uncontrolled allocation window because @dvyukov had some great benchmarks that used this window to completely blow out the heap goal.\r\n\r\nCan't we give them _temporal_ credit? The intention is that background scanners will cover that backlog soon and we can allow goroutines to work without assists at all in the expected case. But if background scanners do not, then goroutines will have to assists aggressively and compensate for initial allocations. The duration of the temporal credit must not be time based, it must be allocation based. That is, if we expect to do scanning while application allocates X bytes, we can give credit for X/10 allocations. I don't know the assist system good enough to say whether such credit system can avoid overallocation.\r\nIt also looks like a more reliable solution to the problem described in cl/20969. The change turns off assists when GOGC\u003e200. But that still can lead to overallocation. Instead we could give goroutines credit for longer period of time.\r\n\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-19T14:40:58Z",
+	"updated_at": "2016-04-19T14:40:58Z"
+}

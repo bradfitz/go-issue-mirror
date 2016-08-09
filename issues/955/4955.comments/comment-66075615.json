@@ -1,0 +1,12 @@
+{
+	"id": 66075615,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eI believe that it's okay to call ntdll system call functions from the\ngoroutine stack. They do not use additional stack space (perhaps one more\nword).\n\nFor example, on 386, if we add this to thread_windows.c:\n\n#pragma dynimport runtime�NtYield NtYieldExecution \"ntdll.dll\"\n#pragma dynimport runtime�NtWaitForSingleObject NtWaitForSingleObject\n\"ntdll.dll\"\n\nextern void *runtime�NtWaitForSingleObject;\nextern void *runtime�NtYield;\n\nthen I believe the following work as implementations of usleep and osyield:\n\nTEXT runtime�osyield(SB),7,$0\nMOVL runtime�NtYield(SB), AX\nMOVL SP, BP\nCALL AX\nMOVL BP, SP\nRET\n\nTEXT runtime�usleep(SB),7,$20\nMOVL runtime�NtWaitForSingleObject(SB), AX\nMOVL usec+0(FP), BX\nMOVL $0, hi-4(SP)\nMOVL BX, lo-8(SP)\nMOVL $lo-8(SP), BX\nMOVL BX, ptime-12(SP)\nMOVL $0, alertable-16(SP)\nMOVL $0, handle-20(SP)\nMOVL SP, BP\nCALL AX\nMOVL BP, SP\nRET\n\nOn amd64 it should be similar (and probably easier since no stdcall\nnonsense).\n\nCan someone who observed the flakiness on 32-bit try this? I had to comment\nout the TestCthread test in misc/cgo/test/cgo_test.go, but I that failure\nis a separate problem.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-04T21:10:15Z",
+	"updated_at": "2014-12-08T10:26:24Z"
+}

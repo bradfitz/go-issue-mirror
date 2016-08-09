@@ -1,0 +1,22 @@
+{
+	"id": 51287189,
+	"number": 7777,
+	"state": "closed",
+	"title": "database/sql: Transaction commit closes the transaction even if there was an error on commit.",
+	"body": "by **Thetawaves**:\n\n\u003cpre\u003eWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Using the sqlite driver, start a long running query.\n2. Attempt to insert a row into the same table you queried.\n3. Attempt to commit the insert transaction. The commit will fail because of a lock on\nthe table.\n\nThis is fine except that the transaction commit function in database/sql closes the\ndatabase/sql transaction through the use of defer tx.close() even if the commit was\nunsuccessful. I have not been able to regain control of this transaction once the\ndatabase/sql representation has closed.\n\n\nWhat should have happened instead?\n\nThe database/sql transaction commit function should first attempt to commit the driver\ntransaction, and only if it has succeeded, close the database/sql representation.\n\nThe function in question:\n\n  1058\t// Commit commits the transaction.\n  1059\tfunc (tx *Tx) Commit() error {\n  1060\t\tif tx.done {\n  1061\t\t\treturn ErrTxDone\n  1062\t\t}\n  1063\t\tdefer tx.close()\n  1064\t\ttx.dc.Lock()\n  1065\t\tdefer tx.dc.Unlock()\n  1066\t\treturn tx.txi.Commit()\n  1067\t}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:43:07Z",
+	"created_at": "2014-04-14T08:31:44Z",
+	"updated_at": "2016-06-25T01:32:13Z"
+}

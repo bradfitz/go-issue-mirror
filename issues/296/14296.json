@@ -1,0 +1,21 @@
+{
+	"id": 132847907,
+	"number": 14296,
+	"state": "open",
+	"title": "net: vague error message from Dial(\"tcp\", \"DNS reg-name\")",
+	"body": "simple app to reproduce error\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc pan(err error) {\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n}\r\n\r\nfunc doRequest() {\r\n\treq, err := http.NewRequest(\"GET\", \"http://example.com/\", nil)\r\n\tpan(err)\r\n\t_, err = client.Do(req)\r\n\tpan(err)\r\n}\r\n\r\nvar client http.Client\r\n\r\nfunc main() {\r\n\ti := 0\r\n\tfor {\r\n\t\tlog.Println(i)\r\n\t\tdoRequest()\r\n\t\ti++\r\n\t}\r\n}\r\n```\r\n\r\nThis app doesn't close response.Body and leaves opened file descriptors.\r\n```\r\n[kirillvr@yao-local ~]$ ulimit -n 10\r\n[kirillvr@yao-local ~]$ go version\r\ngo version go1.6rc2 linux/amd64\r\n[kirillvr@yao-local ~]$ go run too_many_files.go \r\n2016/02/11 10:24:30 0\r\n2016/02/11 10:24:30 1\r\n2016/02/11 10:24:30 2\r\n2016/02/11 10:24:31 3\r\n2016/02/11 10:24:32 4\r\n2016/02/11 10:24:32 5\r\n2016/02/11 10:24:32 Get http://example.com/: dial tcp [2606:2800:220:1:248:1893:25c8:1946]:80: connect: network is unreachable\r\nexit status 1\r\n[kirillvr@yao-local ~]$ ~/go1.4/bin/go version\r\ngo version go1.4.3 linux/amd64\r\n[kirillvr@yao-local ~]$ ~/go1.4/bin/go run too_many_files.go \r\n2016/02/11 10:24:49 0\r\n2016/02/11 10:24:50 1\r\n2016/02/11 10:24:50 2\r\n2016/02/11 10:24:50 3\r\n2016/02/11 10:24:51 4\r\n2016/02/11 10:24:51 5\r\n2016/02/11 10:24:52 6\r\n2016/02/11 10:24:52 Get http://example.com/: dial tcp: lookup example.com: too many open files\r\nexit status 1\r\n```\r\n\r\ngo 1.4 returns correct error message, but go1.5 and 1.6 shows possibly confusing error message\r\n",
+	"user": {
+		"login": "kirillrdy",
+		"id": 12160,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"created_at": "2016-02-10T23:27:19Z",
+	"updated_at": "2016-02-11T04:45:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

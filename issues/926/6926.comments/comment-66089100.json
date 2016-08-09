@@ -1,0 +1,12 @@
+{
+	"id": 66089100,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eOh.  The reason that mmap-ing into the heap doesn't work when the heap has a high\naddress is this code:\n\n\t// On 64-bit, we don't actually have v reserved, so tread carefully.\n\tif(sizeof(void*) == 8 \u0026\u0026 (uintptr)v \u003e= 0xffffffffU) {\n\t\tp = mmap_fixed(v, n, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, fd, 0);\n\nbut even though we're on 64-bit, we are using the 32-bit approach to the heap, so v _is_\nreserved, and mmap_fixed does not dtrt in this case.  I think this needs to be more\nexplicit: maybe set a flag in the heap object somewhere that indicates which mode it is\nusing?  gccgo should also stop trying to map its heap at 0xc000000000 too, that's never\ngoing to work on arm64.\u003c/pre\u003e",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-11T01:56:41Z",
+	"updated_at": "2014-12-08T10:38:33Z"
+}

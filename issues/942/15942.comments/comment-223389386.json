@@ -1,0 +1,12 @@
+{
+	"id": 223389386,
+	"body": "In this example, we do know that the value is a pointer: it's a `*C.either`, not a `C.either`.  We should use essentially the same logic here as we would for `unsafe.Pointer`.\r\n\r\nChanging\r\n\r\n```c\r\ntypedef union {\r\n  header hdr;\r\n  direct d;\r\n  indirect i;\r\n} either;\r\n\r\nint get_payload(either *e) {\r\n  switch (e-\u003ehdr.k) {\r\n  case DIRECT:\r\n    return e-\u003ed.payload;\r\n  case INDIRECT:\r\n    return *(e-\u003ei.payload);\r\n  default:\r\n    return -1;\r\n  }\r\n}\r\n```\r\n\r\nto\r\n\r\n```c\r\ntypedef void either;\r\n\r\nint get_payload(either *e) {\r\n  switch (((header*)e)-\u003ek) {\r\n  case DIRECT:\r\n    return ((direct*)e)-\u003epayload;\r\n  case INDIRECT:\r\n    return *(((indirect*)e)-\u003epayload);\r\n  default:\r\n    return -1;\r\n  }\r\n}\r\n```\r\n\r\nproduces a program with identical semantics that *does* correctly trigger the cgo pointer check, without any change at all in the user-supplied Go code.",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-02T19:00:58Z",
+	"updated_at": "2016-06-02T19:01:12Z"
+}

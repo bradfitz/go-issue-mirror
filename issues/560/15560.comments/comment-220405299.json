@@ -1,0 +1,12 @@
+{
+	"id": 220405299,
+	"body": "@rsc, that's what @cmarcelo's recent CL did, which broke the use case @niemeyer is reporting.\r\n\r\nThe fundamental problem is that ResponseWriter.HeaderMap is one map but people want it to mean two things:\r\n\r\n1. the return value from `ResponseWriter.Header()`. There is no freezing this map at `Write` or `Flush`, since it's just a Go map. Once the user has it in their hands, all bets are off.\r\n2. the effective written headers (the \"frozen\" set), ignoring any mutations the user made after the first `Write` or `Flush`.\r\n\r\nHistorically, we didn't do any freezing, which is why people reported bugs like #8857. In an attempt to fix that, @cmarcelo made `ResponseWriter.Header()` return a private map which later snapshotted into the public field. However, since it's the user running their `ServerHTTP` handler and not us, we didn't know when the function was over, so there was no final snapshot in the case where the handler never did a flush. (which both the HTTP/1.x and HTTP/2 servers do)\r\n\r\nI think the only safe option here is to revert the behavior back to Go1..Go1.6 behavior where HeaderMap is partially bogus (but doesn't break people's old tests), and create a new method to return the wire header map for people who want the fixed behavior. That new method could say that it can't be called until after the handler is done running, and that's where we can do the final snapshot if necessary.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-19T18:04:42Z",
+	"updated_at": "2016-05-19T18:04:42Z"
+}

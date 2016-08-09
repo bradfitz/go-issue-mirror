@@ -1,0 +1,12 @@
+{
+	"id": 226247712,
+	"body": "I'm not convinced that `#cgo nonblocking` is a good idea, because, as you say, it's very easy to get wrong.  In particular it's very easy to get wrong for unlikely error cases, leaving you with a program that normally works but occasionally deadlocks.\r\n\r\nWe could detect a deadlock easily enough in the sysmon thread: if a supposedly non-blocking cgocall doesn't return within some period of time, we can declare an error.  We can't recover, though; all we can do at that point is crash.\r\n\r\nI don't know of a way to know which standard library functions do blocking syscalls.  That is a somewhat different path than a cgo call, and should be more efficient--for example, it doesn't have to switch stacks, as syscalls don't use any stack space.  Still it's true that there is some overhead.  It's also true that the syscall package uses a more efficient call path for syscalls that don't block; they are the ones annotated with `sysnb` comments rather than `sys`.\r\n\r\nIt's worth noting that we've been surprised in the past by which syscalls can not block.  For example, when people use a FUSE file system, Dup can block (see issue #10202).  This is the kind of problem that could vex `#cgo nonblocking` in unusual cases.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-15T16:47:06Z",
+	"updated_at": "2016-06-15T16:47:06Z"
+}

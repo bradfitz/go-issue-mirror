@@ -1,0 +1,12 @@
+{
+	"id": 66076602,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003ecrypto/rand contains a backup pseudo-random implementation, so\ni think with the following patch, we can make crypto/rand work\non playground without any file system access (playground program\noutputs are cached so actually there is no reason to use real\nCSRNG).\n\ndiff -r b0ff2babd1f5 src/pkg/crypto/rand/rand_unix.go\n--- a/src/pkg/crypto/rand/rand_unix.go  Thu Mar 21 08:47:34 2013 -0700\n+++ b/src/pkg/crypto/rand/rand_unix.go  Fri Mar 22 00:54:21 2013 +0800\n@@ -23,12 +23,16 @@\n // Easy implementation: read from /dev/urandom.\n // This is sufficient on Linux, OS X, and FreeBSD.\n\n+// DummyReader implements a Reader that blindly returns len(buf),nil without\n+// touching buf; only for the playground service.\n+type DummyReader struct{}\n+\n+func (DummyReader) Read(p []byte) (int, error) {\n+       return len(p), nil\n+}\n+\n func init() {\n-       if runtime.GOOS == \"plan9\" {\n-               Reader = newReader(nil)\n-       } else {\n-               Reader = \u0026devReader{name: \"/dev/urandom\"}\n-       }\n+       Reader = newReader(DummyReader{}) // only for playground service\n }\n\n // A devReader satisfies reads by reading the file named name.\n\ntests for crypto/rand still pass with this patch applied, so i think it's\ngood enough for the playground.\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-21T16:57:15Z",
+	"updated_at": "2014-12-08T10:27:13Z"
+}

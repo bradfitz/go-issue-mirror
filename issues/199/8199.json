@@ -1,0 +1,27 @@
+{
+	"id": 51287830,
+	"number": 8199,
+	"state": "closed",
+	"title": "runtime: leftover panics in traceback on nacl/amd64p32",
+	"body": "\u003cpre\u003efrom the nacl/amd64p32 builder.\n\u003ca href=\"http://build.golang.org/log/91208176ac2dab8eb7942edb289e1bb48cbeb7e1\"\u003ehttp://build.golang.org/log/91208176ac2dab8eb7942edb289e1bb48cbeb7e1\u003c/a\u003e\n\nThe bug is that traceback_x86.c says sparg += 2*sizeof(uintreg) instead of\n2*sizeof(uintptr) in the if(wasnewproc) case. However, since this is only NaCl, I am not\ngoing to hold up 1.3 any longer. This can be fixed in 1.3.1.\n\n# GOMAXPROCS=2 runtime -cpu=1,2,4\nruntime: g10914: leftover defer argp=0xfeef3f38 pc=0x94480\n\tdefer 0x119f8090 argp=0xfeef3f38 pc=0x94480\n\tdefer 0x110b53c0 argp=0xfeef3f98 pc=0x76dc0\nfatal error: traceback has leftover defers or panics\n\nruntime stack:\nruntime.throw(0x6e1754, 0x110b53c0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/panic.c:520 +0xa0 fp=0xfe9efd00 sp=0xfe9efcf0\nruntime.gentraceback(0x3cbc0, 0xfeef3f00, 0x0, 0x109028f0, 0x0, 0x0, 0x7fffffff,\n0x2c3c0, 0xfe9efe14, 0x0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/traceback_x86.c:369 +0x5c0 fp=0xfe9efd80 sp=0xfe9efd00\naddstackroots(0x109028f0, 0xfe9efe14)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/mgc0.c:1692 +0x1c0 fp=0xfe9efdd0 sp=0xfe9efd80\nmarkroot(0x10910900, 0xa)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/mgc0.c:1321 +0x100 fp=0xfe9efe20 sp=0xfe9efdd0\nruntime.parfordo(0x10910900, 0x1)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/parfor.c:88 +0x100 fp=0xfe9efe80 sp=0xfe9efe20\ngc(0xfed89e68, 0x110f86e0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/mgc0.c:2407 +0x300 fp=0xfe9effa8 sp=0xfe9efe80\nmgc(0x12258e70, 0x0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/mgc0.c:2349 +0x40 fp=0xfe9effb8 sp=0xfe9effa8\nruntime.mcall(0x0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/asm_amd64p32.s:160 +0x60 fp=0xfe9effc8 sp=0xfe9effb8\n\ngoroutine 54953 [garbage collection]:\nruntime.gc(0x0, 0x123c5210)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/mgc0.c:2329 +0x2c0 fp=0xfed89e80 sp=0xfed89e58\nruntime.mallocgc(0x10, 0x2a18e0, 0x0, 0x0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/malloc.goc:205 +0x260 fp=0xfed89ec0 sp=0xfed89e80\nruntime.new(0x2a18e0, 0x4, 0x0, 0x150)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/malloc.goc:826 +0x60 fp=0xfed89ed8 sp=0xfed89ec0\nreflect.Value.MapIndex(0x254d40, 0x110b40c0, 0x0, 0x150, 0x255b80, 0x0, 0x1c4, 0x20,\n0x255b80, 0x0, ...)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/reflect/value.go:1184 +0x40 fp=0xfed89f30 sp=0xfed89ed8\nruntime_test.func·044()\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/map_test.go:272 +0x1c0 fp=0xfed89fc8 sp=0xfed89f30\nruntime.goexit()\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/proc.c:1445 fp=0xfed89fd0 sp=0xfed89fc8\ncreated by runtime_test.testConcurrentReadsAfterGrowth\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/map_test.go:274 +0x3a0\n\n...\n\n\ngoroutine 10914 [runnable]:\nruntime.newproc1(0x1180d610, 0xfeef3f38, 0x0, 0x0, 0x947a0, 0x947a0)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/proc.c:1817 fp=0xfeef3f08 sp=0xfeef3f00\nruntime.newproc(0x0, 0x1180d610)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/proc.c:1809 +0x60 fp=0xfeef3f30 sp=0xfeef3f08\nruntime_test.testConcurrentReadsAfterGrowth(0x1108a0c0, 0x3701)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/map_test.go:274 +0x3a0 fp=0xfeef3f88 sp=0xfeef3f30\nruntime_test.TestConcurrentReadsAfterGrowthReflect(0x1108a0c0, 0xe)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/map_test.go:287 +0x40 fp=0xfeef3f98 sp=0xfeef3f88\ntesting.tRunner(0x1108a0c0, 0x6e2360)\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/testing/testing.go:422 +0x100 fp=0xfeef3fc0 sp=0xfeef3f98\nruntime.goexit()\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/runtime/proc.c:1445 fp=0xfeef3fc8 sp=0xfeef3fc0\ncreated by testing.RunTests\n\t/tmp/gobuilder/nacl-amd64p32-aa46f025bb46/go/src/pkg/testing/testing.go:504 +0xa60\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:45:29Z",
+	"created_at": "2014-06-13T01:33:51Z",
+	"updated_at": "2016-06-25T01:36:23Z",
+	"milestone": {
+		"id": 1067212,
+		"number": 18,
+		"title": "Go1.3.1"
+	}
+}

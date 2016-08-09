@@ -1,0 +1,26 @@
+{
+	"id": 147026661,
+	"number": 15201,
+	"state": "open",
+	"title": "cmd/go: panic in test with augmented GOPATH and symlink to 'self'",
+	"body": "This issue follows on from the golang-dev thread about a vendoring problem, specifically [my response](https://groups.google.com/d/msg/golang-dev/4FfTBfN2YaI/M5SD8_FqCgAJ). In the repro repo linked to below, I'm trying to make the `cmd/a` binary `go get`-able (with `vendor`-ed dependencies, per [this definition](https://golang.org/s/go15vendor)) whilst allowing the library developer to \"vendor\" dependencies via `$GOPATH` augmentation as part of his/her development/build workflow (good practice).\r\n\r\n```\r\n$ go version\r\ngo version go1.6 linux/amd64\r\n```\r\n\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/tmp/tmp.040VgHSXdq/src/github.com/myitcv/go-vendoring/_vendor:/tmp/tmp.040VgHSXdq\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/myitcv/gos\"\r\nGOTOOLDIR=\"/home/myitcv/gos/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nFull repro details here (`README` gives details): https://github.com/myitcv/go-vendoring\r\n\r\nThe directory structure of the repro repo is as follows:\r\n\r\n```\r\n.\r\n├── cmd\r\n│   └── a\r\n│       └── vendor -\u003e ../../_vendor/src\r\n├── mylib1\r\n├── mylib2\r\n└── _vendor\r\n    ├── pkg\r\n    │   └── linux_amd64\r\n    │       ├── bitbucket.org\r\n    │       │   └── pkg\r\n    │       └── github.com\r\n    │           └── pborman\r\n    └── src\r\n        ├── bitbucket.org\r\n        │   └── pkg\r\n        │       └── inflect\r\n        └── github.com\r\n            ├── myitcv\r\n            │   └── go-vendoring -\u003e ../../../..\r\n            └── pborman\r\n                └── uuid\r\n```\r\n\r\nAs [the `README`](https://github.com/myitcv/go-vendoring/blob/master/README.md) shows, the problem comes when you augment `GOPATH` to include `_vendor` (the tree under `_vendor` effectively has a reference to self as shown above) and then re-run `go test ./...`\r\n\r\n`$GOPATH` at this point looks something like this:\r\n\r\n```\r\n/home/myitcv/gostuff/src/github.com/myitcv/go-vendoring/_vendor:/home/myitcv/gostuff\r\n```\r\n\r\nAs you can see from the directory structure above (which is a `tree -d` of `/home/myitcv/gostuff/src/github.com/myitcv/go-vendoring`), there is a symlink in the first (higher precedence) `$GOPATH` entry to a directory outside of the first entry, specifically the directory from which we are running `go test ./...`\r\n\r\nPer the `README`, I expected a successful second run of `go test ./...` but instead got the following panic:\r\n\r\n```\r\npanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 1 [running]:\r\npanic(0x93c000, 0xc82000e120)\r\n        /usr/local/go/src/runtime/panic.go:464 +0x3e6\r\nmain.vendoredImportPath(0xc82030f000, 0xc8202c67c1, 0x17, 0x0, 0x0)\r\n        /usr/local/go/src/cmd/go/pkg.go:460 +0x67b\r\nmain.loadImport(0xc8202c67c1, 0x17, 0xc820193b90, 0x69, 0xc82030f000, 0xc8201e71c8, 0xc8202c5050, 0x1, 0x1, 0x1, ...)\r\n        /usr/local/go/src/cmd/go/pkg.go:336 +0xe52\r\nmain.(*Package).load(0xc82030f000, 0xc8201e71c8, 0xc8201c7500, 0x0, 0x0, 0x4)\r\n        /usr/local/go/src/cmd/go/pkg.go:947 +0x4397\r\nmain.loadImport(0xc8201d62d1, 0x25, 0xc8201a5d40, 0x3c, 0xc8201d4000, 0xc8201e71c8, 0xc8201d6390, 0x1, 0x1, 0x1, ...)\r\n        /usr/local/go/src/cmd/go/pkg.go:377 +0x84e\r\nmain.(*Package).load(0xc8201d4000, 0xc8201e71c8, 0xc8201c6700, 0x0, 0x0, 0xc)\r\n        /usr/local/go/src/cmd/go/pkg.go:947 +0x4397\r\nmain.loadImport(0xc82019ab70, 0x7, 0xc820016044, 0x36, 0x0, 0xc8201e71c8, 0x0, 0x0, 0x0, 0x0, ...)\r\n        /usr/local/go/src/cmd/go/pkg.go:377 +0x84e\r\nmain.loadPackage(0xc82019ab70, 0x7, 0xc8201e71c8, 0x0)\r\n        /usr/local/go/src/cmd/go/pkg.go:1633 +0x13d8\r\nmain.packagesAndErrors(0xc820181890, 0x3, 0x3, 0x0, 0x0, 0x0)\r\n        /usr/local/go/src/cmd/go/pkg.go:1678 +0x531\r\nmain.packagesForBuild(0xc82019a5e0, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n        /usr/local/go/src/cmd/go/pkg.go:1694 +0x82\r\nmain.runTest(0xc887e0, 0xc8200781d0, 0x1, 0x1)\r\n        /usr/local/go/src/cmd/go/test.go:375 +0x14e\r\nmain.main()\r\n        /usr/local/go/src/cmd/go/main.go:181 +0x783\r\n```\r\n\r\nAm I breaking a rule by symlinking in this way?\r\n\r\nI hope not, because it feels like a nice clean solution to the `go get` problem I mention in my response to the aforementioned thread.",
+	"user": {
+		"login": "myitcv",
+		"id": 3374574,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Vendoring"
+		}
+	],
+	"comments": 6,
+	"created_at": "2016-04-08T20:06:00Z",
+	"updated_at": "2016-04-11T23:24:56Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"id": 219212895,
+	"body": "Sorry to bother, but i found it's quite easy to make a h2c client with a little modification to `golang.org/x/net/http2`\r\n\r\n```golang\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n\r\n\t\"golang.org/x/net/http2\"\r\n)\r\n\r\nfunc main() {\r\n\tclient := http.Client{\r\n\t\t// Skip TLS dial\r\n\t\tTransport: \u0026http2.Transport{\r\n\t\t\tDialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {\r\n\t\t\t\treturn net.Dial(netw, addr)\r\n\t\t\t},\r\n\t\t},\r\n\t}\r\n\r\n\tresp, err := client.Get(\"http://localhost:8080/test\")\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t\treturn\r\n\t}\r\n\r\n\tfmt.Printf(\"resp: %#v\\n\", resp)\r\n\r\n\tbody, err := ioutil.ReadAll(resp.Body)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t\treturn\r\n\t}\r\n\r\n\tfmt.Println(string(body))\r\n}\r\n```\r\n\r\nthen remove the restriction from `golang.org/x/net/http2/transport.go` in `func (t *Transport) RoundTripOpt(req *http.Request, opt RoundTripOpt) (*http.Response, error)`\r\n\r\n```\r\n\t//if req.URL.Scheme != \"https\" {\r\n\t//\treturn nil, errors.New(\"http2: unsupported scheme\")\r\n\t//}\r\n```\r\n\r\nI agree that nearly all browsers will not support h2c, but there are some h2c server serving traffic as another RPC service (not gRPC), so can https restriction be loosen a little to support h2c client?",
+	"user": {
+		"login": "ayanamist",
+		"id": 406779,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	},
+	"created_at": "2016-05-14T10:26:56Z",
+	"updated_at": "2016-05-14T10:26:56Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 129639315,
+	"body": "I'd like to implement it. I've enough experience with JSON RPC 2.0 (I'm author of several related Perl modules like [JSON::RPC2](https://metacpan.org/pod/JSON::RPC2) and [Mojolicious::Plugin::JSONRPC2](https://metacpan.org/pod/Mojolicious::Plugin::JSONRPC2)) but this task is going to be my first Go project (and it feels a bit too complicated for the first project).\r\n\r\nI've checked current interface of net/rpc, and it looks like to support some features of JSON RPC 2.0 we'll need some… hacks. For example, right now I see only way to implement support for \"batch\" requests:\r\n- `jsonrpc2` package should register own RPC handler \"JSONRPC2.Batch\"\r\n- when `ReadRequestHeader()` sees batch request it should set `r.ServiceMethod = \"JSONRPC2.Batch\"; r.Seq=someFakeID` and provide contents of batch request (slice of RPCs to call or just `*json.RawMessage`) as param for that handler\r\n- when \"JSONRPC2.Batch\" will be called it should pretend all RPC in that batch comes from another connection, i.e. start new ServeCodec(), write to it all RPC in that batch as separate requests, read from it replies to these RPC, stop ServeCodec() and return joined replies as it's own result\r\n  - (this may introduce incompatibility with spec in case someone manage to send batch request inside another batch request - proposed implementation will execute it while spec doesn't allow this AFAIR)\r\n- send data returned by \"JSONRPC2.Batch\" as reply to original batch request\r\n\r\nIf there are simpler ways to do this - let me know, please.",
+	"user": {
+		"login": "powerman",
+		"id": 1354301,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-10T22:55:03Z",
+	"updated_at": "2015-08-10T22:55:03Z"
+}

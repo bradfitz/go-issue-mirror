@@ -1,0 +1,21 @@
+{
+	"id": 124872122,
+	"number": 13820,
+	"state": "open",
+	"title": "crypto/rand: use the userland CSPRNG by default",
+	"body": "This idea originated in #13785 when using OpenBSD's precedent with [`arc4random(3)`](http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man3/arc4random.3).\r\n\r\nThe Go crypto code includes a [CSPRNG](https://en.wikipedia.org/wiki/CSPRNG) by default (see `src/crypto/rand/rand_unix.go:85`). However, it is only used on operating systems that Go doesn't determine to have a reliable, non-blocking randomness sources. Examples of reliable non-blocking randomness sources include a modern `/dev/urandom`, Linux's `getrandom(2)`, and OpenBSD's `getentropy(2)`.\r\n\r\nMany cryptography guides suggest userland CSPRNGs. The possible benefits include:\r\n\r\n* improving performance by avoiding the vast majority of randomness-related syscalls\r\n * Go's CSPRNG fetches 16 bytes of seed entropy for every 1 MB of generated randomness\r\n* easing up on the kernel, which may expend considerable effort when serving a Go process's randomness-related syscalls\r\n * I remember seeing Poul-Henning Kamp quoted that FreeBSD kernel spends 15% of its time on random number generation\r\n* adding some additional mixing to potentially weak OS-supplied randomness\r\n * This would be a minimal stopgap. However, the Go currently uses [ANSI X9.31](http://csrc.nist.gov/groups/STM/cavp/documents/rng/931rngext.pdf) which mixes via AES and kneads in the current nanosecond time, which is better than nothing.\r\n* potentially being able to replace math/rand with crypto/rand, which would simplify the codebase and prevent misuse of math/rand\r\n * code for deterministic pseudo-randomness could be condensed, and the ability to seed it could be removed\r\n\r\nNetwork applications that use forward secret encryption make the peformance concerns more relevant.\r\n\r\nThe primary risk is that we would then rely on the soundness and safety of Go's CSPRNG logic. I don't know whether timing attacks are a risk, but that's one issue that came to mind. The CSPRNG backs up to Go's AES implementation, though, so any risks unique to the CSPRNG would have to be outside of that. The fact that uses a standard algorithm ([ANSI X9.31](http://csrc.nist.gov/groups/STM/cavp/documents/rng/931rngext.pdf)) and a strong crypto primitive (AES) gives me confidence. I'm definitely not qualified to rigorously review something like this, though.\r\n\r\nThis ticket could also entail a review of the existing CSPRNG and whether it could be stronger.\r\n\r\nThoughts? Also, if anyone knows of relevant profiling techniques and targets, please share. I plan on investigating what kind of performance impact this switch would have.",
+	"user": {
+		"login": "mmcco",
+		"id": 1668979,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-01-05T00:53:16Z",
+	"updated_at": "2016-03-11T00:05:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

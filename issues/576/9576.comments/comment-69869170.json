@@ -1,0 +1,12 @@
+{
+	"id": 69869170,
+	"body": "In sysmon it says:\n\n\t// Need to decrement number of idle locked M's\n\t// (pretending that one more is running) before injectglist.\n\t// Otherwise it can lead to the following situation:\n\t// injectglist grabs all P's but before it starts M's to run the P's,\n\t// another M returns from syscall, finishes running its G,\n\t// observes that there is no work to do and no other running M's\n\t// and reports deadlock.\n\tincidlelocked(-1);\n\tinjectglist(gp);\n\tincidlelocked(1);\n\nAt the bottom of findrunnable it says:\n\n\t// poll network\n\tif(runtime·xchg64(\u0026runtime·sched.lastpoll, 0) != 0) {\n\t\tif(g-\u003em-\u003ep)\n\t\t\truntime·throw(\"findrunnable: netpoll with p\");\n\t\tif(g-\u003em-\u003espinning)\n\t\t\truntime·throw(\"findrunnable: netpoll with spinning\");\n\t\tgp = runtime·netpoll(true);  // block until new work is available\n\t\truntime·atomicstore64(\u0026runtime·sched.lastpoll, runtime·nanotime());\n\t\tif(gp) {\n\t\t\truntime·lock(\u0026runtime·sched.lock);\n\t\t\tp = pidleget();\n\t\t\truntime·unlock(\u0026runtime·sched.lock);\n\t\t\tif(p) {\n\t\t\t\tacquirep(p);\n\t\t\t\tinjectglist(gp-\u003eschedlink);\n\t\t\t\truntime·casgstatus(gp, Gwaiting, Grunnable);\n\t\t\t\treturn gp;\n\t\t\t}\n\t\t\tinjectglist(gp);\n\t\t}\n\t}\n\nIt's worrying that the injectglist(gp) is not protected with the same kind of incidlelocked(-1)/incidlelocked(1). Maybe injectglist itself should do that. \n\nGiven that sched.lock has been released since pidleget and that injectglist releases sched.lock before restarting any m's, it seems plausible that pidleget could return nil, some other m calls stoplockedm, which does pidleput(p) inside handoffp, then injectglist adds the gp's to the global queue and unlocks sched.lock, then the other m calls incidlelocked and finds the \"deadlock\", because the gp's are on the run queue but startm, which will call mget and do nmidle--, has not been called yet.\n\nThis is not what happened to Dan, since his deadlock was reported during findrunnable. But maybe it can happen with findrunnable too. (It's trickier there, because the checking of lastpoll means that if you try to make the \"other m\" run findrunnable, it ends up being the new network poller instead of getting all the way to stopm.)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-14T04:55:15Z",
+	"updated_at": "2015-01-14T04:55:15Z"
+}

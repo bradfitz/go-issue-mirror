@@ -1,0 +1,12 @@
+{
+	"id": 164344270,
+	"body": "\u003e I also notice that the minimum section size I can create is 512 bytes here, but gcc appears to set the section size to the length of the actual written data. In this case, gcc makes .ctors 8 bytes long, but go makes it 512 bytes long. I wonder if that might be confusing the platform linker when it goes to merge the .ctors sections of the .o files at the end.\r\n\r\nYes, that could break things for you.\r\n\r\nGo PE linker used to generate executable files only. Windows executables must have sections padded to 512 bytes (maybe some other sizes work too), otherwise Windows program loader fails to execute them.\r\n\r\nRecently minux implemented code to allow for external linker with cgo. That code produces object file (for gcc linker to use) instead of executable. The object file sections for the object file are padded same way, but there are only 2 sections present: .text and .data. gcc does not complain about that.\r\n\r\nWhile trying to find solution for issue #10776 (see cl 13571), I have discovered that dwarf sections must not be padded, otherwise gcc complains. You can change your code not to pad .ctors section and see what happens. You can pinch some of my code from cl 13571. I think ALL sections in object file shouldn't be padded, but it is not easy to change - by the time PE linker knows if it is building executable or object file, alignment has already been set. We need to rearrange code for that, but I didn't have time to fiddle with that.\r\n\r\nI also suggest you check if your C object file has any relocations. You might have to create them too.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-14T05:16:13Z",
+	"updated_at": "2015-12-14T05:16:13Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 51756347,
+	"number": 9274,
+	"state": "open",
+	"title": "cmd/compile: inlining heuristic does not know code is dead",
+	"body": "The inlining decisions by the compiler are made before the compiler knows about dead code in the inlined routine.  For instance, both of these functions inline:\r\n\r\nfunc readUnaligned64(p unsafe.Pointer) uint64 {\r\n\treturn *(*uint64)(p)\r\n}\r\n\r\nfunc readUnaligned64(p unsafe.Pointer) uint64 {\r\n\tq := (*[8]byte)(p)\r\n\treturn uint64(q[0]) + uint64(q[1])\u003c\u003c8 + uint64(q[2])\u003c\u003c16 + uint64(q[3])\u003c\u003c24 + uint64(q[4])\u003c\u003c32 + uint64(q[5])\u003c\u003c40 + uint64(q[6])\u003c\u003c48 + uint64(q[7])\u003c\u003c56\r\n}\r\n\r\nbut combine them with a compile-time-constant if, and it doesn't inline:\r\n\r\nfunc readUnaligned64(p unsafe.Pointer) uint64 {\r\n\tif GOOS==\"amd64\" {\r\n\t\treturn *(*uint64)(p)\r\n\t}\r\n\treturn uint64(q[0]) + uint64(q[1])\u003c\u003c8 + uint64(q[2])\u003c\u003c16 + uint64(q[3])\u003c\u003c24 + uint64(q[4])\u003c\u003c32 + uint64(q[5])\u003c\u003c40 + uint64(q[6])\u003c\u003c48 + uint64(q[7])\u003c\u003c56\r\n}\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"created_at": "2014-12-12T00:20:35Z",
+	"updated_at": "2015-06-08T06:23:06Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

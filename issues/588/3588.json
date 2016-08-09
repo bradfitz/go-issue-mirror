@@ -1,0 +1,22 @@
+{
+	"id": 51280849,
+	"number": 3588,
+	"state": "closed",
+	"title": "syscall: no way to get at returned float32 value",
+	"body": "by **smith.malcolm.james**:\n\n\u003cpre\u003eCalling syscall with float32 arguments passes the values correctly to the dll. But the\nfloat32 return value is incorrect\n\nWhat steps will reproduce the problem?\n\nvisual C++ 6.0 program:\n#include \u0026quot;stdafx.h\u0026quot;\n#include \u0026lt;stdio.h\u0026gt;\n extern \u0026quot;C\u0026quot;  __declspec(dllexport) float addfloat( float a, float b) ;\nBOOL APIENTRY DllMain( HANDLE hModule, \n                       DWORD  ul_reason_for_call, \n                       LPVOID lpReserved\n\t\t\t\t\t )\n{\n    return TRUE;\n}\n  float addfloat ( float a, float b)\n{\n\tprintf(\u0026quot;In dll: %f %f\\n\u0026quot;, a,b);\n\treturn a+b;\n}\n\nGo program:\npackage main\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;math\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\nvar mylib = syscall.NewLazyDLL(\u0026quot;mylib.dll\u0026quot;)\nvar addfloat = mylib.NewProc(\u0026quot;addfloat\u0026quot;)\nfunc main() {\n\n\tr1, r2, _ := addfloat.Call(uintptr(math.Float32bits(1.1)) , uintptr(math.Float32bits(2.2)))\n\n\tfmt.Println(\u0026quot;r1 and r2 as uintptr\u0026quot;, r1, r2)\n\tfmt.Println(\u0026quot;3.3 as uintptr\u0026quot;, uintptr(math.Float32bits(3.3)))\n\n\tr1, r2, _ = addfloat.Call(uintptr(math.Float32bits(3.3)) , uintptr(math.Float32bits(4.4)))\n\n\tfmt.Println(\u0026quot;r1 and r2 as uintptr\u0026quot;, r1, r2)\n\tfmt.Println(\u0026quot;7.7 as uintptr\u0026quot;, uintptr(math.Float32bits(7.7)))\n}\n\n\nWhat is the expected output?\nExpect r1 to hold IEEE 754 binary representation of 3.3 after 1st call and 7.7 after 2nd\ncall\n\nWhat do you see instead?\nr1 holds 26 after both 1st and 2nd calls\n\nSample output:\nIn dll: 1.100000 2.200000\nr1 and r2 as uintptr 26 821312832\n3.3 as uintptr 1079194419\nIn dll: 3.300000 4.400000\nr1 and r2 as uintptr 26 821312832\n7.7 as uintptr 1089889894\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nWindows XP\n\nWhich version are you using?  (run 'go version')\ngo1\n\nPlease provide any additional information below.\nInteger values are returned with no problem. The code in\nsrc\\pkg\\runtime\\sys_windows_386.s looks as if it is expecting return values to be in the\nAX and DX registers, but float values are returned in the ST0 register.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:18:54Z",
+	"created_at": "2012-05-03T21:00:38Z",
+	"updated_at": "2016-06-24T22:18:36Z"
+}

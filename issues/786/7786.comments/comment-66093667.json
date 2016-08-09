@@ -1,0 +1,12 @@
+{
+	"id": 66093667,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eI think we should try to make this work, although I am not sure how. Here is the\nsimplified case:\n\npackage usb\n\n// struct libusb_context;\n// typedef struct libusb_context libusb_context;\n// void libusb_exit(struct libusb_context *ctx) {};\nimport \"C\"\n\ntype Context struct {\n        ctx  *C.libusb_context\n        done chan struct{}\n}\n\nfunc (c *Context) Close() error {\n        close(c.done)\n        if c.ctx != nil {\n                C.libusb_exit(c.ctx)\n        }\n        c.ctx = nil\n        return nil\n}\n\nThe problem is that c.txt is a *C.libusb_context but libusb_exit is defined to take a\n*C.struct_libusb_context. One is using the typedef name and one is using the struct name\ndirectly. Cgo treats those as different. We've had heuristics in the past to try to\nmerge them but maybe they were removed or maybe they never worked, and the [0]byte bug\nwas keeping things working incorrectly.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-05-09T19:17:36Z",
+	"updated_at": "2014-12-08T10:43:12Z"
+}

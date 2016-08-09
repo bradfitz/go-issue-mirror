@@ -1,0 +1,28 @@
+{
+	"id": 51276932,
+	"number": 780,
+	"state": "closed",
+	"title": "goroutines at goexit are not garbage collected",
+	"body": "by **axel.schreiner**:\n\n\u003cpre\u003eThis is similar to \u003ca href=\"https://golang.org/issue/296\"\u003eissue #296\u003c/a\u003e but I don't believe that the uncollected goroutines are\nblocked in \nsending on a channel.\n\nWhat steps will reproduce the problem?\n1. compile the enclosed file (I use amd64/darwin on a 4g macbook pro)\n2. run without arguments\n3.\n\nThe output is a series of 5 numbers per line, but (on my machine) it eventually crashes:\n\n...\n2 4 16 256 65536\n0 1 2 3 4\npanic: runtime error: invalid memory address or nil pointer dereference\n\npanic PC=0x9d76f028\nruntime.panic+0x7c /Users/ats/Documents/Vorlesungen/go-2009-\n3/code/etc/src/pkg/runtime/proc.c:1012\n\truntime.panic(0x0, 0xe91c)\n...\n\nand the output then contains very many\n\ngoroutine 590823 [1]:\ngoexit /Users/ats/Documents/Vorlesungen/go-2009-3/code/etc/src/pkg/runtime/proc.c:145\n\tgoexit()\n\nWhat is the expected output? What do you see instead?\n\nThe file is a solution to a problem posed and solved at\n\u0026lt;\u003ca href=\"http://www.cs.rit.edu/~ats/fp-2009-\"\u003ehttp://www.cs.rit.edu/~ats/fp-2009-\u003c/a\u003e\n1/2/problem.xml\u0026gt;. The intended solution is the one in Haskell and I tried to model\nthat in Go. \n(Yes -- there are better ways to solve the problem in Go, similar to a solution in\nJavaScript or \nScheme for example.)\n\nIn the spirit of Haskell it could be solved using exp/iterable -- but that also crashed.\nTherefore, I \nstarted to reimplement iterable with a return channel to abort goroutines for infinite\nsequences. \nIt still does not work, see above.\n\nYou can check each individual sequence using a single letter as command line argument,\ne.g.,\n\n$ for i in a b c d e f g h i j k l m n o\n\u0026gt; do 6.out $i\n\u0026gt; done\n1 1 1 1 1\n2 2 2 2 2\n2 2 2 2 2\n1 2 3 4 5\n1 2 3 4 5\n2 4 6 8 10\n1 3 5 7 9\n1 4 9 16 25\n2 4 8 16 32\n2 4 16 256 65536\n0 1 2 3 4\n1 3 5 7 9\n1 2 3 5 8\n1 3 6 10 15\n1 2 6 24 120\n\nbut if you run too many in a single process, the process will crash. \n\nWhat is your $GOOS?darwin  $GOARCH?amd64\n\n\nWhich revision are you using?  (hg identify)\n6cc6c0d85fc3+ release.2010-04-27/release\n\nPlease provide any additional information below.\nsource file enclosed\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/780/0/infinite.go\"\u003einfinite.go\u003c/a\u003e (8214 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:05:50Z",
+	"created_at": "2010-05-13T21:16:57Z",
+	"updated_at": "2016-06-24T19:15:58Z"
+}

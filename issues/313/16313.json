@@ -1,0 +1,32 @@
+{
+	"id": 164686495,
+	"number": 16313,
+	"state": "open",
+	"title": "circular dependency in golang.org/x/net and golang.org/x/crypto repos",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\nGo 1.6.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux amd64\r\n\r\n3. What did you do?\r\n\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n```\r\n$ mkdir test\r\n$ cd test\r\n$ export GOPATH=$PWD\r\n$ git clone https://go.googlesource.com/net src/golang.org/x/net\r\n$ go install golang.org/x/net/...\r\nsrc/golang.org/x/net/html/charset/charset.go:20:2: cannot find package \"golang.org/x/text/encoding\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/text/encoding (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/text/encoding (from $GOPATH)\r\nsrc/golang.org/x/net/html/charset/charset.go:21:2: cannot find package \"golang.org/x/text/encoding/charmap\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/text/encoding/charmap (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/text/encoding/charmap (from $GOPATH)\r\nsrc/golang.org/x/net/html/charset/charset.go:22:2: cannot find package \"golang.org/x/text/encoding/htmlindex\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/text/encoding/htmlindex (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/text/encoding/htmlindex (from $GOPATH)\r\nsrc/golang.org/x/net/html/charset/charset.go:23:2: cannot find package \"golang.org/x/text/transform\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/text/transform (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/text/transform (from $GOPATH)\r\nsrc/golang.org/x/net/http2/h2i/h2i.go:38:2: cannot find package \"golang.org/x/crypto/ssh/terminal\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/crypto/ssh/terminal (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/crypto/ssh/terminal (from $GOPATH)\r\n```\r\n\r\nthe missing golang.org/x/text/ packages are easy to solve. When trying to solve the crypto ones, though, you get this:\r\n\r\n```\r\n$ rm -rf src\r\n$ git clone https://go.googlesource.com/crypto src/golang.org/x/crypto\r\n$ go install golang.org/x/crypto/...\r\nsrc/golang.org/x/crypto/acme/internal/acme/acme.go:25:2: cannot find package \"golang.org/x/net/context\" in any of:\r\n        /usr/lib/go-1.6/src/golang.org/x/net/context (from $GOROOT)\r\n        /home/marcelo/devel/go/test/src/golang.org/x/net/context (from $GOPATH)\r\n```\r\n\r\nWhy am I trying to do it like this? Because what I'd like to do is provide a method where single repositories are fetched, built and installed independently of other repositories, much like a regular Linux distribution would do.\r\n\r\nThis is a bootstrapping issue that doesn't show up with the regular workflow because go get will fetch the dependencies, and then build the binaries:\r\n\r\n```\r\n$ rm -rf src\r\n$ go get golang.org/x/net/...\r\n```\r\n\r\nThis fetches the three repos (net, crypto, text) and builds the packages.\r\n\r\nThis particular issue is going to be solved when 1.7 is released and golang.org/x/crypto/acme/internal/acme removes the dependency on golang.org/x/net/context in favor of net/context.\r\n\r\nThe way I work around this issue in my use case is that I build a single \"project\" out of the three repositories, fetch the three repositories and build everything in one go (no pun intended). The other workaround is to build packages in a specific order (x/net/context first, then golang.org/x/crypto/... then golang.org/x/text/... and then the rest of golang.org/x/net/...), but this doesn't map well to a Linux distribution package building process (you end up with \"two\" packages for the golang.org/x/net repo, one for golang.org/x/net/context and another one for the rest).\r\n\r\n4. What did you expect to see?\r\n\r\nThat golang.org/x/net can be built before or after golang.org/x/crypto, and not have a circular dependency between the repositories.\r\n\r\n5. What did you see instead?\r\n\r\nThere's a circular dependency between the repositories golang.org/x/net and golang.org/x/crypto. I understand that there's no circular dependency between packages.\r\n\r\nJust to be clear, I understand there's no issue with the regular workflow. This is an issue only for workflows that cannot depend on \"go get\" or having a something akin to a monorepo.\r\n\r\nMy specific use case arises when trying to provide Go packages in the context of a Yocto-derived Linux distribution (https://www.yoctoproject.org/).",
+	"user": {
+		"login": "mem",
+		"id": 189701,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "WaitingForInfo"
+		}
+	],
+	"assignee": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-07-09T21:27:54Z",
+	"updated_at": "2016-07-18T04:24:40Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

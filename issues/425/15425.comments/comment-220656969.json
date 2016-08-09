@@ -1,0 +1,12 @@
+{
+	"id": 220656969,
+	"body": "What is that repro (https://gist.github.com/nemothekid/35a3edcf332a20225c725696c0e40e70) trying to show?\r\n\r\nThere's a bunch of weird stuff in it:\r\n\r\n* it has its own LimitedReader instead of using io.LimitReader. Is that a relevant detail?\r\n* the client generates a 1GB of memory to only send 2KB of it. Is that a relevant detail?\r\n\r\nHere's a modified version of your repro, if it still shows what you were trying to show: ?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"net/http/httptest\"\r\n\r\n\t\"golang.org/x/net/http2\"\r\n)\r\n\r\ntype neverEnding byte\r\n\r\nfunc (b neverEnding) Read(p []byte) (int, error) {\r\n\tfor i := range p {\r\n\t\tp[i] = byte(b)\r\n\t}\r\n\treturn len(p), nil\r\n}\r\n\r\nfunc main() {\r\n\r\n\tts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tr.Body.Close()\r\n\t\tlog.Printf(\"Http: %s\", r.Proto)\r\n\t\tio.Copy(w, io.LimitReader(neverEnding('A'), 1024*1024*1024))\r\n\t}))\r\n\thttp2.ConfigureServer(ts.Config, \u0026http2.Server{})\r\n\tts.TLS = ts.Config.TLSConfig\r\n\tts.StartTLS()\r\n\tdefer ts.Close()\r\n\r\n\ttr := \u0026http.Transport{TLSClientConfig: \u0026tls.Config{\r\n\t\tInsecureSkipVerify: true,\r\n\t}}\r\n\thttp2.ConfigureTransport(tr)\r\n\tclient := \u0026http.Client{\r\n\t\tTransport: tr,\r\n\t}\r\n\r\n\treq, err := http.NewRequest(\"POST\", ts.URL, struct{ io.Reader }{io.LimitReader(neverEnding('A'), 2048)})\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tfor i := 0; i \u003c 2; i++ { // racy?\r\n\t\tlog.Printf(\"client.Do next\\n\")\r\n\t\tres, err := client.Do(req)\r\n\t\tlog.Printf(\"client.Do done\\n\")\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatalf(\"i=%d, Do = %v\", i, err)\r\n\t\t}\r\n\t\tn, err := io.Copy(ioutil.Discard, res.Body)\r\n\t\tlog.Printf(\"done Reading the server response's body n=(%v) err=%v\\nres.headers: %v\\n\", n, err, res.Header)\r\n\t\t_ = res.Body.Close()\r\n\t}\r\n}\r\n```\r\n\r\nIs this what you were seeing:\r\n\r\n```\r\n2016/05/20 16:41:01 client.Do next\r\n2016/05/20 16:41:01 Http: HTTP/2.0\r\n2016/05/20 16:41:01 client.Do done\r\n2016/05/20 16:41:01 i=0, Do = Post https://127.0.0.1:33500: stream error: stream ID 1; STREAM_CLOSED\r\nexit status 1\r\n```\r\n\r\n?\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-20T16:42:17Z",
+	"updated_at": "2016-05-20T16:42:17Z"
+}

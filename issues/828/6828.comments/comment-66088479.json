@@ -1,0 +1,12 @@
+{
+	"id": 66088479,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eConfirmed.  This program exits with success on GNU/Linux but on Solaris fails with\n\"connect: Invalid argument.\"\n\n#include \u0026lt;errno.h\u0026gt;\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\n#include \u0026lt;string.h\u0026gt;\n#include \u0026lt;pthread.h\u0026gt;\n#include \u0026lt;unistd.h\u0026gt;\n#include \u0026lt;fcntl.h\u0026gt;\n#include \u0026lt;sys/types.h\u0026gt;\n#include \u0026lt;sys/socket.h\u0026gt;\n#include \u0026lt;netinet/in.h\u0026gt;\n\nstatic void\ndie (const char *s)\n{\n  perror (s);\n  exit (EXIT_FAILURE);\n}\n\nstatic void *\nthread (void *arg)\n{\n  int o1, o3;\n  struct sockaddr_in asin;\n  socklen_t slen;\n\n  o1 = *(int *) arg;\n\n  slen = sizeof asin;\n  o3 = accept (o1, (struct sockaddr *) \u0026asin, \u0026slen);\n  if (o3 \u0026lt; 0)\n    die (\"accept\");\n\n  if (close (o3) \u0026lt; 0)\n    die (\"close\");\n\n  return NULL;\n}\n\nint\nmain ()\n{\n  struct sockaddr_in sin;\n  int o1, o2, flags;\n  socklen_t slen;\n  pthread_t tid;\n  int i;\n\n  o1 = socket (AF_INET, SOCK_STREAM, 0);\n  if (o1 \u0026lt; 0)\n    die (\"socket 1\");\n\n  memset (\u0026sin, 0, sizeof sin);\n  sin.sin_family = AF_INET;\n  sin.sin_addr.s_addr = htonl (INADDR_LOOPBACK);\n  if (bind (o1, (struct sockaddr *) \u0026sin, sizeof sin) \u0026lt; 0)\n    die (\"bind\");\n\n  if (listen (o1, 5) \u0026lt; 0)\n    die (\"listen\");\n\n  slen = sizeof sin;\n  if (getsockname (o1, (struct sockaddr *) \u0026sin, \u0026slen) \u0026lt; 0)\n    die (\"getsockname\");\n\n  o2 = socket (AF_INET, SOCK_STREAM, 0);\n  if (o2 \u0026lt; 0)\n    die (\"socket 2\");\n\n  flags = fcntl (o2, F_GETFL);\n  if (flags \u0026lt; 0)\n    die (\"fcntl 1\");\n  if (fcntl (o2, F_SETFL, flags | O_NONBLOCK) \u0026lt; 0)\n    die (\"fcntl 2\");\n\n  if (connect (o2, (struct sockaddr *) \u0026sin, sizeof sin) \u0026gt;= 0)\n    die (\"connect succeeded\");\n  if (errno != EINPROGRESS)\n    die (\"bad connect errno\");\n\n  i = pthread_create (\u0026tid, NULL, thread, (void *) \u0026o1);\n  if (i != 0)\n    {\n      errno = i;\n      die (\"pthread_create\");\n    }\n\n  sleep (1);\n\n  if (connect (o2, (struct sockaddr *) \u0026sin, sizeof sin) \u0026lt; 0)\n    die (\"connect\");\n\n  return 0;\n}\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-28T05:35:22Z",
+	"updated_at": "2014-12-22T06:30:14Z"
+}

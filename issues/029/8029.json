@@ -1,0 +1,27 @@
+{
+	"id": 51287576,
+	"number": 8029,
+	"state": "closed",
+	"title": "crypto/x509: An invalid certificate chain may be returned by \"Certificate.Verify(opts VerifyOptions)\"",
+	"body": "by **us@ulrich-simon.de**:\n\n\u003cpre\u003eIf opts contains at least 2 intermediate certificates and for the first one the\nvalidation process fails, the invalid chain is still added to the returned list.\n\nThe error variable will be overwritten in the verification of the 2nd intermediate\ncertificate.\n\nThus the function returns err == nil with 2 chains, even though only one is valid.\n\nThe missing error handling can be found in:\n\ncrypto/x509/verify.go:285-304\n\nnextIntermediate:\n        for _, intermediateNum := range possibleIntermediates {\n                intermediate := opts.Intermediates.certs[intermediateNum]\n                for _, cert := range currentChain {\n                        if cert == intermediate {\n                                continue nextIntermediate\n                        }\n                }\n                err = intermediate.isValid(intermediateCertificate, currentChain, opts)\n                if err != nil {\n                        continue\n                }\n                var childChains [][]*Certificate\n                childChains, ok := cache[intermediateNum]\n                if !ok {\n                        childChains, err = intermediate.buildChains(cache, appendToFreshChain(currentChain, intermediate), opts)\n                        cache[intermediateNum] = childChains\n                }\n                chains = append(chains, childChains...)\n        }\n\nIn line 300, the returned err in \u0026quot;childChains, err =\nintermediate.buildChains(..)\u0026quot; is not handled and might be overwritten in the next\nloop in line 293.\n\nProposed Solution: Insert @line 301: \u0026quot;if err != nil { continue }\u0026quot;\n\nI hope my observation is right and it helps :-) .\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:44:31Z",
+	"created_at": "2014-05-19T17:36:09Z",
+	"updated_at": "2016-06-25T01:34:38Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

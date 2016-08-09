@@ -1,0 +1,27 @@
+{
+	"id": 51283526,
+	"number": 5364,
+	"state": "closed",
+	"title": "cmd/compile: eliminate some bounds checks",
+	"body": "\u003cpre\u003eI was just surprised to see a container/heap Swap call show up in a profile and looked\nto see what code was generated.\n\nIt seems like the redundant bounds checks could be eliminated.\n\nAnd it seems like some redundant code to call runtime.panicindex is generated too.\n\n$ cat x.go\npackage main\nfunc swap(s []int, i, j int) { s[i], s[j] = s[j], s[i] }\nfunc main() { swap([]int{0, 1, 2, 3}, 1, 2) }\n\n$ go tool 6g -S x.go \n--- prog list \u0026quot;swap\u0026quot; ---\n0000 (x.go:2) TEXT    swap+0(SB),$0-40\n0001 (x.go:2) MOVQ    i+24(FP),DI\n0002 (x.go:2) MOVQ    j+32(FP),SI\n0003 (x.go:2) MOVQ    s+0(FP),CX\n0004 (x.go:2) MOVQ    s+8(FP),AX\n0005 (x.go:2) LOCALS  ,$0\n0006 (x.go:2) TYPE    s+0(FP){[]int},$24\n0007 (x.go:2) TYPE    i+24(FP){int},$8\n0008 (x.go:2) TYPE    j+32(FP){int},$8\n0009 (x.go:2) MOVQ    CX,BX\n0010 (x.go:2) MOVQ    DI,BP\n0011 (x.go:2) CMPQ    DI,AX\n0012 (x.go:2) JCS     $1,15\n0013 (x.go:2) CALL    ,runtime.panicindex+0(SB)\n0014 (x.go:2) UNDEF   ,\n0015 (x.go:2) LEAQ    (BX)(BP*8),BX\n0016 (x.go:2) MOVQ    (BX),DX\n0017 (x.go:2) MOVQ    CX,BX\n0018 (x.go:2) MOVQ    DI,BP\n0019 (x.go:2) CMPQ    DI,AX\n0020 (x.go:2) JCS     $1,23\n0021 (x.go:2) CALL    ,runtime.panicindex+0(SB)\n0022 (x.go:2) UNDEF   ,\n0023 (x.go:2) LEAQ    (BX)(BP*8),BX\n0024 (x.go:2) MOVQ    CX,BP\n0025 (x.go:2) MOVQ    SI,R8\n0026 (x.go:2) CMPQ    SI,AX\n0027 (x.go:2) JCS     $1,30\n0028 (x.go:2) CALL    ,runtime.panicindex+0(SB)\n0029 (x.go:2) UNDEF   ,\n0030 (x.go:2) LEAQ    (BP)(R8*8),BP\n0031 (x.go:2) MOVQ    (BP),R8\n0032 (x.go:2) MOVQ    R8,(BX)\n0033 (x.go:2) MOVQ    CX,BX\n0034 (x.go:2) MOVQ    SI,BP\n0035 (x.go:2) CMPQ    SI,AX\n0036 (x.go:2) JCS     $1,39\n0037 (x.go:2) CALL    ,runtime.panicindex+0(SB)\n0038 (x.go:2) UNDEF   ,\n0039 (x.go:2) LEAQ    (BX)(BP*8),BX\n0040 (x.go:2) MOVQ    DX,(BX)\n0041 (x.go:2) RET     ,\n\n$ go build -o /tmp/x --gcflags=-l x.go\n$ objdump -D /tmp/x | less\n\n0000000000400c00 \u0026lt;main.swap\u0026gt;:\n  400c00:       64 48 8b 0c 25 f0 ff    mov    %fs:0xfffffffffffffff0,%rcx\n  400c07:       ff ff \n  400c09:       48 3b 21                cmp    (%rcx),%rsp\n  400c0c:       77 05                   ja     400c13 \u0026lt;main.swap+0x13\u0026gt;\n  400c0e:       e8 dd 7a 01 00          callq  4186f0 \u0026lt;runtime.morestack40\u0026gt;\n  400c13:       48 8b 7c 24 20          mov    0x20(%rsp),%rdi\n  400c18:       48 8b 74 24 28          mov    0x28(%rsp),%rsi\n  400c1d:       48 8b 4c 24 08          mov    0x8(%rsp),%rcx\n  400c22:       48 8b 44 24 10          mov    0x10(%rsp),%rax\n  400c27:       48 89 cb                mov    %rcx,%rbx\n  400c2a:       48 89 fd                mov    %rdi,%rbp\n  400c2d:       48 39 c7                cmp    %rax,%rdi\n  400c30:       73 55                   jae    400c87 \u0026lt;main.swap+0x87\u0026gt;\n  400c32:       48 8d 1c eb             lea    (%rbx,%rbp,8),%rbx\n  400c36:       48 8b 13                mov    (%rbx),%rdx\n  400c39:       48 89 cb                mov    %rcx,%rbx\n  400c3c:       48 89 fd                mov    %rdi,%rbp\n  400c3f:       48 39 c7                cmp    %rax,%rdi\n  400c42:       73 3c                   jae    400c80 \u0026lt;main.swap+0x80\u0026gt;\n  400c44:       48 8d 1c eb             lea    (%rbx,%rbp,8),%rbx\n  400c48:       48 89 cd                mov    %rcx,%rbp\n  400c4b:       49 89 f0                mov    %rsi,%r8\n  400c4e:       48 39 c6                cmp    %rax,%rsi\n  400c51:       73 26                   jae    400c79 \u0026lt;main.swap+0x79\u0026gt;\n  400c53:       4a 8d 6c c5 00          lea    0x0(%rbp,%r8,8),%rbp\n  400c58:       4c 8b 45 00             mov    0x0(%rbp),%r8\n  400c5c:       4c 89 03                mov    %r8,(%rbx)\n  400c5f:       48 89 cb                mov    %rcx,%rbx\n  400c62:       48 89 f5                mov    %rsi,%rbp\n  400c65:       48 39 c6                cmp    %rax,%rsi\n  400c68:       73 08                   jae    400c72 \u0026lt;main.swap+0x72\u0026gt;\n  400c6a:       48 8d 1c eb             lea    (%rbx,%rbp,8),%rbx\n  400c6e:       48 89 13                mov    %rdx,(%rbx)\n  400c71:       c3                      retq   \n  400c72:       e8 a9 bd 00 00          callq  40ca20 \u0026lt;runtime.panicindex\u0026gt;\n  400c77:       0f 0b                   ud2    \n  400c79:       e8 a2 bd 00 00          callq  40ca20 \u0026lt;runtime.panicindex\u0026gt;\n  400c7e:       0f 0b                   ud2    \n  400c80:       e8 9b bd 00 00          callq  40ca20 \u0026lt;runtime.panicindex\u0026gt;\n  400c85:       0f 0b                   ud2    \n  400c87:       e8 94 bd 00 00          callq  40ca20 \u0026lt;runtime.panicindex\u0026gt;\n  400c8c:       0f 0b                   ud2    \n        ...\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 19,
+	"closed_at": "2016-04-01T11:20:20Z",
+	"created_at": "2013-04-27T23:27:32Z",
+	"updated_at": "2016-04-01T11:20:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

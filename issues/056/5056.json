@@ -1,0 +1,27 @@
+{
+	"id": 51283053,
+	"number": 5056,
+	"state": "closed",
+	"title": "cmd/gc: inlining of interface methods does not respect escape analysis",
+	"body": "by **awalterschulze**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1.\n\npackage mindfck\n\nimport (\n\t\u0026quot;testing\u0026quot;\n\t\u0026quot;math\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;reflect\u0026quot;\n)\n\ntype ToUint32 interface {\n\tMarshalToUint32() (*uint32, error)\n}\n\ntype Uint16 uint16\n\nfunc (u Uint16) MarshalToUint32() (*uint32, error) {\n\tu32 := uint32(u)\n\treturn \u0026amp;u32, nil\n}\n\nfunc mindfck(a ToUint32, b uint32) {\n\tconverted, err := a.MarshalToUint32()\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Printf(\u0026quot;a converted = %v\\n\u0026quot;, *converted)\n\tready := reflect.Indirect(reflect.ValueOf(a))\n\tfmt.Printf(\u0026quot;ready = %T(%v)\\n\u0026quot;, ready.Interface(), ready.Interface())\n\tnewUint16 := reflect.New(ready.Type())\n\t_ = newUint16.Interface().(ToUint32)\n\tfmt.Printf(\u0026quot;a converted %v\\n\u0026quot;, *converted)\n}\n\nfunc TestMind(t *testing.T) {\n\tmindfck(Uint16(math.MaxUint16), uint32(math.MaxUint16))\n}\n\n2.\n3.\n\nWhat is the expected output?\n\na converted = 65535\nready = mindfck.Uint16(65535)\na converted 65535\n\n\nWhat do you see instead?\n\na converted = 65535\nready = mindfck.Uint16(65535)\na converted 32741\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n\nWhich operating system are you using?\n\n\nWhich version are you using?  (run 'go version')\ngo version devel +5957d9d08900 Fri Mar 15 09:03:45 2013 +0100 linux/amd64\n\nPlease provide any additional information below.\nThe second a converted value is not always the same.\nMaybe I am misunderstanding something, but I think this should work.\nAlso if you comment this line\n//\t_ = newUint16.Interface().(ToUint32)\nThen the second a converted value becomes 0.\nSo I suspect the garbage collector or escape analysis is in play.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:27:01Z",
+	"created_at": "2013-03-15T12:03:49Z",
+	"updated_at": "2016-06-24T22:35:41Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

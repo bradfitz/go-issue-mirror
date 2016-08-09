@@ -1,0 +1,12 @@
+{
+	"id": 227647436,
+	"body": "@josharian, @randall77, I remember reading through https://github.com/golang/go/issues/13215 some time ago because of the concern related to backwards compatibility and trying to figure out the extent it can be changed now.\r\n\r\nMy assumption is that the fix of existing `io.Reader` implementation without the API change is the good trade-off between breaking things and fixing things:\r\n\r\n* Leaving Read as it is now is the only fully backward compatible approach but the longer it like this the more code rely on inconsistent results. The same reasoning could be applied to some extent to the case above but:\r\n* On the other side code which would depend on consistent results now written in more complex roll-your-own way. In contrast with the case above.\r\n* And current implementation is somewhat deceptive in my experience. I was trying to find a bug in my code before I realized there are different streams when sending data over the network (small buffer) vs `ioutil.ReadAll`. And it looks like you have some wired bug in your code because data at the start of the stream (from a first read) matches! o_O\r\n\r\nOther more radical changes I was thinking about are:\r\n* Pulling `io.Reader` implementation into a separate struct (say `rand.Reader`) would eliminate not so obvious interference between Read and other methods and leave `rand.Rand` simple convenience wrapper around `rand.Source` without any additional state. But it is a bigger breaking change. And on the other hand is not that surprising that calling other methods on instance would affect Read: that happens to File for example when one calls Seek.\r\n* I'm curious why rand source is not just `io.Reader` itself? I suspect that might be related to the fact it can't be just `io.Reader`, but more like `ReadSeeder` so other `io.Reader` implementations would not satisfy it anyway, therefore, it is not that beneficial.",
+	"user": {
+		"login": "pin",
+		"id": 150904,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-22T05:29:48Z",
+	"updated_at": "2016-06-22T05:29:48Z"
+}

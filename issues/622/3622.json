@@ -1,0 +1,27 @@
+{
+	"id": 51280899,
+	"number": 3622,
+	"state": "closed",
+	"title": "os/exec: document that LookPath result may only be valid relative to current directory",
+	"body": "\u003cpre\u003eThis program should work, but fails\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;os/exec\u0026quot;\n\t\u0026quot;path/filepath\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n)\n\nfunc main() {\n\tvar prog string\n\tif runtime.GOOS != \u0026quot;windows\u0026quot; {\n\t\tprog = \u0026quot;date\u0026quot;\n\t\t// add . at the front of our PATH,\n\t\t// windows starts search in the current directory anyway\n\t\tp := os.Getenv(\u0026quot;PATH\u0026quot;)\n\t\terr := os.Setenv(\u0026quot;PATH\u0026quot;, \u0026quot;.:\u0026quot;+p)\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t} else {\n\t\tprog = \u0026quot;ipconfig\u0026quot;\n\t}\n\t// find our executable\n\tpath, err := exec.LookPath(prog)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tdir, _ := filepath.Split(path)\n\t// chdir to where our executable lives\n\terr = os.Chdir(dir)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\t// find our executable again\n\tpath, err = exec.LookPath(prog)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\t// run our executable with /tmp directory as current\n\tcmd := exec.Command(path)\n\tcmd.Dir = os.TempDir()\n\tout, err := cmd.CombinedOutput()\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\u0026quot;out=%v\\n\u0026quot;, string(out))\n}\n\nI am not sure where things should be changed.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:19:06Z",
+	"created_at": "2012-05-15T04:04:11Z",
+	"updated_at": "2016-06-24T22:19:02Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

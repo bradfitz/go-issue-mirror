@@ -1,0 +1,27 @@
+{
+	"id": 159664930,
+	"number": 16035,
+	"state": "closed",
+	"title": "syscall: (*Proc).Call does not keep arguments live",
+	"body": "The following test program should give the output of the `ImageState` value for Windows, which for most systems is `IMAGE_STATE_COMPLETE`. However, when trying to get the value into a slice it is possible for GC to mess up the slice and not get the updated value from the syscall.\r\n\r\nTest program:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"runtime\"\r\n\t\"syscall\"\r\n\t\"unsafe\"\r\n)\r\n\r\nvar (\r\n\tadvapi32 = syscall.NewLazyDLL(\"advapi32.dll\")\r\n\r\n\tregGetValue = advapi32.NewProc(\"RegGetValueW\")\r\n)\r\n\r\nconst (\r\n\tHKEY_LOCAL_MACHINE = 0x80000002\r\n\r\n\tRRF_RT_REG_SZ = 0x00000002\r\n)\r\n\r\nfunc RegGetValue(hKey uintptr, lpSubKey *uint16, lpValue *uint16, dwFlags uint32, pdwType *uint32) (string, uint32, error) {\r\n\tvar buf [1024]uint16\r\n\tbufSizeBytes := uint32(1024 * 2)\r\n\truntime.GC() // Everything works correctly if this line is removed\r\n\tret, _, callErr := regGetValue.Call(uintptr(hKey), uintptr(unsafe.Pointer(lpSubKey)), uintptr(unsafe.Pointer(lpValue)), uintptr(dwFlags), uintptr(unsafe.Pointer(pdwType)), uintptr(unsafe.Pointer(\u0026buf[0])), uintptr(unsafe.Pointer(\u0026bufSizeBytes)))\r\n\tif ret != 0 {\r\n\t\treturn \"\", bufSizeBytes, callErr\r\n\t}\r\n\treturn syscall.UTF16ToString(buf[:]), bufSizeBytes, nil\r\n}\r\n\r\nfunc main() {\r\n\tkey, _ := syscall.UTF16PtrFromString(\"SOFTWARE\\\\\\\\Microsoft\\\\\\\\Windows\\\\\\\\CurrentVersion\\\\\\\\Setup\\\\\\\\State\")\r\n\tvalue, _ := syscall.UTF16PtrFromString(\"ImageState\")\r\n\tstr, _, _ := RegGetValue(\r\n\t\tHKEY_LOCAL_MACHINE,\r\n\t\tkey,\r\n\t\tvalue,\r\n\t\tRRF_RT_REG_SZ,\r\n\t\tnil,\r\n\t)\r\n\tfmt.Printf(\"str: %s\\n\", str)\r\n}\r\n\r\n```\r\n\r\nExpected response: `str: IMAGE_STATE_COMPLETE`\r\n\r\nActual response: `str: `\r\n\r\nIf the `regGetValue.Call(...)` line is replace with `syscall.Syscall9(regGetValue.Addr(), ...)` then the code works as intended.\r\n\r\nEnvironment:\r\n\r\n```\r\ngo version go1.6.2 windows/amd64\r\n\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=\r\nset GORACE=\r\nset GOROOT=C:\\go162\r\nset GOTOOLDIR=C:\\go162\\pkg\\tool\\windows_amd64\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```",
+	"user": {
+		"login": "ToadKing",
+		"id": 1023440,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 33,
+	"closed_at": "2016-07-06T20:49:25Z",
+	"created_at": "2016-06-10T15:47:41Z",
+	"updated_at": "2016-07-12T08:00:31Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

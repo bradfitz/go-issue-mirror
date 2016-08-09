@@ -1,0 +1,12 @@
+{
+	"id": 104315830,
+	"body": "This issue is not really fixed since decoding an address before parsing it does not always work:\r\n\r\n```go\r\nto := \"=?ISO-8859-15?Q?Keld_J=F8rn_Simonsen?= \u003ckeld@dkuug.dk\u003e\"\r\n\r\n// Parsing the address still fails because of the unhandled charset.\r\naddr, err := mail.ParseAddress(to)\r\nfmt.Println(addr) // \u003cnil\u003e\r\nfmt.Println(err)  // mail: missing word in phrase: charset not supported: \"iso-8859-15\"\r\n\r\n// Decoding the address before parsing it also fails because mail.ParseAddress then\r\n// fails parsing it.\r\nvar dec mime.WordDecoder\r\ndec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {\r\n\treturn input, nil\r\n}\r\n\r\nd, err := dec.DecodeHeader(to)\r\nfmt.Println(err) // \u003cnil\u003e\r\n\r\naddr, err = mail.ParseAddress(d)\r\nfmt.Println(addr) // \u003cnil\u003e\r\nfmt.Println(err)  // mail: no angle-addr\r\n```\r\n\r\nPossible solutions:\r\n - Stop returning unhandled charset errors in mail.ParseAddress and return the undecoded name so the user can decode it with the new mime functions.\r\n - Add a new function to net/mail like ParseAddress but that also needs a CharsetReader as an argument.\r\n - Add a new function to net/mail to register a global CharsetReader.\r\n\r\n/cc @bradfitz ",
+	"user": {
+		"login": "alexcesaro",
+		"id": 832479,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-21T15:17:33Z",
+	"updated_at": "2015-05-21T15:17:33Z"
+}

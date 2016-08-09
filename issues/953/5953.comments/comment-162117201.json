@@ -1,0 +1,12 @@
+{
+	"id": 162117201,
+	"body": "This issue seems to persist for http2 please see CL https://go-review.googlesource.com/17462 that uncovered it\r\nOR\r\n```diff\r\ncommit eec4d694e3ed2fcc91d72f82c9a2c37c7d17f5c2\r\nAuthor: Emmanuel Odeke \u003cemm.odeke@gmail.com\u003e\r\nDate:   Fri Dec 4 17:21:08 2015 -0700\r\n\r\n    net/http: sniffTest for 5953 set in http2 mode\r\n    \r\n    Change-Id: I345b6ea7024a1c85c805b2d2e22f9f79aeca5816\r\n\r\ndiff --git a/src/net/http/sniff_test.go b/src/net/http/sniff_test.go\r\nindex 293a7f5..a372210 100644\r\n--- a/src/net/http/sniff_test.go\r\n+++ b/src/net/http/sniff_test.go\r\n@@ -88,15 +88,18 @@ func testServerContentType(t *testing.T, h2 bool) {\r\n \r\n // Issue 5953: shouldn't sniff if the handler set a Content-Type header,\r\n // even if it's the empty string.\r\n-func TestServerIssue5953(t *testing.T) {\r\n+func TestServerIssue5953_h1(t *testing.T) { testServerIssue5953(t, false) }\r\n+func TestServerIssue5953_h2(t *testing.T) { testServerIssue5953(t, true) }\r\n+\r\n+func testServerIssue5953(t *testing.T, h2 bool) {\r\n \tdefer afterTest(t)\r\n-\tts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\r\n+\tcst := newClientServerTest(t, h2, HandlerFunc(func(w ResponseWriter, r *Request) {\r\n \t\tw.Header()[\"Content-Type\"] = []string{\"\"}\r\n \t\tfmt.Fprintf(w, \"\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003ehi\u003c/body\u003e\u003c/html\u003e\")\r\n \t}))\r\n-\tdefer ts.Close()\r\n+\tdefer cst.close()\r\n \r\n-\tresp, err := Get(ts.URL)\r\n+\tresp, err := cst.c.Get(cst.ts.URL)\r\n \tif err != nil {\r\n \t\tt.Fatal(err)\r\n \t}\r\n```\r\n\r\n```shell\r\n$ go test --cover\r\n--- FAIL: TestServerIssue5953_h2 (0.00s)\r\n\tsniff_test.go:110: Content-Type = [\"\" \"text/html; charset=utf-8\"]; want [\"\"]\r\nFAIL\r\ncoverage: 77.4% of statements\r\nexit status 1\r\nFAIL\tnet/http\t22.409s\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-05T00:26:03Z",
+	"updated_at": "2015-12-05T00:33:39Z"
+}

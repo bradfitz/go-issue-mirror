@@ -1,0 +1,22 @@
+{
+	"id": 51281210,
+	"number": 3824,
+	"state": "closed",
+	"title": "cmd/gc: wrong order of initialization when using method calls.",
+	"body": "\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Clone math package in GOPATH, give it a different name (newmath).\n2. Modify zipf.go to declare a package level variable X, type string, with an\ninitialiser (say \u0026quot;X\u0026quot;).\n3. Modify rng.go to declare another called Y which takes X and adds some string to it\n(say \u0026quot;Y\u0026quot;, to make \u0026quot;XY\u0026quot;).\n3. Modify rng.go to println(Y) at the top of rngSource.Seed.\n4. Run a program that calls rand.Seed(0)\n\nWhat is the expected output?\n\nThe string \u0026quot;XY\u0026quot; printed during initialisation, again when rand.Seed is called\nfrom main.\n\nWhat do you see instead?\n\nAn empty line (during init) followed by \u0026quot;XY\u0026quot; (rand.Seed called in main).\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g\n\nWhich operating system are you using?\n\nUbuntu Linux 12.04 x86\n\nWhich version are you using?  (run 'go version')\n\ngo version weekly.2012-03-27 +d2213960ade2\n\nPlease provide any additional information below.\n\nThis all seems to stem from the initialisation of the globalRand variable in rand.go.\nIt appears that the compiler has missed the transitive dependency of globalRand on Y.\n\nIf you add a function, say \u0026quot;primethepump\u0026quot;, to rng.go referencing Y, and call\nit in\nNewSource just prior to rng.Seed, then Y will be properly initialised.\n\nI've attached the modified math package and calling program which exhibit the issue.\nSorry, I haven't been able to isolate the problem further so far.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3824/0/varinit.tar.gz\"\u003evarinit.tar.gz\u003c/a\u003e (159815 bytes)",
+	"user": {
+		"login": "axw",
+		"id": 843579,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:13Z",
+	"created_at": "2012-07-14T14:11:14Z",
+	"updated_at": "2016-06-24T22:21:33Z"
+}

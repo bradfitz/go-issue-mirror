@@ -1,0 +1,27 @@
+{
+	"id": 51289176,
+	"number": 9163,
+	"state": "closed",
+	"title": "runtime/debug: FreeOSMemory does not return memory on 64-bit Windows with 386 release",
+	"body": "by **mgspross**:\n\n\u003cpre\u003eWhen running go1.3.3 windows/386 on a 64-bit Windows 7 machine, FreeOSMemory does not\nreturn memory back to the operating system.\n\nFreeOSMemory works correctly with go1.3.3 windows/amd64 on the same machine.\n\nWhat does 'go version' print?\ngo version go1.3.3 windows/386\n\nWhat steps reproduce the problem?\nRun the attached go program (memtest.go) on a 64-bit Windows machine, using go1.3.3\nwindows/386:\n\n    set GCDEBUG=gctrace=1 \u0026amp;\u0026amp; go run memtest.go\n\nAfter 5 seconds, the program allocates ~95 MB of memory via a slice. The program then\nwaits for user input and attempts to release memory with FreeOSMemory periodically.\n\nWhat happened?\nMemory is not returned to the operating system. Running the test program with\nGODEBUG=gctrace=1 shows the following, with no change after multiple calls to\nFreeOSMemory over a period of time:\n\n    inuse: 95, idle:0, sys: 96, released: 0, consumed: 95 (MB)\n\nWhat should have happened instead?\nFreeOSMemory should return memory back to the OS.\n\nAdditional information\n\nThe amount of memory actually returned to the OS varies with different go releases as\nwell (I tested the most recent releases). Here are my findings, running memtest.go with\n\u0026quot;go run memtest.go\u0026quot; on various go releases:\n\n    * go1.3.2 windows/386: The memory is never returned to the OS.\n    * go1.3.2 windows/amd64: This works correctly. The memory is released and the memory usage returns to close to what it was when the program started (memory in-use was ~1.5MB after FreeOSMemory was called).\n    * go1.3.3 windows/386: The memory is never returned to the OS.\n    * go1.3.3 windows/amd64: This works correctly (memory in-use was ~1.5MB after FreeOSMemory was called).\n    * go1.4rc1 windows/386: Some memory is returned, bu not all of it: ~13.5MB was still in use after FreeOSMemory was called.\n    * go1.4rc1 windows/amd64: Some memory is returned, but not all of it: ~7.6MB was still in use after FreeOSMemory was called.\n\nThese results were all repeatable which each respective release.\n\nP.S. I'm using the 386 build because my the program I'm writing uses interacts with\nlegacy 32-bit Windows COM libraries, so I can't use the amd64 build in my current\nsituation.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/9163/0/memtest.go\"\u003ememtest.go\u003c/a\u003e (647 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:50:02Z",
+	"created_at": "2014-11-25T16:01:01Z",
+	"updated_at": "2016-06-25T01:44:55Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

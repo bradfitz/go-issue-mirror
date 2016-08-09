@@ -1,0 +1,28 @@
+{
+	"id": 120891855,
+	"number": 13527,
+	"state": "closed",
+	"title": "runtime: Gosched causes scheduler thrashing",
+	"body": "If there are more Ps than runnable Gs and a G calls Gosched, it causes the scheduler to wake up another P, the woken P finds no work to do, and it goes back to sleep. Doing this once isn't so bad, but if Gosched is called in a loop, such as in runtime.bgsweep (though user code can do this, too), this causes significant sleep/wakeup thrashing and consumes non-trivial CPU in futex calls. In Google, we see ~5% of cycles going to futex calls, most of which appear to be involved in this sort of thrashing based on the call graphs.\r\n\r\nHere's a detailed sequence of what happens. Suppose there are two Ps and Ms and one G. G0 is running on M0 on P0. M1 and P1 are idle; stopped in stopm at the end of findrunnable.\r\n1. G0 invokes Gosched, which calls schedule, which calls findrunnable. findrunnable will always find a G (such as G0) and return it to schedule. schedule will then call resetspinning, which will see that sched.nmspinning is 0 and call wakep. wakep cas's sched.nmspinning to 1 and calls startm. In the steady state, startm will find P1 and M1 and wake up M1 with m.spinning set to true.\r\n2. M1 wakes up in stopm and returns to findrunnable, which gotos top. Since there's nothing on any of the run queues and \\_g_.m.spinning is true, it will fall through to \"return P and block\", which will drop the P, decrement sched.nmspinning back to 0 and stopm.\r\n3. Meanwhile, P0 reschedules G0 because that's the only thing on its run queue. It does a little work (e.g., bgsweep sweeps a page) and calls Gosched again, which takes us through the whole process of waking up another P just for it to find it has no work to do.\r\n\r\nIt may be that this is just a bad way for bgsweep to work, but given that user code is just as capable of calling Gosched in a loop, I think we should consider fixing this in the scheduler. Unfortunately, full call graphs aren't working on the Google profile data right now, so I can't check if all of the time in futex is from bgsweep specifically, or just this problem in general.\r\n\r\n@dvyukov @RLH @rsc",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-12-11T11:33:18Z",
+	"created_at": "2015-12-07T23:14:08Z",
+	"updated_at": "2015-12-11T11:33:18Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

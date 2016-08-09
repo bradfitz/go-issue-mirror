@@ -1,0 +1,27 @@
+{
+	"id": 51284372,
+	"number": 5910,
+	"state": "closed",
+	"title": "cmd/gc: unnamed structs with embedded fields are nuked on import",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nlucky(~/src) % cat q/q.go\npackage q\n\ntype Package struct { \n        name string \n}\n\ntype Future struct {\n        result chan struct {\n                *Package\n                error\n        }\n}\n\nfunc (t *Future) Result() (*Package, error) {\n        result := \u0026lt;-t.result\n        t.result \u0026lt;- result\n        return result.Package, result.error\n}\n\nlucky(~/src) % cat q.go \npackage main\n\nimport \u0026quot;q\u0026quot;\n\nfunc main() {\n        f := new(q.Future)\n        f.Result()\n}\nlucky(~/src) % go build q.go\n\nWhat is the expected output? What do you see instead?\n\nWant: compilation\n\nGot: # command-line-arguments\n./q.go:3: cannot use \u0026lt;-q.t·3.result (type struct { *q.Package; error }) as type\nstruct {} in assignment\n./q.go:3: cannot use q.result·4 (type struct {}) as type struct { *q.Package; error }\nin send\n./q.go:3: q.result·4.Package undefined (type struct {} has no field or method Package)\n./q.go:3: q.result·4.error undefined (type struct {} has no field or method q.error)\n./q.go:7: cannot use q.result·4 (type struct {}) as type struct { *q.Package; error }\nin function argument\n./q.go:7: tempname called with nil type\n\nRémy suggested there were two issues\n\n* unnamed structs with embedded fields are nuked on import.\n* structs with embedded builtins in inlined bodies are buggy like in \u003ca href=\"https://golang.org/issue/3552\"\u003eissue #3552\u003c/a\u003e\n(although embedded builtins received endless fixes).\n\nPlease use labels and text to provide additional information.\n\nSee also discussion: \u003ca href=\"https://groups.google.com/d/msg/golang-dev/kK28QLd8jXA/f0deO0VKmW0J\"\u003ehttps://groups.google.com/d/msg/golang-dev/kK28QLd8jXA/f0deO0VKmW0J\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:32:29Z",
+	"created_at": "2013-07-18T06:31:12Z",
+	"updated_at": "2016-06-24T22:52:10Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

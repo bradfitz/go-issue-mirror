@@ -1,0 +1,22 @@
+{
+	"id": 108856313,
+	"number": 12783,
+	"state": "closed",
+	"title": "mime/multipart: Form fields saved to \"disk\" may actually go to RAM",
+	"body": "multipart.ReadForm is supposed to store up to maxMemory bytes in RAM and then the remainder on disk. The idea, presumably, is to prevent RAM exhaustion.\r\n\r\nTemporary files are created using ioutil.TempFile. os.TempDir is used to determine the temporary directory to use. However, os.TempDir() returns $TMPDIR, or, failing that, \"/tmp\".\r\n\r\nThe problem is that on modern Linux systems, /tmp is a tmpfs and is thus hosted in RAM. This defeats the entire objective of saving large multipart parts to files.\r\n\r\n/var/tmp should always be backed by disk. The FHS states the purpose of \"/var/tmp\" as \"temporary files preserved between system reboots.\" multipart should use /var/tmp, not /tmp.\r\n\r\n(Since there is no actual need for temporary multipart files to be preserved across reboots, it would be nice if the FHS provided something in between, thus allowing for periodic deletion on boot or so on, but alas it does not.)\r\n\r\nPossible solutions:\r\n- Introduce an os.LargeTempDir() which returns a temporary directory to be used for large files. Change multipart to pass this value to ioutil.TempFile.",
+	"user": {
+		"login": "hlandau",
+		"id": 2270010,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-09-29T15:30:31Z",
+	"created_at": "2015-09-29T12:11:06Z",
+	"updated_at": "2015-09-30T05:00:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

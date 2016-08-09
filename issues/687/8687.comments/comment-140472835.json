@@ -1,0 +1,12 @@
+{
+	"id": 140472835,
+	"body": "FWIW, an ETW trace (see https://github.com/google/UIforETW/releases for the easiest way to record one) can be used to record, among other things, all context switches. This makes it possible to determine where applications are waiting.\r\n\r\nThe Windows timer resolution is a continuing source of frustration to be sure, but it only slows down code that calls Sleep(n) or WaitForSingleObject(handle, n) (where 'n' is not INFINITE).\r\n\r\nLooking at bench.txt I see that *OneShotTimeout-2 runs slower with a lower timer frequency. That sounds like it is by-design and shouldn't be used to justify all Go programs running with a high timer frequency. Ditto with BenchmarkGoroutineIdle-2.\r\n\r\nBenchmarkAppendGrowByte-2 runs 368% slower which suggests a benchmark bug. Either the code being tested is waiting (which it should not do) or the code that times is using timeGetTime and is stopping and starting the timer frequently and is therefore hitting aliasing errors.\r\n\r\nI strongly suspect that the latter is the problem. timeGetTime's precision is increased when the timer frequency is increased. The benchmarks with the lower timer precision are mostly not *slower* they are just *less accurate*. The correct fix is not to raise the timer frequency (the timers will still be inaccurate) but to use accurate timers such as QueryPerformanceCounter.\r\n\r\nIt is a frustrating problem I'll agree, but raising the timer frequency so that benchmarks can measure the execution time better is not a great solution.\r\n\r\nIf it turns out that the benchmarks such as BenchmarkAppendGrowByte-2 are *actually* slower when the timer frequency is lower then I will be surprised and might actually investigate. Fixing slow benchmarks requires understanding *why* they are slow.",
+	"user": {
+		"login": "randomascii",
+		"id": 10800041,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-15T17:25:20Z",
+	"updated_at": "2015-09-15T17:25:20Z"
+}

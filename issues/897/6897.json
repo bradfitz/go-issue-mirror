@@ -1,0 +1,27 @@
+{
+	"id": 51285891,
+	"number": 6897,
+	"state": "closed",
+	"title": "net/rpc: socket fd leak when server closes connection first",
+	"body": "by **joshpoimboeuf**:\n\n\u003cpre\u003eAfter an RPC connection has been established, if the server closes the connection first,\nthe client.Close() call returns an error and doesn't close the socket file descriptor,\nresulting in an FD leak.\n\nTo reproduce:\n\n~ $ cat server.go\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;net/rpc\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\ntype MyRpc int\n\nfunc (_ *MyRpc) Foo(arg1, arg2 *int) error {\n\treturn nil\n}\n\nfunc main() {\n\tlog.Println(\u0026quot;server starting\u0026quot;)\n\tsocketPath := \u0026quot;/tmp/test.sock\u0026quot;\n\tos.Remove(socketPath)\n\tgo func() {\n\t\tmyRpc := new(MyRpc)\n\t\tif err := rpc.Register(myRpc); err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\taddr := \u0026amp;net.UnixAddr{Net: \u0026quot;unix\u0026quot;, Name: socketPath}\n\t\tlistener, err := net.ListenUnix(\u0026quot;unix\u0026quot;, addr)\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tfor {\n\t\t\tconn, err := listener.AcceptUnix()\n\t\t\tif err != nil {\n\t\t\t\tlog.Fatal(err)\n\t\t\t}\n\t\t\trpc.ServeConn(conn)\n\t\t}\n\t}()\n\n\ttime.Sleep(2 * time.Second)\n\tlog.Println(\u0026quot;server exiting\u0026quot;)\n}\n~ $ cat client.go\npackage main\n\nimport (\n\t\u0026quot;os/exec\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/rpc\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc showFds() {\n\tprocStr := fmt.Sprintf(\u0026quot;/proc/%d/fd\u0026quot;, os.Getpid())\n\tcmd := exec.Command(\u0026quot;ls\u0026quot;, \u0026quot;-l\u0026quot;, procStr)\n\toutput, err := cmd.CombinedOutput()\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\u0026quot;%s\u0026quot;, output)\n}\n\nfunc main() {\n\tlog.Println(\u0026quot;client starting\u0026quot;)\n\tclient, err := rpc.Dial(\u0026quot;unix\u0026quot;, \u0026quot;/tmp/test.sock\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tlog.Println(\u0026quot;connection established\u0026quot;)\n\n\tlog.Println(\u0026quot;FDs before server exit:\u0026quot;)\n\tshowFds()\n\n\ttime.Sleep(5 * time.Second)\n\n\tlog.Println(\u0026quot;calling client.Close()\u0026quot;)\n\tif err := client.Close(); err != nil {\n\t\tlog.Println(\u0026quot;client.Close() error: \u0026quot;, err)\n\t}\n\n\tlog.Println(\u0026quot;FDs after server exit:\u0026quot;)\n\tshowFds()\n\n\tlog.Println(\u0026quot;client exiting\u0026quot;)\n}\n~ $ cat doit\ngo run server.go \u0026amp;\nsleep 1\ngo run client.go\n~ $ ./doit\n2013/12/05 10:28:41 server starting\n2013/12/05 10:28:42 client starting\n2013/12/05 10:28:42 connection established\n2013/12/05 10:28:42 FDs before server exit:\ntotal 0\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 0 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 1 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 2 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 3 -\u0026gt; socket:[4560708]\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 4 -\u0026gt; anon_inode:[eventpoll]\nlr-x------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 6 -\u0026gt; pipe:[4560709]\n2013/12/05 10:28:43 server exiting\n2013/12/05 10:28:47 calling client.Close()\n2013/12/05 10:28:47 client.Close() error:  connection is shut down\n2013/12/05 10:28:47 FDs after server exit:\ntotal 0\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 0 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 1 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 2 -\u0026gt; /dev/pts/5\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 3 -\u0026gt; socket:[4560708]\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 4 -\u0026gt; anon_inode:[eventpoll]\nlr-x------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 6 -\u0026gt; pipe:[4560712]\n2013/12/05 10:28:47 client exiting\n\nNotice the socket:[4560708] fd still exists after client.Close was called.\n\nWhat steps will reproduce the problem?\nSee above programs and script.\n\nWhat is the expected output?\nThe \u0026quot;socket:[4560708]\u0026quot; file descriptor should no longer be listed in the open\nFDs for the client process.\n\nWhat do you see instead?\nlrwx------. 1 jpoimboe jpoimboe 64 Dec  5 10:28 3 -\u0026gt; socket:[4560708]\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux\n\nWhich version are you using?  (run 'go version')\ngo version go1.2 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:38:25Z",
+	"created_at": "2013-12-05T16:32:24Z",
+	"updated_at": "2016-06-25T01:23:28Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

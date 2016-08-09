@@ -1,0 +1,21 @@
+{
+	"id": 102171139,
+	"number": 12234,
+	"state": "open",
+	"title": "runtime: revisit non-constant assist ratio",
+	"body": "Currently we compute a conservative assist ratio that assumes the entire heap is reachable in order to prevent heap overshoot caused by underestimating. Unfortunately, this means we usually over-assist (by a factor of ~2 in steady state). This causes the GC cycle to finish below the heap goal and with high CPU utilization. This is okay to do for a few cycles, but the unfortunate part is that it's a stable state for the trigger controller, so we keep doing this (it scales the heap growth by the overutilization factor and finds that it would have been right on target with 25% utilization, so it doesn't change the trigger).\r\n\r\nOne solution we talked about early in the pacer development, but never put together a concrete design for, was to adjust the assist ratio as we approached the heap goal. This means the mutator may assist more toward the end of the cycle, but it will let us target the heap goal more precisely (sort of a \"mid-flight correction\"). We need to consider how to do this without allowing overshoot and without putting too much assist strain on the end of the cycle (which increases mutator latency). We also need to consider whether this affects how we compute the trigger error, which currently assumes linearity.\r\n\r\n/cc @RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-08-20T15:52:42Z",
+	"updated_at": "2015-11-04T19:27:24Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 127251614,
+	"number": 13998,
+	"state": "closed",
+	"title": "net/http: missing HTTP KeepAlive timeout configuration",
+	"body": "Hi,\r\n\r\nCurrently it seems that it's only possible to enable or disable `HTTP KeepAlive`. The following code shows how to disable it:\r\n\r\n```go\r\nclient = \u0026http.Client{\r\n        Transport: \u0026http.Transport{\r\n                DisableKeepAlives: true,\r\n        },\r\n}\r\n```\r\n\r\nThere does not seem to be configuration which allows you to specify a KeepAlive timeout, which would abandon idle connections that are inactive for longer than the timeout.\r\n\r\nThis is important as clients operating behind a Firewall / Proxy or targeting a server running behind a Firewall / Load Balancer might get their TCP connection closed after some period (e.g. 5 minutes) without getting informed. When this happens, Go fails the next HTTP call with `read: connection reset by peer`.\r\n\r\nI faced such a scenario and checked Ruby to see how it would handle. It has multiple protections in place so that it does not error with `read: connection reset by peer`.\r\n\r\n* It retries idempotent requests before failing. (Though I never got to this fallback)\r\n* Most imporantly, it has an HTTP KeepAlive timeout configuration that set to 2 seconds by default: https://github.com/ruby/ruby/blob/ec0198fd8cfee7ae499602235fcf3a9318f9b691/lib/net/http.rb#L1478 \r\n\r\nIt is important to note that I am asking for an *HTTP* KeepAlive Timeout configuration. There is already a *TCP* KeepAlive Timeout configuration available in Go, which works just fine, but has a different purpose - to health-check a TCP connection by pushing regular ACK packages.\r\n",
+	"user": {
+		"login": "momchil-sap",
+		"id": 9860734,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-05-02T17:04:51Z",
+	"created_at": "2016-01-18T15:38:16Z",
+	"updated_at": "2016-05-03T16:27:57Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

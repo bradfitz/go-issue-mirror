@@ -1,0 +1,22 @@
+{
+	"id": 92160885,
+	"number": 11485,
+	"state": "closed",
+	"title": "runtime: markroot over finalizers is stop-the-world",
+	"body": "On multi-gigabyte heaps, about half of our mark termination time (~5ms of ~10ms at 4GB) is spent in the loop over all spans in the _RootSpans case of markroot. We should fix this for 1.6.\r\n\r\n@RLH, @dr2chase, and I discussed a few possible fixes. One is to maintain a global list of finalizers in addition to the per-span lists so that this loop is proportional to the number of finalizers rather than the number of spans. This could still be slow in a hypothetical program with many finalizers (maybe we don't care) and might complicate synchronization around the specials and finalizers lists.\r\n\r\nAnother possibility is to scan finalizers during the concurrent scan phase and perform the appropriate write barriers for finalizers added during GC and then simply eliminate this re-scan from mark termination. It's entirely possible we already have all or most of the write barriers we need for this. There is one quirk to this solution: currently we only scan the object with the finalizer during mark termination. However, it's unclear why we do this and it's probably a bad idea since it's means we're delaying mark work we could have done concurrently.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-10-02T19:56:02Z",
+	"created_at": "2015-06-30T18:06:40Z",
+	"updated_at": "2015-10-02T19:56:02Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

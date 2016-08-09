@@ -1,0 +1,27 @@
+{
+	"id": 138543912,
+	"number": 14648,
+	"state": "closed",
+	"title": "cmd/link: optimize de-duplication",
+	"body": "Using suffixarray in the linker to de-duplicate strings saves a bunch of space in the binaries. @crawshaw did this in https://golang.org/cl/19987 but it burns a lot of CPU.\r\n\r\nRunning the benchmarks in index/suffixarray,\r\n\r\n```\r\n$ go test -v -bench=NewIndex -benchtime=3s -cpuprofile=prof.cpu index/suffixarray\r\n```\r\n\r\nShows 43% of the CPU time (50% before SSA!) is on a single line (the suffixSortable.Less) function:\r\n\r\n```\r\n(pprof) top\r\n7470ms of 7960ms total (93.84%)\r\nDropped 39 nodes (cum \u003c= 39.80ms)\r\nShowing top 10 nodes out of 56 (cum \u003e= 110ms)\r\n      flat  flat%   sum%        cum   cum%\r\n    3470ms 43.59% 43.59%     3470ms 43.59%  index/suffixarray.(*suffixSortable).Less\r\n    1900ms 23.87% 67.46%     5370ms 67.46%  sort.doPivot\r\n     820ms 10.30% 77.76%      990ms 12.44%  index/suffixarray.(*suffixSortable).updateGroups\r\n     310ms  3.89% 81.66%      310ms  3.89%  runtime.duffcopy\r\n     210ms  2.64% 84.30%     7220ms 90.70%  index/suffixarray.qsufsort\r\n     200ms  2.51% 86.81%      200ms  2.51%  runtime.deductSweepCredit\r\n     190ms  2.39% 89.20%      220ms  2.76%  index/suffixarray.initGroups\r\n     130ms  1.63% 90.83%      130ms  1.63%  runtime.usleep\r\n     130ms  1.63% 92.46%      280ms  3.52%  sort.insertionSort\r\n     110ms  1.38% 93.84%      110ms  1.38%  index/suffixarray.(*suffixSortable).Swap\r\n\r\n(pprof) list Less\r\nTotal: 7.96s\r\nROUTINE ======================== index/suffixarray.(*suffixSortable).Less in /Users/bradfitz/go/src/index/suffixarray/qsufsort.go\r\n     3.47s      3.47s (flat, cum) 43.59% of Total\r\n         .          .    137:\th   int\r\n         .          .    138:\tbuf []int // common scratch space\r\n         .          .    139:}\r\n         .          .    140:\r\n         .          .    141:func (x *suffixSortable) Len() int           { return len(x.sa) }\r\n     3.47s      3.47s    142:func (x *suffixSortable) Less(i, j int) bool { return x.inv[x.sa[i]+x.h] \u003c x.inv[x.sa[j]+x.h] }\r\n         .          .    143:func (x *suffixSortable) Swap(i, j int)      { x.sa[i], x.sa[j] = x.sa[j], x.sa[i] }\r\n         .          .    144:\r\n         .          .    145:func (x *suffixSortable) updateGroups(offset int) {\r\n         .          .    146:\tbounds := x.buf[0:0]\r\n         .          .    147:\tgroup := x.inv[x.sa[0]+x.h]\r\n\r\n\r\n(pprof) disasm Less\r\nTotal: 7.96s\r\nROUTINE ======================== index/suffixarray.(*suffixSortable).Less\r\n     3.47s      3.47s (flat, cum) 43.59% of Total\r\n      90ms       90ms      71210: GS MOVQ GS:0x8a0, CX\r\n      70ms       70ms      71219: CMPQ 0x10(CX), SP\r\n         .          .      7121d: JBE 0x7127e\r\n     160ms      160ms      7121f: MOVQ 0x8(SP), CX\r\n     100ms      100ms      71224: MOVQ 0(CX), DX\r\n     100ms      100ms      71227: MOVQ 0x18(CX), BX\r\n     130ms      130ms      7122b: MOVQ 0x20(CX), BP\r\n      20ms       20ms      7122f: MOVQ 0x8(CX), SI\r\n      80ms       80ms      71233: MOVQ 0x10(SP), DI\r\n      80ms       80ms      71238: CMPQ SI, DI\r\n         .          .      7123b: JAE 0x71277\r\n     200ms      200ms      7123d: MOVQ 0(DX)(DI*8), AX\r\n     140ms      140ms      71241: MOVQ 0x30(CX), CX\r\n      80ms       80ms      71245: LEAQ 0(AX)(CX*1), DI\r\n     110ms      110ms      71249: CMPQ BP, DI\r\n         .          .      7124c: JAE 0x71277\r\n     120ms      120ms      7124e: MOVQ 0(BX)(DI*8), DI\r\n     320ms      320ms      71252: MOVQ 0x18(SP), R8\r\n      30ms       30ms      71257: CMPQ SI, R8\r\n         .          .      7125a: JAE 0x71277\r\n      30ms       30ms      7125c: MOVQ 0(DX)(R8*8), AX\r\n      50ms       50ms      71260: ADDQ AX, CX\r\n     140ms      140ms      71263: CMPQ BP, CX\r\n         .          .      71266: JAE 0x71277\r\n      50ms       50ms      71268: MOVQ 0(BX)(CX*8), CX\r\n     770ms      770ms      7126c: CMPQ CX, DI\r\n     240ms      240ms      7126f: SETL AL\r\n     160ms      160ms      71272: MOVL AL, 0x20(SP)\r\n     200ms      200ms      71276: RET\r\n         .          .      71277: CALL runtime.panicindex(SB)\r\n         .          .      7127c: UD2\r\n         .          .      7127e: CALL runtime.morestack_noctxt(SB)\r\n         .          .      71283: JMP index/suffixarray.(*suffixSortable).Less(SB)\r\n         .          .      71285: INT $0x3\r\n         .          .      71286: INT $0x3\r\n         .          .      71287: INT $0x3\r\n         .          .      71288: INT $0x3\r\n         .          .      71289: INT $0x3\r\n         .          .      7128a: INT $0x3\r\n         .          .      7128b: INT $0x3\r\n         .          .      7128c: INT $0x3\r\n         .          .      7128d: INT $0x3\r\n         .          .      7128e: INT $0x3\r\n```\r\n\r\nAny Go and/or SSA tweaks we can do to speed up suffixarray? Robert, how much has this been tuned over time?\r\n\r\n/cc @crawshaw @randall77 @tzneal @davecheney @ianlancetaylor @griesemer ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 29,
+	"closed_at": "2016-03-08T19:14:27Z",
+	"created_at": "2016-03-04T18:10:04Z",
+	"updated_at": "2016-03-08T19:14:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

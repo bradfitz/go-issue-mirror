@@ -1,0 +1,28 @@
+{
+	"id": 51278140,
+	"number": 1667,
+	"state": "closed",
+	"title": "gofmt falls into an infinite loop when using rewrite feature",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\n**Be careful reproducing this as this will take all of the memory on your machine very\nquickly.\n\n1. cd into src/pkg/contianer/vector\n2. run make generate\n3. ???\n4. All your cpu and memory are gone.\n\nYou can ^C out of the make call, but it will overwrite your intvector.go file in that\ndirectory. So, make sure to revert intvector.go.\n\nSimplified reproduction:\n\n// foo.go\n\npackage main\n\ntype Foo int\n\nfunc main() {\n\tvar a Foo\n\tprintln(a)\n}\n\n$ gofmt -r='Foo -\u0026gt; Bar' foo.go \n\nWhat is the expected output?\n\ngofmt should change type Foo to type Bar.\n\nWhat do you see instead?\n\nNo output. Memory usage and cpu usage is unbounded. Gofmt gets locked in an infinite\nloop.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nMac OS X 10.5.7\n\nWhich revision are you using?  (hg identify)\n\n$ hg identify\nb002b8e25d25 tip\n\nPlease provide any additional information below.\n\nI isolated this problem to a change between weekly.2011-03-15 and weekly.2011-03-28\n(sorry this is so wide). It doesn't seem to be related to the cpuprofiler addition to\ngofmt because when I compile the 03-15 version with the 03-28 tree, we still see the\nproblem. I isolated the loop down to the following function in rewrite.go (in the gofmt\ncmd dir):\n\n 49 // rewriteFile applies the rewrite rule 'pattern -\u0026gt; replace' to an entire file.\n 50 func rewriteFile(pattern, replace ast.Expr, p *ast.File) *ast.File {\n 51     m := make(map[string]reflect.Value)\n 52     pat := reflect.NewValue(pattern)\n 53     repl := reflect.NewValue(replace)\n 54     var f func(val reflect.Value) reflect.Value // f is recursive\n 55     f = func(val reflect.Value) reflect.Value {\n 56         for k := range m {\n 57             m[k] = nil, false\n 58         }\n 59         val = apply(f, val)\n 60         if match(m, pat, val) {\n 61             val = subst(m, repl, reflect.NewValue(val.Interface().(ast.Node).Pos()))\n 62         }\n 63         return val\n 64     }\n 65     return apply(f, reflect.NewValue(p)).Interface().(*ast.File)\n 66 }\n\nPlease let me know if you need anything else.\u003c/pre\u003e",
+	"user": {
+		"login": "stevvooe",
+		"id": 120601,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:09:20Z",
+	"created_at": "2011-04-06T00:45:40Z",
+	"updated_at": "2016-06-24T19:27:13Z"
+}

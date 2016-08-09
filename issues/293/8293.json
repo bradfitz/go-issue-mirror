@@ -1,0 +1,22 @@
+{
+	"id": 51287985,
+	"number": 8293,
+	"state": "closed",
+	"title": "cmd/gc: bad liveness analysis",
+	"body": "\u003cpre\u003eInvestigating \u003ca href=\"https://golang.org/issue/8228\"\u003eissue #8228\u003c/a\u003e, I simplified test case to:\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n\t\u0026quot;unsafe\u0026quot;\n)\n\nconst (\n\tS_OK    = 0x00000000\n\tNOERROR = S_OK\n\n\tVT_I1 = 16\n\tVT_I8 = 20\n\n\tVARIANT_ALPHABOOL = 0x02\n)\n\nvar (\n\tmodoleaut32           = syscall.NewLazyDLL(\u0026quot;oleaut32.dll\u0026quot;)\n\tprocVariantChangeType = modoleaut32.NewProc(\u0026quot;VariantChangeType\u0026quot;)\n)\n\ntype HRESULT syscall.Errno\n\nfunc (r HRESULT) Error() string {\n\treturn syscall.Errno(r).Error()\n}\n\ntype VARIANT struct {\n\tVT        uint16\n\tReserved1 uint16\n\tReserved2 uint16\n\tReserved3 uint16\n\tVal       int64\n}\n\nfunc VariantChangeType(dest *VARIANT, src *VARIANT, flags uint16, vt uint16) (err error)\n{\n\tr0, _, _ := syscall.Syscall6(procVariantChangeType.Addr(), 4, uintptr(unsafe.Pointer(dest)), uintptr(unsafe.Pointer(src)), uintptr(flags), uintptr(vt), 0, 0)\n\tif r0 != NOERROR {\n\t\terr = HRESULT(r0)\n\t}\n\treturn\n}\n\nfunc test() error {\n\tconst should = 123\n\tsrc := \u0026amp;VARIANT{VT: VT_I1, Val: should}\n\tdest := \u0026amp;VARIANT{}\n\terr := VariantChangeType(dest, src, 0, VT_I8)\n\tif err != nil {\n\t\treturn err\n\t}\n\tis := dest.Val\n\tif is != should {\n\t\treturn fmt.Errorf(\u0026quot;got %v, but %v expected (dest=%v)\u0026quot;, is, should, dest)\n\t}\n\treturn nil\n}\n\nfunc main() {\n\tfor j := 0; j \u0026lt; 100; j++ {\n\t\terr := test()\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t}\n}\n\nThe program succeeds on windows/386, but fails on windows/amd64 with message:\n\nC:\\\u0026gt;u:\\test\nfatal error: freelist empty\n\ngoroutine 16 [running]:\nruntime.throw(0x560f6b)\n        /root/go/root/src/pkg/runtime/panic.c:520 +0x7e fp=0x293d18 sp=0x293d00\nruntime.MCentral_CacheSpan(0x57dc78)\n        /root/go/root/src/pkg/runtime/mcentral.c:96 +0x23f fp=0x293d48 sp=0x293d18\nruntime.MCache_Refill(0x240000, 0x2)\n        /root/go/root/src/pkg/runtime/mcache.c:78 +0x127 fp=0x293d78 sp=0x293d48\nruntime.mallocgc(0x10, 0x4cd080, 0x1)\n        /root/go/root/src/pkg/runtime/malloc.goc:152 +0x354 fp=0x293de0 sp=0x293d78\nruntime.new(0x4cd080, 0x0)\n        /root/go/root/src/pkg/runtime/malloc.goc:826 +0x3b fp=0x293e00 sp=0x293de0\nmain.test(0x0, 0x0)\n        /root/go/path/mine/src/ole/a.go:50 +0x82 fp=0x293ee0 sp=0x293e00\nmain.main()\n        /root/go/path/mine/src/ole/a.go:64 +0x37 fp=0x293f50 sp=0x293ee0\nruntime.main()\n        /root/go/root/src/pkg/runtime/proc.c:249 +0x144 fp=0x293fa8 sp=0x293f50\nruntime.goexit()\n        /root/go/root/src/pkg/runtime/proc.c:1447 fp=0x293fb0 sp=0x293fa8\ncreated by _rt0_go\n        /root/go/root/src/pkg/runtime/asm_amd64.s:97 +0x12c\n\ngoroutine 19 [finalizer wait]:\nruntime.park(0x416c60, 0x565ba0, 0x5645e9)\n        /root/go/root/src/pkg/runtime/proc.c:1371 +0xac\nruntime.parkunlock(0x565ba0, 0x5645e9)\n        /root/go/root/src/pkg/runtime/proc.c:1387 +0x42\nrunfinq()\n        /root/go/root/src/pkg/runtime/mgc0.c:2640 +0xdd\nruntime.goexit()\n        /root/go/root/src/pkg/runtime/proc.c:1447\n\nMy hg id is 75040398cb4e. I appreciate any suggestions of how to debug this further.\n\nThank you.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:46:04Z",
+	"created_at": "2014-06-27T06:19:32Z",
+	"updated_at": "2016-06-25T01:37:17Z"
+}

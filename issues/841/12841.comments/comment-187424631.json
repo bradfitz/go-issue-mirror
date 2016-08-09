@@ -1,0 +1,12 @@
+{
+	"id": 187424631,
+	"body": "Just took a look at this on the SSA branch.\r\nYou're right, there are two copies in the bad case, global data -\u003e stack and stack -\u003e destination.\r\n\r\nThe copies themselves are ok, if you do *dst = *src vs.  dst.a, ... = src.a, ... the copy (using duffcopy) is slightly faster.  It's the x2 that is the problem.\r\n\r\nThere doesn't seem to be an easy fix for this.  For instance, if you do:\r\n```\r\nfunc moveBigX(item *Big, x int) {\r\n\t*item = Big{0, 1, 2, x, 4, 5, 6, 7}\r\n}\r\n```\r\nthen the intermediate stack copy is necessary so you can modify the stack data before writing it.  Direct assignments are still better in this case, but if the struct gets large enough the code size becomes prohibitive.\r\n\r\nA rule like:\r\n(Move dst inter (Move inter src mem)) -\u003e (Move dst src mem)\r\nmight work.  It's not quite that simple, as we have to make sure the intermediate memory isn't used by anyone else.  And drop the inter variable if it is no longer used.  And probably lots of other conditions I'm missing.\r\n\r\nLong story short, thinking about it.  Should be doable for the completely constant case.\r\n\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-22T22:51:53Z",
+	"updated_at": "2016-02-22T22:51:53Z"
+}

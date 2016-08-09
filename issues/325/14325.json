@@ -1,0 +1,26 @@
+{
+	"id": 133552588,
+	"number": 14325,
+	"state": "open",
+	"title": "cmd/compile: recognize append loop",
+	"body": "Loops with appends are common in Go. And often the loops don't terminate or have any conditionals.\r\n\r\ncmd/compile could recognize something of the form:\r\n\r\n```go\r\n        for ... := range x {\r\n            s = append(s, v)\r\n        }\r\n```\r\n\r\nAnd compile it as:\r\n\r\n```go\r\n        s = runtime_ensurecapacity(s, len(x))\r\n        for ... := range x {\r\n            s = append(s, v)\r\n        }\r\n```\r\n\r\nThat would remove the need for the (often premature) optimization of:\r\n\r\n```go\r\n      s := make([]T, 0, len(x))\r\n```\r\n\r\nAnd let people just write instead:\r\n\r\n```go\r\n    var s []T\r\n    for k := range m {\r\n          s = append(s, k)\r\n    }\r\n```\r\n\r\nThis would also help eliminating garbage when the number of iterations is very large. (e.g. @campoy's https://news.ycombinator.com/item?id=11098802)\r\n\r\n/cc @randall77 @dr2chase @rsc \r\n    \r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-02-14T16:31:31Z",
+	"updated_at": "2016-03-18T03:53:10Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

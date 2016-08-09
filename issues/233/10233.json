@@ -1,0 +1,22 @@
+{
+	"id": 63946309,
+	"number": 10233,
+	"state": "closed",
+	"title": "byte: If Buffer can't grow, ErrTooLarge Panic Not triggerred",
+	"body": "I wrote this following code to see if ErrTooLarge panic is triggered if the buffer cannot grow, looks like it is instead causing a fatal error.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n  \"bytes\"\r\n    \"fmt\"\r\n    )\r\n\r\nfunc main() {\r\n\r\n    defer func() {\r\n          if r := recover(); r != nil {\r\n                  fmt.Println(\"Should catch if anyone panics\")\r\n           }\r\n     }()\r\n\r\n\r\n    a := bytes.NewBuffer(make([]byte, 0, 2))\r\n    for {\r\n       _,err := a.Write([]byte(\"create boom\"))\r\n       if err != nil {\r\n         fmt.Println(err.Error())\r\n         return\r\n       }\r\n    }\r\n}\r\n```\r\nThis is the console output i am getting\r\n\r\n```go\r\nfatal error: runtime: out of memory\r\n\r\n▽\r\n  1 package main\r\n\r\ngoroutine 1 [running]:\r\nruntime.throw(0x588257)\r\n\t/usr/lib/go/src/pkg/runtime/panic.c:464 +0x69 fp=0x7f8b0b1beb88\r\n\r\n▽\r\n  1 package main\r\nruntime.SysMap(0xc22b150000, 0x1b000000, 0x594b38)\r\n\t/usr/lib/go/src/pkg/runtime/mem_linux.c:131 +0xfe fp=0x7f8b0b1bebb8\r\nruntime.MHeap_SysAlloc(0x59ea80, 0x1b000000)\r\n\t/usr/lib/go/src/pkg/runtime/malloc.goc:473 +0x10a fp=0x7f8b0b1bebf8\r\nMHeap_Grow(0x59ea80, 0x1b000)\r\n\t/usr/lib/go/src/pkg/runtime/mheap.c:241 +0x5d fp=0x7f8b0b1bec38\r\nMHeap_AllocLocked(0x59ea80, 0x1b000, 0x100000000)\r\n\t/usr/lib/go/src/pkg/runtime/mheap.c:126 +0x305 fp=0x7f8b0b1bec78\r\nruntime.MHeap_Alloc(0x59ea80, 0x1b000, 0x100000000, 0x1)\r\n\t/usr/lib/go/src/pkg/runtime/mheap.c:95 +0x7b fp=0x7f8b0b1beca0\r\nruntime.mallocgc(0x1affffe7, 0x487aa1, 0x1)\r\n\t/usr/lib/go/src/pkg/runtime/malloc.goc:89 +0x484 fp=0x7f8b0b1bed10\r\ncnew(0x487aa0, 0x1affffe7, 0xc200000001)\r\n\t/usr/lib/go/src/pkg/runtime/malloc.goc:718 +0xc1 fp=0x7f8b0b1bed30\r\nruntime.cnewarray(0x487aa0, 0x1affffe7)\r\n\t/usr/lib/go/src/pkg/runtime/malloc.goc:731 +0x3a fp=0x7f8b0b1bed50\r\nmakeslice1(0x4828c0, 0x1affffe7, 0x1affffe7, 0x7f8b0b1bedb0)\r\n\t/usr/lib/go/src/pkg/runtime/slice.c:57 +0x4d fp=0x7f8b0b1bed68\r\nruntime.makeslice(0x4828c0, 0x1affffe7, 0x1affffe7, 0xc21d854000, 0x1affffe7, ...)\r\n\t/usr/lib/go/src/pkg/runtime/slice.c:38 +0x98 fp=0x7f8b0b1bed98\r\nbytes.makeSlice(0x1affffe7, 0x0, 0x0, 0x0)\r\n\t/usr/lib/go/src/pkg/bytes/buffer.go:191 +0x63 fp=0x7f8b0b1bedd0\r\nbytes.(*Buffer).grow(0xc210046000, 0x19, 0x19)\r\n\t/usr/lib/go/src/pkg/bytes/buffer.go:99 +0x200 fp=0x7f8b0b1bee38\r\nbytes.(*Buffer).Write(0xc210046000, 0x7f8b0b1beeb7, 0x19, 0x19, 0x19, ...)\r\n\t/usr/lib/go/src/pkg/bytes/buffer.go:127 +0x50 fp=0x7f8b0b1bee78\r\nmain.main()\r\n\t/vagrant/icarus/buffer_overflow.go:18 +0x16b fp=0x7f8b0b1bef48\r\nruntime.main()\r\n\t/usr/lib/go/src/pkg/runtime/proc.c:220 +0x11f fp=0x7f8b0b1befa0\r\nruntime.goexit()\r\n\t/usr/lib/go/src/pkg/runtime/proc.c:1394 fp=0x7f8b0b1befa8\r\n```\r\n\r\nOperating system info - Ubuntu-trusty\r\ngo version - 1.2.1\r\n\r\nI understood that linux mem_linux.c lib of golang is causing this fatal error, but why is ErrTooLarge panic not triggered instead?",
+	"user": {
+		"login": "domitian",
+		"id": 4576651,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2015-03-24T12:10:37Z",
+	"created_at": "2015-03-24T09:20:25Z",
+	"updated_at": "2016-06-25T02:03:54Z"
+}

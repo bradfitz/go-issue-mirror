@@ -1,0 +1,25 @@
+{
+	"id": 153682771,
+	"number": 15606,
+	"state": "open",
+	"title": "database/sql: proper prepared statement support in transactions",
+	"body": "A very common use case is to create a bunch of prepared statements in a connection manager concern, when a new connection is needed and created (say, when a component requests a connection from a connection pool and there is not an idle one at the moment), associate the user context with a transaction on the returned connection (say when a web service begins to execute an http service request with a connection obtained from a connection pool), and then execute the prepared statements in it.\r\n\r\nIt seems, however, that Go database/sql requires the recompilation of every prepared statement each time it executes:\r\n\r\n```\r\n/* database/sql.go:1063, Go 1.6 */\r\n        func (tx *Tx) Stmt(stmt *Stmt) *Stmt {\r\n        // TODO(bradfitz): optimize this. Currently this re-prepares\r\n        // each time.  This is fine for now to illustrate the API but\r\n        // we should really cache already-prepared statements\r\n        // per-Conn. See also the big comment in Tx.Prepare.\r\n```\r\nThis is not fine, I think - it's worse than useless. In particular, it's strictly less performant (and /quietly/ so!) than not using statements where there are transactions in use.\r\n\r\nSo, we have a situation, it seems, where there is no de facto prepared statement support.   Is this really the case?    What needs to be done to implement support?   \r\n\r\nIt appears as though Stmt /already/ knows how to do the right thing wrt transactions:\r\n\r\n```\r\n    /* database/sql.go:741 */\r\n        // In a transaction, we always use the connection that the\r\n        // transaction was created on.\r\n        if s.tx != nil {\r\n                s.mu.Unlock()\r\n                ci, err = s.tx.grabConn() // blocks, waiting for the connection.\r\n                if err != nil {\r\n                        return\r\n                }\r\n                releaseConn = func(error) { s.tx.releaseConn() }\r\n                return ci, releaseConn, s.txsi, nil\r\n        }\r\n```\r\n\r\nCan we just create\r\n\r\n`\r\n   func (tx *Tx) ExecStmt(s *Stmt, args ...interface{}) ...\r\n`\r\n\r\nand the like, which shallow-clone the Stmt (ie. reuse the same driver statement object), and associate a transaction with the new copy, before calling its Exec()?",
+	"user": {
+		"login": "dtromb",
+		"id": 4296744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-05-08T23:12:14Z",
+	"updated_at": "2016-06-28T11:35:07Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

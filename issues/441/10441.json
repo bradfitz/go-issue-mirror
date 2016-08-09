@@ -1,0 +1,33 @@
+{
+	"id": 68197644,
+	"number": 10441,
+	"state": "closed",
+	"title": "cmd/gc: compiler crash",
+	"body": "This commit causes compiling Camlistore to crash in the compiler:\r\n\r\n@dvyukov: cmd/gc: fix escape analysis of closures\r\nhttps://go-review.googlesource.com/#/c/8408/\r\n\r\nIt seems that the new Node lacks a Type perhaps.\r\n\r\nRepro:\r\n\r\n```\r\n$ go get -d camlistore.org/pkg/server\r\n$ go install camlistore.org/pkg/server\r\n$ go install -v camlistore.org/pkg/server\r\ncamlistore.org/pkg/search\r\ncamlistore.org/pkg/server\r\n# camlistore.org/pkg/server\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0xf pc=0x10fdcf]\r\n\r\ngoroutine 1 [running]:\r\ncmd/internal/gc.haspointers(0x0, 0xffffffffffffffff)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/reflect.go:623 +0x1f\r\ncmd/internal/gc.escwalk(0x20c82dc00, 0xffffffffffffffff, 0x20c82dda0, 0x20c835520)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:1291 +0x14aa\r\ncmd/internal/gc.escwalk(0x20c82dc00, 0xffffffffffffffff, 0x20c82dda0, 0x20beac340)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:1386 +0x836\r\ncmd/internal/gc.escwalk(0x20c82dc00, 0x0, 0x20c82dda0, 0x20c5f4000)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:1328 +0x11b2\r\ncmd/internal/gc.escwalk(0x20c82dc00, 0x0, 0x20c82dda0, 0x20beaf1e0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:1386 +0x836\r\ncmd/internal/gc.escflood(0x20c82dc00, 0x20c82dda0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:1224 +0x324\r\ncmd/internal/gc.escAnalyze(0x20c830b20, 0x20c829c00)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:302 +0x312\r\ncmd/internal/gc.(*bottomUpVisitor).visit(0x20c7b54a0, 0x20bea2000, 0xb2)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:115 +0x1e6\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be9f380, 0xb2, 0x2000000b2)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:149 +0x245\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20be797e0, 0x2000000b2, 0x90c4d)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visit(0x20c7b54a0, 0x20c5eb520, 0xb0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:91 +0x10e\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be9dba0, 0x2000000b0, 0xb0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:157 +0x1cf\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be9f520, 0xb0, 0xb0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:134 +0x75\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be9f6c0, 0xb0, 0xb0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:134 +0x75\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20be79800, 0xb0, 0xb0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be9cb60, 0xb0, 0x2000000b0)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:139 +0x13d\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20be79820, 0xb0, 0x90c4d)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visit(0x20c7b54a0, 0x20be961a0, 0xac)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:91 +0x10e\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be95380, 0xac, 0xac)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:149 +0x245\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20be95520, 0x2000000ac, 0x2000000ac)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:134 +0x75\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20be79140, 0xac, 0x90c4d)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visit(0x20c7b54a0, 0x20be8e680, 0x200000086)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:91 +0x10e\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20bdce4e0, 0x200000086, 0x200000086)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:149 +0x245\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20bdce680, 0x200000086, 0x200000086)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:134 +0x75\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20bdc2a20, 0x86, 0x86)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visitcode(0x20c7b54a0, 0x20bdce000, 0x86, 0x200000086)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:139 +0x13d\r\ncmd/internal/gc.(*bottomUpVisitor).visitcodelist(0x20c7b54a0, 0x20bdc2a40, 0x86, 0x84)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:123 +0x4d\r\ncmd/internal/gc.(*bottomUpVisitor).visit(0x20c7b54a0, 0x20bdaf1e0, 0x84)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:91 +0x10e\r\ncmd/internal/gc.visitBottomUp(0x208713320, 0x3c7058)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:67 +0xaf\r\ncmd/internal/gc.escapes(0x208713320)\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/esc.go:198 +0x34\r\ncmd/internal/gc.Main()\r\n\t/Users/bradfitz/go/src/cmd/internal/gc/lex.go:427 +0x1cc2\r\nmain.main()\r\n\t/Users/bradfitz/go/src/cmd/6g/galign.go:123 +0x71f\r\n```\r\n\r\nIn case Camlistore accidentally changes and ends up avoiding this crash, I verify it's still crashing at camlistore/camlistore@f88da2ae70d9",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-04-14T15:48:14Z",
+	"created_at": "2015-04-13T21:22:47Z",
+	"updated_at": "2016-06-25T02:05:34Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

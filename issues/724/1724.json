@@ -1,0 +1,28 @@
+{
+	"id": 51278214,
+	"number": 1724,
+	"state": "closed",
+	"title": "(*http.Response)Body.Close() does not work with gzip compression",
+	"body": "by **tarmigan**:\n\n\u003cpre\u003eRev 96744c61ffcf \u0026quot;gc: fix copy([]int, string) error message\u0026quot;\n\nWhen I run the attached program on OSX, the http.Get() dnslookup fails after a while in\nC.getaddrinfo in cgo_unix.go.  Once the dns lookup fails, I get \u0026quot;open main.go: too\nmany open files\u0026quot;.  So I think dns lookup is failing because there are too many open\nfiles.\n\nlsof on the process lists around 261 open files once it's hung.  (osx open file limit is\na low 256 by default).\n\nI believe the problem is with (*http.Response).Body.Close() for a gzipped response. \nWhen the response is gzip enabled, the body will be gzip.NewReader.  The Close() method\non a gzip Reader will NOT close the original connection, but will only close the\ndecompressor created by flate.NewReader().\n\nIf I comment out line 536 of src/pkg/http/transport.go the problem goes away.\n\nNot sure what the correct fix is, so I'm only creating an issue.\n\nThanks,\nTarmigan\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n\nWhich operating system are you using?\n\n\nWhich revision are you using?  (hg identify)\n\n\nPlease provide any additional information below.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1724/0/main.go\"\u003emain.go\u003c/a\u003e (685 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:09:36Z",
+	"created_at": "2011-04-21T20:39:24Z",
+	"updated_at": "2016-06-24T19:27:55Z"
+}

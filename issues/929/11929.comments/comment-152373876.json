@@ -1,0 +1,12 @@
+{
+	"id": 152373876,
+	"body": "For the record, here's what I did to set up a VM and the object:\r\n\r\n    gcloud compute instances create ubuntu-us --scopes storage-full --image ubuntu-15-04 --machine-type n1-standard-4 --zone us-central1-a --boot-disk-size 500GB \r\n    gcloud compute ssh --ssh-flag=-A --zone us-central1-a ubuntu-us\r\n    head -c $(numfmt --from iec-i 10Gi) /dev/zero \u003e 10g\r\n    gsutil cp 10g gs://jacobsa-standard-us/10g\r\n    gsutil acl set public-read gs://jacobsa-standard-us/10g\r\n\r\nCurl's throughput varies a decent amount, but this run showing 245 MiB/CPU-second seems representative:\r\n\r\n```\r\n% time curl -H \"Range: bytes=0-1073741823\" \"https://storage.googleapis.com/jacobsa-standard-us/10g\" \u003e /dev/null\r\n  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\r\n                                 Dload  Upload   Total   Spent    Left  Speed\r\n100 1024M  100 1024M    0     0   245M      0  0:00:04  0:00:04 --:--:--  245M\r\ncurl -H \"Range: bytes=0-1073741823\"  \u003e /dev/null  1.48s user 0.79s system 54% cpu 4.184 total\r\n```\r\n\r\nGo 1.5.1 looks like this:\r\n\r\n```\r\n% go version\r\ngo version go1.5.1 linux/amd64\r\n\r\n% go build foo.go \u0026\u0026 time ./foo\r\nCopied 1.00 GiB in 12.830507037s (79.81 MiB/s)\r\n./foo  12.19s user 0.84s system 101% cpu 12.833 total\r\n```\r\n\r\nAnd at tip:\r\n\r\n```\r\n% go version\r\ngo version devel +a92543e Thu Oct 29 23:16:27 2015 +0000 linux/amd64\r\n\r\n% go build foo.go \u0026\u0026 time ./foo\r\nCopied 1.00 GiB in 4.116806503s (248.74 MiB/s)\r\n./foo  2.44s user 1.29s system 90% cpu 4.121 total\r\n```\r\n\r\nSo looking pretty comparable with curl. Nice work.",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-30T01:22:56Z",
+	"updated_at": "2015-10-30T01:24:31Z"
+}

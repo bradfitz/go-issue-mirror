@@ -1,0 +1,28 @@
+{
+	"id": 115350780,
+	"number": 13165,
+	"state": "closed",
+	"title": "net/http: CloseNotifier fails to fire when underlying connection is gone",
+	"body": "I observed some odd behavior when using http.CloseNotifier on ReponseWriter in ServeHTTP.\r\n\r\nThe server program is:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc main() {\r\n\thttp.HandleFunc(\"/\", func(w http.ResponseWriter, r *http.Request) {\r\n\t\tcn, ok := w.(http.CloseNotifier)\r\n\t\tif !ok {\r\n\t\t\tlog.Fatal(\"don't support CloseNotifier\")\r\n\t\t}\r\n\t\t\u003c-cn.CloseNotify()\r\n\t\tlog.Printf(\"CloseNotifier is fired!\")\r\n\t})\r\n\thttp.ListenAndServe(\":8080\", nil)\r\n}\r\n```\r\n\r\nI compiled it using Go 1.5, and ran it on `Linux version 3.13.0-48-generic (buildd@orlo) (gcc version 4.8.2 (Ubuntu 4.8.2-19ubuntu1) ) #80-Ubuntu SMP Thu Mar 12 11:16:15 UTC 2015`.\r\n\r\nIt works when I am doing this:\r\n```\r\n$ ubuntu@ip-172-31-28-238:~$ nc 172.31.28.238 8080\r\nGET / HTTP/1.1\r\n\r\n^C\r\n```\r\nThe CloseNotifier is fired as expected.\r\n\r\nBut it doesn't work when I am doing something like this:\r\n```\r\n$ ubuntu@ip-172-31-28-238:~$ nc 172.31.28.238 8080\r\nGET / HTTP/1.1\r\n\r\nGET / HTTP/1.1\r\n\r\n^C\r\n```\r\n\r\nThe server keeps a TCP connection at CLOSE_WAIT status, and client leaves a TCP connection at `FIN_WAIT2` status. After several minutes, the client TCP connections disappears from `Active Internet connections` in `netstat`. After waiting several minutes more, TCP connection at server side becomes `can't identify protocol` through `lsof`. That generally means that the underlying socket is `CLOSED` status but not be closed(https://idea.popcount.org/2012-12-09-lsof-cant-identify-protocol/). In all the time, CloseNotifier is not fired.\r\n\r\nThe client behavior is simulated from http-pipelining client of python urllib3 described in http://www.projectclearwater.org/adventures-in-debugging-etcd-http-pipelining-and-file-descriptor-leaks/ \r\n\r\nAny thoughts about this behavior? Is this a bug?\r\n\r\n/cc @jonboulle @xiang90 @eyakubovich @bdarnell @philips \r\n\r\nfrom https://github.com/coreos/etcd/issues/2468#issuecomment-154010287",
+	"user": {
+		"login": "yichengq",
+		"id": 2976232,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 12,
+	"closed_at": "2015-12-15T21:02:13Z",
+	"created_at": "2015-11-05T19:04:46Z",
+	"updated_at": "2015-12-15T21:02:13Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

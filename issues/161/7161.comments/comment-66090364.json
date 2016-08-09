@@ -1,0 +1,12 @@
+{
+	"id": 66090364,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eHere's my current thinking, still very rough.\n\nWrite test cases in Go, with inline comments like:\n\n// BREAKPOINT\n// \u0026lt;gdb command\u0026gt;\n// \u0026lt;expected output (regex to handle pointers?)\u0026gt;\n// [optionally more commands / outputs]\n\nWrite a Go helper script that:\n\n* Parses these Go test cases, building up a mapping from breakpoints (with line numbers)\nto input/output pairs.\n* Builds the Go test case, dropping the binary in a temp dir.\n* Create a gdb script based on the parsed test case, consisting mostly of setting\nbreakpoints, running the gdb command, and checking that the output matches the expected\noutput. It might help to have a custom helper Python-based command in gdb-runtime.py\nthat accepts the command to run and the expect output and runs the actual test.\n* Execute gdb, passing it the path to the binary, and asking it to run the test script.\nBased on the result of the execution, either pass or fail the test, with useful output.\n\nThis should make it fairly easy and pleasant to write new tests -- just write Go, with\ninline comments explaining what the gdb output ought to be.\n\nOpen questions about this plan:\n\n* There's a fair amount of plumbing undecided -- how do all the pieces talk to each\nother? How much of the build infra can we borrow instead of build? What support (if any)\ndo we want from Python? How do we signal errors and provide good error messages?\n* How do we handle multiple breakpoints, given that we don't know in which order they'll\nbe hit? Some options include:\n  - Asking gdb which breakpoint we're at. It's a bit clunky, we might hit the same breakpoint many times, which would be inefficient, and it requires passing around lots of metadata.\n  - Specify breakpoint ordering in the Go test case (e.g. BREAKPOINT 1). Seems annoying and fragile.\n  - Instead of having the Go test case be a standalone executable with a main function, make it more like regular Go tests (with no main and functions like TestStructParsing), and provide our own main. Limit to one breakpoint per test function. Generate main on the fly to call the test cases one at a time, thus tightly controlling the order at which breakpoints get hit.\n\nThoughts?\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-21T18:05:04Z",
+	"updated_at": "2014-12-22T06:31:44Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 129124476,
+	"number": 14115,
+	"state": "closed",
+	"title": "net/http: Redirect HTML encodes path rather than URL encoding",
+	"body": "Go Version: go version go1.5.1 darwin/amd64\r\nOS X Yosemite: 10.10.5\r\n\r\nIn the http.Redirect method, there is a fallback for browsers that don't support 301/307 redirects by providing them with a link. Currently the path is encoded using htmlEscape\r\nhttps://github.com/golang/go/blame/master/src/net/http/server.go#L1716\r\n```Go\r\nnote := \"\u003ca href=\\\"\" + htmlEscape(urlStr) + \"\\\"\u003e\" + statusText[code] + \"\u003c/a\u003e.\\n\"\r\nfmt.Fprintln(w, note)\r\n```\r\n\r\nThis causes `urlStr` to not be encoded properly when output as shown below:\r\n\r\n**Example code:**\r\n```Go\r\npackage main\r\n\r\nimport \"net/http\"\r\n\r\nfunc main() {\r\n\thttp.HandleFunc(\"/test/\", func(w http.ResponseWriter, r *http.Request) {\r\n\t\thttp.Redirect(w, r, r.URL.Path[5:], 301)\r\n\t})\r\n\tpanic(http.ListenAndServe(\":8080\", nil))\r\n}\r\n```\r\n\r\n**Example Output:**\r\n```\r\nmlenord~$  curl -i -X GET http://localhost:8080/test/\\\u003c\\\\\r\nHTTP/1.1 301 Moved Permanently\r\nLocation: /\u003c\\\r\nDate: Wed, 27 Jan 2016 11:14:36 GMT\r\nContent-Length: 41\r\nContent-Type: text/html; charset=utf-8\r\n\r\n\u003ca href=\"/\u0026lt;\\\"\u003eMoved Permanently\u003c/a\u003e.\r\n```\r\n\r\nThis is putting a outputting `\u003c` as `\u0026lt;` rather than `%3C` as well as adding an unescaped `\\` at the end of the path causing it to escape the `\"` that comes after it.\r\nThis could be fixed with something along the lines of:\r\n```Go\r\nu, _ := url.Parse(urlStr)\r\nfmt.Fprintf(w, \"\u003ca href=\\\"%s\\\"\u003e%s\u003c/a\u003e.\\n\", u.String(), statusText[code])\r\n```\r\nat https://github.com/golang/go/blame/master/src/net/http/server.go#L1716\r\n\r\nHope this helps\r\n\r\nMartin Lenord",
+	"user": {
+		"login": "MartinLenord",
+		"id": 10765490,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-01-28T15:39:49Z",
+	"created_at": "2016-01-27T12:06:17Z",
+	"updated_at": "2016-01-28T15:39:49Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 100750331,
+	"number": 12130,
+	"state": "closed",
+	"title": "go/types: Checker error with custom importer",
+	"body": "I'm trying to create a gounexport tool for go challenge that was started couple of weeks ago. I have an error from go/types/Checker while trying to check golang.org/x/tools/godoc package. \r\n\r\nI'm using docker image with 1.5 version from golang docker hub on:\r\n\r\n```\r\nroot@7a8ffc8036f0:/go/src/github.com/dooman87/gounexport# go version\r\ngo version go1.5beta3 linux/amd64\r\n```\r\n\r\nThe host system is Debian Jessie:\r\n\r\n```\r\ndooman@dimka:~/Projects/go/src/github.com/dooman87/gounexport$ uname -a\r\nLinux dimka 3.16.0-4-amd64 #1 SMP Debian 3.16.7-ckt11-1 (2015-05-24) x86_64 GNU/Linux\r\ndooman@dimka:~/Projects/go/src/github.com/dooman87/gounexport$\r\n```\r\n\r\nI got the following error:\r\n\r\n```\r\n2015/08/13 10:16:12 \tTYPE [func(tuple *golang.org/x/tools/go/types.Tuple) uint32], position [301 : 10]\r\n2015/08/13 10:16:12 Error while checking sources\r\n/go/src/golang.org/x/tools/go/ssa/create.go:36:28: cannot pass argument h (variable of type golang.org/x/tools/go/types/typeutil.Hasher) to parameter of type golang.org/x/tools/go/types/typeutil.Hasher\r\nexit status 1\r\nFAIL\tgithub.com/dooman87/gounexport\t1.139s\r\n\r\n```\r\n\r\nIt looks little bit strange because I didn't find any issues with types. I'm just wondering could it be some sort of conflict between x/tools ang go/ packages?\r\n\r\nOn small test packages all working fine. Also, I have the similar issue if I'm trying to importer.Default() directly from  customImporter (see commented line in Import func) when trying to analyze this source code.\r\n\r\nI created my own importer that I'm using instead of default when default can't reach sources (all not compiled with go, I suppose). Also, I'm using it to collect information about packages that I'm interested in.\r\n\r\n```go\r\ntype customImporter struct {\r\n\tinfo            *types.Info\r\n\tfset            *token.FileSet\r\n\tpkg             string\r\n\tdefaultImporter types.Importer\r\n}\r\n\r\nfunc (_importer *customImporter) Import(path string) (*types.Package, error) {\r\n\t//importer.Default().Import(path) //TODO: not working?\r\n\tpkg, err := _importer.defaultImporter.Import(path)\r\n\tif err != nil {\r\n\t\tlog.Printf(\"Importing package [%s]\", path)\r\n\t\tfiles := GetFiles(path, false)\r\n\t\tastFiles, fset := doParseFiles(files, _importer.fset)\r\n\t\tpkg, _ = doExtractInfo(path, astFiles, fset, _importer)\r\n\r\n\t\treturn pkg, nil\r\n\t}\r\n\treturn pkg, nil\r\n}\r\n...\r\n\r\nfunc doExtractInfo(pkgName string, astFiles []*ast.File, fset *token.FileSet, importer *customImporter) (*types.Package, *token.FileSet) {\r\n\tvar conf types.Config\r\n\tconf.Importer = importer\r\n\r\n\tpkg, err := conf.Check(pkgName, fset, astFiles, importer.info)\r\n\tif err != nil {\r\n\t\tlog.Fatalf(\"Error while checking sources\\n%v\", err)\r\n\t}\r\n\tlog.Printf(\"Package [%s] successfully parsed\\n\", pkg.Name())\r\n\r\n\tlogInfo(importer.info, fset)\r\n\r\n\treturn pkg, fset\r\n}\r\n\r\n```",
+	"user": {
+		"login": "dooman87",
+		"id": 124110,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-08-13T22:52:57Z",
+	"created_at": "2015-08-13T11:52:52Z",
+	"updated_at": "2015-08-14T01:45:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

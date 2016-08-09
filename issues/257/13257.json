@@ -1,0 +1,21 @@
+{
+	"id": 117029387,
+	"number": 13257,
+	"state": "open",
+	"title": "cmd/link: impossible r.Sym.Cfunc == 1 condition in internal/ld/lib.go",
+	"body": "cmd/link has this test in a block of code labeled \"Mark every Go-called C function with cfunc=2, recursively.\":\r\n\r\n    internal/ld/lib.go:2096:                                                if r.Sym.Cfunc == 1 {\r\n\r\nAs far as I can tell, the only assignments to cmd/link/internal/ld.LSym's Cfunc field are:\r\n\r\n    internal/ld/lib.go:2098:                                                        r.Sym.Cfunc = 2\r\n    internal/ld/objfile.go:268:             s.Cfunc = uint8(v \u0026 2)\r\n\r\nneither of which can set it to 1.\r\n\r\n(There's a \"ptxt.From.Sym.Cfunc = 1\" assignment in compile/internal/gc/pgen.go, but that's referring to the Cfunc field of an cmd/internal/obj.LSym.)\r\n\r\nFWIW, I tracked this check back to https://golang.org/cl/135170044 (0bb14d74f1550dca916251ddb6e1703f95be7325), and it appears to have been impossible even then (though less obvious since cmd/cc and cmd/ld used the same LSym type).\r\n\r\nCC @rsc @randall77",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-11-16T00:00:42Z",
+	"updated_at": "2015-11-17T02:11:01Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

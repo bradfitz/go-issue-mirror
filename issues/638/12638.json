@@ -1,0 +1,17 @@
+{
+	"id": 106715639,
+	"number": 12638,
+	"state": "closed",
+	"title": "archive/tar: needs hardening and refactoring",
+	"body": "I'm filing this issue as the \"capture all\" ticket for all currently known archive/tar issues. I've discovered quite a few issues and it's getting unwieldy filing an issue for them. \r\n\r\nOver time, the tar library has become increasingly buggy, especially with the inclusion of support for PAX, GNU, and sparse files. There are many edge conditions where these various formats interact in unexpected ways leading to bugs. The fact that the fuzzer has detected a large of bugs in archive/tar goes to show its fragility. Also, most of the \"fixes\" done to resolve each issue were bandaids on a larger problem.\r\n\r\nI have gone through the Reader implementation several times now and have read parts of the GNU, BSD, and STAR codebases to get a good understanding of how all the different utilities handle all the oddities when it comes to the TAR format.\r\n\r\nSome of the major issues with the library are:\r\n* #12594: the package's understanding of GNU format is wrong.\r\n* [Example](https://play.golang.org/p/1WZTth3FSo). Malicious tar files [can cause arbitrary memory allocation](https://github.com/golang/go/blob/a1d093d95dfb888e55f960943bd3ad3d181ec743/src/archive/tar/reader.go#L672) due to blind trust of user provided sizes.\r\n* ~~[Example](https://play.golang.org/p/10I2klLOsK). Malicious tar files [can cause arbitrary infinite loops](https://github.com/golang/go/blob/a1d093d95dfb888e55f960943bd3ad3d181ec743/src/archive/tar/reader.go#L819-L826). This occurs because the current data fragment is only popped when data has been read. However, if the reader experiences an io.EOF before the claimed end of the data fragment, then the EOF will be masked as nil and it will make no progress and readers will loop forever.~~\r\n* ~~[Example](https://play.golang.org/p/xyDSmsYut2). Malicious tar files [can cause arbitrary panics](https://github.com/golang/go/blob/a1d093d95dfb888e55f960943bd3ad3d181ec743/src/archive/tar/reader.go#L810-L813). The position and offset and never verified to be non-negative. Thus, bytesLeft can be computed to be negative.~~\r\n\r\nCurrently open tickets are:\r\n* #12594: package understanding of GNU format is wrong\r\n* #12557: call to Next does not detect that stream is truncated\r\n* #12436: reader returns bogus headers\r\n* #12435: invalid memory address or nil pointer dereference\r\n* #12358: output is nondeterministic\r\n* #11171: Writer incorrectly encodes header data (Writer does not support sub-second resolution timestamps)\r\n* #9683: do not use ustar long filename encoding and binary number encoding together (fix by avoid GNU format altogether)\r\n* #9647: Writer permits \"/\" FileHeader rejected by Reader\r\n\r\nThe plan is to refactor the Reader code first to be as reliable as possible, and then to tackle various out-standing Writer issues.\r\n\r\nI'll be filing no more archive/tar related issues after this. I promise :]",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-10-23T18:31:21Z",
+	"created_at": "2015-09-16T07:28:00Z",
+	"updated_at": "2015-10-23T18:31:21Z"
+}

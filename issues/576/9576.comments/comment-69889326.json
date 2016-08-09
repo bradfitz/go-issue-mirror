@@ -1,0 +1,12 @@
+{
+	"id": 69889326,
+	"body": "\u003e It's worrying that the injectglist(gp) is not protected with the same kind of  incidlelocked(-1)/incidlelocked(1). Maybe injectglist itself should do that.\r\n\r\nDeadlock detection is based on number of running *threads* (Ms). While a thread is in findrunnable is it running, so deadlock can't be reported. Sysmon is special, because it is not considered a running thread, and so it does that incidlelocked(-1)/incidlelocked(1).\r\n\r\n\u003eGiven that sched.lock has been released since pidleget and that injectglist releases sched.lock before restarting any m's, it seems plausible that pidleget could return nil, some other m calls stoplockedm, which does pidleput(p) inside handoffp, then injectglist adds the gp's to the global queue and unlocks sched.lock, then the other m calls incidlelocked and finds the \"deadlock\", because the gp's are on the run queue but startm, which will call mget and do nmidle--, has not been called yet.\r\n\r\nIn this scenario deadlock won't be reported because while we are in injectglist the current thread is \"running\". When injectglist is called from findrunnable, the current thread is a normal M and it is \"running\" till stopm. When injectglist is called from sysmon, we do incidlelocked(-1)/incidlelocked(1).\r\n\r\n\r\nWhat bothers me is that the program uses cgo, and when cgo is in use deadlocks should not be reported at all (due to extram's). So even the following program does not report deadlock:\r\n\r\nfunc main() {\r\n\tnet.Dial(\"tcp\", \"127.0.0.1:12345\")\r\n\tselect{}\r\n}\r\n\r\nThe only way a deadlock can be reported is if thread counters gets corrupted (due to a data race or a missed increment/decrement). But I don't see how it can happen.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-14T09:23:24Z",
+	"updated_at": "2015-01-14T09:23:24Z"
+}

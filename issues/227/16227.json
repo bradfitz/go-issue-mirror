@@ -1,0 +1,21 @@
+{
+	"id": 163220892,
+	"number": 16227,
+	"state": "open",
+	"title": "cmd/vet: copylocks false positives",
+	"body": "Examples from the standard library that I believe were introduced between Go 1.6 and Go 1.7.\r\n\r\n\u003e context/context.go:230: assignment copies lock value to c: context.cancelCtx contains sync.Mutex\r\n\u003e context/context.go:236: newCancelCtx returns lock by value: context.cancelCtx contains sync.Mutex\r\n\u003e context/context.go:375: literal copies lock value from newCancelCtx(parent): context.cancelCtx contains sync.Mutex\r\n\r\n```go\r\nfunc WithCancel(parent Context) (ctx Context, cancel CancelFunc) {\r\n\tc := newCancelCtx(parent) // LINE 230\r\n\tpropagateCancel(parent, \u0026c)\r\n\treturn \u0026c, func() { c.cancel(true, Canceled) }\r\n}\r\n\r\nfunc newCancelCtx(parent Context) cancelCtx {  // LINE 236\r\n\treturn cancelCtx{\r\n\t\tContext: parent,\r\n\t\tdone:    make(chan struct{}),\r\n\t}\r\n}\r\n\r\n\tc := \u0026timerCtx{\r\n\t\tcancelCtx: newCancelCtx(parent), // LINE 375\r\n\t\tdeadline:  deadline,\r\n\t}\r\n```\r\n\r\n`cancelCtx` is a struct type containing a sync.Mutex. But all of these are just fine--in newCancelCtx (line 236), the sync.Mutex is (implicitly) being set to its zero value, which is fine. And since it is the zero value, and these are used as initializations of new values (lines 230, 375), they are also ok.\r\n\r\n\u003e go/internal/gcimporter/bimport.go:347: assignment copies lock value to *t: go/types.Struct contains sync.Once contains sync.Mutex\r\n\r\n```go\r\n\t\t*t = *types.NewStruct(p.fieldList(parent))\r\n```\r\n\r\n`Types.NewStruct` constructs a new struct and omits (implicitly zeros) the lock fields.\r\n\r\nI think we should consider rolling back the new checks for 1.7 and restoring them in 1.8 without these false positives. At least in the case of struct initialization, ignoring fields being initialized to the zero value will help. I'm not sure how to detect copying of values that are known to contain zero-valued locks. Marking Go 1.7; Rob can adjust milestone from there.\r\n\r\ncc @valyala @robpike \r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 17,
+	"created_at": "2016-06-30T17:29:37Z",
+	"updated_at": "2016-07-06T18:47:05Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

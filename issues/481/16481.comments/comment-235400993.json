@@ -1,0 +1,12 @@
+{
+	"id": 235400993,
+	"body": "Thanks for your quick response (test and confirm the issue, find #16498,\r\nand a fix). \r\n\r\nWith the fix, there are still uncovered cases. For example, if the\r\nsender sends large chunk of data and use up all connection level flow quota, but the\r\nreceiver's handler never reads the data, the data will be buffered, but\r\nthe current implementation would not send windows update and thus the\r\nwhole connection is blocked. In this case, the data did arrive to the\r\nserver and the connection is wide open, it should not block other steams.\r\n\r\nThe basic idea of windows based flow control is: sender send n bytes of\r\ndata and closes the window by n bytes, receiver \"consumes\" m bytes of\r\ndata and opens by m bytes (by sending window update).\r\n\r\nFor connection level, whenever a data frame is processed, it is\r\n\"consumed\" from connection level's point of view, we don't really care if\r\nthe data is delivered or discarded. Therefore, as soon as a data frame\r\nis processed, we should immediately send window update to open up\r\nconnection level. Even if some crazy client send bogus data frame,\r\nserver should not try to enforce anything, as long as server receives\r\nthe data frame, it should immediately open connection level window by\r\nthe amount of data received, since from the connection point of view,\r\nthe data is delivered and the connection is open for more data, good or\r\nbad. This applies to both server and client (transport).\r\n\r\nFor steam level, the data is \"consumed\" only when the handler read it,\r\nso current implementation is correct. We should move sending connection\r\nlevel flow control from there to processData()",
+	"user": {
+		"login": "wujieliulan",
+		"id": 2224380,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-26T20:50:14Z",
+	"updated_at": "2016-07-26T20:50:14Z"
+}

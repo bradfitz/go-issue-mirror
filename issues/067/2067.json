@@ -1,0 +1,28 @@
+{
+	"id": 51278683,
+	"number": 2067,
+	"state": "closed",
+	"title": "encoding/gob: Encode() memory leak?",
+	"body": "by **christopher.helck**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile and run the attached program.\n2.\n3.\n\nWhat is the expected output?\nThe program simply saves the same data structure over and over again. It should run for\na very long time.\n\n\nWhat do you see instead? Memory dump\nIt runs out of memory. I suspect that either gob.Encode has a leak, or my data structure\nis bad. \n\nruntime: memory allocated by OS not in usable range\nruntime: out of memory: cannot allocate 4390912-byte block (536084480 in use)\nthrow: out of memory\n\nruntime.throw+0x43 /home/chris/go/src/pkg/runtime/runtime.c:102\n\truntime.throw(0x8125085, 0x430)\nruntime.mallocgc+0x2cd /home/chris/go/src/pkg/runtime/malloc.c:60\n\truntime.mallocgc(0x42ffff, 0x1, 0x1, 0x1, 0x8137b98, ...)\nmakeslice1+0x71 /home/chris/go/src/pkg/runtime/slice.c:46\n\tmakeslice1(0x809b92c, 0x42ffff, 0x42ffff, 0xcf8c7c, 0x1, ...)\nruntime.makeslice+0x95 /home/chris/go/src/pkg/runtime/slice.c:26\n\truntime.makeslice(0x809b92c, 0x42ffff, 0x0, 0x42ffff, 0x0, ...)\nbytes.*Buffer·grow+0x13e /home/chris/go/src/pkg/bytes/buffer.go:85\n\tbytes.*Buffer·grow(0x977d289c, 0x1, 0x217ffd, 0x80603ff)\nbytes.*Buffer·WriteByte+0x3c /home/chris/go/src/pkg/bytes/buffer.go:182\n\tbytes.*Buffer·WriteByte(0x977d289c, 0x217f00, 0x806ec29, 0x977d289c)\ngob.*encoderState·encodeUint+0x46 /home/chris/go/src/pkg/gob/encode.go:56\n\tgob.*encoderState·encodeUint(0x97f5e360, 0x0, 0x0)\ngob.encStructTerminator+0x39 /home/chris/go/src/pkg/gob/encode.go:328\n\tgob.encStructTerminator(0x97f5d2e0, 0x97f5e360, 0x97f02d78)\ngob.*Encoder·encodeStruct+0xde /home/chris/go/src/pkg/gob/encode.go:371\n\tgob.*Encoder·encodeStruct(0x977d2870, 0x977d289c, 0x97f5b840, 0x97f02d78, 0x97f5e1f4, ...)\ngob._func_016+0x5f /home/chris/go/src/pkg/gob/encode.go:573\n\tgob._func_016(0x97e4cb18, 0x8061316, 0x97f5d310, 0x97f5e340, 0x97f02d78, ...)\ngob.*Encoder·encodeStruct+0xde /home/chris/go/src/pkg/gob/encode.go:371\n\tgob.*Encoder·encodeStruct(0x977d2870, 0x977d289c, 0x97f5b820, 0x97f02d70, 0x97f5e2f4, ...)\ngob._func_016+0x5f /home/chris/go/src/pkg/gob/encode.go:573\n\tgob._func_016(0x97e4ccf8, 0x8061419, 0x0, 0x97f5e320, 0x97f02d70, ...)\ngob.*Encoder·encodeArray+0xf9 /home/chris/go/src/pkg/gob/encode.go:391\n\tgob.*Encoder·encodeArray(0x977d2870, 0x977d289c, 0x97f04238, 0x97f5e2e0, 0x4, ...)\ngob._func_013+0xdb /home/chris/go/src/pkg/gob/encode.go:542\n\tgob._func_013(0x97e4ccd8, 0x97e4ccd0, 0x97e4cce0, 0x806154e, 0x0, ...)\ngob.encodeReflectValue+0xfc /home/chris/go/src/pkg/gob/encode.go:405\n\tgob.encodeReflectValue(0x97f5e300, 0x809b488, 0xa5371160, 0x0, 0x978253c0, ...)\ngob.*Encoder·encodeMap+0x130 /home/chris/go/src/pkg/gob/encode.go:419\n\tgob.*Encoder·encodeMap(0x977d2870, 0x977d289c, 0x809bbe4, 0x97b76a50, 0x0, ...)\ngob._func_015+0x113 /home/chris/go/src/pkg/gob/encode.go:564\n\tgob._func_015(0x97e4cc98, 0x97e4cca0, 0x97e4ccb8, 0x97e4cca8, 0x97e4ccc0, ...)\ngob.*Encoder·encodeStruct+0xde /home/chris/go/src/pkg/gob/encode.go:371\n\tgob.*Encoder·encodeStruct(0x977d2870, 0x977d289c, 0x97f5b7c0, 0x97826780, 0x80b7a18, ...)\ngob.*Encoder·encode+0x144 /home/chris/go/src/pkg/gob/encode.go:687\n\tgob.*Encoder·encode(0x977d2870, 0x977d289c, 0x80b7a10, 0x97826750, 0x0, ...)\ngob.*Encoder·EncodeValue+0x1b8 /home/chris/go/src/pkg/gob/encoder.go:236\n\tgob.*Encoder·EncodeValue(0x977d2870, 0x80b7a10, 0x97826750, 0x0, 0x0, ...)\ngob.*Encoder·Encode+0x46 /home/chris/go/src/pkg/gob/encoder.go:168\n\tgob.*Encoder·Encode(0x977d2870, 0x80b7a10, 0x97826750, 0x977c8960, 0x2, ...)\nmain.save+0xbf /home/chris/gotest/src/gobble/memory/main.go:101\n\tmain.save(0x977d75d0, 0x0, 0x0)\nmain.main+0x3f /home/chris/gotest/src/gobble/memory/main.go:109\n\tmain.main()\nruntime.mainstart+0xf /home/chris/go/src/pkg/runtime/386/asm.s:93\n\truntime.mainstart()\nruntime.goexit /home/chris/go/src/pkg/runtime/proc.c:178\n\truntime.goexit()\n\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)? 8g\n\n\nWhich operating system are you using?\nLinux Lime 32 bit\n\n\nWhich revision are you using?  (hg identify)\n16bfa562ba76 weekly/weekly.2011-07-07\n\n\n\nPlease provide any additional information below.\n\nI've noticed that when I keep the arrays of pointers fairly small there is no leak. It's\nonly when they get bigger. When I have time I'll try to stream line this program. As is,\nit is pretty close to my application that has this problem (except my app has 100,000+\nRectangles)\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2067/0/main.go\"\u003emain.go\u003c/a\u003e (2161 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:11:11Z",
+	"created_at": "2011-07-13T03:50:20Z",
+	"updated_at": "2016-06-24T19:32:16Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 102780313,
+	"number": 12290,
+	"state": "closed",
+	"title": "math/rand: rand.Float64 is not purely uniform",
+	"body": "The current implementation (as of Go 1.5) of rand.Float64 is:\r\n```go\r\nfunc (r *Rand) Float64() float64 {\r\n  f := float64(r.Int63()) / (1 \u003c\u003c 63)\r\n  if f == 1 {\r\n    f = 0\r\n  }\r\n  return f\r\n}\r\n```\r\n\r\nAs the mantissa of a Float64 is on 52 bits, there are a lot of numbers (2^11 ?) that were initially mapped to 1 that will effectively become 0. The Float64() method therefore does not preserve the uniform property of the underlying Int63() method.\r\n\r\nThis is related to issues https://github.com/golang/go/issues/4965 and https://github.com/golang/go/issues/6721 .\r\n\r\nA better alternative, even if this implies to trade numbers under machine epsilon against uniformity comes from the prototypical code of Mersenne Twister 64 at http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/VERSIONS/C-LANG/mt19937-64.c :\r\n```go\r\n/* generates a random number on [0,1)-real-interval */\r\nfunc (r *Rand) Float64() float64 {\r\n    return (float64(r.Int63()) \u003e\u003e 10) * (1.0/9007199254740992.0)\r\n}\r\n```\r\n```go\r\n/* generates a random number on (0,1)-real-interval */\r\nfunc (r *Rand) Float64Open() float64 {\r\n    return (float64(r.Int63())  \u003e\u003e 11) + 0.5) * (1.0/4503599627370496.0)\r\n}\r\n```\r\n\r\nAn interesting consequence is that this preserves symmetry around 0.5. It's also quite a bit faster on my machine, as the if statement of the original algorithm deteriorate performance significantly (not entirely sure why).",
+	"user": {
+		"login": "fabienlefloch",
+		"id": 3648984,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 21,
+	"closed_at": "2015-12-11T15:18:00Z",
+	"created_at": "2015-08-24T12:27:07Z",
+	"updated_at": "2016-08-02T15:09:28Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

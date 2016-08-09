@@ -1,0 +1,12 @@
+{
+	"id": 176230977,
+	"body": "I finally managed to reproduce this outside of the build system! Last night I got 3 failures out of 187 runs on the windows-386-gce builder using the following script\r\n\r\n```\r\n#!/bin/zsh\r\n\r\nVM=$(gomote create windows-386-gce)\r\nif [[ -z $VM ]]; then\r\n    echo \"VM creation failed\"\r\n    exit 0\r\nfi\r\nSTATUS=0\r\npushlog=$(mktemp)\r\nif ! gomote push $VM \u003e\u0026 $pushlog; then\r\n    echo \"Push failed:\"\r\n    cat $pushlog\r\n    STATUS=1\r\nelif ! gomote run $VM go/src/all.bat; then\r\n    echo \"Run failed\"\r\n    STATUS=1\r\nfi\r\nrm $pushlog\r\ngomote destroy $VM\r\nexit $STATUS\r\n```\r\n\r\nrun as `parallel -j 10 ./test1 :::: \u003c(seq 200)` with the following modification to all.bat to run only the parallel runtime test:\r\n\r\n```patch\r\ndiff --git a/src/run.bat b/src/run.bat\r\nindex 01a66bc..2f4ab00 100644\r\n--- a/src/run.bat\r\n+++ b/src/run.bat\r\n@@ -37,7 +37,7 @@ call env.bat\r\n del env.bat\r\n echo.\r\n \r\n-go tool dist test\r\n+go tool dist test runtime:cpu124\r\n if errorlevel 1 goto fail\r\n echo.\r\n \r\n```\r\n\r\nNext steps are to narrow this down a bit and to see if the same approach works on a Linux builder where it's easier to debug things.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-28T15:16:50Z",
+	"updated_at": "2016-01-28T15:16:50Z"
+}

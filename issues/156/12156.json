@@ -1,0 +1,22 @@
+{
+	"id": 101209893,
+	"number": 12156,
+	"state": "closed",
+	"title": "cmd/go: panic: runtime error: slice bounds out of range",
+	"body": "Does not appear to be a dup of https://github.com/golang/go/issues/11414\r\n\r\nProblem is reproducible on tip +e8c4a5b as well as go1.5rc1 tag.  Added a few printfs just before line 453:\r\n\r\n```\r\njbuberel@ubuntu:~/vtest/src$ go run p/command.go \r\nparent.ImportPath: [p]\r\nlen(parent.ImportPath)-chopped: [-5]\r\nvpath: [vendor/github.com/gorilla/mux]\r\npanic: runtime error: slice bounds out of range\r\n```\r\n\r\nFull output:\r\n\r\n```\r\n$ go run p/cmd.go \r\npanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 1 [running]:\r\nmain.vendoredImportPath(0xc82010bc00, 0xc8201114c1, 0x16, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n        /home/jbuberel/go15/src/cmd/go/pkg.go:453 +0x540\r\nmain.loadImport(0xc8201114c1, 0x16, 0xc820110fa0, 0x1a, 0xc82010bc00, 0xc8201078c0, 0xc8200efa70, 0x1, 0x1, 0x1, ...)\r\n        /home/jbuberel/go15/src/cmd/go/pkg.go:317 +0x138e\r\nmain.(*Package).load(0xc82010bc00, 0xc8201078c0, 0xc8200d2900, 0x0, 0x0, 0x0)\r\n        /home/jbuberel/go15/src/cmd/go/pkg.go:899 +0x42e1\r\nmain.goFilesPackage(0xc82000a350, 0x1, 0x1, 0x8)\r\n        /home/jbuberel/go15/src/cmd/go/build.go:750 +0x836\r\nmain.runRun(0xba6020, 0xc82000a350, 0x1, 0x1)\r\n        /home/jbuberel/go15/src/cmd/go/run.go:87 +0x479\r\nmain.main()\r\n        /home/jbuberel/go15/src/cmd/go/main.go:181 +0x782\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        /home/jbuberel/go15/src/runtime/asm_amd64.s:1696 +0x1\r\n\r\ngoroutine 5 [syscall]:\r\nos/signal.loop()\r\n        /home/jbuberel/go15/src/os/signal/signal_unix.go:22 +0x18\r\ncreated by os/signal.init.1\r\n        /home/jbuberel/go15/src/os/signal/signal_unix.go:28 +0x37\r\njbuberel@ubuntu:~/vtest/src$ mv ../vendor/ ../v\r\njbuberel@ubuntu:~/vtest/src$ go run p/cmd.go   \r\np/cmd.go:4:2: cannot find package \"github.com/gorilla/mux\" in any of:\r\n        /home/jbuberel/go15/src/github.com/gorilla/mux (from $GOROOT)\r\n        /home/jbuberel/vtest/src/github.com/gorilla/mux (from $GOPATH)\r\njbuberel@ubuntu:~/vtest/src$ mv p/cmd.go p/command.go\r\njbuberel@ubuntu:~/vtest/src$ go run p/command.go \r\np/command.go:4:2: cannot find package \"github.com/gorilla/mux\" in any of:\r\n        /home/jbuberel/go15/src/github.com/gorilla/mux (from $GOROOT)\r\n        /home/jbuberel/vtest/src/github.com/gorilla/mux (from $GOPATH)\r\n```\r\n\r\nVersion, build and directory configuration:\r\n\r\n```\r\n$ go version\r\ngo version devel +e8c4a5b Sat Aug 15 17:38:56 2015 +0000 linux/amd64\r\njbuberel@ubuntu:~/vtest/src$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/jbuberel/vtest\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/jbuberel/go15\"\r\nGOTOOLDIR=\"/home/jbuberel/go15/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\njbuberel@ubuntu:~/vtest/src$ cd ../\r\njbuberel@ubuntu:~/vtest$ cd ../\r\njbuberel@ubuntu:~$ tree vtest/\r\nvtest/\r\n|-- src\r\n|   `-- p\r\n|       `-- command.go\r\n`-- vendor\r\n    `-- github.com\r\n        `-- gorilla\r\n            |-- context\r\n            |   |-- context.go\r\n            |   |-- context_test.go\r\n            |   |-- doc.go\r\n            |   |-- LICENSE\r\n            |   `-- README.md\r\n            `-- mux\r\n                |-- bench_test.go\r\n                |-- doc.go\r\n                |-- LICENSE\r\n                |-- mux.go\r\n                |-- mux_test.go\r\n                |-- old_test.go\r\n                |-- README.md\r\n                |-- regexp.go\r\n                `-- route.go\r\n```\r\n\r\nContents of `command.go`:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"github.com/gorilla/mux\"\r\n)\r\n\r\nfunc main() {\r\n        m := mux.NewRouter()\r\n        fmt.Println(m)\r\n}\r\n```",
+	"user": {
+		"login": "jbuberel",
+		"id": 1711364,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-18T13:53:41Z",
+	"created_at": "2015-08-15T21:04:49Z",
+	"updated_at": "2015-08-18T16:16:53Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

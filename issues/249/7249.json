@@ -1,0 +1,27 @@
+{
+	"id": 51286421,
+	"number": 7249,
+	"state": "closed",
+	"title": "cmd/go: build -x output does not describe CGO_LDFLAGS env variable",
+	"body": "by **andrey.gursky@e-mail.ua**:\n\n\u003cpre\u003eThe simple program using external C libraries test_glib_minimal.go:\n\npackage main\n\n// #cgo CFLAGS: -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include\n// #cgo LDFLAGS: -lglib-2.0\n// #include \u0026lt;glib/gprintf.h\u0026gt;\n// void foo(void) {\n//      g_printf(\u0026quot;foo\\n\u0026quot;);\n// }\nimport \u0026quot;C\u0026quot;\n\nfunc main(){\n    C.foo()\n}\n\ngo build test_glib_minimal.go\nworks.\n\ngo build -x test_glib_minimal.go\noutputs commands:\n\nWORK=/tmp/go-build922261626\nmkdir -p $WORK/command-line-arguments/_obj/\ncd /media/portable1/all1/projects/go-cgo\n/usr/lib/go/pkg/tool/linux_amd64/cgo -objdir $WORK/command-line-arguments/_obj/ -- -I\n$WORK/command-line-arguments/_obj/ -I/usr/include/glib-2.0\n-I/usr/lib/x86_64-linux-gnu/glib-2.0/include test_glib_minimal.go\n/usr/lib/go/pkg/tool/linux_amd64/6c -F -V -w -I $WORK/command-line-arguments/_obj/ -I\n/usr/lib/go/pkg/linux_amd64 -o $WORK/command-line-arguments/_obj/_cgo_defun.6 -D\nGOOS_linux -D GOARCH_amd64 $WORK/command-line-arguments/_obj/_cgo_defun.c\ngcc -I . -g -O2 -fPIC -m64 -pthread -print-libgcc-file-name\ngcc -I . -g -O2 -fPIC -m64 -pthread -I $WORK/command-line-arguments/_obj/\n-I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -o\n$WORK/command-line-arguments/_obj/_cgo_main.o -c\n$WORK/command-line-arguments/_obj/_cgo_main.c\ngcc -I . -g -O2 -fPIC -m64 -pthread -I $WORK/command-line-arguments/_obj/\n-I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -o\n$WORK/command-line-arguments/_obj/_cgo_export.o -c\n$WORK/command-line-arguments/_obj/_cgo_export.c\ngcc -I . -g -O2 -fPIC -m64 -pthread -I $WORK/command-line-arguments/_obj/\n-I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -o\n$WORK/command-line-arguments/_obj/test_glib_minimal.cgo2.o -c\n$WORK/command-line-arguments/_obj/test_glib_minimal.cgo2.c\ngcc -I . -g -O2 -fPIC -m64 -pthread -o $WORK/command-line-arguments/_obj/_cgo_.o\n$WORK/command-line-arguments/_obj/_cgo_main.o\n$WORK/command-line-arguments/_obj/_cgo_export.o\n$WORK/command-line-arguments/_obj/test_glib_minimal.cgo2.o -lglib-2.0\n/usr/lib/go/pkg/tool/linux_amd64/cgo -objdir $WORK/command-line-arguments/_obj/\n-dynimport $WORK/command-line-arguments/_obj/_cgo_.o -dynout\n$WORK/command-line-arguments/_obj/_cgo_import.c\n/usr/lib/go/pkg/tool/linux_amd64/6c -F -V -w -I $WORK/command-line-arguments/_obj/ -I\n/usr/lib/go/pkg/linux_amd64 -o $WORK/command-line-arguments/_obj/_cgo_import.6 -D\nGOOS_linux -D GOARCH_amd64 $WORK/command-line-arguments/_obj/_cgo_import.c\ngcc -I . -g -O2 -fPIC -m64 -pthread -o $WORK/command-line-arguments/_obj/_all.o\n$WORK/command-line-arguments/_obj/_cgo_export.o\n$WORK/command-line-arguments/_obj/test_glib_minimal.cgo2.o -Wl,-r -nostdlib\n/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc.a\n/usr/lib/go/pkg/tool/linux_amd64/6g -o $WORK/command-line-arguments/_obj/_go_.6 -p\ncommand-line-arguments -D _/media/portable1/all1/projects/go-cgo -I $WORK\n$WORK/command-line-arguments/_obj/_cgo_gotypes.go\n$WORK/command-line-arguments/_obj/test_glib_minimal.cgo1.go\n/usr/lib/go/pkg/tool/linux_amd64/pack grcP $WORK $WORK/command-line-arguments.a\n$WORK/command-line-arguments/_obj/_go_.6 $WORK/command-line-arguments/_obj/_cgo_import.6\n$WORK/command-line-arguments/_obj/_cgo_defun.6 $WORK/command-line-arguments/_obj/_all.o\ncd .\n/usr/lib/go/pkg/tool/linux_amd64/6l -o test_glib_minimal -L $WORK\n$WORK/command-line-arguments.a\n\nRunning these finishes with:\n\n/var/tmp/go-link-sViLsd/000000.o: In function `foo':\n/media/portable1/all1/projects/go-cgo/test_glib_minimal.go:7: undefined reference to\n`g_printf'\ncollect2: error: ld returned 1 exit status\n/usr/lib/go/pkg/tool/linux_amd64/6l: running gcc failed: unsuccessful exit status 0x100\n\nI'd expect that 'go build' shouldn't do anything implicitly, thus the output commands\nare always enough to do the same, 'go build' does.\n\nI've been using go1.2 from Debian. Near the same behavior is in tip. (Even worse, since\nthe output command for cmd/pack doesn't anymore correspond to the recent update to\ncmd/pack.)\n\nI've could find out, what is being done implicitly by go build. It scans the go files\nand after it finds \n#cgo CFLAGS\n#cgo LDFLAGS\nit collects them. The CFLAGS are passed as command line arguments (can be seen above) to\nthe cmd/cgo, but not LDFLAGS. LDFLAGS are being put only into CGO_LDFLAGS environment\nvariable (where cgo looks for them), which is not reflected by commands and it might be\nnot a good solution.\n\nUsing gccgo compiler doesn't work either:\n$ go build --compiler gccgo test_glib_minimal.go\n# command-line-arguments\n/media/portable1/all1/projects/go-cgo/test_glib_minimal.go:7: error: undefined reference\nto 'g_printf'\ncollect2: error: ld returned 1 exit status\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:40:20Z",
+	"created_at": "2014-02-03T15:49:09Z",
+	"updated_at": "2016-06-25T01:26:44Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

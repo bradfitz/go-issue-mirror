@@ -1,0 +1,22 @@
+{
+	"id": 111938102,
+	"number": 12967,
+	"state": "closed",
+	"title": "runtime: shrinkstack during mark termination significantly increases GC STW time",
+	"body": "I have a process that experiences significant STW times during the mark termination phase of garbage collection. When it has around 100,000 goroutines and a live heap of around 500MB, its STW pauses take tens of milliseconds. The process runs on linux/amd64 with GOMAXPROCS=18, with a recent version of Go tip (30b9663).\r\n\r\nI profiled its CPU usage with perf_events, looking specifically at samples with runtime.gcMark on the stack. 7.5% of samples include runtime.gcMark -\u003e runtime.freeStackSpans (non-parallelized work, discussed in #11465). 90% of samples include runtime.gcMark -\u003e runtime.parfordo -\u003e runtime.markroot, and 75% of samples include runtime.gcMark -\u003e runtime.parfordo -\u003e runtime.markroot -\u003e runtime.shrinkstack.\r\n\r\nThe work for stack shrinking is split 18 ways in my case, but at 75% of CPU cycles it's still a huge contributor to mark termination pauses, and the pauses my program sees are well beyond the 10ms goal with only a modest heap size.\r\n\r\nDoes stack shrinking need to take place while the world is stopped?\r\n\r\n```\r\n$ go version\r\ngo version devel +30b9663 Tue Oct 13 21:06:58 2015 +0000 linux/amd64\r\n```\r\n\r\n@aclements ",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 27,
+	"closed_at": "2016-03-16T20:13:42Z",
+	"created_at": "2015-10-17T02:02:53Z",
+	"updated_at": "2016-03-18T15:15:14Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 131214903,
+	"body": "@ksedgwic Have you tried running bolt tests? They fail for me.\r\n\r\nRegarding flock(), here is Joyent implementation of flock() for Linux brand - we can do exactly the same in GO:\r\n\r\n```\r\nlong\r\nlx_flock(uintptr_t p1, uintptr_t p2)\r\n{\r\n        int                     fd = (int)p1;\r\n        int                     operation = (int)p2;\r\n        struct flock            fl;\r\n        int                     cmd;\r\n        int                     ret;\r\n\r\n        if (operation \u0026 LX_LOCK_NB) {\r\n                cmd = F_FLOCK;\r\n                operation \u0026= ~LX_LOCK_NB; /* turn off this bit */\r\n        } else {\r\n                cmd = F_FLOCKW;\r\n        }\r\n\r\n        switch (operation) {\r\n                case LX_LOCK_UN:\r\n                        fl.l_type = F_UNLCK;\r\n                        break;\r\n                case LX_LOCK_SH:\r\n                        fl.l_type = F_RDLCK;\r\n                        break;\r\n                case LX_LOCK_EX:\r\n                        fl.l_type = F_WRLCK;\r\n                        break;\r\n                default:\r\n                        return (-EINVAL);\r\n        }\r\n\r\n        fl.l_whence = 0;\r\n        fl.l_start = 0;\r\n        fl.l_len = 0;\r\n        fl.l_sysid = 0;\r\n        fl.l_pid = 0;\r\n\r\n        ret = fcntl(fd, cmd, \u0026fl);\r\n\r\n        return ((ret == -1) ? -errno : ret);\r\n}\r\n```",
+	"user": {
+		"login": "akolb1",
+		"id": 4513662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-14T19:28:21Z",
+	"updated_at": "2015-08-14T19:29:26Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 137069594,
+	"number": 14553,
+	"state": "closed",
+	"title": "math/big: Float.Float32() does not correctly handle denormals that are rounded up to a power of 2",
+	"body": "Context for this issue is https://groups.google.com/forum/#!topic/golang-dev/8xrGLS6mzzE\r\n\r\nIt appears to be a bug in the rounding of big.Float.Float32() and\r\nFloat64(), which the compiler uses to convert constants to float32 and\r\nfloat64.\r\n\r\nSpecifically the bug happens when 1) the float32/64 constant is a\r\ntiny, denormal value, 2) the arbitrary precision value would have to\r\nround up to a bit representation with more precision.  So for example\r\n0x7.9p-149 should round up to 0x8.0p-149 when converted to a float32,\r\nbut the existing code actually gets stuck at 3 bits of precision while\r\nstill overflowing the mantissa so 0x4.0p-149 is actually what gets\r\nassigned (which is worse than rounding down to 0x7.0p-149).\r\n\r\nHere is a playground link that shows the problem:\r\nhttp://play.golang.org/p/_aMEvOuOAs\r\n\r\nTo be fair, several places in the git commit history and in the\r\ncomments discuss how math.Float does not completely handle denormal\r\nvalues.  On the other hand, it seems like the compiler should be able\r\nto parse and assign them properly.\r\n\r\ngo v1.6, linux, x64\r\n",
+	"user": {
+		"login": "tarm",
+		"id": 476641,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-03-04T17:40:09Z",
+	"created_at": "2016-02-28T16:38:13Z",
+	"updated_at": "2016-03-04T17:40:09Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

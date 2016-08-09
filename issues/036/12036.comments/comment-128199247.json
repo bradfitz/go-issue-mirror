@@ -1,0 +1,12 @@
+{
+	"id": 128199247,
+	"body": "@mikioh, I'm having a hard time understanding why shouldEscape behaves as it does for mode==escapeHost. Simplifying, it says:\r\n\r\n\t// §2.3 Unreserved characters (alphanum)\r\n\tif 'A' \u003c= c \u0026\u0026 c \u003c= 'Z' || 'a' \u003c= c \u0026\u0026 c \u003c= 'z' || '0' \u003c= c \u0026\u0026 c \u003c= '9' {\r\n\t\treturn false\r\n\t}\r\n\r\n\tswitch c {\r\n\tcase '-', '_', '.', '~': // §2.3 Unreserved characters (mark)\r\n\t\treturn false\r\n\r\n\tcase '$', '\u0026', '+', ',', '/', ':', ';', '=', '?', '@': // §2.2 Reserved characters (reserved)\r\n\t\tswitch mode {\r\n\t\tcase encodeHost: // §3.2.1\r\n\t\t\t// The RFC allows ':'.\r\n\t\t\treturn c != ':'\r\n\t\t}\r\n\r\n\tcase '[', ']': // §2.2 Reserved characters (reserved)\r\n\t\tswitch mode {\r\n\t\tcase encodeHost: // §3.2.1\r\n\t\t\t// The RFC allows '[', ']'.\r\n\t\t\treturn false\r\n\t\t}\r\n\t}\r\n\r\n\t// Everything else must be escaped.\r\n\treturn true\r\n\r\nSo:\r\n\r\n\tshouldEscape('A', escapeHost) = false (first clause)\r\n\tshouldEscape('-', escapeHost) = false (first branch of switch)\r\n\tshouldEscape('+', escapeHost) = true (second branch of switch)\r\n\tshouldEscape(':', escapeHost) = false (second branch of switch)\r\n\tshouldEscape('[', escapeHost) = false (third branch of switch)\r\n\r\nbut the relevant parts of RFC 3986 say:\r\n\r\n      host        = IP-literal / IPv4address / reg-name\r\n      reg-name    = *( unreserved / pct-encoded / sub-delims )\r\n      unreserved  = ALPHA / DIGIT / \"-\" / \".\" / \"_\" / \"~\"\r\n      sub-delims    = \"!\" / \"$\" / \"\u0026\" / \"'\" / \"(\" / \")\"\r\n                  / \"*\" / \"+\" / \",\" / \";\" / \"=\"\r\n\r\nIf the host allows all of those sub-delims, why does shouldEscape return true for all of them? The only thing it returns false for is \":\", which ironically isn't allowed (but it is part of IPv6 syntax and the :port suffix, which is why it's allowed). But why do we force escaping of the sub-delim case? It seems like we should allow them all to be used unencoded. \r\n\r\nThat is, `return c != ':'` should be `return false`. No?\r\n\r\n\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-06T01:11:05Z",
+	"updated_at": "2015-08-06T01:11:05Z"
+}

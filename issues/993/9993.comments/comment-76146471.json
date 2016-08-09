@@ -1,0 +1,12 @@
+{
+	"id": 76146471,
+	"body": "I believe the problem is here\r\n\r\nhttps://github.com/golang/go/blob/master/src/runtime/mheap.go#L731\r\n\r\nAttached is the patch we sent to gccgo last year, but reading over it I am unsure if it is safe to use here. I'm not sure it is safe to widen the range of memory freed as there is no signal to the GC that we've freed a larger area than the scavenge free list wanted us to do.\r\n\r\n```\r\ndiff -r 3a53301d24d7 libgo/runtime/mheap.c\r\n--- a/libgo/runtime/mheap.c\tTue Apr 22 16:43:35 2014 -0700\r\n+++ b/libgo/runtime/mheap.c\tThu Apr 24 21:18:35 2014 -0700\r\n@@ -387,7 +387,7 @@\r\n static uintptr\r\n scavengelist(MSpan *list, uint64 now, uint64 limit)\r\n {\r\n-\tuintptr released, sumreleased;\r\n+\tuintptr released, sumreleased, start, end, pagesize;\r\n \tMSpan *s;\r\n \r\n \tif(runtime_MSpanList_IsEmpty(list))\r\n@@ -400,7 +400,17 @@\r\n \t\t\tmstats.heap_released += released;\r\n \t\t\tsumreleased += released;\r\n \t\t\ts-\u003enpreleased = s-\u003enpages;\r\n-\t\t\truntime_SysUnused((void*)(s-\u003estart \u003c\u003c PageShift), s-\u003enpages \u003c\u003c PageShift);\r\n+\r\n+\t\t\tstart = s-\u003estart \u003c\u003c PageShift;\r\n+\t\t\tend = start + (s-\u003enpages \u003c\u003c PageShift);\r\n+\r\n+\t\t\t// Round start up and end down to ensure we\r\n+\t\t\t// are acting on entire pages.\r\n+\t\t\tpagesize = getpagesize();\r\n+\t\t\tstart = ROUND(start, pagesize);\r\n+\t\t\tend \u0026= ~(pagesize - 1);\r\n+\t\t\tif(end \u003e start)\r\n+\t\t\t\truntime_SysUnused((void*)start, end - start);\r\n \t\t}\r\n \t}\r\n \treturn sumreleased;\r\n```\r\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-26T09:25:43Z",
+	"updated_at": "2015-02-26T09:25:43Z"
+}

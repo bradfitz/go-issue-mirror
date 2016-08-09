@@ -1,0 +1,33 @@
+{
+	"id": 61011669,
+	"number": 10155,
+	"state": "closed",
+	"title": "net/http: bug in late binding",
+	"body": "Late binding does the following (putIdleConn):\r\n\r\n\twaitingDialer := t.idleConnCh[key]\r\n\tselect {\r\n\tcase waitingDialer \u003c- pconn:\r\n\t\tt.idleMu.Unlock()\r\n\t\treturn true\r\n\tdefault:\r\n\t\tif waitingDialer != nil {\r\n\t\t\tdelete(t.idleConnCh, key)\r\n\t\t}\r\n\t}\r\n\r\nHowever, receive in getConn is not atomic with creation of the idleConnCh channel, so it is possible that:\r\n- getConn inserts a chan into idleConnCh\r\n- putIdleConn gets the chan, but the non-blocking send fails\r\n- getConn blocks on receive from idleConnCh\r\n\r\nSo when we need a conn the most, we actually miss the opportunity to match getConn and putIdleConn.\r\n\r\nAnother bad consequence is that putIdleConn will delete the chan from t.idleConnCh in this situation. This can disable late binding for a set of concurrent getConn's -- subsequent putIdleConn's won't hand off connections to them.\r\n\r\n@bradfitz ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-04-30T20:09:37Z",
+	"created_at": "2015-03-13T08:25:22Z",
+	"updated_at": "2016-06-25T02:03:13Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

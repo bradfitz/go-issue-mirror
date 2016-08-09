@@ -1,0 +1,12 @@
+{
+	"id": 66074547,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eI don't think it is a good idea to make it easy to serve the same page at all paths,\neven though it does seem clean when you understand the mechanism.  Let me give some\nexamples of how serving the same content for every page is harmful.\n\n1. You have a load balancer that health-checks a number of backends and forwards queries\nto the ones that are serving 200s.  By mistake, you include a machine in the pool that\nis serving a different service.  Everything appears to work, but you are unknowingly\nserving the wrong content to some fraction of users.  The fix is to health-check not /\nbut /healthy-for-foo; 404s from other backends will stop them from seeing user traffic,\nand your monitoring will pick up the unhealthiness of the incorrectly configured\nbackends.\n\n2. \u003ca href=\"www.foo.bar/path\"\u003e becomes a valid link, not to \u003ca href=\"http://www.foo.bar/path\"\u003ehttp://www.foo.bar/path\u003c/a\u003e as\nyou intended but to \u003ca href=\"http://www.your.site/www.foo.bar/path\"\u003ehttp://www.your.site/www.foo.bar/path\u003c/a\u003e.  If you crawl your site\nchecking broken links, this won't be noticed.  No errors will appear in your logs.\n\n3. Trolls can construct valid URLs to your site with \"creative\" paths.  They can send\nlinks to these paths to other users, and they can get search engines to crawl and index\nthem.\n\nTherefore I think it should be the best practice to serve 200 for / and 404 for\neverything else.\n\nI think \"\" is the easiest API to use, but if you prefer, we could also document that\neveryone using ServeMux should include boilerplate on their / handler to serve only /.\u003c/pre\u003e",
+	"user": {
+		"login": "shields",
+		"id": 134482,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-22T22:52:08Z",
+	"updated_at": "2014-12-08T10:25:28Z"
+}

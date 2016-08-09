@@ -1,0 +1,28 @@
+{
+	"id": 64887428,
+	"number": 10277,
+	"state": "closed",
+	"title": "net/http/httputil: io.Copy in function of ReverseProxy is not high efficiency",
+	"body": "in funtion \r\n\r\n```\r\nfunc (p *ReverseProxy) copyResponse(dst io.Writer, src io.Reader) {\r\n\tif p.FlushInterval != 0 {\r\n\t\tif wf, ok := dst.(writeFlusher); ok {\r\n\t\t\tmlw := \u0026maxLatencyWriter{\r\n\t\t\t\tdst:     wf,\r\n\t\t\t\tlatency: p.FlushInterval,\r\n\t\t\t\tdone:    make(chan bool),\r\n\t\t\t}\r\n\t\t\tgo mlw.flushLoop()\r\n\t\t\tdefer mlw.stop()\r\n\t\t\tdst = mlw\r\n\t\t}\r\n\t}\r\n\r\n\tio.Copy(dst, src)\r\n}\r\n```\r\n\r\nin boom test the QPS is 160000, but use another way like this:\r\n\r\n```\r\nfunc (p *ReverseProxy) copyResponse(dst io.Writer, src io.Reader) {\r\n\tif p.FlushInterval != 0 {\r\n\t\tif wf, ok := dst.(writeFlusher); ok {\r\n\t\t\tmlw := \u0026maxLatencyWriter{\r\n\t\t\t\tdst:     wf,\r\n\t\t\t\tlatency: p.FlushInterval,\r\n\t\t\t\tdone:    make(chan bool),\r\n\t\t\t}\r\n\t\t\tgo mlw.flushLoop()\r\n\t\t\tdefer mlw.stop()\r\n\t\t\tdst = mlw\r\n\t\t}\r\n\t}\r\n        //now i Ignore the err temporary\r\n\tpayload, err := ioutil.ReadAll(src)\r\n\tn, err := dst.Write(payload)\r\n}\r\n```\r\n\r\nin boom test the QPS is 190000.",
+	"user": {
+		"login": "heidawei",
+		"id": 11207613,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-10-28T05:53:54Z",
+	"created_at": "2015-03-28T02:10:40Z",
+	"updated_at": "2015-10-28T05:53:54Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

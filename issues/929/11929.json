@@ -1,0 +1,27 @@
+{
+	"id": 98096284,
+	"number": 11929,
+	"state": "closed",
+	"title": "crypto/cipher: HTTPS throughput is poor",
+	"body": "[Here](https://gist.github.com/jacobsa/230bb47857d2c7b80fd2) is a program that downloads the first 1 GiB from a large object full of zeroes stored in Google Cloud Storage, and reports its throughput. It also dumps a CPU profile to `/tmp/cpu.pprof`.\r\n\r\nRunning on an `n1-standard-4` Google Cloud Engine VM in `us-central1-a` on Sandy Bridge CPUs looks like this:\r\n\r\n```\r\n% go version\r\ngo version devel +d3ffc97 Wed Jul 29 23:50:20 2015 +0000 linux/amd64\r\n\r\n% go build -o read tmp/read.go \u0026\u0026 time ./read\r\nCopied 1.00 GiB in 13.160669712s (77.81 MiB/s)\r\n./read  12.67s user 0.88s system 102% cpu 13.164 total\r\n```\r\n\r\nIn other words, it takes 100% CPU to do 78 MiB/s; CPU appears to be the bottleneck here. Compare that to `curl`:\r\n\r\n```\r\n% time curl -H \"Range: bytes=0-1073741823\" \"https://storage.googleapis.com/jacobsa-standard-us/10g-big-chunks\" \u003e /dev/null   \r\n  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\r\n                                 Dload  Upload   Total   Spent    Left  Speed\r\n100 1024M  100 1024M    0     0   240M      0  0:00:04  0:00:04 --:--:--  240M\r\ncurl -H \"Range: bytes=0-1073741823\"  \u003e /dev/null  1.72s user 1.01s system 64% cpu 4.262 total\r\n```\r\n\r\nHere it appears we've maxed out the network bandwidth available, using 64% CPU. The throughput in terms of walltime is 3x as high. Throughput in terms of bytes per CPU second is about 5x as high.\r\n\r\nThe CPU profile for the Go program looks like this:\r\n\r\n```\r\n11530ms of 13190ms total (87.41%)\r\nDropped 61 nodes (cum \u003c= 65.95ms)\r\nShowing top 5 nodes out of 45 (cum \u003e= 330ms)\r\n      flat  flat%   sum%        cum   cum%\r\n    7780ms 58.98% 58.98%     7780ms 58.98%  crypto/cipher.(*gcm).mul\r\n    1930ms 14.63% 73.62%     1930ms 14.63%  crypto/aes.encryptBlockAsm\r\n     900ms  6.82% 80.44%     8670ms 65.73%  crypto/cipher.(*gcm).updateBlocks\r\n     590ms  4.47% 84.91%     3550ms 26.91%  crypto/cipher.(*gcm).counterCrypt\r\n     330ms  2.50% 87.41%      330ms  2.50%  crypto/cipher.fastXORWords\r\n```\r\n\r\nI know that it's possible to do some AES cipher work in hardware on modern Intel CPUs, and presumably that's what curl is doing via OpenSSL. Has this been considered for `crypto/cipher` in Go?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2015-10-30T06:53:34Z",
+	"created_at": "2015-07-30T06:31:31Z",
+	"updated_at": "2016-04-19T04:35:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

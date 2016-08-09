@@ -1,0 +1,12 @@
+{
+	"id": 106960759,
+	"body": "PS: Just to be clear; I'm not saying it wouldn't be useful to have such cases flagged as errors. I am just saying that this is not a bug per the current spec.\r\n\r\nThe problem with flagging such errors is that in general the situation is undecidable; e.g.:\r\n\r\n```\r\nx := f() // f always called for some side effect\r\nif condition {\r\n   y = x\r\n}\r\n```\r\n\r\nIn this case, x may or may not get used (no _ involved here!), and the compiler may not be able to deduce this 100% correctly in general.\r\n\r\nA conservative approach might be better than what we have now. For instance, one could say that a compiler may make it illegal to declare or assign to a variable inside a function body if there's no possible path that will use the variable. This would permit the above case (x is used in the \"then\" path), and it would also permit things like\r\n\r\n```\r\nvar x int\r\nfor cond {\r\n    sum += x\r\n    x = f()\r\n}\r\n// no further use of x below\r\n```\r\nsince it's possible for x to be used in a subsequent iteration. Such decision making would need to be done independent of the condition otherwise it get's very complicated to explain the behavior (e.g., is x used if cond is the constant false?), etc. etc. But I believe it wouldn't be too hard and actually decidable (analogous to the checks we do for missing return statements, but more conservative in this case).\r\n\r\nBut even if it's possible to tighten the rules here a bit, this would be a backward-incompatible change because it may make currently compiling programs not compile anymore.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-29T23:45:06Z",
+	"updated_at": "2015-05-29T23:45:06Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66079632,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eSo, I looked around a bit and I don't think this is easily done or possible within\ngc/swt.c alone. I don't know yet if it's possible to emit an OGOTO with a dynamic jump\ndestination. Don't think so.\n\nAnyway, I see if I can cook up proof-of-concept code with a new opcode. Not sure if\nthat's the right way to do it, but this allows me to better isolate my code and flush\nout errors.\n\nIn case someone is not sure what I want to achieve, I want to compile this switch\ncontaining only integer cases or case lists:\n\nswitch h {\ncase '0', '1', ..., '9':\n  d = h - '0'\ncase 'a', 'b', ..., 'f':\n  d = h - 'a' + 10\ncase 'A', 'B', ..., 'F':\n  d = h - 'A' + 10\n}\n\n...into roughly this (pseudo) code:\n\n      MOV reg, h\n      CMP reg, 48\n      JLT default   // h \u0026lt; 48 --\u0026gt; jump to default\n      CMP reg, 102\n      JGT default   // h \u0026gt; 102 --\u0026gt; jump to default\n\n      SUB reg, 48\n      SHL reg, 1    // for 2-byte relative JMP instruction.\n                    // shift by 2 (3-byte JMP + NOP) for tables \u0026gt;255\n      INC reg       // reg := (reg - 48) * 2 + 1\n\n      JMP reg       // relative jump by \u0026lt;reg\u0026gt; bytes forward\nh0:   JMP digits    // '0'..'9'\nh1:   JMP digits\nh2:   JMP digits\n..\nh9:   JMP digits\nh10:  JMP default   // gap between '9'+1 and 'A'-1\n..\nh16:  JMP default\nh17:  JMP uppercase // 'A'..'F'\n..\nh22:  JMP uppercase\nh23:  JMP default   // gap between 'F'+1 and 'a'-1\n..\nh48:  JMP default\nh49:  JMP lowercase // 'a'..'f'\n..\nh54:  JMP lowercase\n\ndigits:\n      //code for: d = h - '0'\n      JMP exit_switch\nuppercase:\n      //code for: d = h - 'A' + 10\n      JMP exit_switch\nlowercase:\n      //code for: d = h - 'a' + 10\n      JMP exit_switch\ndefault:\n      // should be inlined if empty\nexit_switch:\n\n(This is pseudo-code. It might not even be correct, but it should give you an idea.)\n\nWhy? What are the use-cases?\nVarious encoders/decoders, lexers/scanners, parsers, state machines can potentially be\nsped up by this.\u003c/pre\u003e",
+	"user": {
+		"login": "cloneable",
+		"id": 9938970,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-05-19T21:16:47Z",
+	"updated_at": "2014-12-22T06:25:21Z"
+}

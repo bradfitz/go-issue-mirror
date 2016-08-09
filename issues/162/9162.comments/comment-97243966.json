@@ -1,0 +1,12 @@
+{
+	"id": 97243966,
+	"body": "A mutex doesn't help here. The problem is that the TimeoutHandler executes the handler in a separate goroutine, which may obtain the headers via `ResponseWriter.Header()` and the TimeoutHandler's main ServeHTTP, upon timeout, may also access `ResponseWriter.Header()`.  Even with a mutex there guarding the acquisition of the map, they both may subsequently race on accessing the header, for which there's no place to put a mutex.\r\n\r\nI think the solution is to change the design of the Timeout Handler to instead Hijack the connection if possible and write the timeout response headers \u0026 body by hand, if possible.  There are still problems with that, though: requires the ResponseWriter to be a Hijacker, and assumes HTTP/1.n  (but this isn't the first such problem), and prevents wrapper Handlers from intercepting the error and writing a prettier failure HTML body.\r\n\r\nSo I think I'll change things to avoid this in the common case but I think the bigger problem is that TimeoutHandler isn't compatible with the ResponseWriter \u0026 Header design.  We probably should've propagated a Context type (like https://godoc.org/golang.org/x/net/context#Context) through ServeHTTP instead, to which we could attach deadlines and do cancelation. Alas.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-28T22:21:28Z",
+	"updated_at": "2015-04-28T22:21:28Z"
+}

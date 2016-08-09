@@ -1,0 +1,17 @@
+{
+	"id": 152792799,
+	"number": 15522,
+	"state": "closed",
+	"title": "[net/http] Support timeout of idle \"keep-alive\" connections in http.Transport",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n1.6.2\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\ndarwin/amd64\r\n\r\n3. What did you do?\r\n\r\nRun the below test:\r\n\r\n```go\r\npackage keepalive\r\n\r\nimport (\r\n\t\"net/http\"\r\n\t\"testing\"\r\n\t\"time\"\r\n\r\n\t\"github.com/getlantern/fdcount\"\r\n)\r\n\r\nfunc TestIdle(t *testing.T) {\r\n\t_, counter, err := fdcount.Matching(\"TCP\")\r\n\tif err != nil {\r\n\t\tt.Fatalf(\"Error getting fd count: %v\", err)\r\n\t}\r\n\r\n\tmaxIdleTime := 100 * time.Millisecond\r\n\ttr := \u0026http.Transport{\r\n\t// MaxIdleTime: maxIdleTime - I'd like to be able to do this\r\n\t}\r\n\tclient := http.Client{\r\n\t\tTransport: tr,\r\n\t}\r\n\tresp, err := client.Get(\"https://www.google.com/humans.txt\")\r\n\tif err != nil {\r\n\t\tt.Fatalf(\"Unable to make request: %v\", err)\r\n\t}\r\n\tif resp.Body != nil {\r\n\t\tresp.Body.Close()\r\n\t}\r\n\r\n\ttime.Sleep(maxIdleTime * 2) // doesn't matter how long I sleep here, connection will never go away\r\n\terr = counter.AssertDelta(0)\r\n\tif err != nil {\r\n\t\tt.Errorf(\"Wrong number of TCP file descriptors\", err)\r\n\t}\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\nTest passes.\r\n\r\n5. What did you see instead?\r\n\r\n```\r\n--- FAIL: TestIdle (7.87s)\r\n\tkeepalive_test.go:34: Wrong number of TCP file descriptors%!(EXTRA *errors.errorString=Unexpected TCP file descriptor count. Expected 0, have 1.\r\n\r\n\t\tRemoved file descriptors\r\n\t\t-----------------------------\r\n\r\n\r\n\t\tNew file descriptors\r\n\t\t-----------------------------\r\n\t\tkeepalive 85989 ox.to.a.cart    5u    IPv4 0x2f354771863b7ca1       0t0       TCP 192.168.29.171:61989-\u003e74.125.21.99:443 (ESTABLISHED)\r\n\t\t)\r\nFAIL\r\nFAIL\tcommand-line-arguments\t7.892s\r\n```\r\n\r\nI hope to have a patch available for review later today.",
+	"user": {
+		"login": "oxtoacart",
+		"id": 5000654,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-03T14:53:00Z",
+	"created_at": "2016-05-03T14:48:06Z",
+	"updated_at": "2016-05-03T14:55:52Z"
+}

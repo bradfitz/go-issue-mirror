@@ -1,0 +1,28 @@
+{
+	"id": 51277343,
+	"number": 1100,
+	"state": "closed",
+	"title": "Occasional off-by-one in the line numbers of runtime.Func.FileLine()",
+	"body": "by **esko.luontola**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\npackage gospec\n\nimport (\n\t\u0026quot;testing\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n)\n\nfunc TestLineNumbersOfFuncFileLine(t *testing.T) {\n\tdefer func() {\n\t\tif cause := recover(); cause != nil {\n\t\t\tcallers := make([]uintptr, 100)\n\t\t\tcount := runtime.Callers(0, callers)\n\t\t\tcallers = callers[0:count]\n\n\t\t\tfor _, pc := range callers {\n\t\t\t\tf := runtime.FuncForPC(pc)\n\t\t\t\tname := f.Name()\n\t\t\t\tfile, line := f.FileLine(pc)\n\t\t\t\tfmt.Printf(\u0026quot;%v %v:%v\\n\u0026quot;, name, file, line)\n\t\t\t}\n\t\t}\n\t}()\n\tvar x *Foo = nil\n\tx.Fail()\n}\n\nfunc TestLineNumbersOfPanic(t *testing.T) {\n\tvar x *Foo = nil\n\tx.Fail()\n}\n\ntype Foo struct {\n\tx string\n}\n\nfunc (this *Foo) Fail() string {\n\treturn this.x\n}\n\n\nWhat is the expected output?\n\nThe line number of sigpanic in file runtime/linux/thread.c should be 286 in both stack\ntraces.\n\nWhat do you see instead?\n\npanicstring /home/orfjackal/go/src/pkg/runtime/runtime.c:83\nsigpanic /home/orfjackal/go/src/pkg/runtime/linux/thread.c:287\ngospec.*Foo·Fail /home/orfjackal/devel/gospec/src/gospec/bug_test.go:42\n...\npanicstring+0x69 /home/orfjackal/go/src/pkg/runtime/runtime.c:83\n\tpanicstring(0x48ded8, 0x2b207ce90850)\nsigpanic+0x148 /home/orfjackal/go/src/pkg/runtime/linux/thread.c:286\n\tsigpanic()\ngospec.*Foo·Fail+0x18 /home/orfjackal/devel/gospec/src/gospec/bug_test.go:42\n\tgospec.*Foo·Fail(0x4166e1, 0x0, 0x2b207ce8bcf0, 0x2b207ce8bcf0)\n\nWhat is your $GOOS?  $GOARCH?\nlinux amd64\n(BTW, is there a simple way to get $GOOS and $GOARCH now that they are optional since\nrelease.2010-08-25?)\n\nWhich revision are you using?  (hg identify)\n97ccc7fb2173 tip\n\nPlease provide any additional information below.\nThis might be related to \u003ca href=\"https://golang.org/issue/754\"\u003ehttps://golang.org/issue/754\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:06:58Z",
+	"created_at": "2010-09-11T11:43:05Z",
+	"updated_at": "2016-06-24T19:20:06Z"
+}

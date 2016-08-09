@@ -1,0 +1,28 @@
+{
+	"id": 51733067,
+	"number": 9271,
+	"state": "closed",
+	"title": "x/mobile/bind/seq: panic when returning a nil error or \"\" string from Go to Java through parameter serialization",
+	"body": "* What version of Go are you using (go version)?\r\n  * 1.4; latest https://godoc.org/golang.org/x/mobile\r\n* What operating system and processor architecture are you using?\r\n  * darwin/amd64 targetting android/arm\r\n* What did you do?\r\n  * Wrote a Go function that returns type `error`. Used Java/Go binding and from Java invoked the Go function which returns `nil` for error value. Under the hood, this is the same as returning a `\"\"` string.\r\n* What did you expect to see?\r\n  * Java wrapper returns after calling the Go function.\r\n* What did you see instead?\r\n  * The Android process terminates. Presumably due to a panic in Go?\r\n\r\nThe parameter serialization function `Buffer.WriteUTF16(\"\")` is called in the case where parameter serialization is returning a `nil` error. As a test, I changed my code to return a `\"\"` string instead of a nil error and that also results in the same process termination.\r\n\r\nI suspect the problem is here: https://github.com/golang/mobile/blob/2861ce3b898909384ed7b647e0a167254238c036/bind/seq/utf16.go#L39. In the case where `len(s)` is `0`, the buffer is not grown. But the subsequent line `data := b.Data[b.Offset+4:]` assumes the buffer is at least `4` bytes and will panic with the default empty buffer.\r\n\r\nBy modifying `WriteUTF16` to skip the string writing entirely in the `0` length case, the serialization works: Java receives the `\"\"` or `nil` error and the process does not terminate.\r\n\r\nIncidentally, the `b.grow(4 * len(s))` may also be insufficient in a `len(s) \u003e 0` case because it only grows the buffer by the maximum possible string length, but the buffer is accessed as if it were `4 + max possible string length` bytes due to how the not-yet-allocated initial length prefix is skipped over. In the \"everything is surrogate pair\" case, could that result in an access past the end of the allocated buffer? To fix this, perhaps the buffer needs to grow by `4 + 4*len(s)` just in case.",
+	"user": {
+		"login": "rod-hynes",
+		"id": 488643,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-12T14:09:11Z",
+	"created_at": "2014-12-11T20:20:41Z",
+	"updated_at": "2016-08-05T16:08:42Z"
+}

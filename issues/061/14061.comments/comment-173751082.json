@@ -1,0 +1,12 @@
+{
+	"id": 173751082,
+	"body": "I cannot reproduce this failure here.\r\n\r\nI can see similar \"http2: server closing client connection; ...\" message logged, but the test still PASSes. I can uses this:\r\n```\r\ndiff --git a/src/net/http/h2_bundle.go b/src/net/http/h2_bundle.go\r\nindex bdbdadb..30b9ba6 100644\r\n--- a/src/net/http/h2_bundle.go\r\n+++ b/src/net/http/h2_bundle.go\r\n@@ -3371,6 +3371,9 @@ func (sc *http2serverConn) processFrameFromReader(res http2readFrameResult) bool\r\n \t\t\treturn true\r\n \t\t}\r\n \t\tclientGone := err == io.EOF || strings.Contains(err.Error(), \"use of closed network connection\")\r\n+\t\tif !clientGone \u0026\u0026 runtime.GOOS == \"windows\" {\r\n+\t\t\tclientGone = strings.Contains(err.Error(), \"An existing connection was forcibly closed by the remote host\")\r\n+\t\t}\r\n \t\tif clientGone {\r\n \r\n \t\t\treturn false\r\n```\r\nto get rid of that message.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-21T23:40:24Z",
+	"updated_at": "2016-01-21T23:40:24Z"
+}

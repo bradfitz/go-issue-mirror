@@ -1,0 +1,12 @@
+{
+	"id": 229381880,
+	"body": "You're onto something. The problem definitely seems related to the buffer size relative to TCP flow control parameters. The client and server are using different buffer sizes -- the client uses len(buf) chunks while the server uses a fixed 32KB buffer (in io.Copy). This results in the following sequence each loop iteration:\r\n\r\n1. client sends len(buf)\r\n2. server receives 32KB\r\n3. server sends 32KB\r\n4. repeat steps 2 and 3 until the server has copied len(buf)\r\n5. client receives len(buf)\r\n\r\nThe behavior of the above sequence depends on the size of the TCP receive window (rwin). If rwin \u003e= len(buf), each step can act as an atomic unit and everything works fine. If rwin \u003c= len(buf)-32KB, the loop will eventually hang at step 3. In other cases, the benchmark will work, however, steps 1 and 4 cannot act as atomic units because rwin is not large enough. This implies more synchronization between the client and server, which slows down the benchmark. The origin version of this benchmark used len(buf)=1\u003c\u003c16=64KB. The question is now, is rwin between 32KB and 64KB? [Here](http://serverfault.com/questions/698504/receiver-limits-tcp-window-size-to-64-512) is a link that suggests Windows uses rwin=64512, which is just shy of 64KB.\r\n\r\nAt least that's my hypothesis. I mailed the following change to close this issue. Can someone verify it works on Windows? Thanks!\r\nhttps://go-review.googlesource.com/24581",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-29T14:54:17Z",
+	"updated_at": "2016-06-29T14:55:57Z"
+}

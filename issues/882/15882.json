@@ -1,0 +1,27 @@
+{
+	"id": 157411141,
+	"number": 15882,
+	"state": "open",
+	"title": "x/net/http2: too much coupling between connection and stream window sizes",
+	"body": "I have not really reproduced the problem in the code yet, so this is based on pure source code analysis that I did a while ago (even before http2 was merged into Go 1.6), and since I was reminded of it recently and code didn't change much in that regard in my recent review I decided to finally report it.\r\n\r\nThere is too much coupling in go implementation of http2 server, which makes stream windows practically useless. The problem is that the only code path where server increments a connection window is in `noteBodyRead`, where both connection and stream windows are updated for the remote side. What this effectively means is that at any given time all received (but not yet read by user code) data on all streams combined cannot exceed the connection window, making only one of them dominating the flow control. And since by default connection and stream windows are equal and rather small a single stream can consume the whole connection window, making it impossible for clients to send data on all other stream.\r\n\r\nA hypothetical problematic case would be a file uploading service, that does some database pre-processing before starting to read from `Request.Body`. If that pre-processing takes a long enough time it would block all other concurrent POST requests until connection window starts to finally be drained.\r\n\r\nWhat's more it appears that this approach of coupling connection and stream windows does not even save memory, since `newWriterAndRequest` allocates the full `initialWindowSize` buffer, which means memory footprint is `numberOfStreams * streamWindowSize` anyway, so updating connection window immediately upon parsing data frames would not increase it.\r\n\r\nAs far as I could understand from the spec connection and stream windows are supposed to be separate, and one good example I've seen recently was http2 in grpc c++ implementation, where connection window is substantially larger than stream window, and the algorithm is also different, as far as I understand: connection window is used for connection-level parsing, decoupled from streams, and updates to client start when more than 3/4 of it is consumed.\r\n\r\nSorry for not providing a code sample to this behavior, I've been postponing this bug report for so long already because of it that I finally decided at least some bug report now would probably be better than no bug report in the foreseeable future again.",
+	"user": {
+		"login": "snaury",
+		"id": 53117,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-05-29T23:14:19Z",
+	"updated_at": "2016-05-30T19:22:17Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

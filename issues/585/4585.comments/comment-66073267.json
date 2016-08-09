@@ -1,0 +1,12 @@
+{
+	"id": 66073267,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eIt's a code generation bug. 6g produces:\n\n0022 (test.go:14) MOVQ    statictmp_0003+0(SB),CX\n0023 (test.go:14) MOVWQZX statictmp_0003+8(SB),BX\n0024 (test.go:15) MOVQ    $type.map[\"\".T]bool+0(SB),(SP)\n[not sure why it uses a statictmp here]\n\nwhich is linked/assembled into:\n\n  400ca2:       48 8b 0c 25 b0 f6 41    movq   0x41f6b0,%rcx\n  400ca9:       00 \n  400caa:       48 0f b7 1c 25 b8 f6    movzwq 0x41f6b8,%rbx\n  400cb1:       41 00 \n  400cb3:       48 c7 04 24 88 6f 41    movq   $0x416f88,(%rsp)\n  400cba:       00 \n\nWhich is wrong, since it should be:\n  movq $0x41f6b0, %rcx\n  movzwq $0x41f6b8, %rbx\n\nGDB shows the corrupted value:\n(gdb) b main.main\nBreakpoint 1 at 0x400c70: file /tmp/test.go, line 12.\n(gdb) run\nStarting program: /tmp/main \n[New LWP 19554]\n[Switching to LWP 19554]\n\nBreakpoint 1, main.main () at /tmp/test.go:12\n12\tfunc main() {\n(gdb) next\n13\t\tm := make(map[T]bool)\n(gdb) \n14\t\tt := T{}\n(gdb) \n15\t\tm[t] = true\n(gdb) print t\n$1 = {a = 4249584, b = -72}\n\nLast line should be {a = 0, b = 0}\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-23T23:11:03Z",
+	"updated_at": "2014-12-08T10:24:20Z"
+}

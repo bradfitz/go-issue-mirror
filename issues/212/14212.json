@@ -1,0 +1,22 @@
+{
+	"id": 131161512,
+	"number": 14212,
+	"state": "closed",
+	"title": "net: LookupHost sometimes returns slice which when modified ruins cache state.",
+	"body": "To reproduce: \r\nMachine must have localhost specified in the /etc/hosts file.\r\nMachine must NOT have localhost entry in its DNS Server.\r\n\r\nRunning this code:\r\n\r\n    package main\r\n\r\n    import (\r\n        \"fmt\"\r\n        \"net\"\r\n    )\r\n\r\n    func main() {\r\n        runClient()\r\n        modifyAddrs(\"localhost\")\r\n        runClient()\r\n    }\r\n\r\n    func modifyAddrs(host string) []string {\r\n        addrs, err := net.LookupHost(host)\r\n        if err != nil {\r\n                panic(err)\r\n        }\r\n        for i := range addrs {\r\n                addrs[i] += \"junk\"\r\n        }\r\n        return addrs\r\n    }\r\n\r\n    func runClient() {\r\n        _, err := net.Dial(\"tcp\", \"localhost:23000\")\r\n        fmt.Printf(\"err = %v\\n\", err)\r\n    }\r\n\r\nWill output:\r\n\r\n    err = dial tcp 127.0.0.1:23000: getsockopt: connection refused\r\n    err = dial tcp: lookup localhost on 169.254.169.254:53: no such host\r\n\r\nThe first error message is able to resolve localhost but after modifying the returned addr slice, it no longer can.\r\nI traced it down to the localStaticHost function returns a slice directly from the cache, rather than returning a copy of it.\r\n\r\nI have a fix here: https://go-review.googlesource.com/#/c/19201/",
+	"user": {
+		"login": "suharshs",
+		"id": 1450614,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-02-21T16:37:20Z",
+	"created_at": "2016-02-03T21:34:09Z",
+	"updated_at": "2016-02-21T16:37:20Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"id": 129606314,
+	"number": 14141,
+	"state": "open",
+	"title": "x/net/http2: support h2c for http2",
+	"body": "Previous discussion: https://github.com/bradfitz/http2/issues/59\r\n\r\nh2c (http2 without TLS) is somewhat controversial part of the http2 spec. As discussed in the linked ticket above, major browser vendors are refusing to implement it.\r\n\r\nI still think it is important to have first class support in Go standard library though.\r\n\r\nThe primary reason is that https is an ideal transport for inter-service RPC - c.f. grpc.io which in grpc/grpc-go has to re-implement large parts of http2 client and server transport to work around this issue.\r\n\r\nBut wanting to use http2 between internal services is not limited to gRPC.\r\n\r\nMy primary motivation is that I generally want my load balancer to terminate SSL. This is not just to reduce crypto overhead on individual application servers, but can actually be more secure.\r\n\r\nTo enable perfect forward secrecy, you have to keep tight controls over session ticket keys and rotate them frequently. This is much easier to achieve if only two (or a few) load balancer machines must terminate SSL rather than possibly hundreds or thousands of application servers, not to mention fewer places for an intruder to get hold of those keys.\r\n\r\nOf course it's possible to terminate public SSL with perfect forward secrecy at LB and then have backend connections use internally signed certificates and forgo the same stringency, but in this setup TLS is pure overhead, and additional complexity to administer.\r\n\r\nSo I think it's pretty reasonable that Go, a language whose core competency is building network services, should at least provide a means to serve and consume h2c via the standard library http2 package. I'd even argue that it should be automatic, but if opinion is strong, I'd settle for just being possible without re-implementing large chunks of the http2 transports.\r\n\r\nIf there is agreement from core (@bradfitz has most insight I'd guess) on how this could be introduced, I'd be really happy to contribute the code. How about if it was a separate package `x/net/http2/h2c` and for now it's required to manually choose h2c transport in client/server?\r\n\r\nIf not, this could be built as a (standalone) third party library that anyone who needs this can use for now.\r\n\r\nThanks for you help with this.",
+	"user": {
+		"login": "banks",
+		"id": 120915,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"created_at": "2016-01-28T22:43:02Z",
+	"updated_at": "2016-05-17T23:00:56Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

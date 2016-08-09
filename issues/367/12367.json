@@ -1,0 +1,30 @@
+{
+	"id": 103592836,
+	"number": 12367,
+	"state": "closed",
+	"title": "reflect: resolve incompatibility between gc and gccgo for unexported embedded structs",
+	"body": "# Current Situation\r\n* gc: unexported embedded structs are settable\r\n* gccgo: unexported embedded structs are not settable\r\n\r\nBoth are not correct w.r.t. the way Go works: an unexported embedded struct should not be settable as a whole, however, exported fields and methods of unexported embedded structs may be promoted and be visible.\r\n\r\n# Goal\r\n* Make gc and gccgo compatible again with a workable solution.\r\n* address issues 7363 and 11007.\r\n\r\n# Solution\r\nMake unexported embedded structs unsettable, but allow the reflect library to access exported fields and methods of such structs. Such fields could also be modified.\r\n\r\nRationale: this prevents blanket changes to values in structs that are generally not settable, while allowing access to fields that might be promoted. \r\n\r\nThe approach might still allow access to fields that are not accessible in the language, namely exported fields and methods that are not promoted because they are masked by or conflict with fields or methods of the same name.  However, access to such fields is also necessary.  Packages like encoding/xml and encoding/json allow users to map fields to alternative names using tags effectively breaking ties and making fields visible again.  Disallowing access to blocked fields now would be too much of a disruptive change and break the Go 1 compatibility promise.\r\n\r\n# Impact\r\nThis will break packages like xml and json, but only minimally. The typical check for whether a field is exported, f.PkgPath != \"\", would have to be amended to f.PkgPath != \"\" \u0026\u0026 !f.Anonymous.\r\n\r\n# Alternatives\r\n## adopt gccgo behavior\r\nUnacceptable: it would be too disruptive to packages like xml and json and would break documented behavior, breaking the Go 1 compatibility promise. It would mean reflect cannot give access to fields that are visible in Go itself.\r\n\r\n## adopt gc behavior\r\nLess problematic, but it would make it very easy to access structs that are indicated as hidden. Users could bypass initialization code etc, raising various security issues. The proposed solution does not eliminate this, but it does considerably mitigate it by limiting access to fields that are deemed exported and settable if the embedded type were accessed directly.\r\n\r\n## package reflect provides a different API for accessing promoted fields and methods.\r\n* This will be a huge change while still not addressing what to do with the remaining old API and its incompatibility.\r\n* It would not be possible for xml and json to implement their documented behavior.\r\n\r\n## Provide a higher-level API for packages like xml and json for mapping structured data to struct fields\r\nThis would potentially give greater consistency and would make it easier for developers to write package like json and xml.  However, it would be a huge change and similarly does not address the concerns of what to do with the current API. Like the current proposal, it would still allow access to non-promoted fields and methods.  It could be implemented on top of the proposed solution.",
+	"user": {
+		"login": "mpvl",
+		"id": 6445383,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Accepted"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2015-10-26T13:58:07Z",
+	"created_at": "2015-08-27T20:51:59Z",
+	"updated_at": "2015-10-26T14:00:57Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 53153087,
+	"number": 9477,
+	"state": "closed",
+	"title": "runtime: Large maps cause significant GC pauses",
+	"body": "I'm on Go 1.4 and linux/amd64. I've noticed this since at least Go 1.2.\r\n\r\nLarge maps incur large GC pause times. This happens even when the map key and value types do not contain pointers, and when the map isn't changing between GC runs. I assume it comes from the collector traversing internal pointers in the map implementation.\r\n\r\nRoughly speaking, with a single map containing millions of entries, one will typically see GC pause times of hundreds of ms.\r\n\r\nHere's an example program that shows a few different approaches: http://play.golang.org/p/AeHSLyLz_c. In particular, it compares\r\n\r\n1. Large map with a pointer-typed value\r\n2. Large map with a pointer-free value\r\n3. Sharded map\r\n4. Big slice\r\n\r\nIn the real program where this issue caused me problems, I have a server that used a very large map (\u003e10M entries) as an index into off-heap data. Even after getting rid of pointers in the map value and sharding the map, the pause times were \u003e100ms which was too large for my use case. So I ended up writing a very simple hashmap implementation using only slices/indexes and that brought the pause times to under 1ms.\r\n\r\nI wonder if the map implementation and GC can be made to work together better to mitigate this.\r\n\r\n(It's possible that this is expected/unfortunate, or that it will get better with improved GC along with everything else, but I wanted to have a record of it to center the discussion.)",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 30,
+	"closed_at": "2015-04-04T02:43:39Z",
+	"created_at": "2014-12-30T22:35:28Z",
+	"updated_at": "2016-05-26T15:54:10Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

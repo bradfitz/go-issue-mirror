@@ -1,0 +1,12 @@
+{
+	"id": 172282901,
+	"body": "Another failure on the dashboard, now with \"system\" level tracebacks for runtime failures: [2016-01-16T02:40:00-b05f18e/linux-ppc64-minux](https://build.golang.org/log/e3d86bd18b41bbb4bc2bd267b3a8354d9aadb427)\r\n\r\nNone of the goroutines are in assists and the background mark workers are idle. Other than the alarm goroutine, only two goroutines are runnable: the background sweeper is in Gosched and the main test thread is in the prologue of fmt.Sprintf. These are both weird. Based on the other goroutines, there almost certainly hasn't been GC activity for 19 minutes, so the background sweeper has had oodles of time to finish. fmt.Sprintf could have stopped either because it needed to grow its stack or because of a preemption. I don't think it needed to grow its stack because the calling frame was already past the first doubling boundary (the stack size in the caller is 0xc820037f80 - 0xc820037910 = 1648 bytes and the first boundary should be 2048 - 720 + 128 = 1456) and it's nowhere near the next boundary (4096-720+128=3504). That means it got preempted, which calls gopreempt_m, which puts it in to _Grunnable (consistent with the traceback) and puts it on the global queue.\r\n\r\nSince both goroutines are on the global run queue, this again points at some issue with scheduling things from the global queue.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-17T01:38:29Z",
+	"updated_at": "2016-01-17T01:38:29Z"
+}

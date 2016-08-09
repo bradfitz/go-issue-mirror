@@ -1,0 +1,33 @@
+{
+	"id": 51289102,
+	"number": 9104,
+	"state": "closed",
+	"title": "net/http: ResponseHeaderTimeout can cause the Heap \u0026 GC to grow/increase rapidly",
+	"body": "\u003cpre\u003ego1.3.3 although go1.4 will have this problem as well\n\nWhen using the DefaultTransport, in our case it was via the ReverseProxy, the\nResponseHeaderTimeout will create a timer that is never closed.  The code relies on\nexpiring.\nIf you have a proxy under load and a timeout that is long in our case 15 minutes but\neven anything in the range of 2-5 minutes, the number of timers starts to overwhelm the\nHeap and GC.\n\nIn our simple runs under load, we can generate 10k req/s.  We see the heap grow from 2Mb\nto 90Mb all due to timers.  The GC cycle starts at 2ms and grows to 120ms.\n\nOur current workaround is to avoid setting the ResponseHeaderTimeout and rely on\nDeadlineTimeouts.  Closing the timers created persistConn.roundTrip() would also\nalleviated the explosion.\u003c/pre\u003e",
+	"user": {
+		"login": "fraenkel",
+		"id": 929377,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-13T07:51:08Z",
+	"created_at": "2014-11-14T04:25:01Z",
+	"updated_at": "2016-06-25T01:44:28Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51287979,
+	"number": 8287,
+	"state": "closed",
+	"title": "runtime: 1.3 garbage collector not releasing server memory back to system from finished goroutines",
+	"body": "by **matusis**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3 linux/amd64\n\nThis program \u003ca href=\"http://play.golang.org/p/vnKYk3sO5d\"\u003ehttp://play.golang.org/p/vnKYk3sO5d\u003c/a\u003e creates 100000 goroutines, with each\ngoroutine allocating some memory and then finishing.\nThe program prints RES memory of the process as seen by \u0026quot;top\u0026quot; and also prints\nruntime.ReadMemStats every 25 minutes.\n\n1. Build the program from \u003ca href=\"http://play.golang.org/p/vnKYk3sO5d\"\u003ehttp://play.golang.org/p/vnKYk3sO5d\u003c/a\u003e on a server and run it\n2. Wait at least for 50 minutes for two printouts\n\n\nWhat happened?\n\nAfter 50 minutes, the program produces output like this:\nCreating 100000 goroutines\n  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            \n19155 alecm     20   0  151m  84m  760 S    0  0.5   0:01.46 bugrep1.3          \nFree #0; HeapAlloc: 10531984, HeapInuse: 10813440, HeapReleased: 0, HeapObjs: 36575\nDone creating goroutines, freeing memory (every 25 mins)\n  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            \n19155 alecm     20   0  151m  79m  836 S    2  0.5   0:01.69 bugrep1.3          \nFree #1; HeapAlloc: 5492784, HeapInuse: 5791744, HeapReleased: 5742592, HeapObjs: 18014\n  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            \n19155 alecm     20   0  151m  79m  860 S    0  0.5   0:01.88 bugrep1.3          \nFree #2; HeapAlloc: 5494912, HeapInuse: 5791744, HeapReleased: 5742592, HeapObjs: 18061\n\nThe program released only 5MB or RES memory after 50 min. HeapReleased value matches RES\ndrop displayed by \u0026quot;top\u0026quot;.\n\nWhat should have happened instead?\n\nSince goroutines exit and the slices created in them are not stored, most memory\n(\u0026gt;80MB) should be returned to the OS. Only 5MB is returned however.\n\nPS. We first saw this behavior in a simple TCP server accepting, reading from and\nclosing 10000 connections: please see\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/0WSOKnHGBZE\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2014-12-08T10:46:02Z",
+	"created_at": "2014-06-25T06:44:59Z",
+	"updated_at": "2016-06-25T01:37:13Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

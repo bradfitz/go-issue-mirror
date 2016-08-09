@@ -1,0 +1,27 @@
+{
+	"id": 51284614,
+	"number": 6056,
+	"state": "closed",
+	"title": "archive/tar: Tar pax support for long links does not work",
+	"body": "by **marco.hennings@freiheit.com**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. write a new tarfile\n2. add a header for a link or symlink with more than 100 characters\n\nWhat is the expected output?\n\nA pax header should be written and no error should occur\n\nWhat do you see instead?\n\nThe pax header is written but it still causes an error that the header was too long.\n\n\nThe reason lies within the following code fragment:\n\n    if len(hdr.Name) \u0026gt; fileNameSize || len(hdr.Linkname) \u0026gt; fileNameSize {\n        var err error\n        prefix, suffix, err = tw.splitUSTARLongName(hdr.Name)\n        // Either we were unable to pack the long name into ustar format\n        // or the link name is too long; use PAX headers.\n        if err == errNameTooLong || len(hdr.Linkname) \u0026gt; fileNameSize {\n            if err := tw.writePAXHeader(hdr); err != nil {\n                return err\n            } \n        } else if err != nil {\n            return err\n        }\n    }\n     [... ]\n    tw.cStringw(s.next(100), hdr.Linkname, \u0026quot;linkname\u0026quot;)  // linkname (157:257)\n\nIn the last line you see that the linkname is added even if it was written in the pax\nheader.\n\n\nTo solve this I have implemented missing parts of the pax header support. Attached you\nfind a patch. I will provide a mercurial contribution soon.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6056/0/fix-tar-pax-support.patch\"\u003efix-tar-pax-support.patch\u003c/a\u003e (13859 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:33:20Z",
+	"created_at": "2013-08-06T15:11:22Z",
+	"updated_at": "2016-06-24T22:53:49Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

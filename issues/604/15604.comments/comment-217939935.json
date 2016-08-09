@@ -1,0 +1,12 @@
+{
+	"id": 217939935,
+	"body": "Stand-alone repro for future reference:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"syscall\"\r\n\t\"time\"\r\n)\r\n\r\ntype Fs interface {\r\n\tStat(name string) (os.FileInfo, error)\r\n}\r\n\r\ntype CacheOnReadFs struct {\r\n\tbase      Fs\r\n\tlayer     Fs\r\n\tcacheTime time.Duration\r\n}\r\n\r\ntype cacheState int\r\n\r\nconst (\r\n\tcacheUnknown cacheState = iota\r\n\tcacheMiss\r\n\tcacheStale\r\n\tcacheHit\r\n\tcacheLocal\r\n)\r\n\r\nfunc (u *CacheOnReadFs) cacheStatus(name string) (state cacheState, fi os.FileInfo, err error) {\r\n\tvar lfi, bfi os.FileInfo\r\n\tlfi, err = u.layer.Stat(name)\r\n\tif err == nil {\r\n\t\tif u.cacheTime == 0 {\r\n\t\t\treturn cacheHit, lfi, nil\r\n\t\t}\r\n\t\tif lfi.ModTime().Add(u.cacheTime).Before(time.Now()) {\r\n\t\t\tbfi, err = u.base.Stat(name)\r\n\t\t\tif err != nil {\r\n\t\t\t\treturn cacheLocal, lfi, nil\r\n\t\t\t}\r\n\t\t\tif bfi.ModTime().After(lfi.ModTime()) {\r\n\t\t\t\treturn cacheStale, bfi, nil\r\n\t\t\t}\r\n\t\t}\r\n\t\treturn cacheHit, lfi, nil\r\n\t}\r\n\r\n\tif err == syscall.ENOENT {\r\n\t\treturn cacheMiss, nil, nil\r\n\t}\r\n\tvar ok bool\r\n\tif err, ok = err.(*os.PathError); ok {\r\n\t\tif err == os.ErrNotExist {\r\n\t\t\treturn cacheMiss, nil, nil\r\n\t\t}\r\n\t}\r\n\treturn cacheMiss, nil, err\r\n}\r\n```\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-09T17:59:40Z",
+	"updated_at": "2016-05-09T17:59:40Z"
+}

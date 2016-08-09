@@ -1,0 +1,12 @@
+{
+	"id": 123532704,
+	"body": "The root cause is the original sin of an AST that isn't really a tree.  Because \"q\" is shared by different expressions, when it is marked \"implicit\" in one, it becomes \"implicit\" in another.  I added tracing at the obvious places in the patch for #9017 ( https://github.com/golang/go/commit/b59dd94f331677d28250b51729d5bc888fe4cef0 ).\r\n\r\nNote the mark-implicit on line 23 (q) and the error on 24 (because q is now implicit)\r\n\r\n```\r\ndrchase-macbookair:tmp drchase$ go run b11790.go\r\n# command-line-arguments\r\nMarking implicit, line 23, node q (type Q)\r\nll = ll.Left, line 24, ll = (*q).T0 (type *T0)\r\nll = ll.Left, line 24, ll = *q (type T2)\r\n./b11790.go:24: q.M0 undefined (type Q has no field or method M0)\r\n```\r\n\r\nBut both actions are necessary for the 9017 test to pass (at line 53, specifically):\r\n\r\n```\r\ngo build issue9017.go \r\n# command-line-arguments\r\nll = ll.Left, line 29, ll = s.T (type T)\r\nll = ll.Left, line 30, ll = s.T (type T)\r\nll = ll.Left, line 38, ll = ps (type S)\r\nll = ll.Left, line 39, ll = ps.T (type T)\r\nMarking implicit, line 40, node ps (type *S)\r\nll = ll.Left, line 40, ll = ps.T (type T)\r\nll = ll.Left, line 46, ll = *p (type S)\r\nll = ll.Left, line 52, ll = p.T (type T)\r\nMarking implicit, line 53, node p (type P)\r\nll = ll.Left, line 53, ll = p.T (type T)\r\n./issue9017.go:47: p.mS undefined (type P has no field or method mS)\r\n./issue9017.go:50: cannot use p (type P) as type I in assignment:\r\nP does not implement I (missing mT method)\r\n./issue9017.go:53: p.mT undefined (type P has no field or method mT)\r\n./issue9017.go:56: cannot use p (type P) as type I in assignment:\r\nP does not implement I (missing mT method)\r\n```\r\n\r\nSo, I think we roll back the fix to 9017?",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-22T02:05:48Z",
+	"updated_at": "2015-07-22T02:05:48Z"
+}

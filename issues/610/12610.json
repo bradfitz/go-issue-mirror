@@ -1,0 +1,27 @@
+{
+	"id": 106318102,
+	"number": 12610,
+	"state": "open",
+	"title": "net/http/cookiejar: Domain matching against IP address",
+	"body": "Hello,\r\n\r\nThe following test fails:\r\n\r\n````\r\npackage foo \r\n\r\nimport (\r\n    \"net/http\"\r\n    \"net/http/cookiejar\"\r\n    \"net/url\"\r\n    \"testing\"\r\n)\r\n\r\nfunc TestIPDomain(t *testing.T) {\r\n    u, err := url.Parse(\"http://127.0.0.1/\")\r\n    if err != nil {\r\n        t.Fatal(err)\r\n    }   \r\n\r\n    jar, err := cookiejar.New(nil)\r\n    if err != nil {\r\n        t.Fatal(err)\r\n    }   \r\n\r\n    c := \u0026http.Cookie{Name: \"foo\", Value: \"bar\", Domain: \"127.0.0.1\"}\r\n    jar.SetCookies(u, []*http.Cookie{c})\r\n    cs := jar.Cookies(u)\r\n    if len(cs) != 1 { \r\n        t.Fatalf(\"Got %v cookies, expected 1\\n\", len(cs))\r\n    } else if cs[0].Name != \"foo\" || cs[0].Value != \"bar\" {\r\n        t.Fatal(\"Invalid cookie name/value\")\r\n    }   \r\n}\r\n````\r\n\r\nFurther inspection shows that it fails with errNoHostname here: https://github.com/golang/go/blob/7f0be1f781a523b5acafb527ca123f5b0eac1536/src/net/http/cookiejar/jar.go#L447-L452\r\n\r\nI believe the comment refers to RFC6265 5.1.3. It states that the domain string must either be identical with the string it's matched against, OR that all of the three subsequently listed conditions are met, one of which are that the string being matched must be a host name. \r\n\r\nIn the case of the matched string being an IP address and the domain string being the same IP address, the first condition is met. I therefor believe that L447-L452 should be removed.",
+	"user": {
+		"login": "sebcat",
+		"id": 2697829,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-09-14T10:57:35Z",
+	"updated_at": "2015-09-21T14:13:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 87566493,
+	"number": 11180,
+	"state": "closed",
+	"title": "os: OpenFile may return EINTR on OS X",
+	"body": "runtime.setsig [supports](https://github.com/golang/go/blob/637d59859d3f13a55eaab7d683b5061fcbfd616c/src/runtime/os1_darwin.go#L438) calling sigaction(2) with the `SA_RESTART` flag, which on OS X [causes](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/sigaction.2.html) several system calls to be restarted when they would otherwise return `EINTR`. In particular, open(2) is one of these, but only for \"slow devices\" and not regular files. I don't have direct evidence, but I believe this is because on OS X an open of a regular file can't usually block in a way that can be interrupted.\r\n\r\nI see that `SA_RESTART` is generally used for Go signal handlers: the default handlers [all use it](https://github.com/golang/go/blob/637d59859d3f13a55eaab7d683b5061fcbfd616c/src/runtime/signal1_unix.go#L67), and sigenable [sets it](https://github.com/golang/go/blob/637d59859d3f13a55eaab7d683b5061fcbfd616c/src/runtime/signal1_unix.go#L86). (The only exceptions appear to be [`SIGPIPE`](https://github.com/golang/go/blob/637d59859d3f13a55eaab7d683b5061fcbfd616c/src/runtime/signal1_unix.go#L139) and [`SIGABRT`](https://github.com/golang/go/blob/637d59859d3f13a55eaab7d683b5061fcbfd616c/src/runtime/signal1_unix.go#L157)). From this I conclude that it's intended that os.OpenFile not leak `EINTR` out to the caller. I've never seen a retry loop around os.OpenFile, so this would make sense.\r\n\r\nHowever, it seems on OS X open(2) of a file *can* be interrupted if the file is on a fuse file system. This came up for me when using os/exec.Command in parallel with opening a file backed by fuse. When the command completes the thread calling open(2) would sometimes receive SIGCHLD, causing errors like this:\r\n\r\n    open /var/folders/00/0mb18000h01000cxqpysvccm002jc5/T/fs_test474101889/foo: interrupted system call\r\n\r\nAm I correct in assuming that os.OpenFile is not intended to leak `EINTR` so that users don't need to call in a loop? If so, should it be modified to contain an internal retry loop?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-09-17T01:21:05Z",
+	"created_at": "2015-06-12T01:26:58Z",
+	"updated_at": "2015-09-17T01:21:05Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

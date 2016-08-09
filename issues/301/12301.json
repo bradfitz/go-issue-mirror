@@ -1,0 +1,27 @@
+{
+	"id": 102888129,
+	"number": 12301,
+	"state": "closed",
+	"title": "net: missing interfaces on Windows",
+	"body": "```\r\npackage main\r\n\r\nimport(\r\n\t\"fmt\"\r\n\t\"net\"\r\n)\r\n\r\nfunc main(){\r\n\tifs, err := net.Interfaces()\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t}\r\n\tfor _, inf := range ifs {\r\n\t\tx, _ := inf.Addrs()\r\n\t\tfmt.Printf(\"%#v %s\", inf, x)\r\n\t}\r\n}\r\n```\r\n\r\nIn 1.4.1 returns:\r\n```\r\nnet.Interface{Index:5, MTU:1500, Name:\"{E36EC396-D578-48C0-82D5-F55217877570}\", HardwareAddr:net.HardwareAddr{0x94, 0xde, 0x80, 0xaf, 0x4b, 0x62}, Flags:0x0} [192.168.1.70]\r\n```\r\n\r\nIn 1.5 returns:\r\n```\r\nnet.Interface{Index:1, MTU:4294967295, Name:\"Loopback Pseudo-Interface 1\", HardwareAddr:net.HardwareAddr{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, Flags:0x15} [::1/28 127.0.0.1/16]\r\n```\r\n\r\nAny code relying on net.Interfaces() breaks (for example making multicasts to all interfaces, since Windows by default multicasts to some single interface)\r\n\r\nWhat version of Go are you using (go version)?\r\ngo version go1.5 windows/amd64\r\n\r\nWhat operating system and processor architecture are you using?\r\nWindows 8.1 x64\r\n\r\nWhat did you do?\r\nCalled net.Interfaces()\r\n\r\nWhat did you expect to see?\r\nMy one external interface\r\n\r\nWhat did you see instead?\r\nMy one loopback interface\r\n\r\nipconfig /all\r\n```\r\nc:\\Go\\src\\net\u003eipconfig /all\r\n\r\nWindows IP Configuration\r\n\r\n   Host Name . . . . . . . . . . . . : Audrius\r\n   Primary Dns Suffix  . . . . . . . :\r\n   Node Type . . . . . . . . . . . . : Hybrid\r\n   IP Routing Enabled. . . . . . . . : No\r\n   WINS Proxy Enabled. . . . . . . . : No\r\n   DNS Suffix Search List. . . . . . : lan\r\n\r\nEthernet adapter Ethernet 5:\r\n\r\n   Connection-specific DNS Suffix  . : lan\r\n   Description . . . . . . . . . . . : Hyper-V Virtual Ethernet Adapter #2\r\n   Physical Address. . . . . . . . . : 94-DE-80-AF-4B-62\r\n   DHCP Enabled. . . . . . . . . . . : Yes\r\n   Autoconfiguration Enabled . . . . : Yes\r\n   Link-local IPv6 Address . . . . . : fe80::58d9:707e:1173:32c%5(Preferred)\r\n   IPv4 Address. . . . . . . . . . . : 192.168.1.70(Preferred)\r\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\r\n   Lease Obtained. . . . . . . . . . : 23 August 2015 13:46:11\r\n   Lease Expires . . . . . . . . . . : 25 August 2015 13:46:22\r\n   Default Gateway . . . . . . . . . : 192.168.1.254\r\n   DHCP Server . . . . . . . . . . . : 192.168.1.254\r\n   DHCPv6 IAID . . . . . . . . . . . : 1150606976\r\n   DHCPv6 Client DUID. . . . . . . . : 00-01-00-01-1D-3C-8E-0C-94-DE-80-AF-4B-62\r\n   DNS Servers . . . . . . . . . . . : fe80::9e97:26ff:fe78:cec2%5\r\n                                       8.8.8.8\r\n                                       4.4.8.8\r\n   NetBIOS over Tcpip. . . . . . . . : Enabled\r\n\r\nTunnel adapter isatap.lan:\r\n\r\n   Media State . . . . . . . . . . . : Media disconnected\r\n   Connection-specific DNS Suffix  . : lan\r\n   Description . . . . . . . . . . . : Microsoft ISATAP Adapter #4\r\n   Physical Address. . . . . . . . . : 00-00-00-00-00-00-00-E0\r\n   DHCP Enabled. . . . . . . . . . . : No\r\n   Autoconfiguration Enabled . . . . : Yes\r\n\r\n```\r\n\r\nnetsh interface show interface\r\n```\r\n\r\nAdmin State    State          Type             Interface Name\r\n-------------------------------------------------------------------------\r\nEnabled        Connected      Dedicated        Ethernet 3\r\nEnabled        Connected      Dedicated        Ethernet 5\r\n```\r\n\r\nTest output:\r\n```\r\nc:\\Go\\src\\net\u003ego test -v -run=Interface\r\n=== RUN   TestInterfaces\r\n--- PASS: TestInterfaces (0.00s)\r\n        interface_test.go:79: \"Loopback Pseudo-Interface 1\": flags \"up|loopback|multicast\", ifindex 1, mtu 4294967295\r\n        interface_test.go:80: hardware address \"00:00:00:00:00:00:00:00\"\r\n        interface_test.go:202: interface address \"::1/28\"\r\n        interface_test.go:202: interface address \"127.0.0.1/16\"\r\n        interface_test.go:223: joined group address \"ff02::c\"\r\n        interface_test.go:223: joined group address \"239.255.255.250\"\r\n=== RUN   TestInterfaceAddrs\r\n--- PASS: TestInterfaceAddrs (0.00s)\r\n        interface_test.go:202: interface address \"fe80::58d9:707e:1173:32c/28\"\r\n        interface_test.go:202: interface address \"192.168.1.70/16\"\r\n        interface_test.go:202: interface address \"::1/28\"\r\n        interface_test.go:202: interface address \"127.0.0.1/16\"\r\n        interface_test.go:202: interface address \"fe80::5efe:c0a8:146/28\"\r\nPASS\r\nSocket statistical information:\r\n(inet4, datagram, udp): opened=4, connected=0, listened=0, accepted=0, closed=4, openfailed=0, connectfailed=0, listenfailed=0, acceptfailed=0, closefailed=0\r\n\r\nok      net     0.124s\r\n```",
+	"user": {
+		"login": "AudriusButkevicius",
+		"id": 1144861,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 32,
+	"closed_at": "2015-11-10T00:53:44Z",
+	"created_at": "2015-08-24T20:48:03Z",
+	"updated_at": "2016-02-03T00:35:27Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

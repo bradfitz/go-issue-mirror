@@ -1,0 +1,12 @@
+{
+	"id": 147029953,
+	"body": "@mdempsky It's not intentionally not expected to match, but I've also not tried to match it - maybe it should, but I haven't seen a convincing reason for it. As my example above shows, the gc implementation (and I believe gccgo as well, to some extent) is not making a difference between padding needed when composing types, and actual sizes. It simply assumes that all types' sizes are the sizes after padding (needed or not); and of course the built-in types are carefully designed/chosen to not require internal padding.\r\n\r\nThus, gc-compiled structs that are not carefully laid out waste memory (internal fragmentation) - in some cases it cannot even be avoided with careful layout (if you don't own the struct).\r\n\r\nIn my view, that's why there's two functions: one for size, and one for alignment. The two together determine the size of composed types, exactly the same way as the two together are used to determine the size of a single struct (by aligning each field individually and thus determine padding between fields).\r\n\r\n(I have discussed this in the past w/ others (iant). The argument for gc and gccgo was that the current solution is simpler and perhaps less surprising. Personally I don't agree. Again, to revive the struct example: When we ask for the size of a byte we expect to get 1, but inside a struct, the actual space used may be 2, 4, or 8 because the next field must be aligned. Nobody is surprised by that, and it would be rather unexpected to see a size of 4 or 8 for bytes just because that's the minimal alignment on a platform. I think the same should be true for composed types such as structs and arrays: The size should not include padding. Or in other words: We have a special case for built-in types in gc where there doesn't need to be one. go/types doesn't special case.)\r\n\r\nRegarding issue #9401: We may still add extra space for an empty struct field at the end of a struct, but again, that shouldn't affect Sizeof, for the same reasons mentioned above. For one, if one were to copy memory byte-wise, padding doesn't need to be copied.\r\n\r\nI'm going to close this for now. Feel free to re-open if you think there are good reasons to change the status quo for go/types besides strict compatibility when it comes to sizes (I'd rather have a gc specific size function instead).",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-10T03:49:36Z",
+	"updated_at": "2015-10-10T03:52:28Z"
+}

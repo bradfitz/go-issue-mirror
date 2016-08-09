@@ -1,0 +1,12 @@
+{
+	"id": 207084449,
+	"body": "Unfortunately, Go just happens to be the victim of a bug in the Solaris 11.2 and later linker.  This issue is also trivially reproducible using gcc alone without Go:\r\n```\r\n$ echo 'int main(int argc, char **argv) { return 0; }' | \\\r\n   gcc -x c -o a.out -\r\nld: fatal: bad section layout: .SUNW_ldynsym must precede and be adjacent to\r\n.dynsym\r\ncollect2: error: ld returned 1 exit status\r\n```\r\n\r\nThe reason we are seeing this issue with Go is due to the changes applied for issue #13247 which added this seemingly innocuous logic to src/cmd/link/internal/ld/symtab.go:\r\n\r\n```\r\n       // Some linkers will add a FILE sym if one is not present.\r\n       // Avoid having the working directory inserted into the symbol table.\r\n       putelfsyment(0, 0, 0, STB_LOCAL\u003c\u003c4|STT_FILE, SHN_ABS, 0)\r\n```\r\n\r\nThis adds a NULL STT_FILE entry to the symtab; this seems to be allowed per the System V ABI, so probably is a valid thing to do.  However, this in turn triggers a silent bug that has existed for a few years (since sometime in the Solaris 11.2 release cycle) in the Solaris linker; ld(1)'s local symbol counting is being thrown off in some manner.  This in turn trips up logic added during the Solaris 11.2 release cycle to ensure that elf output sections are in the expected order:\r\n\r\n```\r\n           secadj\r\n               ELF  objects  require  certain  sections to be adjacent to each\r\n               other in a specified order in the output object. This automatic\r\n               layout can be disrupted by link-editor mapfiles that explicitly\r\n               layout sections. An invalid layout results in  a  fatal  error.\r\n               The -z  relax=secadj option suppresses layout verification.\r\n```\r\n\r\nIn versions of Solaris that have this functionality, this can be worked around by using \"-z relax=secadj\".\r\n\r\nHowever, the simplest workaround is likely to simply have STT_FILE use a name of some sort:\r\n```\r\n    putelfsyment(putelfstr(\"go.go\"), 0, 0, STB_LOCAL\u003c\u003c4|STT_FILE, SHN_ABS, 0)\r\n```\r\n...which avoids the issue.  This issue will be resolved in a future update to Solaris, but a workaround seems appropriate.\r\n\r\nI will happily contribute a CL based on whatever the preferred solution is.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-07T20:57:48Z",
+	"updated_at": "2016-04-07T20:57:48Z"
+}

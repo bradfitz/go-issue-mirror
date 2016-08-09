@@ -1,0 +1,26 @@
+{
+	"id": 167080631,
+	"number": 16472,
+	"state": "open",
+	"title": "proposal: add context cancellation mechanisms to os/signal",
+	"body": "Add a new function to `os/signal` which creates a context which is canceled when a matched signal is received. It's very simple. In fact, it's so simple that I won't be surprised if this gets rejected purely on the basis of it being easy to just write when you need it, but it's also possible that better mechanisms can be implemented by putting it in the actual package and giving it access to the package's innards. I'm not familiar enough with how `os/signal` works to be sure.\r\n\r\nHere's a protoype:\r\n\r\n    func WithContext(ctx context.Context, sig ...os.Signal) context.Context {\r\n        ctx, cancel := context.WithCancel(ctx)\r\n        go func() {\r\n            c := make(chan os.Signal)\r\n            signal.Notify(c, sig...)\r\n            defer signal.Stop(c)\r\n\r\n            select {\r\n            case \u003c-ctx.Done():\r\n            case \u003c-c:\r\n                cancel()\r\n            }\r\n        }()\r\n\r\n        return ctx\r\n    }",
+	"user": {
+		"login": "DeedleFake",
+		"id": 326750,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-07-22T16:15:09Z",
+	"updated_at": "2016-07-25T23:58:09Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

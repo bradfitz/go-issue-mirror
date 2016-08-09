@@ -1,0 +1,12 @@
+{
+	"id": 139450388,
+	"body": "Thanks for your reply. I'm sorry I was not clear. I can see that this cannot be done automatically without changing the code.  However the code change is small, and comes at a small cost rather than extending the linking model to support this feature. \n\n\n\n\u003e On 11 Sep 2015, at 14:13, Matthew Dempsky \u003cnotifications@github.com\u003e wrote:\n\u003e \n\u003e @davecheney I'm not sure exactly what alternative solution you're asking me to contrast against, so hopefully this is what you mean:\n\u003e \n\u003e Suppose for concreteness we want to combine cmd/gofmt and cmd/vet into a single executable, and that we don't have help from the Go toolchain. We might try to introduce a wrapper program like:\n\u003e \n\u003e package main\n\u003e import (\n\u003e     \"os\"\n\u003e     gofmt_main \"cmd/gofmt\"\n\u003e     vet_main \"cmd/vet\"\n\u003e )\n\u003e func main() {\n\u003e     switch os.Args[0] {\n\u003e     case \"gofmt\":\n\u003e         gofmt_main.Main()\n\u003e     case \"vet\":\n\u003e         vet_main.Main()\n\u003e     }\n\u003e }\n\u003e and transform cmd/gofmt and cmd/vet into packages that export a Main function (either manually or with a simple source rewriting tool).\n\u003e \n\u003e However, the direct naive approach of simply changing the package name and a single function name is insufficient, because package initializers will still run. E.g., both cmd/gofmt and cmd/vet's flags will be registered with package flag, so \"gofmt -help\" would list vet's irrelevant flags, and vice versa. Worse, if you try to add in cmd/fix, it's -r flag would conflict with cmd/gofmt's.\n\u003e \n\u003e That's why in my proof-of-concept CL I implemented the switch in package runtime, so it can also control which set of package initializer routines is executed.\n\u003e \n\u003e I expect it's possible to source-to-source transform Go code to remove all implicit initializers so this approach could still work without toolchain support, but I think it would be rather non-trivial and perhaps require transforming the standard library sources too.\n\u003e \n\u003e —\n\u003e Reply to this email directly or view it on GitHub.\n\u003e \n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-11T04:34:40Z",
+	"updated_at": "2015-09-11T04:34:40Z"
+}

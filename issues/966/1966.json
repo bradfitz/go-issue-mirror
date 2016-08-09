@@ -1,0 +1,28 @@
+{
+	"id": 51278552,
+	"number": 1966,
+	"state": "closed",
+	"title": "Reading a multipart email returns only 1 Part object with all the parts inside as content",
+	"body": "by **magius.varios**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1.I send an email from my gmail account to an app at AppEngineGo\n2. It's receive a multipart email (Content-Type: multipart/alternative)\n   with 2 parts: \u0026quot;Content-Type: text/plain\u0026quot;, \u0026quot;Content-Type: text/html\u0026quot;\n3. I try to read the differents parts with \u0026quot;mime/multipart\u0026quot;\n    rmp := multipart.NewReader(tp.R, boundary); part,_ := rmp.NextPart()\n\nWhat is the expected output?\n2 Part object (in 2 calls to rmp.NextPart())\n\nWhat do you see instead?\nIt returns only one Part object with both parts inside (the second as text, it didn't\ndetected the boundary mark)\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nlinux 386\n\nWhich revision are you using?  (hg identify)\nr57\n\nPlease provide any additional information below.\nNextPart calls to Read, which read until detect the part boundary. It expects to find\n\u0026lt;\u0026quot;\\r\\n--\u0026quot; + boundary\u0026gt; but gmail sends only \u0026lt;\u0026quot;\\n--\u0026quot; +\nboundary\u0026gt;\n\nAs a sugestion, it works for me (and pass the tests) to change/add some lines in the\nfile \u0026quot;multipart.go\u0026quot; (marked with +++)\n\nfunc (bp *Part) Read(p []byte) (n int, err os.Error) {\n...\n\t// Search the peek buffer for \u0026quot;\\r\\n--boundary\u0026quot;. If found,\n\t// consume everything up to the boundary. If not, consume only\n\t// as much of the peek buffer as cannot hold the boundary\n\t// string.\n\tnCopy := 0\n\tfoundBoundary := false\n+++\tif idx := bytes.Index(peek, bp.mr.nlDashBoundary[1:]); idx != -1 {\n+++\t\tif idx \u0026gt; 0 \u0026amp;\u0026amp; peek[idx-1] == '\\r' {\n+++\t\t\tidx--\n+++\t\t}\n\t\tnCopy = idx\n\t\tfoundBoundary = true\n\t} else if safeCount := len(peek) - len(bp.mr.nlDashBoundary); safeCount \u0026gt; 0 {\n\t\tnCopy = safeCount\n\t} else if unexpectedEof {\n\t\t// If we've run out of peek buffer and the boundary\n\t\t// wasn't found (and can't possibly fit), we must have\n\t\t// hit the end of the file unexpectedly.\n\t\treturn 0, io.ErrUnexpectedEOF\n\t}\n...\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2014-12-08T10:10:46Z",
+	"created_at": "2011-06-16T21:15:08Z",
+	"updated_at": "2016-06-24T19:30:58Z"
+}

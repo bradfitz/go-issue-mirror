@@ -1,0 +1,12 @@
+{
+	"id": 66069925,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **ajdovahkiin**:\n\n\u003cpre\u003ethanks for the response mike. We are not reusing the client because we need to specify a\ndynamic timeout. Within a day's time around 2000 open connections are piled up in\n\"ESTABLISHED\" state.\n\nPlease find below the relevant section of the code.\n\n\nfunc PostForm(url string, data url.Values, tracker string, timeout time.Duration) (body\n[]byte, err error) {\n\tout.Printf(\"[%s] Firing a POST request to [%s] with data [%v]\\n\", tracker, url, data)\n\tvar resp *http.Response\n\n\tclient := http.Client{\n\t\tTransport: \u0026http.Transport{\n\t\t\tDial:              timeoutDialler(timeout, tracker),\n\t\t\tDisableKeepAlives: true,\n\t\t},\n\t}\n\n\tresp, err = client.PostForm(url, data)\n\tif err != nil {\n\t\tout.Printf(\"[%s] Error in POST request. Reason = [%s]\", tracker, err)\n\t\treturn\n\t}\n\tdefer resp.Body.Close()\n\tbody, err = ioutil.ReadAll(resp.Body)\n\tif err != nil {\n\t\tout.Printf(\"[%s] Error in fetching request body. Reason = [%s]\", tracker, err)\n\t\treturn\n\t}\n\n\treturn\n}\n\n\nCALL (within a goroutine):\nresponse, err = PostForm(url, postParms, tracker, time.Duration(210*time.Second))\n\nOur app spawns several goroutines and each of them talks to multiple servers running on\ndifferent machines using this POST request. I have set the limit for max parallel\ngoroutines to 15. \nPlease let me know if you need any more information or if there is a better way of doing\nit.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-09-10T10:06:05Z",
+	"updated_at": "2014-12-08T10:21:26Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51282064,
+	"number": 4391,
+	"state": "closed",
+	"title": "runtime: unable to use SIGSTOP to background",
+	"body": "\u003cpre\u003eIf I try to SIGSTOP the current process, that seems to only block one thread, while\nother threads continue. I also tried signaling the session leader, same results.\n\nThis reproduces the problem:\n\n$ cat sigstop.go\npackage main\n\nimport (\n\t\u0026quot;syscall\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n\tfmt.Println(\u0026quot;one\u0026quot;)\n\tpid := syscall.Getpid()\n\terr := syscall.Kill(pid, syscall.SIGSTOP)\n\tif err != nil {\n\t\tpanic(\u0026quot;bleh\u0026quot;)\n\t}\n\tfmt.Println(\u0026quot;two\u0026quot;)\n}\n\n$ go build sigstop.go\n$ ./sigstop\none\ntwo\n\nWhat is the expected output?\n\nCompare to\n\n$ cat sigstop.c\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;sys/types.h\u0026gt;\n#include \u0026lt;unistd.h\u0026gt;\n#include \u0026lt;signal.h\u0026gt;\n\nint main(void) {\n  pid_t pid;\n\n  printf(\u0026quot;one\\n\u0026quot;);\n  pid = getpid();\n  kill(pid, SIGSTOP);\n  printf(\u0026quot;two\\n\u0026quot;);\n}\n\n$ gcc sigstop.c\n$ ./a.out \none\n\n[1]+  Stopped                 ./a.out\n$ fg\n./a.out\ntwo\n$ \n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g via \u0026quot;go build\u0026quot;\n\nWhich operating system are you using?\n\n$ lsb_release -a\nNo LSB modules are available.\nDistributor ID:\tUbuntu\nDescription:\tUbuntu 12.04.1 LTS\nRelease:\t12.04\nCodename:\tprecise\n\nWhich version are you using?  (run 'go version')\n\n$ go version\ngo version go1\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 20,
+	"closed_at": "2015-12-16T15:14:38Z",
+	"created_at": "2012-11-15T05:46:53Z",
+	"updated_at": "2015-12-16T15:14:38Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

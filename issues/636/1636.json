@@ -1,0 +1,27 @@
+{
+	"id": 51278095,
+	"number": 1636,
+	"state": "closed",
+	"title": "x/net/websocket: hacked websocket.go (* Conn)RemoteAddr() to return intuitive value",
+	"body": "by **clbanning**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n0. websocket#Conn.RemoteAddr() returns 'host' address for connection.\n1. src/pkg/websocket/websocket.go defines (* Conn)RemoteAddr() as:\n    func (ws *Conn) RemoteAddr() net.Addr { return WebSocketAddr(ws.Location) }\n2. as a result, it returns the same value as (*Conn)LocalAddr() \n3. ws.Location and ws.Orgin are instantiated by websocket.newConn()\n\nWhat is the expected output?\nIntuitively, I thought I'd get the address of the remote end of the connection - the same\nas with http.Request.RemoteAddr (and formerly http.ResponseWriter.RemoteAddr()).\n\n\nWhat do you see instead?  -- \nI hacked websocket.go to replace RemoteAddr() with:\n\nfunc (ws *Conn) RemoteAddr() net.Addr {\n   if conn, ok := ws.rwc.(net.Conn); ok {\n      return conn.RemoteAddr()\n   }\n   return nil\n}\n\nIt now provides the address for the remote end of the connection, as I believe it should.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\ndarwin\n\nWhich revision are you using?  (hg identify)\n37171a06ed48+ tip\n\nPlease provide any additional information below.\nLet me know if you'd like this submitted as a Mecurial change.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:09:11Z",
+	"created_at": "2011-03-23T20:32:45Z",
+	"updated_at": "2016-08-05T16:07:59Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 166438686,
+	"body": "The problem turns out to be incorrect relocation by the internal linker.\n\nmingw gcc generates a wrapper for longjmp.\nobjdump -d _all.o has this:\n0000000000000076 \u003clongjmp\u003e:\n  76:   48 8d 05 00 00 00 00    lea    0x0(%rip),%rax        # 7d\n\u003clongjmp+0x7\u003e\n            79: R_X86_64_PC32   __imp_longjmp\n  7d:   ff 20                   jmpq   *(%rax)\n  7f:   90                      nop\n\nBut the final linked executable contains code like this:\n0000000000459436 \u003clongjmp\u003e:\n  459436:   48 8d 05 f9 ff ff ff    lea    -0x7(%rip),%rax        # 459436\n\u003clongjmp\u003e\n  45943d:   ff 20                   jmpq   *(%rax)\n  45943f:   90\n\nWhich is obviously incorrect.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-21T22:16:15Z",
+	"updated_at": "2015-12-21T22:16:15Z"
+}

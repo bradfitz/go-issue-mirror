@@ -1,0 +1,27 @@
+{
+	"id": 51287654,
+	"number": 8084,
+	"state": "closed",
+	"title": "encoding/gob: panics for invalid input",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3beta2 +708e129e91a9 Wed May 21 16:01:54 2014 -0700 linux/amd64\n\nWhat steps reproduce the problem?\nRun this program on a 64 bit machine.\n\npackage main\n\nimport (\n        \u0026quot;bytes\u0026quot;\n        \u0026quot;encoding/gob\u0026quot;\n)\n\nfunc main() {\n        // Encode an int slice.\n        b := new(bytes.Buffer)\n        t := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}\n        gob.NewEncoder(b).Encode(t)\n\n        // Set an invalid value to the first byte of the length field for the slice.\n        // This makes the encoded slice very long.\n        buf := b.Bytes()\n        buf[len(buf)-len(t)-1] = 0xfa\n\n        // Decode panics on 64 bit.\n        u := make([]int, 0, 1)\n        gob.NewDecoder(b).Decode(\u0026amp;u)\n}\n\nWhat happened?\nIt fails with the following error.\n\npanic: runtime error: runtime: allocation size out of range [recovered]\n        panic: runtime error: runtime: allocation size out of range\n\ngoroutine 16 [running]:\nruntime.panic(0x4e3880, 0x5a2da7)\n        /usr/local/google/home/ruiu/go2/src/pkg/runtime/panic.c:279 +0xf5\nencoding/gob.catchError(0xc2080241c8)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/error.go:38 +0x8f\nruntime.panic(0x4e3880, 0x5a2da7)\n        /usr/local/google/home/ruiu/go2/src/pkg/runtime/panic.c:248 +0x18d\nreflect.unsafe_NewArray(0x4b66c0, 0x20202020202, 0x0)\n        /usr/local/google/home/ruiu/go2/src/pkg/runtime/iface.goc:596 +0x3a\nreflect.MakeSlice(0x7fc55c9c5208, 0x4af9e0, 0x20202020202, 0x20202020202, 0x5a5f80,\n0xc2080224b0, 0x7fc55c826be8, 0x7fc55c826be0)\n        /usr/local/google/home/ruiu/go2/src/pkg/reflect/value.go:2227 +0x1e7\nencoding/gob.(*Decoder).decodeSlice(0xc2080240f0, 0x7fc55c9c5208, 0x4af9e0,\n0xc20803a400, 0xc208042d20, 0x526e58, 0x8, 0x1, 0x0, 0x7fc55c9c11b0, ...)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decode.go:672 +0xc2\nencoding/gob.func·003(0xc208023380, 0xc20803a400, 0xc20803c2d0)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decode.go:892 +0xe0\nencoding/gob.(*Decoder).decodeSingle(0xc2080240f0, 0xc208042aa0, 0xc20803b1c0,\n0xc20803c2d0)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decode.go:487 +0x1b7\nencoding/gob.(*Decoder).decodeValue(0xc2080240f0, 0xc200000041, 0x4aadc0, 0xc208042d20,\n0x0, 0x160)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decode.go:1250 +0x441\nencoding/gob.(*Decoder).DecodeValue(0xc2080240f0, 0x4aadc0, 0xc208042d20, 0x0, 0x160,\n0x0, 0x0)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decoder.go:229 +0x195\nencoding/gob.(*Decoder).Decode(0xc2080240f0, 0x4aadc0, 0xc208042d20, 0x7fc55c9c5418, 0x0)\n        /usr/local/google/home/ruiu/go2/src/pkg/encoding/gob/decoder.go:204 +0x1fb\n\nWhat should have happened instead?\nIt should not panic.\u003c/pre\u003e",
+	"user": {
+		"login": "rui314",
+		"id": 47400,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:44:50Z",
+	"created_at": "2014-05-23T05:43:37Z",
+	"updated_at": "2016-06-25T01:35:12Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

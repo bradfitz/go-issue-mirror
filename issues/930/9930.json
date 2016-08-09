@@ -1,0 +1,27 @@
+{
+	"id": 58239096,
+	"number": 9930,
+	"state": "open",
+	"title": "cmd/compile: improve generated type equality code",
+	"body": "geneq generates a series of if statements, each returning false if they fail. Creating instead a long conjunction would result in shorter, faster generated code.\r\n\r\nIt might also be worth reordering the tests to place all the ones involving a function call last.\r\n\r\nIt might also be worth trying to prevent some of the spurious checknils that are currently produced. In some cases know that we are dereferencing fields on a struct (not a pointer to a struct).\r\n\r\nWe also appear to be generating equality routines when we shouldn't be. The following strike me as possibly spurious:\r\n\r\n* `TEXT type..eq.[0]text/tabwriter.cell(SB) text/tabwriter/tabwriter.go`. An array of length zero? Where does it come from? And the equality check should be trivial, not generated.\r\n* `TEXT type..eq.[2]string(SB) golang.org/x/tools/cmd/godoc/blog.go`. I don't see anything resembling `[2]string` in `blog.go`.\r\n* `TEXT type..eq.[1]interface {}(SB) golang.org/x/tools/cmd/godoc/blog.go`. I don't see where this came from in `blog.go`. And an equality check for an array of length 1 should just be a check of the underlying type.\r\n\r\nLook into these.\r\n\r\nGiven all the above, it might be worth also taking a closer look at the generated hash routines as well.\r\n\r\nI'll poke at these once the c2go conversion is complete.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2015-02-19T17:19:16Z",
+	"updated_at": "2016-02-20T23:00:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

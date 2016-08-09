@@ -1,0 +1,12 @@
+{
+	"id": 166188298,
+	"body": "I think you already have the answer. Please take a look at the output of drill.\r\n\r\n\u003e ;; SERVER: 127.0.0.1\r\n\u003e ;; WHEN: Mon Dec 21 08:59:15 2015\r\n\u003e ;; MSG SIZE  rcvd: 690\r\n\r\nI suppose that the DNS server your are running should behave like the following:\r\n```\r\nWHILE\r\n        READ QueryMessage from UDP endpoint\r\n        IF QueryMessage exists THEN\r\n                PARSE QueryMessage to extract Header, Questions, OptRR\r\n                IF Header and Questions look fine THEN\r\n                        COMPOSE ResponseMessage with Answers\r\n                        IF ResponseMessageLength \u003c= 512 THEN\r\n                                WRITE ResponseMessage to UDP endpoint\r\n                        ELSE\r\n                                IF OptRR exists THEN\r\n                                        RECOMPOSE ResponseMessage using OptRR\r\n                                        WRITE ResponseMessage to UDP endpoint\r\n                                ELSE\r\n                                        RECOMPOSE ResponseMessage to be \u003c= 512\r\n                                        SET TC in ResponseMessage to 1\r\n                                        WRITE ResponseMessage to UDP endpoint\r\n                                ENDIF\r\n                        ENDIF\r\n                ELSE\r\n                        COMPOSE ResponseMessage with ErrorCode\r\n                        WRITE ResponseMessage to UDP endpoint\r\n                ENDIF\r\n        ENDIF\r\n        READ QueryMessage from TCP endpoint\r\n        IF QueryMessage exists THEN\r\n                PARSE QueryMessage to extract Header, Questions, OptRR\r\n                IF Header and Questions look fine THEN\r\n                        COMPOSE ResponseMessage with Answers\r\n                        WRITE ResponseMessage to TCP endpoint\r\n                ELSE\r\n                        COMPOSE ResponseMessage with ErrorCode\r\n                        WRITE ResponseMessage to TCP endpoint\r\n                ENDIF\r\n        ENDIF\r\nENDWHILE\r\n```\r\nClosing as \"working as intended.\" FWIW, we already have #13356.",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-21T03:26:31Z",
+	"updated_at": "2015-12-21T04:11:32Z"
+}

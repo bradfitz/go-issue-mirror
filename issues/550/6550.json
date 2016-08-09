@@ -1,0 +1,33 @@
+{
+	"id": 51285352,
+	"number": 6550,
+	"state": "closed",
+	"title": "compress/gzip: hangs on gunzip",
+	"body": "\u003cpre\u003e$ go version\ngo version devel +add507d4646f Tue Oct 08 13:13:40 2013 -0700 linux/amd64\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Download will_hang.gz data file\n2. Either download go_gunzip.go or take the program from\n\u003ca href=\"http://play.golang.org/p/cvnOQmWTRc\"\u003ehttp://play.golang.org/p/cvnOQmWTRc\u003c/a\u003e\n\n3. Run it\ngo go_gunzip.go \u0026lt; will_crash.gz\n\nWhat is the expected output?\nBefore io.Copy\nAfter io.Copy\n\u0026lt;exit status 0\u0026gt;\n\nWhat do you see instead?\n\n$ go run go_gunzip.go \u0026lt; will_hang.gz                                                 \n                            \n2013/10/08 21:49:51 Before io.Copy\n\nit hangs forever, eats 100% of CPU and never completes.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nUbuntu Linux 12.04 x86-64 (also tested on 13.04).\n\nWhich version are you using?  (run 'go version')\n\n$ go version\ngo version devel +add507d4646f Tue Oct 08 13:13:40 2013 -0700 linux/amd64\n\nAdditional info:\n\nI ran the program under gdb. Here is the example stack traces:\n\n0x00000000004313c0 in compress/flate.(*decompressor).huffSym (f=0xc21006e000,\nh=0xc21006e030, ~anon1=0, ~anon2=...)\n    at /home/krasin/go/src/pkg/compress/flate/inflate.go:645\n645                             chunk =\nh.links[chunk\u0026gt;\u0026gt;huffmanValueShift][(f.b\u0026gt;\u0026gt;huffmanChunkBits)\u0026amp;h.linkMask]\n(gdb) bt\n#0  0x00000000004313c0 in compress/flate.(*decompressor).huffSym (f=0xc21006e000,\nh=0xc21006e030, ~anon1=0, ~anon2=...)\n    at /home/krasin/go/src/pkg/compress/flate/inflate.go:645\n#1  0x000000000043038d in compress/flate.(*decompressor).huffmanBlock (f=0xc21006e000)\n    at /home/krasin/go/src/pkg/compress/flate/inflate.go:395\n#2  0x000000000042f8f4 in compress/flate.(*decompressor).Read (f=0xc21006e000, b=\n[]uint8 = {...}, ~anon1=8192, ~anon2=...)\n    at /home/krasin/go/src/pkg/compress/flate/inflate.go:275\n#3  0x0000000000424b69 in compress/gzip.(*Reader).Read (z=0xc21005d000, p= []uint8 =\n{...}, n=8192, err=...)\n    at /home/krasin/go/src/pkg/compress/gzip/gunzip.go:207\n#4  0x0000000000425f30 in io/ioutil.devNull.ReadFrom (r=..., n=102203392, err=...) at\n/home/krasin/go/src/pkg/io/ioutil/ioutil.go:144\n#5  0x0000000000425584 in io.Copy (dst=..., src=..., written=0, err=...) at\n/home/krasin/go/src/pkg/io/io.go:348\n#6  0x0000000000400ed8 in main.main () at /home/krasin/testdata/go_gunzip.go:22\n\n\n\n\n0x000000000043228a in hash/crc32.update (crc=1794811569, tab=0xc210047000, p= []uint8 =\n{...}, ~anon3=8192)\n    at /home/krasin/go/src/pkg/hash/crc32/crc32.go:103\n103             for _, v := range p {\n(gdb) bt\n#0  0x000000000043228a in hash/crc32.update (crc=1794811569, tab=0xc210047000, p=\n[]uint8 = {...}, ~anon3=8192)\n    at /home/krasin/go/src/pkg/hash/crc32/crc32.go:103\n#1  0x000000000043234e in hash/crc32.Update (crc=1794811569, tab=0xc210047000, p=\n[]uint8 = {...}, ~anon3=1794811569)\n    at /home/krasin/go/src/pkg/hash/crc32/crc32.go:114\n#2  0x00000000004323c6 in hash/crc32.(*digest).Write (d=0xc21000a230, p= []uint8 =\n{...}, n=8192, err=...)\n    at /home/krasin/go/src/pkg/hash/crc32/crc32.go:118\n#3  0x0000000000424bd9 in compress/gzip.(*Reader).Read (z=0xc21005d000, p= []uint8 =\n{...}, n=8192, err=...)\n    at /home/krasin/go/src/pkg/compress/gzip/gunzip.go:208\n#4  0x0000000000425f30 in io/ioutil.devNull.ReadFrom (r=..., n=184705024, err=...) at\n/home/krasin/go/src/pkg/io/ioutil/ioutil.go:144\n#5  0x0000000000425584 in io.Copy (dst=..., src=..., written=0, err=...) at\n/home/krasin/go/src/pkg/io/io.go:348\n#6  0x0000000000400ed8 in main.main () at /home/krasin/testdata/go_gunzip.go:22\n\n\nP.S. There's also a false alarm from me here:\n\u003ca href=\"https://golang.org/issue/6549\"\u003ehttps://golang.org/issue/6549\u003c/a\u003e Please, don't confuse this bug report\n(which I believe to be real) and that one.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6550/0/go_gunzip.go\"\u003ego_gunzip.go\u003c/a\u003e (396 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6550/0/will_hang.gz\"\u003ewill_hang.gz\u003c/a\u003e (65536 bytes)",
+	"user": {
+		"login": "krasin",
+		"id": 21159,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:36:13Z",
+	"created_at": "2013-10-08T21:56:59Z",
+	"updated_at": "2016-06-25T01:20:18Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

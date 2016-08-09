@@ -1,0 +1,39 @@
+{
+	"id": 51283262,
+	"number": 5195,
+	"state": "closed",
+	"title": "net/http: continue to reduce server CPU and allocations",
+	"body": "\u003cpre\u003eTracking bug for continuing to improve CPU and memory allocations in the net/http server.\n\nI was just starting to have fun when it was time to ship Go 1.1.\n\nHere's where we're at:\n\n~/go/src/pkg/net/http$ hg id\n8153882a36e8 tip\n\n~/go/src/pkg/net/http$ go test -c\n\n~/go/src/pkg/net/http$ ./http.test -test.v -test.run=none -test.bench=ServerHandler\n-test.cpuprofile=prof.cpu -test.benchtime=4s\nPASS\nBenchmarkServerHandlerTypeLen\t 1000000\t     11098 ns/op\t    1878 B/op\t      19 allocs/op\nBenchmarkServerHandlerNoLen\t 1000000\t     10249 ns/op\t    1843 B/op\t      17 allocs/op\nBenchmarkServerHandlerNoType\t 1000000\t     10620 ns/op\t    1844 B/op\t      17 allocs/op\nBenchmarkServerHandlerNoHeader\t 1000000\t      8674 ns/op\t    1051 B/op\t      12 allocs/op\n\n4 CPUs:\nprocessor\t: 3\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 37\nmodel name\t: Intel(R) Core(TM) i5 CPU       M 560  @ 2.67GHz\nstepping\t: 5\nmicrocode\t: 0x2\ncpu MHz\t\t: 2667.000\ncache size\t: 3072 KB\n\n(pprof) top25\nTotal: 3883 samples\n     319   8.2%   8.2%      319   8.2% runtime.memmove\n     133   3.4%  11.6%      171   4.4% time.nextStdChunk\n     113   2.9%  14.6%      415  10.7% time.Time.Format\n      93   2.4%  16.9%     1130  29.1% net/http.(*chunkWriter).writeHeader\n      87   2.2%  19.2%      616  15.9% runtime.mallocgc\n      86   2.2%  21.4%      111   2.9% sweepspan\n      82   2.1%  23.5%      114   2.9% scanblock\n      81   2.1%  25.6%      213   5.5% runtime.MCache_Alloc\n      81   2.1%  27.7%       87   2.2% runtime.settype_flush\n      78   2.0%  29.7%       78   2.0% net/textproto.CanonicalMIMEHeaderKey\n      72   1.9%  31.5%       72   1.9% net/textproto.canonicalMIMEHeaderKey\n      72   1.9%  33.4%       72   1.9% runtime.markallocated\n      69   1.8%  35.2%       80   2.1% itab\n      68   1.8%  36.9%       68   1.8% runtime.xchg\n      58   1.5%  38.4%       58   1.5% runtime.memclr\n      57   1.5%  39.9%      272   7.0% hash_insert\n      56   1.4%  41.3%     1409  36.3% net/http.ReadRequest\n      51   1.3%  42.6%       60   1.5% time.appendUint\n      48   1.2%  43.9%      205   5.3% net/http.readTransfer\n      47   1.2%  45.1%       47   1.2% runtime.appendstr\n      42   1.1%  46.2%       42   1.1% bytes.IndexByte\n      39   1.0%  47.2%      218   5.6% bufio.(*Writer).Write\n      39   1.0%  48.2%       44   1.1% hash_init\n      38   1.0%  49.2%       50   1.3% hash_remove\n      37   1.0%  50.1%      209   5.4% runtime.copy\n\n(pprof) top25 --cum\nTotal: 3883 samples\n       0   0.0%   0.0%     3594  92.6% gosched0\n      23   0.6%   0.6%     3593  92.5% net/http.(*conn).serve\n      20   0.5%   1.1%     1593  41.0% net/http.(*conn).readRequest\n      56   1.4%   2.5%     1409  36.3% net/http.ReadRequest\n      13   0.3%   2.9%     1318  33.9% net/http.(*response).finishRequest\n      20   0.5%   3.4%     1240  31.9% bufio.(*Writer).Flush\n      10   0.3%   3.7%     1222  31.5% net/http.(*switchWriter).Write\n      17   0.4%   4.1%     1207  31.1% net/http.(*chunkWriter).Write\n      93   2.4%   6.5%     1130  29.1% net/http.(*chunkWriter).writeHeader\n      13   0.3%   6.8%      627  16.1% net/http.serverHandler.ServeHTTP\n      87   2.2%   9.1%      616  15.9% runtime.mallocgc\n      11   0.3%   9.3%      607  15.6% net/http_test.func·112\n       6   0.2%   9.5%      603  15.5% net/http.HandlerFunc.ServeHTTP\n      27   0.7%  10.2%      514  13.2% net/textproto.(*Reader).ReadMIMEHeader\n      24   0.6%  10.8%      431  11.1% net/http.(*response).Write\n     113   2.9%  13.7%      415  10.7% time.Time.Format\n      28   0.7%  14.4%      332   8.6% runtime.new\n      16   0.4%  14.9%      331   8.5% runtime.mapassign\n     319   8.2%  23.1%      319   8.2% runtime.memmove\n      15   0.4%  23.5%      304   7.8% net/http.(*response).WriteHeader\n      14   0.4%  23.8%      290   7.5% runtime.mapassign1\n      57   1.5%  25.3%      272   7.0% hash_insert\n       4   0.1%  25.4%      249   6.4% net/http_test.func·108\n      34   0.9%  26.3%      243   6.3% net/http.Header.WriteSubset\n       8   0.2%  26.5%      235   6.1% net/http.Header.clone\n\n\nAnd an svg/png of CPU attached.\n\nI'll attach a CPU one later with GOGC=off.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5195/0/http.svg\"\u003ehttp.svg\u003c/a\u003e (104237 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5195/0/http.png\"\u003ehttp.png\u003c/a\u003e (709313 bytes)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "Performance"
+		},
+		{
+			"name": "Suggested"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 17,
+	"closed_at": "2015-12-10T05:42:28Z",
+	"created_at": "2013-04-03T19:26:42Z",
+	"updated_at": "2015-12-10T05:48:56Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

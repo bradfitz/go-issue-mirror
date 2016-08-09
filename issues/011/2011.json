@@ -1,0 +1,28 @@
+{
+	"id": 51278610,
+	"number": 2011,
+	"state": "closed",
+	"title": "Unable to disable keep-alive in http server",
+	"body": "by **thomas.intlayer**:\n\n\u003cpre\u003eIf you use http.ListenAndServe() to create a simple HTTP server, you have no way to\nforce non-keep-alive responses to clients who request keep-alive.\n\nResponseWriter does not have a Close field and setting a \u0026quot;Connection: close\u0026quot;\nheader does to work either.\nSetting Request.Close to true does not help aswell.\n\nThe bug gets bad as serve() in server.go loops one more time because w.closeAfterReply\nis false, trying to read another request even if the client is gone which in turn can\ntake a long time since the default read and write timeouts are set to 0 aka infinity.\nThis is a problem for server that need to close connections right away or otherwise end\nup exhausting file descriptors.\n\nThere is a dirty hack to force closing of connections:\nsend a Connection: close header and overwrite w.ProtoMinor with 0.\nThis works as HTTP/1.0 does not do keep-alive by default and the Go code will set\nw.closeAfterReply to true internally. It might have sideeffects which I did not explore\nso be aware!\n\n\nPS: I would even consider it a security issue that you can't forcefully close\nconnections as this leaves the server open for trivial DoS attacks.\nThough I do not see how this can be completely fixed without some major changes in how\nthe http package works (you need non-blocking or curl-style callback (to measure\ntransfer speed) functionality to combat Slowloris for example)\n\n\nSuggested fixes:\n- expose a method to close client connections forcefully, maybe expose ClientConn to the\nserver\n- set w.closeAfterReply if (to be added) w.Close is true or \u0026quot;Connection:\nclose\u0026quot; header exists\n- set default read and write timeouts to something like 300 seconds\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2014-12-08T10:10:56Z",
+	"created_at": "2011-06-27T21:57:30Z",
+	"updated_at": "2016-06-24T19:31:33Z"
+}

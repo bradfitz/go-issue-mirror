@@ -1,0 +1,12 @@
+{
+	"id": 223362902,
+	"body": "This looks like a problem with placing spills conservatively.  Quoting from a comment I put in regalloc.go:\r\n```\r\n\t\t\t// TODO: schedule the spill at a point that dominates all restores.\r\n\t\t\t// The restore may be off in an unlikely branch somewhere and it\r\n\t\t\t// would be better to have the spill in that unlikely branch as well.\r\n\t\t\t// v := ...\r\n\t\t\t// if unlikely {\r\n\t\t\t//     f()\r\n\t\t\t// }\r\n\t\t\t// It would be good to have both spill and restore inside the IF.\r\n```\r\nIn this case, the `if` is the len==cap test and `f` is `growslice`. It rarely happens that we need to call `growslice`, but we're spilling everything each iteration just in case we need to call `growslice` during that iteration.  We should move the spills inside the `if` so they only happen if `growslice` is definitely called.\r\n\r\nI'm surprised the old compiler does this optimization.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-02T17:28:48Z",
+	"updated_at": "2016-06-02T17:28:48Z"
+}

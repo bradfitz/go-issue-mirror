@@ -1,0 +1,12 @@
+{
+	"id": 148874237,
+	"body": "Turns out this is pretty easy to propagate. `crypto/tls` returns an untyped `fmt.Errorf` error, so we can make it a real type with the data. The data is easily accessible.\r\n\r\n```diff\r\ndiff --git a/src/crypto/tls/conn.go b/src/crypto/tls/conn.go \r\nindex e3dcf15..2a41beb 100644\r\n--- a/src/crypto/tls/conn.go\r\n+++ b/src/crypto/tls/conn.go\r\n@@ -568,7 +568,7 @@ Again:\r\n        }\r\n        if n \u003e maxCiphertext { \r\n                c.sendAlert(alertRecordOverflow) \r\n-               return c.in.setErrorLocked(fmt.Errorf(\"tls: oversized record received with length %d\", n)) \r\n+               return c.in.setErrorLocked(fmt.Errorf(\"tls: oversized record received with length %d ; data=%q\", n, b.data)) \r\n        }\r\n        if !c.haveVers {\r\n                // First message, be extra suspicious: this might not be a TLS\r\n```\r\n\r\nMakes the demo program above error out with the `\"HTTP/1.1 400 Bad Request\\r\\nContent-Type: text/plain\\r\\nConnection: close\\r\\n\\r\\n400 Bad Request\"`",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-17T01:23:14Z",
+	"updated_at": "2015-10-17T01:23:14Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51289039,
+	"number": 9059,
+	"state": "closed",
+	"title": "cmd/compile: VARDEF instruction keeps temporary live when it is unused",
+	"body": "\u003cpre\u003eCompile the following program:\n\npackage footest\n\nimport (\n\t\u0026quot;bytes\u0026quot;\n)\n\nfunc foo() {\n\tvar buf bytes.Buffer\n\tvar b [4]byte\n\tbuf.Write(b[:])\n}\n\nThis produces the following assembly for the buf.Write line:\n\n\t0x0049 00073 (test.go:10)\tMOVQ\t$4,DX\n\t0x0050 00080 (test.go:10)\tMOVQ\t$4,CX\n\t0x0057 00087 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0002+64(SP)\n\t0x005c 00092 (test.go:10)\tMOVQ\tBX,8(SP)\n\t0x0061 00097 (test.go:10)\tMOVQ\tDX,\u0026quot;\u0026quot;.autotmp_0002+72(SP)\n\t0x0066 00102 (test.go:10)\tMOVQ\tDX,16(SP)\n\t0x006b 00107 (test.go:10)\tMOVQ\tCX,\u0026quot;\u0026quot;.autotmp_0002+80(SP)\n\t0x0070 00112 (test.go:10)\tMOVQ\tCX,24(SP)\n\t0x0075 00117 (test.go:10)\tPCDATA\t$0,$0\n\t0x0075 00117 (test.go:10)\tCALL\t,bytes.(*Buffer).Write(SB)\n\nNote that after this, autotmp_0002 is never used again.\n\nregopt gets passed this as its input (obtained via -R -v):\n\n00000 (test.go:7)\tTEXT\t\u0026quot;\u0026quot;.foo+0(SB),$0-0\n00001 (test.go:7)\tFUNCDATA\t$0,\u0026quot;\u0026quot;.gcargs·0+0(SB)\n00002 (test.go:7)\tFUNCDATA\t$1,\u0026quot;\u0026quot;.gclocals·1+0(SB)\n00003 (test.go:7)\tTYPE\t\u0026quot;\u0026quot;.b+0(SP),$4\n00004 (test.go:7)\tTYPE\t\u0026quot;\u0026quot;.\u0026amp;buf+0(SP),$8\n00005 (test.go:7)\tTYPE\t\u0026quot;\u0026quot;.autotmp_0001+0(SP),$8\n00006 (test.go:8)\tMOVQ\t$type.bytes.Buffer+0(SB),BX\n00007 (test.go:8)\tMOVQ\tBX,(SP)\n00008 (test.go:8)\tCALL\t,runtime.newobject+0(SB)\n00009 (test.go:8)\tMOVQ\t8(SP),BX\n00010 (test.go:8)\tMOVQ\tBX,\u0026quot;\u0026quot;.\u0026amp;buf+0(SP)\n00011 (test.go:9)\tVARDEF\t,\u0026quot;\u0026quot;.b+0(SP)\n00012 (test.go:9)\tLEAQ\t\u0026quot;\u0026quot;.b+0(SP),BX\n00013 (test.go:9)\tMOVL\t$0,(BX)\n00014 (test.go:10)\tLEAQ\t\u0026quot;\u0026quot;.b+0(SP),BX\n00015 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0001+0(SP)\n00016 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.\u0026amp;buf+0(SP),BX\n00017 (test.go:10)\tMOVQ\tBX,(SP)\n00018 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0001+0(SP),BX\n00019 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0003+0(SP)\n00020 (test.go:10)\tCHECKNIL\t\u0026quot;\u0026quot;.autotmp_0003+0(SP),\n00021 (test.go:10)\tVARDEF\t,\u0026quot;\u0026quot;.autotmp_0002+0(SP)\n00022 (test.go:10)\tMOVQ\t$4,\u0026quot;\u0026quot;.autotmp_0004+0(SP)\n00023 (test.go:10)\tMOVQ\t$4,\u0026quot;\u0026quot;.autotmp_0005+0(SP)\n00024 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0003+0(SP),BX\n00025 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0002+0(SP)\n00026 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0004+0(SP),BX\n00027 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0002+8(SP)\n00028 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0005+0(SP),BX\n00029 (test.go:10)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0002+16(SP)\n00030 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0002+0(SP),BX\n00031 (test.go:10)\tMOVQ\tBX,8(SP)\n00032 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0002+8(SP),BX\n00033 (test.go:10)\tMOVQ\tBX,16(SP)\n00034 (test.go:10)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0002+16(SP),BX\n00035 (test.go:10)\tMOVQ\tBX,24(SP)\n00036 (test.go:10)\tCALL\t,bytes.(*Buffer).Write+0(SB)\n00037 (test.go:11)\tRET\t,\n\nNote that autotmp_0002 has a vardef which was inserted during cgen_slice, but no\nmatching varkill instruction.\n\nDo we need to insert vardefs for slices? We don't care about their cap or len anymore.\u003c/pre\u003e",
+	"user": {
+		"login": "DanielMorsing",
+		"id": 545573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-17T20:50:05Z",
+	"created_at": "2014-11-04T11:48:53Z",
+	"updated_at": "2016-05-17T20:50:05Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

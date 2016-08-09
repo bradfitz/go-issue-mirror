@@ -1,0 +1,28 @@
+{
+	"id": 121127665,
+	"number": 13540,
+	"state": "closed",
+	"title": "x/net/http2: decide what to do about Transport.CancelRequest",
+	"body": "The net/http.Transport.CancelRequest method is an old feature \u0026 wart.\r\n\r\nThere is no interface which defines it, but it's sniffed for by many RoundTrippers and users of RoundTrippers (including net/http.Client for its Client.Timeout feature), and it's a thorn in the side of people trying to write composable RoundTripper implementations.\r\n\r\nThe modern replacement is the net/http.Request.Cancel receive-only channel to do cancelations. (closed by caller on cancel)\r\n\r\nUnfortunately, net/http.Client doesn't use the Cancel channel. Perhaps it could. But that would require mutating the caller's *Request, at least for Do. But for net/http.Client methods like Get, Head, Post, and PostForm, we create the *http.Request, so we could set the Cancel channel appropriately.\r\n\r\nThat leaves net/http.Client.Do, which takes a raw *Request. Is it allowed to set the Cancel channel if it's nil? Probably not? Or maybe there is precedent in mutating the Request: we read from the Request.Body, so it's not safe to use concurrently already. So maybe we can just save/restore the Request.Cancel field.\r\n\r\nRelated to that debate is whether x/net/http2.Transport should have an old-style CancelRequest method. It would really be nice to stop letting that mistake infect things, though, spreading the idea that everybody needs to implement CancelRequest.\r\n\r\nBut unfortunately as-is, Client Timeouts are failing with http2:  https://go-review.googlesource.com/#/c/17528/1 From the second comment:\r\n```\r\n$ go test -cover\r\n--- FAIL: TestClientTimeout_h2 (2.01s)\r\n\tclient_test.go:983: timeout after 1s waiting for timeout of 500ms\r\n```\r\n\r\nThoughts welcome.\r\n\r\n/cc @rsc @dsymonds @okdave @mcgreevy @bmizerany",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-01-05T22:55:49Z",
+	"created_at": "2015-12-08T23:48:26Z",
+	"updated_at": "2016-01-05T22:55:49Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

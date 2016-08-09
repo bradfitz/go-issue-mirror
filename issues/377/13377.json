@@ -1,0 +1,17 @@
+{
+	"id": 118508844,
+	"number": 13377,
+	"state": "closed",
+	"title": "Cross-compiling with cgo for ARMv7 fails",
+	"body": "\r\nWe are using Go on a ARM335x/Linux board very similar to the BeagleBone black, but the cross compile fails if it involves mixed C and Go code and cgo.\r\n\r\nBackground: Using go version 1.5.1. Host is Ubunutu 15.04 running in a VM on a Mac. Target settings:\r\n    GOOS= linux\r\n    GOARCH=arm\r\n    GOARM=7\r\n\r\nCC, CXX, etc. are also set to the cross compiler gcc tools.\r\n\r\n\r\nThe error reported is:\r\n\r\n```# runtime/cgo\r\nIn file included from /opt/yogurt/AM335x-PD15.1.1/sysroots/cortexa8t2hf-vfp-neon-phytec-linux-gnueabi/usr/include/features.h:389:0,\r\n                 from /opt/yogurt/AM335x-PD15.1.1/sysroots/cortexa8t2hf-vfp-neon-phytec-linux-gnueabi/usr/include/errno.h:28,\r\n                 from /usr/local/go/src/runtime/cgo/cgo.go:50:\r\n/opt/yogurt/AM335x-PD15.1.1/sysroots/cortexa8t2hf-vfp-neon-phytec-linux-gnueabi/usr/include/gnu/stubs.h:7:29: fatal error: gnu/stubs-soft.h: No such file or directory\r\n # include \u003cgnu/stubs-soft.h\u003e\r\n                             ^\r\ncompilation terminated.```\r\n\r\n\r\n\r\nSome research showed that the problem stemmed from incorrect compiler flags. The ARMv7 processor (TI AM3359 Cortex A8 in this case), uses hardware hardware floating point, so the following flags need to be set:\r\n\r\n\"-mthumb-interwork\", \"-mfloat-abi=hard\", \"-mfpu=neon\"\r\n\r\nIt also should link against /lib/ld-linux-armhf.so.3, but links against /lib/ld-linux.so.3 instead.\r\n\r\nWe have a personal branch of Go now that fixes the problem, though we are new to Go, so the change may not be well done.\r\n\r\n",
+	"user": {
+		"login": "gjstrange",
+		"id": 15988955,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2015-11-24T18:30:51Z",
+	"created_at": "2015-11-24T00:59:32Z",
+	"updated_at": "2016-08-04T22:51:33Z"
+}

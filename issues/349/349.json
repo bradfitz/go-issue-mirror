@@ -1,0 +1,31 @@
+{
+	"id": 51276372,
+	"number": 349,
+	"state": "closed",
+	"title": "runtime.Goexit cancels pending defer commands -- bug or documentation error?",
+	"body": "by **mzraly**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Run this program:\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;;\n        \u0026quot;runtime\u0026quot;;\n)\n\nfunc CallGoexit() {\n        fmt.Println(\u0026quot;enter CallGoexit\u0026quot;);\n        defer fmt.Println(\u0026quot;leave CallGoexit\u0026quot;);\n        runtime.Goexit();\n}\n\nfunc main() { CallGoexit() }\n\nWhat is the expected output? What do you see instead?\n\nExpected to see:\nenter CallGoexit\nleave CallGoexit\n\nInstead just saw:\nenter CallGoexit\n\nWhat is your $GOOS?  $GOARCH?\n\nGOOS=linux\nGOARCH=386\n\nWhich revision are you using?  (hg identify)\n\n[~/go]% hg identify\ncf1a9b1f9bee tip\n\nPlease provide any additional information below.\n\nIt is unclear to me whether or not this is a bug in the go runtime. \nNeither the language spec nor the package documentation for runtime.Goexit\nmention whether or not pending defer blocks are executed after the call to\nruntime.Goexit.\n\nIn some cases it would certainly be convenient for defer blocks to be\nexecuted after the call to runtime.Goexit.  This would provide a trivial\nmechanism for ensuring prompt release of resources and for type-safe\ntransmission of data to other goroutines.  In particular, it would help for\ncases where a goroutine acquires a resource handle (e.g. a database\ntransaction handle or cursor), calls untrusted processing code, then\nreleases the handle.  If the untrusted processing code calls Goexit() then,\nin the current implementation, the resource handle cannot be released.\n\nThere are a couple of alternatives to using defer blocks to notify callers\nof goroutine termination:\n\nGC finalizers (once implemented) can be used to release resource handles\nand send data to other goroutines eventually, provided the finalizers are\nguaranteed to run if the program does not crash.  However there is no\ntelling when a particular finalizer will run in a long-running program.\n\nAnother alternative would be to create a separate server goroutine for each\nresource that accepts commands to manipulate the resource and which has a\ntimeout after which it will release the resource and cease operation.  This\nrequires an extra goroutine per resource and requires users to determine\nwhat timeout value to use.\n\nNeither alternative is truly satisfactory.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:04:13Z",
+	"created_at": "2009-11-27T06:39:43Z",
+	"updated_at": "2016-06-24T19:08:39Z"
+}

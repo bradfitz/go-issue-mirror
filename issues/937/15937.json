@@ -1,0 +1,32 @@
+{
+	"id": 158115471,
+	"number": 15937,
+	"state": "closed",
+	"title": "website: https://github.com/golang/go/wiki/cgo broken examples",
+	"body": "Wiki page contains broken examples in section callback\r\n\r\nhttps://github.com/golang/go/wiki/cgo#function-variables\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"unsafe\"\r\n)\r\n\r\n/*\r\nextern void go_callback_int(void* foo, int p1);\r\n\r\n// normally you will have to define function or variables\r\n// in another separate C file to avoid the multiple definition\r\n// errors, however, using \"static inline\" is a nice workaround\r\n// for simple functions like this one.\r\nstatic inline void CallMyFunction(void* pfoo) {\r\n    go_callback_int(pfoo, 5);\r\n}\r\n*/\r\nimport \"C\"\r\n\r\n//export go_callback_int\r\nfunc go_callback_int(pfoo unsafe.Pointer, p1 C.int) {\r\n\tfoo := *(*func(C.int))(pfoo)\r\n\tfoo(p1)\r\n}\r\n\r\nfunc MyCallback(x C.int) {\r\n\tfmt.Println(\"callback with\", x)\r\n}\r\n\r\n// we store it in a global variable so that the garbage collector\r\n// doesn't clean up the memory for any temporary variables created.\r\nvar MyCallbackFunc = MyCallback\r\n\r\nfunc main() {\r\n\tC.CallMyFunction(unsafe.Pointer(\u0026MyCallbackFunc))\r\n}\r\n```\r\n\r\nproduces:\r\n\r\n```bash\r\naxet-laptop:~ axet$ go run test.go \r\npanic: runtime error: cgo argument has Go pointer to Go pointer\r\n\r\ngoroutine 1 [running]:\r\npanic(0x40dc800, 0xc82000a2e0)\r\n\t/opt/local/lib/go/src/runtime/panic.go:481 +0x3e6\r\nmain._cgoCheckPointer0(0x40ba4c0, 0x4182e08, 0xc82000a2d0, 0x1, 0x1, 0x0)\r\n\tcommand-line-arguments/_obj/_cgo_gotypes.go:40 +0x4d\r\nmain.main()\r\n\t/Users/axet/test.go:36 +0xec\r\nexit status 2\r\naxet-laptop:~ axet$\r\n```",
+	"user": {
+		"login": "axet",
+		"id": 298672,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-06-02T19:14:33Z",
+	"created_at": "2016-06-02T11:08:09Z",
+	"updated_at": "2016-06-03T18:04:26Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

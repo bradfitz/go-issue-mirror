@@ -1,0 +1,12 @@
+{
+	"id": 66060323,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eThat sounds good.  So, I went to do that in the net package, starting with adding a new\ntest for that case, but it already passes:\n\n// TestReadEOF verifies that we get io.EOF from a blocking read                         \n                                                      \n// on a TCP connection when the remote side closes.                                     \n                                                      \nfunc TestReadEOF(t *testing.T) {\n        l := localListener(t)\n        defer l.Close()\n\n        closec := make(chan bool, 1)\n        go func() {\n                c, err := l.Accept()\n                if err != nil {\n                        t.Fatalf(\"Accept: %v\", err)\n                }\n                \u0026lt;-closec\n                c.Close()\n        }()\n\n        c, err := Dial(\"tcp\", l.Addr().String())\n        if err != nil {\n                t.Fatalf(\"Dial: %v\", err)\n        }\n        defer c.Close()\n\n        errc := make(chan error, 1)\n        go func() {\n                var buf [1]byte\n                _, err := c.Read(buf[:])\n                errc \u0026lt;- err\n        }()\n        closec \u0026lt;- true\n        got := \u0026lt;-errc\n\n        if got != io.EOF {\n                t.Errorf(\"got error %v; want io.EOF\", got)\n        }\n        t.Logf(\"got error %v\", got)\n}\n\n\n\n... so, I'm confused.\n\nMaybe this error only happens when we get a RST packet?\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-12-05T20:13:33Z",
+	"updated_at": "2014-12-22T06:04:49Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 127189441,
+	"number": 13994,
+	"state": "open",
+	"title": "net/http: redirect code is not handled for DELETE requests. ",
+	"body": "redirection is only handled for GET, HEAD, PUT and POST requests.  But not for 'DELETE' , this leads to an issue where in a 'DELETE' request with proper response from the server doesn't honor redirect. \r\n\r\nFollowing code reproduces this problem. \r\n\r\n```\r\n$ cat server.go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc main() {\r\n\thttp.HandleFunc(\"/bucket/redirect\", func(w http.ResponseWriter, r *http.Request) {\r\n\t\tmsg := fmt.Sprintf(\"Successful redirect. for method %s\", r.Method)\r\n\t\tw.Write([]byte(msg))\r\n\t})\r\n\thttp.HandleFunc(\"/bucket\", func(w http.ResponseWriter, r *http.Request) {\r\n\t\tw.Header().Set(\"Location\", \"http://localhost:8080/bucket/redirect\")\r\n\t\tw.WriteHeader(http.StatusTemporaryRedirect)\r\n\t})\r\n\r\n\tlog.Fatal(http.ListenAndServe(\":8080\", nil))\r\n}\r\n```\r\n\r\n```\r\n$ cat client.go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc main() {\r\n\tclnt := \u0026http.Client{}\r\n\r\n\treq, err := http.NewRequest(\"GET\", \"http://localhost:8080/bucket\", nil)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tresp, err := clnt.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\t// Write response.\r\n\tvar bufferGet bytes.Buffer\r\n\tresp.Write(\u0026bufferGet)\r\n\r\n\tfmt.Println(\"--- GET RESPONSE ---\")\r\n\tfmt.Println(string(bufferGet.Bytes()))\r\n\tfmt.Println(\"\")\r\n\r\n\treq, err = http.NewRequest(\"DELETE\", \"http://localhost:8080/bucket\", nil)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\tresp, err = clnt.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatalln(err)\r\n\t}\r\n\r\n\t// Write response.\r\n\tvar bufferDelete bytes.Buffer\r\n\tresp.Write(\u0026bufferDelete)\r\n\r\n\tfmt.Println(\"--- DELETE RESPONSE ---\")\r\n\tfmt.Println(string(bufferDelete.Bytes()))\r\n}\r\n```\r\n\r\nNow running this client against the server.go \r\n\r\n```\r\n$ go run client.go\r\n--- GET RESPONSE ---\r\nHTTP/1.1 200 OK\r\nContent-Length: 35\r\nContent-Type: text/plain; charset=utf-8\r\nDate: Mon, 18 Jan 2016 09:33:21 GMT\r\n\r\nSuccessful redirect. for method GET\r\n\r\n--- DELETE RESPONSE ---\r\nHTTP/1.1 307 Temporary Redirect\r\nContent-Type: text/plain; charset=utf-8\r\nDate: Mon, 18 Jan 2016 09:33:21 GMT\r\nLocation: http://localhost:8080/bucket/redirect\r\nContent-Length: 0\r\n```\r\n\r\nThe problem seems to be in `client.Do()`\r\n\r\n```\r\nfunc (c *Client) Do(req *Request) (resp *Response, err error) {\r\n        method := valueOrDefault(req.Method, \"GET\")\r\n        if method == \"GET\" || method == \"HEAD\" {\r\n                return c.doFollowingRedirects(req, shouldRedirectGet)\r\n        }\r\n        if method == \"POST\" || method == \"PUT\" {\r\n                return c.doFollowingRedirects(req, shouldRedirectPost)\r\n        }\r\n        return c.send(req, c.deadline())\r\n}\r\n``` \r\n\r\nIs there a specific reason why DELETE is not handled?. \r\n\r\nTested with curl seems to work fine\r\n\r\n```\r\n$ curl -i -L -X DELETE localhost:8080/bucket\r\nHTTP/1.1 307 Temporary Redirect\r\nLocation: http://localhost:8080/bucket/redirect\r\nDate: Mon, 18 Jan 2016 09:39:00 GMT\r\nContent-Length: 0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nHTTP/1.1 200 OK\r\nDate: Mon, 18 Jan 2016 09:39:00 GMT\r\nContent-Length: 38\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nSuccessful redirect. for method DELETE\r\n``` \r\n\r\nAlso verified in RFC7231 - https://tools.ietf.org/html/rfc7231#section-4.3.5, doesn't talk anything specific about redirects for 'DELETE'. \r\n\r\nThanks for your inputs. ",
+	"user": {
+		"login": "harshavardhana",
+		"id": 622699,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FeatureRequest"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-01-18T09:47:06Z",
+	"updated_at": "2016-05-18T18:16:23Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 73711464,
+	"number": 10724,
+	"state": "closed",
+	"title": "misc/cgo/testshared fails on fast enough machines that don't have fine-grained file timestamps",
+	"body": "Ever since it was introduced, one of my machines fails in misc/cgo/testshared when building git master. The failure message:\r\n\r\n    ##### ../misc/cgo/testshared\r\n    ldd: warning: you do not have execution permission for `/data/code/go-lang/go/misc/cgo/testshared/pkg/linux_amd64_RaFaEwVC_dynlink/libdep.so'\r\n    /data/code/go-lang/go/misc/cgo/testshared/pkg/linux_amd64_RaFaEwVC_dynlink/dep.a was not rebuilt\r\n    2015/05/06 14:21:36 Failed: exit status 1\r\n\r\nThe ultimate cause is that this machine is fast enough to build (or finish building by writing the files out), touch a file, copy files, and rebuild, all in the same second, and my copy of the git repo is on a filesystem that only has timestamps with a one second granularity. In this situation you need to insert artificial delays of at least a second both before and after the touch-and-copy code in testshared:\r\n\r\n    diff --git a/misc/cgo/testshared/test.bash b/misc/cgo/testshared/test.bash\r\n    index 21004ad..e471403 100755\r\n    --- a/misc/cgo/testshared/test.bash\r\n    +++ b/misc/cgo/testshared/test.bash\r\n    @@ -96,15 +96,19 @@ assert_not_rebuilt () {\r\n     }\r\n     \r\n     # If the source is newer than both the .a file and the .so, both are rebuilt.\r\n    +sleep 1\r\n     touch src/dep/dep.go\r\n     will_check_rebuilt $rootdir/libdep.so $rootdir/dep.a\r\n    +sleep 1\r\n     go install -installsuffix=\"$mysuffix\" -linkshared exe\r\n     assert_rebuilt $rootdir/dep.a\r\n     assert_rebuilt $rootdir/libdep.so\r\n     \r\n     # If the .a file is newer than the .so, the .so is rebuilt (but not the .a)\r\n    +sleep 1\r\n     touch $rootdir/dep.a\r\n     will_check_rebuilt $rootdir/libdep.so $rootdir/dep.a\r\n    +sleep 1\r\n     go install  -installsuffix=\"$mysuffix\" -linkshared exe\r\n     assert_not_rebuilt $rootdir/dep.a\r\n     assert_rebuilt $rootdir/libdep.so\r\n\r\nThe machine that this fails on is a 64-bit Fedora 21 machine using an ext3 filesystem (mounted with relatime, but I don't believe that makes any difference). On Linux, ext3 does not support nanosecond timestamps but ext4 and various other filesystems do to some extent.\r\n",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2015-05-18T18:40:33Z",
+	"created_at": "2015-05-06T19:19:43Z",
+	"updated_at": "2016-06-25T02:07:44Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

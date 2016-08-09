@@ -1,0 +1,21 @@
+{
+	"id": 51287588,
+	"number": 8037,
+	"state": "open",
+	"title": "cmd/internal/obj/x86: add fma",
+	"body": "by **odysseus9672**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version devel +5b9ac653acf6 Mon May 19 22:57:59 2014 -0400 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Go to $GOROOT/src/cmd/6l/6.out.h\n2. According to \u003ca href=\"http://golang.org/doc/asm#architectures\"\u003ehttp://golang.org/doc/asm#architectures\u003c/a\u003e , this file contains a list of\nall the assembler instructions Go recognizes.\n3. No fused-multiply-add instructions are in the list.\n\nPlease provide any additional information below.\n\nUsing FMA allows for several faster and more accurate versions of several algorithms. My\ncurrent main use case is polynomial evaluation (Horner's scheme and Estrin's scheme are\nboth built on FMA), but another very important one is matrix multiplication. Adding at\nleast a subset of the FMA instructions available on newer AMD and Intel CPUs (available\non PowerPC since at least the 600 series) would improve the ability of performance\nminded coders and compiler optimization writers to make faster running code. \n\nFor instance, a more accurate version of the update in the Mandelbrot set is:\nif the starting point is Cr + i*Ci (and halfCi = 0.5 * Ci)\nZr, Zi = fma( Zr - Zi, Zr + Zi, Cr ), 2 * fma( Zr, Zi, halfCi )\n\nThe update to Zr is likely slower than what is presently done for the The Computer\nLanguage Benchmarks Game, but an fma based update to Zi would definitely speed things up.\n\nGranted, the speedup would only materialize when \u003ca href=\"https://golang.org/issue/4978\"\u003eissue #4978\u003c/a\u003e (\n\u003ca href=\"https://golang.org/issue/4978\"\u003ehttps://golang.org/issue/4978\u003c/a\u003e ) is resolved, but having code in\nuseful libraries in place to take advantage of that optimization would be nice instead\nof having to recode everything afterwords.\n\nTo that end, I would request exposing at least the following (would do it myself if I\ncould find an understandable listing of the opcodes and documentation on how to add them\nto the compiler): \n\nFor greatest compatibility with AMD chips, 4 operand forms ( from\n\u003ca href=\"http://en.wikipedia.org/wiki/X86_instruction_listings#FMA_instructions\"\u003ehttp://en.wikipedia.org/wiki/X86_instruction_listings#FMA_instructions\u003c/a\u003e ): \nVFMADDPD, VFMADDPS, VFMADDSD, VFMADDSS.\n\nAnd for Intel chips, the 3 operand forms ( from Vol. 1 14-21 of Intel's developer's\nmanual:\n\u003ca href=\"http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html?iid=tech_vt_tech+64-32_manuals\"\u003ehttp://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html?iid=tech_vt_tech+64-32_manuals\u003c/a\u003e\n):\nVFMADD231PD, VFMADD231PS, VFMADD231SD, VFMADD231SS\n\nAll of the other operations are permutations of minus signs applied to these (and which\nregister gets clobbered for the 3 op version - the one I'm requesting is the one that\nworks best with polynomial evaluation, naturally). \n\nSolving this issue would also make \u003ca href=\"https://golang.org/issue/681\"\u003eissue #681\u003c/a\u003e more straightforward (\n\u003ca href=\"https://golang.org/issue/681\"\u003ehttps://golang.org/issue/681\u003c/a\u003e ), although even having the opcodes\nwould be enough for that one.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-05-20T06:29:42Z",
+	"updated_at": "2016-01-22T22:00:13Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

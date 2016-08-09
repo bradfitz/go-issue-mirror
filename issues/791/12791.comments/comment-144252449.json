@@ -1,0 +1,12 @@
+{
+	"id": 144252449,
+	"body": "@minux, thanks for your reply. I have looked at your example and also took the time to read through https://github.com/golang/go/issues/11006, which is more similar to this issue than I originally thought.\r\n\r\nI understand now that both the example you provided and the original example I provided match the documented behavior for `json.Marshal`. I don't necessarily agree with that behavior, but I understand that it cannot be changed without breaking backwards compatibility. For reference, the [relevant part of the documentation](https://golang.org/pkg/encoding/json/#Marshal) is rule 3) concerning the visibility of struct fields. \r\n\r\n\u003e 3) Otherwise there are multiple fields, and all are ignored; no error occurs.\r\n\r\nIf possible, I think we should consider changing this in go 2.0. It is relatively common to have conflicting field names or struct tags in embedded struct types, and I am okay with leaving behavior as is for those cases. However, having two fields with conflicting struct tags in the same struct type, as in my [original example](http://play.golang.org/p/8KR89jLh_Y), is a blatant mistake. There is no sane reason a developer should ever do this, and the json package should help developers by returning an error when it sees it. This would require amending the documentation, but the rule is simple enough to express in one sentence. E.g, \"The key name cannot conflict with any other fields in the same struct type.\"\r\n\r\nIn the meantime, since this is probably something we don't want to change in go 1.x, I would like to see `go vet` report an error if you have a single struct type with conflicting struct tags, as in this example: \r\n\r\n```go\r\ntype MyStruct struct {\r\n    A string `json:\"a\"`\r\n    B int    `json:\"a\"`\r\n}\r\n```\r\n\r\nIs that something we can consider? If so, I would be more than happy to contribute. I can also open a separate issue for this if you believe it is appropriate.",
+	"user": {
+		"login": "albrow",
+		"id": 800857,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-30T01:42:23Z",
+	"updated_at": "2015-09-30T01:42:23Z"
+}

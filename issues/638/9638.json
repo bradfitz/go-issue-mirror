@@ -1,0 +1,33 @@
+{
+	"id": 54799271,
+	"number": 9638,
+	"state": "closed",
+	"title": "bytes: add Extend method",
+	"body": "Bryan Ford suggests adding something like this:\n\n\t// Extend adds capacity to b for n bytes beyond its current length\n\t// and then returns the new slice b and the n-byte suffix just created.\n\t// The suffix is not explicitly initialized.\n\tfunc Extend(b []byte, n int) (larger, suffix []byte) {\n\t\told := len(b)\n\t\tfor cap(b) \u003c old+n {\n\t\t\tb = append(b[:cap(b)], 0)\n\t\t}\n\t\treturn b[:old+n], b[old:n]\n\t}\n\nIt could be used to grow a slice to make room for a direct write,\ninstead of writing to a temporary copy and using append.\nFor example, sha1's Sum method does:\n\n\tfunc (d0 *digest) Sum(in []byte) []byte {\n\t\t...\n\t\thash := d.checkSum()\n\t\treturn append(in, hash[:]...)\n\t}\n\nThat code was written carefully to return a fixed-size array so that d.checkSum didn't allocate, and we know that append doesn't capture hash, so there's no allocation other than the append.\n\nThe code could instead change checkSum to write the 20 bytes to its argument (renaming to writeSum) and use:\n\n\tfunc (d0 *digest) Sum(in []byte) []byte {\n\t\t...\n\t\tbuf, sum := bytes.Extend(in, Size)\n\t\td.writeSum(sum)\n\t\treturn buf\n\t}\n\nBrad and Minux talked him out of it, but I am not so sure.\n\nTo consider for Go 1.5.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-06-08T06:03:09Z",
+	"created_at": "2015-01-19T18:50:40Z",
+	"updated_at": "2016-06-25T01:58:54Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

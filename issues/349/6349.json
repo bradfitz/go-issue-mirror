@@ -1,0 +1,22 @@
+{
+	"id": 51285051,
+	"number": 6349,
+	"state": "closed",
+	"title": "container/list element.Next() panics and should return nil",
+	"body": "\u003cpre\u003eNot that there is a good reason to call Next() on an element removed from a list, but\nthe element removed should still return nil for Next() to satisfy the API.\n\n// remove removes e from its list, decrements l.len, and returns e.\nfunc (l *List) remove(e *Element) *Element {\n\te.prev.next = e.next\n\te.next.prev = e.prev\n\te.next = nil // avoid memory leaks\n\te.prev = nil // avoid memory leaks\n\te.list = nil\n\tl.len--\n\treturn e\n}\n\nWhen e.next is nil then calling e.Next() will panic\n\n// Next returns the next list element or nil.\nfunc (e *Element) Next() *Element {\n\tif p := e.next; p != \u0026amp;e.list.root {\n\t\treturn p\n\t}\n\treturn nil\n}\n\nHere e.list is nil, and so e.list.root will panic.  Prior to this CL\n\n\u003ca href=\"https://golang.org/cl/6569072\"\u003ehttps://golang.org/cl/6569072\u003c/a\u003e\n\ne.list was not set to nil when the element was removed from a list.  There is a\ndiscussion of the problem here:\n\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/HGCY7IanlvU\u003c/pre\u003e",
+	"user": {
+		"login": "gavaletz",
+		"id": 1416599,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:34:58Z",
+	"created_at": "2013-09-09T18:37:09Z",
+	"updated_at": "2016-06-25T01:18:23Z"
+}

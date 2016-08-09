@@ -1,0 +1,12 @@
+{
+	"id": 126400696,
+	"body": "The failures seem to be happening in different parts of mat64. Two comments that may help debugging\r\n\r\n1) It is not known at compile time if mat64 will use cgo. The mat64 functions call into the blas64 package (github.com/gonum/blas/blas64). The user can \"Use\" either a native go BLAS implementation or a c-based BLAS implementation. By default, the Go installation is used, and the steps by @aclements  above should be using pure-go code. Possibly though there's some interaction with the possibility of cgo.\r\n\r\n2) We have one unusual construct in the mat64 package. As part of the API, it is fine for a user to supply the same concrete value for the receiver and input arguments (for example, a.Mul(a,b), where a is a *mat64.Dense). For most of the methods, the underlying matrix data cannot be shared, so if the pointers are the same, we allocate new storage, and then at the conclusion of the method copy the data over. \"at the conclusion\" is implemented using a defer statement, that only sometimes executes.\r\n This particular code can be found in the \"isolatedWorkspace\" function https://github.com/gonum/matrix/blob/master/mat64/dense.go#L129 . You can see this in use in the add method https://github.com/gonum/matrix/blob/master/mat64/dense_arithmetic.go#L124.  \r\nThere have been some changes to the code for closures in 1.5, so possibly one of these introduced a bug. ",
+	"user": {
+		"login": "btracey",
+		"id": 3680859,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-30T16:54:09Z",
+	"updated_at": "2015-07-30T16:54:09Z"
+}

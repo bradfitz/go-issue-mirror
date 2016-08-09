@@ -1,0 +1,27 @@
+{
+	"id": 95741035,
+	"number": 11762,
+	"state": "closed",
+	"title": "go/internal/gccgoimporter: gccgoBuiltin{BYTE,RUNE} map to {uint8,int32} types instead of {byte,rune} aliases",
+	"body": "In `go/internal/gccgoimporter`'s `lookupBuiltinType` function, there are these lines:\r\n\r\n    661\t\t\tgccgoBuiltinBYTE:       types.Typ[types.Byte],\r\n    662\t\t\tgccgoBuiltinRUNE:       types.Typ[types.Rune],\r\n\r\nHowever, in `go/types`, `Byte` and `Rune` are defined as:\r\n\r\n    const (\r\n        Invalid BasicKind = iota // type is invalid\r\n\r\n        /* ... */\r\n\r\n        // aliases\r\n        Byte = Uint8\r\n        Rune = Int32\r\n    )\r\n\r\nso `types.Typ[types.Byte]` actually evaluates to the `*types.Basic` representing the universal `uint8` type rather than for the desired universal `byte` type.  `uint8` and `byte` are aliases and generally treated as identical, but they still have distinct `*types.Basic` representations (e.g., so they can each be printed appropriately).  Thus `gccgoBuiltinBYTE` should actually map to something like `types.UniverseByte` or `types.Universe.Lookup(\"byte\").Type()`.\r\n\r\nSimilarly, `gccgoBuiltinRUNE` should map to either `types.UniverseRune` or `types.Universe.Lookup(\"rune\").Type()`.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-07-21T02:04:21Z",
+	"created_at": "2015-07-17T20:46:45Z",
+	"updated_at": "2016-07-20T14:27:31Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

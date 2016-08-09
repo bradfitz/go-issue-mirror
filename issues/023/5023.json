@@ -1,0 +1,27 @@
+{
+	"id": 51283000,
+	"number": 5023,
+	"state": "closed",
+	"title": "doc: effective go semaphore example violates memory model",
+	"body": "\u003cpre\u003eAccording to the thread:\n\u003ca href=\"https://groups.google.com/d/msg/golang-nuts/Ug1DhZGGqTk/tjKg9sMTdlcJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/Ug1DhZGGqTk/tjKg9sMTdlcJ\u003c/a\u003e\n\nThe semaphore example in Effective Go is not precisely correct:\n\u003ca href=\"http://tip.golang.org/doc/effective_go.html#channels\"\u003ehttp://tip.golang.org/doc/effective_go.html#channels\u003c/a\u003e\n\nIn particular, this quote from Dmitry:\n\u0026quot;It's perfectly fine to allow any code to hoist above [a buffered] chan send, or to\nsink below [a buffered] chan receive.\u0026quot;\n\u003ca href=\"https://groups.google.com/d/msg/golang-nuts/Ug1DhZGGqTk/WchLzVPtjEEJ\"\u003ehttps://groups.google.com/d/msg/golang-nuts/Ug1DhZGGqTk/WchLzVPtjEEJ\u003c/a\u003e\n\nThus, the following code:\nfunc handle(r *Request) {\n    sem \u0026lt;- 1    // Wait for active queue to drain.\n    process(r)  // May take a long time.\n    \u0026lt;-sem       // Done; enable next request to run.\n}\n\ncould legally be \u0026quot;optimized\u0026quot; into:\nfunc handle(r *Request) {\n    process(r)  // May take a long time.\n    sem \u0026lt;- 1    // Wait for active queue to drain.\n    \u0026lt;-sem       // Done; enable next request to run.\n}\n\nor into:\nfunc handle(r *Request) {\n    sem \u0026lt;- 1    // Wait for active queue to drain.\n    \u0026lt;-sem       // Done; enable next request to run.\n    process(r)  // May take a long time.\n}\n\nThe correct way to write it would be:\nfunc handle(r *Request) {\n    \u0026lt;-sem       // Wait for a token from the semaphore\n    process(r)  // May take a long time.\n    sem \u0026lt;- 1    // Allow another process to run\n}\n(with a corresponding loop to fill the channel with tokens at initialization)\n\nIf we want to make this documentation change before go1.1, I can do so, but I'm not sure\nif it's even too late for this or not.\u003c/pre\u003e",
+	"user": {
+		"login": "kylelemons",
+		"id": 322213,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:26:49Z",
+	"created_at": "2013-03-11T01:00:44Z",
+	"updated_at": "2016-06-24T22:35:21Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

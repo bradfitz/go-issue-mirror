@@ -1,0 +1,27 @@
+{
+	"id": 51282878,
+	"number": 4949,
+	"state": "closed",
+	"title": "reflect: possible saved allocation in Value.Interface",
+	"body": "\u003cpre\u003efrom private mail:\n\nI've noticed that calling reflect.Value's Interface method is slower if the value being\nreflected is larger than a word. It appears that this is due to an extra memory alloc,\nbut it seems like this should only be necessary if the reflect.Value is addressable.\n\nAs an example:\n\ntype S struct {\n\ti1 int64\n\ti2 int64\n}\n\nfunc BenchmarkInterfaceBig(b *testing.B) {\n\tv := reflect.ValueOf(S{})\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tv.Interface()\n\t}\n}\n\nfunc BenchmarkInterfaceSmall(b *testing.B) {\n\tv := reflect.ValueOf(int64(0))\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tv.Interface()\n\t}\n}\n \nBenchmarkInterfaceBig\t20000000\t        84.6 ns/op\t      16 B/op\t       1 allocs/op\nBenchmarkInterfaceSmall\t100000000\t        23.2 ns/op\t       0 B/op\t       0 allocs/op\n\nSince reflect.ValueOf(S{}) isn't addressable, it seems like it shouldn't have to do an\nalloc. I took a look src/pkg/reflect/value.go and it seems that it allocs for the\nfollowing case (line 953 on tip): \n\n   if v.flag\u0026amp;flagIndir != 0 \u0026amp;\u0026amp; v.typ.size \u0026gt; ptrSize {\n   \t  // eface.word is a pointer to the actual data,\n   \t  // which might be changed.  We need to return\n   \t  // a pointer to unchanging data, so make a copy.\n   \t  ptr := unsafe_New(v.typ)\n   \t  memmove(ptr, unsafe.Pointer(eface.word), v.typ.size)\n   \t  eface.word = iword(ptr)\n   }\n\nShould \u0026quot;v.flag\u0026amp;flagIndir != 0\u0026quot; instead be \u0026quot;v.flag\u0026amp;flagAddr !=\n0\u0026quot;? I might be misinterpreting this code, but it seems like we can reuse the data\nif it's not addressable.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:26:22Z",
+	"created_at": "2013-03-01T01:28:27Z",
+	"updated_at": "2016-06-24T22:34:32Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

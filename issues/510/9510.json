@@ -1,0 +1,22 @@
+{
+	"id": 53434915,
+	"number": 9510,
+	"state": "closed",
+	"title": "cmd/go: linking libgcc into every cgo object can cause multiple definition errors",
+	"body": "issue/a/a.go:\r\n\r\n```\r\npackage a\r\n\r\n/*\r\nstatic long long mod(long long a, long long b) { return a % b; }\r\n*/\r\nimport \"C\"\r\n\r\nfunc F(a, b int64) int64 {\r\n\treturn int64(C.mod(C.longlong(a), C.longlong(b)))\r\n}\r\n```\r\n\r\nissue/b/b.go exactly the same except \"package b\" instead of \"package a\".\r\n\r\nissue/main.go:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\r\n\t\"issue/a\"\r\n\t\"issue/b\"\r\n)\r\n\r\nfunc main() {\r\n\tfmt.Println(a.F(1, 1), b.F(1, 1))\r\n}\r\n\r\nGOARCH=386 go build issue\r\n\r\n# issue\r\n/var/tmp/go-link-0Vel41/000001.o: In function `__moddi3':\r\n(.text+0x70): multiple definition of `__moddi3'\r\n/var/tmp/go-link-0Vel41/000000.o:(.text+0x70): first defined here\r\ncollect2: error: ld returned 1 exit status\r\n/home/iant/go/pkg/tool/linux_amd64/8l: running gcc failed: unsuccessful exit status 0x100\r\n```\r\n\r\nThe problem is that for GOARCH=386 both object files require __moddi3.  The go command links both cgo objects against libgcc, because of issue #3261.  So both object files define __moddi3, and the linker complains.\r\n\r\nOn systems that support external linking, which I think is everything but Windows, it should no longer be necessary to link libgcc into each cgo object file.  Unless, of course, the standard packages that use cgo (net, crypto/x509) use a libgcc function.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 40,
+	"closed_at": "2015-11-14T18:56:34Z",
+	"created_at": "2015-01-05T19:46:43Z",
+	"updated_at": "2015-11-14T18:56:34Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

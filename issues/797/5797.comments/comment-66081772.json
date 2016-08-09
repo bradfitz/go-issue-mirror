@@ -1,0 +1,12 @@
+{
+	"id": 66081772,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eUsing a cpu-heavy work function almost identical to the original I can show the resource\nstarvation problem more clearly. This runs the workers for a while but calls a panic\nnear the end to get a stack trace.\n\nfrom \u003ca href=\"http://play.golang.org/p/xC9tJhLD0b\"\u003ehttp://play.golang.org/p/xC9tJhLD0b\u003c/a\u003e\n\ngoroutine 5 [running]:\nmain.func·001()\n        issue.go:49 +0xa9\ncreated by main.main\n        issue.go:55 +0xe7\n\ngoroutine 1 [chan receive]:\nmain.main()\n        issue.go:69 +0x160\n\ngoroutine 3 [running]:\ncreated by main.main\n        issue.go:55 +0xe7\n\ngoroutine 4 [running]:\ncreated by main.main\n        issue.go:55 +0xe7\n\ngoroutine 6 [chan send]:\nmain.func·002()\n        issue.go:61 +0x4d\ncreated by main.main\n        issue.go:64 +0x12d\npanic: what\n\ngoroutine 4 [running]:\nmain.func·001()\n        issue.go:49 +0xa9\ncreated by main.main\n        issue.go:55 +0xe7\n\ngoroutine 1 is the main function waiting for results\ngoroutine 6 is the goroutine adding work to the queue\ngoroutine 4 is the worker that hit the panic code during processing\ngoroutines 3 and 5 should be doing work and hogging the cpu, but both are in \"running\"\nstate apparently not having entered the goroutine's function after being created. This\nis consistent with what I have observed, that only one cpu is used when there is still a\nlot more work to be done.\n\nAm I misinterpreting these stacktraces, or are some goroutines stuck when they should be\nable to get work from the channel?\u003c/pre\u003e",
+	"user": {
+		"login": "edre",
+		"id": 1291499,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-06-27T15:09:19Z",
+	"updated_at": "2014-12-08T10:31:49Z"
+}

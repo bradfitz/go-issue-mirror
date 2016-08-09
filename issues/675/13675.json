@@ -1,0 +1,21 @@
+{
+	"id": 122944409,
+	"number": 13675,
+	"state": "open",
+	"title": "cmd/vet: vet is reporting lock value copying on composite literal assignment",
+	"body": "The code is the following:\r\n\r\n```\r\n\tr := hipacheRouter{prefix: \"hipache\"}\r\n\terr := r.AddBackend(\"tip\")\r\n\tc.Assert(err, check.IsNil)\r\n\tconfig.Set(\"hipache:redis-server\", \"127.0.0.1:6380\")\r\n\tdefer config.Unset(\"hipache:redis-server\")\r\n\tr = hipacheRouter{prefix: \"hipache\"}\r\n```\r\n\r\ngo vet is reporting \"assignment copies lock value to r: hipache.hipacheRouter\" in the last line. The type hipacheRouter indeed contains a lock:\r\n\r\n```\r\ntype hipacheRouter struct {\r\n\tsync.Mutex\r\n\tprefix string\r\n\tpool   *redis.Pool\r\n}\r\n```\r\n\r\nBut as stated in the code, I'm copying a composite literal to r, so go vet should not complain about that. Changing the variable to ``r2`` and the attribution to a declaration makes vet happy. I've also tried to make the mutex a named field, and it didn't help.\r\n\r\nI tried to reproduce it with a simple Go program and failed to do so. I have the impression that there's another violation going on, and vet is reporting lock copying.\r\n\r\nIt works on Go 1.5.2, and fails on Go 1.6beta1, both on linux_amd64 and darwin_amd64. Details are available on Travis:\r\n\r\n- Go 1.5.2 build: https://travis-ci.org/tsuru/tsuru/jobs/97656688#L234\r\n- Go 1.6beta1 build: https://travis-ci.org/tsuru/tsuru/jobs/97656689#L234",
+	"user": {
+		"login": "fsouza",
+		"id": 108725,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2015-12-18T12:57:50Z",
+	"updated_at": "2015-12-18T20:15:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

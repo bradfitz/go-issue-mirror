@@ -1,0 +1,22 @@
+{
+	"id": 51287716,
+	"number": 8126,
+	"state": "closed",
+	"title": "compress/gzip: Reset should work on an uninitialized Reader.",
+	"body": "by **travis.bischel**:\n\n\u003cpre\u003egzip Reset should work on an uninitialized gzip Reader.\n\nThis goes along with this discussion:\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-dev/e7E6viMqwN0\n\nWhat does 'go version' print?\ngo version devel +f8b50ad4cac4 Mon Apr 21 17:00:27 2014 -0700 + linux/amd64\n\nWhat steps reproduce the problem?\n\u003ca href=\"http://play.golang.org/p/9F1Tn1pZ9O\"\u003ehttp://play.golang.org/p/9F1Tn1pZ9O\u003c/a\u003e\n\nWhat happened?\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x28 pc=0x429fa9]\n\ngoroutine 16 [running]:\nruntime.panic(0x4dd680, 0x593853)\n\t/usr/local/go/src/pkg/runtime/panic.c:279 +0xf5\ncompress/gzip.(*Reader).Reset(0xc2081b2000, 0x7f92548af4e0, 0xc20802c070, 0x0, 0x0)\n\t/home/twmb/fastly/shared/dev/go/go1.3beta1/src/pkg/compress/gzip/gunzip.go:97 +0x69\nmain.main()\n\t/home/twmb/demonstrate.go:22 +0x1bd\n\ngoroutine 17 [runnable]:\nruntime.MHeap_Scavenger()\n\t/usr/local/go/src/pkg/runtime/mheap.c:507\nruntime.goexit()\n\t/usr/local/go/src/pkg/runtime/proc.c:1430\n\ngoroutine 18 [runnable]:\nbgsweep()\n\t/usr/local/go/src/pkg/runtime/mgc0.c:1960\nruntime.goexit()\n\t/usr/local/go/src/pkg/runtime/proc.c:1430\n\ngoroutine 19 [runnable]:\nrunfinq()\n\t/usr/local/go/src/pkg/runtime/mgc0.c:2586\nruntime.goexit()\n\t/usr/local/go/src/pkg/runtime/proc.c:1430\nexit status 2\n\nWhat should have happened instead?\nhello should be printed.\n\nPlease provide any additional information below.\nLine 97 of \u003ca href=\"http://tip.golang.org/src/pkg/compress/gzip/gunzip.go\"\u003ehttp://tip.golang.org/src/pkg/compress/gzip/gunzip.go\u003c/a\u003e, digest is nil because\nit is an uninitialized pointer. This could be fixed by having an\n\nif digest == nil {\n        z.digest = crc32.NewIEEE()\n}\n\nbefore the z.digest.Reset() call.\n\nNewReader must be called first to initialize digest. If I want to gunzip in a for loop,\nI currently must seed the unzipr with valid data before calling Reset on every\niteration. This is not a critical issue, but it would need to go out before 1.3 is\nreleased otherwise doing this issue would break the same API compatibility discussed in\nthe golang-dev thread. Or, this issue could be shot down.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:45:05Z",
+	"created_at": "2014-05-30T22:58:49Z",
+	"updated_at": "2016-06-25T01:35:37Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 109563017,
+	"body": "Ok, I've looked into it a bit: The unexpected 404 error is returned by `http.ServeFile()` because the svg file it should serve doesn't exist, because `go tool pprof` didn't create a file, because the data file it is given contains just the two lines header but no data.\r\n\r\nTurns out that no events are passed down to `serveSVGProfile()`, the filter in the for loop in https://github.com/golang/go/blob/master/src/cmd/trace/pprof.go#L42 doesn't let any events through, because no events have the type `trace.EvGoBlockNet`. Is this because my program dosen't make any network IO? Honestly, I expected a generic IO trace, not a network IO trace for \"IO blocking profile\". The comment for the function `httpIO()` states that`httpIO serves IO pprof-like profile (time spent in IO wait)`.\r\n\r\nI've uploaded the files [restic.test](https://gist.github.com/fd0/e912f32514cfa96dfc37/raw/71e6127c8a76ff9ec0be1dfec715a0f7a9f64cea/restic.test) and [trace.out](https://gist.github.com/fd0/e912f32514cfa96dfc37/raw/b6845ccdb341b01c68a3f25ddc1e1068fcaae76a/trace.out).\r\n\r\nMaybe we could add something along the lines of this diff to return a more meaningful error message:\r\n```diff\r\ndiff --git a/src/cmd/trace/pprof.go b/src/cmd/trace/pprof.go\r\nindex 9e6f277..fe0c5e0 100644\r\n--- a/src/cmd/trace/pprof.go\r\n+++ b/src/cmd/trace/pprof.go\r\n@@ -48,6 +48,11 @@ func httpIO(w http.ResponseWriter, r *http.Request) {\r\n        rec.time += ev.Link.Ts - ev.Ts\r\n        prof[ev.StkID] = rec\r\n    }\r\n+\r\n+   if len(prof) == 0 {\r\n+       http.Error(w, \"no network IO trace events found\", http.StatusNotFound)\r\n+       return\r\n+   }\r\n    serveSVGProfile(w, r, prof)\r\n }\r\n```",
+	"user": {
+		"login": "fd0",
+		"id": 123276,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-06T10:22:29Z",
+	"updated_at": "2016-03-29T10:52:47Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51287738,
+	"number": 8142,
+	"state": "closed",
+	"title": "cmd/gc: liveness bug involving inlined allocation",
+	"body": "\u003cpre\u003eIn the 'bad' function in this program, the inlined newT call creates a local variable\nnamed 'ret' on the stack and sets t := \u0026amp;ret. That would be fine as long as ret is\nkept live for the remainder of the call. But it is not. In particular it is not live at\nthe runtime.GC call, which means that after the GC the map has been collected and the\nt.m[0] crashes.\n\ng% go tool 6g -live /tmp/x.go\n...\n/tmp/x.go:19: live at call to GC: t  [func bad]\n...\n/tmp/x.go:29: live at call to GC: ret t  [func good]\n...\ng% \n\nThe manually inlined version is fine. Also, using return \u0026amp;T{ ... } in func newT\nmakes the program work correctly. The problem has something to do with the local\nvariables created by the inliner.\n\npackage main\n\nimport \u0026quot;runtime\u0026quot;\n\ntype T struct {\n\tm map[int]int\n}\n\nfunc newT() *T {\n\tret := T{\n\t\tmake(map[int]int),\n\t}\n\treturn \u0026amp;ret\n}\n\nfunc bad() {\n\tt := newT()\n\tprintln(\u0026quot;bad before\u0026quot;, t.m[0])\n\truntime.GC()\n\tprintln(\u0026quot;bad after\u0026quot;, t.m[0])\n}\n\nfunc good() {\n\tret := T{\n\t\tmake(map[int]int),\n\t}\n\tt := \u0026amp;ret\n\tprintln(\u0026quot;good before\u0026quot;, t.m[0])\n\truntime.GC()\n\tprintln(\u0026quot;good after\u0026quot;, t.m[0])\n}\n\nfunc main() {\n\tgood()\n\tbad()\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:45:08Z",
+	"created_at": "2014-06-02T19:13:11Z",
+	"updated_at": "2016-06-25T01:35:49Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

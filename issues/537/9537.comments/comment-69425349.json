@@ -1,0 +1,12 @@
+{
+	"id": 69425349,
+	"body": "The problem is that the wrapper main.X.Get is allocating\nt on stack, rather on heap, despite the fact that t obviously\nescapes. (so the result of Get is a slice pointer to our own\nstack. we can use this fact to corrupt the Go stack, and\neven worse, violate the safety by overriding pointers on\nstack to point to arbitrary locations, this is indeed a very\nserious issue.) Simply put, I can use this bug to write a\npure Go function that turns an arbitrary uintptr to a pointer\nwithout using unsafe or cgo. And you can also do arbitrary\npointer type conversion using reflect. (Because every\nfunction/method declared in the same package will be in\nxtop when doing escape analysis, I'm unable to write a\nsingle package example, at least two packages are required\nto trigger the bug.)\n\nI played with this issue for quite some time and found no\nsimple and obviously safe solution than to disable the\ninlining of wrappers. (one line change, remove inlcall(fn)\nline in the genwrapper function in cmd/gc/subr.c)\n\nWhen inlining is first introduced, we first do inlining and\nthen do escape analysis. This is the correct way.\n\nAs the backend will allocate any var not explicitly labeled\nas escaped to heap on stack, it's utterly important to\nrun escape analysis on every function.\n\nThe CL (7214044) violates the order of inlining first and\nescape analysis, and after its submission, we found #5056,\nand this issue is actually another occurrence of #5056.\n\nThe fix to #5056 made the assumption that there is\nescape analysis result on the copied nodes saved for\ninlining.  this is true for the example program for #5056, but\nunfortunately, not true for the example in this issue.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-10T00:22:41Z",
+	"updated_at": "2015-01-10T00:22:41Z"
+}

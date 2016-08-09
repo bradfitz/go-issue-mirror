@@ -1,0 +1,12 @@
+{
+	"id": 192967658,
+	"body": "```\r\npackage main\r\n\r\nimport (\r\n    \"encoding/json\"\r\n    \"fmt\"\r\n    \"net\"\r\n    \"os\"\r\n    \"sync\"\r\n)\r\n\r\nfunc CheckError(err error) {\r\n    if err  != nil {\r\n        fmt.Println(\"Error: \" , err)\r\n        os.Exit(0)\r\n    }\r\n}\r\n\r\nvar WorkQueue = make(chan WorkRequest, 100)\r\n\r\nfunc Reader(ws *sync.WaitGroup) {\r\n    ServerAddr,err := net.ResolveUDPAddr(\"udp\",\":10001\")\r\n    CheckError(err)\r\n\r\n    ServerConn, err := net.ListenUDP(\"udp\", ServerAddr)\r\n    CheckError(err)\r\n    defer ServerConn.Close()\r\n\r\n    buf := make([]byte, 4096)\r\n    var request WorkRequest\r\n\r\n    for {\r\n        n,addr,err := ServerConn.ReadFromUDP(buf)\r\n        err1 := json.Unmarshal(buf[:n], \u0026request)\r\n        fmt.Println(\"Received from \", addr)\r\n\r\n        if err != nil {\r\n            fmt.Println(\"Error: \",err1)\r\n        }\r\n        if err1 != nil {\r\n            fmt.Println(\"Problem in unmarchalling data: \",err1)\r\n        }\r\n\r\n        work := WorkRequest{Topic: request.Topic, Logline: request.Logline}\r\n\r\n        WorkQueue \u003c- work\r\n        fmt.Println(\"Work request queued\", request.Topic, request.Logline)\r\n    }\r\n    ws.Done()\r\n}\r\n```\r\n\r\nOn the other end of the channel I am running a goroutine to pick up this data.",
+	"user": {
+		"login": "sagar8192",
+		"id": 5456218,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-06T19:26:08Z",
+	"updated_at": "2016-03-06T20:30:22Z"
+}

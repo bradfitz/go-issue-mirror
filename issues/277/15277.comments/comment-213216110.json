@@ -1,0 +1,12 @@
+{
+	"id": 213216110,
+	"body": "https://go-review.googlesource.com/22365 is a start at this.\r\nThis CL illuminates two problems with the \"keep value live until return\" strategy.\r\n\r\nThe first is this:\r\n```\r\nfunc f(p *int) {\r\n\tp = nil\r\n\tfoo()\r\n}\r\n```\r\nSo the `nil` value is the one we want to keep live until the end of the function.  But `nil` is rematerializeable, so we will never generate a spill for it.  Since there is no spill, we never get a chance to decide to spill back to `p`.\r\n\r\nSo spill `nil` anyway if it is known to be assigned to p, you say?  Then what about\r\n```\r\nfunc g(p, q *int) {\r\n\tp = nil\r\n\tq = nil\r\n\tfoo()\r\n}\r\n```\r\nThe `nil`s get CSEd, so there's only one value to spill.  It must get spilled to _two_ places.\r\n\r\nLong story short, this is tricky.  Continuing to think about it.\r\n\r\nNote that the defer trick Russ added does work, but only because it (implicitly) takes the address of the argument.  I don't think we want to mark all input args as addrtaken to fix this problem.\r\n\r\nBy the way, we don't spill other variables to PARAM slots (any more).  The only variables that can share a stack slot are two AUTO variables.\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-22T02:44:25Z",
+	"updated_at": "2016-04-22T02:44:25Z"
+}

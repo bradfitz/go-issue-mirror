@@ -1,0 +1,12 @@
+{
+	"id": 154132334,
+	"body": "This is a bug in pprof alone. The full information is in the profile, but the elision of runtime frames is getting confused by the reflect call and eliding everything below it. You can see the extra information using -runtime.\n\n\t$ cat x_test.go\n\tpackage x\n\t\n\timport (\n\t\t\"reflect\"\n\t\t\"testing\"\n\t)\n\t\n\tfunc TestReflect(t *testing.T) {\n\t\tv := reflect.ValueOf(f)\n\t\tfor i := 0; i \u003c 10000; i++ {\n\t\t\tv.Call(nil)\n\t\t}\n\t}\n\t\n\tvar x [][]byte\n\t\n\tfunc f() {\n\t\tx = append(x, make([]byte, 10000))\n\t}\n\t$ go test -memprofile=x.prof x_test.go\n\tok  \tcommand-line-arguments\t0.093s\n\t$ go tool pprof -top x.test x.prof\n\t100.50MB of 100.50MB total (  100%)\n\t      flat  flat%   sum%        cum   cum%\n\t  100.50MB   100%   100%   100.50MB   100%  reflect.Value.call\n\t         0     0%   100%   100.50MB   100%  command-line-arguments.TestReflect\n\t         0     0%   100%   100.50MB   100%  reflect.Value.Call\n\t         0     0%   100%   100.50MB   100%  runtime.goexit\n\t         0     0%   100%   100.50MB   100%  testing.tRunner\n\t$ go tool pprof -top -runtime x.test x.prof\n\t100.50MB of 100.50MB total (  100%)\n\tDropped 1 node (cum \u003c= 0.50MB)\n\t      flat  flat%   sum%        cum   cum%\n\t  100.50MB   100%   100%   100.50MB   100%  runtime.makeslice\n\t         0     0%   100%   100.50MB   100%  command-line-arguments.TestReflect\n\t         0     0%   100%   100.50MB   100%  command-line-arguments.f\n\t         0     0%   100%   100.50MB   100%  reflect.Value.Call\n\t         0     0%   100%   100.50MB   100%  reflect.Value.call\n\t         0     0%   100%   100.50MB   100%  runtime.call32\n\t         0     0%   100%   100.50MB   100%  runtime.goexit\n\t         0     0%   100%   100.50MB   100%  testing.tRunner\n\t$",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-05T17:34:49Z",
+	"updated_at": "2015-11-05T17:34:49Z"
+}

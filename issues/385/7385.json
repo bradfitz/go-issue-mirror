@@ -1,0 +1,33 @@
+{
+	"id": 51286632,
+	"number": 7385,
+	"state": "closed",
+	"title": "cmd/gc: len const check misses some non-const builtins",
+	"body": "\u003cpre\u003ePer the spec: \u003ca href=\"http://tip.golang.org/ref/spec#Length_and_capacity\"\u003ehttp://tip.golang.org/ref/spec#Length_and_capacity\u003c/a\u003e :\n\n\u0026quot;The expressions len(s) and cap(s) are constants if the type of s is an array or\npointer to an array and the expression s does not contain channel receives or function\ncalls; in this case s is not evaluated.\u0026quot;\n\n1) Accordingly, the following declarations are valid:\n\nvar x int\nconst _ = len([10]int{})\nconst _ = len([10]int{x})\n\n2) As expected, the following one is not:\n\nconst _ = len([10]int{len([]int{})})\n\n(error: const initializer len([10]int literal) is not a constant )\n\n_presumably_ because the first element of the array composite literal contains a\nfunction call, len([]int{}) .\n\n3) However, the following one:\n\nconst _ = len([10]int{len([10]int{})})\n\nis accepted despite the fact that the first element of the array composite literal\ncontains a function call. Different from 2), in this case, that function call results in\na constant itself.\n\n4) Similarly:\n\nconst _ = real(0i)\nconst _ = len([10]float64{real(0i)})\n\nis accepted even though we have a function call real(0i); but like in 3), the result of\nthat call is constant.\n\n5) Finally:\n\nvar z complex128\nconst _ = len([10]float64{real(z)})\n\nis still accepted, and it this case the result of the real(z) call is not constant.\n\n\nComparison with other tools:\n\n- go/types rejects all but 1)\n- gccgo rejects 2) and 5); i.e., it treats built-ins result in constants not as calls.\n\n\nAnalysis:\n\na) If we accept the spec as correct, and consider calls to built-in functions as\nfunction calls, then 3), 4), and 5) are invalid and the compiler should report an error.\n\nb) If the spec should be amended to exclude built-in function calls from \u0026quot;function\ncalls\u0026quot;, then 2) is valid, and the compiler should not report an error.\n\nc) If the spec should be amended to exclude built-in function calls returning constant\nvalues from \u0026quot;function calls\u0026quot;, then 5) is invalid and the compiler should\nreport an error.\n\nThe original intent of the spec rule stated in the beginning is to enable len(x) and\ncap(x) calls to return constant values such that they can be used in the specification\nof constants (or in array types), as long as the expression x can be evaluated at\ncompile-time and thus does not produce side-effects. However, that is not what the spec\nspells out at the moment.\n\ngccgo implements that intent (but not the word of the spec). go/types implement the\nwording in the spec. gc does neither and thus is inconsistent whichever interpretation\nis chosen.\n\n\nThere are 2 possible solutions:\n\nA) Accept spec as is, and count any (source-level) function call, to a built-in or not,\nas a function call in this case.\n\nB) Amend the spec to ignore calls to built-in functions that result in a constant result\nin this case.\n\n\nSolution A) results in a simpler spec and is unlikely to invalidate existing programs\nsince the cases where it matters are pathological. B) is closer to the original intent,\nbut hardly matters in practice, requires a slightly more complex spec.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:41:04Z",
+	"created_at": "2014-02-21T22:18:34Z",
+	"updated_at": "2016-06-25T01:28:12Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51282642,
+	"number": 4790,
+	"state": "closed",
+	"title": "runtime: finaliser inconsistency panic needs to be more informative",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nThe build regularly fails on freebsd/arm. It is not clear if this is a bug in the\nfreebsd/arm port, or a real issue in the gc that is only uncovered on this particular\nconfiguration. In either case it would be useful if the panic information gave more\ndetails to promote investigation.\n\n# ../test\nfatal error: mark - finalizer inconsistency\n\ngoroutine 1530 [running]:\nruntime.throw(0x1a64bf, 0x5094b268)\n        /usr/local/go/src/pkg/runtime/panic.c:462 +0x50\naddfinroots(0x0, 0x0)\n        /usr/local/go/src/pkg/runtime/mgc0.c:1041 +0x6c\nruntime.walkfintab(0x29994, 0x4)\n        /usr/local/go/src/pkg/runtime/mfinal.c:208 +0xa0\naddroots()\n        /usr/local/go/src/pkg/runtime/mgc0.c:1101 +0x1a8\ngc(0x70429fc0, 0x70429100)\n        /usr/local/go/src/pkg/runtime/mgc0.c:1528 +0x1e8\n----- stack segment boundary -----\nruntime.gc(0x1, 0x0)\n        /usr/local/go/src/pkg/runtime/mgc0.c:1471 +0xe8\nforcegchelper(0x70217fa0, 0x0)\n        /usr/local/go/src/pkg/runtime/mheap.c:353 +0x28\nruntime.goexit()\n        /usr/local/go/src/pkg/runtime/proc.c:284\ncreated by runtime.MHeap_Scavenger\n        /usr/local/go/src/pkg/runtime/mheap.c:398\n\ngoroutine 1 [chan receive]:\nmain.main()\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:85 +0x930\n\ngoroutine 3 [chan send]:\nmain.runTests()\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:240 +0x40\ncreated by main.startTest\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:226 +0xec\n\ngoroutine 1528 [syscall]:\nsyscall.Syscall6()\n        /usr/local/go/src/pkg/syscall/asm_freebsd_arm.s:36 +0x8\nsyscall.wait4(0x54b, 0x50692f18, 0x0, 0x502b4c30, 0x1, ...)\n        /usr/local/go/src/pkg/syscall/zsyscall_freebsd_arm.go:32 +0x68\nsyscall.Wait4(0x54b, 0x7031a6a0, 0x0, 0x502b4c30, 0x701b800c, ...)\n        /usr/local/go/src/pkg/syscall/syscall_bsd.go:136 +0x60\nos.(*Process).wait(0x5088c9d0, 0x0, 0x0, 0x0)\n        /usr/local/go/src/pkg/os/exec_unix.go:22 +0xcc\nos.(*Process).Wait(0x5088c9d0, 0x506be840, 0x62400)\n        /usr/local/go/src/pkg/os/doc.go:43 +0x28\nos/exec.(*Cmd).Wait(0x50466960, 0x0, 0x0)\n        /usr/local/go/src/pkg/os/exec/exec.go:308 +0x148\nos/exec.(*Cmd).Run(0x50466960, 0x506be840, 0x506be728)\n        /usr/local/go/src/pkg/os/exec/exec.go:232 +0x58\nmain.func·002(0x7031a7dc, 0x7031afc4, 0x1ab94, 0x506be720, 0x7, ...)\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:437 +0x17c\nmain.(*test).run(0x50264380, 0x30af8)\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:620 +0x1450\nmain.func·001(0x50692e20, 0x0)\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:243 +0x2c\ncreated by main.runTests\n        /u/work/freebsd-arm-pi-3ec7a2a68c61/go/test/run.go:245 +0x9c\n\ngoroutine 5 [finalizer wait]:\n\ngoroutine 1529 [syscall]:\nsyscall.Syscall()\n        /usr/local/go/src/pkg/syscall/asm_freebsd_arm.s:14 +0x8\nsyscall.read(0x4, 0x50468858, 0x5a8, 0x5a8, 0x1, ...)\n        /usr/local/go/src/pkg/syscall/zsyscall_freebsd_arm.go:1263 +0x78\nsyscall.Read(0x4, 0x50468858, 0x5a8, 0x5a8, 0x3e964, ...)\n        /usr/local/go/src/pkg/syscall/syscall_unix.go:132 +0x50\nos.(*File).read(0x50692e90, 0x50468858, 0x5a8, 0x5a8, 0x50468858, ...)\n        /usr/local/go/src/pkg/os/file_unix.go:174 +0x58\nos.(*File).Read(0x50692e90, 0x50468858, 0x5a8, 0x5a8, 0x58, ...)\n        /usr/local/go/src/pkg/os/file.go:95 +0x7c\nbytes.(*Buffer).ReadFrom(0x506be840, 0x5023f000, 0x50692e90, 0x58, 0x0, ...)\n        /usr/local/go/src/pkg/bytes/buffer.go:166 +0x210\nio.Copy(0x501e9100, 0x506be840, 0x5023f000, 0x50692e90, 0x0, ...)\n        /usr/local/go/src/pkg/io/io.go:326 +0xa4\nos/exec.func·003(0x50692e80, 0x50692e88, 0x2fac0, 0xdb390, 0x2fae8, ...)\n        /usr/local/go/src/pkg/os/exec/exec.go:207 +0x80\nos/exec.func·004(0x50692e58, 0x5088d900, 0x0)\n        /usr/local/go/src/pkg/os/exec/exec.go:274 +0x28\ncreated by os/exec.(*Cmd).Start\n        /usr/local/go/src/pkg/os/exec/exec.go:275 +0x658\nexit status 2\n\nPlease use labels and text to provide additional information.\n\n\u003ca href=\"http://code.google.com/p/go/source/detail?r=3ec7a2a68c61\"\u003ehttp://code.google.com/p/go/source/detail?r=3ec7a2a68c61\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:25:24Z",
+	"created_at": "2013-02-11T04:23:28Z",
+	"updated_at": "2016-06-24T22:32:45Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

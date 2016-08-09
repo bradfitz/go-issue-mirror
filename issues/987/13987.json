@@ -1,0 +1,35 @@
+{
+	"id": 127123280,
+	"number": 13987,
+	"state": "open",
+	"title": "os: on unix Process.Kill() can kill the wrong process",
+	"body": "This is somewhat similar to the issue #9382. On Unix Process.Kill() just calls Process.Signal(Kill). As https://golang.org/src/os/exec_unix.go#L39 indicates, the Signal function invokes syscall.Kill(p.Pid) outside any lock after checking if the process still runs. Thus at the point when the signal is called the process could finish and Process.Wait() from another thread return. Thus OS is free to reuse the pid for another unrelated process. If this happens, Process.Kill() kills that process. \r\n\r\nDue to this race it is impossible to write a correct platform-independent code in Go that kills the process if it does not terminate after a pause. I.e. the code fragment from #9382 is not correct on Unix:\r\n```\r\nfunc spawnAndKill(exePath string, counter int) error {\r\n    cmd := exec.Command(exePath, fmt.Sprintf(\"%d\", counter))\r\n    err := cmd.Start()\r\n    if err != nil {\r\n        return err\r\n    }\r\n    go func() {\r\n        time.Sleep(1000 * time.Millisecond)\r\n        cmd.Process.Kill()\r\n    }()\r\n    cmd.Wait()\r\n    return nil\r\n}\r\n```\r\n",
+	"user": {
+		"login": "ibukanov",
+		"id": 2381216,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Dragonfly"
+		},
+		{
+			"name": "OS-NetBSD"
+		},
+		{
+			"name": "OS-OpenBSD"
+		},
+		{
+			"name": "OS-Solaris"
+		}
+	],
+	"comments": 12,
+	"created_at": "2016-01-17T20:57:29Z",
+	"updated_at": "2016-06-13T22:25:13Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

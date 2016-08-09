@@ -1,0 +1,28 @@
+{
+	"id": 51281055,
+	"number": 3724,
+	"state": "closed",
+	"title": "net/http/client.go - Client.CheckRedirect does not have the claimed error behavior",
+	"body": "by **krueger@google.com**:\n\n\u003cpre\u003eAccording to the documentation for http.Client:\n\n    // CheckRedirect specifies the policy for handling redirects.\n    // If CheckRedirect is not nil, the client calls it before\n    // following an HTTP redirect. The arguments req and via\n    // are the upcoming request and the requests made already,\n    // oldest first. If CheckRedirect returns an error, the client\n    // returns that error instead of issue the Request req.\n\nThe code does not actually do what this comment says.\n\nThe doFollowingRedirects method, and thus the Do method, do not actually return _that\nerror_ (i.e. the error object returned by CheckRedirect).  It returns a new url.Error\nwhose Err field is the error returned by CheckRedirect.\n\nI'm not sure what is the desirable behavior in light of the rest of the code base ...\nbut it seems to me that what is described in the comment is worthwhile, so that client\ncode can set a specific error object (or type) in CheckRedirect and check for it as the\nerror return.  Client code could then just do an == comparison for the error set by\nCheckRedirect, and wouldn't need to import \u0026quot;net/url\u0026quot; in order to check the\ntype of the url.Error.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:19:38Z",
+	"created_at": "2012-06-11T20:45:29Z",
+	"updated_at": "2016-06-24T22:20:16Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 167895320,
+	"body": "According to strace (run on an ARM Chromebook; on gomote strace makes it unreproducible), we're making what appear to be reasonable calls to setitimer and rt_sigprocmask, yet when the test fails the kernel hasn't sent us any SIGPROFs (it's not just that we're failing to process them).\r\n\r\nThis appears to be related to STW GC phases. The test spends ~50% of its time in GC and most of that is in STW phases. Forcing full STW with GODEBUG=gcstoptheworld=1 significantly reduces the number of collected samples. Even with GOGC=100, it usually only collects 10–20 samples. With STW and GOGC=1, the test always fails.\r\n\r\nGOMAXPROCS also significantly affects the test. Setting GOMAXPROCS=1 fixes the test, even with STW GC, and yields ~500 samples in 5 seconds, which is the expected number. GOMAXPROCS=2 yields ~100 samples in 5 seconds. Usually I'm running with GOMAXPROCS=4.\r\n\r\nClearly the kernel doesn't know the runtime is in a STW GC phase, so there's something different about the process' behavior when it's in STW GC that's interacting with the kernel's profiling signals.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-29T22:52:31Z",
+	"updated_at": "2015-12-29T22:52:31Z"
+}

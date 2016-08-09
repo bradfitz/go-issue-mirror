@@ -1,0 +1,29 @@
+{
+	"id": 147114140,
+	"number": 15206,
+	"state": "open",
+	"title": "runtime: NumCPU() does not match \"the number of cpus usable by the current process\" in FreeBSD",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version\r\n\u003cpre\u003e\r\ngo version devel +9d4efdf Sat Apr 9 07:15:22 2016 +0000 freebsd/amd64\r\n\u003c/pre\u003e\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\ngo env\r\n\u003cpre\u003e\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/home/rhinofly/home/sandspace/go/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"freebsd\"\r\nGOOS=\"freebsd\"\r\nGOPATH=\"/home/rhinofly/home/sandspace/external/:/home/rhinofly/home/sandspace/golibs/\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/rhinofly/home/sandspace/go\"\r\nGOTOOLDIR=\"/home/rhinofly/home/sandspace/go/pkg/tool/freebsd_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -gno-record-gcc-switches\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\u003c/pre\u003e\r\nuname -a\r\n\u003cpre\u003e\r\nFreeBSD freebsd-i5-box.localdomain 10.2-STABLE FreeBSD 10.2-STABLE #0 r292855: Tue Dec 29 06:17:50 UTC 2015     root@releng1.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC  amd64\r\n\u003c/pre\u003e\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\ncpuset is a util to configure/limit processes available for a processor, just like taskset in Linux.\r\n\r\n\u003cpre\u003e\r\nDESCRIPTION\r\n     The cpuset command can be used to assign processor sets to processes, run\r\n     commands constrained to a given set or list of processors, and query\r\n     information about processor binding, sets, and available processors in\r\n     the system.\r\n\u003c/pre\u003e\r\n\r\nsave follow code to freebsdncpu.go \r\n\r\ngo build -o freebsdncpu freebsdncpu.go and run as:\r\n\u003cpre\u003e\r\n/usr/bin/cpuset -l 0 ./freebsdncpu\r\n\u003c/pre\u003e\r\n\r\n\u003cpre\u003e\r\n//\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"runtime\"\r\n\t\"strconv\"\r\n\t\"sync/atomic\"\r\n)\r\n\r\nfunc main() {\r\n\tfmt.Printf(\"runtime.GOMAXPROCS(-1) return %d CPUs\\n\", runtime.GOMAXPROCS(-1))\r\n\tfmt.Printf(\"runtime.NumCPU() return %d CPUs\\n\", runtime.NumCPU())\r\n\tcpuset := exec.Command(\"cpuset\", \"-g\", \"-p\", strconv.Itoa(os.Getpid()))\r\n\toutput, err := cpuset.CombinedOutput()\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"exec cpuset failed: %s\\n\", err.Error())\r\n\t\tos.Exit(1)\r\n\t}\r\n\tfmt.Printf(\"cpuset return: %s\\n\", output)\r\n\tvar cnt int64\r\n\tfor i := 0; i \u003c runtime.NumCPU(); i++ {\r\n\t\tgo func() {\r\n\t\t\tfor {\r\n\t\t\t\tatomic.AddInt64(\u0026cnt, 1)\r\n\t\t\t}\r\n\t\t}()\r\n\t}\r\n\tfmt.Printf(\"%d CPU burnner running ...\\n\", runtime.NumCPU())\r\n\tfmt.Printf(\"Press \u003cctl\u003e+C to exit ...\\n\")\r\n\tselect {}\r\n}\r\n\u003c/pre\u003e\r\n\r\n4. What did you expect to see?\r\n\r\n\u003cpre\u003e\r\nruntime.GOMAXPROCS(-1) return 1 CPUs\r\nruntime.NumCPU() return 1 CPUs\r\ncpuset return: pid 40291 mask: 0\r\n\r\n1 CPU burnner running ...\r\nPress \u003cctl\u003e+C to exit ...\r\n\u003c/pre\u003e\r\n\r\nfrom top -IaP we see Go processor using only CPU0\r\n\r\n5. What did you see instead?\r\n\r\n\u003cpre\u003e\r\nruntime.GOMAXPROCS(-1) return 2 CPUs\r\nruntime.NumCPU() return 2 CPUs\r\ncpuset return: pid 40291 mask: 0\r\n\r\n2 CPU burnner running ...\r\nPress \u003cctl\u003e+C to exit ...\r\n\u003c/pre\u003e\r\n\r\nfrom top -IaP we see Go processor using only CPU0\r\n\r\n6. more information:\r\n\r\nas https://github.com/golang/go/blob/master/src/runtime/os1_freebsd.go#L20 showed, NumCPU()/ncpu is direct probe from sysctl item hw.ncpu, but in \r\nhttps://www.freebsd.org/cgi/man.cgi?sysctl(3) and  /usr/include/sys/sysctl.h, it's say \"hw.ncpu\" is \"The number\tof cpus\", is not the \"usable by the current process\" in https://github.com/golang/go/blob/master/src/runtime/debug.go#L32\r\n\r\nAnd please note, cpuset already limit the CPU list \"befor\" Go processes start, not the case in https://github.com/golang/go/issues/11609 (change usable cpu list on the fly).\r\n",
+	"user": {
+		"login": "wheelcomplex",
+		"id": 1411633,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-FreeBSD"
+		},
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-04-09T09:53:26Z",
+	"updated_at": "2016-05-22T02:03:58Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

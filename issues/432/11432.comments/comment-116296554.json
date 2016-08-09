@@ -1,0 +1,12 @@
+{
+	"id": 116296554,
+	"body": "I'm happy with encoding into \"PC\" values.  The 3 options that quickly come to mind are:\r\n\r\n1.  take existing \"return PC\" and hack into known-unused bits (high order on x86, low order on PPC/MIPS/ARM/SPARC).  The advantage of this is that if the \"bogus\" PCs are filtered out of the stack trace, the ones that remain are the ones that you would see in a machine-level debugger, and also correspond to what you'd see in nm (e.g., A inlines B inlines C, the \"good\" PC belongs to A, and that's what nm shows).\r\n\r\n2. repurpose other PCs within the image, perhaps correspond to rough inline boundaries (never mind what optimization might do).  All PCs are \"real\", only the innermost one corresponds to a real call site.\r\nWe might even leave marker instructions (nops) in the stream.  The advantage is all PCs are real, the disadvantage is that the name of the one that looks like a call site won't match the addresses you see in nm.\r\n\r\n3.  make up something completely different that is just designed to get you the information that we promised, that does not correspond to nm at all.  Advantage here is that there's no risk of subtle confusion -- these things won't look like PCs at all, and we won't run into any weird corner cases based on attempts to fake it.  (This is what we did years ago in a static Java-bytecodes compiler, but we had no installed base to confuse, and sadly, never did).\r\n\r\nI think I have an anti-preference against 2.  That seems most-confusing and also most likely to lead to non-intuitive hair in things like dead code elimination and code motion.\r\n\r\nWhere do we stand on tail-call elimination?  Are we more nearly \"this is an important optimization, users must deal with it\" or \"stack traces are really important, think about the time added to debugging/diagnosis when information is lost\"?  There have been proposals/hacks over the years for figuring out ways to deal with TCE, but none of them come close to the (cache, stack size, simplicity) efficiency of the real thing.  Maybe we can think of new hacks???",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-28T16:35:47Z",
+	"updated_at": "2015-06-28T16:35:47Z"
+}

@@ -1,0 +1,16 @@
+{
+	"id": 233781958,
+	"body": "tl;dr I'm a -1 as well.\r\n\r\nThis problem could potentially be (partially) solved by another proposal:\r\n#8082. Doing the same for function types would, alongside #8082, solve some of\r\nthe more common places where nominal typing becomes an unintentional\r\nimpediment.\r\n\r\nAside from that, while this proposal does lend some credibility to the rune and\r\nbyte aliasing, I'd like to see those de-aliased in Go2 anyway: in my\r\nexperience, the existing two builtin examples of aliasing provide a\r\nnet-inconvenience. `[]int32` and `[]uint8` are nearly always used as \"slices of\r\nintegers\", while `[]rune` and `[]byte` are consistently \"mutable strings\".\r\nBecause rune and byte are aliases, fmt has no way to meaningfully extract that\r\nintent. The language would have been simpler without any form of aliasing.\r\n\r\n---\r\n\r\nI'm not sure there's any acceptable way to avoid abusing this; even when\r\nlimited to the package-global namespace, and even if we took the additional\r\nmeasure of requiring all aliases to be exported, programmers may still feel\r\ninclined to over-use aliases to save typing (even if it bloats their API).\r\n\r\nBeyond that, it'll add extra complexity for newcomers to learn: `var x =\u003e p.Y`\r\nlooks very much like `var x = p.Y` and will \"just work\" in many of the same\r\ncases, which is problematic. For example:\r\n\r\n```go\r\n// x is a copy of the value in p.Y, right?\r\nvar x =\u003e p.Y\r\n\r\n// this looks local, so should be okay, right?\r\nfunc init() { x++ }\r\n```\r\n\r\nVariable aliases especially seem harmful. Should the result of refactoring be\r\nto expose mutable global variables? The inclusion of const and func aliases\r\nseems to be predicated on var aliases being useful, but don't seem to provide\r\nvalue aside from completeness.\r\n\r\n---\r\n\r\nI would be more comfortable with this proposal if we \"taint\" the documentation\r\nof packages that use them (since their intent is to be non-permanent).\r\nSpecifically, any package that uses them should be listed via godoc, godoc.org,\r\netc., as being \"unstable\".\r\n\r\nAdditionally, just as we have ensured that recover is not a convenient\r\ncontrol-flow mechanism, we could just ensure that there's no way for aliases to\r\nsave typing, such as by requiring all aliases to be in an *_alias.go file\r\nwithout any other code aside from the package declaration and imports, and\r\nperhaps requiring that the aliased type declaration to be reproduced locally as\r\nwell:\r\n\r\n```go\r\ntype t =\u003e p.T1 struct { X p.T2 }\r\n\r\n// in package p is the declaration `type T1 struct { X T2 }`\r\n```",
+	"user": {
+		"login": "extemporalgenome",
+		"id": 536740,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-07-19T22:09:49Z",
+	"updated_at": "2016-07-19T22:09:49Z"
+}

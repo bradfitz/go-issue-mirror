@@ -1,0 +1,12 @@
+{
+	"id": 134425181,
+	"body": "Correction: With the latest gotype, go/types, we get:\r\n```\r\npackage a\r\nvar a = 1e20/complex64(1e-20)\r\n```\r\ngotype reports:\r\n```\r\nx.src:2:9: 1e20 / complex64(1e-20) (constant 15474250801184809498242605942063297429153775616/1547425 of type complex64) overflows complex64\r\n```\r\nwhich is a) the correct expression, and b) likely the correct value (it's 1.0000000517753564e+40, or 1e40 after rounding to 24bits).\r\n\r\nSimilarly,\r\n```\r\npackage a\r\nconst a = 1e15/complex64(1e-15)\r\nconst _ = trace(a)\r\n```\r\nprints\r\n```\r\nx.src:3:17: a (constant 1000000015047466219876688855040 of type complex64)\r\n```\r\nwhich is approx. 1e30. Per the spec (http://tip.golang.org/ref/spec#Conversions):\r\n```\r\n... x is a floating-point constant, T is a floating-point type, and x is representable by a value of type T after rounding using IEEE 754 round-to-even rules. The constant T(x) is the rounded value.\r\n```\r\nThus internally, we need to continue in full precision (or in case of go/types, exact) after the intermediate value was rounded to float32 (in this case). Consequently, we get spurious values.\r\n\r\nShould decide if error messages should report in a different more readable format.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-25T00:34:12Z",
+	"updated_at": "2015-08-25T00:34:12Z"
+}

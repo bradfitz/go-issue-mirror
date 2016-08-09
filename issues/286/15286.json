@@ -1,0 +1,27 @@
+{
+	"id": 148186709,
+	"number": 15286,
+	"state": "closed",
+	"title": "runtime: Go 1.5.4/1.6.1 breaks running on Windows Nano Server",
+	"body": "This regression occurred due to change b8af3fd1bd6338f315d92592c28ff26753f2f118 associated with #14959. These changes, which add the LOAD_LIBRARY_SEARCH_SYSTEM32 flag to LoadLibraryEx calls to system DLLs, are incompatible with Windows Nano Server, which is currently in preview release. Go programs fail to load because shell32.dll cannot be found in the course of calling CommandLineToArgvW to parse the command line.\r\n\r\nNano Server does not have shell32.dll or many other DLLs that are part of standard Windows desktop and Windows Server installations. Nano Server is based on OneCore and as such doesn't have shell functionality; the API in question is moved to a different DLL. OneCore replaces explicit references to system DLLs with \"API sets\", which are DLL-like things that reference logical sets of APIs that may be hosted by different DLLs on different Windows platforms. For example, CommandLineToArgvW is in api-ms-win-shcore-obsolete-l1-1-0. (I don't know why it's in something marked \"obsolete\", that seems strange to me, too).\r\n\r\nOf course, most software out there is not going to start linking to the new API sets any time soon, so Nano Server also has a mechanism to forward from the old DLLs to the new API sets. This mechanism is known internally as \"reverse forwarders\". These reverse forwarders allow Go software (and a lot of other open source software) to run on Nano Server without changes.\r\n\r\nUnfortunately, the loader will not try to load these reverse forwarders if you pass LOAD_LIBRARY_SEARCH_SYSTEM32. This means that while Go 1.5.3 programs worked great on Nano Server, programs built with 1.5.4 will not. This is quite unfortunate for us since we are trying to support Docker on Nano Server, and Docker has just moved to Go 1.5.4 for the security fixes.\r\n\r\nWe are working internally at Microsoft to see if/how we can support LOAD_LIBRARY_SEARCH_SYSTEM32 with reverse forwarders. I am hopeful that by RTM of Nano Server we will be able to improve this messy situation. But for now, this change has broken us pretty badly.\r\n\r\nOne proposal for a workaround would be to revert to the old behavior if kernel32.dll cannot be loaded with LOAD_LIBRARY_SEARCH_SYSTEM32. That would be a pretty good indication that you're on a system that doesn't have a standard set of Windows DLLs, and that you shouldn't pass this flag. I can put together a proposed fix today if that's likely to be acceptable.",
+	"user": {
+		"login": "jstarks",
+		"id": 9548354,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2016-05-06T01:18:41Z",
+	"created_at": "2016-04-13T21:23:01Z",
+	"updated_at": "2016-05-06T02:07:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

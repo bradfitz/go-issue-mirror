@@ -1,0 +1,27 @@
+{
+	"id": 51288471,
+	"number": 8632,
+	"state": "closed",
+	"title": "inotify: IN_IGNORED causes information to be lost",
+	"body": "by **shulman.peleg**:\n\n\u003cpre\u003eProblem:  \nEvents with IN_IGNORED mask remove the watch from the kernel, but they remain listed in\nthe w.watches[path] map of the Watcher struct. This leads to missing information\n(path/event names) when trying to renew the watch.   \n\nDetails: \nWhen renewing a watch and invoking the AddWatch function after a previous IN_IGNORED\nevent (on the same file) we get the following situation: \n1. In line 105: \nfound := w.watches[path] -- gets \u0026quot;true\u0026quot; \n\n2. The block in lines 123-128 is not executed    \nif !found {\n    w.watches[path] = \u0026amp;watch{wd: uint32(wd), flags: flags}\n    w.paths[wd] = path\n}\n-- w.paths[wd] is empty \n\n3. When a new event on the watched file comes in we can't get its name in function\nreadEvents \nIn line 200:  \nevent.Name = w.paths[int(raw.Wd)]\n-- event.Name is empty and we don't have the required information \n\nExample solution: \nRemoving the \u0026quot;if !found\u0026quot; condition and always executing the lines 124-125:\nw.watches[path] = \u0026amp;watch{wd: uint32(wd), flags: flags}\nw.paths[wd] = path\n\nNote: The problematic \u0026quot;!found\u0026quot; condition seems to be removed in\nfsnotify_linux.go. However, fsnotify is not a sufficient replacement to inotify since it\ndoes not give the access to all of the inotify event types and mask bits required for\nsome use cases.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-04-14T19:39:03Z",
+	"created_at": "2014-09-03T12:15:41Z",
+	"updated_at": "2016-06-25T01:40:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

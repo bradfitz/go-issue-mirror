@@ -1,0 +1,27 @@
+{
+	"id": 51287928,
+	"number": 8260,
+	"state": "closed",
+	"title": "runtime: crash when SEH exceptions raised/handled from non-go threads",
+	"body": "by **andrew@spacemonkey.com**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3 windows/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. raise and handle an SEH exception from a thread not managed by Go (i.e. spawned via\nCreateThread from another C function invoked via cgo/syscall)\n\nWhat happened?\nApp crashes due to an access violation\n\nWhat should have happened instead?\nThe SEH exception should have been handled normally\n\nPlease provide any additional information below.\n\nWhen a thread not managed by the runtime raises an SEH exception, runtime.sigtramp\nerroneously assumes that the thread has a goroutine\npointer in TLS and causes an access violation:\n\nIn sys_windows_amd64.s (also broken in sys_windows_386.s):\n\n\tMOVQ\t0(CX), BX // ExceptionRecord*\n\tMOVQ\t8(CX), CX // Context*\n\n\t// fetch g\n\tget_tls(DX)\n\tMOVQ\tm(DX), AX   \u0026lt;---- DX is 0\n\tCMPQ\tAX, $0\n\tJNE\t2(PC)\n\nI've attached both a repro program as well as a patchset with returns\nEXCEPTION_CONTINUE_SEARCH if a goroutine isn't associated with the thread.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8260/0/crashrepro.tar.gz\"\u003ecrashrepro.tar.gz\u003c/a\u003e (900 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8260/0/continue_if_no_g_on_thread.patch\"\u003econtinue_if_no_g_on_thread.patch\u003c/a\u003e (1515 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:45:51Z",
+	"created_at": "2014-06-21T19:23:55Z",
+	"updated_at": "2016-06-25T01:37:00Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51278321,
+	"number": 1804,
+	"state": "closed",
+	"title": "HTTP client panics issuing HEAD request when response reports gzip content encoding",
+	"body": "by **eivind@uggedal.com**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1.\n  cat \u0026gt; head_with_gzip_response_bug.go \u0026lt;\u0026lt; 'EOF'\n  package main\n  import \u0026quot;http\u0026quot;\n  func main () {\n    http.Head(\u0026quot;\u003ca href=\"http://uggedal.com/\u0026quot\"\u003ehttp://uggedal.com/\u0026quot\u003c/a\u003e;)\n  }\n  EOF\n\n2.\n  6g head_with_gzip_response_bug.go \u0026amp;\u0026amp; 6l -o head_with_gzip_response_bug head_with_gzip_response_bug.6 \u0026amp;\u0026amp; ./head_with_gzip_response_bug\n\nWhat is the expected output?\n\nNothing, success return.\n\nWhat do you see instead?\n\npanic: interface conversion: io.ReadCloser is *http.body, not *http.bodyEOFSignal\n\nruntime.panic+0xac /home/eivind/dev/go/src/pkg/runtime/proc.c:1060\n\truntime.panic(0x52e920, 0xf84000de00)\nassertI2Tret+0x107 /home/eivind/dev/go/src/pkg/runtime/iface.c:251\n\tassertI2Tret(0x5218a0, 0xf8400a20f0, 0xf8400a2060, 0x7fe43ecd1d30, 0xf8400981c0, ...)\nruntime.assertI2T+0x33 /home/eivind/dev/go/src/pkg/runtime/iface.c:231\n\truntime.assertI2T(0x5218a0, 0xf8400a20f0, 0xf8400a2060, 0x70697a6700000004)\nhttp.*persistConnÂ·roundTrip+0x34d /home/eivind/dev/go/src/pkg/http/transport.go:546\n\thttp.*persistConnÂ·roundTrip(0xf840027d20, 0xf84002d4b0, 0x0, 0x0, 0x0, ...)\nhttp.*TransportÂ·RoundTrip+0x200 /home/eivind/dev/go/src/pkg/http/transport.go:79\n\thttp.*TransportÂ·RoundTrip(0xf84000c840, 0xf84002d4b0, 0x0, 0x0, 0x0, ...)\nhttp.send+0x2c0 /home/eivind/dev/go/src/pkg/http/client.go:108\n\thttp.send(0xf84002d4b0, 0xf840042000, 0xf84000c840, 0x0, 0x0, ...)\nhttp.*ClientÂ·Head+0xc5 /home/eivind/dev/go/src/pkg/http/client.go:307\n\thttp.*ClientÂ·Head(0xf84000c820, 0x5576b4, 0x13, 0x0, 0x0, ...)\nhttp.Head+0x51 /home/eivind/dev/go/src/pkg/http/client.go:297\n\thttp.Head(0x5576b4, 0x7074746800000013, 0x6075c8, 0x0, 0x0, ...)\nmain.main+0x2c /home/eivind/dev/wasitup/goclient/head_with_gzip_response_bug.go:6\n\tmain.main()\nruntime.mainstart+0xf /home/eivind/dev/go/src/pkg/runtime/amd64/asm.s:77\n\truntime.mainstart()\nruntime.goexit /home/eivind/dev/go/src/pkg/runtime/proc.c:178\n\truntime.goexit()\n----- goroutine created by -----\n_rt0_amd64+0x8e /home/eivind/dev/go/src/pkg/runtime/amd64/asm.s:64\n\ngoroutine 3 [1]:\nruntime.gosched+0x5c /home/eivind/dev/go/src/pkg/runtime/proc.c:603\n\truntime.gosched()\nruntime.exitsyscall+0x73 /home/eivind/dev/go/src/pkg/runtime/proc.c:683\n\truntime.exitsyscall()\nsyscall.Syscall+0x4b /home/eivind/dev/go/src/pkg/syscall/asm_linux_amd64.s:30\n\tsyscall.Syscall()\nsyscall.Read+0x62 /home/eivind/dev/go/src/pkg/syscall/zsyscall_linux_amd64.go:498\n\tsyscall.Read(0xf800000003, 0xf840029000, 0x100000001000, 0x404831, 0xf84000dcd8, ...)\nnet.*netFDÂ·Read+0x172 /home/eivind/dev/go/src/pkg/net/fd.go:378\n\tnet.*netFDÂ·Read(0xf840038140, 0xf840029000, 0x100000001000, 0x100000000, 0x0, ...)\nnet.*TCPConnÂ·Read+0x95 /home/eivind/dev/go/src/pkg/net/tcpsock.go:94\n\tnet.*TCPConnÂ·Read(0xf840000128, 0xf840029000, 0x100000001000, 0xf2c00000000, 0x0, ...)\nbufio.*ReaderÂ·fill+0xf6 /home/eivind/dev/go/src/pkg/bufio/bufio.go:97\n\tbufio.*ReaderÂ·fill(0xf840033fc0, 0x0)\nbufio.*ReaderÂ·Peek+0xbc /home/eivind/dev/go/src/pkg/bufio/bufio.go:116\n\tbufio.*ReaderÂ·Peek(0xf840033fc0, 0xf800000001, 0x0, 0x0, 0xf840001500, ...)\nhttp.*persistConnÂ·readLoop+0x78 /home/eivind/dev/go/src/pkg/http/transport.go:433\n\thttp.*persistConnÂ·readLoop(0xf840027d20, 0x0)\nruntime.goexit /home/eivind/dev/go/src/pkg/runtime/proc.c:178\n\truntime.goexit()\n----- goroutine created by -----\nhttp.*TransportÂ·getConn+0x610 /home/eivind/dev/go/src/pkg/http/transport.go:289\n\ngoroutine 2 [3]:\nruntime.entersyscall+0x78 /home/eivind/dev/go/src/pkg/runtime/proc.c:639\n\truntime.entersyscall()\nsyscall.Syscall6+0x5 /home/eivind/dev/go/src/pkg/syscall/asm_linux_amd64.s:40\n\tsyscall.Syscall6()\nsyscall.EpollWait+0x89 /home/eivind/dev/go/src/pkg/syscall/zsyscall_linux_amd64.go:200\n\tsyscall.EpollWait(0xf800000007, 0xf84001df30, 0xa0000000a, 0xffffffff, 0xc, ...)\nnet.*pollsterÂ·WaitFD+0x115 /home/eivind/dev/go/src/pkg/net/fd_linux.go:130\n\tnet.*pollsterÂ·WaitFD(0xf84001df20, 0xf84001c7c0, 0x0, 0x7200000003, 0x0, ...)\nnet.*pollServerÂ·Run+0xe0 /home/eivind/dev/go/src/pkg/net/fd.go:226\n\tnet.*pollServerÂ·Run(0xf84001c7c0, 0x0)\nruntime.goexit /home/eivind/dev/go/src/pkg/runtime/proc.c:178\n\truntime.goexit()\n----- goroutine created by -----\nnet.newPollServer+0x328 /home/eivind/dev/go/src/pkg/net/newpollserver.go:39\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nDebian GNU/Linux 6.0 Squeeze\n\nWhich revision are you using?  (hg identify)\n\n2887dd36b6f8+ tip\n\nPlease provide any additional information below.\n\nSee attached patch with test case\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1804/0/head_with_gzip_response_bug.patch\"\u003ehead_with_gzip_response_bug.patch\u003c/a\u003e (1356 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:09:58Z",
+	"created_at": "2011-05-11T20:48:51Z",
+	"updated_at": "2016-06-24T19:28:54Z"
+}

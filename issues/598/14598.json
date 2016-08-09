@@ -1,0 +1,17 @@
+{
+	"id": 137919604,
+	"number": 14598,
+	"state": "closed",
+	"title": "x/crypto/ssh: TCP Forwarding Twice Hangs Second Connection",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n    ```bash\r\n    \u003e go version\r\n    go version go1.6 linux/amd64\r\n    ```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n    Ubuntu 14.04.4 LTS\r\n\r\n    ```bash\r\n    \u003e go env\r\n    GOARCH=\"amd64\"\r\n    GOBIN=\"\"\r\n    GOEXE=\"\"\r\n    GOHOSTARCH=\"amd64\"\r\n    GOHOSTOS=\"linux\"\r\n    GOOS=\"linux\"\r\n    GOPATH=\"/home/wolf/goworkspace\"\r\n    GORACE=\"\"\r\n    GOROOT=\"/usr/local/go\"\r\n    GOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\n    GO15VENDOREXPERIMENT=\"1\"\r\n    CC=\"gcc\"\r\n    GOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\n    CXX=\"g++\"\r\n    CGO_ENABLED=\"1\"\r\n    ```\r\n\r\n3. What did you do?\r\n(Use play.golang.org to provide a runnable example, if possible.)\r\n\r\n    If I use `Dial()` on an SSH Client more than once, the second returned `net.Conn` can not read/write until the first Dial completes.  The write's appear to work fine on the returned `net.Conn`, but aren't actually delivered until the first one is `Close()`d.\r\n\r\n    Example:\r\n\r\n    ```go\r\n            sshClient, err := ssh.Dial(\"tcp\", serverstr, sshConfig)\r\n            remoteConn, err := sshClient.Dial(\"tcp\", remoteString)\r\n            defer remoteConn.Close()\r\n            remoteConn2, err := sshClient.Dial(\"tcp\", remoteString)\r\n    ```\r\n\r\n    In this code, `remoteConn2` will not send bytes until `remoteConn` is `Close()`d, and `remoteConn2` will not `Read()` until `remoteConn` is closed.\r\n\r\n4. What did you expect to see?\r\n\r\n    I expect every `Dial()`ed connection to be independent of the others and able to fully multiplex.  I don't want to have to wait for previous `Dial()`ed connections to close.\r\n\r\n    This greatly hinders throughput.\r\n\r\n5. What did you see instead?\r\n\r\n    I must `Close()` previously `Dial()`ed connections if I want any new ones to work.\r\n",
+	"user": {
+		"login": "theonewolf",
+		"id": 522248,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-03-02T23:10:46Z",
+	"created_at": "2016-03-02T16:16:02Z",
+	"updated_at": "2016-03-02T23:10:46Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51278163,
+	"number": 1683,
+	"state": "closed",
+	"title": "asn1: strange behaviour when object length \u003e 127",
+	"body": "\u003cpre\u003eAttached is a patch to the asn1 test cases currently failing because of a strange\nmiscalculation in the marshal code. The following happens:\n\nThe first added test case is a string of 'x'-es, 127 characters long. The following DER\noutput from calling asn1.Marshal() with this string is expected:\n1st byte: 0x13 (the type identifier, indicating a PrintableString)\n2nd byte: 0x7f (the length: 127 octets)\n3rd byte: 0x78 (uint8 value of 'x')\nand another 126 bytes of 0x78\n\nThe second added test case is one that fails: another string of 'x'-es, now 128\ncharacters long. Now this output is expected:\n1st byte: 0x13 (type identifier)\n2nd byte: 0x81 (first length octet, indicating a number above 127 with the first bit,\nbeing described in the 0x01 octets hereafter)\n3rd byte: 0x80 (second length octet (first real length byte) indicating there's 128\noctets length)\n4th byte: 0x78 (first 'x')\nand another 127 bytes of 0x78\n\nHowever, the test case fails, indicating the output of marshal is the following:\n1st byte: 0x13 (type)\n2nd byte: 0x82 (\u0026gt;128, 0x02 octets for length following)\n3rd byte: 0x00 (wasted octet)\n4th byte: 0x80 (128 octets length)\n5th byte: 0x78 (first 'x')\nand another 127 bytes of 0x78\n\nEven though this isn't incorrect behaviour it's different from most implementations\n(which is how I found out) and it wastes a byte for some lengths of objects.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1683/0/patch\"\u003epatch\u003c/a\u003e (1538 bytes)",
+	"user": {
+		"login": "Luit",
+		"id": 388247,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:09:25Z",
+	"created_at": "2011-04-10T20:37:54Z",
+	"updated_at": "2016-06-24T19:27:25Z"
+}

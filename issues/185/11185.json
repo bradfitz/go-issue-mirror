@@ -1,0 +1,22 @@
+{
+	"id": 87771994,
+	"number": 11185,
+	"state": "closed",
+	"title": "regexp: confusing behavior on invalid utf-8 sequences",
+	"body": "The following program:\r\n```go\r\npackage main\r\n\r\nimport \"regexp\"\r\n\r\nfunc main() {\r\n\tre := regexp.MustCompile(\".\")\r\n\tprintln(re.MatchString(\"\\xd1\"))\r\n\tprintln(re.MatchString(\"\\xd1\\x84\"))\r\n\tprintln(re.MatchString(\"\\xd1\\xd1\"))\r\n\tre = regexp.MustCompile(\"..\")\r\n\tprintln(re.MatchString(\"\\xd1\"))\r\n\tprintln(re.MatchString(\"\\xd1\\x84\"))\r\n\tprintln(re.MatchString(\"\\xd1\\xd1\"))\r\n}\r\n```\r\nprints:\r\n```\r\ntrue\r\ntrue\r\ntrue\r\nfalse\r\nfalse\r\ntrue\r\n```\r\n\r\nWhile the following C++ program:\r\n```c\r\n#include \u003cstdio.h\u003e\r\n#include \u003cre2/re2.h\u003e\r\n\r\nint main() {\r\n\tRE2 re1(\".\");\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\", re1));\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\\x84\", re1));\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\\xd1\", re1));\r\n\tRE2 re2(\".\");\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\", re2));\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\\x84\", re2));\r\n\tprintf(\"%d\\n\", RE2::PartialMatch(\"\\xd1\\xd1\", re2));\r\n}\r\n```\r\nprints:\r\n```\r\n0\r\n1\r\n0\r\n0\r\n1\r\n0\r\n```\r\n\r\nThis raises 2 questions:\r\n1. Why is behavior different between regexp and re2 (re2 seems to be more consistent)?\r\n2. Why is \"\\xd1\\xd1\" matched against both \".\" and \"..\"? I can understand if it is matched against one or another, but not both; is it one character or two?\r\n\r\ngo version devel +b0532a9 Mon Jun 8 05:13:15 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-10-14T17:26:37Z",
+	"created_at": "2015-06-12T16:01:50Z",
+	"updated_at": "2015-10-14T17:26:37Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51277886,
+	"number": 1499,
+	"state": "closed",
+	"title": "bytes: Buffer.ReadBytes() miscalculates size",
+	"body": "by **joelegasse**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nCompiling and running the following program:\n\npackage main\n\nimport (\n  \u0026quot;bytes\u0026quot;\n  \u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n  data := bytes.NewBuffer([]byte{1, 2, 3, 4, 5})\n  data.Next(2) // buffer now on element 3\n  line, _ := data.ReadBytes(3)\n  fmt.Println(line)\n}\n\nWhat is the expected output?\n\n[3]\n\nWhat do you see instead?\n\nRuntime panic.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich revision are you using?  (hg identify)\n\n867d37fb41a4+ release.2011-02-01.1/release\n\nPlease provide any additional information below.\n\nIn src/pkg/bytes/buffer.go, in the ReadBytes() method, the following line needs to be\nupdated (including the fix for \u003ca href=\"https://golang.org/issue/1498\"\u003eissue #1498\u003c/a\u003e).\n\ndiff -r 867d37fb41a4 src/pkg/bytes/buffer.go\n--- a/src/pkg/bytes/buffer.go   Wed Feb 02 12:09:31 2011 +1100\n+++ b/src/pkg/bytes/buffer.go   Fri Feb 11 02:35:19 2011 -0500\n@@ -309,13 +309,14 @@\n // delim.\n func (b *Buffer) ReadBytes(delim byte) (line []byte, err os.Error) {\n        i := IndexByte(b.buf[b.off:], delim)\n-       size := i + 1 - b.off\n-       if i \u0026lt; 0 {\n+       size := i + 1\n+       if size \u0026lt;= 0 {\n                size = len(b.buf) - b.off\n                err = os.EOF\n        }\n        line = make([]byte, size)\n        copy(line, b.buf[b.off:])\n+       b.off += size\n        return\n }\n\n\nThis is because IndexByte will return the index into the slice that it was passed\n(b.buf[b.off:] in this case), which means that i is actually b.off + i with respect to\nb.buf. So, there is no need to take away the current offset when calculating the size. A\nzero would represent that the delim is at b.off, so we would want to copy 1 byte out of\nReadBytes(), not -1 as in the sample program provided (b.off == 2, so i + 1 - 2 would be\n-1). That -1 is then passed to make(), which doesn't like negative sizes. To fix this, I\nalso changed the check from 'i \u0026lt; 0', to 'size \u0026lt;= 0'. That way we know that in the\ncall to make() size is greater than or equal to zero.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:08:36Z",
+	"created_at": "2011-02-11T07:42:03Z",
+	"updated_at": "2016-06-24T19:25:08Z"
+}

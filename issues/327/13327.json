@@ -1,0 +1,21 @@
+{
+	"id": 117831009,
+	"number": 13327,
+	"state": "open",
+	"title": "database/sql: Ability to timeout when wating for the connection from the pool",
+	"body": "Issue is partially related to golang/go#8874.\r\n\r\nWe are facing a problem under heavy load when the connection pool is full and lots of connection requests are in internal database/sql queue. \r\n\r\nThe result is that all go routines that suppose to handle queries stacks and accumulates on the background. Query time itself can be at least controlled by driver specific statement timeout. But nothing controls connection queue. So if you have enough clients, query can be executed few seconds / minutes after client hits API. Obviously for no reason since API already returned timeout. Support for go context would be the best for query and connections but it would require lot of invasive changes, i guess. \r\n\r\nSo my proposal is to have poolTimeout. \r\n```go\r\ntype DB struct {\r\n    ....\r\n    var poolTimeout time.Duration\r\n}\r\n\r\nfunc (db *DB) SetPoolTimeout(t time.Duration) {\r\n\tdb.mu.Lock()\r\n\tdb.poolTimeout = t\r\n\tif t \u003c 0 {\r\n\t\tdb.poolTimeout = 0\r\n\t}\r\n\tdb.mu.Unlock()\r\n}\r\n\r\n// and change function\r\nfunc (db *DB) conn(strategy connReuseStrategy) (*driverConn, error) {\r\n...\r\n\r\n//from \r\nreq := make(chan connRequest, 1)\r\ndb.connRequests = append(db.connRequests, req)\r\ndb.mu.Unlock()\r\nret := \u003c-req\r\n\r\n//to \r\nreq := make(chan connRequest, 1)\r\ndb.connRequests = append(db.connRequests, req)\r\ndb.mu.Unlock()\r\nif db.poolTimeout == 0 {\r\n  ret := \u003c-req\r\n} else {\r\n  select {\r\n  case ret := \u003c-req:\r\n  \treturn ret.conn, ret.err\r\n  case \u003c- time.After(db.poolTimeout):\r\n  \tgo func(result chan connRequest) {\r\n  \t\tc := \u003c- result\r\n  \t\tif !db.closed {\r\n  \t\t  \tdb.putConn(c.conn, nil)\r\n  \t\t}\r\n  \t}(req)\r\n  \treturn nil, driver.ErrPoolTimeout\r\n  }\r\n}\r\n```\r\n",
+	"user": {
+		"login": "pavelsmejkal",
+		"id": 10357205,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-11-19T14:57:22Z",
+	"updated_at": "2016-08-05T20:52:05Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,36 @@
+{
+	"id": 89156019,
+	"number": 11265,
+	"state": "closed",
+	"title": "go/internal/gccgoimporter: File.ReadAt moves underlying seek position on Plan9?",
+	"body": "https://go-review.googlesource.com/#/c/11152/ fails on Plan 9 without line 7 in https://go-review.googlesource.com/#/c/11152/7/src/go/internal/gccgoimporter/importer_test.go (and the corresponding line 7 in https://go-review.googlesource.com/#/c/11152/7/src/go/internal/gccgoimporter/gccgoinstallation_test.go).\r\n\r\nThe change was submitted with the tests disabled for Plan 9. When actually running the tests on Plan 9 (i.e., without the build tag), the failure is:\r\n\r\n```\r\n--- FAIL: TestGoxImporter (0.00s)\r\n\timporter_test.go:26: unrecognized magic string: \"pack\"\r\n\timporter_test.go:26: unrecognized magic string: \"pack\"\r\n\timporter_test.go:26: unrecognized magic string: \"pack\"\r\n\timporter_test.go:26: unrecognized magic string: \"pack\"\r\n\timporter_test.go:26: unrecognized magic string: \"pack\"\r\nFAIL\r\nFAIL\tgo/internal/gccgoimporter\t0.031s\r\n```\r\n\r\n( https://storage.googleapis.com/go-build-log/e6448c25/plan9-386_c70f45b0.log )\r\n\r\nAnalysis:\r\n\r\nIn this specific test, the go/internal/gccgoimporter/testdata/*.gox files are read. In a first step, openExportFile (importer.go:74ff) reads the first 4 \"magic\" bytes using File.ReadAt (line 87). They are \"v1;\\n\" (see e.g. testdata/pointer.gox). In a 2nd step, the closure returned by GetImporter (importer.go:142ff) reads the file's magic bytes again, this time via io.ReadSeeker.Read. It appears that the next 4 bytes \"pack\" are read this time, leading to the above error.\r\n\r\nOn non-Plan9 systems, this error doesn't appear. It seems that the Plan9 File.ReadAt moves the seek position, while other OSes don't.\r\n\r\nFrom the documentation:\r\n\r\n- http://golang.org/pkg/os/#File.ReadAt doesn't say anything about the seek position.\r\n- http://golang.org/pkg/io/#ReaderAt is quite specific:\r\n\"If ReadAt is reading from an input source with a seek offset, ReadAt should not affect nor be affected by the underlying seek offset.\"\r\n\r\nIt would appear the File.ReadAt should follow this specification as well (and perhaps it should be documented).",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"assignee": {
+		"login": "ality",
+		"id": 352151,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2015-11-05T16:05:17Z",
+	"created_at": "2015-06-17T23:54:24Z",
+	"updated_at": "2015-11-05T16:05:17Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"id": 165935681,
+	"body": "OK, I think I've got an idea as to what is happening.\r\n\r\nThe call sequence is\r\n\r\n    schedule: called by locked m\r\n    stoplockedm\r\n    handoffp\r\n    startm\r\n    newm: allocates m, calls msigsave to save signal mask into m, then calls\r\n    newosproc: starts new thread running\r\n    mstart\r\n    mstart1\r\n    minit: sets signal mask based on mask saved by newm\r\n\r\nThis call sequence gives us a new m that has a signal mask based on the one in the locked M that called schedule.  Normally a locked m has an empty signal mask just like every other M, but there is an exception: the goroutine started by ensureSigM.  That goroutine, which is locked to a thread, has a signal mask that blocks everything except the signals passed to signal.Notify.  So when that goroutine manages to enter schedule at a time when no other m is available, we can get an m with a non-empty signal mask.\r\n\r\nThe os/exec package doesn't do anything about this, so the signal mask of the m that calls os/exec.Start will provide the signal mask of the process. \r\n\r\nI was able to occasionally recreate the problem with this trivial C program in ./foo5:\r\n\r\n    #include \u003cstdio.h\u003e\r\n    #include \u003csignal.h\u003e\r\n\r\n    int main() {\r\n\t    sigset_t mask;\r\n\r\n\t    sigemptyset(\u0026mask);\r\n\t    if (sigprocmask(SIG_SETMASK, NULL, \u0026mask) \u003c 0) {\r\n\t\t    perror(\"sigprocmask\");\r\n\t\t    return 1;\r\n\t    }\r\n\t    if (sigismember(\u0026mask, SIGINT)) {\r\n\t\t    fprintf(stderr, \"SIGINT is blocked\\n\");\r\n\t\t    return 1;\r\n\t    }\r\n\t    return 0;\r\n    }\r\n\r\nrunning this Go program that calls the C program:\r\n\r\n    package main\r\n\r\n    import (\r\n\t    \"fmt\"\r\n\t    \"os\"\r\n\t    \"os/exec\"\r\n\t    \"os/signal\"\r\n\t    \"syscall\"\r\n\t    \"sync\"\r\n    )\r\n\r\n    func main() {\r\n\t    c := make(chan os.Signal, 1)\r\n\t    signal.Notify(c, syscall.SIGTERM)\r\n\t    go func() {\r\n\t\t    for range c {\r\n\t\t\t    fmt.Println(\"SIGTERM\")\r\n\t\t    }\r\n\t    }()\r\n\r\n\t    var wg sync.WaitGroup\r\n\t    for i := 0; i \u003c 10; i++ {\r\n\t\t    wg.Add(1)\r\n\t\t    go func() {\r\n\t\t\t    defer wg.Done()\r\n\t\t\t    for j := 0; j \u003c 1000; j++ {\r\n\t\t\t\t    syscall.Kill(os.Getpid(), syscall.SIGTERM)\r\n\t\t\t\t    go func(iter int) {\r\n\t\t\t\t\t    cmd := exec.Command(\"./foo5\")\r\n\t\t\t\t\t    cmd.Stdout = os.Stdout\r\n\t\t\t\t\t    cmd.Stderr = os.Stderr\r\n\t\t\t\t\t    if err := cmd.Run(); err != nil {\r\n\t\t\t\t\t\t    fmt.Printf(\"iteration %d: %v\\n\", iter, err)\r\n\t\t\t\t\t\t    os.Exit(1)\r\n\t\t\t\t\t    }\r\n\t\t\t\t    }(j)\r\n\t\t\t    }\r\n\t\t    }()\r\n\t    }\r\n\t    wg.Wait()\r\n    }",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2015-12-19T02:07:03Z",
+	"updated_at": "2015-12-19T02:07:03Z"
+}

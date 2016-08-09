@@ -1,0 +1,33 @@
+{
+	"id": 51286985,
+	"number": 7625,
+	"state": "closed",
+	"title": "net/http: Requests to the server with Expect: 100-continue fail if Content-Length: 0",
+	"body": "by **jim@studt.net**:\n\n\u003cpre\u003ego version go1.2 linux/amd64\n\nnet/http/server.go contains an explicit check and deliberately returns StatusBadRequest\nwhen a request with an Expect: 100-continue has a zero length body.\n\nUsers of curl run into this in two cases.\n\nIf you attempt to POST a zero length file using the -T option, or more obscurely if you\ntry to POST any file while using digest authentication, \n\n  e.g.   curl -T emptyfile \u003ca href=\"http://some-go-server/\"\u003ehttp://some-go-server/\u003c/a\u003e\n           curl -u foo:bar --digest -T my.file \u003ca href=\"http://some-go-server/\"\u003ehttp://some-go-server/\u003c/a\u003e\n\nIn the second case, you ask to upload a file using digest authentication. Since curl\nknows it doesn't have a nonce, it issues the request in order to get the 401 and its\nauthentication parameters. \n\nThis behavior is probably against RFC 2616 which states the client must not send the\nExpects header if it does not intend to send a body in section 8.2.3 (They are getting\ntheir own bug report.) Whether the PUT of an empty file contains no body, or a zero\nlength body is a question for philosophers.\n\nAside from being an RFC cop, the body check does not seem to have a function. Go\nsoftware would be more tolerant of existing internet practices without it.\n\nThere is a workaround for curl at least, once one becomes aware of the incompatibility\nof curl and Go's server implementation, one can use the \u0026quot;-H Expect:\u0026quot; flags to\nsuppress the Expect header\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:42:23Z",
+	"created_at": "2014-03-25T00:22:14Z",
+	"updated_at": "2016-06-25T01:30:40Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

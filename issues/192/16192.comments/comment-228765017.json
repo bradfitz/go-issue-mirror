@@ -1,0 +1,12 @@
+{
+	"id": 228765017,
+	"body": "@randall77:\r\n\r\n\u003e Issue 2: yes, it looks like there are cases where we should perform the op on the copy instead of the original. I'll have to think about how to detect when that is beneficial.\r\n\r\nI think Issue 1 and 4 are all various symptoms of this:  to me it looks like it would be better to keep the original and modify the copy more times than not.\r\n\r\n\u003e Issue 3: Even before doing things like OR AX, (BX), we also would want OR (BX), AX. The problem is on amd64 there are a ton of possible instructions you could potentially want, including all the ops times all the addressing modes. So although I think it would be easy to handle this particular case, doing it generally would be a large maintenance burden.\r\n\r\nx86 doesn't have so many modes, but I think it has the read/modify/write instructions?\r\n\r\nRegarding addressing complexity, all the addressing modes are already used by the LEA instruction, although the execution time assessments don't seem quite right yet; it you solve that one, then the read/modify/write is solved except for latency.\r\n\r\nYour concern about OR (BX),AX is misplaced I think, as latency is just dependent on whether the memory is in the cache or not, as for all memory accesses; the OR AX,(BX) is more of a concern only if the destination is in the dependency chain, then it is quite long, but almost always shorter or about the same time as separate MOV (BX),AX/XOR DX,AX/MOV AX,(BX) instructions.  Note that 1) there is a latency of the first MOV, but the manipulations of the AX register can hide it, and 2) the use of the instructions is usually is this order where there is no dependency on the final (BX) destination.\r\n\r\nI'm just saying - GCC can do it in the specific case where the modify/assignment operators are used, why can't we?  GCC does not use them when the modify/assignment operators are not used although Clang/LLVM does.  We'll never be able to effectively do extreme loop unrolling of some kinds without it (modulos type of things).\r\n\r\n\u003e Issue 7: I think this is #14761.\r\n\r\nYes, I think you're right.",
+	"user": {
+		"login": "GordonBGood",
+		"id": 10696269,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-27T14:38:42Z",
+	"updated_at": "2016-06-27T14:55:37Z"
+}

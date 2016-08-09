@@ -1,0 +1,27 @@
+{
+	"id": 76231802,
+	"number": 10851,
+	"state": "closed",
+	"title": "regexp/syntax: \\p{} should support unicode properties",
+	"body": "The \"unicode.Properties\" table seems arbitrarily left out of the parser in regexp/syntax/parse.go\r\n\r\nUnicode properties are the most character neutral way I know to match on (or split on) whitespace, so there's no reason they shouldn't be considered. There also are properties for ideographs, hexadecimal numbers, radicals, quotation marks, and other things that would be really useful to match on. Since it just adds categories to the \\u{...} syntax, it won't step on anyone's existing regular expressions. Since unicode properties in Go are implemented as unicode.RangeTables, just like categories and scripts already supported by regular expression matching, it wouldn't make the engine any slower than it is already.\r\n\r\nSo, here's the patch. It compiled and all tests passed, including the ones I added to match unicode properties. I'd appreciate if you could apply this, so other people could benefit from it too.\r\n```patch\r\ndiff --git a/src/regexp/syntax/parse.go b/src/regexp/syntax/parse.go\r\nindex d579a40..d4f91f0 100644\r\n--- a/src/regexp/syntax/parse.go\r\n+++ b/src/regexp/syntax/parse.go\r\n@@ -1436,6 +1436,9 @@ func unicodeTable(name string) (*unicode.RangeTable, *unicode.RangeTable) {\r\n \tif t := unicode.Scripts[name]; t != nil {\r\n \t\treturn t, unicode.FoldScript[name]\r\n \t}\r\n+\tif t := unicode.Properties[name]; t != nil {\r\n+\t\treturn t, unicode.FoldScript[name]\r\n+\t}\r\n \treturn nil, nil\r\n }\r\n \r\ndiff --git a/src/regexp/syntax/parse_test.go b/src/regexp/syntax/parse_test.go\r\nindex c4a1117..e14ba9a 100644\r\n--- a/src/regexp/syntax/parse_test.go\r\n+++ b/src/regexp/syntax/parse_test.go\r\n@@ -105,6 +105,9 @@ var parseTests = []parseTest{\r\n \t{`[\\P{Braille}]`, `cc{0x0-0x27ff 0x2900-0x10ffff}`},\r\n \t{`[\\p{^Braille}]`, `cc{0x0-0x27ff 0x2900-0x10ffff}`},\r\n \t{`[\\P{^Braille}]`, `cc{0x2800-0x28ff}`},\r\n+\t{`[\\p{White_Space}]`,`cc{0x9-0xd 0x20 0x85 0xa0 0x1680 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}`},\r\n+\t{`[\\p{^White_Space}]`,`cc{0x0-0x8 0xe-0x1f 0x21-0x84 0x86-0x9f 0xa1-0x167f 0x1681-0x1fff 0x200b-0x2027 0x202a-0x202e 0x2030-0x205e 0x2060-0x2fff 0x3001-0x10ffff}`},\r\n+\t{`[\\P{^White_Space}]`,`cc{0x9-0xd 0x20 0x85 0xa0 0x1680 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}`},\r\n \t{`[\\pZ]`, `cc{0x20 0xa0 0x1680 0x2000-0x200a 0x2028-0x2029 0x202f 0x205f 0x3000}`},\r\n \t{`\\p{Lu}`, mkCharClass(unicode.IsUpper)},\r\n \t{`[\\p{Lu}]`, mkCharClass(unicode.IsUpper)},\r\n```",
+	"user": {
+		"login": "cyisfor",
+		"id": 1278811,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-10-14T17:36:39Z",
+	"created_at": "2015-05-14T04:56:28Z",
+	"updated_at": "2016-02-25T18:53:58Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

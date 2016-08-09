@@ -1,0 +1,26 @@
+{
+	"id": 142809072,
+	"number": 14921,
+	"state": "open",
+	"title": "runtime, cmd/compile: consider write barrier short-circuit when *dst == src",
+	"body": "I did a quick and dirty instrumentation of `writebarrierptr` and found that when executing `cmd/compile` to build std, about 25% of calls on average had `*dst == src`. In that case, there's no need to do the actual assignment or gray any objects (I think). I don't know how (a)typical that 25% number is.\r\n\r\nWe should investigate whether checking for this and short-circuiting is a net performance gain, in general. There are multiple places in the stack this could occur:\r\n\r\n(1) writebarrierptr (and friends)\r\n\r\nAdd\r\n\r\n```go\r\nif *dst == src {\r\n  return\r\n}\r\n```\r\n\r\nto the beginning of the method.\r\n\r\n(2) Wrapper routines\r\n\r\nAdd checks like:\r\n\r\n```go\r\nif dst[1] != src[1] {\r\n\twritebarrierptr(\u0026dst[1], src[1])\r\n}\r\n```\r\n\r\nto the runtime routines that call `writebarrierptr`, like the wbfat.go routines, and `writebarrierstring` and friends. This is different than (1) insofar as it skips the `writebarrierptr` function call instead of having it return immediately.\r\n\r\n(3) Generated code\r\n\r\nWe currently generate wb-calling code like:\r\n\r\n```go\r\nif writeBarrier.enabled {\r\n  writebarrierptr(dst, src)\r\n} else {\r\n  *dst = src\r\n}\r\n```\r\n\r\nWe could instead generate code like:\r\n\r\n```go\r\nif *dst != src {\r\n  if writeBarrier.enabled {\r\n    writebarrierptr(dst, src)\r\n  } else {\r\n    *dst = src\r\n  }\r\n}\r\n```\r\n\r\ncc @aclements @randall77 \r\n\r\nI don't plan to work on this soon, as I need to undistract myself.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 20,
+	"created_at": "2016-03-22T23:20:12Z",
+	"updated_at": "2016-04-12T23:50:44Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

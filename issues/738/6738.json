@@ -1,0 +1,26 @@
+{
+	"id": 51285654,
+	"number": 6738,
+	"state": "open",
+	"title": "net/http: Allow custom io.Readers to provide a size for ContentLength in requests",
+	"body": "\u003cpre\u003eCurrently only 3 types can specify automatically the ContentLength of the body of an\nhttp.Request:\n - bytes.Reader\n - bytes.Buffer\n - strings.Reader\n\nIn these cases, the *http.Request automatically has the ContentLength field set by the\nvalue of the Len method of these three types. A user using the http package with any\nother kind of io.Reader must manually call NewRequest, then set the ContentLength\nthemselves, and then call http.Client.Do.\n\nIf instead, if http.NewRequest was modified to support passing an io.Reader with a (for\nexample) Size() method, and then set the ContentLength to the value returned from that\nfunction, users could avoid having to set the ContentLength field of the request\nthemselves. This would allow the http.Post() and http.Client.Post() helper methods to be\nmore used in more situations, if passed such an io.Reader. The bigger benefit would be\nfor external packages which use http though.\n\nA situation has arisen with github package that makes http requests to the github API\nwhere uploads must be sent a Content-Length, see:\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/Hipcz658QQ8\n\nCurrently the easiest way to upload files successfully is to load the entire file into a\n[]byte in memory, create a bytes.Buffer or bytes.Reader from it, and pass that to the\npackage functions. With the proposed feature, an \u0026quot;augmented\u0026quot; os.File could be\nused instead, saving a lot of memory and time for large files.\n\nAlthough it would be possible to modify the go-github package to get a size (somehow)\nfor the data in the io.Reader and then set the Content-Length itself, by providing this\nfunctionality in the standard library, then all packages which wrap the http package\ncould benefit.\u003c/pre\u003e",
+	"user": {
+		"login": "cookieo9",
+		"id": 109270,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 8,
+	"created_at": "2013-11-08T10:12:10Z",
+	"updated_at": "2015-04-14T19:45:21Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

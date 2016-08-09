@@ -1,0 +1,25 @@
+{
+	"id": 108430867,
+	"number": 12757,
+	"state": "closed",
+	"title": "Proposal: using gob for record-based serialization",
+	"body": "##### Motivation\r\nThe gob encoder includes type data on a just-in-time basis within a stream. This makes it impossible to use gobs as a record-based serialization format. Some changes could expand gobs to this use case.\r\n\r\nProtobufs are an instructive example: a fixed specification, once loaded, can be used to quickly encode/decode any number of independent records in any order. Protobufs, however, incur the overhead of external specification and compilation in order to support multiple languages.\r\n\r\nSince gobs are \"unashamedly Go-centric\", external specification and compilation should not be needed. It should be possible to dynamically generate the type specification information directly while encoding values.\r\n\r\n##### Proposal\r\nAllow the developer to generate their own type specifications needed to encode or decode a given type. The developer can subsequently encode values in a strict fashion, adhering to previously-created type specifications. Finally, the developer can decode values adhering to provided type specifications.\r\n\r\n##### Implementation\r\nA simple implementation permits generating an ordered list of `wireType` structs needed to encode a value. This list could be encapsulated in an opaque object `RecordSpec` which can be added to the built-in types so that serializing it as a record does not itself require a `RecordSpec`.\r\n\r\nOnce generated, `RecordSpec` can be used to create a `RecordEncoder` and a `RecordDecoder`.\r\n\r\n```go\r\ntype RecordSpec []wireType\r\nfunc NewRecordSpec(interface{}) (*RecordSpec, error) { ... }\r\n\r\nfunc NewRecordEncoder(*RecordSpec) *RecordEncoder { ... }\r\nfunc (*RecordEncoder) Encode(interface{}) ([]byte, error) { ... }\r\n\r\nfunc NewRecordDecoder(*RecordSpec) *RecordDecoder { ... }\r\nfunc (*RecordDecoder) Decode([]byte, interface{}) error { ... }\r\n```\r\n##### Example usage\r\n\r\n```go\r\npackage main\r\n\r\nimport \"encoding/gob\"\r\n\r\ntype Type1 struct {\r\n  v2 Type2\r\n}\r\ntype Type2 struct {\r\n  i int\r\n}\r\n\r\nfunc main() {\r\n  t1 := new(Type1)\r\n  t1.v2.i = 42\r\n  rs, err := gob.NewRecordSpec(t)\r\n  if err != nil {\r\n    return err\r\n  }\r\n\r\n  // rs == []gob.wireType {\r\n  //    wireType{ /* for Type1 */ },\r\n  //    wireType{ /* for Type2 */ },\r\n  // }\r\n\r\n  renc := gob.NewRecordEncoder(rs)\r\n  b, err := renc.Encode(t)\r\n  if err != nil {\r\n    // In addition to the usual errors, Encode also reports an error if the\r\n    // provided type cannot be fully encoded using only the given RecordSpec\r\n    // (i.e. no additional wireType's need to be generated).\r\n    return err\r\n  }\r\n\r\n  // Internal: type_ids in byte stream b correspond to indexes into the list\r\n  // of wireType's in rs\r\n\r\n  // developer transfers or persists b and rs separately\r\n\r\n  rdec := gob.NewRecordDecoder(rs)\r\n  t2 := new(Type1)\r\n  err = rdec.Decode(b, t2)\r\n  if err != nil {\r\n    // Additional possible error as above.\r\n    return err\r\n  }\r\n}\r\n```",
+	"user": {
+		"login": "vsekhar",
+		"id": 415244,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-09-29T01:35:10Z",
+	"created_at": "2015-09-26T01:03:27Z",
+	"updated_at": "2015-10-03T03:43:44Z"
+}

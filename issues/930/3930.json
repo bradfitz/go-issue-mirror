@@ -1,0 +1,27 @@
+{
+	"id": 51281376,
+	"number": 3930,
+	"state": "closed",
+	"title": "crypto/tls: no support for SSLv2 handshake",
+	"body": "by **ian.ragsdale**:\n\n\u003cpre\u003eTo reproduce, run the attached TLS echo server and try to connect using the openssl\ns_client utility:\n\n\u0026gt; openssl s_client -quiet -connect localhost:50000                                   \n                                                      \n95052:error:140773F2:SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert unexpected\nmessage:/SourceCache/OpenSSL098/OpenSSL098-47/src/ssl/s23_clnt.c:602:\n\u0026gt; openssl s_client -quiet -connect localhost:50000 -ssl3                             \n                                                      \ndepth=0\n/CN=relay.cloudsmtp.com/O=Datran/OU=CapThought/ST=Texas/C=US/L=Austin/emailAddress=ian.ragsdale@gmail.com\nverify error:num=20:unable to get local issuer certificate\nverify return:1\ndepth=0\n/CN=relay.cloudsmtp.com/O=Datran/OU=CapThought/ST=Texas/C=US/L=Austin/emailAddress=ian.ragsdale@gmail.com\nverify error:num=21:unable to verify the first certificate\nverify return:1\nhi \n\u0026gt;\u0026gt; hi\n\nNote that the s_client is unable to connect with its default settings, but can connect\nby specifying a version.\n\nThis is because TLS-capable clients that also support connecting to SSLv2 servers start\noff by sending a SSLv2 formatted CLIENT-HELLO packet instead of a TLS ClientHello.  The\ncrypto/tls package does not recognize these packets and so terminates the handshake,\nmaking it impossible to use these clients. However, these ARE compliant TLS clients, and\nthey set the TLS version correctly in the CLIENT-HELLO packet in order to signify that\nthey support TLS.  This makes it possible for the crypto/tls code to read these packets,\nrecognize TLS compliance, and send back a TLS-compliant ServerHello packet, at which\npoint the entire rest of the conversation is exactly like any other TLS session.\n\nSo, in order to support these clients, the only thing that needs to be done is to\nrecognize a SSLv2 compliant packet correctly and begin a standard TLS conversation. \nSince it seemed fairly simple to do so, I've attached a fairly simple patch to allow\ncommunicating with these clients.  I'm sure it's unacceptable in its current form, but\nit functions for me and illustrates the changes that are needed to support this\nfunctionality.\n\nI completely understand (and agree with) the aversion to supporting older versions of\nSSL, but this is actually TLS behavior documented in at least the 1.0 and 1.1 RFCs, and\nis a fairly minor change, which should greatly improve interop.  Lots of common clients\n(recent versions of Java and Ruby at least) do this by default. I can easily configure\nmy own clients to not do this, but it isn't easy for a lot of people.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3930/0/tls_echo.go\"\u003etls_echo.go\u003c/a\u003e (1002 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3930/0/0001-Allow-SSLv2-compatible-client-hello-so-SSLv2-compati.patch\"\u003e0001-Allow-SSLv2-compatible-client-hello-so-SSLv2-compati.patch\u003c/a\u003e (5479 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LongTerm"
+		}
+	],
+	"comments": 42,
+	"closed_at": "2016-03-02T16:39:53Z",
+	"created_at": "2012-08-09T16:41:27Z",
+	"updated_at": "2016-03-02T16:39:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

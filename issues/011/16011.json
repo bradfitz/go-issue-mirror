@@ -1,0 +1,21 @@
+{
+	"id": 159255228,
+	"number": 16011,
+	"state": "open",
+	"title": "cmd/compile: panic line number of deferred functions is ambiguous",
+	"body": "Using `go1.6`\r\n\r\nConsider the following:\r\n```go\r\npackage main\r\n\r\nfunc Foo(b bool) {\r\n\tif b {\r\n\t\tpanic(\"ha\")\r\n\t}\r\n}\r\n\r\nfunc main() {         // Line  9\r\n\tdefer Foo(false)  // Line 10\r\n\tdefer Foo(true)   // Line 11\r\n\tdefer Foo(false)  // Line 12\r\n\tdefer Foo(false)  // Line 13\r\n}                     // Line 14\r\n```\r\n\r\nCurrently, this prints:\r\n```\r\npanic: ha\r\n\r\ngoroutine 1 [running]:\r\npanic(0x94e60, 0x1030a040)\r\n\t/usr/local/go/src/runtime/panic.go:481 +0x700\r\nmain.Foo(0x10327f01, 0xb4a00)\r\n\t/tmp/sandbox118729948/main.go:5 +0x80\r\nmain.main()\r\n\t/tmp/sandbox118729948/main.go:14 +0x13b\r\n```\r\n\r\nHowever, the stack trace reports that the panic occurs at Line 14 of main, which is technically correct since it is at the end of the function and now executing deferred functions. However, it is ambiguous exactly which of the calls to Foo was part of the real stack trace.\r\n\r\nAny thoughts on having the printed line number be the line number where the defer occurred? In this example, it would be Line 11.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-06-08T19:48:46Z",
+	"updated_at": "2016-06-08T22:27:40Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

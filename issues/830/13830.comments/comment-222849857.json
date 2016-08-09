@@ -1,0 +1,12 @@
+{
+	"id": 222849857,
+	"body": "This doesn't appear to even require a double-pointer.  A plain old `void*` - as for `C.free` - suffices.  I think this implies that every program that calls `C.free` on a typed parameter ends up triggering the panic.\r\n\r\nFor example, this program panics:\r\n\r\n```go\r\npackage main\r\n\r\n/*\r\n#include \u003cstdlib.h\u003e\r\n*/\r\nimport \"C\"\r\nimport \"unsafe\"\r\n\r\nfunc main() {\r\n\tvar dt *C.div_t\r\n\tdt = (*C.div_t)(C.malloc(C.size_t(unsafe.Sizeof(*dt))))\r\n\tdefer C.free(dt)\r\n}\r\n```\r\n\r\nwhereas this one does not:\r\n\r\n```go\r\npackage main\r\n\r\n/*\r\n#include \u003cstdlib.h\u003e\r\n*/\r\nimport \"C\"\r\nimport \"unsafe\"\r\n\r\nfunc main() {\r\n\tvar dt *C.div_t\r\n\tdt = (*C.div_t)(C.malloc(C.size_t(unsafe.Sizeof(*dt))))\r\n\tdefer C.free(unsafe.Pointer(dt))\r\n}\r\n```",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-31T23:19:26Z",
+	"updated_at": "2016-05-31T23:19:26Z"
+}

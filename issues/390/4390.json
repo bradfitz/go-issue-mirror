@@ -1,0 +1,27 @@
+{
+	"id": 51282063,
+	"number": 4390,
+	"state": "closed",
+	"title": "net/http, net/http/httputil: Chunked reader doesn't read the final two bytes of the chunked data",
+	"body": "by **jgrahamc**:\n\n\u003cpre\u003eWhat is the expected output?\n\nIt's expected that the function beginChunk() will read the trailing CRLF from the final\nchunk size when doing chunked encoding. It does not. The function is as follows:\n\nfunc (cr *chunkedReader) beginChunk() {\n\t// chunk-size CRLF\n\tvar line string\n\tline, cr.err = readLine(cr.r)\n\tif cr.err != nil {\n\t\treturn\n\t}\n\tcr.n, cr.err = strconv.ParseUint(line, 16, 64)\n\tif cr.err != nil {\n\t\treturn\n\t}\n\tif cr.n == 0 {\n\t\tcr.err = io.EOF\n\t}\n}\n\nWhen cr.n == 0 the readLine() has consumed 0\\r\\n but there's an additional \\r\\n at the\nend (see RFC2616 section 3.6).\n\nWhat do you see instead?\n\nThere are two bytes left in the buffer when done.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\n64 bit Linux\n\nWhich version are you using?  (run 'go version')\n\ngo version go1.0.3\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:23:20Z",
+	"created_at": "2012-11-15T01:20:47Z",
+	"updated_at": "2016-06-24T22:28:11Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

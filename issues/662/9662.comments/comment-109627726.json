@@ -1,0 +1,12 @@
+{
+	"id": 109627726,
+	"body": "I don't think this issue is much to worry about on plain HTTP. (On HTTPS, where you're spending CPU to decrypt all that useless data, maybe it could be a problem.)\r\n\r\nI can think of three things that an attacker could potentially waste on your server by doing this: incoming bandwidth, CPU, and number of open connections (file descriptors and goroutines).\r\n\r\nThere are easier ways to DOS a server on bandwidth and number of open connections. So the only one left is CPU.\r\n\r\nSo I decided to see how much CPU is consumed:\r\n\r\n```\r\n$ time ./post\r\n2015/06/06 10:21:45 Closing Body\r\n2015/06/06 10:21:53 Body Closed\r\n^C\r\nreal\t0m18.970s\r\nuser\t0m1.283s\r\nsys\t0m3.228s\r\n```\r\n\r\n```\r\n$ time curl -X POST -T /Users/andy/Downloads/OS\\ installs/Windows10_InsiderPreview_x64_EN-US_10074.iso  http://localhost:8080/\r\n\r\nreal\t0m8.169s\r\nuser\t0m0.540s\r\nsys\t0m5.491s\r\n```\r\n\r\n(This is on a MacBook Pro with a 2.2 GHz i7.)\r\n\r\nSo posting a 3.78 GB file takes 8 seconds. And the CPU is pretty busy during that time. But most of the time is kernel time. So processing the packets through the TCP/IP stack is taking more time than the Go code in Resquest.Body.Close.\r\n\r\nBut anyway, that's about 1 CPU-second per gigabyte, which implies that a bandwidth-to-CPU-core ratio of 8 Gb/sec per core on the server would be necessary to make this a useful DOS technique. Maybe some cloud servers have that. If I count all the computers in my office that are currently turned on, I'm working with more like 0.15 Mb/sec per core here…",
+	"user": {
+		"login": "andybalholm",
+		"id": 868908,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-06T18:15:24Z",
+	"updated_at": "2015-06-06T18:15:24Z"
+}

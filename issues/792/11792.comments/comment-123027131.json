@@ -1,0 +1,12 @@
+{
+	"id": 123027131,
+	"body": "Collectively, your recently filed bugs look like somehow the instruction memory for the Go binary is being lost, or not loaded correctly to begin with. All the failures are very early in the life of a program, possibly the first time a particular instruction page is hit. This sounds like possibly a kernel problem or a virtual hardware problem (you're running Vagrant; is it backed by QEMU?). Maybe something Go does tickles a bug that most C binaries do not.\n\nOne thing maybe worth trying is to turn off hugepage support, which seems to be\n\n\techo never \u003e /sys/kernel/mm/transparent_hugepage/enabled\n\nAnd then see whether the failure rate changes.\n\nGo does unmap data memory, so possibly Go could get confused and unmap text memory, but there is nothing in the core file maps to support that, and the failures happen so early in the lifetime of the program that the unmapper almost certainly hasn't gotten a chance to run. It seems more likely that the instruction pages are somehow not being loaded into memory properly. If that's true, the question is why and whether we can do anything to Go binaries to work around the problem.\n\nThanks.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-20T20:36:49Z",
+	"updated_at": "2015-07-20T20:36:49Z"
+}

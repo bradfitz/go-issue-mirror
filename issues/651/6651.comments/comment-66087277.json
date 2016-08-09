@@ -1,0 +1,12 @@
+{
+	"id": 66087277,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eFYI. I don't see any problems with MSSQL. I added this test\n\ndiff --git a/mssql_test.go b/mssql_test.go\n--- a/mssql_test.go\n+++ b/mssql_test.go\n@@ -1180,3 +1180,28 @@\n \t\tt.Errorf(\"expected \\\"hello\\\", but received %v\", s)\n \t}\n }\n+\n+func Test_RaisingPqErrorOnQueryRowConstraintViolation(t *testing.T) {\n+\tdb, sc, err := mssqlConnect()\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tdefer closeDB(t, db, sc, sc)\n+\n+\tdb.Exec(\"drop table dbo.temp\")\n+\t_, err = db.Exec(\"CREATE TABLE dbo.temp (a varchar(3) not null UNIQUE)\")\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\tvar returned string\n+\terr = db.QueryRow(\"INSERT INTO dbo.temp (a) output inserted.a values(?)\",\n\"abc\").Scan(\u0026returned)\n+\tif err != nil {\n+\t\tt.Fatal(err)\n+\t}\n+\terr = db.QueryRow(\"INSERT INTO dbo.temp (a) output inserted.a values(?)\",\n\"abc\").Scan(\u0026returned)\n+\tif err == sql.ErrNoRows {\n+\t\tt.Fatal(err)\n+\t}\n+\tt.Logf(\"err=%v\", err)\n+\texec(t, db, \"drop table dbo.temp\")\n+}\n\nto code.google.com/p/odbc, and I get this\n\n=== RUN Test_RaisingPqErrorOnQueryRowConstraintViolation\n--- PASS: Test_RaisingPqErrorOnQueryRowConstraintViolation (0.02 seconds)\n\tmssql_test.go:1205: err=SQLExecute: {23000} [FreeTDS][SQL Server]Violation of UNIQUE KEY constraint 'UQ__temp__39251148'. Cannot insert duplicate key in object 'dbo.temp'.\nPASS\nok  \tcode.google.com/p/odbc\t0.027s\n\nwhich looks reasonable to me.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-10-24T01:32:24Z",
+	"updated_at": "2014-12-08T10:36:52Z"
+}

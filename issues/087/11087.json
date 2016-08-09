@@ -1,0 +1,33 @@
+{
+	"id": 85599408,
+	"number": 11087,
+	"state": "closed",
+	"title": "crypto/tls: Client authentication fails for certificates that don't specify an extended key usage",
+	"body": "*go version go1.4.2 linux/amd64*\r\n*Expecting:* client cert to be verified and connection proceeds.\r\n*Getting:* \"tls: client's certificate's extended key usage doesn't permit it to be used for client authentication\"\r\n\r\nAlso see: https://github.com/golang/go/issues/7423\r\n\r\nThis is basically the same issue reposted.  At the time the issue was posted people who hit this issue generated new certs with EKU to get around the problem.  However the behaviour for certs without EKU is IMO still incorrect.\r\n\r\nI am using Go in an existing system where there are an existing set of certs that are already used for client authentication.  Because of live upgrade considerations generating new certs is difficult and the existing certs do not specify EKU.  From my reading of the standard the way we are currently using the certificates is compliant.  One option I have to fit within this system is to patch the libraries which I'd rather not do.  Trying to override the default verification appears to be complicated and error prone.\r\n\r\nFrom RFC3280 (emphasis mine):\r\n\u003e This extension MAY, at the option of the certificate issuer, be either critical or non-critical. **If the extension is present**, then the certificate MUST only be used for one of the purposes indicated.\r\n\r\nFrom RFC5280:\r\n\u003e **If the extension is present**, then the certificate MUST only be used for one of the purposes indicated.\r\n\r\nIf I'm reading it correctly, the existing code (ftls/handshake_server.go) appears to treat a missing EKU the same as if the EKU is specified without the client auth usage but as far I can tell there's no real justification in the standard for doing this?\r\n\r\n```go\r\nok := false\r\nfor _, ku := range certs[0].ExtKeyUsage {\r\n    if ku == x509.ExtKeyUsageClientAuth {\r\n        ok = true\r\n\tbreak\r\n   }\r\n}\r\n```\r\n\r\nContrast this with the way server certificates are treated here (x509/verify.go):\r\n```go\r\nif len(cert.ExtKeyUsage) == 0 \u0026\u0026 len(cert.UnknownExtKeyUsage) == 0 {\r\n    // The certificate doesn't have any extended key usage specified.\r\n    continue\r\n}\r\n```\r\n(if the same requirement for EKU was applied to server certs that would probably break everyone's applications... client authentication is not very common which is why only a few people seem to have hit this...)\r\n\r\nFurther reference:\r\nhttp://tools.ietf.org/html/rfc5280#section-4.2.1.12\r\nhttp://blogs.msdn.com/b/kaushal/archive/2012/02/18/client-certificates-v-s-server-certificates.aspx\r\nhttp://security.stackexchange.com/questions/68491/recommended-key-usage-for-a-client-certificate\r\nhttp://stackoverflow.com/questions/20875626/tls-clientauth-requires-extkeyusageclientauth-through-whole-certificate-chain\r\n\r\nI'd be happy to propose a patch if there's agreement there is an issue.  Either changing the default behaviour or providing some way of overriding could solve my problem.  Any other suggestions would be appreciated. (The proper way is probably to pass the client auth usage to the verify function which already seems to do the right thing rather than doing the extra verification in the server handshake code)",
+	"user": {
+		"login": "GuySirton",
+		"id": 4914433,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-06-09T15:48:39Z",
+	"created_at": "2015-06-05T18:28:30Z",
+	"updated_at": "2016-06-25T02:10:29Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

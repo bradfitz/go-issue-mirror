@@ -1,0 +1,12 @@
+{
+	"id": 109819965,
+	"body": "This also reproduce.\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"C\"\r\n        \"fmt\"\r\n)\r\n\r\nvar (\r\n        c chan string\r\n        q chan struct{}\r\n)\r\n\r\nfunc init() {\r\n        c = make(chan string)\r\n        q = make(chan struct{})\r\n        go func() {\r\n                defer func() {\r\n                        recover()\r\n                        q \u003c- struct{}{}\r\n                }()\r\n                n := 1\r\n                for {\r\n                        switch {\r\n                        case n%15 == 0:\r\n                                c \u003c- \"FizzBuzz\"\r\n                        case n%3 == 0:\r\n                                c \u003c- \"Fizz\"\r\n                        case n%5 == 0:\r\n                                c \u003c- \"Buzz\"\r\n                        default:\r\n                                c \u003c- fmt.Sprint(n)\r\n                                println(\"stop\")\r\n                        }\r\n                        n++\r\n                }\r\n        }()\r\n}\r\n\r\n//export fizzbuzz\r\nfunc fizzbuzz() *C.char {\r\n        return C.CString(\u003c-c)\r\n}\r\n\r\n//export finish\r\nfunc finish() {\r\n        close(c) // occur panic of sending closed channel in above\r\n        \u003c-q      // wait goroutine\r\n}\r\n\r\nfunc main() {\r\n}\r\n```\r\n```python\r\nfrom ctypes import *\r\nimport _ctypes\r\nlib = CDLL(\"./libfizzbuzz.so\")\r\nlib.fizzbuzz.restype = c_char_p\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nprint lib.fizzbuzz()\r\nlib.finish()\r\n_ctypes.dlclose(lib._handle)\r\n```\r\n",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-08T01:10:58Z",
+	"updated_at": "2015-06-08T01:10:58Z"
+}

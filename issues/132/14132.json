@@ -1,0 +1,17 @@
+{
+	"id": 129486827,
+	"number": 14132,
+	"state": "closed",
+	"title": "How accurate is timer ?",
+	"body": "go version go1.5.3\r\nubuntu 14.04 linux/amd64\r\nI run the test below.\r\n```\r\n// Ensure that the clock's AfterFunc executes at the correct time.\r\nfunc TestClock_AfterFunc(t *testing.T) {\r\n        var ok bool\r\n        go func() {\r\n                time.Sleep(10 * time.Millisecond)\r\n                ok = true\r\n        }()\r\n        go func() {\r\n                time.Sleep(30 * time.Millisecond)\r\n                t.Fatal(\"too late\")             \r\n        }()\r\n        gosched()\r\n\r\n        var wg sync.WaitGroup\r\n        wg.Add(1)\r\n        time.AfterFunc(20*time.Millisecond, func() {\r\n                wg.Done()\r\n        })\r\n        wg.Wait()\r\n        if !ok {\r\n                t.Fatal(\"too early\")            \r\n        }\r\n}\r\n```\r\nI expect this test passed,but I found this accidentally failed and print \"too late\".\r\n\r\nAs far as I know linux x86 time interrupt interval is 10ms (100HZ), and the grain is more than 10ms, which leads to a timer with 30ms duration run before a timer with 20ms duration. \r\n\r\nIt seems like there is a timer goroutine to manage the timer heap. So it depends on the scheduling grain I guess it is larger than 10ms , is it right ?",
+	"user": {
+		"login": "ggaaooppeenngg",
+		"id": 4769989,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-01-28T15:41:13Z",
+	"created_at": "2016-01-28T15:39:37Z",
+	"updated_at": "2016-01-28T15:41:13Z"
+}

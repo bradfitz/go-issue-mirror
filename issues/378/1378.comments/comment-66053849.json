@@ -1,0 +1,12 @@
+{
+	"id": 66053849,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eYou probably need to do two things.\n\nFirst, edit src/pkg/runtime/freebsd/amd64/signal.c and put\n\n    return;\n\nat the top of runtime·initsig, so that it becomes a no-op.\n\nSecond, edit src/pkg/runtime/runtime.c and comment\nout the call to runtime·dopanic in runtime·throw, so that\nit reads:\n\nvoid\nruntime·throw(int8 *s)\n{\n\truntime·printf(\"throw: %s\\n\", s);\n//\truntime·dopanic(0);\n\t*(int32*)0 = 0;\t// not reached\n\truntime·exit(1);\t// even more not reached\n}\n\nThen rebuild everything.  Now when the split stack\noverflow happens throw will dereference 0 (on the\n\"not reached\" line) and, since there is no signal\nhandler, you'll get a core dump.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-01-05T20:39:27Z",
+	"updated_at": "2014-12-08T10:08:03Z"
+}

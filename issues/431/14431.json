@@ -1,0 +1,22 @@
+{
+	"id": 135105063,
+	"number": 14431,
+	"state": "closed",
+	"title": "net: DialTimeout return \"io timeout\" when the timeout argument is large",
+	"body": "This issue occurs with the latest Go version (1.6 darwin/amd64) and on master.\r\n\r\nWhen `net.DialTimeout` is passed a very large timeout argument like `1 \u003c\u003c 63 - 1`, the call returns immediately with the error `i/o timeout`. I expected the call to block indefinitely.\r\n\r\nI have a repro test:\r\nhttps://github.com/prashantv/dial-timeout-repro\r\n\r\nThe issue seems to be in `runtime.setDeadlineImpl`:\r\n```go\r\nd := runtimeNano() + int64(t.Sub(time.Now()))\r\n```\r\n\r\nThis can overflow the int64 and result in a negative number. I'm also not sure whether this line needs to call `runtimeNano` and `time.Now`. The current code converts `t` to an `int64` representing the unix nanos, but this can be done by calling `t.UnixNano` which will be clearer and cheaper.\r\n\r\nI'm working on a CL to fix this.",
+	"user": {
+		"login": "prashantv",
+		"id": 140159,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-02-23T22:48:26Z",
+	"created_at": "2016-02-20T17:44:12Z",
+	"updated_at": "2016-02-23T22:48:26Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

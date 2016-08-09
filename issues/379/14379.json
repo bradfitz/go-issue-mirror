@@ -1,0 +1,22 @@
+{
+	"id": 134533456,
+	"number": 14379,
+	"state": "closed",
+	"title": "cmd/compile: line number table incorrect for break statements",
+	"body": "`go version go1.6 linux/amd64`\r\n\r\nIf I take this program:\r\n\r\n```\r\npackage main\r\n\r\nfunc main() {\r\n\ti := 0\r\n\tfor {\r\n\t\ti++\r\n\t\tif i \u003e 10 {\r\n\t\t\tbreak\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nCompile it with `go build -gcflags='-N -l' break.go`, load its `.gosymtab` and `.gopclntab` with `debug/gosym` and then call\r\n\r\n```\r\ngoSymTable.LineToPC(\"/path/to/break.go\", 8)\r\n```\r\n\r\nI get the error: `no code at /path/to/break.go:8`. Furthermore if I disassemble it I get:\r\n\r\n```\r\n$ go tool objdump -s main.main break\r\nTEXT main.main(SB) /path/to/break.go\r\n\tbreak.go:3\t0x401000\t4883ec10\t\tSUBQ $0x10, SP\r\n\tbreak.go:4\t0x401004\t48c7042400000000\tMOVQ $0x0, 0(SP)\r\n\tbreak.go:6\t0x40100c\t488b1c24\t\tMOVQ 0(SP), BX\r\n\tbreak.go:6\t0x401010\t48895c2408\t\tMOVQ BX, 0x8(SP)\r\n\tbreak.go:6\t0x401015\t488b5c2408\t\tMOVQ 0x8(SP), BX\r\n\tbreak.go:6\t0x40101a\t4883c301\t\tADDQ $0x1, BX\r\n\tbreak.go:6\t0x40101e\t48891c24\t\tMOVQ BX, 0(SP)\r\n\tbreak.go:7\t0x401022\t488b1c24\t\tMOVQ 0(SP), BX\r\n\tbreak.go:7\t0x401026\t4883fb0a\t\tCMPQ $0xa, BX\r\n\tbreak.go:7\t0x40102a\t7ee0\t\t\tJLE 0x40100c\r\n\tbreak.go:11\t0x40102c\t4883c410\t\tADDQ $0x10, SP\r\n\tbreak.go:11\t0x401030\tc3\t\t\tRET\r\n```\r\n\r\nwhich also doesn't have any address corresponding to break.go:8. I would expect the JLE instruction at 0x40102a to correspond to break.go:8.\r\n\r\nFor reference this came up while I was reviewing [this delve bug](https://github.com/derekparker/delve/issues/149).",
+	"user": {
+		"login": "aarzilli",
+		"id": 303620,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-02-23T07:10:26Z",
+	"created_at": "2016-02-18T10:02:18Z",
+	"updated_at": "2016-02-23T19:00:23Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51286921,
+	"number": 7582,
+	"state": "closed",
+	"title": "runtime, net: OS X 10.9 kernel dumpens quicker spinning applications down by default",
+	"body": "by **jake.net**:\n\n\u003cpre\u003eI have the following code, and when I run it after a certain amount of time I it\ncrashes. Could this be be a file descriptor exhaustion problem? \n\nWhat does 'go version' print?\ngo version go1.2.1 darwin/386\n\nMac OS X 10.9\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n\u003ca href=\"http://play.golang.org/p/-74yJshfTk\"\u003ehttp://play.golang.org/p/-74yJshfTk\u003c/a\u003e\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t\u0026quot;sync\u0026quot;\n)\n\nconst MaxOutstanding int = 2000\n\nvar semaphore = make(chan int, MaxOutstanding)\nvar wg sync.WaitGroup\n\nfunc init() {\n\tfor i := 0; i \u0026lt; MaxOutstanding; i++ {\n\t\tsemaphore \u0026lt;- 1\n\t}\n}\n\nfunc main() {\n\tlog.Println(\u0026quot;start\u0026quot;)\n\tfor i := 0; i \u0026lt; 5000; i++ {\n\t\twg.Add(1)\n\t\tgo handle(i)\n\t}\n\twg.Wait()\n\tlog.Println(\u0026quot;finish\u0026quot;)\n}\n\nfunc handle(i int) {\n\t\u0026lt;-semaphore\n\tprocess(i)\n\tsemaphore \u0026lt;- 1\n}\n\nfunc process(i int) {\n\tresp, err := http.Get(\u0026quot;\u003ca href=\"http://localhost:3000\u0026quot\"\u003ehttp://localhost:3000\u0026quot\u003c/a\u003e;)\n\tpanicIf(err)\n\tdefer resp.Body.Close()\n\n\tlog.Println(\u0026quot;handle\u0026quot;, i)\n\twg.Done()\n}\n\nfunc panicIf(err error) {\n\tif err != nil {\n\t\tpanic(err)\n\t}\n}\n\nWhat happened?\nSometimes it says: \npanic: Get \u003ca href=\"http://localhost:3000\"\u003ehttp://localhost:3000\u003c/a\u003e: dial tcp 127.0.0.1:3000: connection reset by peer\npanic: Get \u003ca href=\"http://localhost:3000\"\u003ehttp://localhost:3000\u003c/a\u003e: dial tcp 127.0.0.1:3000: can't assign requested address\n\nWhat should have happened instead?\nIt should not panic :)\n\nPlease provide any additional information below.\nI have asked on the golang-nuts mailing list \n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/NY7NMx1jAVo\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:42:09Z",
+	"created_at": "2014-03-19T08:54:18Z",
+	"updated_at": "2016-06-25T01:30:14Z"
+}

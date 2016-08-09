@@ -1,0 +1,30 @@
+{
+	"id": 52415445,
+	"number": 9382,
+	"state": "closed",
+	"title": "os: data race between Process.Wait and Kill",
+	"body": "go version go1.4 windows/amd64\r\n\r\nLooks like there is a data race between os.Process.Wait() and os.Process.Kill(). The documentation does not state these operations can be run concurrently, but if they cannot, can you suggest a way to implement some kind of timeout on started process? Like \"kill it if it runs more than N seconds\".\r\n\r\nThe following code triggers the issue:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"strconv\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nfunc spawnAndKill(exePath string, counter int) error {\r\n\tcmd := exec.Command(exePath, fmt.Sprintf(\"%d\", counter))\r\n\terr := cmd.Start()\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tgo func() {\r\n\t\ttime.Sleep(1000 * time.Millisecond)\r\n\t\tcmd.Process.Kill()\r\n\t}()\r\n\tcmd.Wait()\r\n\treturn nil\r\n}\r\n\r\nfunc main() {\r\n\targs := os.Args[1:]\r\n\tif len(args) \u003e 0 {\r\n\t\tdelay, err := strconv.ParseInt(args[0], 10, 32)\r\n\t\tif err != nil {\r\n\t\t\tpanic(\"invalid input: \" + args[0])\r\n\t\t}\r\n\t\ttime.Sleep(time.Duration(delay) * time.Millisecond)\r\n\t\treturn\r\n\t}\r\n\texePath := os.Args[0]\r\n\tfmt.Printf(\"exe: %s\\n\", exePath)\r\n\r\n\tjobs := \u0026sync.WaitGroup{}\r\n\tfor j := 0; j \u003c 100; j++ {\r\n\t\tjobs.Add(1)\r\n\t\tgo func(id int) {\r\n\t\t\tdefer jobs.Done()\r\n\t\t\tcounter := 0\r\n\t\t\tfor {\r\n\t\t\t\terr := spawnAndKill(exePath, counter%2000)\r\n\t\t\t\tif err != nil {\r\n\t\t\t\t\tfmt.Printf(\"spawn error: %s\\n\", err)\r\n\t\t\t\t\treturn\r\n\t\t\t\t}\r\n\t\t\t\tcounter += 1\r\n\t\t\t}\r\n\t\t}(j)\r\n\t}\r\n\tjobs.Wait()\r\n}\r\n```\r\n\r\nwhen run with:\r\n```\r\ngo install -race race \u0026\u0026 GOMAXPROCS=100 GORACE=\"halt_on_error=1\" bin/race.exe\r\n```\r\n\r\nand triggers:\r\n```\r\nexe: F:\\dev\\master\\sword2\\bin\\race.exe\r\n==================\r\nWARNING: DATA RACE\r\nRead by goroutine 106:\r\n  os.(*Process).signal()\r\n      c:/go/src/os/exec_windows.go:56 +0x5a\r\n  os.(*Process).Signal()\r\n      c:/go/src/os/doc.go:51 +0x62\r\n  os.(*Process).kill()\r\n      c:/go/src/os/exec_posix.go:53 +0x76\r\n  os.(*Process).Kill()\r\n      c:/go/src/os/doc.go:36 +0x4e\r\n  main.func·001()\r\n      F:/dev/master/sword2/src/race/race.go:20 +0x83\r\n\r\nPrevious write by goroutine 6:\r\n  os.(*Process).release()\r\n      c:/go/src/os/exec_windows.go:77 +0x2c2\r\n  os.(*Process).Release()\r\n      c:/go/src/os/doc.go:31 +0x4e\r\n  os.(*Process).wait()\r\n      c:/go/src/os/exec_windows.go:42 +0x64c\r\n  os.(*Process).Wait()\r\n      c:/go/src/os/doc.go:45 +0x4e\r\n  os/exec.(*Cmd).Wait()\r\n      c:/go/src/os/exec/exec.go:364 +0x315\r\n  main.spawnAndKill()\r\n      F:/dev/master/sword2/src/race/race.go:22 +0x360\r\n  main.func·002()\r\n      F:/dev/master/sword2/src/race/race.go:46 +0xe1\r\n\r\nGoroutine 106 (running) created at:\r\n  main.spawnAndKill()\r\n      F:/dev/master/sword2/src/race/race.go:21 +0x340\r\n  main.func·002()\r\n      F:/dev/master/sword2/src/race/race.go:46 +0xe1\r\n\r\nGoroutine 6 (running) created at:\r\n  main.main()\r\n      F:/dev/master/sword2/src/race/race.go:53 +0x539\r\n==================\r\n```",
+	"user": {
+		"login": "pmezard",
+		"id": 1430779,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-11T01:34:10Z",
+	"created_at": "2014-12-18T20:59:58Z",
+	"updated_at": "2016-06-25T01:56:52Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

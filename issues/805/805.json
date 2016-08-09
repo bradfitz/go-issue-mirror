@@ -1,0 +1,28 @@
+{
+	"id": 51276961,
+	"number": 805,
+	"state": "closed",
+	"title": "netchan: closing a channel on exported end doesn't propagate to the caller",
+	"body": "by **ghexsel**:\n\n\u003cpre\u003eI have a loop in the exporter sender side that sends 10 items then closes \nthe netchan.  On the importer side, I have a loop to check if the channel \nis closed before trying to receive, but the channel doesn't appear to get \nclosed.  Instead, I see the \u0026quot;2010/05/23 16:39:38 importer header: EOF\u0026quot; \nmessage (in the importer receiver side).  \n\nA simple solution would be to change the sender side to consider EOF a \nclose signal on importer.go#run().\n\nExporter relevant bits:\n\n    for i := 0; i \u0026lt; count; i++ {\n        if closed(ch) {\n\t \t\tfmt.Printf(\u0026quot;Can't send, channel is closed\\n\u0026quot;)\n\t\t\tos.Exit(1)\n        } else {\n        \tch \u0026lt;- value {23 + i, \u0026quot;hello\u0026quot;}\n    \t}\n    }\n    close(ch)\n\n\nImporter relevant bits:\n\n    for {\n        if closed(ch) {\n\t \t\tfmt.Printf(\u0026quot;Can't receive, channel is closed\\n\u0026quot;)\n\t\t\tos.Exit(0)\n        } else {\n\t\t    v := \u0026lt;-ch\n\t\t    fmt.Printf(\u0026quot;%v\\n\u0026quot;, v)\n    \t}\n    }\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2014-12-08T10:05:56Z",
+	"created_at": "2010-05-23T23:50:06Z",
+	"updated_at": "2016-06-24T19:16:18Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 166034040,
+	"body": "I submitted a patch for the issue mentioned above, and started work on c-shared. The initial work of generating a .dll is done, but it has references to unexpected files. For example, when I run my test rig it says it cannot find a.out.exe. If I rename the output file \"test.dll\" to \"a.out.exe\" the test system runs and crashes. The dependency is probably just an artifact of how the linker generates output. If I use the final output name during the generation it will probably be okay.\r\n\r\nThe segfault occurs in runtime.rt0_go, here is the context:\r\n\r\n```\r\n   0x000000006ab8ba86 \u003c+246\u003e:   mov    %gs:0x28,%rbx\r\n=\u003e 0x000000006ab8ba8f \u003c+255\u003e:   movq   $0x123,%fs:(%rbx)\r\n   0x000000006ab8ba97 \u003c+263\u003e:   mov    0x852da(%rip),%rax        # 0x6ac10d78 \u003cruntime.m0+88\u003e\r\n   0x000000006ab8ba9e \u003c+270\u003e:   cmp    $0x123,%rax\r\n   0x000000006ab8baa4 \u003c+276\u003e:   je     0x6ab8baad \u003cruntime.rt0_go+285\u003e\r\n```\r\nRegisters are:\r\n\r\n```\r\n(gdb) info reg\r\nrax            0x7a318c         8008076\r\nrbx            0x6ac10d78       1791036792\r\nrcx            0x6ac10a20       1791035936\r\nrdx            0x0              0\r\nrsi            0x6ab8d850       1790498896\r\nrdi            0x6ac10d78       1791036792\r\nrbp            0x0              0x0\r\nrsp            0x99fed0         0x99fed0\r\nr8             0x7fffffdb000    8796092870656\r\nr9             0x62             98\r\nr10            0x100000         1048576\r\nr11            0x99fa98         10091160\r\nr12            0x0              0\r\nr13            0x0              0\r\nr14            0x0              0\r\nr15            0x0              0\r\nrip            0x6ab8ba8f       0x6ab8ba8f \u003cruntime.rt0_go+255\u003e\r\neflags         0x10202          [ IF RF ]\r\ncs             0x33             51\r\nss             0x2b             43\r\nds             0x0              0\r\nes             0x0              0\r\nfs             0x0              0\r\ngs             0x0              0\r\n```\r\n\r\nI'm really not sure what the expected values are supposed to be here, or why they are wrong when the c-archive has them correct.\r\n\r\nCode is here: https://github.com/nadiasvertex/go/commit/4a4e02259f7f7f3926c463b36b976dbfdbe79dde",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-19T23:39:57Z",
+	"updated_at": "2015-12-19T23:41:59Z"
+}

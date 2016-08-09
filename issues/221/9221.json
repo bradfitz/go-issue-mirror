@@ -1,0 +1,26 @@
+{
+	"id": 51300568,
+	"number": 9221,
+	"state": "open",
+	"title": "crypto/rand: mutex around /dev/urandom is unnecessarily broad",
+	"body": "(Possibly related to #7000)\r\n\r\nWe were trying to read concurrently (on Linux, go 1.3) from the Reader provided by crypto/rand, but were seeing a lot of unexpected contention. Taking a look at the implementation, it appears to take a mutex around the entire call just in order to protect the initialization step: https://github.com/golang/go/blob/master/src/crypto/rand/rand_unix.go#L51\r\n\r\nThis seems unnecessarily broad, since the underlying `Read` call itself should be safe to do concurrently. It would seem better to replace the mutex with a `sync.Once` which would allow concurrent reads, and also provide a fast path with an atomic op once the initialization is complete.\r\n\r\nThoughts?",
+	"user": {
+		"login": "eapache",
+		"id": 1706826,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 7,
+	"created_at": "2014-12-08T13:15:45Z",
+	"updated_at": "2015-04-14T19:45:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

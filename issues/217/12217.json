@@ -1,0 +1,22 @@
+{
+	"id": 102036565,
+	"number": 12217,
+	"state": "closed",
+	"title": "cmd/go: internal package is importable to the packages which is not rooted in the same subtree.",
+	"body": "```\r\n$go version\r\ngo version go1.5 darwin/amd64\r\n```\r\n```\r\n$uname -a\r\nDarwin TonydeMacBook-Air-2.local 13.1.0 Darwin Kernel Version 13.1.0: Thu Jan 16 19:40:37 PST 2014; root:xnu-2422.90.20~2/RELEASE_X86_64 x86_64\r\n```\r\n\r\nthe project layout is below: (GOPATH=/home/bigwhite/gotestinternal)\r\n```\r\n/home/bigwhite/gotestinternal\r\n└── src\r\n    ├── mypkg\r\n    │   ├── internal\r\n    │   │   └── foo\r\n    │   │       └── foo.go\r\n    │   ├── main.o\r\n    │   └── pkg1\r\n    │       ├── main\r\n    │       └── main.go\r\n    └── otherpkg\r\n        └── main.go\r\n```\r\nI am trying to test the internal package in go 1.5 final release. according to the internal design doc, if we import internal/foo in mypkg/main.go or mypkg/pkg1/main.go, it is ok. but if we import mypkg/internal/foo in otherpkg/main.go， it should be invalid. \r\n\r\nBut the test result is not as the above:\r\n\r\n```\r\n//otherpkg/main.go\r\npackage main\r\n\r\nimport \"mypkg/internal/foo\"\r\n\r\nfunc main() {\r\n    foo.Foo()\r\n}\r\n```\r\nwe build otherpkg/main.go in otherpkg directory, but no error occurs. It is not the result expected. \r\nbut go list -json tell us we has a not-allowed use of internal package：\r\n\r\n```\r\n\"DepsErrors\": [\r\n\t\t{\r\n\t\t\t\"ImportStack\": [\r\n\t\t\t\t\"otherpkg\",\r\n\t\t\t\t\"mypkg/internal/foo\"\r\n\t\t\t],\r\n\t\t\t\"Pos\": \"\",\r\n\t\t\t\"Err\": \"use of internal package not allowed\"\r\n\t\t}\r\n\t]\r\n```\r\nI'm not sure whether it is a problem of go1.5.\r\n",
+	"user": {
+		"login": "bigwhite",
+		"id": 419088,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-01-14T04:02:05Z",
+	"created_at": "2015-08-20T01:30:27Z",
+	"updated_at": "2016-01-14T04:02:05Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

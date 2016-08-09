@@ -1,0 +1,22 @@
+{
+	"id": 51289122,
+	"number": 9121,
+	"state": "closed",
+	"title": "runtime: should not display Windows Error Reporting (WER) dialogue",
+	"body": "\u003cpre\u003eBrad suggest we disable WER here\n\u003ca href=\"https://groups.google.com/d/msg/golang-dev/QJ-W2FGfq7c/kZONgbJT5Y0J\"\u003ehttps://groups.google.com/d/msg/golang-dev/QJ-W2FGfq7c/kZONgbJT5Y0J\u003c/a\u003e\n\nI agree. It is not useful for debugging Go programs. And it leaves crashed programs\nrunning on our builder. And we use that approach in our compilers already anyway -\nsearch lib9/main.c for SetErrorMode.\n\nI applied this:\n\ndiff --git a/src/runtime/os_windows.c b/src/runtime/os_windows.c\n--- a/src/runtime/os_windows.c\n+++ b/src/runtime/os_windows.c\n@@ -31,6 +31,7 @@\n #pragma dynimport runtime·NtWaitForSingleObject NtWaitForSingleObject \u0026quot;ntdll.dll\u0026quot;\n #pragma dynimport runtime·ResumeThread ResumeThread \u0026quot;kernel32.dll\u0026quot;\n #pragma dynimport runtime·SetConsoleCtrlHandler SetConsoleCtrlHandler \u0026quot;kernel32.dll\u0026quot;\n+#pragma dynimport runtime·SetErrorMode SetErrorMode \u0026quot;kernel32.dll\u0026quot;\n #pragma dynimport runtime·SetEvent SetEvent \u0026quot;kernel32.dll\u0026quot;\n #pragma dynimport runtime·SetProcessPriorityBoost SetProcessPriorityBoost \u0026quot;kernel32.dll\u0026quot;\n #pragma dynimport runtime·SetThreadPriority SetThreadPriority \u0026quot;kernel32.dll\u0026quot;\n@@ -64,6 +65,7 @@\n extern void *runtime·ResumeThread;\n extern void *runtime·SetConsoleCtrlHandler;\n extern void *runtime·SetEvent;\n+extern void *runtime·SetErrorMode;\n extern void *runtime·SetProcessPriorityBoost;\n extern void *runtime·SetThreadPriority;\n extern void *runtime·SetUnhandledExceptionFilter;\n@@ -106,14 +108,24 @@\n \treturn info.dwNumberOfProcessors;\n }\n \n+#define SEM_FAILCRITICALERRORS\t\t0x0001\n+#define SEM_NOGPFAULTERRORBOX\t\t0x0002\n+#define SEM_NOALIGNMENTFAULTEXCEPT\t0x0004\n+#define SEM_NOOPENFILEERRORBOX\t\t0x8000\n+\n void\n runtime·osinit(void)\n {\n \tvoid *kernel32;\n \tvoid *addVectoredContinueHandler;\n+\tuint32 errormode;\n \n \tkernel32 = runtime·stdcall1(runtime·LoadLibraryA, (uintptr)\u0026quot;kernel32.dll\u0026quot;);\n \n+\t// don't display the crash dialog\n+\terrormode = (uint32)runtime·stdcall1(runtime·SetErrorMode, SEM_NOGPFAULTERRORBOX);\n+\truntime·stdcall1(runtime·SetErrorMode, errormode | SEM_FAILCRITICALERRORS |\nSEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);\n+\n \truntime·externalthreadhandlerp = (uintptr)runtime·externalthreadhandler;\n \n \truntime·stdcall2(runtime·AddVectoredExceptionHandler, 1, (uintptr)runtime·exceptiontramp);\n\nto version with problem (see \u003ca href=\"https://golang.org/issue/9106\"\u003eissue #9106\u003c/a\u003e)\n\nchangeset:   21782:d8a076541f57\nbranch:      dev.garbage\nparent:      21781:c957f50feeba\nparent:      21769:7667e41f3ced\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Fri Nov 14 12:09:42 2014 -0500\nsummary:     [dev.garbage] all: merge dev.power64 (7667e41f3ced) into dev.garbage\n\nand WER dialogue disappears.\n\nI will wait until the source tree opens, and send this fix then.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-01-06T05:33:09Z",
+	"created_at": "2014-11-18T01:13:36Z",
+	"updated_at": "2016-06-25T01:44:35Z"
+}

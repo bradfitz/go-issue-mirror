@@ -1,0 +1,12 @@
+{
+	"id": 214829966,
+	"body": "```\r\npackage main\r\n\r\nimport \"sort\"\r\n\r\nfunc f1(a []int) {\r\n\tsort.Sort(sortable(a))\r\n}\r\nfunc f2(a []int) {\r\n\tg(sortable(a))\r\n}\r\n//go:noescape\r\nfunc g(s sort.Interface)\r\n```\r\n`f1` allocates and `f2` doesn't.  (You can tell just by looking at the generated assembly and see what the 3rd arg to convT2I is.  If it is 0, then it allocates.  If it is a pointer to a stack temp, it doesn't.)\r\n\r\nWith `-m`, we get (among other reports):\r\n```\r\ntmp3.go:6: sortable(a) escapes to heap\r\ntmp3.go:10: f2 sortable(a) does not escape\r\n```\r\n\r\nSo I think this has something to do with the analysis.  Maybe because quickSort is recursive and escape analysis gives up?\r\n\r\n@dr2chase ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-26T18:00:31Z",
+	"updated_at": "2016-04-26T18:00:31Z"
+}

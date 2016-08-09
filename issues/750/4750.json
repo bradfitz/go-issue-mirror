@@ -1,0 +1,21 @@
+{
+	"id": 51282586,
+	"number": 4750,
+	"state": "open",
+	"title": "cmd/compile: omit zeroing of named return value when possible",
+	"body": "\u003cpre\u003eIn the program below, f1 and f2 should ideally generate the same code: if a return\nvariable name is never mentioned in the function and there are no returns without\narguments and no defer statements, the variable need not be cleared on entry:\n\ng% cat x.go\npackage main\n\ntype T [16]int\n\nfunc f1() (t T) {\n\treturn g()\n}\n\nfunc f2() T {\n\treturn g()\n}\n\nfunc g() T\ng% go tool 6g -S x.go\n\n--- prog list \u0026quot;f1\u0026quot; ---\n0000 (x.go:5) TEXT    f1+0(SB),$256-128\n0001 (x.go:5) LEAQ    t+0(FP),DI\n0002 (x.go:5) MOVQ    $0,AX\n0003 (x.go:5) MOVQ    $16,CX\n0004 (x.go:5) REP     ,\n0005 (x.go:5) STOSQ   ,\n0006 (x.go:6) CALL    ,g+0(SB)\n0007 (x.go:6) LEAQ    (SP),BX\n0008 (x.go:6) LEAQ    autotmp_0000+-128(SP),BP\n0009 (x.go:6) MOVQ    BP,DI\n0010 (x.go:6) MOVQ    BX,SI\n0011 (x.go:6) MOVQ    $16,CX\n0012 (x.go:6) REP     ,\n0013 (x.go:6) MOVSQ   ,\n0014 (x.go:6) LEAQ    autotmp_0000+-128(SP),BX\n0015 (x.go:6) LEAQ    t+0(FP),BP\n0016 (x.go:6) MOVQ    BP,DI\n0017 (x.go:6) MOVQ    BX,SI\n0018 (x.go:6) MOVQ    $16,CX\n0019 (x.go:6) REP     ,\n0020 (x.go:6) MOVSQ   ,\n0021 (x.go:6) RET     ,\n\n--- prog list \u0026quot;f2\u0026quot; ---\n0022 (x.go:9) TEXT    f2+0(SB),$256-128\n0023 (x.go:10) CALL    ,g+0(SB)\n0024 (x.go:10) LEAQ    (SP),BX\n0025 (x.go:10) LEAQ    autotmp_0001+-128(SP),BP\n0026 (x.go:10) MOVQ    BP,DI\n0027 (x.go:10) MOVQ    BX,SI\n0028 (x.go:10) MOVQ    $16,CX\n0029 (x.go:10) REP     ,\n0030 (x.go:10) MOVSQ   ,\n0031 (x.go:10) LEAQ    autotmp_0001+-128(SP),BX\n0032 (x.go:10) LEAQ    .noname+0(FP),BP\n0033 (x.go:10) MOVQ    BP,DI\n0034 (x.go:10) MOVQ    BX,SI\n0035 (x.go:10) MOVQ    $16,CX\n0036 (x.go:10) REP     ,\n0037 (x.go:10) MOVSQ   ,\n0038 (x.go:10) RET     ,\n\n--- prog list \u0026quot;init\u0026quot; ---\n0039 (x.go:13) TEXT    init+0(SB),$0-0\n0040 (x.go:13) MOVBQZX initdone·+0(SB),AX\n0041 (x.go:13) CMPB    AX,$0\n0042 (x.go:13) JEQ     ,48\n0043 (x.go:13) CMPB    AX,$2\n0044 (x.go:13) JNE     ,46\n0045 (x.go:13) RET     ,\n0046 (x.go:13) CALL    ,runtime.throwinit+0(SB)\n0047 (x.go:13) UNDEF   ,\n0048 (x.go:13) MOVB    $2,initdone·+0(SB)\n0049 (x.go:13) RET     ,\ng%\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2013-02-03T17:35:11Z",
+	"updated_at": "2015-06-08T06:23:32Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 52539511,
+	"number": 9405,
+	"state": "closed",
+	"title": "net/http: errors from Client.Timeout triggering have .Timeout()==false",
+	"body": "(From aaronlevy on IRC)\r\n\r\nIt's hard for a client to know when a HTTP request failed due to timeout, and when for other reasons.\r\n\r\nGiven a slow server\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"net/http\"\r\n    \"time\"\r\n)\r\n\r\nfunc main() {\r\n    http.HandleFunc(\"/\", func(w http.ResponseWriter, r *http.Request) {\r\n        time.Sleep(3*time.Second)\r\n        fmt.Fprintf(w, \"req rcvd\")\r\n    })\r\n    http.ListenAndServe(\":8080\", nil)\r\n}\r\n```\r\n\r\nand a client\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n\t\"net/url\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tclient := \u0026http.Client{\r\n\t\tTimeout: time.Duration(time.Second),\r\n\t}\r\n\r\n\treq, err := client.Get(\"http://localhost:8080\")\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"type: %T\\n\", err)\r\n\t\tfmt.Printf(\"error: %v\\n\", err)\r\n\t\tif err2, ok := err.(*url.Error); ok {\r\n\t\t\tfmt.Printf(\"inner type: %T\\n\", err2.Err)\r\n\t\t\tfmt.Printf(\"inner error: %v\\n\", err2.Err)\r\n\t\t\tif err3, ok := err2.Err.(net.Error); ok {\r\n\t\t\t\tfmt.Printf(\"is timeout: %v\\n\", err3.Timeout())\r\n\t\t\t}\r\n\t\t\tif err4, ok := err2.Err.(*net.OpError); ok {\r\n\t\t\t\tfmt.Printf(\"OpError inner type: %T\\n\", err4.Err)\r\n\t\t\t\tfmt.Printf(\"OpError inner error: %v\\n\", err4.Err)\r\n\t\t\t}\r\n\t\t}\r\n\t\treturn\r\n\t}\r\n\r\n\tresp, err := ioutil.ReadAll(req.Body)\r\n\treq.Body.Close()\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t}\r\n\tfmt.Printf(\"%s\", resp)\r\n}\r\n```\r\n\r\nResults in\r\n\r\n```console\r\n$ go run server.go \u0026\r\n$ go run client.go\r\ntype: *url.Error\r\nerror: Get http://localhost:8080: read tcp 127.0.0.1:8080: use of closed network connection\r\ninner type: *net.OpError\r\ninner error: read tcp 127.0.0.1:8080: use of closed network connection\r\nis timeout: false\r\nOpError inner type: *errors.errorString\r\nOpError inner error: use of closed network connection\r\n```\r\n\r\nThat's quite the gift wrapping on that error. But the real bug is \"is timeout: false\". The error was caused by a timeout, it should claim to be one.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-20T05:03:10Z",
+	"created_at": "2014-12-19T23:17:01Z",
+	"updated_at": "2016-06-25T01:57:01Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51278862,
+	"number": 2190,
+	"state": "closed",
+	"title": "time.Sleep goroutines locked",
+	"body": "by **VisualFC**:\n\n\u003cpre\u003eThe time.Sleep goroutines locked\n\nWhat steps will reproduce the problem?\n\n{{{\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;time\u0026quot;\n\t\u0026quot;sync\u0026quot;\n)\n\nvar newTimerMutex sync.Mutex\n\nfunc MutexSleep(ns int64) {\n\tnewTimerMutex.Lock()\n\tt := time.NewTimer(ns)\n\tnewTimerMutex.Unlock()\n\t\u0026lt;-t.C\n}\n\nfunc main() {\n\tch := make(chan int)\n\texit := make(chan bool)\n\tgo func() {\n\t\tindex := 0\n\t\tfor {\n\t\t\ti := \u0026lt;-ch\n\t\t\tfmt.Printf(\u0026quot;%d.\u0026quot;, i)\n\t\t\tindex++\n\t\t\tif index \u0026gt;= 100000 {\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\texit \u0026lt;- true\n\t}()\n\tfor i := 0; i \u0026lt; 100000; i++ {\n\t\tgo func(i int, ch chan int) {\n\t\t\ttime.Sleep(1e9)\n\t\t\t//MutexSleep(1e9)\n\t\t\tch \u0026lt;- i\n\t\t}(i, ch)\n\t}\n\t\u0026lt;-exit\n}\n\n}}}\n\nWhat is the expected output?\n\nruntime: failed to create new OS thread (have \n941 already; errno=11)\nthrow: runtime.newosproc\n\ngoroutine 942 [syscall]:\nsyscall.Syscall6()\n\t/home/win32/go/src/pkg/syscall/asm_linux_amd64.s:40 +0x5\nsyscall.Select(0x0, 0x0, 0x0, 0x0, 0xf84281c330, ...)\n\t/home/win32/go/src/pkg/syscall/zsyscall_linux_amd64.go:1008 +0x63\nsyscall.Sleep(0x3b9aca00, 0x0, 0xf84281c340, 0x41f77d)\n\t/home/win32/go/src/pkg/syscall/syscall_linux.go:189 +0x7a\ntime.sysSleep(0x3b9aca00, 0x0, 0x4e571ee8, 0x123d725925d91b70)\n\t/home/win32/go/src/pkg/time/sys_posix.go:13 +0x25\ntime.sleep(0x123d7258ea3e5170, 0x3b9aca00, 0x0, 0x0, 0x0, ...)\n\t/home/win32/go/src/pkg/time/sys.go:44 +0x40\ntime.Sleep(0x3b9aca00, 0x0, 0x0, 0x40c9f1)\n\t/home/win32/go/src/pkg/time/sys.go:33 +0x33\nmain._func_002(0xf8000003ab, 0xf8400019b0, 0x0, 0x0)\n\t/home/win32/dev/test.go:35 +0x24\ncreated by main.main\n\t/home/win32/dev/test.go:38 +0xd5\n\nWhat do you see instead?\napplication exceptsion\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g,8g\n\nWhich operating system are you using?\nCentOS6.0 WINDOWS7\n\nWhich revision are you using?  (hg identify)\nweekly.2011-08-17 and 88744261dd47 tip\n\nPlease provide any additional information below.\nuse MutexSleep(1e9) the application normal\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:11:47Z",
+	"created_at": "2011-08-26T04:23:28Z",
+	"updated_at": "2016-06-24T19:33:52Z"
+}

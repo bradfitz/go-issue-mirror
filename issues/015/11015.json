@@ -1,0 +1,22 @@
+{
+	"id": 83331123,
+	"number": 11015,
+	"state": "closed",
+	"title": "Is correct uusing select for sending to a closed channel?",
+	"body": "```\r\nfunc Publish(text string, pipe chan string) {\r\n    for {\r\n        pipe \u003c- text\r\n    }\r\n}\r\n\r\nfunc main() {\r\n    pipe := make(chan string)\r\n    go Publish(\"Channels let goroutines communicate.\", pipe)\r\n    fmt.Println(\"Waiting for the news...\")\r\n    for i := 0; i \u003c 5; i++ {\r\n        text := \u003c-pipe\r\n        fmt.Println(text)\r\n    }\r\n    close(pipe)\r\n    fmt.Println(\"The news is out, time to leave.\")\r\n    time.Sleep(time.Second)\r\n}\r\n```\r\nThe code above will cause panic:\r\n```\r\npanic: send on closed channel\r\n\r\ngoroutine 5 [running]:\r\nmain.Publish(0x1443c8, 0x24, 0x1042e040, 0x0)\r\n    /tmp/sandbox452988919/main.go:10 +0x60\r\ncreated by main.main\r\n    /tmp/sandbox452988919/main.go:16 +0xa0\r\n\r\ngoroutine 1 [sleep]:\r\nmain.main()\r\n    /tmp/sandbox452988919/main.go:24 +0x3c0\r\n\r\ngoroutine 6 [runnable]:\r\nruntime.timerproc()\r\n    /usr/src/go/src/runtime/time.go:151\r\nruntime.goexit()\r\n    /usr/src/go/src/runtime/asm_amd64p32.s:1086 +0x1\r\n```\r\nThough this pattern has been discussed long time ago, I can't find a good solution.\r\nTo solve this problem but not using mutex, I have following code:\r\n```\r\ntype Pipe struct {\r\n    pipe   chan string\r\n    closed chan bool\r\n}\r\n\r\nfunc Publish(text string, pipeStruct *Pipe) {\r\n    for {\r\n        select {\r\n        case \u003c-pipeStruct.closed:\r\n            return\r\n        case pipeStruct.pipe \u003c- text:\r\n\r\n        }\r\n\r\n    }\r\n}\r\n\r\nfunc main() {\r\n    pipeStruct := \u0026Pipe{\r\n        pipe:   make(chan string),\r\n        closed: make(chan bool),\r\n    }\r\n    go Publish(\"Channels let goroutines communicate.\", pipeStruct)\r\n    fmt.Println(\"Waiting for the news...\")\r\n    for i := 0; i \u003c 5; i++ {\r\n        text := \u003c-pipeStruct.pipe\r\n        fmt.Println(text)\r\n    }\r\n    close(pipeStruct.closed)\r\n    close(pipeStruct.pipe)\r\n    fmt.Println(\"The news is out, time to leave.\")\r\n    time.Sleep(time.Second)\r\n}\r\n```\r\nSeems work properly, but I do not know why. From the spec:\r\n\u003eIf one or more of the communications can proceed, a single one that can proceed is chosen via a uniform pseudo-random selection. \r\n\r\nDue to `Random chosen`, I want to know why my solution work properly. Thanks.\r\n",
+	"user": {
+		"login": "denghongcai",
+		"id": 1433247,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-01T06:01:49Z",
+	"created_at": "2015-06-01T05:50:24Z",
+	"updated_at": "2016-06-25T02:09:56Z"
+}

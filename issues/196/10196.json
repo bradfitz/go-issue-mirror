@@ -1,0 +1,33 @@
+{
+	"id": 62917564,
+	"number": 10196,
+	"state": "closed",
+	"title": "net/http: ServeContent for a directory unexpectedly closes the socket",
+	"body": "Using http's ServeContent, a GET on a directory opened by os.Open unexpectedly closes the socket. The Content-Length header contains a non-zero size but then not a single byte is written in the HTTP body.\r\n\r\nThis is because a directory opened with os.Open seeks to a positive size but fails when read. I report this as an issue for net/http, instead os, since I am not sure if this is allowed behaviour for a directory. For HTTP, reporting a non-zero Content-Length with an empty body during GET in my understanding isn't.\r\n\r\n#### How to reproduce this issue\r\n\r\nGET a directory served by http.ServeContent on a real filesystem:\r\n\r\n    $ curl -i http://localhost:8080/\r\n    HTTP/1.1 200 OK\r\n    Accept-Ranges: bytes\r\n    Content-Length: 68\r\n    Content-Type: text/plain; charset=utf-8\r\n    Last-Modified: Thu, 19 Mar 2015 07:57:56 GMT\r\n    Date: Thu, 19 Mar 2015 07:57:56 GMT\r\n\r\n    curl: (18) transfer closed with 68 bytes remaining to read\r\n\r\nSource: https://play.golang.org/p/Tm5SPq9uag\r\n\r\n    $ go version\r\n    go version devel +ecd630d Wed Mar 18 00:59:49 2015 +0000 darwin/amd64\r\n\r\nSame for Go 1.4.1 and 1.4.2 on OS X and Linux.\r\n\r\n#### Demo that a directory seeks to a positive size but fails when read\r\n\r\nseekdir.go seeks a directory, rewinds and tries to read:\r\n\r\n    $ go run seekdir.go\r\n    seekSize: 374\r\n    2015/03/19 09:09:29 read /tmp: is a directory\r\n    exit status 1\r\n\r\nSource: https://play.golang.org/p/aeJkT4OsPV\r\n\r\n#### How to fix this\r\n\r\nUnfortunately I couldn't come up with a good solution. In my understanding, http.ServeContent is fine. \r\n\r\nI had hoped that inspecting the return values of CopyN in [fs.go line 257]( https://github.com/golang/go/blob/master/src/net/http/fs.go#L257) for zero or error would help. But at this point, one can't rewrite the Content-Length header.\r\n\r\nIf a directory should remain seekable but not readable, a workaround in ServeContent could be to try to read the first n bytes in a buffer before calling WriteHeader.",
+	"user": {
+		"login": "rsto",
+		"id": 4787225,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-03-23T01:19:18Z",
+	"created_at": "2015-03-19T08:34:58Z",
+	"updated_at": "2016-06-25T02:03:33Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

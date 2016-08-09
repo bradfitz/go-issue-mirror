@@ -1,0 +1,22 @@
+{
+	"id": 51279041,
+	"number": 2317,
+	"state": "closed",
+	"title": "Infinite loop in RPC server",
+	"body": "by **louisk@google.com**:\n\n\u003cpre\u003eThere is a bug in the RPC server that causes an infinite loop (with infinite error\nmessages on the console) if there is an error condition on the socket.  This bug\ntriggers routinely on Windows, but it can also happen on Linux.  Here is a sample code\nwhich reproduces the problem.\nBug verified on Go r60.1 and Go weekly.2011-09-21\n\nRun \u0026quot;./bug server\u0026quot; in one window and \u0026quot;./bug client\u0026quot; in another.  The\nserver will infinite loop and print the following message forever:\n2011/09/29 12:27:34 rpc: rpc: server cannot decode request: invalid character '{'\nlooking for beginning of object key string\n2011/09/29 12:27:34 rpc: rpc: server cannot decode request: invalid character '{'\nlooking for beginning of object key string\n2011/09/29 12:27:34 rpc: rpc: server cannot decode request: invalid character '{'\nlooking for beginning of object key string\n2011/09/29 12:27:34 rpc: rpc: server cannot decode request: invalid character '{'\nlooking for beginning of object key string\n...\n\n\n\n/////////// bug.go /////////////\n\npackage main\n\nimport \u0026quot;os\u0026quot;\nimport \u0026quot;net\u0026quot;\nimport \u0026quot;rpc\u0026quot;\nimport \u0026quot;rpc/jsonrpc\u0026quot;\nimport \u0026quot;fmt\u0026quot;\n\nfunc handleErr(who string, err os.Error) bool {\n  if (err != nil) {\n    fmt.Fprintln(os.Stderr, who, err)\n    return true\n  }\n  return false\n}\n\ntype BugRequest struct {\n  Foo int\n}\n\ntype RPCMethods struct{}\n\nfunc (RPCMethods) Method(req *BugRequest, resp *string) os.Error {\n  *resp = \u0026quot;Hello\u0026quot;\n  return nil\n}\n\nfunc serve() {\n  li, err := net.Listen(\u0026quot;tcp\u0026quot;, \u0026quot;:5432\u0026quot;)\n  if (handleErr(\u0026quot;listen:\u0026quot;, err)) {\n    return\n  }\n  rpcserver := rpc.NewServer()\n  err = rpcserver.Register(RPCMethods{})\n  fmt.Println(\u0026quot;listening on port 5432\u0026quot;)\n  for {\n    conn, err := li.Accept()\n    if handleErr(\u0026quot;accept:\u0026quot;, err) {\n      return\n    }\n    go rpcserver.ServeCodec(jsonrpc.NewServerCodec(conn))\n  }\n\n  rpcserver.Accept(li)\n}\n\nfunc client() os.Error {\n  sock, err := net.Dial(\u0026quot;tcp\u0026quot;, \u0026quot;localhost:5432\u0026quot;)\n  if (handleErr(\u0026quot;rpc.Dial:\u0026quot;, err)) {\n    return err\n  }\n  cli := jsonrpc.NewClient(sock)\n  var resp string\n  err = cli.Call(\u0026quot;RPCMethods.Method\u0026quot;, BugRequest{}, \u0026amp;resp)\n  fmt.Println(resp)\n  // add some junk to the socket -- triggers bug\n  sock.Write([]byte { 123, 123, 123, 123})\n  sock.Close()\n  return nil\n}\n\nfunc main() {\n  switch(os.Args[1]) {\n    case \u0026quot;server\u0026quot;:\n          serve()\n    case \u0026quot;client\u0026quot;:\n          client()\n  }\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:12:27Z",
+	"created_at": "2011-09-29T16:31:15Z",
+	"updated_at": "2016-06-24T19:35:31Z"
+}

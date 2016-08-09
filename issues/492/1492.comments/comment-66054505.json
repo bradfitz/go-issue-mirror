@@ -1,0 +1,12 @@
+{
+	"id": 66054505,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1 by **ejsherry**:\n\n\u003cpre\u003eYeah, it looks like the garbage collector is holding things up. Here's a slightly more\nexplicit example:\n\npackage main\n\nimport (\n\t\"os\"\n\t\"runtime\"\n)\n\nfunc main() {\n\truntime.GOMAXPROCS(2)\n\tgo func() {\n\t\tprintln(\"b0\")\n\t\t_ = new(int)\n\t\tprintln(\"b1\")\n\t\tos.Exit(0)\n\t}()\n\tprintln(\"a0\")\n\tfor {\n\t}\n}\n\nThe one goroutine hangs at new(int) since the allocator is trying to do a garbage\ncollection. It tries to stoptheworld which will hang since the other goroutine never\nenters the scheduler. Removing the new(int) allows the example to exit.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-10T22:42:36Z",
+	"updated_at": "2014-12-08T10:08:34Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 85210075,
+	"number": 11069,
+	"state": "closed",
+	"title": "runtime: documentation for LockOSThread is not clear",
+	"body": "I plan to bind a functionality in my app to not run in parallel but without losing the concurrency solutions, much like a GIL but for a specific thread. I planned to use runtime.LockOSThread() but the documentation is unclear. \r\n\r\nFirst of all is the current goroutine that will bind to a OS thread or is the next being created?\r\n\r\nAnd second any goroutine created by the one locked to the OS thread will also execute exclusively to that OS thread or any other?\r\n\r\nI used an example suggested [here](http://stackoverflow.com/a/30647648/2521743):\r\n\r\n    package main\r\n    // #include \u003cpthread.h\u003e\r\n    import \"C\"\r\n    import (\r\n \t \"fmt\"\r\n\t \"runtime\"\r\n         \"time\"\r\n    )\r\n\r\n    func main() {\r\n\t    runtime.GOMAXPROCS(runtime.NumCPU())\r\n\t    ch1 := make(chan bool)\r\n\t    ch2 := make(chan bool)\r\n\t    fmt.Println(\"main\", C.pthread_self())\r\n\t    runtime.LockOSThread()\r\n\t    go func() {\r\n\t\t    fmt.Println(\"locked\", C.pthread_self())\r\n\t\t    time.Sleep(1000 * time.Millisecond)\r\n\t\t    go func() {\r\n\t\t\t    time.Sleep(1000 * time.Millisecond)\r\n\t\t\t    fmt.Println(\"locked child\", C.pthread_self())\r\n\t\t\t    ch1 \u003c- true\r\n\t\t    }()\r\n\t\t    ch2 \u003c- true\r\n\t    }()\r\n\t    \u003c-ch1\r\n\t    \u003c-ch2\r\n    }\r\n\r\nAnd I come up with the result:\r\n\r\n    main 139673634682688\r\n    locked 139673609656064\r\n    locked child 139673609656064\r\n\r\nIt looks that the second goroutine executes in the same OS thread as the first one (witch fits my needs but I don't know if is a reliable way).\r\n",
+	"user": {
+		"login": "joaonrb",
+		"id": 2837356,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-04T18:19:49Z",
+	"created_at": "2015-06-04T18:05:50Z",
+	"updated_at": "2016-06-25T02:10:21Z"
+}

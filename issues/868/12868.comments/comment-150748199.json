@@ -1,0 +1,12 @@
+{
+	"id": 150748199,
+	"body": "A few points.\r\n\r\n1. I don't see what this has to do with exec.Cmd. You're talking about writing general helper functions for manipulating []string representing environment lists and then hard-coding that they only operate on cmd.Env.\r\n\r\n2. I don't see why methods on exec.Cmd must necessarily store their state in the Env field. The current semantics are that cmd.Env == nil means \"use the current environment\", while cmd.Env != nil means \"use this exact environment\". You could reasonably make the methods operate on behind-the-scenes state and define that cmd.Env == nil means \"use the current environment as modified by calls to Setenv/Unsetenv\", while if cmd.Env != nil then the calls are ignored.\r\n\r\n3. Along that line of thought, the Setenv and Unsetenv methods could just record the operations in an unexported field and then they could be replayed onto the effective environment at (*Cmd).Start time. Then they could apply to both nil and non-nil cmd.Env.\r\n\r\n4. Or maybe this really should be a separate type (like exec.Env) that helps you prepare an environment list. Internally the Env implementation would be something like a slice+map.\r\n\r\n\t\tvar env exec.Env\r\n\t\tenv = exec.Environ()\r\n\t\tenv.Setenv(\"XXX\", \"YYY\")\r\n\t\tenv.Unsetenv(\"ZZZ\")\r\n\t\tcmd.Env = env.List()",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-24T03:29:32Z",
+	"updated_at": "2015-10-24T03:29:57Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 156892456,
+	"body": "I did some more digging and was able to repro this using a DNS server built with [github.com/miekg/dns](https://github.com/miekg/dns).\r\n\r\nInstead of the current capturing and returning of [the last seen error](https://github.com/golang/go/blob/25a28da0807f3fa85588fb219f6fa40314bde675/src/net/dnsclient_unix.go#L455) it probably would make sense to prefer the error encountered when looking up the name closest to what was passed in to `LookupIP` and friends.\r\n\r\nThis would mostly mimic what glibc does ([here](https://sourceware.org/git/?p=glibc.git;a=blob;f=resolv/res_query.c;h=4a9b3b3f27288f1c6926082ba5aadcd0427b142e;hb=HEAD#l379) and [here](https://sourceware.org/git/?p=glibc.git;a=blob;f=resolv/res_query.c;h=4a9b3b3f27288f1c6926082ba5aadcd0427b142e;hb=HEAD#l526)), though it only returns the error encountered when looking up the provided name if it has enough dots. Otherwise it will return the last error encountered while trying names with search domains appended, similar to what the Go implementation is doing now.\r\n\r\nI'm happy to put a CL together if preference for errors close to user input sounds like a good plan.",
+	"user": {
+		"login": "dpiddy",
+		"id": 2182,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-16T02:40:38Z",
+	"updated_at": "2015-11-16T02:40:38Z"
+}

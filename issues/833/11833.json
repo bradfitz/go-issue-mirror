@@ -1,0 +1,22 @@
+{
+	"id": 96701721,
+	"number": 11833,
+	"state": "closed",
+	"title": "crypto/rand: Please reconsider GRND_NONBLOCK, or at least provide a mode without it",
+	"body": "I've read https://github.com/golang/go/issues/8520 and https://codereview.appspot.com/123260044 . While I can appreciate @agl's \"might be a big surprise to Go programs\" argument, I feel that crypto/rand falling back to /dev/urandom if `GetRandom(..., GRND_NONBLOCK)` returns `EAGAIN` completely misses out the primary point of the syscall.\r\n\r\nI find the tradeoff of going from \"application that used to get non-entropy and trusting it for crypto\" to \"application hangs until entropy is available, which is a very brief delay on modern hardware and only happens at boot, or even just first boot on a well set up system\" to be very much desirable.\r\n\r\nThis particularly hurts OS installs and all kinds of appliances, e.g. wifi access points and such, that would typically generate TLS keys on first boot. That is exactly the time when they don't yet have much entropy, and exactly the time where the current implementation of Go's crypto/rand will let them down.\r\n\r\nWould you at least entertain a `rand.WaitForEntropy()` method or such, after which crypto/rand can guarantee it's operating in safe mode? (Without the getrandom syscall, that might mean that a 1-byte read from /dev/random succeeded once.) Because the current crypto/rand really isn't safe too close to boot time.\r\n\r\n\r\nOn a related note, in the code review at https://codereview.appspot.com/123260044 @agl says\r\n\r\n\u003e I think that GRND_NONBLOCK should be passed here so that, if the pool isn't\r\n\u003e ready, we'll fall back on /dev/urandom until the syscall will work.\r\n\r\nbut the implementation does *not* do that; it stays with /dev/urandom.\r\n\r\nOne extra complication from the above is that one important use case for the getrandom syscall was that you no longer need to populate /dev/urandom in a chroot etc -- now it's racy whether it's needed or not, depending on how fast after boot the program started.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-08-02T16:21:56Z",
+	"created_at": "2015-07-23T01:06:21Z",
+	"updated_at": "2015-08-10T16:18:24Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

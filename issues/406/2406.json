@@ -1,0 +1,27 @@
+{
+	"id": 51279164,
+	"number": 2406,
+	"state": "closed",
+	"title": "encoding/xml: Unmarshal nested field tags only work with dashes removed",
+	"body": "by **pcrosby**:\n\n\u003cpre\u003eRun this test:\n\nimport (\n        \u0026quot;strings\u0026quot;\n        \u0026quot;testing\u0026quot;\n        \u0026quot;xml\u0026quot;\n)\n\nvar cr =\n`\u0026lt;customer\u0026gt;\u0026lt;id\u0026gt;xxxx\u0026lt;/id\u0026gt;\u0026lt;parent-dash\u0026gt;\u0026lt;child-dash\u0026gt;\u0026lt;name\u0026gt;xxx\u0026lt;/name\u0026gt;\u0026lt;/child-dash\u0026gt;\u0026lt;child-dash\u0026gt;\u0026lt;name\u0026gt;yyy\u0026lt;/name\u0026gt;\u0026lt;/child-dash\u0026gt;\u0026lt;/parent-dash\u0026gt;\u0026lt;/customer\u0026gt;`\n\ntype RespBug struct {\n    ID string `xml:\u0026quot;id\u0026quot;`\n    Children []Child `xml:\u0026quot;parent-dash\u0026gt;child-dash\u0026quot;`\n}\n\ntype RespWorks struct {\n    ID string `xml:\u0026quot;id\u0026quot;`\n    Children []Child `xml:\u0026quot;parentdash\u0026gt;childdash\u0026quot;`\n}\n\ntype Child struct {\n    Name string `xml:\u0026quot;name\u0026quot;`\n}\n\n\nfunc TestBug(t *testing.T) {\n        r := new(RespBug)\n        err := xml.Unmarshal(strings.NewReader(cr), r)\n        if err != nil {\n                t.Errorf(\u0026quot;didn't expect error: %s\u0026quot;, err)\n        }\n        if len(r.Children) != 2 {\n                t.Errorf(\u0026quot;expected 2 children, got %d\u0026quot;, len(r.Children))\n        }\n}\n\nfunc TestWorks(t *testing.T) {\n        r := new(RespWorks)\n        err := xml.Unmarshal(strings.NewReader(cr), r)\n        if err != nil {\n                t.Errorf(\u0026quot;didn't expect error: %s\u0026quot;, err)\n        }\n        if len(r.Children) != 2 {\n                t.Errorf(\u0026quot;expected 2 children, got %d\u0026quot;, len(r.Children))\n        }\n}\n\n/* end of code */\n\nTestBug will fail, TestWorks will pass.  It took a lot of investigation to find out that\nthe xml package was stripping the dashes.\n\nWhat is the expected output?\n\nexpected TestBug to pass.  The xml tag in RespBug has dashes in it, just like the xml it\nis parsing, thus it would make sense that the fieldPath should work with dashes in it.\n\nWhat do you see instead?\n\nTestBug fails yet TestWorks passes.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g, 8g\n\nWhich operating system are you using?\n\nmac and linux\nWhich revision are you using?  (hg identify)\n\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:12:52Z",
+	"created_at": "2011-10-28T22:38:41Z",
+	"updated_at": "2016-06-24T21:19:54Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

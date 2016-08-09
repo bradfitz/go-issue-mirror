@@ -1,0 +1,12 @@
+{
+	"id": 66082027,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003ejunshi04,\n\nSorry, but I am still not clear about what we are fixing here. I wrote this test:\n\ndiff --git a/src/pkg/net/udp_test.go b/src/pkg/net/udp_test.go\n--- a/src/pkg/net/udp_test.go\n+++ b/src/pkg/net/udp_test.go\n@@ -9,6 +9,7 @@\n \t\"reflect\"\n \t\"runtime\"\n \t\"testing\"\n+\t\"time\"\n )\n \n type resolveUDPAddrTest struct {\n@@ -280,3 +281,35 @@\n \t\t}\n \t}\n }\n+\n+func TestUDPReadFrom(t *testing.T) {\n+\tconst raddr = \"54.244.132.193:55555\"\n+\tc, err := Dial(\"udp\", raddr)\n+\tif err != nil {\n+\t\tt.Fatalf(\"Dial failed: %v\", err)\n+\t}\n+\tdefer c.Close()\n+\n+\tra, err := ResolveUDPAddr(\"udp\", raddr)\n+\tif err != nil {\n+\t\tt.Fatalf(\"ResolveUDPAddr failed: %v\", err)\n+\t}\n+\n+\t_, err = c.(*UDPConn).WriteToUDP([]byte(\"a\"), ra)\n+\tif err == nil {\n+\t\tt.Fatal(\"WriteToUDP should fail\")\n+\t}\n+\tif err != nil \u0026\u0026 err.(*OpError).Err != ErrWriteToConnected {\n+\t\tt.Fatalf(\"WriteToUDP should fail as ErrWriteToConnected: %v\", err)\n+\t}\n+\n+\terr = c.SetDeadline(time.Now().Add(100 * time.Millisecond))\n+\tif err != nil {\n+\t\tt.Fatalf(\"SetDeadline failed: %v\", err)\n+\t}\n+\tb := make([]byte, 1)\n+\t_, _, err = c.(*UDPConn).ReadFromUDP(b)\n+\tif err != nil \u0026\u0026 !isTimeout(err) {\n+\t\tt.Fatalf(\"ReadFromUDP failed: %v\", err)\n+\t}\n+}\n\nand it PASSes on both linux and windows here. Please, change the test, so it PASSes on\none and FAILs on the other. This way we can narrow it down where the differences are and\ndecide what to do about them.\n\nThank you.\n\nAlex\u003c/pre\u003e\n\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-09-20T00:11:30Z",
+	"updated_at": "2014-12-08T10:32:03Z"
+}

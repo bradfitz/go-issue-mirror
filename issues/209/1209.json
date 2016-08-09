@@ -1,0 +1,28 @@
+{
+	"id": 51277497,
+	"number": 1209,
+	"state": "closed",
+	"title": "Unexpected nil pointer with recursive function doing select",
+	"body": "by **joamaki**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n--snip--\n1\tpackage main\n2\t\n3\timport (\n4\t\t\u0026quot;fmt\u0026quot;\n5\t)\n6\t\n7\ttype Foo struct {\n8\t\tch chan bool\n9\t}\n10\t\n11\tfunc (f *Foo) recur(n int) {\n12\t\tfmt.Printf(\u0026quot;%d: %p\\n\u0026quot;, n, f)\n13\t\n14\t\ttimeout := make(chan bool, 1)\n15\t\tgo func() {\n16\t\t\t// time.Sleep(...)\n17\t\t\ttimeout \u0026lt;- true\n18\t\t}()\n19\t\n20\t\tselect {\n21\t\tcase \u0026lt;- timeout:\n22\t\t\treturn\n23\t\tcase \u0026lt;- f.ch:\n24\t\t\tf.recur(n+1)\n25\t\t}\n26\t}\n27\t\n28\tfunc main() {\n29\t\tf := \u0026amp;Foo{make(chan bool, 1)}\n30\t\tgo f.recur(0)\n31\t\tfor {\n32\t\t\tf.ch \u0026lt;- true\n33\t\t}\n34\t}\n\nAfter 34 recursive calls the stack seems to go boom:\n\n% gorun crash.go\n0: 0x7f79add40050\n1: 0x7f79add40050\n2: 0x7f79add40050\n3: 0x7f79add40050\n4: 0x7f79add40050\n5: 0x7f79add40050\n6: 0x7f79add40050\n7: 0x7f79add40050\n8: 0x7f79add40050\n9: 0x7f79add40050\n10: 0x7f79add40050\n11: 0x7f79add40050\n12: 0x7f79add40050\n13: 0x7f79add40050\n14: 0x7f79add40050\n15: 0x7f79add40050\n16: 0x7f79add40050\n17: 0x7f79add40050\n18: 0x7f79add40050\n19: 0x7f79add40050\n20: 0x7f79add40050\n21: 0x7f79add40050\n22: 0x7f79add40050\n23: 0x7f79add40050\n24: 0x7f79add40050\n25: 0x7f79add40050\n26: 0x7f79add40050\n27: 0x7f79add40050\n28: 0x7f79add40050\n29: 0x7f79add40050\n30: 0x7f79add40050\n31: 0x7f79add40050\n32: 0x7f79add40050\n33: 0x7f79add40050\n1: 0x0\npanic: runtime error: invalid memory address or nil pointer dereference\n\npanic PC=0x7f79add75a90\nruntime.panic+0xb2 /home/jmaki/go/src/pkg/runtime/proc.c:1019\n\truntime.panic(0x7f7900000000, 0x4087c1)\npanicstring+0x69 /home/jmaki/go/src/pkg/runtime/runtime.c:83\n\tpanicstring(0x465848, 0x7f79add93520)\nsigpanic+0x148 /home/jmaki/go/src/pkg/runtime/linux/thread.c:286\n\tsigpanic()\nmain.*Foo·recur+0x18a /home/jmaki/work/study/crash.go:25\n\tmain.*Foo·recur(0x7f79addd3220, 0x7f79add86600, 0x0, 0x7f79add87100)\nmain.*Foo·recur+0x1ca /home/jmaki/work/study/crash.go:26\n\tmain.*Foo·recur(0x0, 0x7f7900000001, 0x7f79add494c0, 0x7f79add48401)\n\ngoroutine 37 [1]:\nmain._func_001 /home/jmaki/work/study/crash.go:15\n\tmain._func_001(0x0, 0x0)\ngoexit /home/jmaki/go/src/pkg/runtime/proc.c:145\n\tgoexit()\n\ngoroutine 1 [4]:\ngosched+0x77 /home/jmaki/go/src/pkg/runtime/proc.c:546\n\tgosched()\nchansend+0x170 /home/jmaki/go/src/pkg/runtime/chan.c:257\n\tchansend(0x7f79add53bf0, 0x7f79add647c0, 0x7f79add45090, 0x4858c0, 0x1, ...)\nruntime.chansend1+0x5b /home/jmaki/go/src/pkg/runtime/chan.c:411\n\truntime.chansend1(0x7f79add53ba0, 0x7f79add45090)\nmain.main+0x8e /home/jmaki/work/study/crash.go:32\n\tmain.main()\nmainstart+0xf /home/jmaki/go/src/pkg/runtime/amd64/asm.s:78\n\tmainstart()\ngoexit /home/jmaki/go/src/pkg/runtime/proc.c:145\n\tgoexit()\n--snip--\n\nWhat is the expected output?\n\nExpected this to recur until out of memory.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g and 8g.\n\nWhich operating system are you using?\nLinux\n\nWhich revision are you using?  (hg identify)\n- 1eec33c03bce+ release/release.2010-09-22\n- 43470054417c+ tip\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:07:21Z",
+	"created_at": "2010-10-18T10:00:32Z",
+	"updated_at": "2016-06-24T19:21:27Z"
+}

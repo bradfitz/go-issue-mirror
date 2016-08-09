@@ -1,0 +1,22 @@
+{
+	"id": 51285543,
+	"number": 6674,
+	"state": "closed",
+	"title": "64-bit alignment issue with sync/atomic on linux/arm",
+	"body": "by **greatred**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Use \u003ca href=\"http://play.golang.org/p/w45c_7mFyN\"\u003ehttp://play.golang.org/p/w45c_7mFyN\u003c/a\u003e as alignment.go\n2. Execute `go run alignment.go`\n\nWhat is the expected output? (where the pointer addresses can vary, although the lowest\nnibble should be similar - this working output from linux/amd64)\n0xc20005f000 0xc20005f008 0xc20005f010\nv.A = 1\natomic v.A = 1\nv.C = 2\natomic v.C = 2\n\nWhat do you see instead?\n0x10442100 0x10442108 0x1044210c\nv.A = 1\natomic v.A = 1\nv.C = 2\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x4 pc=0x4b0d0]\n\ngoroutine 1 [running]:\nruntime.panic(0xa2fc0, 0x104000f0)\n        /usr/local/go/src/pkg/runtime/panic.c:266 +0x134\nsync/atomic.loadUint64(0x1044210c, 0x2, 0x0)\n        /usr/local/go/src/pkg/sync/atomic/64bit_arm.go:10 +0x6c\nmain.main()\n        /home/huin/gopath/src/alignment/alignment.go:20 +0x430\nexit status 2\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nlinux/arm\n\nWhich version are you using?  (run 'go version')\ngo versions that exhibit the problem:\n* go version devel +5b367120d592 Thu Sep 19 17:12:00 2013 +1000 linux/arm\n* I have also had this problem on release 1.1.2 on the same platform.\n\nUnaffected version:\n* go version go1.1.2 linux/amd64\n\nPlease provide any additional information below.\n\nLooking at the last nibble of the pointer addresses leads me to believe that the 3rd\nmember of the struct `C` isn't being aligned on a 64bit boundary, causing trouble with\nthe sync/atomic.LoadInt64 instruction, which (I imagine) expects this alignment.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:37:01Z",
+	"created_at": "2013-10-27T09:32:38Z",
+	"updated_at": "2016-06-25T01:21:31Z"
+}

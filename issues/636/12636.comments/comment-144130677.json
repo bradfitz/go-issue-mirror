@@ -1,0 +1,12 @@
+{
+	"id": 144130677,
+	"body": "@stevekuznetsov I think what @ianlancetaylor explained before should explain the discrepancy. go vet is a conservative tool, if it is not pretty certain about an error, it is not going to report it.\r\n\r\nIt may help to understand better how go vet works: If go vet has access to all files of a package (directory) it will consider all package files (including tests). If it only has access to one file, it will only consider that one file.\r\n\r\nKeep in mind that if it sees only one file of a (multi-file) package, it obviously cannot know about the contents in those other files. If types are declared in those files and hence not available, errors that would be obvious if those types were known cannot be reported.\r\n\r\nThe same is true for imports: If go vet cannot find an imported package, errors that would be obvious if those imports were available, are not reported (go vet cannot guess, it's not possible in general).\r\n\r\nImports are **only** available, if the respected packages were installed in the right place. That is, in that respect, go vet operates like the compiler applied to a single package (e.g. go  tool compile \u003cpackage\u003e). Specifically, go vet does not make an attempt to analyze the source code of imported packages - they have to be installed.\r\n\r\nThe reason for this as follows: go vet makes use of the go/types package to determine type information. go/types learns about imported packages by \"importing\" their information from the installed packages. If they are not installed, they cannot be imported at the moment.\r\n\r\nIt is possible to make an \"importer\" that can import from source code (open issue), but we haven't done that yet.\r\n\r\nNot knowing more about your specific setup, I suspect strongly that you get different results because your different systems have different files installed (or not installed). Which is exactly what @ianlancetaylor already suggested.\r\n\r\nI don't know of any dependency of go vet on godeps, or why it should matter.\r\n\r\nHope that helps. I am inclined to say go vet is working as intended.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-29T17:36:02Z",
+	"updated_at": "2015-09-29T17:36:02Z"
+}

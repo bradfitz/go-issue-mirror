@@ -1,0 +1,27 @@
+{
+	"id": 51281018,
+	"number": 3702,
+	"state": "closed",
+	"title": "cmd/gc: returning a function parameter causes escape",
+	"body": "\u003cpre\u003eThe buf below shouldn't escape to the heap.\n\npackage main\n\nfunc nothing() {\n}\n\nfunc f(b []byte) []byte { // leaking param: b\n        b[0] = 'H'\n        b[1] = 'i'\n        nothing() // (force f to not inline.)\n        return b[:2]\n}\n\nfunc main() {\n        var buf [10]byte // moved to heap: buf\n        hi := f(buf[:]) // buf escapes to heap\n        for i, c := range hi {\n                println(i, c)\n        }\n}\n\n$ go tool 6g -s -m e.go\ne.go:3: can inline nothing\ne.go:9: inlining call to nothing\ne.go:14: moved to heap: buf\ne.go:6: leaking param: b\ne.go:15: buf escapes to heap\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:19:32Z",
+	"created_at": "2012-06-04T14:32:08Z",
+	"updated_at": "2016-06-24T22:19:59Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

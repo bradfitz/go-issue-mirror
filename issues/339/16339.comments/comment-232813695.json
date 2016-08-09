@@ -1,0 +1,16 @@
+{
+	"id": 232813695,
+	"body": "+1 to this proposal.\r\n\r\nAnother motivation for aliasing internal objects:\r\n\r\nIf you have,\r\n\r\n    outer/\r\n        |- inner/\r\n            |- bar.go\r\n        |- foo.go       // imports outer/inner\r\n\r\nWhere package `outer` implements the primary API of your library and `inner`\r\nprovides a lower level API which `outer` builds upon.\r\n\r\nYou can't define a type `T` in `outer` that can be used from `inner` because\r\nthat introduces an import cycle. So you will either define it in `inner` or\r\nin another subpackage.\r\n\r\n    outer/\r\n        |- another/\r\n            |- t.go     // type T struct{..}\r\n        |- inner/\r\n            |- bar.go   // imports outer/another\r\n        |- foo.go       // imports outer/another\r\n\r\nThis is undesirable if you want to export `T` as part of your primary API,\r\nwhile still having access to it in the low-level API.\r\n\r\nWe have worked around this by defining an internal type and creating new\r\ndeclarations of it in `inner` and `outer`:\r\n\r\n    outer/\r\n        |- internal/\r\n            |- t.go     // type T struct{..}\r\n        |- inner/\r\n            |- bar.go   // type T internal.T\r\n        |- foo.go       // type T internal.T\r\n\r\nThe aliased versions have copies of the internal type's constructors and\r\nmethods that cast to and from the internal type. Plus the `outer` version\r\ncasts to the `inner` version when calling the low level API.\r\n\r\n    func NewT() T {\r\n        t := internal.NewT()\r\n        return T(t)\r\n    }\r\n\r\n    func (t T) Get() string {\r\n        return internal.T(t).Get()\r\n    }\r\n\r\nWith this proposal and support for aliasing internal objects, all this\r\nboilerplate and casting goes away.\r\n\r\n    outer/\r\n        |- internal/\r\n            |- t.go     // type T struct{..}\r\n        |- inner/\r\n            |- bar.go   // type T =\u003e internal.T\r\n        |- foo.go       // type T =\u003e internal.T\r\n\r\nCC @prashantv ",
+	"user": {
+		"login": "abhinav",
+		"id": 41730,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	},
+	"created_at": "2016-07-14T22:42:34Z",
+	"updated_at": "2016-07-14T22:42:34Z"
+}

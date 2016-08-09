@@ -1,0 +1,28 @@
+{
+	"id": 159257624,
+	"number": 16013,
+	"state": "closed",
+	"title": "cmd/compile: framepointer + duffzero generates weird (+bad?) code",
+	"body": "```\r\nfunc f(i byte) byte {\r\n\tvar x [256]byte\r\n\treturn x[i]\r\n}\r\n```\r\nWithout framepointers, the zeroing of x is done with:\r\n```\r\n    205b:       48 8d 3c 24             lea    (%rsp),%rdi\r\n    205f:       0f 57 c0                xorps  %xmm0,%xmm0\r\n    2062:       e8 7d 60 04 00          callq  480e4 \u003cruntime.duffzero+0xe4\u003e\r\n```\r\nWith framepointers on, however, there's some extra weird code on there:\r\n```\r\n    206e:       48 8d 3c 24             lea    (%rsp),%rdi\r\n    2072:       0f 57 c0                xorps  %xmm0,%xmm0\r\n    2075:       48 89 6c 24 f0          mov    %rbp,-0x10(%rsp)\r\n    207a:       48 8d 6c 24 f0          lea    -0x10(%rsp),%rbp\r\n    207f:       e8 20 9d 04 00          callq  4bda4 \u003cruntime.duffzero+0xe4\u003e\r\n    2084:       48 8b 6d 00             mov    0x0(%rbp),%rbp\r\n```\r\n\r\nI'm not sure what this code is about or where in the compiler it comes from.  I'm investigating. Some sort of pretend framepointer link for duffzero?  It doesn't seem necessary, duffzero is a leaf routine.\r\nThe fact that it is writing on the wrong side of `%rsp` scares me.\r\n\r\nAlso check duffcopy.\r\n\r\n@aclements ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-06-09T02:36:44Z",
+	"created_at": "2016-06-08T20:00:55Z",
+	"updated_at": "2016-06-09T02:36:44Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

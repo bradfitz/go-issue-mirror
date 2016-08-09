@@ -1,0 +1,12 @@
+{
+	"id": 93091186,
+	"body": "@ianlancetaylor Are you referring to just item 3, or you think the spec is accurate and complete for the first two items I listed too?\r\n\r\nRephrasing my concern about the wording in item 3, currently the spec seems to admit this behavior for recover:\r\n\r\n    func recover() interface{} {\r\n        // 1. Apply the \"stop panicking\" logic from the \"The recover function allows a program [...]\" paragraph.\r\n        if (\"called by function D [possibly indirectly?], which was deferred by panicking function G\") {\r\n            stopPanicking()\r\n        }\r\n\r\n        // 2. Apply the \"return nil\" logic from the next paragraph.\r\n        if (\"goroutine is not panicking\" || \"not *directly* called by a deferred function\") {\r\n            return nil\r\n        }\r\n\r\n        // 3. Continue with the previous paragraph and return the value from panicking.\r\n        return valueFromPanicking()\r\n    }\r\n\r\nThe nit I see is the stop-panicking logic and the what-value-is-returned logic are separately described with slightly different wording.\r\n\r\nI think by reorganizing the section a bit, it could be clearer that the correct behavior is something like:\r\n\r\n    func recover() interface{} {\r\n        // 1. This case always return nil without doing anything.\r\n        // (Note: No need to test for \"not panicking\", because that's just a special case.)\r\n        if (\"not *directly* called by a function D, deferred by a panicking function G\") {\r\n            return nil\r\n        }\r\n\r\n        // 2. Stop panicking and return the panic value.\r\n        stopPanicking()\r\n        return valueFromPanicking()\r\n    }",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-14T22:20:28Z",
+	"updated_at": "2015-04-14T22:20:28Z"
+}

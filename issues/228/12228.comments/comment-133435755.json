@@ -1,0 +1,12 @@
+{
+	"id": 133435755,
+	"body": "@aclements I have some additional info for you:\r\nAs I already described in my original post, my converter program is parsing very large HTML documents into Abstract syntax trees (I guess) with the help of [goquery](https://github.com/PuerkitoBio/goquery) and then it searches for logical parts (sections) in those ASTs and eventually saves each section to a separate HTML file.\r\nToday I managed to find out which part of my original program (as of yesterday) triggered the Go 1.5 slowdown: When saving each found section, I created a clone(!) of the whole AST first, then removed all unnecessary elements from that cloned AST and then saved the remaining AST as HTML to a file. Since the original input HTML files are about 1.5MB each, and each such file contains about 325 sections, my original program did a lot of cloning. Because of this, I was always aware that my program was generating a lot of garbage in the memory for the GC. That's because after a section got saved, the cloned AST became pure garbage. This excessive amount of generated garbage caused the slowdown with Go 1.5 (with the default GOGC value of 100). I know this now for sure, because today I was able to refactor my program: I no longer clone the original AST, I managed to work around that necessity. Now when I save each section I work with the same original AST. This resulted a significant speed-up (as expected): now my program completes the same task in just 12 seconds!\r\nHere is the interesting part: My converter program now completes the task in 12 seconds even with the default GOGC value of 100 ! In other words: Since my program no longer generates a lot of garbage for the GC, it no longer suffers from the new GC and its default GOGC value of 100 as it did yesterday.\r\nIt is still interesting why and how did the new GC caused such a major slowdown for the original program. It was not trivial nor easy to work around the cloning of the AST in my case, fortunately I managed to do it. However I can imagine situations where this would not be possible. In such Go programs the new GC could still cause major slowdowns... So I agree, the new GC still needs some fine tuning. Keep up the great work!",
+	"user": {
+		"login": "tssajo",
+		"id": 2164104,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-21T14:04:35Z",
+	"updated_at": "2015-08-21T14:04:35Z"
+}

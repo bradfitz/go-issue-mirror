@@ -1,0 +1,12 @@
+{
+	"id": 66090829,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe problem is this call in ld/lib.c:\n\t\t// Provided by the code that imports the package.\n\t\t// Since we are simulating the import, we have to provide this string.\n\t\taddstrdata(\"go.string.\\\"runtime/cgo\\\"\", \"runtime/cgo\");\nThat defines a symbol go.string.\"runtime/cgo\".  When the compiler sees the string\nconstant, it defines the same symbol to hold the string.  The compiler builds the symbol\nas a string header followed immediately by the string data, and it builds a relocation\nthat knows that layout: a relocation to the symbol plus the size of the string header\n(datastring in gobj.c).  The linker uses a different layout in addstrdata--it puts the\nstring header in one section and the string data in a different section.  But the symbol\nname go.string.\"runtime/cgo\" is the same in both cases, and it has to be the same or we\nget other linker confusion.\n\nSo it fails when using external linking because we get a reference to an offset from the\nstring symbol expecting to find the string data there, but it isn't there.\n\nI haven't quite worked out why works when using internal linking.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-29T22:17:53Z",
+	"updated_at": "2014-12-08T10:40:13Z"
+}

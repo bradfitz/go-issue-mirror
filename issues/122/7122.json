@@ -1,0 +1,26 @@
+{
+	"id": 51286222,
+	"number": 7122,
+	"state": "open",
+	"title": "net: reject Lookup(\"www.google.com..\") on all systems",
+	"body": "\u003cpre\u003eOn Linux domain look-up is too liberal and accepts domain\nnames with two trailing dots like \u0026quot;www.google.com..\u0026quot;.\nMost probably this is an issue on the OS level as\ngethostbyname(3) shows this behavior also.\n\nAllowing two trailing dots instead of none or\none (for a FQDN) seems harmless but it messes with the\ndomain name canonicalization done in net/http/cookiejar\nand the determination of the public suffix of a domain.\n\nI'd like to argue that malformed domains should be\nrejected on look-up on any OS; at least no request\nshould be made to such malformed domain names.\n\nThis issue is not present on Windows and OSX.\nDomains with three trailing dots are properly rejected\non Linux, Windows and OSX.\nOther OS are untested.\n\nThe following program demonstrates the issue:\nOn Linux neither net.LookupHost nor http.Get fail.\n\n--------------\npackage main\n\nimport (\n\t\u0026quot;io\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\nfunc main() {\n\taddrs, err := net.LookupHost(\u0026quot;www.google.com..\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfor _, a := range addrs {\n\t\tlog.Println(a)\n\t}\n\tres, err := http.Get(\u0026quot;\u003ca href=\"http://www.google.com\"\u003ehttp://www.google.com\u003c/a\u003e../foo\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tdefer res.Body.Close()\n\tio.Copy(os.Stdout, res.Body)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "vdobler",
+		"id": 701382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 7,
+	"created_at": "2014-01-14T13:53:53Z",
+	"updated_at": "2015-04-14T19:45:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51282078,
+	"number": 4397,
+	"state": "closed",
+	"title": "cmd/compile: inline of a predicate uses temporary bool",
+	"body": "by **jeff.allen**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. here is a program that makes a call to a predicate:\n\npackage main\n\nfunc eq(a,b string) bool {\n\treturn len(a) == len(b)\n}\n\nfunc main() {\n\ta := \u0026quot;\u0026quot;\n\tb := \u0026quot;\u0026quot;\n\tif eq(a,b) {\n\t\tprintln(\u0026quot;ok\u0026quot;)\n\t}\n}\n\nInlining the predicate results in assembly with duplicate initialization of temporaries\non the stack and jumps forward and back. \n\nIs this really correct behavior? It seems suspiciously ugly.\n\nWhat is the expected output?\n\nThis is the assembly from manually inlining the code (i.e. replacing a call to eq(a,b)\nwith the expression len(a)==len(b))\n\n--- prog list \u0026quot;main\u0026quot; ---\n0010 (streq.go:7) TEXT    main+0(SB),$16-0\n0011 (streq.go:8) LEAQ    go.string.\u0026quot;\u0026quot;+0(SB),BX\n0012 (streq.go:8) MOVQ    (BX),BP\n0013 (streq.go:8) MOVQ    8(BX),CX\n0014 (streq.go:9) MOVQ    (BX),BP\n0015 (streq.go:9) MOVQ    8(BX),AX\n0016 (streq.go:10) CMPQ    CX,AX\n0017 (streq.go:10) JNE     ,26\n0018 (streq.go:11) LEAQ    go.string.\u0026quot;ok\u0026quot;+0(SB),BX\n0019 (streq.go:11) LEAQ    (SP),BP\n0020 (streq.go:11) MOVQ    BP,DI\n0021 (streq.go:11) MOVQ    BX,SI\n0022 (streq.go:11) MOVSQ   ,\n0023 (streq.go:11) MOVSQ   ,\n0024 (streq.go:11) CALL    ,runtime.printstring+0(SB)\n0025 (streq.go:11) CALL    ,runtime.printnl+0(SB)\n0026 (streq.go:13) RET     ,\n\nWhat do you see instead?\n\nThis is the assembly from 6g with inlining. Note the useless MOVB $0,.anon2, which after\ntwo jumps (!), is overwritten by MOV AX,.anon2, then compared to $0.\n\n--- prog list \u0026quot;main\u0026quot; ---\n0010 (streq.go:7) TEXT    main+0(SB),$24-0\n0011 (streq.go:8) LEAQ    go.string.\u0026quot;\u0026quot;+0(SB),BX\n0012 (streq.go:8) MOVQ    (BX),SI\n0013 (streq.go:8) MOVQ    8(BX),DX\n0014 (streq.go:9) MOVQ    (BX),CX\n0015 (streq.go:9) MOVQ    8(BX),BP\n0016 (streq.go:10) MOVB    $0,.anon2+-1(SP)\n0017 (streq.go:10) JMP     ,20\n0018 (streq.go:10) MOVQ    $1,AX\n0019 (streq.go:10) JMP     ,23\n0020 (streq.go:10) CMPQ    DX,BP\n0021 (streq.go:10) JEQ     ,18\n0022 (streq.go:10) MOVQ    $0,AX\n0023 (streq.go:10) MOVB    AX,.anon2+-1(SP)\n0024 (streq.go:10) MOVBQZX .anon2+-1(SP),BX\n0025 (streq.go:10) CMPB    BX,$0\n0026 (streq.go:10) JEQ     ,35\n0027 (streq.go:11) LEAQ    go.string.\u0026quot;ok\u0026quot;+0(SB),BX\n0028 (streq.go:11) LEAQ    (SP),BP\n0029 (streq.go:11) MOVQ    BP,DI\n0030 (streq.go:11) MOVQ    BX,SI\n0031 (streq.go:11) MOVSQ   ,\n0032 (streq.go:11) MOVSQ   ,\n0033 (streq.go:11) CALL    ,runtime.printstring+0(SB)\n0034 (streq.go:11) CALL    ,runtime.printnl+0(SB)\n0035 (streq.go:13) RET     ,\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nLinux\n\nWhich version are you using?  (run 'go version')\n\n14893:591fc8a0131a\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 14,
+	"closed_at": "2016-02-26T16:15:44Z",
+	"created_at": "2012-11-16T09:20:26Z",
+	"updated_at": "2016-02-26T16:15:44Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

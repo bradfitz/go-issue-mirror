@@ -1,0 +1,12 @@
+{
+	"id": 145186618,
+	"body": "Unless we check for this case explicitly, i don't think we can generate any\r\nbetter error messages.\r\n\r\nPS: when debugging problems like this, go build -x will generally lead you\r\nto the problem faster.\r\n\r\nThe problem is that normally cmd/go tolerates a lot of missing directories\r\nbecause it calls os.MkdirAll to create directories, except for one case:\r\nwhen it needs to create the initial $WORK directory, it calls\r\n     ioutil.TempDir(\"\", \"go-build\")\r\nwhich will not create $TMPDIR if it doesn't exist. And I think that's a\r\nreasonable choice (because $TMPDIR is supposed to always exist and\r\nshould be created by root due to the special sticky bit requirement.)\r\n\r\nAnd I don't think ioutil.TempDir should check for the case where $TMPDIR\r\ndoesn't exist and generate a new error message. The existing message is\r\narguably good enough already: \"mkdir /xxx/yyy: no such file or directory\"\r\nmeans mkdir syscall returns ENOENT, and that signifies that the parent\r\ndirectory doesn't exist or there is a bad symlink somewhere.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-03T00:14:13Z",
+	"updated_at": "2015-10-03T01:03:10Z"
+}

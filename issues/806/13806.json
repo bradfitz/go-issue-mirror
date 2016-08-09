@@ -1,0 +1,26 @@
+{
+	"id": 124660982,
+	"number": 13806,
+	"state": "open",
+	"title": "runtime: EABI support for netbsd/arm is insufficient",
+	"body": "1  What version of Go are you using (go version)?\r\n\r\n  Go 1.4 and Go 1.5 (maybe Go 1.3, too)\r\n\r\n2 What operating system and processor architecture are you using?\r\n   * Host:\r\n     * Linux(CentOS7)   go version go1.4.2 linux/amd64\r\n     * NetBSD/amd64 7.0 go version go1.5.1 netbsd/amd64\r\n     * NetBSD/amd64 7.0 go version go1.4.3 netbsd/amd64\r\n\r\n     This problem occurs on all host environments.\r\n\r\n   * Target:\r\n      * NetBSD/evbarm 7.0 (EABI, PAGE_SIZE=4K kernel)\r\n\r\n3  What did you do?\r\n\r\nSimple test program\r\n```\r\n  package main\r\n  import \"fmt\"\r\n  func main() {\r\n          fmt.Println(\"Hello World\")\r\n  }\r\n\r\n  $ GOOS=netbsd GOARCH=arm go build .hello.go\r\n  $ file hello\r\n  hello: ELF 32-bit LSB executable, ARM, version 1 (NetBSD), statically linked, for NetBSD 5.99, not stripped\r\n```\r\n4 What did you expect to see?\r\n```\r\n  $ ./hello\r\n  Hello World\r\n```\r\n5  What did you see instead?\r\n   When run on NetBSD/arm\r\n ```\r\n $ ./hello\r\n (no response, send KILL signal from another tty)\r\n [1]   Killed                  ./hello\r\n $ gdb ./hello\r\n (gdb) r\r\n  Starting program: /tmp/hello\r\n  \r\n  Program received signal SIGSEGV, Segmentation fault.\r\n  0x000383c4 in runtime.newosproc ()\r\n      at /usr/lib/golang/src/runtime/os_netbsd.c:228\r\n```\r\nThe reason of this is because the EABI support is insufficient.\r\nPrevious changes (at Mar 2014) are only in syscall packages:\r\n  https://github.com/golang/go/commit/30d60936d97423af0403f2d5395c604ac0ff3757\r\nHowever runtime package is also a need to be changed.\r\nGo1.5: src/runtime/defs1_netbsd_arm.go\r\nGo1.4: src/runtime/defs_netbsd_arm.h\r\nI think some types need padding bytes - timespec,  timeval, mcontextt, ucontextt, keventt,  \r\nIn addition, ELF header is also required EABI flag as same as Linux / FreeBSD.\r\n\r\nI attached these patch for go1.5.\r\n[go_netbsd_earm_diff.txt](https://github.com/golang/go/files/76677/go_netbsd_earm_diff.txt)\r\n",
+	"user": {
+		"login": "oshimaya",
+		"id": 7277201,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-01-03T17:40:55Z",
+	"updated_at": "2016-05-18T01:05:28Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

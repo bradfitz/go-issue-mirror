@@ -1,0 +1,26 @@
+{
+	"id": 51280467,
+	"number": 3358,
+	"state": "open",
+	"title": "os: some functions fail if full paths are long (more than about 250 chars) on windows",
+	"body": "\u003cpre\u003eThis program creates directory, but fails to create file inside (CAREFUL IF CHANGING\nTHIS PROGRAM - YOU MIGHT END UP WITH FILES/DIRECTORIES YOU WILL NOT BE ABLE TO DELETE\nWITH STANDARD SHELL TOOLS):\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;strings\u0026quot;\n)\n\nfunc main() {\n//\troot := `\\\\?\\c:\\`\n\troot := `c:\\`\n\tdir := root + strings.Repeat(\u0026quot;d\u0026quot;, 200)\n\tfile := dir + `\\` + strings.Repeat(\u0026quot;f\u0026quot;, 200)\n\terr := os.Mkdir(dir, 0777)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Mkdir(%s): %v\u0026quot;, dir, err)\n\t}\n\tf, err := os.Create(file)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Create(%s): %v\u0026quot;, file, err)\n\t}\n\t_, err = fmt.Fprintf(f, \u0026quot;Hello world\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Fprintf(%s): %v\u0026quot;, file, err)\n\t}\n\terr = f.Close()\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Close(%s): %v\u0026quot;, file, err)\n\t}\n\terr = os.Remove(file)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Remove(%s): %v\u0026quot;, file, err)\n\t}\n\terr = os.Remove(dir)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Remove(%s): %v\u0026quot;, dir, err)\n\t}\n}\n\nThis can be handled properly if we use \\\\?\\ path prefix (uncomment line in the code).\nBut \\\\?\\ prefixed paths needs to be \u0026quot;normalized\u0026quot;: they have to be absolute, no\n. or .. allowed, / is not allowed, UNC paths needs to be handled properly. See\n\u003ca href=\"http://goo.gl/th2fJ\"\u003ehttp://goo.gl/th2fJ\u003c/a\u003e for details, especially \u0026quot;Maximum Path Length Limitation\u0026quot;\nsection.\n\nThis issue has come up on our own builder: \u003ca href=\"http://goo.gl/FbblU\"\u003ehttp://goo.gl/FbblU\u003c/a\u003e. Perhaps our own paths do\nnot need to be that long. I did not look into that yet.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 33,
+	"created_at": "2012-03-20T05:47:54Z",
+	"updated_at": "2016-05-10T01:12:44Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

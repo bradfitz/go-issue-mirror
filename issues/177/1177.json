@@ -1,0 +1,22 @@
+{
+	"id": 51277455,
+	"number": 1177,
+	"state": "closed",
+	"title": "macho64 load command size should be a multiple of 8",
+	"body": "by **jimmc2**:\n\n\u003cpre\u003e1. What is a short input program that triggers the error?\n\nBuild something that causes the linker to emit an LC_RPATH section. Mine is\n/Users/jim/src/go/pkg/darwin_amd64 which results in a segment length of 52 when it\nshould be a multiple of 8. \n\n2. What is the full compiler output?\n\noutput of otool -l binary\n...\nLoad command 10\n          cmd LC_RPATH\n      cmdsize 52\n         path /Users/jim/src/go/pkg/darwin_amd64 (offset 12)\n...\n\n3. What version of the compiler are you using?  (Run it with the -V flag.)\n6l version 6449\n\nThe patch is a pretty safe fix inside newMachoLoad to force load commands to be a\nmultiple of 8 bytes for macho64. All of the call sites seem to pass an even number\nexcept for this one.\n\nml = newMachoLoad(0x80000000 | 0x1c, 1+(strlen(pkgroot)+1+7)/8*2);\t/* LC_RPATH */\n\n\ndiff -r cc2fee944133 src/cmd/ld/macho.c\n--- a/src/cmd/ld/macho.c\tTue Oct 05 11:02:15 2010 +1100\n+++ b/src/cmd/ld/macho.c\tThu Oct 07 23:36:08 2010 -0700\n@@ -47,6 +47,10 @@\n \t\tdiag(\u0026quot;too many loads\u0026quot;);\n \t\terrorexit();\n \t}\n+\t\n+\tif(macho64 \u0026amp;\u0026amp; (ndata \u0026amp; 1))\n+\t\tndata++;\n+\t\t\n \tl = \u0026amp;load[nload++];\n \tl-\u0026gt;type = type;\n \tl-\u0026gt;ndata = ndata;\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:07:15Z",
+	"created_at": "2010-10-08T07:33:28Z",
+	"updated_at": "2016-06-24T19:21:03Z"
+}

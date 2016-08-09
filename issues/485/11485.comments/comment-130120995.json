@@ -1,0 +1,12 @@
+{
+	"id": 130120995,
+	"body": "I believe the primary expense in finalizers is treating them as roots, right? For the *os.File finalizer, what we care about is getting at the 'fd int' field, not any pointers the *os.File contains. One option is to have a runtime.unsafeSetFinalizer that arranges for the finalizer to be called as usual but without treating the object as a root. The finalizer must be careful not to access pointers contained in the object. We could use that for *os.File but not expose it otherwise.\r\n\r\nA safer option, which I like better, might be to introduce an optimization in SetFinalizer that if the object contains no pointers, it doesn't count as a root during GC (since it points at nothing). Then we can put the 'fd int' in its own finalized mini-object that satisfies this property. That would eliminate basically all the finalizer roots in network heavy programs with tons of open network connections, which should kill off the finalizer contribution to stop-the-world in those programs.\r\n\r\nWould that help enough?\r\n\r\nThe sweep of a span containing finalized objects would still need to arrange to call the finalizers, but that runs concurrently so I assume it is not as critical to the speed.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-12T00:31:17Z",
+	"updated_at": "2015-08-12T00:31:17Z"
+}

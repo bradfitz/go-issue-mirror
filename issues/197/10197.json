@@ -1,0 +1,21 @@
+{
+	"id": 63006517,
+	"number": 10197,
+	"state": "open",
+	"title": "cmd/go: fails when generated import path for local package contains space character",
+	"body": "Go version:\r\n\r\n    go version devel +6ffed30 Wed Mar 18 15:14:37 2015 +0000 darwin/amd64\r\n\r\nI did:\r\n\r\n    cd ~/\"Google Drive\"\r\n    git clone https://go.googlesource.com/go\r\n    cd go/src\r\n    ./all.bash\r\n\r\nI expected to see a successful build and test.\r\n\r\nInstead I saw:\r\n\r\n    ...\r\n    ##### ../test\r\n    # go run run.go -- fixedbugs/bug248.go\r\n    exit status 1\r\n    bug2.go:8: import path contains space character: \"/Users/drchase/Google Drive/work/go/test/fixedbugs/bug248.dir/bug0\"\r\n    bug2.go:9: import path contains space character: \"/Users/drchase/Google Drive/work/go/test/fixedbugs/bug248.dir/bug1\"\r\n\r\nand a similar failure with bug369.go .\r\nMy workaround is to rename \"Google Drive\" to \"GoogleDrive\" (and correct external references to the original name).\r\n\r\nSmall reproducer (can copy and paste into shell):\r\n\r\n    cd;  mkdir -p tmp ; cd tmp ; mkdir \"t m p\" ; cd \"t m p\"\r\n\r\n    cat \u003e main.go \u003c\u003cEOF\r\n    package main\r\n    import (\r\n      p0 \"./x\"\r\n      \"fmt\"\r\n     )\r\n    func main() {\r\n      fmt.Println(p0.Id(\"Hello, playground\"))\r\n    }\r\n    EOF\r\n    \r\n    mkdir x\r\n    cat \u003e x/bug0.go \u003c\u003cEOF\r\n    package x\r\n    func Id (s string) string {\r\n      return s\r\n    }\r\n    EOF\r\n\r\n    go tool 6g main.go\r\n    # end of copy and paste\r\n\r\nThis produces the error:\r\n\r\n    main.go:3: import path contains space character: \"/Users/drchase/tmp/t m p/x\"\r\n    main.go:7: undefined: p0 in p0.Id\r\n\r\nOrdinary compilation works fine:\r\n\r\n    $ go run main.go\r\n    Hello, playground\r\n\r\n",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-03-19T14:41:59Z",
+	"updated_at": "2015-07-14T03:25:52Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

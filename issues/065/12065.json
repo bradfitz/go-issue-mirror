@@ -1,0 +1,22 @@
+{
+	"id": 99580964,
+	"number": 12065,
+	"state": "closed",
+	"title": "cmd/cgo: \"struct size calculation error\" build error when returning id type from cgo to Go on Darwin.",
+	"body": "## Standard Questions\r\n\r\n#### What version of Go are you using (go version)?\r\n\r\n```\r\ngo version go1.5rc1 darwin/amd64\r\n```\r\n\r\n#### What operating system and processor architecture are you using?\r\n\r\nOS X Yosemite Version 10.10.4 (14E46)\r\n\r\n#### What did you do?\r\n\r\nHere's a small reproduce case. Create a `main.go` file in an empty folder:\r\n\r\n```Go\r\n// +build darwin\r\n\r\npackage main\r\n\r\n/*\r\n#cgo CFLAGS: -x objective-c\r\n\r\nid foo() {\r\n    return 0;\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n    fmt.Println(C.foo())\r\n}\r\n```\r\n\r\nThen run:\r\n\r\n```\r\ngo build\r\n```\r\n\r\n#### What did you expect to see?\r\n\r\nNo output, because the build should be successful.\r\n\r\n#### What did you see instead?\r\n\r\nA failure to build, with the following error:\r\n\r\n```\r\n./main.go:17:14: struct size calculation error off=8 bytesize=0\r\n```\r\n\r\n## Notes\r\n\r\nI'm not an expert on Objective-C, so this may be a user error. But from what I can tell, it looks like a longstanding bug with cgo.\r\n\r\nObjective-C seems to have a predeclared type `id`. I have seen headers (in [external code](https://github.com/glfw/glfw/blob/29b40112c234c3021648ea42a5e74cc122ba08b4/include/GLFW/glfw3native.h#L81-L85)) that include the following:\r\n\r\n```ObjectiveC\r\n#if defined(__OBJC__)\r\n #import \u003cCocoa/Cocoa.h\u003e\r\n#else\r\n typedef void* id;\r\n#endif\r\n```\r\n\r\nWhich leads me to think `id` type is similar to a void pointer.\r\n\r\nWhen building the program below, I can tell that `__OBJC__` is set. I can also tell `id` is declared even if I don't import `\u003cCocoa/Cocoa.h\u003e`, because if I change the type from `id` to `idx`, I get a `clang` error:\r\n\r\n```\r\n./main.go:8:1: error: unknown type name 'idx'; did you mean 'id'?\r\nidx foo() {\r\n^~~\r\nid\r\nnote: 'id' declared here\r\n1 error generated.\r\n```\r\n\r\nAdding `#import \u003cCocoa/Cocoa.h\u003e` or `typedef void* id;` does not make any difference on the error.\r\n\r\nHowever, using a different type name (e.g., `idx`) and doing `typedef void* idx;` results in a successful compilation.\r\n\r\nThis issue _might_ be related to https://github.com/golang/go/issues/3505 which is the only remaining reported unresolved issue with a similar `struct size calculation error` error message.\r\n\r\nOriginal issue is https://github.com/go-gl/glfw/issues/136.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-08-07T08:24:22Z",
+	"created_at": "2015-08-07T05:05:02Z",
+	"updated_at": "2016-08-08T21:04:10Z"
+}

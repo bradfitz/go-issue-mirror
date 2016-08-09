@@ -1,0 +1,28 @@
+{
+	"id": 153471312,
+	"number": 15572,
+	"state": "closed",
+	"title": "cmd/compile: bad export data for composite literal with elided type",
+	"body": "This works:\n\n```\n$ cat b.go\npackage b\n\ntype T struct {\n}\n\nfunc F() []*T {\n\treturn []*T{\u0026T{}}\n}\n$ cat a.go\npackage a\n\nimport \"./b\"\n\nfunc F() {\n\tb.F()\n}\n$ go tool compile b.go \u0026\u0026 go tool compile a.go\n```\n\nThis does not (dropped the unnecessary `\u0026T` in the inner composite literal):\n\n```\n$ cat b.go\npackage b\n\ntype T struct {\n}\n\nfunc F() []*T {\n\treturn []*T{{}}\n}\n$ go tool compile b.go \u0026\u0026 go tool compile a.go\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x30 pc=0x2277f0]\n\ngoroutine 1 [running]:\nbootstrap/compile/internal/gc.typecheck1(0xc2083bc120, 0x44, 0x4)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:478 +0xa5e0\nbootstrap/compile/internal/gc.typecheck(0xc2083bc120, 0x44, 0xc2083bc090)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:188 +0x8d7\nbootstrap/compile/internal/gc.typecheckcomplit(0xc2083bc090, 0x0)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:2847 +0x1dd\nbootstrap/compile/internal/gc.typecheck1(0xc2083bc090, 0x2, 0x3)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:823 +0x6924\nbootstrap/compile/internal/gc.typecheck(0xc2083bc090, 0x2, 0xc2083bc000)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:188 +0x8d7\nbootstrap/compile/internal/gc.typecheckcomplit(0xc2083afdd0, 0x0)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:2928 +0xac0\nbootstrap/compile/internal/gc.typecheck1(0xc2083afdd0, 0x12, 0x2)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:823 +0x6924\nbootstrap/compile/internal/gc.typecheck(0xc2083afdd0, 0x12, 0xc20802cb28)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:188 +0x8d7\nbootstrap/compile/internal/gc.typecheckslice(0xc20804c708, 0x1, 0x1, 0x12)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:49 +0x63\nbootstrap/compile/internal/gc.typecheck1(0xc2083afd40, 0x1, 0x1)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:2028 +0x10d0f\nbootstrap/compile/internal/gc.typecheck(0xc2083afd40, 0x1, 0xccff)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:188 +0x8d7\nbootstrap/compile/internal/gc.typecheckslice(0xc20804c710, 0x1, 0x1, 0x1)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/typecheck.go:49 +0x63\nbootstrap/compile/internal/gc.typecheckinl(0xc2083afcb0)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:78 +0x134\nbootstrap/compile/internal/gc.mkinlcall1(0xc2083bc6c0, 0xc2083afcb0, 0x1ea400, 0xc2083b4930)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:536 +0xb6\nbootstrap/compile/internal/gc.mkinlcall(0xc2083bc6c0, 0xc2083afcb0, 0x0, 0x0)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:501 +0x73\nbootstrap/compile/internal/gc.inlnode(0xc2083bc6c0, 0xc20804c750)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:461 +0x85c\nbootstrap/compile/internal/gc.inlnodelist(0xc208399cc0)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:319 +0x85\nbootstrap/compile/internal/gc.inlnode(0xc2083bc360, 0xc2083bc360)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:437 +0x551\nbootstrap/compile/internal/gc.inlcalls(0xc2083bc360)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/inl.go:275 +0x4e\nbootstrap/compile/internal/gc.func·019(0xc20804c748, 0x1, 0x1, 0xc2083c1a00)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/main.go:433 +0x7b\nbootstrap/compile/internal/gc.(*bottomUpVisitor).visit(0xc2083b2c60, 0xc2083bc360, 0xc2083b2c90)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/esc.go:106 +0x3a5\nbootstrap/compile/internal/gc.visitBottomUp(0xc20804c740, 0x1, 0x1, 0x676728)\n\t/Users/rsc/go/src/cmd/compile/internal/gc/esc.go:62 +0xe4\nbootstrap/compile/internal/gc.Main()\n\t/Users/rsc/go/src/cmd/compile/internal/gc/main.go:436 +0x25cb\nbootstrap/compile/internal/amd64.Main()\n\t/Users/rsc/go/src/cmd/compile/internal/amd64/galign.go:96 +0x7bc\nmain.main()\n\t/Users/rsc/go/src/cmd/compile/main.go:33 +0x17b\n\ngoroutine 2 [runnable]:\nruntime.forcegchelper()\n\t/Users/rsc/go1.4/src/runtime/proc.go:90\nruntime.goexit()\n\t/Users/rsc/go1.4/src/runtime/asm_amd64.s:2232 +0x1\n\ngoroutine 3 [runnable]:\nruntime.bgsweep()\n\t/Users/rsc/go1.4/src/runtime/mgc0.go:82\nruntime.goexit()\n\t/Users/rsc/go1.4/src/runtime/asm_amd64.s:2232 +0x1\n\ngoroutine 4 [runnable]:\nruntime.runfinq()\n\t/Users/rsc/go1.4/src/runtime/malloc.go:712\nruntime.goexit()\n\t/Users/rsc/go1.4/src/runtime/asm_amd64.s:2232 +0x1\n$ \n```",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-09T06:16:44Z",
+	"created_at": "2016-05-06T15:04:03Z",
+	"updated_at": "2016-05-09T06:16:44Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

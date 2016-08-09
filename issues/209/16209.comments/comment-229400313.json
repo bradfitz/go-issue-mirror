@@ -1,0 +1,12 @@
+{
+	"id": 229400313,
+	"body": "I left specific examples in the referenced thread. That was probably a mistake… better for this discussion to be self-contained.\r\n\r\nHere's a fairly succinct example. We're trying to pass a function as an argument, but the argument types differ because `fmt.Stringer` and `main.Stringer` are different interfaces, even though they are compatible:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\ntype Stringer interface {\r\n\tString() string\r\n}\r\n\r\nfunc func1(s Stringer) {}\r\nfunc func2(s fmt.Stringer) {}\r\nfunc func3(f func(s Stringer)) {}\r\nfunc func4(f func(s fmt.Stringer)) {}\r\n\r\nfunc main() {\r\n\te := time.Second // valid Stringer\r\n\r\n\tfunc1(e) // ok\r\n\tfunc2(e) // ok\r\n\r\n\tfunc3(func1) // ok\r\n\tfunc4(func1) // cannot use func1 (type func(Stringer)) as type func(fmt.Stringer) in argument to func4\r\n}\r\n```\r\n\r\nHonestly, I don't see much practical reason for struct fields to change, but they seem similar enough that it would be confusing for them to be treated differently. Perhaps it would be simpler to limit this proposal to functions: I've done that below in the proposed change. Apologies for the clumsy language: I expect someone with more experience at spec writing can do better.\r\n\r\n## Proposed change:\r\n\r\n### Assignability\r\n\r\nA value x is assignable to a variable of type T (\"x is assignable to T\") in any of these cases:\r\n\r\n- x's type is identical to T.\r\n- x's type V and T have identical underlying types and at least one of V or T is not a named type.\r\n- T is an interface type and x implements T.\r\n- x is a bidirectional channel value, T is a channel type, x's type V and T have identical element types, and at least one of V or T is not a named type.\r\n- x is the predeclared identifier nil and T is a pointer, function, slice, map, channel, or interface type.\r\n- x is an untyped constant representable by a value of type T.\r\n- **x is a function, T is a function type, and x's type and T have the same number of parameters and result values, parameter values of x's type are assignable to corresponding parameter types of T, result values of T are assignable to corresponding result types of x's type, and either both functions are variadic or neither is.**",
+	"user": {
+		"login": "zellyn",
+		"id": 33625,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-29T15:51:25Z",
+	"updated_at": "2016-06-29T15:51:25Z"
+}

@@ -1,0 +1,16 @@
+{
+	"id": 217995359,
+	"body": "\u003e I don't want to start making every package depending on fmt have its own fmt-like \"minimal\" versions. That would mean that in a real program we'd have both the actual fmt implementation as well as all the \"minimal\" fmt clones, making the size problem even worse.\r\n\r\nI agree with @bradfitz here. I think that trying to remove a single dependency from a package in order to optimize performance is setting a bad precedent. The Go programming language and its compilers are meant to make our jobs, the humans, easier, and I want to continue to be be able to write natural and idiomatic Go code.\r\n\r\n\u003e I'd rather just see the linkers (Go and GopherJS's) fixed to do more dead code elimination, if that's the issue. (sometimes unnecessary generated init funcs pin things that might not otherwise be needed).\r\n\r\nThis is where I'd like to see time and effort being spent, rather than trying to eliminate usages of packages in a few places, because that is likely to regress in the future, or cause pain for people trying to write idiomatic Go code because suddenly there are certain packages they shouldn't import (according to fuzzy metrics).\r\n\r\n\u003e A good linker should discard things which are unused. I don't know whether GopherJS can do that.\r\n\r\n\u003e But if it turns out that a perfect linker couldn't dead-code eliminate something (perhaps because the code paths to take depend on the Errorf format string), perhaps only then could we change something to give the linker more information. But only if it helps significantly.\r\n\r\nGopherJS is able to and currently performs high quality DCE, potentially better than generic JS minifiers can, because it has full access to the original source that's being built and it sees what is statically needed/used. It follows the constraint that it must always produce valid code that works as specified in Go spec; it can't take shortcuts that would be against Go spec.\r\n\r\n**However,** its DCE efforts are _significantly_ thwarted because of run-time reflection via `reflect` package. That ability means it's not possible to determine at compile type if some types, etc., are not used and eliminate them, because they may be accessed via reflection (which in 99% of cases they are not, but to generate correct programs, that 1% possibility cannot be discarded). /cc @neelance\r\n\r\nThere is an open issue https://github.com/gopherjs/gopherjs/issues/186 to implement optional \"unsafe aggressive DCE\" where if you promise not to use reflect to access things that aren't statically mentioned, GopherJS could eliminate them (and if you break your promise, behavior is undefined). However, it's not implemented yet.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-05-09T21:27:46Z",
+	"updated_at": "2016-05-09T21:33:21Z"
+}

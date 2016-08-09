@@ -1,0 +1,28 @@
+{
+	"id": 51281325,
+	"number": 3898,
+	"state": "closed",
+	"title": "go/ast: Fprint misbehaves with user-provided data.",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. A *ast.Object may contain arbitrary data. ast.Fprint assumes it can call Interface()\non arbitrary reflect.Value's The exp/types package injects such data.\n\n2. Call the following file main.go and go run it (you need exp/types)\n\npackage main\n\nimport (\n      \u0026quot;exp/types\u0026quot;\n      \u0026quot;go/ast\u0026quot;\n      \u0026quot;go/parser\u0026quot;\n      \u0026quot;go/token\u0026quot;\n      \u0026quot;os\u0026quot;\n)\n\nfunc main() {\n      fs := token.NewFileSet()\n      file, err := parser.ParseFile(fs, \u0026quot;main.go\u0026quot;, nil, 0)\n      if err != nil {\n            panic(err)\n      }\n\n      astpkg, err := ast.NewPackage(fs, map[string]*ast.File{\u0026quot;main.go\u0026quot;: file}, types.GcImport, types.Universe)\n      if err != nil {\n            panic(err)\n      }\n\n      _, err = types.Check(fs, astpkg)\n      if err != nil {\n            panic(err)\n      }\n\n      ast.Fprint(os.Stdout, fs, astpkg, nil)\n}\n\nWhat is the expected output? What do you see instead?\n\nExpected: bunches of AST/struct dumps.\n\nGot: an error on a *big.Int:\n\n   501  .  .  .  .  .  .  .  .  .  .  .  .  .  Data: *ast.Scope {\n   502  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Outer: nil\n   503  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Objects: map[string]*ast.Object (len = 109) {\n   504  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  \u0026quot;LEQ\u0026quot;: *ast.Object {\n   505  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Kind: const\n   506  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Name: \u0026quot;LEQ\u0026quot;\n   507  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Decl: nil\n   508  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  Data: types.Const {\n   509  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  val: *panic: reflect.Value.Interface: cannot return value obtained from unexported field or method [recovered]\n\tpanic: interface conversion: interface is string, not ast.localError\n\ngoroutine 1 [running]:\ngo/ast.func·003(0x7f43ab6fff38, 0x7f43ab5e6100)\n\t/opt/remy/go/src/pkg/go/ast/print.go:52 +0x67\n----- stack segment boundary -----\nreflect.valueInterface(0x58a4e8, 0xf840118380, 0x161, 0x1, 0x161, ...)\n\t/opt/remy/go/src/pkg/reflect/value.go:831 +0xe8\nreflect.Value.Interface(0x58a4e8, 0xf840118380, 0x161, 0x0, 0x0, ...)\n\t/opt/remy/go/src/pkg/reflect/value.go:816 +0x42\ngo/ast.(*printer).print(0xf84011a600, 0x58a4e8, 0xf840118380, 0x161)\n\t/opt/remy/go/src/pkg/go/ast/print.go:164 +0x7e8\ngo/ast.(*printer).print(0xf84011a600, 0x4f05e8, 0xf8400d5f50, 0x143)\n\t/opt/remy/go/src/pkg/go/ast/print.go:145 +0xeb\n\n\nPlease use labels and text to provide additional information.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:20:38Z",
+	"created_at": "2012-08-02T21:09:23Z",
+	"updated_at": "2016-06-24T22:22:27Z"
+}

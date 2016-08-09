@@ -1,0 +1,30 @@
+{
+	"id": 115710865,
+	"number": 13183,
+	"state": "closed",
+	"title": "runtime: reconsider stack shrinking",
+	"body": "Issue #13169 has pointed out an issue which has bothered be for a while: when is it safe to shrink a stack?  Direct goroutine-\u003egoroutine copies are touchy - how do we know that the destination stack isn't being shrunk?  In a world without stop-the-world, it isn't easy to know that the destination goroutine isn't being shrunk right when we're trying to copy data to the receiving goroutine.\r\n\r\nWe get away with this right now by doing shrinking in marktermination.  If we do shrinking some other way, we could shrink without having all threads stopped, which would help our pause times.\r\n\r\nA possible solution is to only allow stack shrinking in place.  I wouldn't be too hard to do so, I had a buddy allocator stack scheme coded up about a year ago that could do this (by only freeing the unused half of the stack, leaving the rest in place).  I didn't pursue the idea because it can make fragmentation somewhat worse than the current scheme.  But maybe that problem is not as bad as this one.\r\n\r\nOr maybe there is some synchronization scheme that could lock stacks so that channel sending and shrinking were mutually excluded?\r\n\r\n@aclements ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-11-08T23:30:26Z",
+	"created_at": "2015-11-08T05:48:25Z",
+	"updated_at": "2015-11-08T23:30:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

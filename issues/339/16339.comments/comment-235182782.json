@@ -1,0 +1,16 @@
+{
+	"id": 235182782,
+	"body": "Of the language proposals so far, I like Ian's `import p.N` the best, except it doesn't support renaming an existing type. Is that an important case for refactorings?\r\n\r\nI sympathize with many of the concerns in this thread. Many commenters have suggested that the refactoring problem can be solved with a build system change, rather than a language change. That suggestion deserves to be fleshed out and responded to in more detail. Let me try ...\r\n\r\nI'll use @egonelbre's [proposal](https://github.com/golang/go/issues/16339#issuecomment-234466074) as a baseline. Briefly, the idea is to introduce a global config file that describes aliases to the build system. Let me extend the proposal slightly. I believe the following proposal is at least as powerful as Ian's, although (intentionally) more awkward. The config file is a mapping from packages to aliases, e.g.:\r\n\r\n```\r\n\"old/path/package\" = {\r\n  A: \"new/path/p0\".A,\r\n  B: \"new/path/p1\".B,\r\n}\r\n```\r\n\r\nThis redefines \"old/path/package\" to be a package that exports two identifiers, `A` and `B`, which are aliases for identifiers in packages `p0` and `p1`, respectively. If the old package had any other identifiers, like `C`, they are dropped from the package. The above config file essentially auto-generates the following package (using Ian's syntax):\r\n\r\n```go\r\npackage \"old/path/package\"\r\nimport \"new/path/p0\"\r\nimport \"new/path/p1\"\r\nimport p0.A\r\nimport p1.B\r\n```\r\n\r\nRenaming a package, splitting a package, and merging multiple packages are all trivial: just create a mapping from each identifier in the old package to the new package. In all of these cases, the aliasing rules could be auto-generated with a tool. Also, you might want to rename an identifier without changing the rest of the package. You could do that with syntax like:\r\n\r\n```\r\n\"path/package\".New = \"path/package\".Old\r\n\"path/package\".Old = nil  // remove the old identifier\r\n```\r\n\r\nThis idea is pretty ugly. I'll be the first to admit that. However, ugliness is arguably a feature: Refactorings are supposed to be temporary. Programmers (usually) don't like ugliness, so they'll avoid using this feature unless necessary, and only for as long as necessary.\r\n\r\nThis idea doesn't (easily) allow large packages to export identifiers from internal packages, as might be useful for packages like `go/*` or `net/http`. This is either a good thing or a bad thing, depending on your point of view.\r\n\r\nThe implementation may seem hairy. I don't think it would be too bad (caveat: I don't know too much about the compiler/linker internals). For example, we could add a `go tool` command to compile this config file into a collection of `.a` files, one for each package, where the aliasing information is encoded in the symbol table of the `.a` file. Effectively, we'd implement Ian's proposal in the object files, but not in the actual language syntax.",
+	"user": {
+		"login": "tombergan",
+		"id": 13954200,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"-1": 1
+	},
+	"created_at": "2016-07-26T07:18:31Z",
+	"updated_at": "2016-07-26T07:18:31Z"
+}

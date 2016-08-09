@@ -1,0 +1,21 @@
+{
+	"id": 144294312,
+	"number": 15016,
+	"state": "open",
+	"title": "cmd/internal:  plan9 mnemonic RLDCL and mask operand",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version devel +d733cef Tue Mar 29 11:19:31 2016 +0000 linux/ppc64le\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nlinux ppc64le RHEL7.2\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\nTrying to write plan9 asm to generate rldicl power asm.\r\n\r\n4. What did you expect to see?\r\nInstructions generated as defined in the Power ISA.\r\n\r\n5. What did you see instead?\r\nUnable to generate rldicl instructions with certain shift counts.  The operand for the mask bit is\r\nbeing treated as a mask instead, which is inconsistent with the power asm and does not allow\r\nall possible shift count values.\r\n\r\nFrom the Power ISA:\r\n\r\n**rldcl RA,RS,SH,MB\r\n\r\nThe contents of register RS are rotated64 left the num-\r\nber of bits specified by (RB)58:63. A mask is generated\r\nhaving 1-bits from bit MB through bit 63 and 0-bits else-\r\nwhere. The rotated data are ANDed with the generated\r\nmask and the result is placed into register RA.\r\n**\r\nThere is a plan9 asm mnemonic RLDCL (and other similar RLD)\r\nwhich can generate some of the rld* power asm instructions but\r\n the operand which corresponds to MB as described in the ISA\r\n is not the mask bit but instead is treated as a mask.  (There are\r\n no comments describing this, I found out through trial and error.)\r\n\r\nThe existing asm9.go code also limits this operand to certain values,\r\notherwise giving the error message:  \"invalid mask for shift\".  This\r\noperand should allow 0-63 as values because it is intended to\r\nspecify the first bit of the mask to use, up to a value of 63.\r\n\r\nI don't see the RLD* plan9 mnemonics being used by any other \r\nplatform.  I am working on a change to modify the use of this operand\r\nfor these plan9 mnemonics so they are consistent with the power asm\r\ndescription and so they allow the full range of mask bit values.\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-03-29T15:08:11Z",
+	"updated_at": "2016-08-06T00:06:30Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

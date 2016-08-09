@@ -1,0 +1,22 @@
+{
+	"id": 51284914,
+	"number": 6254,
+	"state": "closed",
+	"title": "cmd/go: does not report full import cycle",
+	"body": "\u003cpre\u003einit.go:\n\npackage main\n\nimport \u0026quot;pckg_a\u0026quot;\nimport \u0026quot;pckg_b\u0026quot;\n\nfunc main() {\n\tpckg_a.New()\n\tpckg_b.New()\n\nsrc/pckg_a/test.go:\n\npackage pckg_a\n\nimport \u0026quot;pckg_b\u0026quot;\n\nfunc New() string {\n\treturn pckg_b.New()\n\nsrc/pckg_b/test.go:\n\npackage pckg_b\n\nimport \u0026quot;pckg_a\u0026quot;\n\nfunc New() string {\n\treturn pckg_a.New()\n\n\nIn the directory containing init.go:\n\nGOPATH=`pwd` go build\n\nreports\n\ninit.go:3:8: import cycle not allowed\n\nThe bug is that it does not actually report the import cycle.\n\nIf I apply this patch to cmd/go/pkg.go:\n\n--- a/src/cmd/go/pkg.go\tSun Aug 11 13:05:51 2013 +0400\n+++ b/src/cmd/go/pkg.go\tMon Aug 26 09:42:19 2013 -0700\n@@ -252,7 +252,7 @@\n \t\tbp.BinDir = gobin\n \t}\n \tp.load(stk, bp, err)\n-\tif p.Error != nil \u0026amp;\u0026amp; len(importPos) \u0026gt; 0 {\n+\tif p.Error != nil \u0026amp;\u0026amp; len(importPos) \u0026gt; 0 \u0026amp;\u0026amp; p.Error.Err !=\n\u0026quot;import cycle not allowed\u0026quot; {\n \t\tpos := importPos[0]\n \t\tpos.Filename = shortPath(pos.Filename)\n \t\tp.Error.Pos = pos.String()\n\nThen the complete import cycle is reported:\n\npackage .\n\timports pckg_a\n\timports pckg_b\n\timports pckg_a: import cycle not allowed\n\n\nRecording this issue in the hopes of producing a more sensible patch.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:34:25Z",
+	"created_at": "2013-08-26T16:43:26Z",
+	"updated_at": "2016-06-25T01:17:22Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66062177,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eArguably, given the spec, and assuming the fix is to permit the above also in the\nnon-pointer receiver case, the following pathological code should also work:\n\npackage p\n\ntype T struct {\n\tfoo int\n}\n\nfunc (x *T) foo() {\n}\n\ntype I interface{\n\tfoo()\n}\n\nvar x I = new(T)\n\nThat is, an interface could be used to call the method foo (which cannot be called from\nx directly because it's ambiguous). However, 6g complains:\n\ngo tool 6g x.go \nx.go:14: T.foo is ambiguous\nx.go:14: cannot use new(T) (type *T) as type I in assignment:\n\t*T does not implement I (missing foo method)\ngo tool 6g: exit status 1\n\nFurthermore, this case would have to work as well:\n\ntype T struct {\n\tfoo int\n}\n\nfunc (x *T) foo() {}\n\nfunc (x *T) foo() {}\n\nBut we get:\n\ngo tool 6g x.go \nx.go:10: (*T).foo redeclared in this block\n\tprevious declaration at x.go:7\ngo tool 6g: exit status 1\n\nThe spec is somewhat inconsistent: For struct fields it is explicit and says that\nnon-blank identifiers must all be different in a struct, but for methods it only says\nthat the selector must be non-ambiguous. I believe the spec should be clarified in one\nof two ways:\n\n1) Only leave the requirement that field selectors must be non-ambiguous.\n    - This would permit both a method foo and a field foo (as is accepted now by 6g for a pointer receiver).\n    - It would newly permit also a struct with two fields foo: struct {foo, foo int} as long as the field name is not used in a selector, or two methods foo for the same receiver base type.\n\nor:\n\n2) Say explicitly that all method names for a type must be different (already enforced),\nand that struct fields and method names (for that struct) must be different\n(inconsistently enforced at the moment).\n\nI vote for 2) as it is what we expect in practice. Furthermore, any situation where he\nhave both a method and a field foo is likely due to a mistake.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-01T22:23:04Z",
+	"updated_at": "2014-12-08T10:14:58Z"
+}

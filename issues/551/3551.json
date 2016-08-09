@@ -1,0 +1,27 @@
+{
+	"id": 51280787,
+	"number": 3551,
+	"state": "closed",
+	"title": "cmd/gc: generate better code for integer division",
+	"body": "\u003cpre\u003eCurrently 6g generates code like this for int32 division:\n\n0012 (foo2.go:9) CMPL    BX,$-1\n0013 (foo2.go:9) JNE     ,18\n0014 (foo2.go:9) CMPL    AX,$-2147483648\n0015 (foo2.go:9) JNE     ,18\n0016 (foo2.go:9) MOVL    $-2147483648,8(SP)\n0017 (foo2.go:9) JMP     ,21\n0018 (foo2.go:9) CDQ     ,\n0019 (foo2.go:9) IDIVL   BX,\n0020 (foo2.go:9) MOVL    AX,8(SP)\n\nIt occurs to me that we could generate this instead:\n\n    CMPL BX,$-1\n    JEQ 1f\n    CDQ\n    IDIVL BX,\n    JMP 2f\n1:  NEGL AX\n2:\n\nThis incorporates two ideas.  First, division by -1 is the same as negation; there is no\nneed to explicitly check for 0x80000000.  This saves one comparison and one conditional\nbranch.  Second, forward branches are predicted not taken, and presumably division by -1\nis an unlikely case.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:18:40Z",
+	"created_at": "2012-04-19T22:00:06Z",
+	"updated_at": "2016-06-24T22:18:09Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

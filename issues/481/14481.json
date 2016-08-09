@@ -1,0 +1,25 @@
+{
+	"id": 135686878,
+	"number": 14481,
+	"state": "open",
+	"title": "race: not working with Alpine based image",
+	"body": "Hi,\r\n\r\nWith the following docker image (save it as demo.docker)\r\n```Dockerfile\r\nFROM golang:1.6.0-alpine\r\nMAINTAINER \"florinpatan@gmail.com\"\r\n\r\nRUN apk add --update alpine-sdk \\\r\n    \u0026\u0026 rm -rf /var/cache/apk/*\r\n```\r\nrun\r\n```bash\r\ndocker build -f demo.docker -t race/demo .\r\n```\r\n\r\nThen you can finally run the command:\r\n```bash\r\nPROJECT_DIR=\"${PWD}\" #assume we are in $GOPATH/src/github.com/dlsniper/demo on the computer\r\nCONTAINER_PROJECT_DIR=\"/go/src/github.com/dlsniper/demo\"\r\nCONTAINER_PROJECT_GOPATH=\"${CONTAINER_PROJECT_DIR}/vendor:/go\"\r\n\r\ndocker run --rm \\\r\n        --net=\"host\" \\\r\n        -v ${PROJECT_DIR}:${CONTAINER_PROJECT_DIR} \\\r\n        -e CI=true \\\r\n        -e GODEBUG=netdns=go \\\r\n        -e CGO_ENABLED=1 \\\r\n        -e GOPATH=${CONTAINER_PROJECT_GOPATH} \\\r\n        -w \"${CONTAINER_PROJECT_DIR}\" \\\r\n        race/demo \\\r\n        go test -v -race ./...\r\n```\r\n\r\nThis will fail with:\r\n```\r\n# runtime/race\r\nrace_linux_amd64.syso: In function `__sanitizer::InternalAlloc(unsigned long, __sanitizer::SizeClassAllocatorLocalCache\u003c__sanitizer::SizeClassAllocator32\u003c0ul, 140737488355328ull, 0ul, __sanitizer::SizeClassMap\u003c17ul, 64ul, 14ul\u003e, 20ul, __sanitizer::TwoLevelByteMap\u003c32768ull, 4096ull, __sanitizer::NoOpMapUnmapCallback\u003e, __sanitizer::NoOpMapUnmapCallback\u003e \u003e*)':\r\ngotsan.cc:(.text+0x1681): undefined reference to `__libc_malloc'\r\nrace_linux_amd64.syso: In function `__sanitizer::ReExec()':\r\ngotsan.cc:(.text+0xd937): undefined reference to `__libc_stack_end'\r\nrace_linux_amd64.syso: In function `__sanitizer::InternalFree(void*, __sanitizer::SizeClassAllocatorLocalCache\u003c__sanitizer::SizeClassAllocator32\u003c0ul, 140737488355328ull, 0ul, __sanitizer::SizeClassMap\u003c17ul, 64ul, 14ul\u003e, 20ul, __sanitizer::TwoLevelByteMap\u003c32768ull, 4096ull, __sanitizer::NoOpMapUnmapCallback\u003e, __sanitizer::NoOpMapUnmapCallback\u003e \u003e*)':\r\ngotsan.cc:(.text+0x5ec8): undefined reference to `__libc_free'\r\ncollect2: error: ld returned 1 exit status\r\n```\r\n\r\nIf you then disable CGO and run again:\r\n```bash\r\nPROJECT_DIR=\"${PWD}\" #assume we are in $GOPATH/src/github.com/dlsniper/demo on the computer\r\nCONTAINER_PROJECT_DIR=\"/go/src/github.com/dlsniper/demo\"\r\nCONTAINER_PROJECT_GOPATH=\"${CONTAINER_PROJECT_DIR}/vendor:/go\"\r\n\r\ndocker run --rm \\\r\n        --net=\"host\" \\\r\n        -v ${PROJECT_DIR}:${CONTAINER_PROJECT_DIR} \\\r\n        -e CI=true \\\r\n        -e GODEBUG=netdns=go \\\r\n        -e CGO_ENABLED=0 \\\r\n        -e GOPATH=${CONTAINER_PROJECT_GOPATH} \\\r\n        -w \"${CONTAINER_PROJECT_DIR}\" \\\r\n        race/demo \\\r\n        go test -v -race ./...\r\n```\r\n\r\nIt will result in the following output:\r\n```\r\ngo test: -race requires cgo; enable cgo by setting CGO_ENABLED=1\r\n```\r\n\r\nPreviously, in go 1.5.3, when running with CGO disabled, this used to fail with:\r\n```\r\n# testmain\r\nruntime/race(.text): __libc_malloc: not defined\r\nruntime/race(.text): getuid: not defined\r\nruntime/race(.text): pthread_self: not defined\r\nruntime/race(.text): madvise: not defined\r\nruntime/race(.text): madvise: not defined\r\nruntime/race(.text): madvise: not defined\r\nruntime/race(.text): sleep: not defined\r\nruntime/race(.text): usleep: not defined\r\nruntime/race(.text): abort: not defined\r\nruntime/race(.text): isatty: not defined\r\nruntime/race(.text): __libc_free: not defined\r\nruntime/race(.text): getrlimit: not defined\r\nruntime/race(.text): pipe: not defined\r\nruntime/race(.text): __libc_stack_end: not defined\r\nruntime/race(.text): getrlimit: not defined\r\nruntime/race(.text): setrlimit: not defined\r\nruntime/race(.text): setrlimit: not defined\r\nruntime/race(.text): setrlimit: not defined\r\nruntime/race(.text): exit: not defined\r\nruntime/race(.text.unlikely): __errno_location: not defined\r\nruntime/race(.text): undefined: __libc_malloc\r\n/usr/local/go/pkg/tool/linux_amd64/link: too many errors\r\n```\r\nTo test this just change the base image for the container.\r\n\r\nPlease let me know if there are any additional details I can share.\r\n\r\nThank you.",
+	"user": {
+		"login": "dlsniper",
+		"id": 607868,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-02-23T09:44:33Z",
+	"updated_at": "2016-02-24T09:16:04Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

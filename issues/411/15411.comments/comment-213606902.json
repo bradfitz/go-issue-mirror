@@ -1,0 +1,12 @@
+{
+	"id": 213606902,
+	"body": "@bradfitz \r\nTake this example, having to write all that extra code for something that can be done with a select, try to reconsider the use case.\r\n```\r\ntype KeyValueChan struct {\r\n\tch     chan *KeyValue\r\n\twg     sync.WaitGroup\r\n\tclosed uint32\r\n}\r\n\r\nfunc newKVChan(sz int) *KeyValueChan {\r\n\treturn \u0026KeyValueChan{\r\n\t\tch: make(chan *KeyValue, sz),\r\n\t}\r\n}\r\n\r\nfunc (ch *KeyValueChan) send(v *KeyValue) (ok bool) {\r\n\tif atomic.LoadUint32(\u0026ch.closed) == 1 {\r\n\t\treturn\r\n\t}\r\n\tch.wg.Add(1)\r\n\tch.ch \u003c- v\r\n\tch.wg.Done()\r\n\treturn\r\n}\r\n\r\nfunc (ch *KeyValueChan) Break() {\r\n\tif atomic.SwapUint32(\u0026ch.closed, 1) != 0 {\r\n\t\treturn\r\n\t}\r\n\tch.wg.Wait()\r\n\tclose(ch.ch)\r\n\tfor range ch.ch {\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "OneOfOne",
+		"id": 1080443,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-22T22:14:26Z",
+	"updated_at": "2016-04-22T22:14:26Z"
+}

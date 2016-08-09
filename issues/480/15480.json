@@ -1,0 +1,32 @@
+{
+	"id": 151710889,
+	"number": 15480,
+	"state": "open",
+	"title": "index/suffixarray: optimize QSufSort by removing allocated scratch space",
+	"body": "Go's implementation of QSufSort allocates scratch space for an intermediate update step.  We can get rid of this scratch space.\r\n\r\nIn /master/src/index/suffixarray/qsufsort.go, after x.sa[] == sa[pi:pk] has been sorted, with x.inv[x.sa[i] + x.h] as key, updateGroups() updates x.sa[] and x.inv[].  updateGroup() needs to scan x.inv[x.sa[i] + x.h] for \"groups\", but also writes to x.inv[].  To avoid pollution, current code uses 2 loops, using x.buf[] to store intermediate group results.  x.buf[] is a scratch space that needs allocation.\r\n\r\nI propose to optimize updateGroups() by doing the update in 1 pass without x.buf[].  Let\r\n\r\nold_group := x.inv[sa[0]] == offset + len(x.sa) - 1\r\n\r\nThe key idea is to realize that x.inv[x.sa[:]] will always be assigned from old_group to some value in [offset, old_group].  Moreover, nothing in x.inv[] outside x:sa[:] uses these values.  Therefore we can write to x.inv[] as we read x.inv[x:sa[i] + x.h], providing that every time we read x.inv[x:sa[i] + x.h] we undo the change by interpreting [offset, old_group] as old_group\r\n\r\nA prototype was implemented in C++ for Chrome's Courgette:\r\nhttps://codereview.chromium.org/1914303002/diff/1/courgette/third_party/qsufsort.h\r\nEventually a different solution was used -- but the first solution is useful for optimizing Go's QSufSort implementation.\r\n\r\nEdit 2016/05/18: \"The key idea is... \" x.inv[x.sa[:] + x.h] =\u003e x.inv[x.sa[:]]",
+	"user": {
+		"login": "samuelhuang",
+		"id": 7310073,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-04-28T18:25:15Z",
+	"updated_at": "2016-05-18T20:50:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

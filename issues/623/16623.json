@@ -1,0 +1,26 @@
+{
+	"id": 169700944,
+	"number": 16623,
+	"state": "open",
+	"title": "proposal: refactor cmd/cgo into an internal helper package",
+	"body": "Currently cgo support is implemented with cmd/cgo as a separate tool that analyzes cgo-using Go code and transforms it into standard Go code.  This proposal is to extract the analysis logic into a separate internal package that can be reused by cmd/compile and go/types directly without needing source rewrites.  I.e., turn them into native cgo compilers, rather than needing a separate \"cgofront\" preprocessor step.\r\n\r\nThe expected benefits are:\r\n\r\n  1. Better error messages.  E.g., currently cmd/compile emits error messages about calls to _Cfunc_foo instead of C.foo.\r\n  2. Better position information.  Currently when using golang.org/x/tools/go/loader to analyze cgo-using source, the column location and byte offset information is wrong because it applies go/types to the post-transformation Go source files.  Thanks to //line directives, we can at least identify the original line number, but it's troublesome/imprecise to write type-sensitive refactoring tools that rely on column information and want to support cgo-using packages.\r\n  3. Better desugaring of cgo calls.  Currently cmd/cgo needs to rewrite expressions into valid Go code to be accepted by cmd/compile, which is sometimes subtle (e.g., #7757, #9557, #13635, #13930, #16591).  By desugaring within the compiler itself, we have more flexibility about the sorts of fundamental operations we can use.\r\n\r\nPotential downsides and counter-arguments:\r\n\r\n  1. cmd/cgo still needs to exist for gccgo, but cmd/cgo already has substantially different behavior for supporting cmd/compile vs gccgo.\r\n  2. Might complicate #15681 (scheduling cmd/cgo earlier), but I expect an alternative strategy is equally viable: schedule the C compilations later.  Currently the only reason we need to schedule the C compilations before the Go compiler is to produce _cgo_imports.go.  But this file only contains //go:cgo_import_dynamic and //go:cgo_dynamic_linker directives, which don't actually affect Go compilation; cmd/compile just writes them back out again so cmd/link can ultimately handle them.\r\n  3. Increases coupling between cmd/compile and cgo, but cmd/compile already is / needs to be cgo-aware, and cmd/go already has extensive special case code for cmd/cgo (unlike any other tool that generates Go source).\r\n\r\nAlternative ideas that might achieve similar benefits while generalizing to tools other than cmd/cgo:\r\n\r\n  1. Add a //go:errorname directive so cmd/cgo can express that _Cfunc_foo should be referred to as \"C.foo\" in error messages.  It's not obvious this would generalize fully though; e.g., cmd/yacc rewrites $1 to yyDollar[1], which would need something more powerful to express.\r\n  2. Generalize //line directives to something that records column/offset information too (similar to JavaScript Source Maps).  Again, I'm not sure how useful in practice this would actually be for tools other than cmd/cgo.\r\n\r\n/cc @ianlancetaylor @alandonovan @griesemer ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-08-05T21:34:33Z",
+	"updated_at": "2016-08-08T19:38:50Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

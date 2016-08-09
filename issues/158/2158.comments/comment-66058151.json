@@ -1,0 +1,12 @@
+{
+	"id": 66058151,
+	"body": "\u003ca id=\"c19\"\u003e\u003c/a\u003eComment 19:\n\n\u003cpre\u003eLooks to me like we only care if the URL uses an IP address.\n\nThat is, if you say no_proxy=10.2.3.4 and foo.com resolves to 10.2.3.4, \u003ca href=\"http://10.2.3.4/\"\u003ehttp://10.2.3.4/\u003c/a\u003e\nis no_proxy but \u003ca href=\"http://foo.com/\"\u003ehttp://foo.com/\u003c/a\u003e is not (is proxied).\n\nFrom Chrome:\n\u003ca href=\"http://code.google.com/p/chromium/source/search?q=BypassIPBlockRule%5C+%3A%5C+public\u0026origq=BypassIPBlockRule%5C+%3A%5C+public\u0026btnG=Search+Trunk\"\u003ehttp://code.google.com/p/chromium/source/search?q=BypassIPBlockRule%5C+%3A%5C+public\u0026origq=BypassIPBlockRule%5C+%3A%5C+public\u0026btnG=Search+Trunk\u003c/a\u003e\n\nThat's proxy_bypass_rules.cc:\n\nclass BypassIPBlockRule : public ProxyBypassRules::Rule {\n public:\n  // |ip_prefix| + |prefix_length| define the IP block to match.\n  BypassIPBlockRule(const std::string\u0026 description,\n                    const std::string\u0026 optional_scheme,\n                    const IPAddressNumber\u0026 ip_prefix,\n                    size_t prefix_length_in_bits)\n      : description_(description),\n        optional_scheme_(optional_scheme),\n        ip_prefix_(ip_prefix),\n        prefix_length_in_bits_(prefix_length_in_bits) {\n  }\n\n  virtual bool Matches(const GURL\u0026 url) const OVERRIDE {\n    if (!url.HostIsIPAddress())\n      return false;\n\n    if (!optional_scheme_.empty() \u0026\u0026 url.scheme() != optional_scheme_)\n      return false;  // Didn't match scheme expectation.\n\n    // Parse the input IP literal to a number.\n    IPAddressNumber ip_number;\n    if (!ParseIPLiteralToNumber(url.HostNoBrackets(), \u0026ip_number))\n      return false;\n\n    // Test if it has the expected prefix.\n    return IPNumberMatchesPrefix(ip_number, ip_prefix_,\n                                 prefix_length_in_bits_);\n  }\n\nNote the first if in Matches.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-10T21:55:50Z",
+	"updated_at": "2014-12-08T10:11:36Z"
+}

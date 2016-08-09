@@ -1,0 +1,12 @@
+{
+	"id": 66091627,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI've tried to revert the change that removes zero termination for strings, and the crash\nstopped happening.\n\nBut, I've also tried to run with GOGC=0 and hit the following crash in exactly the same\nplace where errors are matched:\n\nfatal error: string concatenation too long\n\ngoroutine 135 [running]:\nruntime.throw(0x828d240)\n\tsrc/pkg/runtime/panic.c:463 +0x68 fp=0xf75868b4\nconcatstring(0xf75868f8, 0x2, 0xf75868e8)\n\tsrc/pkg/runtime/string.goc:161 +0x5e fp=0xf75868d8\nruntime.concatstring2(0x186bd8c0, 0xdeaddead, 0x817e3d8, 0x1, 0x0, ...)\n\tsrc/pkg/runtime/string.goc:185 +0x20 fp=0xf75868e8\nmain.func·006(0x186bd8c0, 0xdeaddead, 0x0, 0x0)\n\ttest/run.go:731 +0x5d fp=0xf7586910\nmain.(*test).errorCheck(0x18470200, 0x18664600, 0x5ef, 0xf7586f60, 0x2, ...)\n\ttest/run.go:737 +0x73c fp=0xf7586bbc\nmain.(*test).run(0x18470200)\n\ttest/run.go:517 +0x1464 fp=0xf7586fbc\nmain.func·001()\n\ttest/run.go:257 +0x29 fp=0xf7586fcc\nruntime.goexit()\n\tsrc/pkg/runtime/proc.c:1438 fp=0xf7586fd0\ncreated by main.runTests\n\ttest/run.go:259 +0xad\n\nThis was with a slightly modified run.go which is attached.\nThe crash says that filterRe was freed (len of first member (expr string) is 0xdeaddead).\n\nfilterRe is created here:\n\n853:\t\t\terrs = append(errs, wantedError{\n854:\t\t\t\treStr:    rx,\n855:\t\t\t\tre:       re,\n856:\t\t\t\tfilterRe: regexp.MustCompile(filterPattern),\n857:\t\t\t\tlineNum:  lineNum,\n858:\t\t\t\tfile:     short,\n859:\t\t\t})\n\nRuss, can you check whether liveness analysis for this statement is correct or not?\n\nrun.go:856: live at call to MustCompile: t file short errs autotmp_1730 autotmp_1738\nautotmp_1721 autotmp_1715 autotmp_1712 autotmp_1716 autotmp_1717 line rx autotmp_1726\nautotmp_1734 re\nrun.go:859: live at call to growslice: t file short autotmp_1739 autotmp_1730\nautotmp_1738 autotmp_1721 autotmp_1715 autotmp_1712 autotmp_1716 autotmp_1717 line\nautotmp_1726 autotmp_1734\n\nI am not sure why errs (return value) is not alive at 859.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7370/4/run.go\"\u003erun.go\u003c/a\u003e (22251 bytes)",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-25T08:04:24Z",
+	"updated_at": "2014-12-08T10:41:01Z"
+}

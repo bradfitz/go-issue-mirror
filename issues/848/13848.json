@@ -1,0 +1,21 @@
+{
+	"id": 125293834,
+	"number": 13848,
+	"state": "open",
+	"title": "strings: optimize WriteTo to use an intermediate buffer for large strings",
+	"body": "Using ```go1.5```\r\n\r\nNOTE: This issue used to be about using an intermediate buffer in io.WriteString, but will instead perform the optimization in strings.Reader.WriteTo instead. The description in this issue still refers to WriteString, but the performance numbers will probably be the same once applied to strings.Reader.WriteTo.\r\n\r\n--\r\n\r\nCurrently WriteString does ```w.Write([]byte(s))``` if ```w``` is not a ```stringWriter```. This causes a memory allocation proportional to len(s). Instead, we should use an intermediate buffer for large strings.\r\n\r\nUsing this test code:\r\n```go\r\nvar (\r\n\tlarge = strings.Repeat(\"the quick brown fox jumped over the lazy dog\", 1024*1024)\r\n\twriterOnly = struct{ io.Writer }{ioutil.Discard}\r\n)\r\n\r\n// WriteString2 is modified from io.WriteString to use an\r\n// intermediate buffer for large strings.\r\nfunc WriteString2(w io.Writer, s string) (n int, err error) {\r\n\tconst chunkSize = 32*1024\r\n\tif sw, ok := w.(interface {WriteString(s string) (n int, err error)}); ok {\r\n\t\treturn sw.WriteString(s)\r\n\t}\r\n\tif len(s) \u003c chunkSize {\r\n\t\treturn w.Write([]byte(s))\r\n\t}\r\n\r\n\tbuf := make([]byte, chunkSize)\r\n\tfor len(s) \u003e 0 {\r\n\t\tcnt := copy(buf, s)\r\n\t\ts = s[cnt:]\r\n\t\tcnt, err = w.Write(buf[:cnt])\r\n\t\tn += cnt\r\n\t\tif err != nil {\r\n\t\t\tbreak\r\n\t\t}\r\n\t}\r\n\treturn n, err\r\n}\r\n\r\nfunc BenchmarkWriteString(b *testing.B) {\r\n\tb.ReportAllocs()\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tif _, err := io.WriteString(writerOnly, large); err != nil {\r\n\t\t\tb.Error(err)\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc BenchmarkWriteString2(b *testing.B) {\r\n\tb.ReportAllocs()\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tif _, err := WriteString2(writerOnly, large); err != nil {\r\n\t\t\tb.Error(err)\r\n\t\t}\r\n\t}\r\n}\r\n``` \r\n\r\nWe can get the number of bytes allocated to be capped at some maximum:\r\n```\r\nBenchmarkWriteString-4 \t     200\t   6482427 ns/op\t46137405 B/op\t       2 allocs/op\r\nBenchmarkWriteString2-4\t     500\t   2437841 ns/op\t   32784 B/op\t       2 allocs/op\r\n```\r\n\r\nI was pleasantly surprised that the runtime also decreased, but this may be because the small buffer fits entirely in the cache.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"created_at": "2016-01-07T00:16:40Z",
+	"updated_at": "2016-05-17T20:38:17Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

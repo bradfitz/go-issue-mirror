@@ -1,0 +1,26 @@
+{
+	"id": 51283525,
+	"number": 5363,
+	"state": "open",
+	"title": "runtime: race detector: instrument Sendmsg and Recvmsg",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nwrite a program that synchronizes due to calls to Sendmsg and Recvmsg\n\nbuild and test with -race\n\nWhat do you see instead?\n\na race is detected\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich version are you using?  (run 'go version')\n\ntip\n\nPlease provide any additional information below.\n\nDmitry helped me debug this. Recvmsg needs:\n\n  if rsa.Addr.Family != AF_UNSPEC {\n  from, err = anyToSockaddr(\u0026amp;rsa)\n  }\n+ if raceenabled \u0026amp;\u0026amp; err == nil {\n+ raceAcquire(unsafe.Pointer(\u0026amp;ioSync))\n+ }\n\nSendmsg needs:\n\n  msg.Iov = \u0026amp;iov\n  msg.Iovlen = 1\n+ if raceenabled {\n+ raceReleaseMerge(unsafe.Pointer(\u0026amp;ioSync))\n+ }\n\nDmitry suggested that this is for after Go 1.1. Since it's a small fix, it would be nice\nto do it before, but we can wait.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 8,
+	"created_at": "2013-04-27T16:29:21Z",
+	"updated_at": "2015-04-14T19:45:19Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

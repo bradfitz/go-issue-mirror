@@ -1,0 +1,31 @@
+{
+	"id": 51282774,
+	"number": 4883,
+	"state": "closed",
+	"title": "spec: partially contradictory rule regarding shift typing",
+	"body": "\u003cpre\u003eThe spec says ( \u003ca href=\"http://tip.golang.org/ref/spec#Operators\"\u003ehttp://tip.golang.org/ref/spec#Operators\u003c/a\u003e ):\n\n\u0026quot;The right operand in a shift expression must have unsigned integer type or be an\nuntyped constant that can be converted to unsigned integer type. If the left operand of\na non-constant shift expression is an untyped constant, the type of the constant is what\nit would be if the shift expression were replaced by its left operand alone; the type is\nint if it cannot be determined from the context (for instance, if the shift expression\nis an operand in a comparison against an untyped constant).\u0026quot;\n\nThe last sub-phrase, \u0026quot;the type is int if it cannot be determined from the context\n(for instance, if the shift expression is an operand in a comparison against an untyped\nconstant).\u0026quot; is troublesome:\n\nEven in comparisons of untyped constants, the \u0026quot;smaller\u0026quot; untyped type is\npromoted to the \u0026quot;higher\u0026quot; untyped type for comparison, similar to any other\noperation. For instance, in 1.0 == 1, the 1 on the rhs is implicitly converted to an\nuntyped float for comparison (in 1.0 == true we get the error: cannot convert true to\ntype float64!). If this same mechanism were applied uniformly, even in a comparison with\na non-constant shift as in:\n\n1.0\u0026lt;\u0026lt;s == 1 // s is a uint variable\n\nthen typing this expression would be more uniform: The type of x would become float64\nand this expression would be illegal. At the moment, this expression is legal (and\naccepted by 6g), but not accepted by gccgo (invalid context-determined non-integer type\nfor left operand of shift). It appears that gccgo is using the more uniform rule here.\n\nRelated to this, the expression\n\n1.0\u0026lt;\u0026lt;s + 1 // s is a uint variable\n\nis actually (wrongly!) accepted by 6g (we are not in a comparison, and 1.0 would turn\ninto float64 w/0 the shift), while gccgo correctly complains. See \u003ca href=\"https://golang.org/issue/4882\"\u003eissue #4882\u003c/a\u003e.\n\nRemoving that special case for comparisons would simplify the rules. This is a\ncorner-case language change but the compilers seem to disagree already.\n\nSee also related issues 4880, 4881.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:25:59Z",
+	"created_at": "2013-02-23T00:22:42Z",
+	"updated_at": "2016-06-24T22:33:47Z"
+}

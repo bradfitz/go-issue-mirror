@@ -1,0 +1,16 @@
+{
+	"id": 203158312,
+	"body": "I wonder if a low-impact alternative to the `IsZeroer` interface would be to allow one to return an `error` called `json.CanOmit` (or similar) from an implementation of the `Marshaler` interface. That way the dev is in control of determining what constitutes a zero value, and it doesn't impact other code.\r\n\r\nIt's not a perfect solution, since one can't add methods to types defined in another package, but this can be worked around to a degree.\r\n\r\nTaking the `time.Time` example:\r\n\r\n``` go\r\ntype MyTime struct {\r\n  time.Time\r\n}\r\n\r\n// Implement the Marshaler interface\r\nfunc (mt MyTime) MarshalJSON() ([]byte, error) {\r\n  res, err := json.Marshal(mt.Time)\r\n\r\n  if err == nil \u0026\u0026 mt.IsZero() {\r\n    return res, json.CanOmit // Exclude zero value from fields with `omitempty`\r\n  }\r\n  return res, err\r\n}\r\n```\r\n\r\nI haven't looked into implementation, but on the surface it would seem like a low-overhead solution, assuming the only work would be to check if an error returned equals `json.CanOmit` on fields where `omitempty` was included.\r\n\r\nUsing errors as a flag is not without precedent in the standard library, e.g. `filepath#WalkFunc` allows one to return `filepath.SkipDir` to skip recursion into a directory.",
+	"user": {
+		"login": "Perelandric",
+		"id": 1114646,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-03-29T23:33:01Z",
+	"updated_at": "2016-03-29T23:33:01Z"
+}

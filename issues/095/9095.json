@@ -1,0 +1,26 @@
+{
+	"id": 51289083,
+	"number": 9095,
+	"state": "open",
+	"title": "cmd/cgo: cgo_import_dynamic doesn't work on PE dlls (Windows)",
+	"body": "\u003cpre\u003ego version go1.4beta1 linux/amd64\n\nWith some make-fu is it possible to have SWIG+CGO build a DLL out of a package. This\nfixes the issue of external linking not available in Windows.\n\nBasically, applying the following patches to SWIG does the following:\n- Mark all structs as __packed__ [1]\n- Bind crosscall2 and _cgo_* via DllMain (instead of extern) [2]\n- Mark all wrap functions as SWIGEXPORT [3]\n- Mark all the functions in the _gc.c file as dynimport name name \u0026quot;mylib.dll\u0026quot;\n\nOnce the file is generated/compiled, to get a .dll, I do the following:\n- unpack the library\n- repack the library minus the _wrap object file\n- cc -shared the _wrap object file into a .dll (with linked needed libraries)\n\nEverything does compile after that with no issues.\n\nThe issue is that cgo_import_dynamic doesn't properly resolve the symbol in the DLL, but\nin the IAT section of the .exe file. This causes the executing program to crash.\n\nI traced the program with IDA and confirmed that. See the thread of go-nuts with lots of\nadditional informations and IDA outputs [4].\n\nI have no idea why C code using this pragma works fine, but Go code using the variable\ngenerated to the symbol doesn't. Maybe a bug in the PE linker?\n\nThank you\n\n[1] \u003ca href=\"https://github.com/steeve/swig/commit/e70fce1c1cf928564f009ea512c6c3acb97ace16\"\u003ehttps://github.com/steeve/swig/commit/e70fce1c1cf928564f009ea512c6c3acb97ace16\u003c/a\u003e\n[2] \u003ca href=\"https://github.com/steeve/swig/commit/27bb9bd3bcb2a748b68ca7c9ffa5052a12c1f860\"\u003ehttps://github.com/steeve/swig/commit/27bb9bd3bcb2a748b68ca7c9ffa5052a12c1f860\u003c/a\u003e\n[3] \u003ca href=\"https://github.com/steeve/swig/commit/2c55397ec8315d1089205e586e88ae86cc677148\"\u003ehttps://github.com/steeve/swig/commit/2c55397ec8315d1089205e586e88ae86cc677148\u003c/a\u003e\n[4] \u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/-M-8X-PLvOw\u003c/pre\u003e",
+	"user": {
+		"login": "steeve",
+		"id": 137467,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 3,
+	"created_at": "2014-11-12T21:42:45Z",
+	"updated_at": "2015-04-15T01:41:10Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

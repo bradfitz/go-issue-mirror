@@ -1,0 +1,12 @@
+{
+	"id": 66072816,
+	"body": "\u003ca id=\"c29\"\u003e\u003c/a\u003eComment 29:\n\n\u003cpre\u003eThis is quick an dirty, but should implement what rsc suggested.\n\n# hg id\n0f40abacc6ee+ tip  \n# hg diff\ndiff -r 0f40abacc6ee src/pkg/runtime/runtime.h\n--- a/src/pkg/runtime/runtime.h\tFri Jan 11 12:29:14 2013 +0800\n+++ b/src/pkg/runtime/runtime.h\tFri Jan 11 17:19:10 2013 +1100\n@@ -295,6 +295,7 @@\n \tvoid*\tthread;\t\t// thread handle\n #endif\n \tSEH*\tseh;\n+\tuint32\tlinux_sig_mask[2];\n \tuintptr\tend[];\n };\n \ndiff -r 0f40abacc6ee src/pkg/runtime/thread_linux.c\n--- a/src/pkg/runtime/thread_linux.c\tFri Jan 11 12:29:14 2013 +0800\n+++ b/src/pkg/runtime/thread_linux.c\tFri Jan 11 17:19:10 2013 +1100\n@@ -149,6 +149,8 @@\n \t// Disable signals during clone, so that the new thread starts\n \t// with signals disabled.  It will enable them in minit.\n \truntime·rtsigprocmask(SIG_SETMASK, \u0026sigset_all, \u0026oset, sizeof oset);\n+\tmp-\u003elinux_sig_mask[0] = oset.mask[0];\t// client will restore our signals\n+\tmp-\u003elinux_sig_mask[1] = oset.mask[1];\n \tret = runtime·clone(flags, stk, mp, gp, fn);\n \truntime·rtsigprocmask(SIG_SETMASK, \u0026oset, nil, sizeof oset);\n \n@@ -174,10 +176,15 @@\n void\n runtime·minit(void)\n {\n+\tSigset oset;\n+\n \t// Initialize signal handling.\n \tm-\u003egsignal = runtime·malg(32*1024);\t// OS X wants \u003e=8K, Linux \u003e=2K\n \truntime·signalstack((byte*)m-\u003egsignal-\u003estackguard - StackGuard, 32*1024);\n-\truntime·rtsigprocmask(SIG_SETMASK, \u0026sigset_none, nil, sizeof sigset_none);\n+\t// restore parents signals\n+\toset.mask[0] = m-\u003elinux_sig_mask[0];\n+\toset.mask[1] = m-\u003elinux_sig_mask[1];\n+\truntime·rtsigprocmask(SIG_SETMASK, \u0026oset, nil, sizeof oset);\n }\n \n void\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-01-11T06:22:09Z",
+	"updated_at": "2014-12-08T10:23:55Z"
+}

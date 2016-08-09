@@ -1,0 +1,12 @@
+{
+	"id": 178357292,
+	"body": "The Go 1.6 GC is much better about hitting its target heap size than the Go 1.5 GC was, especially at small heap sizes. This is a good thing, but this particular program happens to be using a *very* small heap and it was *very* good at overshooting the target on 1.5, so this bug was working to its advantage to reduce the number of GCs.\r\n\r\nBelow are CDFs of the overshoot for go15_100_128.log and go16_100_128.log. The red area highlights what fraction of GC cycles overshot the heap and the X axis shows how much the overshoot was.\r\n\r\n![go15_100_128 log](https://cloud.githubusercontent.com/assets/2688315/12739345/e2435d22-c936-11e5-8082-258639d8a6c1.png) ![go16_100_128 log](https://cloud.githubusercontent.com/assets/2688315/12739350/edc65014-c936-11e5-9d1e-90b59901f07f.png)\r\n\r\nI'm certainly not going to make Go worse at hitting the heap target. :) I also don't want to optimize for this benchmark at the expense of other programs because it seems quite artificial to me; I wouldn't expect \"real\" applications to be running on 40 cores, handling a large amount of load, and maintaining a 5 MB heap. In general, you expect a program's heap to scale with its load and any program handling a non-trivial load to easily exceed the minimum target. Likewise, I'm reluctant to raise the minimum heap target because it's only expected to apply to small programs (and it's meant to keep small programs small).\r\n\r\nSo, I suppose my conclusion is \"working as intended\" unless there are specific counter-proposals or compelling evidence that we need to do something different for heavy loads on small heaps.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-02T03:58:05Z",
+	"updated_at": "2016-02-02T03:58:05Z"
+}

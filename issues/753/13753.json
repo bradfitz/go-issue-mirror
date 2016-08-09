@@ -1,0 +1,17 @@
+{
+	"id": 124068781,
+	"number": 13753,
+	"state": "closed",
+	"title": "Getting started guide for GCS is stale for running service accounts with appengine dev_appserver",
+	"body": "I apologize in advance if this isn't the right spot to file this issue since this is related to documentation of Google cloud api libraries as they related to local appengine development.\r\n\r\nThe instructions as listed on https://cloud.google.com/appengine/docs/go/googlecloudstorageclient/getstarted explicitly state that this should work:\r\n\r\ndev_appserver.py . --appidentity_email_address [your_service_account_email] --appidentity_private_key_path [path_to_pkcs1_pem_file]\r\n\r\nWith no code modifications, to make your dev_appserver use the service account credentials for the sample code provided.\r\n\r\nThis is not the case. The code actually checks for the value of the env var GOOGLE_APPLICATION_CREDENTIALS, before falling back to your default credentials under ~/.config/gcloud/application_default_credentials.json. Which is not going to be your service account.\r\n\r\nThe --appidentity_email_address and --appidentity_private_key_path flags that are recommended don't actually do anything for this code example. The credentials aren't used for the OAuth token dance.\r\n\r\nOne needs to either add the env variables to the app.yaml, or explicitly write code to pass in a separate TokenSource as an optional cloud.ClientOption in the call to storage.NewClient(...) that has the service account credentials loaded. Neither of which are reflected in the guide.\r\n\r\nUsing a service account for local dev is important If one wants to use a separate dev-only GCS bucket for testing. This however requires forked code paths just for local development (outside of just swapping the bucket name). \r\n\r\nA better solution IMHO would be to have dev_appserver take in a --appidentity_json \u003cpath_to_credentials_json\u003e  (or something like that) and then internally expose that to the go_appengine runtime via the GOOGLE_APPLICATION_CREDENTIALS env var which would make this work with no code changes at all to the libraries since they already pick this up for the managed VM and GCE cases.",
+	"user": {
+		"login": "donjaime",
+		"id": 1757100,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-11T18:14:19Z",
+	"created_at": "2015-12-28T13:38:33Z",
+	"updated_at": "2016-01-11T18:14:19Z"
+}

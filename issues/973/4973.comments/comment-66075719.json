@@ -1,0 +1,12 @@
+{
+	"id": 66075719,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eThe minimal reproducer is:\n\npackage main\nimport _ \"runtime/cgo\"\nfunc main() {\n\tselect {}\n}\n\nAnd the culprit is \"runtime: allow cgo callbacks on non-Go threads\"\n\u003ca href=\"https://code.google.com/p/go/source/detail?r=1d5a80b07916cd123d1aa4ef2ae04400f29ac6f6\"\u003ehttps://code.google.com/p/go/source/detail?r=1d5a80b07916cd123d1aa4ef2ae04400f29ac6f6\u003c/a\u003e.\n\nNow that C can callback into Go, consider the following scenario.\nGo program loads a dynamic library that creates a background thread, Go program blocks\nsolely waiting for callbacks from C. This looks like a valid scenario now, and old\nscheduler would just kill the program immediately. The new scheduler properly waits for\nthe potential callbacks.\nSo it looks like a correct behavior to me. However, of course, it's a pity that now it's\nimpossible to detect deadlocks when import \"runtime/cgo\" or \"C\".\nWhat do you think?\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-04T06:37:51Z",
+	"updated_at": "2014-12-08T10:26:29Z"
+}

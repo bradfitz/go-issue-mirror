@@ -1,0 +1,22 @@
+{
+	"id": 51278096,
+	"number": 1637,
+	"state": "closed",
+	"title": "MkdirAll() returns unhelpful error message if the parent directory is /",
+	"body": "\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n1. os.MkdirAll(\u0026quot;/nonexistant\u0026quot;, 0755)\n2.\n3.\n\nWhat is the expected output?\n[mike]voltron:~\u0026gt; ./mkdir_test \nmkdir /zk: permission denied\n\nWhat do you see instead?\n[mike]voltron:~\u0026gt; ./mkdir_test \nmkdir : no such file or directory\n\nWhich operating system are you using?\nLinux.\n\n\nHere's the fix:\n\n\ndiff -r 9add7892ac1d src/pkg/os/path.go\n--- a/src/pkg/os/path.go\tTue Mar 22 11:52:41 2011 -0700\n+++ b/src/pkg/os/path.go\tWed Mar 23 14:34:09 2011 -0700\n@@ -33,7 +33,7 @@\n \t\tj--\n \t}\n \n-\tif j \u0026gt; 0 {\n+\tif j \u0026gt; 1 {\n \t\t// Create parent\n \t\terr = MkdirAll(path[0:j-1], perm)\n \t\tif err != nil {\ndiff -r 9add7892ac1d src/pkg/os/path_test.go\n--- a/src/pkg/os/path_test.go\tTue Mar 22 11:52:41 2011 -0700\n+++ b/src/pkg/os/path_test.go\tWed Mar 23 14:34:09 2011 -0700\n@@ -179,3 +179,22 @@\n \t\tt.Errorf(\u0026quot;MkdirAll %q: %s\u0026quot;, path, err)\n \t}\n }\n+\n+func TestMkdirAllAtSlash(t *testing.T) {\n+\tif runtime.GOOS == \u0026quot;windows\u0026quot; {\n+\t\tt.Log(\u0026quot;Skipping test: does windows have /?\u0026quot;)\n+\t\treturn\n+\t}\n+\n+\terr := MkdirAll(\u0026quot;/_test/dir\u0026quot;, 0755)\n+\tif err != nil {\n+\t\tpathErr, ok := err.(*PathError)\n+\t\t// common for users not to be able to write to /\n+\t\t// previously reported erroneously as ENOENT\n+\t\tif ok \u0026amp;\u0026amp; pathErr.Error == EACCES {\n+\t\t\treturn\n+\t\t}\n+\t\tt.Fatalf(`MkdirAll \u0026quot;/_test/dir\u0026quot;: %v`, err)\n+\t}\n+\tdefer RemoveAll(\u0026quot;/_test/dir\u0026quot;)\n+}\u003c/pre\u003e",
+	"user": {
+		"login": "msolo",
+		"id": 5078276,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:09:11Z",
+	"created_at": "2011-03-23T21:37:57Z",
+	"updated_at": "2016-06-24T19:26:51Z"
+}

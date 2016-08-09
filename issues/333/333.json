@@ -1,0 +1,31 @@
+{
+	"id": 51276352,
+	"number": 333,
+	"state": "closed",
+	"title": "Prohibit expressionless var declarations for structs with unexported fields",
+	"body": "by **eadfrith**:\n\n\u003cpre\u003eGo prohibits composite literal expressions for structs with unexported\nfields. This is good, as it allows the package author to control the way in\nwhich instances of such structs are initialized.\n\nHowever, variable declarations for the same structs are allowed to occur\nwithout an explicit initializer. The struct is then initialized to its zero\nvalue - which may be invalid. Currently there is no way for the package\nauthor to prevent a client from creating an invalid instance of a struct.\n\nConsider the following silly example: \n\npackage foo\n\n// Incr holds a value and its cached increment\ntype Incr struct\n{\n  val, ival int; \n}\n\nfunc NewIncr(v int) Incr\n{\n  return Incr{v, v+1};\n}\n\nfunc (i *Incr) Valid() (bool)\n{\n  return i.val == i.ival-1;\n}\n\nClient:\n\npackage main\n\nimport \u0026quot;foo\u0026quot;;\n\nfunc main()\n{\t\n  // intended usage: use factory to create a valid instance\n  valid := foo.NewIncr(1);\n\n  // compiler blocks composite literals for struct with unexported fields\n  // illegal := foo.Incr{};  // implicit assignment of foo.Incr field 'val'\n\t\n  // but declaration without explicit initialization is allowed\n  var invalid foo.Incr; // invalid instance\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:04:10Z",
+	"created_at": "2009-11-25T04:23:47Z",
+	"updated_at": "2016-06-24T19:08:29Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66076342,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4 by **jeff.allen**:\n\n\u003cpre\u003eI thought about this a bit, and it seems like implementing the \"decode into an existing\nimage buffer\" feature will need support in pkg image. For example for paletted images,\nwe'd have to do:\n\n// NewPaletted returns a new Paletted with the given width, height and palette.\nfunc NewPaletted(r Rectangle, p color.Palette) *Paletted {\n\tw, h := r.Dx(), r.Dy()\n\tpix := make([]uint8, 1*w*h)\n\treturn NewPalettedFrom(r, p, pix)\n}\n\n// NewPalettedFrom returns a new Paletted with the given width, height, and palette.\n// It uses the given slice of uint8 as the storage for the pixels of the image.\nfunc NewPalettedFrom(r Rectangle, p color.Palette, pix []uin8) *Paletted {\n\tw, h := r.Dx(), r.Dy()\n        if len(pix) \u0026lt; 1*w*h {\n                // not clear what the right answer is here: return nil? panic?\n        }\n\treturn \u0026Paletted{pix, 1 * w, r, p}\n}\n\nWe'd need a New*From for each type of image, to be consistent.\n\nThen image/gif/reader.go could offer an API to decode into an existing []uint8. Perhaps\nDecodeInto(r io.Reader, pix []uint8). DecodeAll would get a twin with prototype\nDecodeAllInto(r io.Reader, frames [][]uint) (*GIF, error).\n\nThere should also be a DecodeAllConfigs(r io.Reader) ([]image.Config, error) which\nreturns the sizes of all the frames that will be seen by a later call to DecodeAllInto.\n\nI can work on this, if people (Nigel?) thinks it is the right way to go.\n\nI don't think that the inconvenience of buffering, reading the config and rewinding\nshould be solved in the std library. I think callers that care about this level of\ncontrol should be willing to do that work themselves. What they need to be able to do \nthat is an entry point to the decoder that lets them limit the memory consumption before\nit happens.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-07-10T15:07:37Z",
+	"updated_at": "2014-12-22T06:23:16Z"
+}

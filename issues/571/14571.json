@@ -1,0 +1,27 @@
+{
+	"id": 137313130,
+	"number": 14571,
+	"state": "open",
+	"title": "runtime: signal race condition",
+	"body": "**1. What version of Go are you using (`go version`)?**\r\n**2. What operating system and processor architecture are you using (`go env`)?**\r\ngo version go1.6 linux/amd64\r\n\r\n**3. What did you do?**\r\nI have summoner process with large number of workers. When disconnected from the server, worker will exit its main loop and call `signal.Stop()` on the SIGINT it had previously set-up with `signal.Notify()`. At the same time, summoner will attempt to kill it with `proc.Signal(os.Interrupt)`.\r\n\r\nSometimes, the interrupt signal gets lost - won't arrive to the channel and will not crash the program either. Below is an example I can replicate the race with, run it over and over and you will see some \"signal missed\" soon:\r\n\r\n```bash\r\nwhile true; do go run signaltest.go; done\r\n```\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"os/signal\"\r\n    \"os\"\r\n    \"fmt\"\r\n    \"time\"\r\n)\r\n\r\nfunc connection(disconnected \u003c-chan bool) bool {\r\n    in := make(chan os.Signal, 2)\r\n    signal.Notify(in, os.Interrupt)\r\n    defer signal.Stop(in)\r\n\r\n    for {\r\n        select {\r\n        case \u003c-in:\r\n            return true\r\n        case \u003c-disconnected:\r\n            goto check_signal\r\n        }\r\n    }\r\n\r\ncheck_signal:\r\n    signal.Stop(in)\r\n\r\n    select {\r\n    case \u003c- in:\r\n        return true\r\n    default:\r\n        return false\r\n    }\r\n}\r\n\r\nfunc killer(disconnected chan\u003c- bool) {\r\n    proc, _ := os.FindProcess(os.Getpid())\r\n    time.Sleep(100*time.Millisecond)\r\n    disconnected \u003c- true\r\n    proc.Signal(os.Interrupt)\r\n}\r\n\r\nfunc main() {\r\n    disconnected := make(chan bool)\r\n\r\n    for i := 0; true; i++ {\r\n        fmt.Printf(\"%d: start\\n\", i)\r\n\r\n        go killer(disconnected)\r\n\r\n        if connection(disconnected) {\r\n            fmt.Printf(\"  %d: got signal\\n\", i)\r\n        } else {\r\n            fmt.Printf(\"  %d: missed\\n\", i)\r\n        }\r\n        time.Sleep(500*time.Millisecond)\r\n    }\r\n}\r\n```\r\n\r\n**4. What did you expect to see?**\r\nI expected the signal not to get lost. The documentation only states that _\"When Stop returns, it is guaranteed that c will receive no more signals.\"_ , so I'm not sure whether it is the right expectation, if it isn't, then the fix is fairly easy - just keep the signal channel registered the whole time.\r\n\r\n**5. What did you see instead?**\r\nSome of the signals get lost.\r\n\r\n",
+	"user": {
+		"login": "Tasssadar",
+		"id": 120108,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-02-29T17:10:03Z",
+	"updated_at": "2016-05-20T01:39:22Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51277100,
+	"number": 913,
+	"state": "closed",
+	"title": "exec.Cmd.Wait crashes on Nexus One (ARMv7) with 5g/5l",
+	"body": "\u003cpre\u003eWhat is your $GOOS?  $GOARCH?\n\nlinux / arm\n\nWhich revision are you using?  (hg identify)\n\nb761e0299e9b+ release.2010-07-01/release\n\nThis program crashes on my Nexus One, but works fine on the host with 8g/8l:\n\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;\n        \u0026quot;os\u0026quot;\n        \u0026quot;exec\u0026quot;\n)\n\nfunc runSubProc(n int) bool {\n        fmt.Printf(\u0026quot;Running subproc #%d...\\n\u0026quot;, n)\n        cmd, err := exec.Run(\n                \u0026quot;/system/bin/ls\u0026quot;,\n                []string{\u0026quot;ls\u0026quot;, \u0026quot;/sdcard\u0026quot;},\n                os.Environ(),\n                \u0026quot;/\u0026quot;,\n                exec.DevNull, // stdin                                                                                         \n                exec.PassThrough, // stdout                                                                                    \n                exec.MergeWithStdout) // stderr                                                                                \n        if err != nil {\n                fmt.Printf(\u0026quot;Error running ls: %v\\n\u0026quot;, err)\n                return false\n        }\n\n        fmt.Printf(\u0026quot;Started ls with pid %v\\n\u0026quot;, cmd.Pid)\n        waitmsg, err := cmd.Wait(0)\n        if err != nil {\n                fmt.Printf(\u0026quot;Error running ls: %v\\n\u0026quot;, err)\n                return false\n        }\n        fmt.Printf(\u0026quot;WaitMsg: %v\\n\u0026quot;, waitmsg)\n        return true\n}\n\nfunc main() {\n        fmt.Println(\u0026quot;Hello, Android!\u0026quot;)\n        for i := 0; i \u0026lt; 20; i++ {\n                runSubProc(i)\n        }\n}\n\n\nOutput:\n\n$ 5g -o crash.5 crash.go \u0026amp;\u0026amp; 5l -o crash crash.5\n$ adb push crash /data/local\n$ adb shell\n# /data/local/crash\nHello, Android!\nRunning subproc #0...\nStarted ls with pid 5579\n/sdcard\n[1]   Segmentation fault      /data/local/crash\n\nNote that the command starts, its pid is reported, and the command's output returns\nsuccessfully.\n\nIt's just the cmd.Wait() that crashes.\n\nUnfortunately strace gets confused by Go:\n\n# strace /data/local/crash\nexecve(\u0026quot;/data/local/crash\u0026quot;, [\u0026quot;/data/local/crash\u0026quot;], [/* 10 vars */])\n= 0\nsyscall: unknown syscall trap 0xe49df014\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/913/0/crash.go\"\u003ecrash.go\u003c/a\u003e (752 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/913/0/crash\"\u003ecrash\u003c/a\u003e (892928 bytes)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:06:21Z",
+	"created_at": "2010-07-11T17:09:27Z",
+	"updated_at": "2016-06-24T19:17:36Z"
+}

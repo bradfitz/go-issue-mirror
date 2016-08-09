@@ -1,0 +1,21 @@
+{
+	"id": 51288980,
+	"number": 9010,
+	"state": "open",
+	"title": "gccgo: behavior for direct syscalls for ioctl not always consistent with glibc ioctl calls",
+	"body": "by **laboger@linux.vnet.ibm.com**:\n\n\u003cpre\u003eThis is a problem found when building gccgo from trunk and using that to build Docker\nfor PPC64LE.\n\nIn the Docker code there is a direct syscall to ioctl using the value for TCSETS.  When\nused in GO code from Docker, the syscall passes in the original value for TCSETS to the\nsyscall.  However, the comparable C code which calls ioctl in glibc invokes the syscall\nwith a modified value.  The ioctl call from the GO code results in incorrect behavior.\n\nHere are some comments from an internal mailling list on this issue, concerning the\nmodification of the argument by glibc before invoking the ioctl syscall:\n\n\u0026gt; That change is due to the change of struct termios size. The kernel uses\n\u0026gt; a struct, userspace uses a different struct.\n\u0026gt; \n\u0026gt; From GNU libc:\n\u0026gt; \n\u0026gt; /* The user-visible size of struct termios has changed.  Catch ioctl calls\n\u0026gt;    using the new-style struct termios, and translate them to old-style. */\n\u0026gt; \n\u0026gt; If docker don't want to use a proper libc to do ioctl's, then, it needs\n\u0026gt; to implement these kind of hacks on its own.\n\nAnother comment (about using a syscall within GO):\n\n+ I think this is coming from go runtime syscall pkg. One could argue\n+ that since it uses its own syscall layer it should translate\n+ like glibc does.\n\nHere is a C program which demonstrates the modification of the value by glibc:\n\n# cat ioctl_test.c \n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;sys/ioctl.h\u0026gt;\n#include \u0026lt;unistd.h\u0026gt;\n\nint\nmain(int argc, char *argv[]) \n{\n    struct termios buf; \n    printf(\u0026quot;TCGETS=0x%x\\n\u0026quot;, TCGETS);\n    printf(\u0026quot;TCSETS=0x%x\\n\u0026quot;, TCSETS);\n    ioctl(1, TCGETS, \u0026amp;buf);\n    ioctl(1, TCSETS, \u0026amp;buf);\n    return 0;\n}\n# gcc ioctl_test.c \n# strace -e trace=ioctl -e raw=ioctl ./a.out \nTCGETS=0x403c7413\nTCSETS=0x803c7414\nioctl(0x1, 0x402c7413, 0x3fffeb3da130)  = 0\nioctl(0x1, 0x402c7413, 0x3fffeb3da0e0)  = 0\nioctl(0x1, 0x802c7414, 0x3fffeb3da10c)  = 0\nioctl(0x1, 0x402c7413, 0x3fffeb3da10c)  = 0\n+++ exited with 0 +++\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2014-10-28T18:43:08Z",
+	"updated_at": "2015-04-15T17:34:39Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

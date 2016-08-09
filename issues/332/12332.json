@@ -1,0 +1,30 @@
+{
+	"id": 103146146,
+	"number": 12332,
+	"state": "open",
+	"title": "proposal: math/decimal: add decimal128 implementation",
+	"body": "### Preamble\r\n\r\nIn financial computation, base-10 computation is mandatory.\r\nDiscussion can be found in the proposal [proposal: math/big: Decimal #12127](https://github.com/golang/go/issues/12127) for big.Decimal.\r\n\r\nA numeric type in the standard library usable for financial and commercial applications would be a big plus.\r\n\r\n### Existing solutions\r\n\r\nFor the moment, there exist 14 package that implement base-10 numbers.\r\nhttps://godoc.org/?q=decimal\r\n\r\nThey all seem experimental, except https://github.com/shopspring/decimal which is used in production.\r\n\r\nIts Decimal type is defined as:\r\n\r\n    type Decimal struct {\r\n        value *big.Int\r\n        exp int32\r\n    }\r\n\r\nSo, it is a __arbitrary-precision__ type. But this proposal is about __fixed-size__ decimal type.\r\n\r\n\r\n### Need to retrieve currency values stored as decimal in SQL databases\r\n\r\nBase-10 numbers are primarily used for financial computation, for dealing with currency values.\r\n\r\nThese values are already stored as base-10 fixed-point datatypes (NUMERIC, DECIMAL, MONEY) in SQL databases (MySQL, MS SQL Server, Oracle, etc), but working with them in Go is not so easy.\r\n\r\nEven if a big.Decimal type would eventually be added, the API of package math/big is more complex that what is needed for most financial or commercial applications.\r\n\r\nA simpler data type, __fixed-size 128bits floating-point decimal__ would be an optimal trade-off.\r\n\r\nIn the field of decimal data type, the work of Mike Cowlishaw is paramount:\r\nhttps://en.wikipedia.org/wiki/Mike_Cowlishaw\r\nhttp://speleotrove.com/decimal/\r\n\r\nNote that the Java implementation of java.math.BigDecimal is based on the work of M. Cowlishaw:\r\nhttp://www.drdobbs.com/jvm/fixed-floating-and-exact-computation-wit/184405721\r\n\r\n### Financial and commercial applications' requirements\r\n\r\nThe usual range for monetary values can be estimated as follows.\r\nAssets under management for a very large multinational insurance company is:\r\n\r\n`$265,507,000,000`\r\n\r\nThis figure is the sum of amounts that can have 8 digits after decimal point, because this precision is needed when working with foreign currency conversion.\r\n\r\nThis means that for a large company, a decimal data type must cope with figures like:\r\n\r\n`100,000,000,000.00000000`, that is, 20 significant digits.\r\n\r\nA `decimal128` fixed-size data type provides __34 significant digits__, which can easily store these figures.\r\nWe can even store USA national debt of $18,000,000,000,000 in it with full precision.\r\n\r\nWhen doing financial computation, intermediate calculation can require some more digits, and 34 significant digits of decimal128 can easily provide them for most real cases of financial computation.\r\n\r\nSmaller datatype like decimal 64bits only has 16 significant digits, which is not enough for financial computation.\r\nIt is always possible to save them with the proper precision in SQL database tables, to spare storage, but to make arithmetic on them, it is safer to always use a decimal 128bits.\r\n\r\n### Package for prototyping\r\n\r\nSo far, there exists no implementation of fixed-size decimal type, so I wrote this package to experiment with it.\r\nIt is a thin wrapper around the [decNumber](http://speleotrove.com/decimal/dnfloat.html) package of Mike Cowlishaw written in C.\r\nOnly the decQuad type has been implemented, as it is a 128bits fixed-size data type.\r\n\r\n`decnum.Quad` is a floating-point base-10 number with 34 significant digits, and size is 128 bits.\r\nWorking with them is almost as easy as working with float64:\r\n    - decnum.Quad is a value, and not a pointer.\r\n    - all arithmetic is done on values, not pointers.\r\n    - computation errors are tracked by denum.Context.\r\n\r\nhttps://github.com/rin01/decnum\r\nhttps://godoc.org/github.com/rin01/decnum\r\n\r\nThis package tries to demonstrate that decnum.Quad is easy to work with, and is a proposal for the base of an API.\r\n__A complete package would implement all functions described in this document:__\r\nhttp://speleotrove.com/decimal/dnfloat.html\r\nThe only difference is that values are passed by value instead of pointers.\r\n\r\n\r\n",
+	"user": {
+		"login": "rin01",
+		"id": 9582469,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 27,
+	"created_at": "2015-08-26T00:50:52Z",
+	"updated_at": "2016-02-04T16:03:20Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

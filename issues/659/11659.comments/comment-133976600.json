@@ -1,0 +1,12 @@
+{
+	"id": 133976600,
+	"body": "The [documentation](https://golang.org/cmd/go/#hdr-List_packages) for `go list` says:\r\n\r\n\u003e Usage:\r\n\u003e\r\n\u003e ```\r\n\u003e go list [-e] [-f format] [-json] [build flags] [packages]\r\n\u003e ```\r\n\u003e\r\n\u003e List lists the packages named by the import paths, one per line.\r\n\u003e\r\n\u003e The default output shows the package import path\r\n\r\nRunning `go list all` will list all Go packages that are inside /vendor/ folders for use with `GO15VENDOREXPERIMENT=1`.\r\n\r\nHowever, `github.com/foo/bar/vendor/github.com/foo/baz` is not a valid import path. You can't import it, you can't build it, you can't install it.\r\n\r\nSimilarly, running `go build github.com/foo/bar/...` or `go generate github.com/foo/bar/...` used to be completely normal and produced expected results in Go 1.4, but as of Go 1.5 it will do unexpected things and fail for repos that have a `/vendor/` directory. Setting or not setting `GO15VENDOREXPERIMENT` has no effect here.\r\n\r\nImport path matching and general importing of Go packages uses the following rule for ignoring certain paths:\r\n\r\n\u003e Directory and file names that begin with \".\" or \"_\" are ignored by the go tool, as are directories named \"testdata\".\r\n\r\nSource: http://golang.org/cmd/go/#hdr-Description_of_package_lists.\r\n\r\nIn order to resolve this problem for vendored Go packages inside `/vendor/` folder (if that decision is made), I see  two approaches:\r\n\r\n1. Modify the rule to ignore directories and file names that begin with \".\", \"_\" and directories named \"testdata\" as well as \"vendor\".\r\n\r\n    - This would have to be done by the go tool as well as every tool in the wild that implements this rule. Tools would need to be updated for Go 1.5 and for `GO15VENDOREXPERIMENT` even if those people are not interested in using `GO15VENDOREXPERIMENT=1` themselves.\r\n\r\n2. Use the existing rules to hide contents of `/vendor/` folder. For example, by renaming it to `/_vendor/`.\r\n\r\n    - Existing tools will continue to work on non-vendored packages just fine, but will ignore contents of vendored packages. Optionally, support for `GO15VENDOREXPERIMENT=1` could be added; those tools can then treat `/_vendor/` specially.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-24T00:48:58Z",
+	"updated_at": "2015-08-24T01:55:51Z"
+}

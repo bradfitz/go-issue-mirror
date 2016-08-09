@@ -1,0 +1,33 @@
+{
+	"id": 52951968,
+	"number": 9456,
+	"state": "closed",
+	"title": "runtime: SIGPROF arriving on a foreign thread before any cgo call is made will crash the process",
+	"body": "`runtime.badsignal` will try to deliver the signal received by foreign threads to sigqueue using the cgo callback mechanism, however, cgocallback will not work if the process has not made any cgo call yet.\r\n\r\nA simple reproduction program:\r\n```\r\npackage main\r\n\r\n/*\r\n#include \u003csignal.h\u003e\r\n#include \u003cpthread.h\u003e\r\nvolatile int x;\r\nstatic void *thread(void *p) {\r\n\t(void)p;\r\n\twhile (x == 0)\r\n\t\t;\r\n\tpthread_kill(pthread_self(), SIGPROF);\r\n\treturn NULL;\r\n}\r\n__attribute__((constructor)) void test() {\r\n\tpthread_t tid;\r\n\tpthread_create(\u0026tid, 0, thread, NULL);\r\n}\r\n*/\r\nimport \"C\"\r\nimport \"sync/atomic\"\r\nimport \"unsafe\"\r\n\r\nfunc main() {\r\n\tatomic.StoreInt32((*int32)(unsafe.Pointer(\u0026C.x)), 1)\r\n\tselect {}\r\n}\r\n```\r\n\r\nThis example is contrived, but imagine the thread is created by an external library linked in, and the user is profiling Go code. See https://groups.google.com/forum/#!topic/golang-nuts/SMhWSUsfPag for a real-world example (the symptom is the same, and disabling the cgocallback line in function runtime.badsignal fixes it, but I'm still not sure about how the program could create the extra thread during benchmarking without any cgocall. The problem could also be in other part of runtime.)\r\n\r\nTentatively labeled 1.4.1, as there is no meaningful workaround for 1.4.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-31T23:12:10Z",
+	"created_at": "2014-12-27T08:34:21Z",
+	"updated_at": "2016-06-25T01:57:24Z",
+	"milestone": {
+		"id": 906464,
+		"number": 3,
+		"title": "Go1.4.1"
+	}
+}

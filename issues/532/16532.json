@@ -1,0 +1,26 @@
+{
+	"id": 168201748,
+	"number": 16532,
+	"state": "open",
+	"title": "crypto/x509: darwin only loads system.root keychain should also load system keychain",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n1.6\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\namd64 darwin El Capitan\r\n\r\n3. What did you do?\r\nI am trying to run minikube start on a mac running el capitan. I am inside my corporate network and they have a TLS man-in-the-middle box between the internal network and the internet so that when a TLS connection is made to an internet site, it generates an SSL certificate signed by the corporate root CA. This is installed in my Mac in the system keychain since it is not possible to install trusted CA root certs in the system.root keychain. However, in src/crypto/x509/root_darwin.go I see this:\r\n\r\n```\r\nfunc execSecurityRoots() (*CertPool, error) {\r\n        cmd := exec.Command(\"/usr/bin/security\", \"find-certificate\", \"-a\", \"-p\", \"/System/Library/Keychains/SystemRootCertificates.keychain\")\r\n        data, err := cmd.Output()\r\n        if err != nil {\r\n                return nil, err\r\n        }\r\n\r\n        roots := NewCertPool()\r\n        roots.AppendCertsFromPEM(data)\r\n        return roots, nil\r\n}\r\n```\r\n\r\nI believe the code should also load certificates from /System/Library/Keychains/SystemCACertificates.keychain\r\n\r\nso as to pick up any user installed root certificates.\r\n",
+	"user": {
+		"login": "jostockley",
+		"id": 11546796,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "WaitingForInfo"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-07-28T21:31:09Z",
+	"updated_at": "2016-07-31T05:34:58Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51287799,
+	"number": 8177,
+	"state": "closed",
+	"title": "go.tools/go/importer: import failure of cyclic interface definitions",
+	"body": "\u003cpre\u003eTo reproduce the problem, apply this patch and run the go/importer test suite:\n\ndiff -r eb49a6e58ac3 go/importer/import_test.go\n--- a/go/importer/import_test.go        Tue Jun 03 14:16:59 2014 +1000\n+++ b/go/importer/import_test.go        Tue Jun 10 11:57:50 2014 -0700\n@@ -61,6 +61,7 @@\n        `package p; type T chan int`,\n        `package p; type T \u0026lt;-chan complex64`,\n        `package p; type T chan\u0026lt;- map[int]string`,\n+       `package p; type T1 interface { F(T2) }; type T2 interface { T1 }`,\n \n        // vars\n        `package p; var X int`,\n\n$ go test\n--- FAIL: TestImportSrc (0.01 seconds)\npanic: interface conversion: interface is nil, not *types.Interface [recovered]\n\tpanic: interface conversion: interface is nil, not *types.Interface\n\ngoroutine 20 [running]:\nruntime.panic(0x2356c0, 0x2084692c0)\n\t/Users/gri/go/src/pkg/runtime/panic.c:279 +0xf5\ntesting.func·006()\n\t/Users/gri/go/src/pkg/testing/testing.go:416 +0x176\nruntime.panic(0x2356c0, 0x2084692c0)\n\t/Users/gri/go/src/pkg/runtime/panic.c:248 +0x18d\ncode.google.com/p/go.tools/go/types.NewInterface(0x3cc5f8, 0x0, 0x0, 0x208466118, 0x1,\n0x1, 0x20)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/types/type.go:272 +0x57f\ncode.google.com/p/go.tools/go/importer.(*importer).typ(0x208430660, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:276 +0x1582\ncode.google.com/p/go.tools/go/importer.(*importer).typ(0x208430660, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:314 +0x618\ncode.google.com/p/go.tools/go/importer.(*importer).param(0x208430660, 0x1)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:380 +0x49\ncode.google.com/p/go.tools/go/importer.(*importer).tuple(0x208430660, 0x2084ae370)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:386 +0x8b\ncode.google.com/p/go.tools/go/importer.(*importer).signature(0x208430660, 0x2084b8570)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:376 +0x65\ncode.google.com/p/go.tools/go/importer.(*importer).typ(0x208430660, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:256 +0x17e7\ncode.google.com/p/go.tools/go/importer.(*importer).typ(0x208430660, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:273 +0x13d5\ncode.google.com/p/go.tools/go/importer.(*importer).typ(0x208430660, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:314 +0x618\ncode.google.com/p/go.tools/go/importer.(*importer).obj(0x208430660, 0x2084ae2d0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:126 +0x5f7\ncode.google.com/p/go.tools/go/importer.ImportData(0x2084b84e0, 0x208478190, 0x33, 0x70,\n0x2084aa1a0, 0x0, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import.go:69 +0x5db\ncode.google.com/p/go.tools/go/importer.testExportImport(0x2084761b0, 0x2084ae0f0,\n0x270cf0, 0x0, 0x43, 0x0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import_test.go:148 +0xbb\ncode.google.com/p/go.tools/go/importer.TestImportSrc(0x2084761b0)\n\t/Users/gri/golib/src/code.google.com/p/go.tools/go/importer/import_test.go:93 +0x1db\ntesting.tRunner(0x2084761b0, 0x3c2e80)\n\t/Users/gri/go/src/pkg/testing/testing.go:422 +0x8b\ncreated by testing.RunTests\n\t/Users/gri/go/src/pkg/testing/testing.go:504 +0x8db\n\nProblem: NewInterface attempts to compute the method set before all involved interfaces\nhave been imported.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:45:22Z",
+	"created_at": "2014-06-10T20:46:54Z",
+	"updated_at": "2016-06-25T01:36:11Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

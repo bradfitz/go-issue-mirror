@@ -1,0 +1,21 @@
+{
+	"id": 51280185,
+	"number": 3150,
+	"state": "open",
+	"title": "encoding/csv: \"LazyQuotes\" not lazy enough, need an \"IgnoreQuotes\" mode for highly messy csv input",
+	"body": "by **philipp.schumann**:\n\n\u003cpre\u003e---What steps will reproduce the problem?---\n\n1. Download and extract \u003ca href=\"http://download.geonames.org/export/dump/allCountries.zip\"\u003ehttp://download.geonames.org/export/dump/allCountries.zip\u003c/a\u003e --\ncontains a single tab-separated file about 940MB\n\n2. Set up a TSV reader in Go:\n\n\t\ttsv = csv.NewReader(txtFile)\n\t\ttsv.Comma = '\\t'\n\t\ttsv.Comment = '#'\n\t\ttsv.LazyQuotes = true\n\t\ttsv.TrailingComma = true // retain rather than remove empty slots\n\t\ttsv.TrimLeadingSpace = false // retain rather than remove empty slots\n\n3. Iterate through the records returned by tsv.Read() (after each read, set\ntsv.FieldsPerRecord = 0) until the file's line 2293755 which begins like this:\n\n3376027\t”S” Falls\t\u0026quot;S\u0026quot; Falls\t\t4.533......\n\n---What is the expected result?---\n\nWith LazyQuotes set, the reader should return a string array containing the\ntab-separated items of only this line.\n\n---What do you see instead?---\n\nThe reader packs all fields of the current line, starting from field 2 (if counting\n0-based), PLUS all consecutive lines until line 3043730 (record 6489131\tB\u0026amp;B \u0026quot;a\nCasa di Griffi\u0026quot;\tB\u0026amp;B \u0026quot;a Casa di Griffi\u0026quot;\t... into a single 91MB big\nstring value.\n\n6g, weekly.2012-02-22 under openSuSE 12.1 64bit.\n\nNOTES: guessing this is due to quote character mismatches of some sort or another. So\nthis behaviour might very well be due to non-sanitized input data. However, such is the\nnature of 99.9% of real-world CSV files out there. If I have to run custom code to scan\nand sanitize this 950MB file myself prior to feeding it to encoding/csv, I can just\nparse manually in the first place. Ideally, the csv package would offer an\n\u0026quot;IgnoreQuotes\u0026quot; mode -- for use-cases where I *know* that there are no\nmulti-line records and where I *know* all newlines and commas (or tabs in this case)\nabsolutely *need* to take the strictest precedence over any quotes that may or may not\nbe appearing in the data and should ideally be taken as they are since nobody ever\nbothered to properly escape those quotes that are 100% part of the data, not record or\nfield delimiters...\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"created_at": "2012-02-28T09:23:11Z",
+	"updated_at": "2016-05-25T01:00:18Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51286246,
+	"number": 7142,
+	"state": "closed",
+	"title": "syscall: darwin/386 programs crash",
+	"body": "\u003cpre\u003eAfter \u003ca href=\"https://golang.org/cl/45930043\"\u003ehttps://golang.org/cl/45930043\u003c/a\u003e\nlots of programs crash on darwin/386 with:\n\npanic: runtime error: call of nil func value\n[signal 0xa code=0x2 addr=0x0 pc=0x0]\n\nThe crash is easily reproducible with:\n$ go test -run=TestParseGlob text/template\n\nThe culprit is:\n\nfunc ReadDirent(fd int, buf []byte) (n int, err error) {\n\t// Final argument is (basep *uintptr) and the syscall doesn't take nil.\n\t// TODO(rsc): Can we use a single global basep for all calls?\n\treturn Getdirentries(fd, buf, new(uintptr))\n}\n\nThe compiler seems to think that new(uintptr) is not alive during syscall. And combines\nit... with return address? And then syscall writes 0 to return address.\n\nWith the following fix 'go test std' passes:\n\n+var xx **uintptr\n+\n func ReadDirent(fd int, buf []byte) (n int, err error) {\n \t// Final argument is (basep *uintptr) and the syscall doesn't take nil.\n \t// TODO(rsc): Can we use a single global basep for all calls?\n-\treturn Getdirentries(fd, buf, new(uintptr))\n+\tx := new(uintptr)\n+\tif *x != 0 {\n+\t\txx = \u0026amp;x\n+\t}\n+\treturn Getdirentries(fd, buf, x)\n }\n\nIt seems wrong that compiler think that the var is not alive. And it probably could\nbreak w/o the escape-related change, because liveness is orthogonal to escape-ness.\n\nRuss, what do you think?\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:39:41Z",
+	"created_at": "2014-01-17T17:43:24Z",
+	"updated_at": "2016-06-25T01:25:46Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

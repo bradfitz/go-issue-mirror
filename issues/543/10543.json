@@ -1,0 +1,33 @@
+{
+	"id": 70188282,
+	"number": 10543,
+	"state": "closed",
+	"title": "x/net/spdy: stream id zero is disallowed",
+	"body": "The following program crashes:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"encoding/hex\"\r\n\t\"golang.org/x/net/spdy\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\nfunc main() {\r\n\tdata, _ := hex.DecodeString(\"0000000030000000\")\r\n\tframer, err := spdy.NewFramer(ioutil.Discard, bytes.NewReader(data))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfor score := 0; ; score++ {\r\n\t\tf, err := framer.ReadFrame()\r\n\t\tif err != nil {\r\n\t\t\tif f != nil {\r\n\t\t\t\tpanic(err)\r\n\t\t\t}\r\n\t\t\treturn\r\n\t\t}\r\n\t\terr = framer.WriteFrame(f)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n```\r\npanic: stream id zero is disallowed\r\n\r\ngoroutine 1 [running]:\r\nruntime.gopanic(0x6904e0, 0xc20800e8c0)\r\n\tsrc/runtime/panic.go:477 +0x410 fp=0xc20804fec8 sp=0xc20804fe48\r\nmain.main()\r\n\tspdy.go:20 +0x1fb fp=0xc20804ff90 sp=0xc20804fec8\r\n```\r\n\r\nEither WriteFrame must be able to handle ReadFrame output, or ReadFrame must not produce this output (error instead).\r\n\r\non commit 6f62f426de90c0ed6a55207b51476115fcb17237",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"closed_at": "2015-04-24T03:30:20Z",
+	"created_at": "2015-04-22T17:30:17Z",
+	"updated_at": "2016-06-25T02:06:16Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

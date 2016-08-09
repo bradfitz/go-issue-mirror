@@ -1,0 +1,32 @@
+{
+	"id": 161087544,
+	"number": 16119,
+	"state": "open",
+	"title": "cmd/compile: SSA runtime performance regression on rotate function",
+	"body": "```\r\n$ gotip version\r\ngo version devel +691c5c1 Sun Jun 19 05:18:09 2016 +0000 linux/amd64\r\n```\r\n\r\nCode:\r\n\r\n```go\r\npackage foo\r\n\r\nimport \"testing\"\r\n\r\n//go:noinline\r\nfunc Rotate(x uint64, n uint) uint64 {\r\n\treturn (x \u003c\u003c n) | (x \u003e\u003e uint(64-n))\r\n}\r\n\r\nvar sink uint64\r\n\r\nfunc BenchmarkRotate(b *testing.B) {\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tsink = Rotate(0xff88ff88cc77cc77, 32)\r\n\t}\r\n}\r\n```\r\n(note that the `//go:noinline` directive is necessary, because tip is able to fold the `Rotate` call into a load of the result).\r\n\r\n`go1.6.2` vs `tip`:\r\n\r\n```\r\nname      old time/op  new time/op  delta\r\nRotate-4  3.00ns ± 1%  4.36ns ± 0%  +45.09%  (p=0.000 n=10+9)\r\n```\r\n\r\nThe problem with the generated code looks similar to the one in #16061 (SSA does two stack spilling and the legacy compiler does not), but this time we're not using instructions that requires values to be in specific registers. I'm not sure whether this can be considered the same as #16061 or not.\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-19T19:22:01Z",
+	"updated_at": "2016-06-19T20:25:55Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

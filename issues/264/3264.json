@@ -1,0 +1,22 @@
+{
+	"id": 51280338,
+	"number": 3264,
+	"state": "closed",
+	"title": "bytes.NewBuffer does not properly initialize (Go1 binary release candidate darwin amd64) ",
+	"body": "by **antonio.dolcetta**:\n\n\u003cpre\u003eHi\n\nFollowing code shows the problem.\nThe created out.txt contains garbage because the first use of buffer.String() finds a\nlot of zeros in the buffer.\nManually resetting the newly created buffer with buffer.Reset() fixes the problem, but\nthe docs seem to imply this should not be needed.\n\n(Go1 binary release candidate darwin amd64)\n\nRegards\n\n\nAntonio\n\n\npackage main\n\nimport (\n\t\u0026quot;bufio\u0026quot;\n\t\u0026quot;bytes\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;io\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\n// Read a whole file into the memory and store it as array of lines\nfunc readLines(path string) (lines []string, err error) {\n\tvar (\n\t\tfile   *os.File\n\t\tpart   []byte\n\t\tprefix bool\n\t)\n\tif file, err = os.Open(path); err != nil {\n\t\treturn\n\t}\n\tdefer file.Close()\n\n\treader := bufio.NewReader(file)\n\tbuffer := bytes.NewBuffer(make([]byte, 1024))\n\t// if we omit following line buffer is not properly initialized\n\tbuffer.Reset()\n\tfor {\n\t\tif part, prefix, err = reader.ReadLine(); err != nil {\n\t\t\tbreak\n\t\t}\n\t\tbuffer.Write(part)\n\t\tif !prefix {\n\t\t\tlines = append(lines, buffer.String())\n\t\t\tbuffer.Reset()\n\t\t}\n\t}\n\tif err == io.EOF {\n\t\terr = nil\n\t}\n\treturn\n}\n\nfunc main() {\n\tlines, err := readLines(\u0026quot;IntegerArray.txt\u0026quot;)\n\tlines, err := readLines(\u0026quot;in.txt\u0026quot;)\n\tif err != nil {\n\t\tfmt.Printf(\u0026quot;Error: %s\\n\u0026quot;, err)\n\t\treturn\n\t}\n\tfh, err := os.Create(\u0026quot;out.txt\u0026quot;)\n\tif err != nil {\n\t\treturn\n\t}\n\tdefer fh.Close()\n\tfor _, line := range lines {\n\t\tfmt.Fprintf(fh, \u0026quot;%s\\n\u0026quot;, line)\n\t\t//fmt.Printf(\u0026quot;%s\\n\u0026quot;, line)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:16:59Z",
+	"created_at": "2012-03-09T15:00:29Z",
+	"updated_at": "2016-06-24T21:30:28Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 67098615,
+	"body": "Small reproduction:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\twg := new(sync.WaitGroup)\r\n\twg.Add(8000)\r\n\r\n\tfor i := 0; i \u003c 8000; i++ {\r\n\t\tgo func() { wg.Done(); time.Sleep(10 * time.Hour) }()\r\n\t}\r\n\r\n\twg.Wait()\r\n\r\n\tcmd := exec.Command(\"ps\", \"auxf\")\r\n\tcmd.Stdout = os.Stdout\r\n\tcmd.Stderr = os.Stderr\r\n\tfmt.Println(cmd.Run())\r\n}\r\n```\r\n\r\nOn 1.4:\r\n\r\n```\r\nroot@bnpdc5ehkue:~# time /usr/local/go/bin/go run -race test.go\r\nfork/exec /bin/ps: cannot allocate memory\r\n\r\nreal\t0m2.669s\r\nuser\t0m1.164s\r\nsys\t0m0.542s\r\n```\r\n\r\nOn 1.3.3:\r\n\r\n```\r\nroot@bnpdc5ehkua:~# time /usr/local/go/bin/go run test.go -race\r\nUSER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\r\nroot         1  0.0  0.0   1120     0 ?        S\u003cs  01:00   0:00 wshd: bnpdc5ehkua\r\nroot       234  0.0  0.0  18168  1136 pts/1    S\u003cs  01:01   0:00 bash\r\nroot       542  0.0  0.1 256040  6768 pts/1    S\u003cl  01:14   0:00  \\_ /usr/local/go/bin/go run -race test.go\r\nroot       550  0.1 20.5 5500216 1256116 pts/1 S\u003cl  01:14   0:00  |   \\_ /tmp/go-build944912787/command-line-arguments/_obj/exe/test\r\nroot       590  0.0  0.0 255912  5136 pts/1    S\u003cl+ 01:25   0:00  \\_ /usr/local/go/bin/go run test.go -race\r\nroot       598  0.0  0.6  72228 37960 pts/1    S\u003cl+ 01:25   0:00      \\_ /tmp/go-build681557977/command-line-arguments/_obj/exe/test -race\r\nroot       602  0.0  0.0  15564  1104 pts/1    R\u003c+  01:25   0:00          \\_ ps auxf\r\n\u003cnil\u003e\r\n\r\nreal\t0m0.216s\r\nuser\t0m0.180s\r\nsys\t0m0.061s\r\n```\r\n\r\n(Also note the time taken to run. Way different.)",
+	"user": {
+		"login": "vito",
+		"id": 1880,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-16T01:30:32Z",
+	"updated_at": "2014-12-16T01:33:49Z"
+}

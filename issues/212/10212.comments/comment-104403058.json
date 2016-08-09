@@ -1,0 +1,12 @@
+{
+	"id": 104403058,
+	"body": "This could be caused by the write barrier consulting arena_used and then h_spans while this sequence runs in another thread:\n\n\t\th.arena_used = p + n\n\t\tif p_end \u003e h.arena_end {\n\t\t\th.arena_end = p_end\n\t\t}\n\t\t\n\t\tXXX write barrier on other thread NOW XXX\n\n\t\tmHeap_MapBits(h)\n\t\tmHeap_MapSpans(h)\n\nIf there is system memory in the middle of the arena (more likely on 32-bit systems) then the advancement of arena_used may cause the range arena_start, arena_used to now include that memory. Inheap sees that the system pointer it is considering (and it is a system pointer since the barrier is in traceEvent) is in range, so it looks at the corresponding h_spans entry. But since mHeap_MapSpans has not completed yet, the corresponding h_spans entry is not present in memory and causes the fault.\n\nThe fix would be to swap the two halves of the above code, passing the expected new arena_end value into mHeap_MapBits and mHeap_MapSpans, but waiting until they return to actually update h.arena_used.\n\nThis sequence happens twice in runtime/malloc.go. The other looks like:\n\n\t\tp := h.arena_used\n\t\tsysMap((unsafe.Pointer)(p), n, h.arena_reserved, \u0026memstats.heap_sys)\n\t\th.arena_used += n\n\t\tmHeap_MapBits(h)\n\t\tmHeap_MapSpans(h)\n\nBoth need to be fixed.\n\n@aclements @RLH",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-21T19:57:42Z",
+	"updated_at": "2015-05-21T19:57:42Z"
+}

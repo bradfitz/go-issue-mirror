@@ -1,0 +1,12 @@
+{
+	"id": 66091665,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **rpolzer@google.com**:\n\n\u003cpre\u003eI should add that problem 2 seems a lot more disturbing, as that may be usable for XSS.\n\nThis seems to stem from this function:\n\nfunc escapeTemplates(tmpl *Template, names ...string) error {\n        e := newEscaper(tmpl)\n        for _, name := range names {\n                c, _ := e.escapeTree(context{}, name, 0)\n                var err error\n// ...\n                tmpl.escaped = true\n        }\n        e.commit()\n        return nil\n}\n\nThis writes to tmpl.escaped once ANY of the templates is escaped, even if a later one\nfails escaping! This assignment should simply not exist, as tmpl.escaped is already set\nin Template.Execute when this function returns. The panic BTW happens in commit(), when\nescaped is already set.\n\nEven worse, in lookupAndEscapeTemplate, tmpl.escaped is checked for whether to escape\nanother than the root template. This looks dangerous.\n\nProbably this escaped field should rather exist once per template... otherwise mixing\ncalls of .Execute() and .ExecuteTemplate() can cause non-escaped data too.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-21T12:56:23Z",
+	"updated_at": "2014-12-08T10:41:03Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 56681819,
+	"number": 9782,
+	"state": "closed",
+	"title": "fsnotify: EINTR from Error channel (linux/x64)",
+	"body": "Platform:\r\nlinux/x64, 1.4.1 (binary download).\r\n\r\nProblem:\r\nfsnotify's Error chan leaked an EINTR. I don't think this is meant to happen.\r\nI may have time to investigate further this weekend.\r\n\r\nI can reproduce the problem with this:\r\n```\r\npackage main\r\n\r\nimport (\r\n  \"time\"\r\n  \"fmt\"\r\n  \"golang.org/x/exp/fsnotify\"\r\n  \"os\"\r\n  \"syscall\"\r\n)\r\n\r\nfunc Panic(err error) {\r\n  if err != nil {\r\n    panic(err)\r\n  }\r\n}\r\n\r\nfunc main() {\r\n  go sig()\r\n  go notify()\r\n  \u003c-time.After(5 * time.Second)\r\n}\r\n\r\nfunc notify() *fsnotify.Watcher {\r\n  w, err := fsnotify.NewWatcher()\r\n  Panic(err)\r\n  defer w.Close()\r\n  err = w.Watch(\".\")\r\n  Panic(err)\r\n  defer w.RemoveWatch(\".\")\r\n  for {\r\n    select {\r\n    case err := \u003c-w.Error:\r\n      Panic(fmt.Errorf(\"fsnotify error from Error channel: %#v\", err))\r\n    case \u003c-w.Event:\r\n    }\r\n  }\r\n}\r\n\r\nfunc sig() {\r\n  p, err := os.FindProcess(os.Getpid())\r\n  Panic(err)\r\n  for {\r\n    p.Signal(syscall.SIGUSR1)\r\n  }\r\n}\r\n```",
+	"user": {
+		"login": "PieterD",
+		"id": 821733,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2015-04-14T19:39:01Z",
+	"created_at": "2015-02-05T15:08:43Z",
+	"updated_at": "2016-06-25T02:00:07Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 94968046,
+	"number": 11712,
+	"state": "closed",
+	"title": "time: Time.String() can return \"+0000 +0000\" as time zone",
+	"body": "```\r\njb@syno:~ $ cat test.go \r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tt, _ := time.Parse(\"2006-01-02 15:04:05 -0700\", \"2015-07-13 12:13:14 +0000\")\r\n\tfmt.Println(t)\r\n\r\n\tt, _ = time.Parse(\"2006-01-02 15:04:05\", \"2015-07-13 12:13:14\")\r\n\tfmt.Println(t)\r\n}\r\njb@syno:~ $ go version\r\ngo version devel +b6ead9f Tue Jul 7 21:53:11 2015 +0000 darwin/amd64\r\njb@syno:~ $ go run test.go\r\n2015-07-13 12:13:14 +0000 +0000\r\n2015-07-13 12:13:14 +0000 UTC\r\njb@syno:~ $ \r\n```\r\n\r\nI guess this is due to\r\n\r\n\u003e When parsing a time with a zone offset like -0700, if the offset corresponds to a time zone used by the current location (Local), then Parse uses that location and zone in the returned time. Otherwise it records the time as being in a fabricated location with time fixed at the given zone offset.\r\n\r\nin Parse...? However, perhaps the fabricated location for +0000 should be UTC? It also seems system specific, as http://play.golang.org/p/NYpETX_L9a actually prints UTC in both cases.\r\n\r\n(Dates returned from database/sql, at least with the github.com/lib/pq driver, suffer from this so it's not only synthetic.)",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-11-04T19:55:59Z",
+	"created_at": "2015-07-14T15:07:11Z",
+	"updated_at": "2015-11-04T21:00:03Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

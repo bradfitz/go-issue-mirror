@@ -1,0 +1,21 @@
+{
+	"id": 143858485,
+	"number": 14989,
+	"state": "open",
+	"title": "x/mobile/exp/f32: Mat4.Rotate incorrectly rotates around axes with non-zero X values",
+	"body": "I have put together the following example to demonstrate a problem with Rotate method on f32.Mat4. I attempt to rotate a ~~vector v~~ (edit: vector u) around the X axis. The resulting vector does not have the same length (in this extreme case the \"rotation\" has collapsed a unit vector to zero-length). \r\n\r\nhttp://play.golang.org/p/INyRQCldPm\r\n\r\nWhen I actually use the resulting transformation in OpenGL what I have observed is that my models gets flattened onto a plane (presumably the Y-Z plane, perpendicular to the X axis, at X=0).\r\n\r\nI believe the problem lies in how the first row of the rotation matrix is constructed.\r\n\r\nhttps://github.com/golang/mobile/blob/467d8559f22b81884dfbc37d1cef95d0fab78049/exp/f32/mat4.go#L157-L160\r\n\r\nI kind of suck at this stuff. But you can see the subsequent rows in the matrix have a pattern which is not observed in the first row. So I tried changing the first row of the rotation matrix to the following. \r\n\r\n```\r\n\t{\r\n\t\tc + d*a[0]*a[0],\r\n\t\t0 + d*a[0]*a[1] + s*a[2],\r\n\t\t0 + d*a[0]*a[2] - s*a[1],\r\n\t\t0,\r\n\t}\r\n```\r\n\r\nAnd that looks like it works.\r\n\r\nThe following demonstrates the altered Rotate function: http://play.golang.org/p/8ZrOpdv_AY\r\n\r\nThis second example confirms rotation of [1, 0, 0] around the X axis yields [1, 0, 0]. Obviously length was preserved.",
+	"user": {
+		"login": "bmatsuo",
+		"id": 15089,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-03-27T22:54:06Z",
+	"updated_at": "2016-04-09T22:51:30Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

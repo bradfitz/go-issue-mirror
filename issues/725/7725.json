@@ -1,0 +1,33 @@
+{
+	"id": 51287122,
+	"number": 7725,
+	"state": "closed",
+	"title": "runtime: crash in GC",
+	"body": "\u003cpre\u003e---------- Forwarded message ----------\nFrom: Dave Cheney \u0026lt;dave@cheney.net\u0026gt;\nDate: Wed, Apr 2, 2014 at 7:41 PM\nSubject: [golang-dev] GC crash, SIGSEGV: segmentation violation PC=0x4071dc\nTo: golang-dev \u0026lt;golang-dev@googlegroups.com\u0026gt;\n\n\nHello,\n\nOne of our juju packages can reliably (100% at the moment) crash the\nruntime during tests.\n\nInterestingly the PC is always the same, although the stack trace does\nvary from time to time.\n\nAs reproducing this involves installing mongodb and all our juju\ndependencies, I'd like to help narrow this crash down before trying to\nlog an issue.\n\nIf you want to try anyway, details to reproduce the issue are at the\nend of the message.\n\nCheers\n\nDave\n\nSIGSEGV: segmentation violation\nPC=0x4071dc\n\ngoroutine 0 [idle]:\nscanblock(0x7f42b0080000, 0x12de700)\n/home/dfc/go/src/pkg/runtime/mgc0.c:969 +0x8ec fp=0x7fffb7565df8\nmarkroot(0xc20800c900, 0x1007f4200000001)\n/home/dfc/go/src/pkg/runtime/mgc0.c:1307 +0xd9 fp=0x7fffb7565e78\nruntime.parfordo(0xc20800c900)\n/home/dfc/go/src/pkg/runtime/parfor.c:88 +0xa3 fp=0x7fffb7565ef0\ngc(0xc2089b1460)\n/home/dfc/go/src/pkg/runtime/mgc0.c:2339 +0x1aa fp=0x7fffb7566018\nmgc(0xc20827cb40)\n/home/dfc/go/src/pkg/runtime/mgc0.c:2285 +0x2e fp=0x7fffb7566028\nruntime.mcall(0x42b297)\n/home/dfc/go/src/pkg/runtime/asm_amd64.s:181 +0x4b fp=0x7fffb7566038\n\ngoroutine 12757 [garbage collection]:\nruntime.gc(0x7f4200000000)\n/home/dfc/go/src/pkg/runtime/mgc0.c:2265 +0x1a3 fp=0xc2089b1470\nruntime.mallocgc(0x1500, 0xce31e0, 0x1)\n/home/dfc/go/src/pkg/runtime/malloc.goc:204 +0x1d6 fp=0xc2089b14d8\nruntime.new(0xce31e0, 0x0)\n/home/dfc/go/src/pkg/runtime/malloc.goc:825 +0x3b fp=0xc2089b14f8\nmath/rand.NewSource(0x863e227d68306861, 0x0, 0x0)\n/home/dfc/go/src/pkg/math/rand/rand.go:25 +0x38 fp=0xc2089b1530\nmath/big.nat.probablyPrime(0xc208584870, 0x4, 0x9, 0x14, 0xda9a21)\n/home/dfc/go/src/pkg/math/big/nat.go:1431 +0x5a3 fp=0xc2089b16b0\nmath/big.(*Int).ProbablyPrime(0xc20864b0e0, 0x14, 0x7f42b1125000)\n/home/dfc/go/src/pkg/math/big/int.go:721 +0x4a fp=0xc2089b16e8\ncrypto/rsa.(*PrivateKey).Validate(0xc208b385a0, 0x0, 0x0)\n/home/dfc/go/src/pkg/crypto/rsa/rsa.go:91 +0xd9 fp=0xc2089b17b0\ncrypto/x509.ParsePKCS1PrivateKey(0xc208569040, 0x13e, 0x13e,\n0xc208b385a0, 0x0, ...)\n/home/dfc/go/src/pkg/crypto/x509/pkcs1.go:77 +0x4b5 fp=0xc2089b18b8\ncrypto/tls.parsePrivateKey(0xc208569040, 0x13e, 0x13e, 0x0, 0x0, ...)\n/home/dfc/go/src/pkg/crypto/tls/tls.go:259 +0x81 fp=0xc2089b1968\ncrypto/tls.X509KeyPair(0xc2084a5acd, 0x0, 0x33, 0xc20865b7ed, 0x0, ...)\n/home/dfc/go/src/pkg/crypto/tls/tls.go:213 +0x32c fp=0xc2089b1ae8\nlaunchpad.net/juju-core/environs/config.verifyKeyPair(0xc2084a5800,\n0x2cd, 0x300, 0xc20865b600, 0x1ed, ...)\n/home/dfc/src/launchpad.net/juju-core/environs/config/authkeys.go:82\n+0x96 fp=0xc2089b1b78\nlaunchpad.net/juju-core/environs/config.Validate(0xc2082f2320, 0x0, 0x0, 0x0)\n/home/dfc/src/launchpad.net/juju-core/environs/config/config.go:280\n+0xfa1 fp=0xc2089b1e18\nlaunchpad.net/juju-core/environs/config.New(0x7f42b004b200,\n0xc208b3ddd0, 0x7f42b004b208, 0x0, 0x0)\n/home/dfc/src/launchpad.net/juju-core/environs/config/config.go:126\n+0x1fc fp=0xc2089b1f80\n----- stack segment boundary -----\n\nFull log: \u003ca href=\"http://paste.ubuntu.com/7196494/\"\u003ehttp://paste.ubuntu.com/7196494/\u003c/a\u003e\n\nTo reproduce:\n\nsudo apt-get install mongodb-server\ngo get launchpad.net/juju-core/...\ngo test launchpad.net/juju-core/worker/uniter\n\n--\n\n---\nYou received this message because you are subscribed to the Google Groups\n\u0026quot;golang-dev\u0026quot; group.\nTo unsubscribe from this group and stop receiving emails from it, send an email to\ngolang-dev+unsubscribe@googlegroups.com.\nFor more options, visit \u003ca href=\"https://groups.google.com/d/optout\"\u003ehttps://groups.google.com/d/optout\u003c/a\u003e.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2014-12-08T10:42:53Z",
+	"created_at": "2014-04-08T00:14:06Z",
+	"updated_at": "2016-06-25T01:31:39Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

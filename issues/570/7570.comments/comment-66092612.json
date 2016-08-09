@@ -1,0 +1,12 @@
+{
+	"id": 66092612,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eWhat is happening here is that exec.Command looks up \"ccc\" in PATH.  It finds it in the\ndirectory \".\", and it prepares to execute the file \"./ccc\".  When you set the Dir field,\nthe child process changes directory and then attempts to execute the file \"./ccc\". \nSince that file does not exist, the execution fails.\n\nThis is all still documented behaviour.  exec.Command says \"If name contains no path\nseparators, Command uses LookPath to resolve the path to a complete name if possible.\" \nLookPath says \"The result may be an absolute path or a path relative to the current\ndirectory.\"  So exec.Command can in some cases, like this one, turn a name with no path\nseparators into a path relative to the current directory.  The documentation for the\nPath field of Command says \"If Path is relative, it is evaluated relative to Dir.\"  So\nthe relative path produced by exec.Command is evaluated relative to the Dir you set, and\nfails.\n\nThe os/exec package is designed to make certain common operations convenient, and it\nevidently does so at the cost of some API complexity.  By having exec.Command call\nLookPath for you, we are walking into this lack of clarity.  But I don't see anything\nclearly wrong here.  You are describing a complex scenario, but the package does appear\nto be behaving as documented, and the package does provide ways to avoid the\ncomplexities.\n\nI understand that you are trying to figure out when the os/exec package should add a\n.exe suffix.  At present LookPath adds .exe (and other suffixes) when looking for an\nexecutable file.  Command is documented to call LookPath in certain cases and that\nshould not change.  As far as I can tell the os and syscall packages never add a .exe\nsuffix.\n\nSo I think the only question here is: what should Command do on Windows when given a\nname that does contain path separators?  In that case, should it add .exe or not?  In Go\n1.2 it did.  On tip it does not.  I think it would be reasonable to say that, on\nWindows, when Command sees a name that does contain path separators, that it will try\nadding .exe (and other suffixes), but will not make any other change to the name.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-31T17:28:50Z",
+	"updated_at": "2014-12-08T10:42:04Z"
+}

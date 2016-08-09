@@ -1,0 +1,33 @@
+{
+	"id": 51284938,
+	"number": 6270,
+	"state": "closed",
+	"title": "os/exec: fix StdinPipe and maybe StdoutPipe",
+	"body": "\u003cpre\u003eSee also \u003ca href=\"https://golang.org/issue/4290\"\u003eissue #4290\u003c/a\u003e.\n\nStdinPipe (for instance) returns a WriteCloser but then closes it in Wait. That's bad\ndesign: a package that returns a Closer shouldn't then close it for you silently.\n\nBut the real problem is that this property makes it impossible to use StdinPipe\ncorrectly to deliver data to the process, since any program attempting to write to the\npipe to deliver input to the process must close the file descriptor itself to signal\nEOF. There is a deadly embrace: The process won't exit until EOF; the EOF won't be\ndelivered until the process exits.\n\nI believe StdinPipe should be deprecated, and a new method (call it XXX) that returns a\nWriteCloser, but that Wait does not close that file descriptor. It would be the\nwell-documented responsibility of the client to close XXX explicitly.\n\nI haven't thought through StdoutPipe but perhaps it has a related issue.\u003c/pre\u003e",
+	"user": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:34:28Z",
+	"created_at": "2013-08-28T02:00:45Z",
+	"updated_at": "2016-06-25T01:17:32Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

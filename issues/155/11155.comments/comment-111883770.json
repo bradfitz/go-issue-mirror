@@ -1,0 +1,12 @@
+{
+	"id": 111883770,
+	"body": "Note that I'm asking about the number of OS threads (this might be the wrong terminology; I mean the thing limited by GOMAXPROCS), not the number of goroutines. [This gist](https://gist.githubusercontent.com/jacobsa/bc7fd7c94586336b9f2f/raw/ec524ea05a895576644ff05733991655a56a1392/gistfile1.txt) shows an invocation of my test case that deadlocked then received SIGQUIT. Though I invoked it with GOMAXPROCS=4 and there are many runnable goroutines, only two are running:\r\n\r\n    % cat tmux.history | grep -w goroutine | grep run                                \r\n    goroutine 11 [runnable]:\r\n    goroutine 13 [running]:\r\n            goroutine running on other thread; stack unavailable\r\n    goroutine 18 [runnable]:\r\n    goroutine 19 [runnable]:\r\n    goroutine 22 [runnable]:\r\n    goroutine 23 [runnable]:\r\n    goroutine 2803 [runnable]:\r\n    goroutine 2327 [runnable]:\r\n    goroutine 2421 [runnable]:\r\n    goroutine 2782 [runnable]:\r\n    goroutine 2769 [runnable]:\r\n    goroutine 2802 [runnable]:\r\n    goroutine 2792 [runnable]:\r\n    goroutine 2479 [runnable]:\r\n    goroutine 2767 [runnable]:\r\n    goroutine 2631 [runnable]:\r\n    goroutine 2791 [runnable]:\r\n    goroutine 2506 [runnable]:\r\n    goroutine 2196 [runnable]:\r\n    goroutine 2793 [runnable]:\r\n    goroutine 2781 [running]:\r\n            goroutine running on other thread; stack unavailable\r\n    goroutine 2532 [runnable]:\r\n    goroutine 2575 [runnable]:\r\n\r\n[This gist](https://gist.github.com/jacobsa/cc3d2cdcf667e387b828) shows what the kernel was doing on behalf of each thread after SIGQUIT. (`cat /proc/15386/stack` hung for the fusermount process; I don't know why.)\r\n\r\nIn any case, there is no *safe* value of GOMAXPROCS -- if I set it to N, then N concurrent calls to clone may freeze the program, right?",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-14T23:15:43Z",
+	"updated_at": "2015-06-14T23:15:43Z"
+}

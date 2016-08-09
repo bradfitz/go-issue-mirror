@@ -1,0 +1,22 @@
+{
+	"id": 111944650,
+	"number": 12968,
+	"state": "closed",
+	"title": "runtime: perf_events shows deep call stacks with repeated address",
+	"body": "When profiling a process with perf_events I see some call stacks that are very deep, repeating a single address many times (usually around 100 or 125). The repeated addresses that I've checked always refer to a `CALL runtime.deferreturn(SB)` instruction, whereas non-repeated addresses refer to the instruction _after_ a `CALL` to a different function.\r\n\r\nThe output of `perf script -k $debugkernel -i perf.data` includes some samples like the following:\r\n\r\n```\r\nredacted 1234 cycles:\r\n\t          5dabd5 sync/atomic.LoadUint64 (/redacted)\r\n\t          4a5557 net.(*netFD).readUnlock (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n\t          4a5e51 net.(*netFD).Read (/redacted)\r\n// etc, for a total of 124 instances of address 4a5e51\r\n\r\n```\r\n\r\nThe relevant section of `go tool objdump` output is as follows:\r\n\r\n```\r\n        fd_unix.go:241  0x4a5e3b        4889942400010000                MOVQ DX, 0x100(SP)\r\n        fd_unix.go:241  0x4a5e43        48894c2460                      MOVQ CX, 0x60(SP)\r\n        fd_unix.go:241  0x4a5e48        48898c2408010000                MOVQ CX, 0x108(SP)\r\n        fd_unix.go:243  0x4a5e50        90                              NOPL\r\n        fd_unix.go:243  0x4a5e51        e85aaff8ff                      CALL runtime.deferreturn(SB)\r\n        fd_unix.go:243  0x4a5e56        488bac24c8000000                MOVQ 0xc8(SP), BP\r\n        fd_unix.go:243  0x4a5e5e        4881c4d0000000                  ADDQ $0xd0, SP\r\n        fd_unix.go:243  0x4a5e65        c3                              RET\r\n        fd_unix.go:241  0x4a5e66        488d1d53554200                  LEAQ 0x425553(IP), BX\r\n        fd_unix.go:241  0x4a5e6d        48891c24                        MOVQ BX, 0(SP)\r\n        fd_unix.go:241  0x4a5e71        e8daeaf6ff                      CALL runtime.newobject(SB)\r\n```\r\n\r\nThe function that appears to be called by the first instance of `net.(*netFD).Read` certainly [shows up as a deferred function](https://github.com/golang/go/blob/30b966307f475b1445816308f8cb2c5813b38232/src/net/fd_unix.go#L223), but I don't believe `net.(*netFD).Read` should show up on the sampled stack this many times. It looks like the call stack would appear to be infinite if `perf script` didn't cut it off after 125 frames. The identity of `net.(*netFD).Read`'s caller is lost.\r\n\r\nMy program is compiled with a Go toolchain that I built with GOEXPERIMENT=framepointer. I'm using Go version 30b9663, running the process on linux/amd64 with kernel version 3.13, and profiling it with perf_events, via `perf record -g -F 977 -p 1234 -o perf.data -- sleep 300` and `perf script -k $debugkernel -i perf.data`\r\n\r\n```\r\n$ go version\r\ngo version devel +30b9663 Tue Oct 13 21:06:58 2015 +0000 linux/amd64\r\n```",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-05-26T13:54:43Z",
+	"created_at": "2015-10-17T05:13:34Z",
+	"updated_at": "2016-05-26T13:54:43Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 58806459,
+	"number": 9987,
+	"state": "closed",
+	"title": "net/http: Server sets both Content-Length \u0026 Transfer-Encoding: chunked",
+	"body": "When implementing Tranfer-Encoding (transfer-coding, TE) other than chunked in an http.Server, Go produces an invalid combination of HTTP response headers \u0026mdash; it provides both Content-Length and Transfer-Encoding. It should not be writing a Content-Length header.\r\n\r\n[RFC 2616 Section 4.4](http://tools.ietf.org/html/rfc2616#section-4.4):\r\n\r\n\u003e If a Content-Length header field (section 14.13) is present, its decimal value in OCTETs represents both the entity-length and the transfer-length. **The Content-Length header field MUST NOT be sent if these two lengths are different (i.e., if a Transfer-Encoding header field is present).** If a message is received with both a Transfer-Encoding header field and a Content-Length header field, the latter MUST be ignored.\r\n\r\nI am using go version go1.4.1 linux/amd64.\r\n\r\nTo reproduce the problem, compile and run an HTTP server that implements gzip Transfer-Encoding:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"bytes\"\r\nimport \"compress/gzip\"\r\nimport \"log\"\r\nimport \"net/http\"\r\nimport \"strings\"\r\n\r\nfunc gz(input []byte) []byte {\r\n    var buf bytes.Buffer\r\n    w := gzip.NewWriter(\u0026buf)\r\n    w.Write(input)\r\n    w.Close()\r\n    return buf.Bytes()\r\n}\r\n\r\nvar response = []byte(\"Hello, world!\\n\")\r\n\r\nfunc main() {\r\n    http.HandleFunc(\"/\", func(w http.ResponseWriter, req *http.Request) {\r\n        // This is not strictly correct, but close enough for demoing\r\n        if strings.Contains(strings.ToLower(req.Header.Get(\"TE\")), \"gzip\") {\r\n            // Go automatically wraps this in chunked as required by spec\r\n            w.Header().Set(\"Transfer-Encoding\", \"gzip\")\r\n            // Uncomment this to print an error, but produce a valid response\r\n            //w.Header().Set(\"Content-Length\", \"-1\")\r\n            w.Write(gz(response))\r\n        } else {\r\n            w.Write(response)\r\n        }\r\n    })\r\n\r\n    log.Fatal(http.ListenAndServe(\":8080\", nil))\r\n}\r\n```\r\n\r\nThen use curl to query the server. curl is one of the few clients that implement Transfer-Encoding, and it knows how to handle the Transfer-Encoding header in response to this request with the `TE` request header.\r\n\r\n```\r\n$ curl -i -H 'TE: gzip' http://localhost:8080/\r\nHTTP/1.1 200 OK\r\nTransfer-Encoding: gzip\r\nDate: Tue, 24 Feb 2015 20:51:18 GMT\r\nContent-Length: 38\r\nContent-Type: application/x-gzip\r\nTransfer-Encoding: chunked\r\n\r\nHello, world!\r\n```\r\nhttp.Server logs an error saying that the Content-Length was set, but it was actually calculated in http.Server's `chunkWriter.writeHeader()`.\r\n\r\n\u003e http: WriteHeader called with both Transfer-Encoding of \"gzip\" and a Content-Length of 38\r\n\r\nSetting the Content-Length to an invalid value (such as -1, by uncommenting line 26 of the source),  produces correct output, but also logs an error message.\r\n\r\n\u003e http: invalid Content-Length of \"-1\"\r\n\r\n\u003e What did you expect to see?\r\n\r\nA Transfer-Encoding header (either \"gzip, chunked\" or two separate headers, \"gzip\" and \"chunked\") and *no Content-Length header*.\r\n\r\n\u003e What did you see instead?\r\n\r\nBoth a Content-Length \u0026 Transfer-Encoding header.\r\n\r\nThe problem appears to be where the contentLength is calculated in src/net/http/server.go near line 795:\r\n\r\n    if w.handlerDone \u0026\u0026 !trailers \u0026\u0026 bodyAllowedForStatus(w.status) \u0026\u0026 header.get(\"Content-Length\") == \"\" \u0026\u0026 (!isHEAD || len(p) \u003e 0) {\r\n        w.contentLength = int64(len(p))\r\n        setHeader.contentLength = strconv.AppendInt(cw.res.clenBuf[:0], int64(len(p)), 10)\r\n    }\r\n\r\nThis is causing the Content-Length header to be set.\r\n\r\n\r\nThen around line 860 the presence of the Transfer-Encoding header is determined:\r\n\r\n    te := header.get(\"Transfer-Encoding\")\r\n    hasTE := te != \"\"\r\n    if hasCL \u0026\u0026 hasTE \u0026\u0026 te != \"identity\" {\r\n        // TODO: return an error if WriteHeader gets a return parameter\r\n        // For now just ignore the Content-Length.\r\n        w.conn.server.logf(\"http: WriteHeader called with both Transfer-Encoding of %q and a Content-Length of %d\",            te, w.contentLength)\r\n        delHeader(\"Content-Length\")\r\n        hasCL = false\r\n    }\r\n\r\nBut I think the fact that w.contentLength is still set to something other than -1 means it is unaffected by the presence of \"Content-Length\" in excludeHeader (via `delHeader()`) and the Content-Length is included in the output headers.\r\n\r\nA couple of options that probably fix this:\r\n1. Move the calculation of the Content-Length \u0026 the definition of `hasCL` to occur *after* `hasTE` is defined, and only `if !hasTE`. (Neither the calculated content length nor `hasCL` is used before the `hasCL \u0026\u0026 hasTE` condition.); or\r\n2. Add `\u0026\u0026 header.get(\"Transfer-Encoding\") == \"\"` to the condtion near line 795 to prevent the Content-Length header being produced.\r\n\r\n(In my real world implementation I set the Content-Type explicitly, so I'm not concerned about the Content-Type being guessed incorrectly as it is in this example, where it should be \"text/plain\". Maybe it shouldn't be detected if the user set a Transfer-Encoding?)",
+	"user": {
+		"login": "tedjp",
+		"id": 253416,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-05-06T00:12:13Z",
+	"created_at": "2015-02-24T21:13:29Z",
+	"updated_at": "2016-06-25T02:01:55Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

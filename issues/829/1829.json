@@ -1,0 +1,28 @@
+{
+	"id": 51278355,
+	"number": 1829,
+	"state": "closed",
+	"title": "ebnf: spec doesn't permit empty Terms, implementation does",
+	"body": "by **nmessenger**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Write test.go:\n\n    package main\n    \n    import \u0026quot;ebnf\u0026quot;\n    import \u0026quot;go/token\u0026quot;\n    import \u0026quot;fmt\u0026quot;\n    \n    var grammar = `Foo = ( ) .`\n    \n    func main() {\n        fset := token.NewFileSet()\n        _, err := ebnf.Parse(fset, \u0026quot;\u0026quot;, []byte(grammar))\n        fmt.Printf(\u0026quot;Valid: (%v)\u0026quot;, err == nil)\n    }\n\n2. 8g test.go \u0026amp;\u0026amp; 8l test.8 \u0026amp;\u0026amp; 8.out\n\nWhat is the expected output?\nValid: (false), according to the grammar in the ebnf package comment as revised from\n\u003ca href=\"https://golang.org/issue/1821\"\u003eissue #1821\u003c/a\u003e, empty terms are not permitted.\n\nWhat do you see instead?\nValid: (true)\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g for Windows, packaged in \u0026lt;gowin32_release.r57.1_installer.exe\u0026gt; from\n\u0026lt;\u003ca href=\"http://code.google.com/p/gomingw/downloads/list\u0026gt\"\u003ehttp://code.google.com/p/gomingw/downloads/list\u0026gt\u003c/a\u003e;\n\nPlease provide any additional information below.\n\nTwo proposed fixes:\n\n(1) You could bring the spec in line with the implementation, to wit:\n\n    Production = name \u0026quot;=\u0026quot; Expression \u0026quot;.\u0026quot; .\n    Term       = Empty | name | token /* etc. */ .\n    Empty      = .\n\nThis would permit productions like these, which the implementation accepts:\n\n    Foo = ( ) .\n    Silly = [ | { ( ) | } ] { } .\n\n(2) Or, keep the correction to the grammar from \u003ca href=\"https://golang.org/issue/1821\"\u003eissue #1821\u003c/a\u003e, and bring the implementation\nin line with it, disallowing such forms. My first stab at a correction, untested:\n\n    // pkg/ebnf/parser.go\n    \n    func (p *parser) parseTerm() (x Expression) {\n            // ...\n            switch p.tok {\n            // ...\n            default:\n                    p.errorExpected(pos, \u0026quot;Term\u0026quot;)\n            }\n            // ...\n    }\n    \n    // ...\n    \n    func (p *parser) parseProduction() *Production {\n            name := p.parseIdentifier()\n            p.expect(token.ASSIGN)\n            if p.tok == token.PERIOD {\n                    p.next()\n                    return \u0026amp;Production{name, nil}\n            }\n            expr := p.parseExpression()\n            p.expect(token.PERIOD)\n            return \u0026amp;Production{name, expr}\n    }\n\nIt would also need an ebnf_test.go case to make sure productions like Foo are invalid.\n\nCheers.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:10:05Z",
+	"created_at": "2011-05-15T22:17:18Z",
+	"updated_at": "2016-06-24T19:29:16Z"
+}

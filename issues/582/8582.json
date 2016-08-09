@@ -1,0 +1,33 @@
+{
+	"id": 51288398,
+	"number": 8582,
+	"state": "closed",
+	"title": "encoding/json: inconsistent behavior in *(numeric type) and string tag option ",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3.1 linux/amd64\n\nWhat steps reproduce the problem?\n1. Create a struct type with a field of type *int64\n2. Init with a non-nil value for that field\n3. Encode using json.Marshal\n4. Decode result using json.Unmarshal\n\n\u003ca href=\"http://play.golang.org/p/fWLSVv9hxT\"\u003ehttp://play.golang.org/p/fWLSVv9hxT\u003c/a\u003e\n\nAlso discussed:\ngroups.google.com/d/msg/golang-nuts/BTNKGipB7zs/Ub3FDleTnlkJ\ngroups.google.com/forum/#!topic/golang-nuts/mr49_7W9CKM\n\nWhat happened?\nEncountered decode error unmarshalling quoted (string) field value (\u0026quot;err\nunmarshalling json: cannot unmarshal number into Go value of type string\u0026quot;)\n\nWhat should have happened instead?\nDecoded int64 string value into a *int64 without error.\n\nPlease provide any additional information below.\nencoding/json/encode.go\n 699\tfunc (pe *ptrEncoder) encode(e *encodeState, v reflect.Value, _ bool) {\n   700\t\tif v.IsNil() {\n   701\t\t\te.WriteString(\u0026quot;null\u0026quot;)\n   702\t\t\treturn\n   703\t\t}\n   704\t\tpe.elemEnc(e, v.Elem(), false)\n   705\t}\n\nIf changed to (lines 699, 704)\n 699\tfunc (pe *ptrEncoder) encode(e *encodeState, v reflect.Value, quoted bool) {\n   700\t\tif v.IsNil() {\n   701\t\t\te.WriteString(\u0026quot;null\u0026quot;)\n   702\t\t\treturn\n   703\t\t}\n   704\t\tpe.elemEnc(e, v.Elem(), quoted)\n   705\t}\n\ncorrects the issue. As the array, slice, struct, and map encoders ignore the quoted\nparameter, this should still result in correct json encoding in all existing code, while\nprinting strings for numeric and bool values (as a user probably expects when adding the\nstring tag option)\u003c/pre\u003e",
+	"user": {
+		"login": "matt-duch",
+		"id": 1303097,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:47:39Z",
+	"created_at": "2014-08-25T07:06:58Z",
+	"updated_at": "2016-06-25T01:40:06Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

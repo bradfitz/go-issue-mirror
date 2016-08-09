@@ -1,0 +1,12 @@
+{
+	"id": 238554439,
+	"body": "I don't know what the bug is, but here is what is going on.  Your program is entering the stop-the-world phase of a garbage collection.  The goroutine that started that is telling all the other goroutines to stop.  It is sleeping on a `note` waiting for a notification that a goroutine has stopped, with a deadline of 100us.  The code (`notetsleep_internal`) calls `WaitForSingleObject` with a deadline of 100us.  `WaitForSingleObject` returned an error, assumed to indicate a timeout, meaning that the deadline has expired.  When the goroutine goes to check the `note`, it finds that the `note` has been woken up.  It calls `WaitForSingleObject` with no deadline, expecting to acquire the semaphore.  That calls fails unexpectedly.\r\n\r\nA call to `WaitForSingleObject` with no deadline should not fail.  I think what we need to do is modify os_windows.go to report the actual failure in that case.  That might help clarify what has happened here.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-09T13:35:23Z",
+	"updated_at": "2016-08-09T13:35:23Z"
+}

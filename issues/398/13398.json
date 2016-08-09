@@ -1,0 +1,17 @@
+{
+	"id": 118854613,
+	"number": 13398,
+	"state": "closed",
+	"title": "bytes.Buffer for exec.Cmd.Stdout",
+	"body": "A little test shows a quite confusing error. I wrote a little test script to test interaction with lazy commands that write some data to stdout during their execution:\r\n\r\n    #!/bin/sh\r\n    T=${1:-60}\r\n    for i in `seq 1 $T`\r\n    do\r\n\tlet \"T--\"\r\n\tprintf \"%02ds \" $T\r\n\tsleep 1\r\n    done\r\n    printf \"\\nDone.\\n\"\r\n\r\nThis shell script simply counts down from $T to 0. An example output of `cmd/test_command 4` is\r\n\r\n    03s 02s 01s 00s\r\n    Done.\r\n\r\nThe go test program waits 3 seconds between reads of the output buffer and writes that output buffer to stdout:\r\n\r\n\tpackage main\r\n\t\r\n\timport (\r\n\t\t\"bytes\"\r\n\t\t\"fmt\"\r\n\t\t\"os\"\r\n\t\t\"os/exec\"\r\n\t\t\"time\"\r\n\t)\r\n\t\r\n\tfunc main() {\r\n\t\tout := bytes.Buffer{}\r\n\t\tcmd := exec.Command(\"cmd/test_command\")\r\n\t\tcmd.Stdout = \u0026out\r\n\t\tcmd.Start()\r\n\t\tstep, _ := time.ParseDuration(\"3s\")\r\n\t\tfor {\r\n\t\t\ttime.Sleep(step)\r\n\t\t\tos.Stderr.Write([]byte(fmt.Sprintf(\"Buffer Length %d\\n\", out.Len())))\r\n\t\t\tout.WriteTo(os.Stdout)\r\n\t\t}\r\n\t}\r\n\r\nConfusingly, this program repeats parts of the buffer, instead of overwriting that with the new input:\r\n\r\n    Buffer Length 12\r\n    59s 58s 57s Buffer Length 12\r\n    59s 55s 54s Buffer Length 12\r\n    59s 52s 51s Buffer Length 12\r\n    59s 49s 48s Buffer Length 12\r\n    59s 46s 45s Buffer Length 12\r\n    59s 43s 42s Buffer Length 12\r\n\r\n... You can see here, on the second and the following lines, that the first bytes of the buffer seem to overlay the true output from the process.\r\n\r\nEven more confusing, if you write more bytes in one step of the test command, the leading buffer offset gets longer too.\r\n\r\n",
+	"user": {
+		"login": "ikrabbe",
+		"id": 167360,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-11-28T13:27:24Z",
+	"created_at": "2015-11-25T15:01:23Z",
+	"updated_at": "2015-11-28T13:27:24Z"
+}

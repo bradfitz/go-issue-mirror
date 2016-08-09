@@ -1,0 +1,12 @@
+{
+	"id": 66068746,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10 by **jls@semicomplete.com**:\n\n\u003cpre\u003eSummarizing: UnixConn doesn't work because it tries to connect(2).  ListenUnix doesn't\nwork because it tries to listen(2). ListenUnixgram doesn't work because it provides a\nUDPConn which, on ReadFrom() rejects Unix address families and there is no\nUDPConn.ReadFromUnix() \n\nUnixConn from DialUnix doesn't work for reading unixgram data, as 'DialUnix' tries to\nconnect, which is not correct for 'reading' datagrams from a unix domain socket -\n\nstrace output:\n[pid  5847] socket(PF_FILE, SOCK_DGRAM, 0) = 3\n[pid  5847] connect(3, {sa_family=AF_FILE, sun_path=\"/tmp/example.sock\"}, 20) = -1\nECONNREFUSED (Connection refused)\n\non the flipside, net.ListenUnixgram does the correct thing:\n\n[pid  6312] socket(PF_FILE, SOCK_DGRAM, 0) = 3\n[pid  6312] bind(3, {sa_family=AF_FILE, sun_path=\"/tmp/example.sock\"}, 20) = 0\n\nIt's just that you can't read from it due to assumptions of address families (likely due\nto ListenUnixgram returning a UDPCon).\n\nListenUnix gives a UnixListener which requires you call AcceptUnix(), which fails\nbecause that calls listen(2) which fails on unix datagram sockets:\n\n[pid  7652] socket(PF_FILE, SOCK_DGRAM, 0) = 3\n[pid  7652] bind(3, {sa_family=AF_FILE, sun_path=\"/tmp/example.sock\"}, 20) = 0\n[pid  7652] listen(3, 128)              = -1 EOPNOTSUPP (Operation not supported)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-12T09:51:05Z",
+	"updated_at": "2014-12-08T10:20:28Z"
+}

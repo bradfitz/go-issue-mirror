@@ -1,0 +1,28 @@
+{
+	"id": 136262285,
+	"number": 14500,
+	"state": "closed",
+	"title": "x/tools/imports: add FormatOnly option",
+	"body": "### Proposal\r\n\r\nAdd a `FormatOnly` field to the `imports.Options` type.  Setting `FormatOnly` to `true` will bypass the \"fix\" functionality so that no imports will be inserted or deleted.  Default would be `false` and backward compatible.\r\n\r\nThanks for your consideration.\r\n\r\n### Rationale\r\n\r\nI'm working on a Go code generator and would like for the generated import stanza to be formatted according to the standard `goimports` style.  Some projects enforce `goimports` formatting such that improperly formatted files will cause a CI build failure.\r\n\r\nHowever, we don't want the import-insertion logic of the `imports` package to execute.  If our generator creates code with missing imports, we consider that a bug in the generator and don't want to mask the bugs by using `imports.Process`.  We've also seen `goimports` insert the wrong package and want to avoid that scenario, too.\r\n\r\nThis proposal would also disable the deletion of unused imports, but that functionality is easily replicated with `astutil.UsesImport`.  In our project, we already delete unused imports manually and would continue doing so prior to using `imports.Process`.\r\n\r\n### Alternatives\r\n\r\n#### Add an option to `go/format`\r\n\r\nAn option could to be added to `go/format` to enable `goimports` formatting, but I'm doubtful that the Go team would care to alter `go/format` for this use.  `go/format` does one thing (with no options): canonical `gofmt` formatting.  Unless we're willing to change the canon (blasphemy!), this is a dead end.\r\n\r\n#### Copy code\r\n\r\nWe looked at copying the necessary code out of `x/tools/imports`, but we didn't like that option.  It ended up being more code than we cared to copy and added a lot of complexity that we felt was unnecessary.\r\n\r\n### Proof of Concept\r\n\r\n```diff\r\ndiff --git a/imports/imports.go b/imports/imports.go\r\nindex e30946b..5342801 100644\r\n--- a/imports/imports.go\r\n+++ b/imports/imports.go\r\n@@ -31,6 +31,8 @@ type Options struct {\r\n        Comments  bool // Print comments (true if nil *Options provided)\r\n        TabIndent bool // Use tabs for indent (true if nil *Options provided)\r\n        TabWidth  int  // Tab width (8 if nil *Options provided)\r\n+\r\n+       FormatOnly bool // Disable the insertion and deletion of imports\r\n }\r\n \r\n // Process formats and adjusts imports for the provided file.\r\n@@ -46,9 +48,11 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {\r\n                return nil, err\r\n        }\r\n \r\n-       _, err = fixImports(fileSet, file)\r\n-       if err != nil {\r\n-               return nil, err\r\n+       if !opt.FormatOnly {\r\n+               _, err = fixImports(fileSet, file)\r\n+               if err != nil {\r\n+                       return nil, err\r\n+               }\r\n        }\r\n \r\n        sortImports(fileSet, file)\r\n```",
+	"user": {
+		"login": "moorereason",
+		"id": 131056,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-04-05T16:35:06Z",
+	"created_at": "2016-02-25T03:05:34Z",
+	"updated_at": "2016-04-05T19:25:03Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

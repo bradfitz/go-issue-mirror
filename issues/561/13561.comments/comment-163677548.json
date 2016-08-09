@@ -1,0 +1,12 @@
+{
+	"id": 163677548,
+	"body": "I am still seeing it with tip\r\n```\r\ngo version devel +e05b48e Thu Dec 10 08:04:07 2015 +0000 linux/amd64\r\n\r\nexport GODEBUG=netdns=go+2\r\ngo run fetch.go https://index.docker.io/v1/search?q=phusion\r\ngo package net: GODEBUG setting forcing use of Go's resolver\r\ngo package net: hostLookupOrder(index.docker.io) = files,dns\r\n2015/12/11 00:44:23 Get https://index.docker.io/v1/search?q=phusion: dial tcp: lookup index.docker.io on x.x.x.x:53: no such host\r\nexit status 1\r\n\r\nexport GODEBUG=netdns=cgo+2\r\ngo run fetch.go https://index.docker.io/v1/search?q=phusion\r\ngo package net: using cgo DNS resolver\r\ngo package net: hostLookupOrder(index.docker.io) = cgo\r\n{\"num_pages\": 11, \"num_results\": 259, ...}\r\n```\r\nI discovered that changing the nameservers in `/etc/resolv.conf` solves the problem - at least I tested a few other public name servers and found no problem.\r\n\r\nAfter careful inspection of the response packets from Google's nameservers and ours, I can see no difference in them other than Google (and BIND at least) appear to use an internal \"packet pointer\" to effectively compress the response packet. When the parser sees a byte in the label where the 2 high bits are set (ie 0xC000 and higher), it uses the next 14 bits as an offset that many characters into the previous label (dots not included) to complete the rest of the current label. It is defined in [RFC1035](https://tools.ietf.org/html/rfc1035) section _4.1.4 Message Compression_ and described in O'Reilly's _DNS and BIND_ 4th edition, chapter 15.2.3.\r\n\r\nOur nameservers do not use this method of compression and instead include the full label for every RR. I will need to do some more research on that. I still think the problem is in Go but may not be exactly as described in the initial post.",
+	"user": {
+		"login": "waddles",
+		"id": 236990,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-10T16:25:59Z",
+	"updated_at": "2015-12-10T21:45:50Z"
+}

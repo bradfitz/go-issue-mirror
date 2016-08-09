@@ -1,0 +1,27 @@
+{
+	"id": 115312169,
+	"number": 13161,
+	"state": "open",
+	"title": "runtime: print all threads in GOTRACEBACK \u003e= all",
+	"body": "Currently, GOTRACEBACK=all is a misnomer. It prints stacks for all goroutines that happen to be non-running or running on the current OS thread, but it does not print stacks for goroutines that are running on other OS threads. This is frustrating. For purely internal reasons, it's currently necessary to set GOTRACEBACK=crash in order to get stacks for goroutines on other threads, but that also gets you runtime frames and an abort at the end, which is often undesirable.\r\n\r\nWe should make GOTRACEBACK=all (or higher) print stacks for all goroutines, regardless of what thread they're running on. This will make \"all\" do what it says in the name and will make the only difference between \"system\" and \"crash\" be whether or not it aborts at the end of the traceback.\r\n\r\nIn other words, this is the current behavior of the GOTRACEBACK settings:\r\n\r\n                       | none | single | all | system | crash\r\n---------------------- |:----:|:------:|:---:|:------:|:-----:\r\nshow user frames       |   N  |   Y    |  Y  |   Y    |   Y\r\nshow runtime frames    |   N  |   N    |  N  |   Y    |   Y\r\nshow other goroutines  |   N  |   N    |  Y  |   Y    |   Y\r\nshow other threads     |   N  |   N    |  N  |   N    |   Y\r\nabort                  |   N  |   N    |  N  |   N    |   Y\r\n\r\nThis is what it should be:\r\n\r\n                       | none | single | all | system | crash\r\n---------------------- |:----:|:------:|:---:|:------:|:-----:\r\nshow user frames       |   N  |   Y    |  Y  |   Y    |   Y\r\nshow runtime frames    |   N  |   N    |  N  |   Y    |   Y\r\nshow other goroutines  |   N  |   N    |  Y  |   Y    |   Y\r\nshow other threads     |   N  |   N    | \\*Y\\* |  \\*Y\\*   |   Y\r\nabort                  |   N  |   N    |  N  |   N    |   Y\r\n\r\nWith this, we would eliminate the distinction between \"show other goroutines\" and \"show other threads\", and each GOTRACEBACK level would enable exactly one additional feature.\r\n\r\nWe could do this using the same signal hand-off mechanism GOTRACEBACK=crash currently uses to interrupt the other threads. Historically we couldn't do this because this mechanism wasn't entirely robust, but it's been improved to the point where it should be reliable.\r\n\r\n/cc @rsc @ianlancetaylor @randall77 ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-11-05T15:48:20Z",
+	"updated_at": "2016-05-05T23:26:19Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

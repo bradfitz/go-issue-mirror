@@ -1,0 +1,12 @@
+{
+	"id": 66063618,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThe two cases really are different.  Given a map holding a struct\n    m[0] = s\nis a write.\n    m[0].f = 1\nis a read-modify-write.  That is, we can implement\n    m[0] = s\nby passing 0 and s to the map insert routine.  That doesn't work for\n    m[0].f\nInstead we have to fetch a pointer, as you suggest, and assign through the pointer.\n\nRight now maps are unsafe when GOMAXPROCS \u003e 1 because multiple threads writing to the\nmap simultaneously can corrupt the data structure.  This is an unfortunate violation of\nGo's general memory safeness.  This suggests that we will want to implement a\npossibly-optional safe mode, in which the map is locked during access.  That will work\nstraightforwardly with the current semantics.  But it won't work with your proposed\naddition.\n\nThat said, there is another possible implementation.  We could pass in the key, an\noffset into the value type, the size of the value we are passing, and the value we are\npassing.\n\nA more serious issue: if we permit field access, can we justify prohibiting method\naccess?\n    m[0].M()\nBut method access really does require addressability.\n\nAnd let's not ignore\n    m[0]++\n    m[0][:]\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-11T14:33:14Z",
+	"updated_at": "2014-12-08T10:16:13Z"
+}

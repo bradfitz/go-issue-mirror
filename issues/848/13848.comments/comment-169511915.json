@@ -1,0 +1,12 @@
+{
+	"id": 169511915,
+	"body": "I see. I can definitely see how the single Write is important in console applications and possibly others.\r\n\r\nI filed this ticket because I noticed large allocations due to writings strings and when I saw io.WriteString, my first thought was \"oh sweet, here's a library method that'll efficiently write a string for me!\" Alas, I was wrong.\r\n\r\nIn theory, another way to do what I wanted would be:\r\n```go\r\nio.Copy(w, strings.NewReader(s))\r\n```\r\nBut... that doesn't work well either, since [strings.Reader just calls io.WriteString](https://github.com/golang/go/blob/c264c87335ff4b3111d43f830dbe37eac1509f2e/src/strings/reader.go#L136), and we're back to the same problem.\r\n\r\nWhat are your thoughts on doing the following:\r\n1. Add the chunking optimization to strings.Reader.WriteTo. Given that WriteTo was developed for io.Copy, which does chunking, I don't think there is any expectation that it performs a single Write.\r\n2. Filing a separate issue to document that WriteString guarantees at most one call to Write.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-07T00:52:35Z",
+	"updated_at": "2016-01-07T00:54:58Z"
+}

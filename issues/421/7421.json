@@ -1,0 +1,22 @@
+{
+	"id": 51286687,
+	"number": 7421,
+	"state": "closed",
+	"title": "runtime: bus error on dragonfly/386 causes fault in signal trampoline",
+	"body": "\u003cpre\u003eThe following code (from runtime.TestSetPanicOnFault) effectively deadlocks on\ndragonfly/386:\n\n        var p *int\n        p = (*int)(unsafe.Pointer(^uintptr(0)))\n        fmt.Println(*p)\n\nThis code intentionally triggers a bus error, the process gets sent a SIGBUS signal, at\nwhich point the signal trampoline seemingly faults when attempting to retrieve m from\nTLS (on dragonfly/386, m(CX) becomes 4(GS)):\n\n        // check that m exists\n        MOVL    m(CX), BX\n\nThe same code works fine on most platforms, including dragonfly/amd64. Additionally, the\nsignal trampoline works correctly for a segmentation violation (SIGSEGV):\n\n        var p *int\n        p = (*int)(unsafe.Pointer(uintptr(0)))\n        fmt.Println(*p)\n\nSending a SIGBUS to the process via kill also results in the expected/correct behaviour.\nAs such, I believe that this is most likely an issue in the DragonFly i386 kernel trap\ncode (rather than an issue with the Go runtime) - my current guess is that GS is being\ncorrupted, however need to investigate further.\u003c/pre\u003e",
+	"user": {
+		"login": "4a6f656c",
+		"id": 8142769,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-03-14T10:48:13Z",
+	"created_at": "2014-02-27T11:27:54Z",
+	"updated_at": "2016-06-25T01:28:33Z"
+}

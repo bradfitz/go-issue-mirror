@@ -1,0 +1,21 @@
+{
+	"id": 122857156,
+	"number": 13667,
+	"state": "open",
+	"title": "net/http: Transport.RoundTrip errors could be more informative",
+	"body": "```\r\ngo version go1.5 linux/amd64\r\n```\r\n```\r\nUbuntu 14.04.3 LTS\r\n```\r\n\r\nI made an HTTP request to a server that accepts all TCP connections and then immediately closes them. I was expecting a meaningful error such as \"connection closed before request could be sent\" but http.RoundTrip returned EOF.\r\n\r\nHere are client and server snippets that reproduce this. The client:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n)\r\n\r\nfunc main() {\r\n\tdialer := \u0026net.Dialer{}\r\n\ttransport := \u0026http.Transport{\r\n\t\tDial: dialer.Dial,\r\n\t}\r\n\r\n\trequest, _ := http.NewRequest(\"GET\", \"http://127.0.0.1:19870/\", nil)\r\n\t_, err := transport.RoundTrip(request)\r\n\tfmt.Println(err)\r\n}\r\n```\r\nOutput is:\r\n```\r\nEOF\r\n```\r\nAnd the server:\r\n```go\r\npackage main\r\n\r\nimport \"net\"\r\n\r\nfunc main() {\r\n\tln, _ := net.Listen(\"tcp\", \":19870\")\r\n\tconn, _ := ln.Accept()\r\n\tconn.Close()\r\n}\r\n```\r\n\r\nHere is a dump of the TCP exchange:\r\n```\r\n17:16:31.017342 IP localhost.52287 \u003e localhost.19870: Flags [S], seq 3991906392, win 43690, options [mss 65495,sackOK,TS val 27880590 ecr 0,nop,wscale 7], length 0\r\nE..\u003c..@.@.w..........?M....X.........0.........\r\n..l.........\r\n17:16:31.017356 IP localhost.19870 \u003e localhost.52287: Flags [S.], seq 530413255, ack 3991906393, win 43690, options [mss 65495,sackOK,TS val 27880590 ecr 27880590,nop,wscale 7], length 0\r\nE..\u003c..@.@.\u003c.........M..?..v....Y.....0.........\r\n..l...l.....\r\n17:16:31.017367 IP localhost.52287 \u003e localhost.19870: Flags [.], ack 1, win 342, options [nop,nop,TS val 27880590 ecr 27880590], length 0\r\nE..4..@.@.w..........?M....Y..v....V.(.....\r\n..l...l.\r\n17:16:31.017514 IP localhost.19870 \u003e localhost.52287: Flags [F.], seq 1, ack 1, win 342, options [nop,nop,TS val 27880591 ecr 27880590], length 0\r\nE..4.F@.@.\"|........M..?..v....Y...V.(.....\r\n..l...l.\r\n17:16:31.019472 IP localhost.52287 \u003e localhost.19870: Flags [F.], seq 1, ack 2, win 342, options [nop,nop,TS val 27880591 ecr 27880591], length 0\r\nE..4..@.@.w..........?M....Y..v....V.(.....\r\n..l...l.\r\n17:16:31.019493 IP localhost.19870 \u003e localhost.52287: Flags [.], ack 2, win 342, options [nop,nop,TS val 27880591 ecr 27880591], length 0\r\nE..4.G@.@.\"{........M..?..v....Z...V.(.....\r\n..l...l.\r\n```",
+	"user": {
+		"login": "alexflint",
+		"id": 640247,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2015-12-18T01:16:54Z",
+	"updated_at": "2016-05-18T17:58:45Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

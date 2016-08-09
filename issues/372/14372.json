@@ -1,0 +1,22 @@
+{
+	"id": 134460900,
+	"number": 14372,
+	"state": "closed",
+	"title": "net: packDomainName encodes \".\" as \"\\0\\0\" instead of \"\\0\"",
+	"body": "dnsMsg.Pack() and/or dnsMsg.Unpack() in the net package are broken.\r\n\r\nThis test fails:\r\n```go\r\nfunc TestDNSPackUnpack(t *testing.T) {\r\n\twant := dnsMsg{question: []dnsQuestion{{\r\n\t\tName:   \".\",\r\n\t\tQtype:  dnsTypeNULL,\r\n\t\tQclass: dnsClassINET,\r\n\t}}}\r\n\tb, _ := want.Pack()\r\n\tvar got dnsMsg\r\n\tgot.Unpack(b)\r\n\tif !reflect.DeepEqual(got, want) {\r\n\t\tt.Errorf(\"got = %+v, want = %+v\", got, want)\r\n\t}\r\n}\r\n```\r\n\r\nOutput:\r\n```\r\n--- FAIL: TestDNSPackUnpack (0.00s)\r\n\tdnsmsg_test.go:23: got = {dnsMsgHdr:{id:0 response:false opcode:0 authoritative:false truncated:false recursion_desired:false recursion_available:false rcode:0} question:[{Name: Qtype:0 Qclass:2560}] answer:[] ns:[] extra:[]}, want = {dnsMsgHdr:{id:0 response:false opcode:0 authoritative:false truncated:false recursion_desired:false recursion_available:false rcode:0} question:[{Name:. Qtype:10 Qclass:1}] answer:[] ns:[] extra:[]}\r\nFAIL\r\n```\r\n\r\nThe problem is that Qtype and Qclass get corrupted. The question starts off as ```{Name:. Qtype:10 Qclass:1}``` and after a Pack/Unpack cycle turn into ```{Name: Qtype:0 Qclass:2560}```.",
+	"user": {
+		"login": "iangudger",
+		"id": 7056530,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 20,
+	"closed_at": "2016-02-19T00:56:06Z",
+	"created_at": "2016-02-18T02:10:11Z",
+	"updated_at": "2016-02-19T02:45:45Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

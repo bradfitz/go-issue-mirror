@@ -1,0 +1,27 @@
+{
+	"id": 51287589,
+	"number": 8038,
+	"state": "closed",
+	"title": "runtime: failed to commit pages (windows)",
+	"body": "\u003cpre\u003eThis issue is similar to 7143.\n\nU:\\\u0026gt;type main.go\npackage main\n\nimport (\n        \u0026quot;runtime/debug\u0026quot;\n)\n\nfunc main() {\n        n := 550000\n        buffs := make(chan []byte, n)\n        for i := 0; i \u0026lt; n; i++ {\n                buffs \u0026lt;- make([]byte, 1500)\n        }\n        for i := 0; i \u0026lt; n; i++ {\n                \u0026lt;-buffs\n        }\n        debug.FreeOSMemory()\n        for i := 0; i \u0026lt; n; i++ {\n                buffs \u0026lt;- make([]byte, 1500)\n        }\n        for i := 0; i \u0026lt; n; i++ {\n                \u0026lt;-buffs\n        }\n}\n\nU:\\\u0026gt;go build main.go\n\nU:\\\u0026gt;main.exe\nfatal error: runtime: failed to commit pages\n\ngoroutine 16 [running]:\nruntime.throw(0x5228c2)\n        C:/go/root/src/pkg/runtime/panic.c:520 +0x71 fp=0x30c63e14\nruntime.SysUsed(0x41526000, 0xd5c000)\n        C:/go/root/src/pkg/runtime/mem_windows.c:72 +0x70 fp=0x30c63e34\nMHeap_AllocLocked(0x531780, 0x1, 0x23)\n        C:/go/root/src/pkg/runtime/mheap.c:240 +0x147 fp=0x30c63e54\nruntime.MHeap_Alloc(0x531780, 0x1, 0x23, 0x30c60100)\n        C:/go/root/src/pkg/runtime/mheap.c:178 +0x8b fp=0x30c63e68\nMCentral_Grow(0x537e60)\n        C:/go/root/src/pkg/runtime/mcentral.c:265 +0x83 fp=0x30c63e9c\nruntime.MCentral_CacheSpan(0x537e60)\n        C:/go/root/src/pkg/runtime/mcentral.c:84 +0x10d fp=0x30c63ebc\nruntime.MCache_Refill(0x30b70000, 0x23)\n        C:/go/root/src/pkg/runtime/mcache.c:78 +0xf7 fp=0x30c63ed4\nruntime.mallocgc(0x600, 0x48c561, 0x1)\n        C:/go/root/src/pkg/runtime/malloc.goc:151 +0x2df fp=0x30c63f08\ncnew(0x48c560, 0x5dc, 0x1)\n        C:/go/root/src/pkg/runtime/malloc.goc:835 +0xad fp=0x30c63f18\nruntime.cnewarray(0x48c560, 0x5dc)\n        C:/go/root/src/pkg/runtime/malloc.goc:848 +0x3f fp=0x30c63f28\nmakeslice1(0x489120, 0x5dc, 0x5dc, 0x30c63f68)\n        C:/go/root/src/pkg/runtime/slice.goc:55 +0x4b fp=0x30c63f34\nruntime.makeslice(0x489120, 0x5dc, 0x0, 0x5dc, 0x0, 0x0, 0x5dc, 0x5dc)\n        C:/go/root/src/pkg/runtime/slice.goc:36 +0xb2 fp=0x30c63f54\nmain.main()\n        U:/main.go:18 +0x13e fp=0x30c63f9c\nruntime.main()\n        C:/go/root/src/pkg/runtime/proc.c:247 +0x11e fp=0x30c63fd0\nruntime.goexit()\n        C:/go/root/src/pkg/runtime/proc.c:1445 fp=0x30c63fd4\ncreated by _rt0_go\n        C:/go/root/src/pkg/runtime/asm_386.s:101 +0x102\n\ngoroutine 19 [finalizer wait]:\nruntime.park(0x4123d0, 0x526480, 0x525809)\n        C:/go/root/src/pkg/runtime/proc.c:1369 +0x94\nruntime.parkunlock(0x526480, 0x525809)\n        C:/go/root/src/pkg/runtime/proc.c:1385 +0x3f\nrunfinq()\n        C:/go/root/src/pkg/runtime/mgc0.c:2640 +0xc5\nruntime.goexit()\n        C:/go/root/src/pkg/runtime/proc.c:1445\n\nU:\\\u0026gt;go version\ngo version devel +4a839bf01b58 Tue May 20 15:52:08 2014 +1000 windows/386\n\nI wonder if we can apply similar solution to 3ac2308bca2a. The solution assumes that\ncalls to SysUnused are rare. I'm not sure this is the same. On the other hand, perhaps\nslow program is better then crashing program. Looking for advice.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:44:36Z",
+	"created_at": "2014-05-20T07:10:16Z",
+	"updated_at": "2016-06-25T01:34:43Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

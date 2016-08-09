@@ -1,0 +1,28 @@
+{
+	"id": 51280733,
+	"number": 3514,
+	"state": "closed",
+	"title": "net/http: http tries to reuse dead TLS connections",
+	"body": "\u003cpre\u003eThe symptom is that requests occasionally fail with io.EOF. I've observed this when\nmaking requests against AWS's ELB (Elastic Load Balancer), but it might happen elsewhere.\n\nWhen ELB's load suddenly increases, it can respond with HTTP 503 errors while it warms\nup. When it does this over HTTPS, it also sends a TLS close_notify alert but does not\nclose the connection itself.\n\nGo's http package receives ELB's 503 responses just fine. However, it does not read the\nclose_notify alert and so doesn't realize that the TLS connection is effectively closed.\nIt then tries to reuse the same connection for its next request.\n\nThe next request's writes all succeed, but ELB is completely ignoring everything. Then\nhttp attempts to read the response, the tls.Conn sees the close_notify alert from the\nprevious response, and the read returns io.EOF.\n\nI can provide steps to reproduce the problem, but unfortunately they're kind of involved.\n\n1. Sign up for an account on \u003ca href=\"http://www.iron.io/\"\u003ehttp://www.iron.io/\u003c/a\u003e\n2. Create a project and take note of its project ID.\n3. Get an API token from \u003ca href=\"https://hud.iron.io/tokens\"\u003ehttps://hud.iron.io/tokens\u003c/a\u003e\n4. Run the attached program until it panics\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3514/0/mq_eof.go\"\u003emq_eof.go\u003c/a\u003e (499 bytes)",
+	"user": {
+		"login": "edsrzf",
+		"id": 369904,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 30,
+	"closed_at": "2014-12-08T10:18:25Z",
+	"created_at": "2012-04-12T20:03:10Z",
+	"updated_at": "2015-10-29T19:51:16Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

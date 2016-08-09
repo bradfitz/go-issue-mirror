@@ -1,0 +1,30 @@
+{
+	"id": 93199404,
+	"number": 11608,
+	"state": "closed",
+	"title": "debug/pe: decoding dwarf section failure",
+	"body": "```\r\nC:\\dev\\go\\src\\debug\\pe\u003ego version\r\ngo version devel +d5994f4 Sun Jul 5 22:07:46 2015 +0000 windows/386\r\n\r\nC:\\dev\\go\\src\\debug\\pe\u003egit diff\r\ndiff --git a/src/debug/pe/file_test.go b/src/debug/pe/file_test.go\r\nindex 0d73969..aa03459 100644\r\n--- a/src/debug/pe/file_test.go\r\n+++ b/src/debug/pe/file_test.go\r\n@@ -5,7 +5,12 @@\r\n package pe\r\n \r\n import (\r\n+\t\"io/ioutil\"\r\n+\t\"os\"\r\n+\t\"os/exec\"\r\n+\t\"path/filepath\"\r\n \t\"reflect\"\r\n+\t\"runtime\"\r\n \t\"testing\"\r\n )\r\n \r\n@@ -241,3 +246,37 @@ func TestOpenFailure(t *testing.T) {\r\n \t\tt.Errorf(\"open %s: succeeded unexpectedly\", filename)\r\n \t}\r\n }\r\n+\r\n+func TestDWARF(t *testing.T) {\r\n+\tif runtime.GOOS != \"windows\" {\r\n+\t\tt.Skip(\"Skipping windows only test.\")\r\n+\t}\r\n+\r\n+\ttmpdir, err := ioutil.TempDir(\"\", \"TestDWARF\")\r\n+\tif err != nil {\r\n+\t\tt.Fatal(\"TempDir failed: \", err)\r\n+\t}\r\n+\tdefer os.RemoveAll(tmpdir)\r\n+\r\n+\tprog := `\r\n+package main\r\n+func main() {\r\n+}\r\n+`\r\n+\tsrc := filepath.Join(tmpdir, \"a.go\")\r\n+\texe := filepath.Join(tmpdir, \"a.exe\")\r\n+\terr = ioutil.WriteFile(src, []byte(prog), 0644)\r\n+\toutput, err := exec.Command(\"go\", \"build\", \"-o\", exe, src).CombinedOutput()\r\n+\tif err != nil {\r\n+\t\tt.Fatalf(\"building test executable failed: %s %s\", err, string(output))\r\n+\t}\r\n+\r\n+\tf, err := Open(exe)\r\n+\tif err != nil {\r\n+\t\tt.Fatal(err)\r\n+\t}\r\n+\t_, err = f.DWARF()\r\n+\tif err != nil {\r\n+\t\tt.Fatal(err)\r\n+\t}\r\n+}\r\n\r\nC:\\dev\\go\\src\\debug\\pe\u003ego test -v -run=DWARF\r\n=== RUN   TestDWARF\r\n--- FAIL: TestDWARF (3.80s)\r\n        file_test.go:280: decoding dwarf section info at offset 0x1e7ff: underflow\r\nFAIL\r\nexit status 1\r\nFAIL    debug/pe        3.905s\r\n\r\nC:\\dev\\go\\src\\debug\\pe\u003e\r\n```\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-07-10T03:33:54Z",
+	"created_at": "2015-07-06T06:15:06Z",
+	"updated_at": "2016-07-11T22:38:29Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

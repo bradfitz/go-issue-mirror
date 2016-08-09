@@ -1,0 +1,35 @@
+{
+	"id": 51283668,
+	"number": 5465,
+	"state": "open",
+	"title": "net/http: thoughts for Go 2.0",
+	"body": "\u003cpre\u003eWishlist bug for what net/http would look like if we could make backwards-incompatible\nchanges.\n\nAnything goes.\n\nI'll start:\n\n* Handler (\u003ca href=\"http://golang.org/pkg/net/http/#Handler)\"\u003ehttp://golang.org/pkg/net/http/#Handler)\u003c/a\u003e currently takes a pointer to a 208\nbyte Request struct.  \n\n* The Request struct (\u003ca href=\"http://golang.org/pkg/net/http/#Request)\"\u003ehttp://golang.org/pkg/net/http/#Request)\u003c/a\u003e has all its fields\npublicly exposed, most of which require memory allocation:\n\n  -- Method\n  -- URL (itself 104 bytes, with a bunch of strings requiring allocation)\n  -- Header map + slices + strings (even if never accessed)\n  -- TransferEncoding slice (even if not accessed)\n  -- Host string (even if not accessed)\n  -- RemoteAddr string (even if not accessed)\n  -- RequestURI (even if not accessed)\n  -- TLS state struct (even if not accessed)\n\nFor a lightweight handler that doesn't touch anything (say, serves some static content\nfrom memory), this means we can't do any better than generating ~1KB of garbage per\nrequest.\n\nI'd prefer to make a ServerRequest interface with accessor methods which can generate\nneeded data on demand.\n\nThis would also simplify our docs on our doubly-abused-in-different-ways *Request, which\ncontains documentation gems like:\n\n    // PostForm contains the parsed form data from POST or PUT\n    // body parameters.\n    // This field is only available after ParseForm is called.\n    // The HTTP client ignores PostForm and uses Body instead.\n    PostForm url.Values\n\nIf we had byte views (\u003ca href=\"https://golang.org/issue/5376\"\u003eissue #5376\u003c/a\u003e), I would also say that most fields in the\nServerRequest, URL, Header, and FormValues are all byte views with validity scoped to\nthe duration of the http.Handler call, instead of strings.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "Go2"
+		},
+		{
+			"name": "LongTerm"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 16,
+	"created_at": "2013-05-14T20:01:50Z",
+	"updated_at": "2015-12-15T04:48:52Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

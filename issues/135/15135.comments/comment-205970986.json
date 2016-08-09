@@ -1,0 +1,12 @@
+{
+	"id": 205970986,
+	"body": "OK, this is what I tried, but didn't know I had to do something \nexplicitly to\nregenerate the file.  Do I just run mkall.sh with the right GOOS and GOARCH?\n\nAlso, this fixes the size but doesn't it matter that the members of the\nstructure don't really describe the fields correctly?\n\nIn runtime/defs_linux_ppc64le.go it looks right:\n\ntype epollevent struct {\n         events    uint32\n         pad_cgo_0 [4]byte\n         data      [8]byte // unaligned uintptr\n}\n\nOn 04/05/2016 01:41 PM, Brad Fitzpatrick wrote:\n\u003e\n\u003e Try adding:\n\u003e\n\u003e diff --git a/src/syscall/types_linux.go b/src/syscall/types_linux.go\n\u003e index 9bccfca..3a105a4 100644\n\u003e --- a/src/syscall/types_linux.go\n\u003e +++ b/src/syscall/types_linux.go\n\u003e @@ -117,6 +117,9 @@  struct my_epoll_event {\n\u003e          // alignment requirements of EABI\n\u003e          int32_t padFd;\n\u003e   #endif\n\u003e +#ifdef __powerpc64__\n\u003e + int32_t _pad;\n\u003e +#endif\n\u003e          int32_t fd;\n\u003e          int32_t pad;\n\u003e   };\n\u003e\n\u003e And then regenerating it, then send a CL with both changes.\n\u003e\n\u003e —\n\u003e You are receiving this because you authored the thread.\n\u003e Reply to this email directly or view it on GitHub \n\u003e \u003chttps://github.com/golang/go/issues/15135#issuecomment-205940834\u003e\n\u003e\n\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-05T20:05:34Z",
+	"updated_at": "2016-04-05T20:05:34Z"
+}

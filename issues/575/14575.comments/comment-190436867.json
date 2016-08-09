@@ -1,0 +1,12 @@
+{
+	"id": 190436867,
+	"body": "exec.Cmd does inserts a lot of back slashes (and other characters) when it builds command line on windows. See https://github.com/golang/go/blob/master/src/syscall/exec_windows.go#L84 for details. But I don't think these back slashes are random. That is what Microsoft recomends we do (see a link in the code).\r\n\r\nI think your case fails because exec.Cmd tries hard to incorporate \" into paths and other parameters, and 7za is confused by these. I think you're trying too hard, tyr this (not tested):\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n)\r\n\r\nfunc main() {\r\n\tzippath := \"C:\\\\test.zip\"\r\n\toutputpath := \"C:\\\\testfolder\\\\\"\r\n\r\n\tcmd := exec.Command(\"7za\", \"x\", zippath, \"-aoa\", \"-r\", \"-o\"+outputpath, \"*.xml\")\r\n\tfmt.Printf(\"cmd.Args: %q\\n\", cmd.Args)\r\n\r\n\tcmdoutput, err := cmd.CombinedOutput()\r\n\tfmt.Println(\"output:\", string(cmdoutput), err)\r\n}\r\n```\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-29T22:54:26Z",
+	"updated_at": "2016-02-29T22:54:26Z"
+}

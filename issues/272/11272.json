@@ -1,0 +1,33 @@
+{
+	"id": 89337883,
+	"number": 11272,
+	"state": "closed",
+	"title": "log: TestUTCFlag is flaky",
+	"body": "```bash\r\nrlh@rlh0:~/work/go/src/log$ go version\r\ngo version devel +d6ce3b2 Thu Jun 18 11:35:11 2015 -0400 linux/amd64\r\nrlh@rlh0:~/work/go/src/log$ stress ./log.test -test.v\r\n\r\n/tmp/go-stress150315426\r\n=== RUN   TestAll\r\n--- PASS: TestAll (0.00s)\r\n=== RUN   TestOutput\r\n--- PASS: TestOutput (0.00s)\r\n=== RUN   TestFlagAndPrefixSetting\r\n--- PASS: TestFlagAndPrefixSetting (0.00s)\r\n=== RUN   TestUTCFlag\r\n--- FAIL: TestUTCFlag (0.00s)\r\n\tlog_test.go:145: got \"Test:2015/06/18 16:10:29 hello\\n\"; want \"Test:2015/06/18 16:10:%!d(MISSING) hello\\n\"\r\n=== RUN   TestEmptyPrintCreatesLine\r\n--- PASS: TestEmptyPrintCreatesLine (0.00s)\r\n=== RUN   ExampleLogger\r\n--- PASS: ExampleLogger (0.00s)\r\nFAIL\r\n\r\n\r\nERROR: exit status 1\r\n\r\n5677 runs so far\r\n```\r\n\r\n--- The second fmt.Sprintf looks like it is missing a now.Second()\r\n\r\n```go\r\nfunc TestUTCFlag(t *testing.T) {\r\n\tvar b bytes.Buffer\r\n\tl := New(\u0026b, \"Test:\", LstdFlags)\r\n\tl.SetFlags(Ldate | Ltime | LUTC)\r\n\t// Verify a log message looks right in the right time zone. Quantize to the second only.\r\n\tnow := time.Now().UTC()\r\n\tl.Print(\"hello\")\r\n\twant := fmt.Sprintf(\"Test:%d/%.2d/%.2d %.2d:%.2d:%.2d hello\\n\",\r\n\t\tnow.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())\r\n\tgot := b.String()\r\n\tif got == want {\r\n\t\treturn\r\n\t}\r\n\t// It's possible we crossed a second boundary between getting now and logging,\r\n\t// so add a second and try again. This should very nearly always work.\r\n\tnow.Add(time.Second)\r\n\twant = fmt.Sprintf(\"Test:%d/%.2d/%.2d %.2d:%.2d:%.2d hello\\n\",\r\n\t\tnow.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())\r\n\tif got == want {\r\n\t\treturn\r\n\t}\r\n\tt.Errorf(\"got %q; want %q\", got, want)\r\n}\r\n```",
+	"user": {
+		"login": "RLH",
+		"id": 972447,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-06-18T18:09:16Z",
+	"created_at": "2015-06-18T16:32:41Z",
+	"updated_at": "2016-06-25T02:11:29Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

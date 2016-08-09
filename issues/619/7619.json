@@ -1,0 +1,21 @@
+{
+	"id": 51286976,
+	"number": 7619,
+	"state": "open",
+	"title": "database/sql: Ping after statement reports good connection when it has failed",
+	"body": "by **zulthank**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.2.1 linux/amd64\n\nWhat steps reproduce the problem?\n\n1. db = sql.Open()\n2. stmt = db.Prepare(\u0026quot;INSERT INTO table VALUES($1, $2, $3, $4, $5)\u0026quot;)\n3. // now shut down the DB server\n4. stmt.Exec(\u0026quot;1\u0026quot;, \u0026quot;2\u0026quot;, \u0026quot;3\u0026quot;, \u0026quot;4\u0026quot;, \u0026quot;5\u0026quot;)\n5. err = db.Ping()\n\nWhat happened?\n\nerr = nil\n\nWhat should have happened instead?\n\nerr = \u0026lt;bad connection\u0026gt;\n\nPlease provide any additional information below.\n\n- Ping before stmt.Exec() returns error, as expected\n- Ping after db.Exec() (instead of stmt.Exec()) works as expected\n- tested with postGreSQL DB\n\nI could not figure out, where thee problem lies, but it seems the statement does not\nupdate the underlying sql.db if an error occures.\n\n\nTemporary solution was to define my own ping version:\n\nfunc myPing(l *sql.DB) error {\n\n    _, err := (*l).Exec(\u0026quot;\u0026quot;)\n    if err != nil {\n        return err\n    }\n    return nil\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-03-24T11:21:40Z",
+	"updated_at": "2015-04-14T19:45:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

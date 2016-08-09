@@ -1,0 +1,12 @@
+{
+	"id": 66062328,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eNo, a value sent over a chan is instantly available for receiving, there is no any kind\nof delaying.\nThe problem is that the program may enter deadlock state depending on timings. If you\nput runtime.Gosched() into seqMaker() between sending to outChan and finChan, then the\nprogram will deadlock much more frequently even with GOMAXPROCS=1.\nOne way to solve the deadlock is to send exactly 10000 numbers to each channel:\n\nfor k, s := range seqMakers {\n    s.c \u0026lt;- i * i\n    s.n++\n    if s.n == 10000 {\n      close(s.c)\n      delete(seqMakers, k)\n    }\n}\n\nThen you do not need finChan at all, and the program won't deadlock in any conditions.\nIt is now acyclic and deterministic and does not depend on timings.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-02-04T16:56:00Z",
+	"updated_at": "2014-12-22T06:08:55Z"
+}

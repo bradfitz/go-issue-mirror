@@ -1,0 +1,12 @@
+{
+	"id": 100606235,
+	"body": "I've done some testing using ```time go build -a -p 4 std```.\r\nBefore:\r\n```\r\nreal\t0m11.527s\r\nreal\t0m11.478s\r\nreal\t0m11.353s\r\nreal\t0m11.544s\r\nreal\t0m11.586s\r\n```\r\nAfter:\r\n```\r\nreal\t0m10.443s\r\nreal\t0m10.496s\r\nreal\t0m10.487s\r\nreal\t0m10.348s\r\nreal\t0m10.451s\r\n```\r\nThere is clear 10% win.\r\nI've also modified cmd/go to print number of executing actions every 500ms to confirm the win.\r\nBefore:\r\n```\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 2\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 2\r\n```\r\nAfter:\r\n```\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 4\r\nEXECUTING 1\r\nEXECUTING 1\r\nEXECUTING 4\r\n```\r\nThere is clear difference towards end of build -- old code leads to lower parallelism because previous actions were scheduled badly.\r\n\r\nAlso, the win highly depends on work graph structure. It is possible to come up with dependency structure which will be handled arbitrary inefficiently by the old code. So some users can see higher speedup than we see on std lib. Moreover, currently scheduling depends on package names (or how does it order them now?), which is just weird. You can increase/reduce build speed by renaming packages.\r\n\r\nAlso, better scheduling will have more impact when we make actions finer-grained. In particular split cgo compilation and maybe asm compilation.\r\n\r\nSo I am sure that this is a positive change and we should do it. The additional complexity is minimal and very localized.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-10T09:02:21Z",
+	"updated_at": "2015-05-10T09:02:21Z"
+}

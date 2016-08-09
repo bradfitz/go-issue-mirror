@@ -1,0 +1,12 @@
+{
+	"id": 123498614,
+	"body": "Here's what's going on. The loop that allocates 1,000 1MB byte slices does enter the assist and the assist knows that it needs to do a lot of work to pay for the allocation, but it finds no work to do, so it returns immediately. It keeps building up assist debt, but also keeps finding no work to do, so there's no back pressure.\r\n\r\nThe reason it's not finding any work to do appears to be related to #11694. There's no work to do because we're actually out of work. But we haven't entered mark termination yet, so the mutator is still running. This can happen simply because it takes us a while to go in to mark termination when we run out of work because we do things like rescanning globals to pick up more work to do in concurrent mark.\r\n\r\nIt's also theoretically possible for this to happen when there is work to do, but it's not available to the assist. For example, the code in #11694 creates a heap that's almost entirely a long singly-linked list. A dedicated mark worker could be working on that list, but there's no way to hand off that work, so the assist won't be able to do anything, regardless of the assist debt.\r\n\r\nSo it seems like we need to do something if we're in the assist and can't find enough work to pay down the assist debt.\r\n",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-21T22:30:11Z",
+	"updated_at": "2015-07-21T22:30:11Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 106422416,
+	"number": 12620,
+	"state": "closed",
+	"title": "runtime: heap profiling incorrectly sampling allocations",
+	"body": "Heap profiling in go is incorrectly sampling allocations, resulting on inaccurate profiles from go tool pprof. It oversamples some locations and undersamples others, depending on the size of the surrounding allocations.\r\n\r\nHere is an example:\r\n```\r\nGo 1.5\u003ego version\r\ngo version go1.5 linux/amd64\r\nGo 1.5\u003ecat mytest.go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\nimport _ \"net/http/pprof\"\r\n\r\nfunc main() {\r\n\tallocate_large_small()\r\n\tallocate_small()\r\n\r\n\tlog.Println(\"Ready to serve\")\r\n\thttp.ListenAndServe(\"localhost:8234\", nil)\r\n}\r\n\r\nvar a16 *[16]byte\r\nvar a512 *[512]byte\r\nvar a256 *[256]byte\r\nvar a1k *[1024]byte\r\nvar a256k *[256 * 1024]byte\r\n\r\nfunc allocate_large_small() {\r\n\tfor i := 0; i \u003c 100000; i++ {\r\n\t\ta256k = new([256 * 1024]byte)\r\n\t\ta1k = new([1024]byte)\r\n\t\ta256k = new([256 * 1024]byte)\r\n\t\ta512 = new([512]byte)\r\n\t\ta256k = new([256 * 1024]byte)\r\n\t\ta256 = new([256]byte)\r\n\t\ta256k = new([256 * 1024]byte)\r\n\t\ta16 = new([16]byte)\r\n\t}\r\n}\r\n\r\nfunc allocate_small() {\r\n\tfor i := 0; i \u003c 1000000; i++ {\r\n\t\ta1k = new([1024]byte)\r\n\t\ta512 = new([512]byte)\r\n\t\ta256 = new([256]byte)\r\n\t\ta16 = new([16]byte)\r\n\t}\r\n}\r\nGo 1.5\u003ego build mytest.go\r\nGo 1.5\u003e./mytest \u0026\r\n... Wait ~30 seconds for the job to start serving\r\nGo 1.5\u003ego tool pprof -lines -top -alloc_objects mytest  localhost:8234/debug/pprof/heap\r\n....\r\n211936406 of 215013112 total (98.57%)\r\nDropped 13 nodes (cum \u003c= 1075065)\r\n      flat  flat%   sum%        cum   cum%\r\n 174623336 81.22% 81.22%  174623336 81.22%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:33\r\n  11070094  5.15% 86.36%   11070094  5.15%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:31\r\n   5586598  2.60% 88.96%    5586598  2.60%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:29\r\n   4338764  2.02% 90.98%    4338764  2.02%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:32\r\n   4207027  1.96% 92.94%    4207027  1.96%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:26\r\n   4199323  1.95% 94.89%    4199323  1.95%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:28\r\n   3977368  1.85% 96.74%    3977368  1.85%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:30\r\n   2819767  1.31% 98.05%    2819767  1.31%  main.allocate_large_small /home/rsilvera/work/Go/test/mytest.go:27\r\n   1114129  0.52% 98.57%    1114129  0.52%  main.allocate_small /home/rsilvera/work/Go/test/mytest.go:42\r\n```\r\n\r\nHere is a summary of the actual and expected results:\r\n\r\nLine | Actual | Expected (approx)\r\n------|-----------|---------------\r\n26 | 4207027 | 100000\r\n27 | 1114129 | 100000\r\n28 | 4199323 | 100000\r\n29 | 5586598 | 100000\r\n30 | 3977368 | 100000\r\n31 | 11070094 | 100000\r\n32 | 4338764  | 100000\r\n33 | 174623336 | 100000\r\n39 | 0 | 1000000\r\n40 | 0 | 1000000\r\n41 | 0 | 1000000\r\n42 | 1114129 | 1000000\r\n\r\n",
+	"user": {
+		"login": "rauls5382",
+		"id": 11181042,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-10-05T08:15:32Z",
+	"created_at": "2015-09-14T20:34:49Z",
+	"updated_at": "2015-10-14T03:01:54Z"
+}

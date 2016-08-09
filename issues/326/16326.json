@@ -1,0 +1,28 @@
+{
+	"id": 164959042,
+	"number": 16326,
+	"state": "closed",
+	"title": "runtime: cgocallback signature mismatch",
+	"body": "While working on #11041, I encountered the following mismatch:\r\n\r\nruntime/asm_amd64.s:\r\n\r\n```\r\n// cgocallback(void (*fn)(void*), void *frame, uintptr framesize, uintptr ctxt)\r\nTEXT runtime·cgocallback(SB),NOSPLIT,$32-32\r\n```\r\n\r\nruntime/stubs.go:\r\n\r\n```go\r\nfunc cgocallback(fn, frame unsafe.Pointer, framesize uintptr)\r\n```\r\n\r\nThe assembly implementation uses the ctxt parameter. However, there are other pure Go callers (in runtime/signal*.go) that call cgocallback directly, which means that there's junk in the ctxt parameter.\r\n\r\nIt appears that the right fix is to add ctxt to the prototype and add a ctxt parameter to the Go callers. Is this right? What value should ctxt have in those calls? Guidance appreciated.\r\n\r\ncc @ianlancetaylor ",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-07-12T16:56:08Z",
+	"created_at": "2016-07-11T23:03:12Z",
+	"updated_at": "2016-07-12T16:56:08Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

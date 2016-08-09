@@ -1,0 +1,16 @@
+{
+	"id": 182825096,
+	"body": "For what it is worth, if this bug is blocking you, for a hot fix you can get around it by setting your own stdin before cmd.Start(). I ran into this bug two days back and it got me for about 18 hours until I realized that the race condition was caused because in `cmd.Wait()`, `cmd.closeDescriptors()` is invoked for the registered(internal) io.Pipe()s. The pipeReader that is returned for stdin is registered internally whenever you invoke cmd.StdinPipe() and will be closed on cmd.Wait(). The work around this is to assign a readCloser that you control and then close it on your own whenever you are done reading. Please see the patch below\r\n\r\n```diff\r\n--- orig.go\t2016-02-11 03:44:56.000000000 -0800\r\n+++ main.go\t2016-02-11 03:44:57.000000000 -0800\r\n@@ -2,23 +2,24 @@\r\n \r\n import (\r\n \t\"fmt\"\r\n+\t\"io\"\r\n \t\"log\"\r\n \t\"os/exec\"\r\n )\r\n \r\n func main() {\r\n \tcmd := exec.Command(\"/bin/echo\")\r\n-\tstdin, err := cmd.StdinPipe()\r\n-\tif err != nil {\r\n-\t\tlog.Fatalf(\"StdinPipe: %v\", err)\r\n-\t}\r\n+\tpr, pw := io.Pipe()\r\n+\r\n+\tcmd.Stdin = pr\r\n \tif err := cmd.Start(); err != nil {\r\n \t\tlog.Fatalf(\"Start: %v\", err)\r\n \t}\r\n \twrote := make(chan bool)\r\n \tgo func() {\r\n \t\tdefer close(wrote)\r\n-\t\tfmt.Fprint(stdin, \"echo\\n\")\r\n+\t\tfmt.Fprint(pw, \"echo\\n\")\r\n+\t\t_ = pw.Close()\r\n \t}()\r\n \tif err := cmd.Wait(); err != nil {\r\n \t\tlog.Fatalf(\"Wait: %v\", err)\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	},
+	"created_at": "2016-02-11T11:51:19Z",
+	"updated_at": "2016-02-11T11:56:05Z"
+}

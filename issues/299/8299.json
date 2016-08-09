@@ -1,0 +1,27 @@
+{
+	"id": 51287991,
+	"number": 8299,
+	"state": "closed",
+	"title": "runtime: markfreed corrupts GC bitmap",
+	"body": "\u003cpre\u003eIn the mark phase, RootFlushCaches stage calls MCache_ReleaseAll. Which in turn calls\nMCentral_UncacheSpan. Which in turn calls markfreed for remote freed object. markfreed\nupdates GC bitmap non-atomically, but at the same time other threads mark objects. This\ncan lead to the bitmap corruption (mark bit is lost).\n\nI've patched markfreed as:\n\n+\tif(m-\u0026gt;gcing) {\n+\t\tuintptr xbits;\n+\n+\t\txbits = *b;\n+\t\truntime·usleep(10);\n+\t\tif(xbits != *b) {\n+\t\t\truntime·printf(\u0026quot;markfreed messed bitmap: %p-\u0026gt;%p\\n\u0026quot;, xbits, *b);\n+\t\t\truntime·throw(\u0026quot;BAD\u0026quot;);\n+\t\t}\n+\t}\n\nand was able to actually catch the bug on net/http tests (mark bit is concurrently set\nfrom in different thread):\n\nmarkfreed messed bitmap: 0x1000-\u0026gt;0x100000001000\nfatal error: BAD\n\nruntime stack:\nruntime.throw(0x61990b)\n\tsrc/pkg/runtime/panic.c:520 +0x69 fp=0xb06b7b70 sp=0xb06b7b58\nruntime.markfreed(0xc208e80c60)\n\tsrc/pkg/runtime/mgc0.c:2783 +0x106 fp=0xb06b7bb0 sp=0xb06b7b70\nMCentral_Free(0x63abf8, 0xc208e80c60)\n\tsrc/pkg/runtime/mcentral.c:187 +0xd5 fp=0xb06b7bd0 sp=0xb06b7bb0\nruntime.MCentral_FreeList(0x63abf8, 0xc20975b200)\n\tsrc/pkg/runtime/mcentral.c:151 +0x50 fp=0xb06b7bf0 sp=0xb06b7bd0\nruntime.MCache_ReleaseAll(0x1000000)\n\tsrc/pkg/runtime/mcache.c:125 +0xce fp=0xb06b7c20 sp=0xb06b7bf0\nflushallmcaches()\n\tsrc/pkg/runtime/mgc0.c:2155 +0x5c fp=0xb06b7c48 sp=0xb06b7c20\nmarkroot(0xc208018480, 0x4)\n\tsrc/pkg/runtime/mgc0.c:1309 +0x21b fp=0xb06b7cc8 sp=0xb06b7c48\nruntime.parfordo(0xc208018480)\n\tsrc/pkg/runtime/parfor.c:103 +0x128 fp=0xb06b7d40 sp=0xb06b7cc8\ngc(0x25e3af0)\n\tsrc/pkg/runtime/mgc0.c:2407 +0x1d6 fp=0xb06b7e70 sp=0xb06b7d40\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:46:05Z",
+	"created_at": "2014-06-29T01:40:22Z",
+	"updated_at": "2016-06-25T01:37:21Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

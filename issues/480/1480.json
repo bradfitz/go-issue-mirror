@@ -1,0 +1,27 @@
+{
+	"id": 51277860,
+	"number": 1480,
+	"state": "closed",
+	"title": "runtime: program takes more OS threads than expected",
+	"body": "\u003cpre\u003efrom\tziutek \u0026lt;ziutek@lnet.pl\u0026gt;\nto\tgolang-nuts \u0026lt;golang-nuts@googlegroups.com\u0026gt;\ndate\tFri, Feb 4, 2011 at 09:23\nsubject\t[go-nuts] Re: How GOMAXPROCS is used by current 8g implementation?\n\nI wrote simple test using http package:\n\n package main\n\n import (\n    \u0026quot;log\u0026quot;\n    \u0026quot;http\u0026quot;\n )\n\n func handler(wr http.ResponseWriter, req *http.Request) {\n    wr.Write([]byte(\u0026quot;Ok!\\n\u0026quot;))\n }\n\n func main() {\n    err := http.ListenAndServe(\u0026quot;:8080\u0026quot;, http.HandlerFunc(handler))\n    if err != nil {\n        log.Fatalln(\u0026quot;ListenAndServe:\u0026quot;, err)\n    }\n }\n\nThen compile it and run:\n\n $ 8g test.go \u0026amp;\u0026amp; 8l -o test test.8\n $ GOMAXPROC=2 ./test\n\nThere is output from  ps -eL |grep test\n\n 3176  3176 pts/0    00:00:00 test\n 3176  3177 pts/0    00:00:00 test\n\nNext I use curl to get something from this application:\n\n $ curl 127.0.0.1:8080\n Ok!\n $ curl 127.0.0.1:8080\n Ok!\n\nAnd ps -eL:\n\n 3176  3176 pts/0    00:00:00 test\n 3176  3177 pts/0    00:00:00 test\n\nNext I use siege with 10 concurrent simulated users:\n\n $ siege 127.0.0.1:8080 -c10 -d0 -t10s\n ** SIEGE 2.70\n ** Preparing 10 concurrent users for battle.\n The server is now under siege...\n Lifting the server siege.      done.\n Transactions:                 11791 hits\n Availability:                100.00 %\n Elapsed time:                  9.07 secs\n Data transferred:              0.04 MB\n Response time:                 0.01 secs\n Transaction rate:           1300.00 trans/sec\n Throughput:                    0.00 MB/sec\n Concurrency:                   9.85\n Successful transactions:       11792\n Failed transactions:              0\n Longest transaction:           0.03\n Shortest transaction:          0.00\n\nAnd ps -eL:\n\n 3176  3176 pts/0    00:00:00 test\n 3176  3177 pts/0    00:00:00 test\n 3176  3260 pts/0    00:00:01 test\n 3176  3261 pts/0    00:00:00 test\n 3176  3262 pts/0    00:00:01 test\n 3176  3263 pts/0    00:00:01 test\n 3176  3264 pts/0    00:00:01 test\n 3176  3265 pts/0    00:00:01 test\n\nthere is 8 persistent threads. This number of threads is constant even\nif I use siege with 100 concurrent users.\n\nIs this the expected behavior? Maybe it is related to my 36 threads\n\u0026quot;problem\u0026quot; (it isn't any problem for me if the number of threads will\nnot increase in time).\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:08:31Z",
+	"created_at": "2011-02-04T19:18:06Z",
+	"updated_at": "2016-06-24T19:24:53Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

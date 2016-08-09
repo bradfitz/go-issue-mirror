@@ -1,0 +1,28 @@
+{
+	"id": 51283718,
+	"number": 5492,
+	"state": "closed",
+	"title": "bufio: Writer.Writer's []byte argument escapes",
+	"body": "\u003cpre\u003eIt's not possible to Write to a *bufio.Writer without the []byte argument escaping, due\nto the fast path passing p through an interface value:\n\npackage bufio\n...\nfunc (b *Writer) Write(p []byte) (nn int, err error) {\n\tfor len(p) \u0026gt; b.Available() \u0026amp;\u0026amp; b.err == nil {\n                var n int\n\t\tif b.Buffered() == 0 {\n\t\t\t// Large write, empty buffer.\n\t\t\t// Write directly from p to avoid copy.\n\t\t\tn, b.err = b.wr.Write(p)    // \u0026lt;------------ escapes\n\t\t} else {\n                        n = copy(b.buf[b.n:], p)\n\t\t\tb.n += n\n\t\t\tb.Flush()\n\t\t}\n                nn += n\n\t\tp = p[n:]\n\t}\n        if b.err != nil {\n\t\treturn nn, b.err\n\t}\n        n := copy(b.buf[b.n:], p)\n\tb.n += n\n\tnn += n\n\treturn nn, nil\n}\n\n\nPossible solutions:\n\n0) do nothing.  accept that it's not possible to have a caller do a small write from a\nstack-local byte array.  I don't like this option.\n\n1) remove the fast path above.  that's also sad, since it'd be worse in the common cases.\n\n2) add a new public method on *bufio.Writer that's like Write, but without its p []byte\nargument escaping.  This is gross, because it's new API for a performance thing.\n\n3) instead of passing p to b.wr.Write in the line of code labeled above, instead play a\ngame where we pass a copy of p if \u0026amp;p[0] is on the stack, otherwise pass p directly\n(but this would probably involve gross unsafe tricks to avoid the compiler thinking that\np escapes)\n\n4) caller can do a loop on its stack-local byte array and call WriteByte for each input.\n this is what I've done so far.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "GarbageCollector"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:29:49Z",
+	"created_at": "2013-05-16T23:40:39Z",
+	"updated_at": "2016-06-24T22:40:21Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66074211,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eI have gotten your test.sh script to tell me it failed, but I don't believe this is\nactually a bug. The master listens on a TCP port and passes that fd to many children.\nThat is, they all have references to the exact same TCP listener.\n\nThe slave exit closes its copy of the fd and then waits for the blocked accept to\nfinish. However, there is no reason to expect it to finish. The listener is still\nactive, and will be until all the copies of the fd are closed. The incoming signal may\nforce the accept to restart, but in all likelihood it will have successfully restarted\nbefore the main slave thread gets around to closing the fd.\n\nIt is easy to believe that the different behaviors you are seeing depend primarily on\nthe order in which threads are scheduled to run. The accept will exit if it gets\nrestarted and sees the closed fd, but it need not be restarted; whether it does depends\non this kind of scheduling decision. Removing config.LoadTLS presumably changes the\ntiming or the cpu nice priorities or something like that.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-05T20:20:29Z",
+	"updated_at": "2014-12-08T10:25:09Z"
+}

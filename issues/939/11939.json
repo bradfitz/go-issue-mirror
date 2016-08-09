@@ -1,0 +1,30 @@
+{
+	"id": 98180200,
+	"number": 11939,
+	"state": "open",
+	"title": "proposal: encoding/json, encoding/xml: support zero values of structs with omitempty",
+	"body": "Support zero values of structs with omitempty in encoding/json and encoding/xml.\r\n\r\nThis bites people a lot, especially with `time.Time`.  Open bugs include #4357 (which has many dups) and #10648.  There may be others.\r\n\r\n## Proposal\r\n\r\n**Check for zero struct values by adding an additional case to the `isEmptyValue` function:**\r\n\r\n```go\r\ncase reflect.Struct:\r\n        return reflect.Zero(v.Type()).Interface() == v.Interface()\r\n```\r\n\r\nThis will solve the vast majority of cases.\r\n\r\n(Optional) **Introduce a new `encoding.IsZeroer` interface, and use this to check for emptiness:**\r\n\r\n**Update**: *I am dropping this part of the proposal, [see below](https://github.com/golang/go/issues/11939#issuecomment-149303511).*\r\n\r\n```go\r\ntype IsZeroer interface {\r\n        IsZero() bool\r\n}\r\n```\r\n\r\nVisit [this playground link](http://play.golang.org/p/lUNzjSV_bN) and note that the unmarshaled `time.Time` value does not have a `nil` `Location` field.  This prevents the reflection-based emptiness check from working.  `IsZero()` already exists on `time.Time`, has the correct semantics, and has been adopted as a convention by Go code outside the standard library.\r\n\r\nAn additional check can be added to the `isEmptyValue()` functions before checking the value's `Kind`:\r\n\r\n```go\r\nif z, ok := v.Interface().(encoding.IsZeroer); ok {\r\n        return z.IsZero()\r\n}\r\n```\r\n\r\n## Compatibility\r\n\r\nThe `encoding.IsZeroer` interface could introduce issues with existing non-struct types that may have implemented `IsZero()` without consideration of `omitempty`.  If this is undesirable, the `encoding.IsZeroer` interface check could be moved only within the struct case:\r\n\r\n```go\r\ncase reflect.Struct:\r\n        val := v.Interface()\r\n        if z, ok := val.(encoding.IsZeroer); ok {\r\n                return z.IsZero()\r\n        }\r\n        return reflect.Zero(v.Type()).Interface() == val\r\n```\r\n\r\nOtherwise, this change is backward-compatible with existing valid uses of `omitempty`.  Users who have applied `omitempty` to struct fields incorrectly will get their originally intended behavior for free.\r\n\r\n## Implementation\r\n\r\nI (@joeshaw) have implemented and tested this change locally, and will send the CL when the Go 1.6 tree opens.\r\n",
+	"user": {
+		"login": "joeshaw",
+		"id": 39916,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 13,
+	"created_at": "2015-07-30T14:14:34Z",
+	"updated_at": "2016-08-02T23:51:46Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

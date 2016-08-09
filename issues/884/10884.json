@@ -1,0 +1,33 @@
+{
+	"id": 77223255,
+	"number": 10884,
+	"state": "closed",
+	"title": "net/http: MaxBytesReader's behavior does not match the comments",
+	"body": "```Go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n\t\"net/http\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc test1(w http.ResponseWriter, r *http.Request) {\r\n\trd := strings.NewReader(\"12345\")\r\n\trc := ioutil.NopCloser(rd)\r\n\r\n\tmr := http.MaxBytesReader(w, rc, 5)\r\n\tfmt.Println(io.Copy(ioutil.Discard, mr))\r\n}\r\n\r\nfunc test2(w http.ResponseWriter, r *http.Request) {\r\n\tr.Body = http.MaxBytesReader(w, r.Body, 5)\r\n\tfmt.Println(io.Copy(ioutil.Discard, r.Body))\r\n}\r\n\r\nfunc main() {\r\n\thttp.HandleFunc(\"/test1\", test1)\r\n\thttp.HandleFunc(\"/test2\", test2)\r\n\thttp.ListenAndServe(\":80\", nil)\r\n}\r\n```\r\n\r\nfor test1:\r\nthe reader rd 's content does not beyond the http.MaxBytesReader mr 's limit, but we got\r\n\r\n```Go\r\n5 http: request body too large\r\n```\r\n\r\nfor test2(use postman, post 12345, use raw, not form-data, x-www-form-urlencoded):\r\n\r\nwe got\r\n```Go\r\n5 \u003cnil\u003e\r\n```\r\n\r\nsee\r\nhttps://github.com/golang/go/blob/master/src/net/http/request.go#L730\r\n\r\nif n==l.n and err==nil and next call return n==0 and err==io.EOF, The program does not consider this\r\n",
+	"user": {
+		"login": "chanxuehong",
+		"id": 3416908,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-07-07T21:33:24Z",
+	"created_at": "2015-05-17T05:39:19Z",
+	"updated_at": "2016-07-11T22:37:58Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

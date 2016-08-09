@@ -1,0 +1,27 @@
+{
+	"id": 164576904,
+	"number": 16300,
+	"state": "open",
+	"title": "cmd/compile: slightly unclear heap escape message (with -m)",
+	"body": "Tested with linux/amd64, go 1.6.2 and tip.\r\n\r\nConsider the following function and `-gcflags -m` output:\r\n\r\n```\r\n219|func readString(r io.Reader, buf []byte) ([]byte, error) {\r\n220|\tvar scratch [4]byte\r\n221|\tif _, err := io.ReadFull(r, scratch[:]); err != nil {\r\n222|\t\treturn nil, err\r\n223|\t}\r\n224|\tn := int(binary.BigEndian.Uint32(scratch[:]))\r\n225|\tif n \u003e maxStringLength {\r\n226|\t\treturn nil, ErrStringTooBig\r\n227|\t}\r\n228|\tif n \u003c= cap(buf) {\r\n229|\t\tbuf = buf[:n]\r\n230|\t} else {\r\n231|\t\tbuf = make([]byte, n)\r\n232|\t}\r\n233|\tif _, err := io.ReadFull(r, buf); err != nil {\r\n234|\t\treturn nil, err\r\n235|\t}\r\n236|\treturn buf, nil\r\n237|}\r\n\r\nx.go:219: leaking param: r\r\nx.go:220: moved to heap: scratch                \u003c-------\r\nx.go:221: scratch escapes to heap\r\nx.go:231: make([]byte, n) escapes to heap\r\nx.go:219: leaking param: buf\r\nx.go:231: make([]byte, n) escapes to heap\r\nx.go:231: make([]byte, n) escapes to heap\r\nx.go:224: readString scratch does not escape    \u003c-------\r\n```\r\n\r\nAt first glance the two indicated lines seem to contradict each other. After consulting with some other folks I think that the last line (\"x.go:224: readString scratch does not escape\") means that the function call using scratch on line 224 does not itself cause scratch to escape, even though scratch does escape. Rather, it is the usage on line 221 that causes scratch to escape.\r\n\r\nPerhaps the message could be reworded a bit.\r\n\r\n/cc @dr2chase, I think?",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-08T17:21:30Z",
+	"updated_at": "2016-07-08T23:34:18Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

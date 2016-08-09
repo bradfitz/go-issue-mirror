@@ -1,0 +1,12 @@
+{
+	"id": 66077000,
+	"body": "\u003ca id=\"c20\"\u003e\u003c/a\u003eComment 20:\n\n\u003cpre\u003eThe doublehash program in this CL uses go/ssa to find occurrences:\n\n  \u003ca href=\"https://golang.org/cl/182420043/\"\u003ehttps://golang.org/cl/182420043/\u003c/a\u003e\n\n% doublehash encoding/json\n/home/adonovan/go/src/encoding/json/encode.go:1073:14:  this map[reflect.Type]int lookup\n/home/adonovan/go/src/encoding/json/encode.go:1073:14:          dominates this update\nwith same map and key\n\n/home/adonovan/go/src/encoding/json/encode.go:1074:17:  this map[reflect.Type]int lookup\n/home/adonovan/go/src/encoding/json/encode.go:1073:14:          dominates this update\nwith same map and key\n\nIt only finds update-after-lookup patterns, but it could be easily adapted to\nlookup-after-lookup too, although they're rare in code that's already performance\nsensitive.\n\nSince unlike gc, go/ssa doesn't have a precise interprocedural escape analysis, I've\nadded an -unsound flag to make optimistic aliasing assumptions about the map expression,\ne.g. that in this program,\n\n  if !o.m[k] {\n    ...\n    o.m[k] = true\n    ...\n  }\n\nthe two references o.m must alias to the same variable.\n\ndoublehash finds 77 definite occurrences in the standard library, and 176 with the\n-unsound flag.  (Escape analysis would likely yield even more since the key expression\nmay also be subject to aliasing, e.g. m[o.k].)\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-03T18:23:24Z",
+	"updated_at": "2014-12-08T10:27:35Z"
+}

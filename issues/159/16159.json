@@ -1,0 +1,28 @@
+{
+	"id": 161857700,
+	"number": 16159,
+	"state": "closed",
+	"title": "cmd/pprof: linux CPU profiles disable remote symbolization",
+	"body": "\u003e 1. What version of Go are you using (`go version`)?\r\n\r\nMy server is built with go1.7beta2 (go version devel +fca9fc5 Thu Jun 16 19:45:33 2016 +0000 linux/amd64).\r\n\r\nI'm using `go tool pprof` from go1.7beta2 and a more recent version of tip:\r\ngo version devel +fca9fc5 Thu Jun 16 19:45:33 2016 +0000 darwin/amd64\r\ngo version devel +395f6eb Wed Jun 22 21:15:51 2016 +0000 darwin/amd64\r\n\r\n\u003e 2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux/amd64 server, darwin/amd64 for `go tool pprof`\r\n\r\n\u003e 3. What did you do?\r\n\r\nI ran `go tool pprof http://.../debug/pprof/profile` from my darwin/amd64 machine to collect and view a CPU profile over the network of a process running on linux/amd64 (with the `web` and `top` subcommands).\r\n\r\n\u003e 4. What did you expect to see?\r\n\r\nI expected the profile to include the names of the functions that were being executed, as collected by a follow-up call to the /debug/pprof/symbol endpoint.\r\n\r\n\u003e 5. What did you see instead?\r\n\r\nThe profile did not include function names, and all of the CPU cycles were attributed to a single node (named after the app).\r\n\r\nI switched to \"addresses\" mode, and saw that CPU cycles were attributed to many different addresses (as I'd expect).\r\n\r\nI suspect this is related to 4223294eab3dee0f6c03fd57fc24be3dc3e2d53a and so only affects GOOS=linux profilees; that the presence of the mapping paths causes `go tool pprof` to attempt local symbolization and to not try the remote mode.\r\n\r\nThis doesn't appear to be #16128, as I'm able to reproduce it with a version of `go tool pprof` that includes 252eda470a3684a1ead5956f7e703532f4213f11.\r\n\r\nI included the `-symbolize=remote` flag in my invocation of `go tool pprof`, and the resulting profile included function names. The \"heap\" profile works as expected without adding that flag. Remote CPU profiles should work without that flag (as they do in go1.6.x and earlier).\r\n\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"closed_at": "2016-06-25T00:38:00Z",
+	"created_at": "2016-06-23T07:30:52Z",
+	"updated_at": "2016-06-25T00:38:00Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

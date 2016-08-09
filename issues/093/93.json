@@ -1,0 +1,28 @@
+{
+	"id": 51276042,
+	"number": 93,
+	"state": "closed",
+	"title": "http.Conn needs Flush method to force output",
+	"body": "by **david.titarenco**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\npackage main\n\nimport (\n        \u0026quot;http\u0026quot;;\n        \u0026quot;io\u0026quot;;\n        \u0026quot;time\u0026quot;;\n        \u0026quot;fmt\u0026quot;;\n)\n\n// yuck global :(\nvar Timeout bool;\n\n//ugly timeout goroutine -- there's probably a better way to do this\nfunc g_Timeout() {\n        time.Sleep(25000000000); // 25sec\n        Timeout = false;\n}\n\n// hello world, the web server\nfunc HelloServer(c *http.Conn, req *http.Request) {\n        io.WriteString(c, \u0026quot;Hey there. In 25 seconds I should die...\u0026lt;br\u0026gt;\u0026quot;);\n\n        Timeout = true;\n        go g_Timeout();\n        for Timeout {\n           time.Sleep(5000000); // 500ms (non-blocking?)\n           io.WriteString(c, \u0026quot;. \u0026quot;); // write to HTTP.Conn buffer\n           fmt.Printf(\u0026quot;.\u0026quot;); // write to stdout\n        }\n        io.WriteString(c, \u0026quot;I'm done\u0026quot;);\n}\n\nfunc main() {\n        http.Handle(\u0026quot;/test\u0026quot;, http.HandlerFunc(HelloServer));\n        err := http.ListenAndServe(\u0026quot;:9001\u0026quot;, nil);\n        if err != nil {\n                panic(\u0026quot;ListenAndServe: \u0026quot;, err.String())\n        }\n}\n\nWhat is the expected output? What do you see instead?\nI expect the buffer to be drained every write increment (ie every 500ms),\nbut it appears that there's a certain threshold len(data) needs to reach\nbefore the fd buffer is drained (and I consequently see it in my browser).\nI didn't do much digging through the source so there might be a soft-limit\nimposed? Correct me if I'm wrong.\n\nWhat is your $GOOS?  $GOARCH?\nGOARCH=386\nGOOS=linux\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n4009:3732030c7584\n\nPlease provide any additional information below.\nThe http package also desperately needs a timeout function (there IS an fd\nlimit last time I checked :p). As a matter of fact, I might just make one.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:03:13Z",
+	"created_at": "2009-11-12T09:18:42Z",
+	"updated_at": "2016-06-24T19:00:31Z"
+}

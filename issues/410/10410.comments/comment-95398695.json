@@ -1,0 +1,12 @@
+{
+	"id": 95398695,
+	"body": "The PPC ELF v2 ABI requires that every function start with a small prologue that computes the TOC pointer in r2 from the function address in r12.  This computation is two instructions; in normal PPC assembler it looks like this:\r\n\r\n0:      addis 2,12,.TOC.-0b@ha\r\n        addi 2,2,.TOC.-0b@l\r\n\r\nThe symbol .TOC. is not defined in an object file, and is magically defined by the linker.  The linker must arrange that every function in the same module (shared library or executable) compute the same value for r2.\r\n\r\nThe problem here is that 9l is using a different value for .TOC. for functions defined in different object files.  I haven't sorted it all out, but 9l seems to use a different .TOC. symbol for each object file, and to give them different values.  This may be correct for the ELF v1 ABI; I'm not sure.  It's not correct for the ELF v2 ABI used on PPC64le.\r\n\r\nThe different TOC value causes some calls to pthread_mutex_lock to load the wrong value from the GOT and branch to the wrong function, leading to a crash.\r\n\r\nI hope somebody else can take it from here.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-23T02:44:03Z",
+	"updated_at": "2015-04-23T02:44:03Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 131939911,
+	"body": "\u003e As Austin said, it really does look like a finalizer is being set on an allocation that is being kept in C but not in Go, or something like that.\r\n\r\nIt's weirder than that. I don't think the object with the finalizer is the problem. The bad pointer is the pointer to the finalizer *function*, not the object. I can't imagine why one would pass that in to C (it's not even possible without some serious gymnastics and I don't know what you'd do with it in C).\r\n\r\n\u003e Unfortunately, I've been unable to reproduce any more panics with the environment variable set.\r\n\r\nThanks for trying. Did you get any without the environment variable set?\r\n\r\n\u003e We have many finalizers in the code base. Is there any hint in the information provided to narrow down where the search is?\r\n\r\nThe finalizer function would have to be a closure that actually captures variables from its enclosing scope or a method (which turns in to a closure that captures the method receiver). This should be the only way we can see a (bad) heap-allocated function pointer. Otherwise the funcval would point in to static data, and we wouldn't see this panic.\r\n\r\nI can also tell you that the closure is at most 1,408 bytes, but I doubt that narrows things down much. :)\r\n\r\n\u003e I'll look for finalizers on C allocated memory (I believe that's what @rsc meant in his first comment on this issue), but are there any more?\r\n\r\nUnfortunately, as I mentioned at the top of this comment in response to @rsc's comment, this isn't a good filter for this problem. It isn't about the finalized object, it's about the finalizer function.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-17T19:43:22Z",
+	"updated_at": "2015-08-17T19:43:22Z"
+}

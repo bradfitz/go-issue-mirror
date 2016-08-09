@@ -1,0 +1,21 @@
+{
+	"id": 51679588,
+	"number": 9265,
+	"state": "open",
+	"title": "runtime: lots of time spent in sweepone",
+	"body": "Here is repro program:\r\nhttp://play.golang.org/p/giKY6IcWjU\r\n\r\nIf you run it as-is, it runs for 1.357s and profile looks as:\r\n 21.94%  test  test               [.] runtime.memclr\r\n 12.24%  test  test               [.] runtime.MSpanList_IsEmpty\r\n 11.02%  test  test               [.] runtime.xchg\r\n  7.94%  test  test               [.] MHeap_AllocLocked\r\n  5.19%  test  test               [.] runtime.MSpan_Sweep\r\n\r\nIf you uncomment \"y = make([]byte, 1\u003c\u003c30)\" line, it runs for 26.696s and profile looks as:\r\n 37.52%  test  test               [.] runtime.sweepone\r\n 27.15%  test  test               [.] runtime.xadd\r\n 24.96%  test  test               [.] markroot\r\n  1.96%  test  test               [.] runtime.memclr\r\n  0.75%  test  test               [.] runtime.xchg\r\n\r\nThe problem is that the program creates 131221 spans when the live set is 1GB and the heap grows to 2GB. Later the live set drops to 1MB and GCs become very frequent, but each GC has to iterate over all of 131221 spans in sweepone and markroot. The total time spent in span handling becomes 90%.\r\n\r\nThis was reported on golang-nuts:\r\nhttps://groups.google.com/forum/#!topic/golang-nuts/-Dq4WkivD2E\r\n\r\nWe need to either (1) re-partition allspans so that we don't iterate over the dead part, or (2) remove and deallocate dead spans from allspans after some time of inactivity.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2014-12-11T12:14:37Z",
+	"updated_at": "2016-05-07T01:06:48Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

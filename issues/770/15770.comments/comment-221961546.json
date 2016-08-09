@@ -1,0 +1,12 @@
+{
+	"id": 221961546,
+	"body": "Building kubernetes is new to me so I'm still learning about the makefiles and what should get built.  And it seems to behave differently as commits are added to it,  so the behavior is not consistent.\r\n\r\nIf you pull from the latest then you must update the hack/lib/golang.sh file to enable builds for ppc64le.  \r\n\r\n+++ b/hack/lib/golang.sh\r\n@@ -69,7 +69,7 @@ else\r\n     linux/amd64\r\n     linux/arm\r\n     linux/arm64\r\n-    #linux/ppc64le # temporarily disabled due to a linking error\r\n+    linux/ppc64le # temporarily disabled due to a linking error\r\n   )\r\n\r\n@@ -79,7 +79,7 @@ else\r\n     linux/386\r\n     linux/arm\r\n     linux/arm64\r\n-    #linux/ppc64le # temporarily disabled due to a linking error\r\n+    linux/ppc64le # temporarily disabled due to a linking error\r\n     darwin/amd64\r\n     darwin/386\r\n     windows/amd64\r\n\r\nThe original error happens when building the hyperkube binary, and that error was a relocation truncation error due to the text section getting too large for the GNU linker to handle.  After the original failure, in some later commits it does build successfully, it just depends on the size that it ends up being or the length for the branch targets.  In any case, I was hoping that the use of -buildmode=shared -linkshared would resolve the original issue and allow the build to succeed but maybe that is a wrong assumption.  In any case I would like to understand how the buildmode and linkshared options should be used in this case even if it doesn't solve my original problem.\r\n\r\nIf the build of the hyperkube binary succeeds (without the -buildmode=shared -linkshared options) you should see these:\r\n./_output/local/bin/linux/ppc64le/hyperkube\r\n./_output/local/go/bin/hyperkube\r\n\r\nHere's what I tried, and maybe I'm not using the options correctly.\r\n\r\nI first did:\r\ngo install -buildmode=shared std\r\n\r\nIn my experiments, when I add -buildmode=shared -linkshared to 'go install' in golang.sh it doesn't build the hyperkube binary so it's not really doing what it needs to do.  Not sure if that is expected when using those options.\r\nWhen I added just -bulidmode=shared, I get the errors I posted earlier, maybe that that is incorrect usage of the options.\r\n\r\nAny comments or advice would be helpful.",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-26T18:53:48Z",
+	"updated_at": "2016-05-26T18:53:48Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 226383126,
+	"body": "The most efficient implementation of `#cgo nonblocking`--and if we don't do an efficient implementation, why bother--can easily deadlock.  The scheduler assumes that it can preempt any goroutine, in order to do a garbage collection or simply because the goroutine has been running for a long time.  However, a goroutine blocked in C code can not be preempted.  That is, a goroutine running in C code is essentially equivalent to a nonpreemptible goroutine, which leads us to the kinds of problems we see in #10958.  Those problems are quite bad, but we live with it because it's hard to write a nonpreemptible goroutine.  But with an efficient `#cgo nonblocking`, it's easy.\r\n\r\nTo avoid that problem, we need to notify the scheduler that we are entering a different regime--the steps taken by `entersyscall` in runtime/proc.go.\r\n\r\nNo matter what, we need to switch to a new stack.  A goroutine stack is often very small--as small as 128 bytes.  No C function can be expected to run on a stack that small.  So we must always change stacks.\r\n\r\nAnd, of course, not matter what, we must pass the arguments using the C ABI.\r\n\r\nBut at this point--notify the scheduler, change stacks, pass C ABI arguments--we're pretty much doing everything that cgo does today.  So `#cgo nonblocking` isn't saving us much time, if any.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-16T04:04:11Z",
+	"updated_at": "2016-06-16T04:04:11Z"
+}

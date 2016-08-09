@@ -1,0 +1,17 @@
+{
+	"id": 127858537,
+	"number": 14053,
+	"state": "closed",
+	"title": "net/http: Cancel channel is not passed upon redirects",
+	"body": "On HTTP redirect, the HTTP client creates a new request and don't copy over the `Cancel` channel. This prevents any redirected request from being cancelled.\r\n\r\nHere is a way to reproduce the issue:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"net/http\"\r\n        \"time\"\r\n)\r\n\r\nfunc main() {\r\n        t := time.Now()\r\n        _, err := requestTimeout(\"http://httpbin.org/delay/10\", 2 * time.Second)\r\n        fmt.Printf(\"Err: %v\\n\", err)\r\n        fmt.Printf(\"Elapsed: %v\\n\", time.Now().Sub(t))\r\n\r\n        t = time.Now()\r\n        _, err = requestTimeout(\"http://httpbin.org/redirect-to?url=http://httpbin.org/delay/10\", 2 * time.Second)\r\n        fmt.Printf(\"Err: %v\\n\", err)\r\n        fmt.Printf(\"Elapsed: %v\\n\", time.Now().Sub(t))\r\n}\r\n\r\nfunc requestTimeout(url string, timeout time.Duration) (res *http.Response, err error) {\r\n        req, _ := http.NewRequest(\"GET\", url, nil)\r\n        cancel := make(chan struct{})\r\n        done := make(chan struct{})\r\n        req.Cancel = cancel\r\n        go func() {\r\n                res, err = http.DefaultClient.Do(req)\r\n                close(done)\r\n        }()\r\n        time.Sleep(timeout)\r\n        close(cancel)\r\n        \u003c-done\r\n        return\r\n}\r\n```\r\n\r\nOutput:\r\n```\r\nErr: Get http://httpbin.org/delay/10: net/http: request canceled\r\nElapsed: 2.004138928s\r\nErr: \u003cnil\u003e\r\nElapsed: 10.319406866s\r\n```",
+	"user": {
+		"login": "rs",
+		"id": 68232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-21T17:01:19Z",
+	"created_at": "2016-01-21T06:50:39Z",
+	"updated_at": "2016-01-21T17:01:19Z"
+}

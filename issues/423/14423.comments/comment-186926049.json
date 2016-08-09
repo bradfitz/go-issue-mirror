@@ -1,0 +1,12 @@
+{
+	"id": 186926049,
+	"body": "This is not an issue, this is a feature request. Please discuss this first on one of the popular Go forums (mailing list, etc.).\r\n\r\nI agree with @minux and @bradfitz that this doesn't belong into the strings package: It's trivial to write if needed. Moreover, the examples you found are clearer as is, than with an extra function call. For instance:\r\n```\r\nb = os.Getenv(\"GOARM\")\r\nif b == \"\" {\r\n    b = xgetgoarm()\r\n}\r\n```\r\nwould become\r\n```\r\nstrings.Coalesce(os.Getenv(\"GOARM\"), xgetgoarm())\r\n```\r\nNow a reader has to learn what Coalesce means (and it doesn't seem a very good name for the functionality either). Also, the 2nd argument always has to be evaluated (and in this case called) even if not needed (possibly an expensive operation). Finally, invoking a variadic function (...) requires allocation and population of a slice. If the pattern\r\n```\r\ns = a\r\nif s == \"\" {\r\n   s = b\r\n}\r\n```\r\nis very common in a package it's trivial to define\r\n```\r\nfunc nonempty(a, b string) string {\r\n   if a != \"\" {\r\n      return a\r\n   }\r\n   return b\r\n}\r\n```\r\nwhich doesn't allocate a slice. It's also easy to see locally what it does.\r\n\r\nThe functionality is simply too simple to warrant inclusion in strings. Or, looking from the other perspective: If we add this to strings, where do we say no?\r\n\r\nClosing.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-21T21:55:23Z",
+	"updated_at": "2016-02-21T21:55:23Z"
+}

@@ -1,0 +1,33 @@
+{
+	"id": 51287358,
+	"number": 7886,
+	"state": "closed",
+	"title": "spec: Interface Types defines embedding as method enumeration, but private methods are treated differently",
+	"body": "by **Zteve.Powell**:\n\n\u003cpre\u003eSection \u003ca href=\"http://golang.org/ref/spec#Interface_types\"\u003ehttp://golang.org/ref/spec#Interface_types\u003c/a\u003e in golang spec says:\n\n    An interface may use an interface type name T in place of a method specification. \n    The effect, called embedding an interface, is equivalent to enumerating the methods of T explicitly in the interface.\n\nand no mention is made of private methods (beginning with a lowercase letter). These are\n*not* treated as equivalent to being enumerated explicitly by the compiler.  The\ncompiler prevents implementation of these methods outside of the package the embedded\ninterface is defined in.\n\nDemonstrate issue\n----------------\n1. Define an interface Base in pkga with an initial-lower-case method (lower), and an\ninitial-upper-case method (Upper).\n2. Define an interface Outer in pkgb which embeds pkga.Base.\n3. Define methods (receiver type OB struct{}, say) with the names and signatures of\nlower and Upper in pkgb.\n4. In a func, declare (var x OB;) and (var y Outer;) and assign x to y (x = y;)\n5. go build\n\nWhat happened?\n-------------\nError from compiler along the lines of:\n# iftest/pkgb\n./pkgb.go:17: cannot use x (type OB) as type Outer in assignment:\n\tOB does not implement Outer (missing pkga.lower method)\n\t\thave lower()\n\t\twant pkga.lower()\n\nWhat should have happened instead?\n-------------------------------\nAccording to the *spec* we should have compiled cleanly.\n\nAdditional information\n-------------------\nSee\n\u003ca href=\"http://www.google.com/url?q=http%3A%2F%2Fwww.onebigfluke.com%2F2014%2F04%2Fgos-power-is-in-emergent-behavior.html\u0026amp\"\u003ehttp://www.google.com/url?q=http%3A%2F%2Fwww.onebigfluke.com%2F2014%2F04%2Fgos-power-is-in-emergent-behavior.html\u0026amp\u003c/a\u003e;sa=D\u0026amp;sntz=1\u0026amp;usg=AFQjCNGPJvFRYNQdzvUgsJ6I8YkmLEJ4Rg\n\n\nand \u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/9AsBWYd6AY0\n\nfor the provenance of this issue.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"closed_at": "2014-12-08T10:43:46Z",
+	"created_at": "2014-04-28T15:44:10Z",
+	"updated_at": "2016-06-25T01:33:16Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

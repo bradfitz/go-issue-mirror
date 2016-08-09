@@ -1,0 +1,28 @@
+{
+	"id": 158967323,
+	"number": 15994,
+	"state": "closed",
+	"title": "runtime: SIGPROF mishandled on C thread",
+	"body": "In a cgo-using program a `SIGPROF` signal that arrives on a thread started by C code will call the following sequence of functions in the runtime package:\r\n\r\n    cgoSigtramp\r\n    sigtramp\r\n    sigtrampgo\r\n    sigfwdgo (which will normally return false)\r\n    badsignal\r\n    cgocallback\r\n    badsignalgo\r\n    raisebadsignal\r\n\r\n`raisebadsignal` will observe that it got a `SIGPROF` signal and return, and the whole call stack will unwind having done nothing.\r\n\r\nHowever, the call to `cgocallback` hides a set of internal calls, that include waiting for a new thread to be available to run the Go function `badsignalgo`.  Waiting for a new thread can in some cases mean starting a new thread.  Starting a new thread in a cgo-using program means calling `_cgo_thread_start`, which calls `malloc`.\r\n\r\nIn other words, we've called `malloc` in a signal handler.  That is not a good idea in general.  In practice, if the `SIGPROF` occurred while executing within `malloc`, as is not unlikely, the best result we can hope for is a program deadlock.\r\n\r\nWe need to, at the very least, check for `SIGPROF` before calling `cgocallback`.  No other non-forwarded signal is particularly likely to occur during `malloc`, so that may be sufficient for 1.7.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-13T21:43:55Z",
+	"created_at": "2016-06-07T16:27:41Z",
+	"updated_at": "2016-06-13T21:43:55Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

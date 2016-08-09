@@ -1,0 +1,33 @@
+{
+	"id": 54964386,
+	"number": 9649,
+	"state": "closed",
+	"title": "encoding/gob: panic on random input",
+	"body": "100% reproducible panic inside the gob decoder. Version is the binary package from golang.org. Panic on user data seems like the wrong thing to do, even if it could possibly be because Decode was called after Decode returned error (I don't know that this is always the case).\r\n\r\nI encountered this on a real but corrupt gob file, but it seems that just generating 10MB of garbage does it too.\r\n\r\n```\r\n$ uname -a\r\nLinux xxxxxxxx 3.16.0-0.bpo.4-amd64 #1 SMP Debian 3.16.7-ckt2-1~bpo70+1 (2014-12-08) x86_64 GNU/Linux\r\n$ go version\r\ngo version go1.4.1 linux/amd64\r\n$ dd if=/dev/urandom bs=1M count=10 of=crash.data\r\n$ go build crash.go \u0026\u0026 ./crash\r\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\r\n        panic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x18 pc=0x44b648]\r\n\r\ngoroutine 1 [running]:\r\nencoding/gob.catchError(0xc20807a070)\r\n        /usr/local/go/src/encoding/gob/error.go:38 +0x96\r\nencoding/gob.(*Decoder).decodeValue(0xc20807a000, 0xc200000000, 0x691240, 0xc2080837a0, 0xd9)\r\n        /usr/local/go/src/encoding/gob/decode.go:1159 +0x258\r\nencoding/gob.(*Decoder).DecodeValue(0xc20807a000, 0x600da0, 0xc2080837a0, 0x16, 0x0, 0x0)\r\n        /usr/local/go/src/encoding/gob/decoder.go:210 +0x1d9\r\nencoding/gob.(*Decoder).Decode(0xc20807a000, 0x600da0, 0xc2080837a0, 0x0, 0x0)\r\n        /usr/local/go/src/encoding/gob/decoder.go:185 +0x297\r\nmain.main()\r\n        /xxx/var/log/merged/tmp/crash.go:54 +0x192\r\n```\r\n\r\n```\r\n$ cat crash.go\r\npackage main\r\n\r\nimport (\r\n        \"encoding/gob\"\r\n        \"log\"\r\n        \"os\"\r\n)\r\n\r\ntype foo struct{} // for actual code this struct is of course not empty, but crash is reproducible with it empty.\r\n\r\nfunc main() {\r\n        f, err := os.Open(\"crash.data\")\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        dec := gob.NewDecoder(f)\r\n        for {   \r\n                var i foo // i being 'int' does not trigger it.\r\n                dec.Decode(\u0026i) // I get one or more error returns before it crashes.\r\n        }\r\n}\r\n```\r\n",
+	"user": {
+		"login": "ThomasHabets",
+		"id": 6056,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-04-08T21:30:15Z",
+	"created_at": "2015-01-21T01:12:04Z",
+	"updated_at": "2016-06-25T01:59:04Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

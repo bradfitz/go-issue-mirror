@@ -1,0 +1,12 @@
+{
+	"id": 126119603,
+	"body": "I can reproduce the specific crash with\r\n\r\n\tpackage main\r\n\t\r\n\timport \"unsafe\"\r\n\t\r\n\ttype T struct {\r\n\t\ta [10]int\r\n\t}\r\n\t\r\n\tfunc main() {\r\n\t\tdefer func() {\r\n\t\t\trecover()\r\n\t\t\trecurse(10000)\r\n\t\t}()\r\n\t\tvar x, y interface{}\r\n\t\tvar t T\r\n\t\tx = t\r\n\t\ty = t\r\n\t\t(*[2]uintptr)(unsafe.Pointer(\u0026y))[1] = 0\r\n\t\tprintln(x == y)\r\n\t}\r\n\t\r\n\tfunc recurse(x int) {\r\n\t\tif x \u003e 0 {\r\n\t\t\trecurse(x-1)\r\n\t\t}\r\n\t\tprint(\"\")\r\n\t}\r\n\r\nI doubt this program bears much resemblance to yours, but the salient point is that there was a fault inside memeq due to a bad pointer somewhere. And then the handling of the fault went bad.\r\n\r\nThe same program works correctly in Go 1.5. So I think this is fixed.\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-29T22:50:24Z",
+	"updated_at": "2015-07-29T22:50:24Z"
+}

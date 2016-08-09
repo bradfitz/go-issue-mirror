@@ -1,0 +1,28 @@
+{
+	"id": 51276156,
+	"number": 187,
+	"state": "closed",
+	"title": "Assumptions about the file system layout. (/bin/*, /usr, /lib, ...)",
+	"body": "by **nicolas.b.pierron**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n1. Download NixOS CD image: \u003ca href=\"http://hydra.nixos.org/job/nixos/trunk/iso_minimal\"\u003ehttp://hydra.nixos.org/job/nixos/trunk/iso_minimal\u003c/a\u003e\n2. nix-env -i mercurial bison ed which # bash \u0026amp; glibc are provided by the system\n3. cd /tmp; hg clone \u003ca href=\"https://go.googlecode.com/hg/\"\u003ehttps://go.googlecode.com/hg/\u003c/a\u003e go\n4. cd /tmp/go/src; mkdir -p /tmp/bin\n5. GOROOT=$(pwd)/.. GOBIN=/tmp/bin PATH=\u0026quot;$GOBIN:$PATH\u0026quot; GOOS=linux GOARCH=386\n./all.bash\n\nWhat is the expected output? What do you see instead?\n\n\nExpected: Running ./all.bash without any work around.\nInstead:  /bin/bash: no such file or directory\n\nProblem:\n- NixOS does not have /bin/bash, it only has /bin/sh because the kernel depends on it\nfor the system function.\n\nWork around:\nfind /tmp/go -type f | xargs grep -l \u0026quot;/bin/bash\u0026quot; | xargs sed -i\n\u0026quot;s,/bin/bash,$(which bash),\u0026quot;\n\nThis command replace all reference to /bin/bash by the corresponding path found in $PATH.\n\n\nExpected: Compiling \u0026amp; Testing\nInstead:\n...\nmake[2]: Entering directory `/tmp/go/go-bug/src/pkg/archive/tar'\n8g -o _gotest_.8 common.go reader.go writer.go    reader_test.go writer_test.go\nrm -f _test/archive/tar.a\ngopack grc _test/archive/tar.a _gotest_.8 \nmake[2]: Leaving directory `/tmp/go/go-bug/src/pkg/archive/tar'\n/tmp/go/bin/gotest: line 152: ./8.out: No such file or directory\n...\n\nProblem:\n- /lib does not exists on NixOS, it should be replaced by one of the glibc install.\n\nWork around:\nsed -i 's,/lib/ld-linux.so.2,/var/run/current-system/sw/lib/ld-linux.so.2,'\n/tmp/go/src/cmd/8l/asm.c\n\nThis command replace the assumption of the location of the library by it location on\nNixOS.  This may change with the glibc version if we \nwant to compile Go programs with a different glibc version.\n\n\nExpected: Compiling \u0026amp; Testing\nInstead:  Failure of testing in src/pkg/exec \u0026amp; src/pkg/os\n\nProblem:\n- /bin/cat \u0026amp; /bin/echo do not exists.\n- /usr does not exists.\n\nWork around:\nDisable the following tests in src/pkg/Makefile: exec os.\n\n\nExpected: Compiling \u0026amp; Testing\nInstead:  Failure in test/run.\n\nProblem:\n- test/run contains:\n* Redefinition of the PATH variable (deadly on NixOS)\n* References to /usr/bin/pwd (pwd should be enough)\n\nWork around:\nRemove the reference to this test in src/run.bash .\n\n\nWhat is your $GOOS?  $GOARCH?\n\nGOOS=linux GOARCH=386\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\n\nchangeset:   4041:21cae7efdcc6\ntag:         tip\nuser:        Rob Pike \u0026lt;r@golang.org\u0026gt;\ndate:        Sat Nov 14 12:23:24 2009 -0800\nsummary:     move evaluation of null-matching instructions one iteration earlier.\n\n\nPlease provide any additional information below.\n\nNixOS does not respect the FHS in order to manage packages with a garbage collector.  \nAll packages are located inside /nix/store and should \nbe referenced by the mean of a Nix expression which is used to build any package\n(libraries, compiler, ...)\n\nI've managed to package Go in NixPkgs (the package manager of NixOS) and you can access\nthe nix expression here[1].  This expression is the \nequivalent of the previous list of work around plus some additional issues.\n\n[1]\n\u003ca href=\"https://svn.nixos.org/viewvc/nix/nixpkgs/trunk/pkgs/development/compilers/go/default.nix?revision=18348\"\u003ehttps://svn.nixos.org/viewvc/nix/nixpkgs/trunk/pkgs/development/compilers/go/default.nix?revision=18348\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:03:35Z",
+	"created_at": "2009-11-14T21:16:07Z",
+	"updated_at": "2016-06-24T19:04:45Z"
+}

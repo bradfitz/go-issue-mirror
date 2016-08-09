@@ -1,0 +1,25 @@
+{
+	"id": 51278049,
+	"number": 1604,
+	"state": "closed",
+	"title": "append([]T, T) []T is somewhat slow.",
+	"body": "by **consalus**:\n\n\u003cpre\u003eOn my machine (tip, 6g, darwin), the append() builtin seems ~25x slower when adding one\nelement to a slice that has room for it than special cased code that avoids calling\nappend() if the slice needn't be extended.\n\nExample (somewhat flawed) benchmark:\n\nconst N = 20\n\nfunc BenchmarkAppend(b *testing.B) {\n\tb.StopTimer()\n\tx := make([]int, 0, N)\n\tb.StartTimer()\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tx = x[0:0]\n\t\tfor j := 0; j \u0026lt; N; j++ {\n\t\t\tx = append(x, j)\n\t\t}\n\t}\n}\n\nfunc BenchmarkSpecialCase(b *testing.B) {\n\tb.StopTimer()\n\tx := make([]int, 0, N)\n\tb.StartTimer()\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tx = x[0:0]\n\t\tfor j := 0; j \u0026lt; N; j++ {\n\t\t\tif len(x) \u0026lt; cap(x) {\n\t\t\t\tx = x[:len(x)+1]\n\t\t\t\tx[len(x)-1] = j\n\t\t\t} else {\n\t\t\t\tx = append(x, j)\n\t\t\t}\n\t\t}\n\t}\n}\n\nResult:\n\nbm.BenchmarkAppend\t 1000000\t      2763 ns/op\nbm.BenchmarkSpecialCase\t20000000\t       110 ns/op\n\nIn less manufactured scenarios, the performance difference seems to be more in the\n1.8X-5X range.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:09:04Z",
+	"created_at": "2011-03-11T19:16:08Z",
+	"updated_at": "2016-06-24T19:26:27Z"
+}

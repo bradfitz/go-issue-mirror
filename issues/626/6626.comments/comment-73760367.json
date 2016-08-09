@@ -1,0 +1,12 @@
+{
+	"id": 73760367,
+	"body": "I would like to see this issue added to the 1.5 milestone. RSA private key validation is prohibitively slow, to the point where it is dominating the startup time for a server that loads just a few keypairs.\r\n\r\n[I have submitted a CL for benchmarks that cover tls.X509KeyPair](https://go-review.googlesource.com/#/c/4430/). Here is a sample run on my machine:\r\n\r\n```\r\nPASS\r\nBenchmarkX509KeyPairECDSAP224     1000     1727143 ns/op     13410 B/op      349 allocs/op\r\nBenchmarkX509KeyPairECDSAP256     2000      740906 ns/op     14625 B/op      365 allocs/op\r\nBenchmarkX509KeyPairECDSAP384      100    11173441 ns/op   2851176 B/op    29839 allocs/op\r\nBenchmarkX509KeyPairECDSAP521      100    20017927 ns/op   5203322 B/op    45132 allocs/op\r\nBenchmarkX509KeyPairRSA512       200     8075167 ns/op    736272 B/op    14575 allocs/op\r\nBenchmarkX509KeyPairRSA1024       50    28510635 ns/op   2252128 B/op    27745 allocs/op\r\nBenchmarkX509KeyPairRSA2048       10   125728535 ns/op   7751872 B/op    54337 allocs/op\r\nBenchmarkX509KeyPairRSA4096        2   619041582 ns/op  30324544 B/op   107405 allocs/op\r\nok    crypto/tls  13.740s\r\n```\r\n\r\nSwitching the `prime.ProbablyPrime(20)` call to `prime.ProbablyPrime(3)` shows a substantial improvement for large RSA private keys:\r\n\r\n```\r\nPASS\r\nBenchmarkX509KeyPairECDSAP224     1000     1573445 ns/op     14165 B/op      342 allocs/op\r\nBenchmarkX509KeyPairECDSAP256     2000      650514 ns/op     15333 B/op      358 allocs/op\r\nBenchmarkX509KeyPairECDSAP384      200     7402859 ns/op   2851451 B/op    29827 allocs/op\r\nBenchmarkX509KeyPairECDSAP521      100    13063005 ns/op   5203804 B/op    45122 allocs/op\r\nBenchmarkX509KeyPairRSA512        1000     1263790 ns/op    153504 B/op     2958 allocs/op\r\nBenchmarkX509KeyPairRSA1024        300     3965701 ns/op    410464 B/op     5337 allocs/op\r\nBenchmarkX509KeyPairRSA2048        100    17037333 ns/op   1349856 B/op    10513 allocs/op\r\nBenchmarkX509KeyPairRSA4096         20    87310326 ns/op   5080576 B/op    20352 allocs/op\r\nok    crypto/tls  13.250s\r\n```",
+	"user": {
+		"login": "benburkert",
+		"id": 77,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-10T19:00:15Z",
+	"updated_at": "2015-02-10T19:00:15Z"
+}

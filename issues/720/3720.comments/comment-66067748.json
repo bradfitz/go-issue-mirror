@@ -1,0 +1,12 @@
+{
+	"id": 66067748,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1 by **jeff.allen**:\n\n\u003cpre\u003eI don't think this is a bug. Using the code below, I can see that when\n(f.FileHeader.FileInfo().Mode() \u0026 os.ModeType) == os.ModeSymlink, the contents of the\nFile is the symlink target. That's what you want, right?\n\nI agree that the appnote.txt file says the target should be stored in an Extra segment\nof type 0x000d, but in practice, it's apparently not done that way. Your example zipfile\ndoesn't store it that way, and testdata/symlink.zip does not either.\n\nIn case you want to read the Extra segments yourself, you can see them by looking at\nFileHeader.Extra, a []byte. I dumped some, and the ones I have access to look like this:\n[85 84 5 0 3 224 85 89 79 117 120 11 0 1 4 245 1 0 0 4 20 0 0 0]\nThat's one 0x5455 (decimal 85, 84) extended timestamp (len 5) followed by one\nundocumented one of type 0x7875 (decimal 117, 120) of length 11. You can parse those\nyourself, since archive/zip does not parse them for you.\n\n-- snip --\n\npackage main\n\nimport (\n\t\"archive/zip\"\n\t\"fmt\"\n\t\"io\"\n\t\"os\"\n)\n\nfunc main() {\n\tr, _ := zip.OpenReader(\"test.zip\")\n\tfor _, f := range r.File {\n\t\tmode := f.FileHeader.FileInfo().Mode()\n\t\tt := mode \u0026 os.ModeType\n\t\tif t == os.ModeDir {\n\t\t\tfmt.Printf(\"%s Is dir\\n\", f.Name)\n\t\t\tcontinue\n\t\t}\n\t\tif t == os.ModeSymlink {\n\t\t\tfmt.Printf(\"%s Is symlink\\n\", f.Name)\n\t\t}\n\t\tfmt.Printf(\"Contents of %s:\\n\", f.Name)\n\t\trc, _ := f.Open()\n\t\t_, _ = io.Copy(os.Stdout, rc)\n\t\trc.Close()\n\t\tfmt.Println()\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-06-12T12:50:19Z",
+	"updated_at": "2014-12-08T10:19:38Z"
+}

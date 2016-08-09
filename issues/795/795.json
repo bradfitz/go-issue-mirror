@@ -1,0 +1,22 @@
+{
+	"id": 51276950,
+	"number": 795,
+	"state": "closed",
+	"title": "MinFloat32 on amd64 is treated incorrectly in comparisons",
+	"body": "by **benjamin.heatwole**:\n\n\u003cpre\u003e$GOOS = linux\n$GOARCH = amd64\nhg identify = f7e1cbc5ce28 tip\n\nCode demonstrating the problem:\n\nfunc main() {\n\tvar min float32 = math.MinFloat32\n\tvar minPlusOne float32 = min + 1.0\n\tvar negOne float32 = -1.0\n\tvar zero float32 = 0.0\n\tvar one float32 = 1.0\n\t\n\t// All these should be true, but only the comparison with a positive number works\n\tfmt.Println(\u0026quot;Testing comparisons using math.MinFloat32 ... \u0026quot;)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, negOne, min, negOne \u0026gt; min)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, zero, min, zero \u0026gt; min)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, one, min, one \u0026gt; min)\n\tfmt.Println()\n\t\n\t// Adding one to MinFloat32 doesn't help\n\tfmt.Println(\u0026quot;Testing comparisons using math.MinFloat32 + 1 ... \u0026quot;)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, negOne, minPlusOne, negOne \u0026gt; minPlusOne)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, zero, minPlusOne, zero \u0026gt; minPlusOne)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, one, minPlusOne, one \u0026gt; minPlusOne)\n\tfmt.Println()\n\t\n\t// Using another small value works\n\tvar small float32 = -999999.0\n\tfmt.Println(\u0026quot;Testing comparisons using -999999.0 ... \u0026quot;)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, negOne, small, negOne \u0026gt; small)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, zero, small, zero \u0026gt; small)\n\tfmt.Printf(\u0026quot;%v \u0026gt; %v = %v\\n\u0026quot;, one, small, one \u0026gt; small)\n\tfmt.Println()\n\t\n\t// One final test\n\tfmt.Println(\u0026quot;Testing 0 == MinFloat32 ... \u0026quot;)\n\tfmt.Printf(\u0026quot;%v == %v = %v\\n\u0026quot;, zero, min, zero == min)\n}\n\n\nOutput is:\n\nTesting comparisons using math.MinFloat32 ...\n-1 \u0026gt; 1e-45 = false\n0 \u0026gt; 1e-45 = false\n1 \u0026gt; 1e-45 = true\n\nTesting comparisons using math.MinFloat32 + 1 ...\n-1 \u0026gt; 1 = false\n0 \u0026gt; 1 = false\n1 \u0026gt; 1 = false\n\nTesting comparisons using -999999.0 ...\n-1 \u0026gt; -999999 = true\n0 \u0026gt; -999999 = true\n1 \u0026gt; -999999 = true\n\nTesting 0 == MinFloat32 ... \n0 == 1e-45 = false\n\nAs you can see from the tests, MinFloat32 is being printed as \u0026quot;1e-45\u0026quot; but\ninternally its treating the \nvalue as \u0026quot;0\u0026quot; in some cases (the second test with MinFloat32+1 prints as\n\u0026quot;1\u0026quot;), but not in others (the \nlast test of 0 == MinFloat32 is false).\n\nI'm not sure entirely what's going on, but something is goofy.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:05:54Z",
+	"created_at": "2010-05-20T14:33:55Z",
+	"updated_at": "2016-06-24T19:16:09Z"
+}

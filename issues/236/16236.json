@@ -1,0 +1,28 @@
+{
+	"id": 163312404,
+	"number": 16236,
+	"state": "closed",
+	"title": "x/image/riff: (*Reader) Next() drops io.ReadFull error",
+	"body": "I'm getting panics and memory issues using golang.org/x/image/riff package with malformed riff files.\r\n\r\nE.g. https://play.golang.org/p/cCN1VQ4Dz2\r\n\r\nThese seem to be due to an IO error being dropped in the (*Reader) Next() method.\r\n\r\nFrom line 132 in https://github.com/golang/image/blob/master/riff/riff.go:\r\n```go\r\n\tif _, err = io.ReadFull(z.r, z.buf[:chunkHeaderSize]); err != nil {\r\n\t\tif z.err == io.EOF || z.err == io.ErrUnexpectedEOF {\r\n\t\t\tz.err = errShortChunkHeader\r\n\t\t}\r\n\t\treturn FourCC{}, 0, nil, z.err\r\n\t}\r\n\tchunkID = FourCC{z.buf[0], z.buf[1], z.buf[2], z.buf[3]}\r\n\tz.chunkLen = u32(z.buf[4:])\r\n\tz.padded = z.chunkLen\u00261 == 1\r\n\tz.chunkReader = \u0026chunkReader{z}\r\n\treturn chunkID, z.chunkLen, z.chunkReader, nil\r\n```\r\n\r\nThe err var in the first line of that snippet is a named return value but it is never used/ returned by the method.\r\n\r\nCan fix by assigning the io.ReadFull error to z.err instead:\r\n\r\n```go\r\n\tif _, z.err = io.ReadFull(z.r, z.buf[:chunkHeaderSize]); z.err != nil {\r\n\t\tif z.err == io.EOF || z.err == io.ErrUnexpectedEOF {\r\n\t\t\tz.err = errShortChunkHeader\r\n\t\t}\r\n\t\treturn FourCC{}, 0, nil, z.err\r\n\t}\r\n\tchunkID = FourCC{z.buf[0], z.buf[1], z.buf[2], z.buf[3]}\r\n\tz.chunkLen = u32(z.buf[4:])\r\n\tz.padded = z.chunkLen\u00261 == 1\r\n\tz.chunkReader = \u0026chunkReader{z}\r\n\treturn chunkID, z.chunkLen, z.chunkReader, nil\r\n```\r\n\r\nas at [golang/image@ 8550bb5](https://github.com/golang/image/commit/8550bb53808b49e6f655a27cbb293b1f90c56a24)  \r\n\r\n",
+	"user": {
+		"login": "richardlehane",
+		"id": 157422,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-07-07T05:38:05Z",
+	"created_at": "2016-07-01T03:26:00Z",
+	"updated_at": "2016-07-07T05:38:05Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

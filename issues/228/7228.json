@@ -1,0 +1,33 @@
+{
+	"id": 51286383,
+	"number": 7228,
+	"state": "closed",
+	"title": "os/exec: Command does a LookPath in the wrong place.",
+	"body": "by **david@scraperwiki.com**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n\u003ca href=\"http://play.golang.org/p/3MjLGe5gFd\"\u003ehttp://play.golang.org/p/3MjLGe5gFd\u003c/a\u003e\n\nIf I am planning to set the .Dir property of a Cmd object before calling .Run(), it\nprobably will not work because exec.Command() curses the Cmd object.\n\nIf the filename of a binary passed to exec.Command() does not exist then the returned\nCmd object is cursed and will not .Run() even if Dir is assigned before .Run() is called.\n\nIn the example in the code, exec.Command(\u0026quot;./ls\u0026quot;) followed by .Dir =\n\u0026quot;/bin\u0026quot; followed by .Run() does not work, even though /bin/ls exists. (first\n.Run() invocation in the code).\n\nInternally, what is happening is that exec.Command() is calling LookPath and setting the\n.err property. However, if \u0026quot;./ls\u0026quot; exists, then the LookPath will succeed, and\nthe .Run() will work, and it will run \u0026quot;/bin/ls\u0026quot; instead of \u0026quot;./ls\u0026quot;\n(second invocation in the code).\n\nThe upshot is that exec.Command() should not be doing the LookPath. The LookPath should\nbe done only when .Run() is called, because .Dir may change.\n\n\nWhat is the expected output?\n\nWe should see:\n\u0026lt;a listing of the /bin directory\u0026gt;\n\u0026lt;date and time\u0026gt; error: \u0026lt;nil\u0026gt;\n\u0026lt;a listing of the /bin directory\u0026gt;\n\u0026lt;date and time\u0026gt; error: \u0026lt;nil\u0026gt;\n\n(note that this is the same thing twice)\n\n\nWhat do you see instead?\n\n2014/01/28 17:02:57 error: exec: \u0026quot;./ls\u0026quot;: stat ./ls: no such file or directory\n\u0026lt;a listing of the /bin directory\u0026gt;\n\u0026lt;date and time\u0026gt; error: \u0026lt;nil\u0026gt;\n\n(note that this has an error message followed by one part of the expected output)\n\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\nWAT?\n\nWhich operating system are you using?\n\n$ uname -a\nLinux ash 3.8.0-32-generic #47~precise1-Ubuntu SMP Wed Oct 2 16:19:35 UTC 2013 x86_64\nx86_64 x86_64 GNU/Linux\n\n\nWhich version are you using?  (run 'go version')\n\n$ go version\ngo version go1.1.2 linux/amd64\n\nPlease provide any additional information below.\n\nNote that the sandbox provided by the go playground doesn't have a \u0026quot;/bin\u0026quot;\ndirectory, but we can still see evidence of the buggy behaviour, because we get two\ndifferent error messages.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 18,
+	"closed_at": "2014-12-08T10:40:09Z",
+	"created_at": "2014-01-28T17:11:01Z",
+	"updated_at": "2016-06-25T01:26:33Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 154387277,
+	"number": 15659,
+	"state": "closed",
+	"title": "net: GODEBUG=netdns=go massive DNS lookups crash w/ \"runtime/cgo: pthread_create failed: Resource temporarily unavailable\"",
+	"body": "This happens on darwin 21d781070cea6001ee541933ed76dc6da96bde4c and doesn't happen on darwin go1.6, and not sure whether darwin-specific issue.\r\n\r\nCaution: TestLookupIPDeadline in lookup_test.go is a bad test in bad manner. It generates massive DNS queries to confirm that the net package doesn't create system threads extravagantly. Before testing, you need to make sure whether the flood is acceptable to your circumstances.\r\n\r\nWhen we run `go test -v -run=TestLookupIPDeadline -dnsflood -count=10`, the expected result is that probably the test may fail but not crash. On tip, TestLookupIPDeadline crashes unfortunately.\r\n```\r\n# export CGO_ENABLED=1\r\n# go build\r\n\r\n# export GODEBUG=netdns=cgo\r\n# go test -v -run=IPDeadline -dnsflood -count=10\r\n=== RUN   TestLookupIPDeadline\r\n(snip)\r\nok  \tnet\t30.542s\r\n\r\n# export GODEBUG=netdns=go\r\n# go test -v -run=IPDeadline -dnsflood -count=10\r\n=== RUN   TestLookupIPDeadline\r\nruntime/cgo: pthread_create failed: Resource temporarily unavailable\r\nSIGABRT: abort\r\nPC=0x7fff84223f06 m=2\r\n(snip)\r\nrax    0x0\r\nrbx    0x6\r\nrcx    0x700000080bd8\r\nrdx    0x0\r\nrdi    0xd03\r\nrsi    0x6\r\nrbp    0x700000080c00\r\nrsp    0x700000080bd8\r\nr8     0x40\r\nr9     0x7fff74c4b1e0\r\nr10    0x8000000\r\nr11    0x206\r\nr12    0xc9001070bc281990\r\nr13    0x30\r\nr14    0x700000081000\r\nr15    0x700000080c58\r\nrip    0x7fff84223f06\r\nrflags 0x206\r\ncs     0x7\r\nfs     0x0\r\ngs     0x0\r\nexit status 2\r\n```\r\nNot sure the reason why GODEBUG=netdns=go DNS lookups on tip require the functionality of runtime/cgo.",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-05-12T08:34:56Z",
+	"created_at": "2016-05-12T03:06:30Z",
+	"updated_at": "2016-05-13T04:00:38Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51280138,
+	"number": 3113,
+	"state": "closed",
+	"title": "net/rpc: log chatter",
+	"body": "\u003cpre\u003eUnfortunately I can't reproduce it in the test app. But I've discovered the bug with\ngocode (\u003ca href=\"https://github.com/nsf/gocode)\"\u003ehttps://github.com/nsf/gocode)\u003c/a\u003e. Here's what happens, if you run standalone\n'gocode' command all it does is using \u0026quot;net/rpc\u0026quot; package:\n1. connect to the server (or run it and connect if it's not running already)\n2. disconnect\n\nSo.. basically it's `client, err := rpc.Dial(...)` and then `client.Close()`. But\nsometimes the net/rpc package prints this nasty log message, here's how it looks like:\n\n\n[nsf @ gocode]$ gocode\n[nsf @ gocode]$ gocode\n[nsf @ gocode]$ gocode\n2012/02/23 14:33:55 rpc: client protocol error: use of closed network connection\n[nsf @ gocode]$ gocode\n2012/02/23 14:33:55 rpc: client protocol error: use of closed network connection\n[nsf @ gocode]$ gocode\n[nsf @ gocode]$ gocode\n\n\nI did 'hg bisect' on this, the bug appears after this commit:\n\u003ca href=\"http://code.google.com/p/go/source/detail?r=a5b623616453\"\u003ehttp://code.google.com/p/go/source/detail?r=a5b623616453\u003c/a\u003e\n\nProbably some kind of desync in logic between new \u0026quot;net\u0026quot; principles and the\n\u0026quot;net/rpc\u0026quot;.\n\nSo.. the bug appeared in a5b623616453 commit, between weekly.2012-02-07 and\nweekly.2012-02-14.\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:16:12Z",
+	"created_at": "2012-02-23T08:37:29Z",
+	"updated_at": "2016-06-24T21:28:34Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

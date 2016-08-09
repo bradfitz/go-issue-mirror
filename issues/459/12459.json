@@ -1,0 +1,28 @@
+{
+	"id": 104558423,
+	"number": 12459,
+	"state": "closed",
+	"title": "x/tools/cmd/oracle: doesn't work with GO15VENDOREXPERIMENT",
+	"body": "I was directed to open this issue here in #12278.\r\n\r\nIt appears that x/tools/cmd/oracle doesn't honor the GO15VENDOREXPERIMENT when resolving dependencies. Here is a small example illustrating the problem:\r\n\r\n```\r\n$ echo $GOPATH\r\n/home/ereyes/code/oracle-vendor-issue\r\n$ pwd\r\n/home/ereyes/code/oracle-vendor-issue\r\n$ find src/a\r\nsrc/a\r\nsrc/a/vendor\r\nsrc/a/vendor/b\r\nsrc/a/vendor/b/b.go\r\nsrc/a/a.go\r\n$ cd src/a\r\n$ cat a.go\r\npackage main\r\n\r\nimport (\r\n\t\"b\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\tfmt.Println(\"Hello from a!\")\r\n\r\n\tb.Hello()\r\n}\r\n$ cat vendor/b/b.go \r\npackage b\r\n\r\nimport \"fmt\"\r\n\r\nfunc Hello() {\r\n\tfmt.Println(\"Hello from b!\")\r\n}\r\n$ go version\r\ngo version go1.5 linux/amd64\r\n$ GO15VENDOREXPERIMENT=1 go run a.go\r\nHello from a!\r\nHello from b!\r\n$ go get golang.org/x/tools/cmd/oracle\r\n$ GO15VENDOREXPERIMENT=1 $GOPATH/bin/oracle -pos=./a.go:44 callees a\r\n/home/ereyes/code/oracle-vendor-issue/src/a/a.go:4:2: could not import b (cannot find package \"b\" in any of:\r\n\t/home/ereyes/code/go-1.4/src/b (from $GOROOT)\r\n\t/home/ereyes/code/oracle-vendor-issue/src/b (from $GOPATH))\r\n/home/ereyes/code/oracle-vendor-issue/src/a/a.go:11:2: undeclared name: b\r\noracle: couldn't load packages due to errors: a\r\n$\r\n```\r\n\r\nThanks, Eddy",
+	"user": {
+		"login": "ereyes01",
+		"id": 1884883,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-02-10T18:05:05Z",
+	"created_at": "2015-09-02T19:50:04Z",
+	"updated_at": "2016-02-10T18:05:05Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

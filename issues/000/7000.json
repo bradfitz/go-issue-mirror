@@ -1,0 +1,32 @@
+{
+	"id": 51286047,
+	"number": 7000,
+	"state": "open",
+	"title": "x/net/websocket: slowdown on OS X due to rand.Reader",
+	"body": "by **kell.sommers**:\n\n\u003cpre\u003eBenchmarking a web socket server I started hitting a single threaded wall. It seems\nmessages/second performance on OSX doesn't increase when set beyond 1. Some others on\nthe IRC channel took my short reproducible code for a run on other Macs and other Linux\nand FreeBSD machines and verified there is something going on with Go on OSX.\n\nI did additional tests figure further down to out if the OSX problem is on the client or\non the server side. It seems it is on the server side. This test goes over the network\nnot over localhost. I know this isn't a localhost issue because I have a C based HTTP\nserver that can do 500,000 HTTP requests/second on this machine over localhost with the\nmuch bulkier HTTP protocol.\n\nGo 1.2 on all machines tested.\n\nThe test code can be found here:\n\u003ca href=\"https://gist.github.com/kellabyte/8032308\"\u003ehttps://gist.github.com/kellabyte/8032308\u003c/a\u003e\n\n----------------------------------------------\nOSX i7-3720QM CPU @ 2.60GHz go1.2 darwin/amd64\n----------------------------------------------\nPerformance doesn't increase with GOMAXPROCS it gets worse on OSX!\n\nGOMAXPROCS=1\n./websocket_client 4 100000\nSent 400000 in 2.389414969s for a rate of 167404/second\n\nGOMAXPROCS=2\n./websocket_client 4 100000\nSent 400000 in 6.219798526s for a rate of 64310/second \u0026lt;-- Lost 100K msgs/second!\n\nGOMAXPROCS=3\n./websocket_client 4 100000\nSent 400000 in 5.487955623s for a rate of 72886/second\n\nGOMAXPROCS=4\n./websocket_client 4 100000\nSent 400000 in 7.428882557s for a rate of 53843/second\n\n---------------\n2013 MBP retina\n---------------\nConfirmed again on someone elses OSX machine.\n\n$ sysctl -n machdep.cpu.brand_string\nIntel(R) Core(TM) i5-3230M CPU @ 2.60GHz\n$ go version\ngo version go1.2 darwin/amd64\n$ ./client 1 100000\nSent 100000 in 896.185619ms for a rate of 111584/second\n$ ./client 4 100000\nSent 400000 in 3.661056594s for a rate of 109258/second\n$ GOMAXPROCS=4 ./client 1 100000\nSent 100000 in 923.826561ms for a rate of 108245/second\n$ GOMAXPROCS=4 ./client 4 100000\nSent 400000 in 3.254549872s for a rate of 122904/second\n\n----------------------------------------\nUbuntu 13.10, cpu is Intel Core i5-2500K\n----------------------------------------\n\nThis one seems to scale with GOMAXPROCS!\n\n$ go version\ngo version go1.2 linux/amd64\n$ ./client 1 100000\nSent 100000 in 428.895171ms for a rate of 233157/second\n$ ./client 4 100000\nSent 400000 in 1.79000027s for a rate of 223463/second\n$ GOMAXPROCS=4 ./client 1 100000\nSent 100000 in 454.46171ms for a rate of 220040/second\n$ GOMAXPROCS=4 ./client 4 100000\nSent 400000 in 700.25884ms for a rate of 571217/second\n\n--------------------------------------------------\n2.2GHz dual core Ivy Bridge FreeBSD 10.0rc1 Go 1.2\n--------------------------------------------------\n\nGOMAXPROCS=1:\n./client 4 100000\nSent 400000 in 2.723452743s for a rate of 146872/second\n\nGOMAXPROCS=2:\n./client 4 100000\nSent 400000 in 3.107706227s for a rate of 128712/second\n\nGOMAXPROCS=3:\n./client 4 100000\nSent 400000 in 1.903976998s for a rate of 210086/second\n\nGOMAXPROCS=4:\n./client 4 100000\nSent 400000 in 1.736387681s for a rate of 230363/second\n\n-------------------------------------\nUbuntu server and OSX client over GbE LAN\n-------------------------------------\nServer: Ubuntu AMD Phenom(tm) 9150e Quad-Core Processor\nClient: OSX i7-3720QM CPU @ 2.60GHz\nGOMAXPROCS=4 on both client and server\n\n./websocket_client 4 400000\nSent 1600000 in 3.354864357s for a rate of 476919/second\n\n-------------------------------------\nOSX server and Ubuntu client over GbE LAN\n-------------------------------------\nThe OSX machine never goes above 115% CPU so the other 3 cores aren't used much.\n\nServer: OSX i7-3720QM CPU @ 2.60GHz    \nClient: Ubuntu AMD Phenom(tm) 9150e Quad-Core Processor    \nGOMAXPROCS=4 on both client and server\n\n./websocket_client 4 400000\nSent 1600000 in 7.687288138s for a rate of 208135/second\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		},
+		{
+			"name": "OS-Linux"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 20,
+	"created_at": "2013-12-21T21:36:29Z",
+	"updated_at": "2015-04-15T01:39:14Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

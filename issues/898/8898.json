@@ -1,0 +1,32 @@
+{
+	"id": 51288843,
+	"number": 8898,
+	"state": "open",
+	"title": "runtime: special case timer channels",
+	"body": "\u003cpre\u003eConsider special-casing timer channels created with time.Ticker and time.After.\nNamely, such chans need to contain next fire time and period. Then receive from such\nlooks like:\n\nfunc chanrecv(c *Hchan) {\n  ...\n  if c.isTimeChan {\n    for {\n      next := c.nextTime\n      if next == -1 {\n        // already fired one-time timer\n        blockForever()\n      }\n      newTime := -1\n      if c.period != 0 {\n        newTime = next + c.period\n      }\n      if CAS(\u0026amp;c.nextTime, next, newTime) {\n        wait := next - now\n        if wait \u0026gt; 0 {\n          sleepFor(wait)\n        }\n        return\n      }\n    }\n  }\n  ...\n}\n\nThis has several advantages:\n1. No need to stop timers. If nobody waits on a timers, it's just a normal heap object\nthat can be garbage collected.\n2. Faster operation for both blocking and non-blocking case.\n3. Faster selects involving time chans.\n4. Can combine time.Ticker/After into a single allocation.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2014-10-07T13:45:50Z",
+	"updated_at": "2016-05-04T23:47:34Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

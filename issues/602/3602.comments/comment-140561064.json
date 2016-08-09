@@ -1,0 +1,12 @@
+{
+	"id": 140561064,
+	"body": "I agree that this is probably out of scope for the driver. I do, however, think we could make this a bit easier to for developers to manage by exposing the driver name:\r\n\r\n```diff\r\ntype Driver interface {\r\n        Open(name string) (Conn, error)\r\n+       Name() string\r\n}\r\n```\r\n\r\nThis would allow me to use the existing `Driver()` function to determine which driver has been loaded and adjust the SQL query as needed:\r\n\r\n```Go\r\nswitch db.Driver().Name() {\r\ncase \"postgres\":\r\n  // replace ? with $%d\r\ncase \"mysql\", \"sqlite3\":\r\n}\r\n```\r\n\r\nThis would probably require exposing either the `DB` or `Driver` in the transaction as well:\r\n\r\n```diff\r\ntype Tx struct {\r\n    db *DB\r\n}\r\n\r\n+func (t *Tx) Driver() driver.Driver {\r\n+    return t.db.Driver()\r\n+}\r\n```\r\n\r\nI think this sort of minor change would make this problem a bit easier to deal with. I've noticed projects writing custom functions to normalize queries (see `sqlx.Rebind` as an example) most of which end up wrapping `sql.DB` just to store and provide access to the the driver name.",
+	"user": {
+		"login": "bradrydzewski",
+		"id": 817538,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-15T22:11:47Z",
+	"updated_at": "2015-09-15T22:16:41Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 127656530,
+	"number": 14038,
+	"state": "open",
+	"title": "time: Timer.Reset is not possible to use correctly",
+	"body": "I saw two common usage patterns of Timer.Reset:\r\n\r\nFirst is ensuring that a sequence of events happens in a timely fashion:\r\n```go\r\ntimeout := time.NewTimer(T)\r\nfor {\r\n  if !timeout.Reset(T) {\r\n    \u003c-timeout.C\r\n  }\r\n  select {\r\n  case \u003c- ...: ...\r\n  case \u003c-timeout.C: ...\r\n  }\r\n}\r\n```\r\n\r\nSecond is connection timeout with an ability to change the timeout:\r\n```go\r\ntimeout := time.NewTimer(T)\r\n\r\n// goroutine 1\r\nfor {\r\n  select {\r\n  case \u003c- ...: ...\r\n  case \u003c-timeout.C: ...\r\n  }\r\n}\r\n\r\n// goroutine 2\r\n  if !timeout.Reset(T2) {\r\n    \u003c-timeout.C\r\n  }\r\n```\r\n\r\nThere are several things that can go wrong here depending on timings:\r\n1. Reset returns false; one element is already in the channel (the old one); timer goroutine sends another (corresponding to the new timeout), it is discarded since the channel is full; now we drain the channel to read out the old value; as the result timeout will never happen as the new value was discarded.\r\n2. Reset returns false; one element is already in the channel (the old one); timer goroutine sends another (corresponding to the new timeout), it is discarded since the channel is full; goroutine 1 reads out from the channel; goroutine 2 hangs forever trying to drain the channel.\r\n\r\nI've found several cases of this bug in our internal codebase, one even with a TODO by @bradfitz describing this race.\r\n\r\nTimer.Reset does the following:\r\n```go\r\nfunc (t *Timer) Reset(d Duration) bool {\r\n\tif t.r.f == nil {\r\n\t\tpanic(\"time: Reset called on uninitialized Timer\")\r\n\t}\r\n\tw := when(d)\r\n\tactive := stopTimer(\u0026t.r)\r\n\tt.r.when = w\r\n\tstartTimer(\u0026t.r)\r\n\treturn active\r\n}\r\n```\r\n\r\nWhat would be possible to use correctly is:\r\n```go\r\nfunc (t *Timer) Reset2(d Duration) bool {\r\n\tif t.r.f == nil {\r\n\t\tpanic(\"time: Reset called on uninitialized Timer\")\r\n\t}\r\n\tw := when(d)\r\n\tactive := stopTimer(\u0026t.r)\r\n        if !active {\r\n                \u003c-t.C\r\n        }\r\n\tt.r.when = w\r\n\tstartTimer(\u0026t.r)\r\n\treturn active\r\n}\r\n```\r\n\r\n@rsc @Sajmani @aclements ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-01-20T10:51:49Z",
+	"updated_at": "2016-05-31T06:00:25Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

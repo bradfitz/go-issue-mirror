@@ -1,0 +1,27 @@
+{
+	"id": 51286446,
+	"number": 7267,
+	"state": "closed",
+	"title": "math/rand: rand.Float64() twice slower since Dec 18",
+	"body": "\u003cpre\u003eHello everyone, \n\nI have noticed that the float random number generator in Go tip is slower than 1.2. I\nhave done some testing and most of the float functions of math/rand are slightly slower,\nbut Float64 is much slower, it takes twice the time. Benchmark here:\n\u003ca href=\"http://play.golang.org/p/_bjHfAtRv3\"\u003ehttp://play.golang.org/p/_bjHfAtRv3\u003c/a\u003e\n\nChecking the code, it seems than the problem appears in revision 3ed9d5c72102 in file\nmath/rand/rand.go, in particular:\n\nchangeset:   18661:3ed9d5c72102\nuser:        Jeff R. Allen \u0026lt;jra@nella.org\u0026gt;\ndate:        Wed Dec 18 15:38:53 2013 -0500\nsummary:     math/rand: Float32/64 must only return values in [0,1)\n\nDiff for Float64:\n // Float64 returns, as a float64, a pseudo-random number in [0.0,1.0).\n-func (r *Rand) Float64() float64 { return float64(r.Int63()) / (1 \u0026lt;\u0026lt; 63) }\n+func (r *Rand) Float64() float64 { return float64(r.Int63n(1\u0026lt;\u0026lt;53)) / (1 \u0026lt;\u0026lt;\n53) }\n\nDiscussed here:\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!searchin/golang-dev/rand.Float64/golang-dev/3b_OW2DYpbI/wuePqYv-JvsJ\n\nAfter this change, Float64() uses Int63n() that is much slower than Int63. There is a\nsimilar change for Float32(), using Int31n(), but Int31n is fast enough.\n\nIf it is possible to change it back somehow to Int63, speed should return to previous\nvalues.\n\nMaybe in a 64 bit system the difference is not noticeable. I have only tested in arm and\nlinux/386.\n\nThere is also a side effect: a random sequence of Floats will be different than in\nprevious Go versions, even if the same seed is used. That may affect the repeatability\nof some tests (I don't think that would break the compatibility promise, but...)\n\n(GO 1.2) $ go test -bench=.\nBenchmarkFloat64         1000000              1211 ns/op\nBenchmarkFloat32         1000000              1280 ns/op\nBenchmarkExpFloat64      1000000              1184 ns/op\nBenchmarkNormFloat64     1000000              1182 ns/op\nBenchmarkInt     2000000               880 ns/op\nBenchmarkIntn    1000000              1291 ns/op\nBenchmarkInt31n  1000000              1248 ns/op\nBenchmarkInt63n  1000000              2194 ns/op\nBenchmarkInt31   2000000               873 ns/op\nBenchmarkInt63   2000000               834 ns/op\n\n(GO TIP) $ ~/gotip/go/bin/go version\ngo version devel +d067c6de4ec3 Wed Feb 05 01:24:51 2014 -0500 linux/arm\n$ ~/gotip/go/bin/go test -bench=.\nBenchmarkFloat64          500000              2646 ns/op\nBenchmarkFloat32         1000000              1391 ns/op\nBenchmarkExpFloat64      1000000              1196 ns/op\nBenchmarkNormFloat64     1000000              1211 ns/op\nBenchmarkInt     2000000               876 ns/op\nBenchmarkIntn    1000000              1339 ns/op\nBenchmarkInt31n  1000000              1271 ns/op\nBenchmarkInt63n  1000000              2419 ns/op\nBenchmarkInt31   2000000               874 ns/op\nBenchmarkInt63   2000000               818 ns/op\u003c/pre\u003e",
+	"user": {
+		"login": "siritinga",
+		"id": 3969105,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:40:26Z",
+	"created_at": "2014-02-05T19:28:29Z",
+	"updated_at": "2016-06-25T01:26:56Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

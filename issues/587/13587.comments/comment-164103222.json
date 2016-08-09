@@ -1,0 +1,12 @@
+{
+	"id": 164103222,
+	"body": "It looks like maybe it's a missing write barrier due to `err` escaping to the heap.  Both the working and failing programs are being compiled as roughly:\r\n\r\n    func methodWithError() (err error) {\r\n        perr := new(error)\r\n        defer instrument(perr)()\r\n        *perr = errors.New(\"error\")\r\n        err = *perr\r\n        return\r\n    }\r\n\r\nHowever, the difference is that the implicit `*perr = errors.New(\"error\")` assignment only uses a write barrier for the iface.data field in the working program (i.e., with the explicit `err = errors.New(\"error\")` assignment).\r\n\r\nCC @aclements ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-12T02:43:47Z",
+	"updated_at": "2015-12-12T02:43:47Z"
+}

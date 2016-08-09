@@ -1,0 +1,22 @@
+{
+	"id": 51278900,
+	"number": 2216,
+	"state": "closed",
+	"title": "Windows: DialIP and ListenIP silently return incorrect data on errors",
+	"body": "\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull\u0026quot;, \u0026quot;hg update default\u0026quot;, rebuild, and\nretry\nwhat you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n\n1. Compile and run (as a Windows Administrator) the following code\npackage main\nimport \u0026quot;net\u0026quot;\nimport \u0026quot;fmt\u0026quot;\nfunc main() {\n _, err := net.ListenIP(\u0026quot;ip4:blah\u0026quot;, nil)\n fmt.Println(err)\n}\n\nWhat is the expected output?\n\u0026quot;dial ip4: protocol not supported\u0026quot;\n\n\nWhat do you see instead?\n\u0026quot;\u0026lt;nil\u0026gt;\u0026quot;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nWindows XP, SP2\n\nWhich revision are you using?  (hg identify)\ngomingw, release \u0026quot;gowin32_release.r59\u0026quot;\n\nPlease provide any additional information below.\nThis actually reflects a bug in go/src/pkg/net/iprawsock.go, in which splitNetProto()\nwill never set err to anything, even when the protocol passed cannot be found. Instead,\nfor \u0026quot;ip4:blah\u0026quot; it returns (\u0026quot;ip4\u0026quot;, 0, nil). On Linux, this results in\nan error from socket() because there is no supported IP protocol number 0. On Windows\nhowever, the socket() call fails, but with an invalid protocol number which ends up\ncreating weird packets on the network. This contributes to \u003ca href=\"https://golang.org/issue/2215\"\u003eissue #2215\u003c/a\u003e, where no textual\nprotocols can be successfully looked up, so even \u0026quot;ip4:icmp\u0026quot; results in a\nsocket opened with protocol 0.\u003c/pre\u003e",
+	"user": {
+		"login": "mattharden",
+		"id": 2703390,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:11:56Z",
+	"created_at": "2011-09-01T23:33:23Z",
+	"updated_at": "2016-06-24T19:34:12Z"
+}

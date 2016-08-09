@@ -1,0 +1,12 @@
+{
+	"id": 66055321,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eHere is the repro.\nPlease put it into src/sync/cond_test.go after fixing the issue.\n\nimport (\n\t. \"sync\"\n\t\"testing\"\n\t\"runtime\"\n)\n\nfunc TestCondWaitGenerations(t *testing.T) {\n\tprocs := runtime.GOMAXPROCS(4)\n\tfor i := 0; i \u0026lt; 1000; i ++ {\n\t\tvar m Mutex\n\t\tc := NewCond(\u0026m)\n\t\tstate := 0\n\t\tgo func() {\n\t\t\tm.Lock();\n\t\t\tfor state == 0 {\n\t\t\t\tc.Wait()\n\t\t\t}\n\t\t\tstate = 2\n\t\t\tc.Signal()\n\t\t\tm.Unlock()\n\t\t}()\n\t\tgo func() {\n\t\t\tm.Lock()\n\t\t\tstate = 1\n\t\t\tc.Signal()\n\t\t\tm.Unlock()\n\t\t}()\n\t\tgo func() {\n\t\t\tfor true {\n\t\t\t  \tm.Lock()\n\t\t\t  \tif (state != 0) {\n\t\t\t  \t\tfor state != 2 {\n\t\t\t\t\t\tc.Wait()\n\t\t\t\t\t}\n\t\t\t\t} else {\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t\tm.Unlock()\n\t\t\t}\n\t\t}()\n\t}\n\truntime.GOMAXPROCS(procs)\n}\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-31T12:51:12Z",
+	"updated_at": "2014-12-22T05:54:39Z"
+}

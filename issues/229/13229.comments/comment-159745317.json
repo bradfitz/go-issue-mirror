@@ -1,0 +1,12 @@
+{
+	"id": 159745317,
+	"body": "@rsc Timing on other machines would be nice to see.\r\n\r\nThere are also unrelated changes.  The way trial division is done is quite different in the patch.  The code on master (in nat.go) does a mod of either 29# or 53# then simple modulos.  The patch replaces this with a much more convoluted method.  I think there needs to be some benchmarking justification for this less obvious code.\r\n\r\nAssume for the moment that these are equal in performance and results.  I still find it very hard to figure out what the cost of the Lucas test is because the benchmark results mix multiple kinds of inputs.  Assume for the moment that the Lucas test is 5x a M-R test.\r\n\r\nFor most composites we should get similar performance.  A single M-R test, whether BPSW's base 2 or the old random base, will cull a huge number of them.\r\n\r\nFor the set of composites that are base-2 strong pseudoprimes with no small divisors, the patch would run about 3x slower (a cost of 1+5 vs. 2 or 3).\r\n\r\nFor primes, the cost for the old method is whatever 'n' is set to, while the patch would be 1+5.  Since for normal use 'n' would have to be significantly larger than 6, we would see a net gain.\r\n\r\nYour signature idea is worth considering.  n=0 means BPSW, n=1+ means BPSW plus that many additional random base M-R tests.  If the input is less than 2^64 we could ignore the argument.  Values above 5 seem excessive but that's up to the user I guess.  For performance sake the steps probably should be:\r\n  1) M-R base 2 (because jfcg says it is a little faster than random bases)\r\n  2) if x \u003e 2^64, run n random-base M-R tests\r\n  3) run the Lucas test.\r\n\r\nIf n=0 or if x is 64-bit, then we just have BPSW.  If we have a larger n, then this ordering has the least cost for composites (any ordering would be identical time for primes).  This is actually what I did on my Perl 6 branch (but Perl6 has default arguments so the user can just say x.is-prime without having to specify a number).",
+	"user": {
+		"login": "danaj",
+		"id": 125502,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-25T22:25:56Z",
+	"updated_at": "2015-11-25T22:25:56Z"
+}

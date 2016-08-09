@@ -1,0 +1,12 @@
+{
+	"id": 75911928,
+	"body": "Hello @robpike, I wonder if you are actively working on this issue.\r\nI got some time this evening and did a trace through the code and figured that the EOF trip is toggled   because there is a one off or greater increment of the `s.count` variable in fmt/scan.go in function: ReadRune() which fails at condition:\r\n```go\r\nfunc (s *ss) ReadRune() (r rune, size int, err error) {\r\n...\r\n    if s.atEOF || s.nlIsEnd \u0026\u0026 s.prevRune == '\\n' || s.count \u003e= s.argLimit {\r\n           err = io.EOF\r\n          return\r\n    }\r\n...\r\n}\r\n```\r\n\r\nIn the source code, I narrowed it down to: \r\n```diff\r\ndiff --git a/src/fmt/scan.go b/src/fmt/scan.go\r\nindex d7befea..dc989f2 100644\r\n--- a/src/fmt/scan.go\r\n+++ b/src/fmt/scan.go\r\n@@ -200,7 +200,7 @@ func (s *ss) ReadRune() (r rune, size int, err error) {\r\n \r\n \tr, size, err = s.rr.ReadRune()\r\n \tif err == nil {\r\n-\t\ts.count++\r\n+\t\t// s.count++ \u003c- Troublesome spot here\r\n \t\ts.prevRune = r\r\n \t} else if err == io.EOF {\r\n \t\ts.atEOF = true\r\n```\r\n\r\nThe `s.count` increment made before selecting `s.prevRune`  seems unnecessary since we are just peeking and checking for EOF (at least I think we shouldn't make the increment).\r\n\r\nTherefore, by the point the EOF test is made, the value of s.count is always 9 and so is s.argLimit (given your example) hence the error. Modifying the widths always maintained the condition `s.count \u003e= s.argLimit`.\r\n\r\nTo give more flesh to this hypothesis,\r\nif you add at least two spaces greater than the space left over from the actual space chars in the line being parsed, the bug is accounted for as seen with http://play.golang.org/p/5BKRizLGyD\r\n\r\n\r\nTo be honest, this isn't close to a good analysis: I just figured I could take a shot at it with some free time. I could totally be wrong but for now this cuts the deal and also works with a few other tests.\r\nAny comments, hints or wisdom would be greatly appreciated.\r\n\r\nPS: If you'd like to see my trace through to see how I narrowed it down, please let me know. I didn't include the diff because it would be too much noise.\r\n\r\nThank you.",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-25T06:24:47Z",
+	"updated_at": "2015-02-25T06:31:21Z"
+}

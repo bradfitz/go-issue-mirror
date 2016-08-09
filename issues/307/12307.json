@@ -1,0 +1,23 @@
+{
+	"id": 102934157,
+	"number": 12307,
+	"state": "closed",
+	"title": "x/mobile/bind: syntax errors in generated Objective-C code for interface method with 'error' return type",
+	"body": "With gomobile version +979ebce, go 1.5, darwin/amd64 build host, `gomobile bind` fails for `-target ios` with the following test package:\r\n\r\n```\r\npackage bindtest\r\n\r\nimport \"fmt\"\r\n\r\ntype TestInterface interface {\r\n        TestFunc() error\r\n}\r\n\r\nfunc CallTestFunc(t TestInterface) {\r\n        err := t.TestFunc()\r\n        fmt.Printf(\"Go library called app's TestFunc and got %s\", err)\r\n}\r\n```\r\n\r\nAndroid target builds successfully: `gomobile bind bindtest`.\r\n\r\niOS target build fails: `gomobile bind -target ios bindtest`:\r\n\r\n```\r\ngomobile: darwin-armv7: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -I . -g -O2 -o gobind-bindtest-arm.o -c GoBindtest.m -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk -arch armv7 failed: exit status 1\r\nGoBindtest.m:69:17: error: unexpected interface name 'NSString': expected expression\r\n                                errorDesc = NSString(@\"%!@(string=error)\", %!s(MISSING));\r\n                                            ^\r\nGoBindtest.m:69:48: error: expected expression\r\n                                errorDesc = NSString(@\"%!@(string=error)\", %!s(MISSING));\r\n                                                                           ^\r\nGoBindtest.m:69:50: warning: implicit declaration of function 's' is invalid in C99 [-Wimplicit-function-declaration]\r\n                                errorDesc = NSString(@\"%!@(string=error)\", %!s(MISSING));\r\n                                                                             ^\r\nGoBindtest.m:69:52: error: use of undeclared identifier 'MISSING'\r\n                                errorDesc = NSString(@\"%!@(string=error)\", %!s(MISSING));\r\n                                                                               ^\r\nGoBindtest.m:71:25: error: expected expression\r\n                go_seq_writeUTF8(out, %!s(MISSING)Desc);\r\n                                      ^\r\nGoBindtest.m:71:29: error: use of undeclared identifier 'MISSING'\r\n                go_seq_writeUTF8(out, %!s(MISSING)Desc);\r\n                                          ^\r\n1 warning and 5 errors generated.\r\n```\r\n\r\nThe iOS target works, for the test package, when the return value is changed from `error` to some other [supported type](https://godoc.org/golang.org/x/mobile/cmd/gobind); or when the test package consists of a Go function that returns `error`. The failing case appears to be an interface method returning `error`.\r\n\r\nThe generated code in question appears to come from `genobjc.go` [here](https://github.com/golang/mobile/blob/5c55c26446d9994aab046d1bc1da79194a37f408/bind/genobjc.go#L560) and [here](https://github.com/golang/mobile/blob/5c55c26446d9994aab046d1bc1da79194a37f408/bind/genobjc.go#L564). \r\n\r\n",
+	"user": {
+		"login": "rod-hynes",
+		"id": 488643,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "hyangah",
+		"id": 4999471,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-08-25T15:23:06Z",
+	"created_at": "2015-08-25T02:21:23Z",
+	"updated_at": "2015-08-25T15:23:06Z"
+}

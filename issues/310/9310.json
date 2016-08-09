@@ -1,0 +1,28 @@
+{
+	"id": 51916026,
+	"number": 9310,
+	"state": "closed",
+	"title": "go build/install should only check canocial import paths as an option. go get should use this option",
+	"body": "**What version of Go are you using (go version)?** 1.4\r\n\r\n**What operating system and processor architecture are you using?**\r\nlinux but does not matter\r\n\r\n**What did you do?**\r\n\r\ne.g.\r\n\r\n    cd $GOPATH/src/github.com/metakeule/\r\n    git clone https://github.com/metakeule/loop.git\r\n    [... add canonical path // import \"gopkg.in/metakeule/loop.v1\"]\r\n    go build\r\n\r\n**What did you expect to see?**\r\nnothing, build succeeds\r\n    \r\n**What did you see instead?**\r\n\r\n    can't load package: package github.com/metakeule/loop: code \r\n    in directory /home/benny/Entwicklung/gopath/src/github.com/metakeule/loop \r\n    expects import \"gopkg.in/metakeule/loop.v1\"\r\n\r\nThe Problem\r\n-----------------\r\n\r\nA `vanity import path` like `gopkg.in/metakeule/loop.v1` is just a redirect, hiding the\r\nunderlying hosting service from the user.\r\n\r\nThe `canonical import path` is a way to force the `vanity import path` to be used by package users.\r\n\r\nThe problem with the current implementation is that `go build` forces **developers and users** to\r\nuse the `canonical import path` while it would make more sense to **just force the users** to use it.\r\n\r\nDevelopers however should be able to build and install their package inside the normal path of the hosting service, since they should know where the package is hosted and don't get their package\r\nvia `go get` but by cloning the repository. And it does not make sense to clone the repository to a path that is an redirect and not the real path.\r\n\r\nAlso it prevents the proper use of tools like gopkg.in that make use of `vanity imports`.\r\nJust using the old github repo (by the old working copy) and simply adding \r\n\r\n     // import \"gopkg.in/mypackage.v1\"\r\n\r\nto force the users to get the versioned import is not possible without changing the working directory\r\n(which makes no sense in combination with gopkg.in).\r\n\r\nLeaving gopkg.in aside the current behavior means, **there is no easy way to change the canonical import path** if the hosting path stays the same. Currently changing the canonical import path means to also change the directory structure for the development.\r\n\r\nWhy and how?\r\n------------------\r\n\r\nUsers should be forced to get the package via the `canonical import path`. This could by forced by `go get`. Since `go get` also builds and installs the package, the build should be run with the option that prevents builds.\r\n\r\nDevelopers however should be able to develop and test under the real hosting path, so `go build` and `go install` should be default not respect the canonical import path.\r\n\r\nImplementation\r\n--------------------\r\n\r\n1. Add a flag `--force-canonical` (tentative name) to `go build` and `go install` to force the building from a canonical path if defined.\r\n\r\n2. Make `go get` use the `--force-canonical` flag by default.\r\n\r\nAlternative\r\n\r\n1. Make `go build` and `go install` ignore the canonical path if no package name is given.",
+	"user": {
+		"login": "metakeule",
+		"id": 180603,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 21,
+	"closed_at": "2014-12-14T13:46:29Z",
+	"created_at": "2014-12-14T10:47:16Z",
+	"updated_at": "2016-06-25T01:56:22Z"
+}

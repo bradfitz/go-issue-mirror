@@ -1,0 +1,22 @@
+{
+	"id": 94939542,
+	"number": 11709,
+	"state": "closed",
+	"title": "cmd/go: do not modify environment for 'go run'",
+	"body": "For example compiling for dragonfly/amd64 on darwin/amd64:\r\n\r\n(Via a build script, but what happens is just a setting of GOPATH for vendoring and some ldflags for version tagging being added)\r\n\r\n```\r\njb@syno:~/src/github.com/syncthing/syncthing (go15) $ go run build.go -goos dragonfly\r\n*** Unknown Go version \"go version devel +b6ead9f Tue Jul 7 21:53:11 2015 +0000 darwin/amd64\".\r\n*** This isn't known to work, proceed on your own risk.\r\nGOPATH=/Users/jb/src/github.com/syncthing/syncthing/Godeps/_workspace:/Users/jb\r\ngo install -v -ldflags -w -X main.Version=v0.11.15+6-gff03813 -X main.BuildStamp=1436877241 -X main.BuildUser=jb -X main.BuildHost=syno -X main.BuildEnv=default ./cmd/...\r\nruntime/cgo\r\n# runtime/cgo\r\n/usr/local/go-exp/src/runtime/cgo/gcc_dragonfly_amd64.c:37:2: error: implicit declaration of function 'SIGFILLSET' is invalid in C99 [-Werror,-Wimplicit-function-declaration]\r\n/usr/local/go-exp/src/runtime/cgo/gcc_dragonfly_amd64.c:37:13: error: variable 'ign' is uninitialized when used here [-Werror,-Wuninitialized]\r\n/usr/local/go-exp/src/runtime/cgo/gcc_dragonfly_amd64.c:32:14: note: initialize the variable 'ign' to silence this warning\r\nexit status 2\r\nexit status 1\r\n```\r\n\r\nI'm not sure what it's trying to do, but the error sounds like it's trying to compile stuff for dragonfly using the system compiler, which is obviously quite different from what would exist on actual dragonfly. Disabling cgo makes it work:\r\n\r\n```\r\njb@syno:~/src/github.com/syncthing/syncthing (go15) $ CGO_ENABLED=0 go run build.go -goos dragonfly\r\n*** Unknown Go version \"go version devel +b6ead9f Tue Jul 7 21:53:11 2015 +0000 darwin/amd64\".\r\n*** This isn't known to work, proceed on your own risk.\r\nGOPATH=/Users/jb/src/github.com/syncthing/syncthing/Godeps/_workspace:/Users/jb\r\ngo install -v -ldflags -w -X main.Version=v0.11.15+6-gff03813 -X main.BuildStamp=1436877241 -X main.BuildUser=unknown-user -X main.BuildHost=syno -X main.BuildEnv=default ./cmd/...\r\n```\r\n\r\nIs this expected? (cgo not working is obviously expected, what surprises me is that it seems to try to enable it by default.)\r\n\r\n(I see similar but different errors on linux/amd64 -\u003e dragonfly/amd64 so this one at least is not darwin specific)",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-07-21T22:19:27Z",
+	"created_at": "2015-07-14T12:54:32Z",
+	"updated_at": "2015-08-11T15:00:30Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

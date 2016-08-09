@@ -1,0 +1,12 @@
+{
+	"id": 193708646,
+	"body": "So I still haven't been able to reliably reproduce the crasher yet but the following code runs into the similar other issues I've noticed.\r\n\r\nIf I remove the SetConnMaxLifeTime and ensure MaxOpen and MaxIdle are equal most of the issues seem to disappear.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n\r\n\t\"database/sql\"\r\n\r\n\t_ \"github.com/go-sql-driver/mysql\"\r\n)\r\n\r\nfunc createPreparedStatement(conn *sql.DB) (*sql.Stmt, error) {\r\n\treturn conn.Prepare(\"SELECT uid FROM oc_users\")\r\n}\r\n\r\nfunc executeStatement(stmt *sql.Stmt) {\r\n\tvar result sql.NullString\r\n\terr := stmt.QueryRow().Scan(\u0026result)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"%v\\n\", err)\r\n\t}\r\n}\r\n\r\nfunc doStatementStuff(conn *sql.DB) {\r\n\tstmt, err := createPreparedStatement(conn)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"%v\\n\", err)\r\n\t}\r\n\texecuteStatement(stmt)\r\n\terr = stmt.Close()\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"%v\\n\", err)\r\n\t}\r\n}\r\n\r\nvar globStatement *sql.Stmt\r\n\r\nfunc main() {\r\n\tconn, err := sql.Open(\"mysql\", \"root@tcp(localhost:3306)/owncloud\")\r\n\tconn.SetMaxOpenConns(5)\r\n\tconn.SetMaxIdleConns(3)\r\n\tconn.SetConnMaxLifetime(time.Second * 1)\r\n\tglobStatement, err := createPreparedStatement(conn)\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"%v\\n\", err)\r\n\t}\r\n\tfor {\r\n\t\tfor i := 0; i \u003c 20; i++ {\r\n\t\t\tgo doStatementStuff(conn)\r\n\t\t\tgo executeStatement(globStatement)\r\n\t\t}\r\n\t\ttime.Sleep(time.Millisecond * 10)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "RobinGeuze",
+		"id": 8234736,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-08T10:25:13Z",
+	"updated_at": "2016-03-08T10:39:33Z"
+}

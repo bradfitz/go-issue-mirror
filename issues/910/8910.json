@@ -1,0 +1,22 @@
+{
+	"id": 51288857,
+	"number": 8910,
+	"state": "closed",
+	"title": "net/http: http.Client connection reuse behaviour differs when receiving from HTTP response body with Content-Encoding: gzip vs. uncompressed",
+	"body": "by **akrennmair**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.3.3 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. go run server.go (see attached files)\n2. go run client.go \n3. use tcpdump to observe that one connection is reused\n4. go run client.go -compressed\n5. use tcpdump to observe that for each HTTP request, a new connection is opened and\nthen closed again.\n\nWhat happened?\n\nIn client.go, the resp.Body.Read() read the same content from the HTTP response body but\nreturned different values (err == io.EOF for uncompressed vs. err == nil for\ncompressed). In the case of the compressed HTTP response body, connection reuse did not\nwork properly.\n\nWhat should have happened instead?\n\nThe resp.Body.Read() should have behaved the same, no matter whether the underlying HTTP\nresponse is Content-Encoding: gzip or not, and connection reuse should have worked in\nboth cases.\n\nPlease provide any additional information below.\n\nWhat I could gather from reading the source, http.noteEOFReader doesn't properly pick up\nthe EOF when the underlying io.Reader is a gzip.Reader, which in turn makes\nhttp.persistConn think the subsequent Close() is an early close, which makes it not\nreuse the connection for subsequent requests. I stumbled upon the issue when using\njson.NewDecoder(resp.Body).Decode(...) and noticing connections not being reused. As a\nworkaround, I used ioutil.ReadAll() and json.Unmarshal(), and then boiled down the issue\nto the attached files, with some advice and pointing in the right direction from Dave\nCheney on Twitter.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8910/0/server.go\"\u003eserver.go\u003c/a\u003e (709 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8910/0/client.go\"\u003eclient.go\u003c/a\u003e (623 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-04-02T02:13:26Z",
+	"created_at": "2014-10-08T21:13:50Z",
+	"updated_at": "2016-04-02T02:13:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

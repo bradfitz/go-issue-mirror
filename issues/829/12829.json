@@ -1,0 +1,22 @@
+{
+	"id": 109621310,
+	"number": 12829,
+	"state": "closed",
+	"title": "runtime: MOVUPS in duffcopy causing \"suicide: sys: floating point in note handler\" on Plan9",
+	"body": "#### Go and OS versions\r\ngo: `go version devel +5a2a556 Fri Oct 2 16:39:16 2015 +0100 darwin/amd64`\r\nexecuting OS: 9front amd64 current head\r\ncompiling OS: OS X 10.11\r\n\r\n#### Test\r\n```go\r\npackage main\r\n\r\nfunc main() {\r\n    println(\"Hello World!\")\r\n}\r\n```\r\n\r\n#### Expected result\r\n```\r\ncpu% ./test\r\nHello World!\r\ncpu%\r\n```\r\nThis is also the result on 1.5.1\r\n\r\n#### Actual result\r\n```\r\ncpu% ./test\r\nHello World!\r\ntest 9272: suicide: sys: floating point in note handler: 0x24abaa\r\ntest 9271: suicide: sys: floating point in note handler: 0x24abaa\r\ntest 9270: suicide: sys: floating point in note handler: 0x24abaa\r\ncpu%\r\n```\r\n\r\n#### Debug info\r\n```\r\ncpu% acid 9270\r\n/proc/9270/text:amd64 plan 9 executable\r\n/sys/lib/acid/port\r\n/sys/lib/acid/amd64\r\n\r\nacid: stk()\r\nruntime.duffcopy()+0x25a ?file?:0\r\nruntime.sighandler(runtime.~r3=0x0,runtime.gp=0x862c480,runtime.note=0x7ffffeffeb70,runtime._ureg=0x7ffffeffebf8)+0x369 ?file?:0\r\nruntime.sigtramp()+0x60 ?file?:0\r\n0x7ffffeffebf8 ?file?:0\r\n\r\nacid: asm(*PC)\r\nruntime.duffcopy+0x25a 0x000000000024abaa\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x25d 0x000000000024abad\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x261 0x000000000024abb1\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x264 0x000000000024abb4\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x268 0x000000000024abb8\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x26b 0x000000000024abbb\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x26f 0x000000000024abbf\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x272 0x000000000024abc2\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x276 0x000000000024abc6\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x279 0x000000000024abc9\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x27d 0x000000000024abcd\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x280 0x000000000024abd0\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x284 0x000000000024abd4\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x287 0x000000000024abd7\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x28b 0x000000000024abdb\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x28e 0x000000000024abde\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x292 0x000000000024abe2\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x295 0x000000000024abe5\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x299 0x000000000024abe9\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x29c 0x000000000024abec\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x2a0 0x000000000024abf0\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x2a3 0x000000000024abf3\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x2a7 0x000000000024abf7\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x2aa 0x000000000024abfa\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x2ae 0x000000000024abfe\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x2b1 0x000000000024ac01\tADDQ\t$0x10,SI\r\nruntime.duffcopy+0x2b5 0x000000000024ac05\tMOVUPS\tX0,0x0(DI)\r\nruntime.duffcopy+0x2b8 0x000000000024ac08\tADDQ\t$0x10,DI\r\nruntime.duffcopy+0x2bc 0x000000000024ac0c\tMOVUPS\t0x0(SI),X0\r\nruntime.duffcopy+0x2bf 0x000000000024ac0f\tADDQ\t$0x10,SI\r\n```\r\n\r\nThe above appears to be calling copyduff from the sighandler. Change 14836 (https://go-review.googlesource.com/#/c/14836/) changes runtime.copyduff from using MOVQ to using MOVUPS for performance reasons, but Plan9 does not permit using floating point in note handlers. This includes operations that access XMM registers, such as MOVUPS.\r\n\r\nAlmost two years ago, a similar issue was fixed, where runtime.memmove (which used MOVOU) was used accidentally in the plan9 signal handler: https://codereview.appspot.com/34640045/\r\n\r\n#### Proposed solution\r\nA solution would be to avoid using copyduff in this case or to have a slower copyduff as well. Reverting the optimized copyduff for only this reason would seem silly to me.",
+	"user": {
+		"login": "joushou",
+		"id": 176245,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2015-10-06T19:06:28Z",
+	"created_at": "2015-10-03T12:38:36Z",
+	"updated_at": "2015-10-06T19:06:28Z"
+}

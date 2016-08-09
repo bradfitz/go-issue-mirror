@@ -1,0 +1,12 @@
+{
+	"id": 125023476,
+	"body": "So to clear a few things up, I was actually frustrated before the `mt_rand` debacle took hold, although it was illustrative of some of the problems here.\r\n\r\nThe underlying issue is multi part in my opinion, although some of it is easier solved. In my (humble) opinion having an RNG that isn't a CSPRNG is dangerous in and of itself. Much of Go's philosophy hinges on the fact that people cut corners and don't read docs, and so I tend to think that having a `rand` that isn't safe for crypto is unsavoury.\r\n\r\nOn the specific topic of `math/rand`, I think inheriting `rand(3)`s API is extremely regrettable. While there are cases for deterministic RNG's, they're almost certainly in the minority (eg, deterministic tests?) and supporting them first seems like a mistake. Especially when the rationale appears to be that \"Noone would ever manage to ship software without noticing that the numbers are always the same\", the threads that Andrey linked above demonstrate that isn't the case.\r\n\r\nFinally, and getting a little offtopic, but while we're talking about Go's RNG's and user safety, having `crypto/rand` accept a plain old `io.Reader` seems like a footgun to me. It means that things like http://play.golang.org/p/4NDDz8FSDq work. Worse, it means that http://play.golang.org/p/0e9_Oke1xF works and kills the CSPRNG for anyone consuming your code.\r\n\r\nThat's the \"why\", onto the \"how\". I would propose one of two things:\r\n\r\n* rename `math/rand` to `math/deterministic_rand`. This has the advantage of forcing a user to comprehend what they're getting themselves into. I rather doubt that the core team is willing to rename a module at this late stage of the game so;\r\n* Seed `math/rand` with `crypto/rand`s reader, as proposed by @shazow above.\r\n\r\nCheers\r\n\r\nricho",
+	"user": {
+		"login": "richo",
+		"id": 476418,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-26T18:02:43Z",
+	"updated_at": "2015-07-26T18:02:43Z"
+}

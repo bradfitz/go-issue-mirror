@@ -1,0 +1,12 @@
+{
+	"id": 202515693,
+	"body": "You cannot just leave the %2F's in place, because that will encourage people to unescape the URL.Path again, which will lead to double-unescaping problems. And you do need to unescape the other things. You _do_ want /%78yz to turn into /xyz. Also if you decide not to unescape %2F then you also can't unescape %252F, and because you're not unescaping that, you can't unescape %25252F, or %2525252F, and so on. It gets into a rathole pretty quickly. And if we started doing this all of a sudden then you'd have to worry about people seeing %2F and not knowing if it was a preserved %2F or a decoded %252F being process by an earlier version of Go. There are no good answers here.\r\n\r\nFundamentally, the idea of 'Path string' is at odds with the \"internet standard\". It should have been 'Path []string' and people who wanted the full path would have to strings.Join(u.Path, \"\") or something like that. But obviously we can't do that now.\r\n\r\nFor now I think we should just leave things alone. In the long term I think very limited wildcard support in ServeMux might help provide an API with the convenience of the single string form and still have the ability to pull out these kinds of mangled paths from individual elements. I wrote more about this at https://www.reddit.com/r/golang/comments/46bd5h/ama_we_are_the_go_contributors_ask_us_anything/d05lewi.\r\n\r\nThe workaround is to pass your own handler to Serve or ListenAndServe and have that handler pick off the %2F paths you care about before handing the rest to ServeMux. One reason the root handler is just an http.Handler instead of a ServeMux is so that you can do this when it is necessary. (Sadly, this unexpected usage of REST has made it more necessary than we anticipated.)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-28T18:20:16Z",
+	"updated_at": "2016-03-28T18:20:16Z"
+}

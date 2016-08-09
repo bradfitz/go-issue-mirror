@@ -1,0 +1,22 @@
+{
+	"id": 51278944,
+	"number": 2250,
+	"state": "closed",
+	"title": "syscall.StartProcess: windows vs. linux",
+	"body": "\u003cpre\u003eGo version: c934f6f5fe8b weekly/weekly.2011-09-01\nOSes: linux x86 and windows xp sp3\n\nI've seen other issues on the issue tracker regarding buggy StartProcess on windows (the\none about batch files). But this is probably kind of different, even though it comes\nfrom the same area.\n\nLet's take simple scenario for example: we have a client/server application, client\nexecutes a server if it's not running already (in the example code we will always start\na new server), then the client communicates with the server and prints something to\nstdout. Fairly simple. Plus we will use a ruby/python script to actually run a client\nand capture its output. Something like this:\n\nGo:\n------------------------------------------------------------\npackage main\n\nimport (\n\t\u0026quot;exec\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\tif len(os.Args) == 2 \u0026amp;\u0026amp; os.Args[1] == \u0026quot;-s\u0026quot; {\n\t\t// server\n\t\tfmt.Println(\u0026quot;server\u0026quot;)\n\n\t\t// sleep for 5 seconds and die\n\t\ttime.Sleep(5e9)\n\t} else {\n\t\t// client\n\t\tfmt.Println(\u0026quot;client\u0026quot;)\n\n\t\t// start a daemon\n\t\tcmd := exec.Command(os.Args[0], \u0026quot;-s\u0026quot;)\n\t\terr := cmd.Start()\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n}\n------------------------------------------------------------\n\nand Ruby:\n------------------------------------------------------------\n#!/usr/bin/env ruby\n\n# get output from client (should return immediately)\ncli = %x[./clientserver]\nputs cli\n------------------------------------------------------------\n\nThe problem is that on windows this ruby scripts freezes on \u0026quot;cli =\n%x[./clientserver]\u0026quot; line for 5 seconds. It happens, because syscall.StartProcess\npasses opened pipe handle to the server from the client and that's the pipe created by\nruby for getting an output from the client. As long as that pipe is still opened, script\nthinks that the client hasn't finished yet, even though the process is dead already. On\nlinux of course it returns immediately, because the child process (server in our case)\ndoesn't share a single FD with its parent here.\n\nSomewhat related to this bug as well: \u003ca href=\"https://golang.org/issue/2243\"\u003ehttps://golang.org/issue/2243\u003c/a\u003e\nI agree with what Russ said, we should fix syscall.StartProcess on windows.\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:12:06Z",
+	"created_at": "2011-09-11T09:41:11Z",
+	"updated_at": "2016-06-24T19:34:40Z"
+}

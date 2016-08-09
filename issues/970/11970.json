@@ -1,0 +1,22 @@
+{
+	"id": 98450098,
+	"number": 11970,
+	"state": "closed",
+	"title": "runtime: replace GC coordinator with state machine",
+	"body": "As of 1.5, all GC phase changes are managed through straight-line code in func gc, which runs on a dedicated GC goroutine. However, much of the real work is done in other goroutines, and the coordination between these goroutines and the main GC goroutine delays phase changes and opens windows where, for example, the mutator can allocate uncontrolled, or nothing can be accomplished because everything is waiting on the coordinator to wake up. This has led to bugs like #11677 and #11911. We've tried to mitigate this by handing control directly to the coordinator goroutine when we wake it up, but the scheduler isn't designed for this sort of explicit co-routine scheduling, so this doesn't always work and it's more likely to fall apart under stress.\r\n\r\nFor 1.6, we should consider decentralizing the role of the coordinator so that the goroutine that notices it's time to make a transition takes care of performing the transition.\r\n\r\nThis could take the form of a state machine where whichever goroutine detects the termination condition of the current state is responsible for moving the system to the next state. Because these transitions could happen on user goroutines, we'll want to make sure that these state transitions are all short (or STW), which is currently not true of everything the coordinator does. The states would roughly correspond to the GC phases, but would further subdivide some of them (especially the concurrent ones).\r\n\r\nI think we should further design this state machine such that if more than one goroutine detects the termination condition for the current state (including while another goroutine is working on transitioning out of it) it should block until the goroutine performing the transition finishes the transition (or, if possible, help with the transition), rather than simply continuing execution. We have various problems right now because we don't do this: for example, the first G to detect that the system is over the heap trigger will start the transition from \"GC off\" to sweep termination, but before we're actually in sweep termination, other Gs will also detect this condition as well but simply continue allocating, allowing them to over-allocate [1]. If they instead blocked or helped until this transition was complete, this wouldn't happen.\r\n\r\n[1] See issue #11911 and all of its linked CLs.\r\n\r\n@RLH @rsc",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-11-05T21:24:18Z",
+	"created_at": "2015-07-31T18:51:47Z",
+	"updated_at": "2015-11-05T21:24:18Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

@@ -1,0 +1,25 @@
+{
+	"id": 51284822,
+	"number": 6199,
+	"state": "closed",
+	"title": "\"build -race\" uses lots of memory and triggers OOM killer",
+	"body": "by **dave@lytics.io**:\n\n\u003cpre\u003eBuilding with the race detector enabled sometimes blows up and consumes all available\nmemory. This happens for me with the package \u0026quot;labix.org/v2/mgo\u0026quot; .\n\nWhat steps will reproduce the problem?\n\nDownload labix.org/v2/mgo and build it with -race:\n\n{{{\n$ mkdir ~/gopathtemp\n$ export GOPATH=~/gopathtemp\n$ go get labix.org/v2/mgo\n$ cd $GOPATH/src/labix.org/v2/mgo\n$ free -h\n             total       used       free     shared    buffers     cached\nMem:           31G        11G        19G         0B       154M       1.4G\n-/+ buffers/cache:        10G        20G\nSwap:           0B         0B         0B\n$ go build -v -race\nlabix.org/v2/mgo/bson\nlabix.org/v2/mgo\ngo build labix.org/v2/mgo: signal: killed\n}}}\n\nThe final command \u0026quot;go build -race\u0026quot; takes about 30 seconds and uses 18G of RAM\nbefore being OOM-killed. In /var/log/syslog, the following appears:\n\n{{{Aug 20 13:55:34 dave2 kernel: [12453.191018] 6g invoked oom-killer: gfp_mask=0x280da,\norder=0, oom_score_adj=0\nAug 20 13:55:34 dave2 kernel: [12453.191022] 6g cpuset=/ mems_allowed=0\nAug 20 13:55:34 dave2 kernel: [12453.191025] Pid: 6445, comm: 6g Tainted: GF           \n3.8.0-29-generic #42-Ubuntu\nAug 20 13:55:34 dave2 kernel: [12453.191026] Call Trace:\nAug 20 13:55:34 dave2 kernel: [12453.191042]  [\u0026lt;ffffffff816c199e\u0026gt;]\ndump_header+0x80/0x1c3\nAug 20 13:55:34 dave2 kernel: [12453.191046]  [\u0026lt;ffffffff81132ec7\u0026gt;]\noom_kill_process+0x1b7/0x320\nAug 20 13:55:34 dave2 kernel: [12453.191049]  [\u0026lt;ffffffff81065a45\u0026gt;] ?\nhas_ns_capability_noaudit+0x15/0x20\nAug 20 13:55:34 dave2 kernel: [12453.191051]  [\u0026lt;ffffffff81065a67\u0026gt;] ?\nhas_capability_noaudit+0x17/0x20\nAug 20 13:55:34 dave2 kernel: [12453.191053]  [\u0026lt;ffffffff81133607\u0026gt;]\nout_of_memory+0x417/0x450\nAug 20 13:55:34 dave2 kernel: [12453.191056]  [\u0026lt;ffffffff81138b96\u0026gt;]\n__alloc_pages_nodemask+0x7e6/0x920\nAug 20 13:55:34 dave2 kernel: [12453.191060]  [\u0026lt;ffffffff81175a75\u0026gt;]\nalloc_pages_vma+0xa5/0x150\nAug 20 13:55:34 dave2 kernel: [12453.191063]  [\u0026lt;ffffffff81158739\u0026gt;]\nhandle_pte_fault+0x2d9/0x450\nAug 20 13:55:34 dave2 kernel: [12453.191065]  [\u0026lt;ffffffff81159209\u0026gt;]\nhandle_mm_fault+0x299/0x670\nAug 20 13:55:34 dave2 kernel: [12453.191068]  [\u0026lt;ffffffff8115fa63\u0026gt;] ?\nmmap_region+0x2a3/0x640\nAug 20 13:55:34 dave2 kernel: [12453.191071]  [\u0026lt;ffffffff816d0c7d\u0026gt;]\n__do_page_fault+0x18d/0x500\nAug 20 13:55:34 dave2 kernel: [12453.191073]  [\u0026lt;ffffffff8116004d\u0026gt;] ?\ndo_mmap_pgoff+0x24d/0x340\nAug 20 13:55:34 dave2 kernel: [12453.191076]  [\u0026lt;ffffffff8109297f\u0026gt;] ?\n__dequeue_entity+0x2f/0x50\nAug 20 13:55:34 dave2 kernel: [12453.191079]  [\u0026lt;ffffffff8114b7c8\u0026gt;] ?\nvm_mmap_pgoff+0x88/0xb0\nAug 20 13:55:34 dave2 kernel: [12453.191082]  [\u0026lt;ffffffff816d0ffe\u0026gt;]\ndo_page_fault+0xe/0x10\nAug 20 13:55:34 dave2 kernel: [12453.191084]  [\u0026lt;ffffffff816cd618\u0026gt;]\npage_fault+0x28/0x30\n}}}\n \n\n\nI'm running Ubuntu 13.04 AMD64, with 32G of RAM (see the \u0026quot;free -h\u0026quot; command\nabove):\n{{{\n$ uname -a\nLinux dave2 3.8.0-29-generic #42-Ubuntu SMP Tue Aug 13 19:40:39 UTC 2013 x86_64 x86_64\nx86_64 GNU/Linux\n\n$ cat /etc/lsb-release \nDISTRIB_ID=Ubuntu\nDISTRIB_RELEASE=13.04\nDISTRIB_CODENAME=raring\nDISTRIB_DESCRIPTION=\u0026quot;Ubuntu 13.04\u0026quot;\n}}}\n\nWhat is the expected output?\n\u0026quot;go build -race\u0026quot; should produce a binary and terminate. It does neither.\n\nWhat do you see instead?\n\u0026quot;go build -race\u0026quot; runs for 30 seconds before using all available memory and\nbeing killed by the OOM killer.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nI'm using the go 1.1.2 tar distribution from golang.org and running \u0026quot;go build\n-race\u0026quot;.\n\nWhich operating system are you using?\nUbuntu 13.04 AMD64.\n\nWhich version are you using?  (run 'go version')\n1.1.2\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:34:06Z",
+	"created_at": "2013-08-20T21:09:52Z",
+	"updated_at": "2016-06-24T22:55:46Z"
+}

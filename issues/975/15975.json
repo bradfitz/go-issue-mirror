@@ -1,0 +1,22 @@
+{
+	"id": 158746981,
+	"number": 15975,
+	"state": "closed",
+	"title": "cmd/compile: defer of nil interface call does not panic",
+	"body": "The following program behaves differently depending on whether or not it's compiled with SSA:\r\n\r\n```go\r\npackage main\r\n\r\ntype Closer interface {\r\n\tClose()\r\n}\r\n\r\nfunc main() {\r\n\tvar x Closer\r\n\tdefer x.Close()\r\n\tprintln(\"not reached\")\r\n}\r\n```\r\n\r\nWhen compiled without SSA, it does not print \"not reached\". However, when compiled with SSA, it *does* print \"not reached\". Based on my understanding of the spec, this program should not print \"not reached\" because the evaluation of `x.Close` to a function value happens on the defer line and should cause a nil panic (though either way it shouldn't change with SSA).\r\n\r\n```\r\n$ go run -gcflags -ssa=0 x.go\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n...\r\n\r\n$ go run x.go\r\nnot reached\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n```\r\n\r\nThis pattern appears in `test/fixedbugs/issue6055.go`.\r\n\r\n/cc @cherrymui @randall77 ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-08T20:37:17Z",
+	"created_at": "2016-06-06T18:47:48Z",
+	"updated_at": "2016-06-08T20:37:17Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"id": 141107279,
+	"number": 14833,
+	"state": "open",
+	"title": "crypto/x509: invalid implementation of Permitted DNS Names",
+	"body": "1. What version of Go are you using (`go version`)?\r\n\r\n    1.4.3\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n    ```\r\n    GOARCH=\"amd64\"\r\n    GOOS=\"darwin\"\r\n    ```\r\n\r\n3. What did you do?\r\n\r\n    We received a report that someone is having problem connecting from GitLab Runner to GitLab server. The GitLab Runner is application written in Go. The user when tries to connect sees the `x509: a root or intermediate certificate is not authorized to sign in this domain`.\r\n\r\n    We asked for full certificate chain of problematic server.\r\n    We saw that the CA certificate uses **X509v3 Name Constraints** with Permitted DNS limitation set.\r\n    The DNS specified in certificate are of format: `.domain.com` (leading `.`).\r\n\r\n    This is excerpt from [RFC 5280](https://tools.ietf.org/html/rfc5280#section-4.2.1.10) describing the expected implementation of name constraints:\r\n\r\n        For URIs, the constraint applies to the host part of the name.  The\r\n        constraint MUST be specified as a fully qualified domain name and MAY\r\n        specify a host or a domain.  Examples would be \"host.example.com\" and\r\n        \".example.com\".  When the constraint begins with a period, it MAY be\r\n        expanded with one or more labels.  That is, the constraint\r\n        \".example.com\" is satisfied by both host.example.com and\r\n        my.host.example.com.  However, the constraint \".example.com\" is not\r\n        satisfied by \"example.com\".  When the constraint does not begin with\r\n        a period, it specifies a host.  If a constraint is applied to the\r\n        uniformResourceIdentifier name form and a subsequent certificate\r\n        includes a subjectAltName extension with a uniformResourceIdentifier\r\n        that does not include an authority component with a host name\r\n        specified as a fully qualified domain name (e.g., if the URI either\r\n        does not include an authority component or includes an authority\r\n        component in which the host name is specified as an IP address), then\r\n        the application MUST reject the certificate.\r\n\r\n    According to implementation checked here: https://golang.org/src/crypto/x509/verify.go#L160 the leading `.` is not correctly handled by Go crypto library. The constraint `.domain.com` should be satisfied by `host.domain.com` and `my.host.domain.com`.\r\n\r\n    Here's the example app: https://play.golang.org/p/tIa1m313_M\r\n\r\n4. What did you expect to see?\r\n\r\n    We expected to see a trusted connect to server, signed by the CA with Name Constraints set. The implementation should support DNS constraints that starts with `.`\r\n\r\n5. What did you see instead?\r\n\r\n    The error when connecting the server: `x509: a root or intermediate certificate is not authorized to sign in this domain`.\r\n\r\n",
+	"user": {
+		"login": "ayufan",
+		"id": 2419009,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-03-15T21:43:24Z",
+	"updated_at": "2016-05-18T00:16:53Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

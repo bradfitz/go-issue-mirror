@@ -1,0 +1,27 @@
+{
+	"id": 113504167,
+	"number": 13061,
+	"state": "open",
+	"title": "go/types: inconsistent handling of untyped expressions",
+	"body": "Currently if you type check this code with go/types:\r\n\r\n    var (\r\n    \t_ int = 0\r\n    \t_ = int(0)\r\n    \t_ *int = nil\r\n    \t_ = (*int)(nil)\r\n    )\r\n\r\nboth `0` expressions will have type \"int\", whereas the first `nil` expression will have type \"untyped nil\", and the second will have type \"*int\".  This seems at the least inconsistent.  See http://play.golang.org/p/cw8Ldz1U5D\r\n\r\nMy expectation was that the `0`s would type check as \"untyped int\" and the `nil`s would type check as \"untyped nil\".  The current behavior of rewriting the type of untyped expressions seems to have two negative consequences that I've noticed trying to use go/types:\r\n\r\n  1. It makes it difficult to identify useless conversion operations; i.e., expressions `T(x)` where `x` is already of type `T`.  Expressions like `int(0)` will trigger as false positives.\r\n  2. It causes `types.TypeAndValue.IsNil` to return false for the `nil` subexpression in `(*int)(nil)`, because it doesn't have the type \"untyped nil\" anymore.\r\n\r\nIt also seems inconsistent with conversions of already typed expressions, where they're not rewritten.\r\n\r\nHowever, I notice api_test.go has a bunch of tests that seem to explicitly test for this behavior, so it seems intentional?\r\n\r\nCC @griesemer",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-10-27T04:24:36Z",
+	"updated_at": "2015-11-30T17:04:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

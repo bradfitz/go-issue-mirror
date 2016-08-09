@@ -1,0 +1,27 @@
+{
+	"id": 51285418,
+	"number": 6593,
+	"state": "closed",
+	"title": "database/sql: connection leak with SetMaxOpenConns",
+	"body": "\u003cpre\u003eGo 1.2 adds a new *DB.SetMaxOpenConns method.\n\nBut it contains a race.\n\nFrom the email thread:\n\n[golang-dev] code review 14611045: database/sql: Fix connection leak and potential\ndeadlock (\u003ca href=\"https://golang.org/issue/14611045\"\u003eissue #14611045\u003c/a\u003e)\n\n\u0026quot;\u0026quot;\u0026quot;\nI could not reproduce the problem with a small program, but it\nmanifested itself repeatedly in one of our high traffic sites every few\ndays. The timing is pretty sensitive and the window for the leak to\noccur is very small. What basically happens is:\n\n- A new connection is requested while there are no idle connections. A\nsignal is sent via openerCh to open a new one.\n- The gorutine running connectionOpener() gets the signal and starts\nopening a new connection. Since that involves sockets, it gets\nsuspended.\n- In the meantime, maxIdle (2 by default) + 1 connections which were\nalready open but busy are released. This fulfills the connection\nrequested by the first goroutine and makes the idle list full.\n- The new connection finishes opening, execution resumes at\nopenNewConnection() and it calls putConnDBLocked() without checking the\nreturn value, assuming the connection will either fulfill a pending\nrequest or be added to the idle queue, but that's not always the case.\nIn this situation, the connection ends up discarded without being\nclosed, but counted (numOpen is incremented).\n- Eventually, the number of leaked connections reaches\nMIN(maxOpenConnections, max_connections_the_server_allows) and either\ndeadlocks or stops working bringing the whole database server down.\n\nThis was a total pain to track down (in part because we have a ORM built\non top of database/sql and I started digging there before looking in\ndatabase/sql), but I think this explanation makes it pretty evident.\n\nAs for the fix, I saw basically two options: either close and discard\nthe connection or add it to the idle list. I opted for the latter\nbecause by the time we realize the connection is not needed anymore is\nalready open and ready to use. It would be a waste to close it when the\napp will probably need to open a new one in the near future, even when\nthis fix momentarily violates the maxIdle constraint.\n\nRegards,\nAlberto\n\u0026quot;\u0026quot;\u0026quot;\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:36:31Z",
+	"created_at": "2013-10-15T22:36:20Z",
+	"updated_at": "2016-06-25T01:20:43Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

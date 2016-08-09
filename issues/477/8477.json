@@ -1,0 +1,22 @@
+{
+	"id": 51288258,
+	"number": 8477,
+	"state": "closed",
+	"title": "runtime: defs_linux.go doesn't work anymore",
+	"body": "\u003cpre\u003eRunning \u0026quot;GOARCH=amd64 go tool cgo -debug-gcc=true -cdefs defs_linux.go\u0026quot; on\nUbuntu 14.04 no longer works; GCC complains about multiple definitions of sigset_t,\ntimespec, etc.\n\nI suspect this is because of revision 46fd4ef6c0deeb184aa0b843dfc080cc869a7e19, which\nadded \u0026quot;#include \u0026lt;sys/types.h\u0026gt;\u0026quot; to ensure size_t was available.  On Linux\nthis will define the userspace-compatible sigset_t/timespec/etc struct definitions, but\ndefs_linux.go has already included headers to define the *kernel*-compatible definitions.\n\nI suspect the proper fix is to replace cgo's #include \u0026lt;sys/types.h\u0026gt; with #include\n\u0026lt;stddef.h\u0026gt;, which is the ISO C standard header for \u0026quot;size_t\u0026quot; and defines\nfar fewer additional/unnecessary types than \u0026lt;sys/types.h\u0026gt; does.\n\ndefs_linux.go should probably also #undef size_t at the end of its \u0026quot;import\n\u0026quot;C\u0026quot;\u0026quot; preamble.\n\nI'll send a patch for both of these.\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:47:07Z",
+	"created_at": "2014-08-05T20:26:59Z",
+	"updated_at": "2016-06-25T01:39:01Z"
+}

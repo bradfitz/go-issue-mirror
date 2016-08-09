@@ -1,0 +1,22 @@
+{
+	"id": 51279242,
+	"number": 2459,
+	"state": "closed",
+	"title": "exp/wingui: amd64 BEX64 error",
+	"body": "by **VisualFC**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. make exp/wingui on go for windows amd64\n2. run exp/wingui.exe and close windows\n3.\n\nWhat is the expected output?\nthe winngui.exe BEX64 error\n\nWhat do you see instead?\nwingui.exe normal close\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nWindows7 x64\n\nWhich revision are you using?  (hg identify)\nweekly.2011-11-09 and c3ae7b7f6930\n\nPlease provide any additional information below.\n\ni'm add the exp/wingui/gui.go and debug:\n\n//func WndProc(...)\n\tcase 0x0112 : /*WM_SYSCOMMAND*/\n\t\tif wparam == 0xF060 /*SC_CLOSE*/{\n\t\t\trc = DefWindowProc(hwnd, msg, wparam, lparam) //debug line\n\t\t} else {\n\t\t\trc = DefWindowProc(hwnd, msg, wparam, lparam)\n\t\t}\nmain.WndProc -\u0026gt; main.DefWindowProc \n-\u0026gt;syscall.Syscall6 -\u0026gt; runtime·cgocall \n-\u0026gt;runtime·morestack\n\nerror loop:  MOVQ g(CX), SI  -\u0026gt; CALL runtime·newstack(SB)\n\n/*\n * support for morestack\n */\n\n// Called during function prolog when more stack is needed.\n// Caller has already done get_tls(CX); MOVQ m(CX), BX.\nTEXT runtime·morestack(SB),7,$0\n\t// Cannot grow scheduler stack (m-\u0026gt;g0).\n\tMOVQ\tm_g0(BX), SI\n\tCMPQ\tg(CX), SI\n\tJNE\t2(PC)\n\tINT\t$3\n\n\t// Called from f.\n\t// Set m-\u0026gt;morebuf to f's caller.\n\tMOVQ\t8(SP), AX\t// f's caller's PC\n\tMOVQ\tAX, (m_morebuf+gobuf_pc)(BX)\n\tLEAQ\t16(SP), AX\t// f's caller's SP\n\tMOVQ\tAX, (m_morebuf+gobuf_sp)(BX)\n\tMOVQ\tAX, m_moreargp(BX)\n\tget_tls(CX)\n\tMOVQ\tg(CX), SI    \n\tMOVQ\tSI, (m_morebuf+gobuf_g)(BX)\n\n\t// Set m-\u0026gt;morepc to f's PC.\n\tMOVQ\t0(SP), AX\n\tMOVQ\tAX, m_morepc(BX)\n\n\t// Call newstack on m-\u0026gt;g0's stack.\n\tMOVQ\tm_g0(BX), BP\n\tMOVQ\tBP, g(CX)\n\tMOVQ\t(g_sched+gobuf_sp)(BP), SP\n\tCALL\truntime·newstack(SB)\n\tMOVQ\t$0, 0x1003\t// crash if newstack returns\n\tRET\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2459/0/wingui_debug.zip\"\u003ewingui_debug.zip\u003c/a\u003e (4943 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2014-12-08T10:13:08Z",
+	"created_at": "2011-11-14T00:49:23Z",
+	"updated_at": "2016-06-24T21:20:35Z"
+}

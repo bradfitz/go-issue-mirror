@@ -1,0 +1,28 @@
+{
+	"id": 51277751,
+	"number": 1397,
+	"state": "closed",
+	"title": "cgo: include symbol version information",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nReproducing the problem is a bit tricky, since you need to call a function on the\nibverbs C library that is only going to return the right stuff if you have an InfiniBand\ncontroller in your machine.\n\nI tried to make my own little shared library with a simplified version of the function\nand the same structs as what produces the error, but it didn't reproduce the problem.\n\nIf there's anything I can check with gdb that could help, let me know. I have the\nibverbs debuginfo, so I can set breakpoints in it and in my Go code.\n\nSo here goes...\n\nWhat is the expected output?\n\nWith release.2010-12-08 (the old cgo), I get the following structs returned from the C\nfunction:\n\nstruct ibv_device **ibv_get_device_list(int *num_devices)\n\nThe values:\n\ndeviceList=0x17fd3c0\n\u0026amp;device=0x17f5740\ndevice=\u0026amp;{ops:{alloc_context:0x7f8ef46d7480 free_context:0x7f8ef46d72b0} node_type:1\ntransport_type:0 name:[109 108 120 52 95 48 0 ...] dev_name:[117 118 101 114 98 115 48 0\n...] dev_path:[47 115 121 115 47 99 108 97 115 115 47 105 110 102 105 110 105 98 97 110\n100 95 118 101 114 98 115 47 117 118 101 114 98 115 48 0 ...] ibdev_path:[47 115 121 115\n47 99 108 97 115 115 47 105 110 102 105 110 105 98 97 110 100 47 109 108 120 52 95 48 0\n...]}\n\nWhat do you see instead?\n\ndeviceList=0x1b40048\n\u0026amp;device=0x1b40710\ndevice=\u0026amp;{ops:{alloc_context:\u0026lt;nil\u0026gt; free_context:\u0026lt;nil\u0026gt;} node_type:28575552\ntransport_type:0 name:[garbage0] dev_name:[garbage] dev_path:[garbage]\nibdev_path:[garbage]}\n\nBasically the whole struct is corrupted.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich revision are you using?  (hg identify)\n\ntip\n\nrelease.2010-12-08 with the old cgo works fine.\n\nPlease provide any additional information below.\n\nThe C function looks like this:\n\nstruct ibv_device **ibv_get_device_list(int *num_devices)\n\nAnd the structs involved:\n\nenum {\n  IBV_SYSFS_NAME_MAX = 64,\n  IBV_SYSFS_PATH_MAX = 256\n};\n\nstruct ibv_device_ops {\n  void *p1; // actually a function pointer\n  void *p2; // actually a function pointer\n};\n\nenum ibv_node_type {\n  IBV_NODE_UNKNOWN = -1,\n  IBV_NODE_CA = 1,\n  IBV_NODE_SWITCH,\n  IBV_NODE_ROUTER,\n  IBV_NODE_RNIC\n};\n\nenum ibv_transport_type {\n  IBV_TRANSPORT_UNKNOWN = -1,\n  IBV_TRANSPORT_IB = 0,\n  IBV_TRANSPORT_IWARP\n};\n\nstruct ibv_device {\n  struct ibv_device_ops ops;\n  enum ibv_node_type node_type;\n  enum ibv_transport_type transport_type;\n  char name[IBV_SYSFS_NAME_MAX];\n  char dev_name[IBV_SYSFS_NAME_MAX];\n  char dev_path[IBV_SYSFS_PATH_MAX];\n  char ibdev_path[IBV_SYSFS_PATH_MAX];\n};\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1397/0/ib.go\"\u003eib.go\u003c/a\u003e (893 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1397/0/Makefile\"\u003eMakefile\u003c/a\u003e (107 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1397/0/ib_test.go\"\u003eib_test.go\u003c/a\u003e (267 bytes)",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"closed_at": "2014-12-08T10:08:09Z",
+	"created_at": "2011-01-07T09:32:29Z",
+	"updated_at": "2016-06-24T19:23:50Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 186829087,
+	"body": "I think it's ultimately the rendezvous service's fault, it doesn't buffer to read the secret. So for that to work it has to come in one read (TLS record?). It also uses TLSv1.0 currently which led me to [this](https://github.com/golang/go/blob/bc4fdfdbfe6b971fcceaf4d75514a882917df10d/src/crypto/tls/conn.go#L998-L1016) which is what I would guess is the issue.\r\n\r\nThis standalone program shows what rendezvous sees:\r\n\r\nhttps://gist.github.com/dpiddy/cb646c925ff5c645803f\r\n\r\nThe output is:\r\n\r\n```\r\n% go run main.go\r\n2016/02/21 10:11:12 write n=6\r\n2016/02/21 10:11:12 read n=1 b=\"h\"\r\n```\r\n\r\nIf I remove or up `MaxVersion` it behaves differently:\r\n\r\n```\r\n# comment out MaxVersion setting\r\n% go run main.go\r\n2016/02/21 10:12:34 write n=6\r\n2016/02/21 10:12:34 read n=6 b=\"hello\\n\"\r\n```\r\n\r\nBut, again, it seems like all this is expected for a TLSv1.0 server and we should get rendezvous up to TLSv1.2 and/or buffer to read the secret.",
+	"user": {
+		"login": "dpiddy",
+		"id": 2182,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-21T14:16:16Z",
+	"updated_at": "2016-06-01T18:44:37Z"
+}

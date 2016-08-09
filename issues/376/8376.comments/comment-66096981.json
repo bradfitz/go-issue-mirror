@@ -1,0 +1,12 @@
+{
+	"id": 66096981,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **marty.woodlee@mapmyfitnessinc.com**:\n\n\u003cpre\u003eWe are experiencing similar problems and came to the same conclusion regarding the root\ncause before finding this issue. Here's a proposal for a solution. I've compiled code\nagainst this and been able to get rid of the excessive statement preparation and memory\nleakage that was occurring otherwise:\n\n@@ -1360,17 +1360,27 @@ func (s *Stmt) connStmt() (ci *driverConn, releaseConn\nfunc(error), si driver.St\n                if err != nil {\n                        return nil, nil, nil, err\n                }\n-               dc.Lock()\n-               si, err := dc.prepareLocked(s.query)\n-               dc.Unlock()\n-               if err != nil {\n-                       s.db.putConn(dc, err)\n-                       return nil, nil, nil, err\n+               alreadyPrepared := false\n+               for _, v := range s.css {\n+                       if v.dc == dc {\n+                               alreadyPrepared = true\n+                               cs = v\n+                               break\n+                       }\n+               }\n+               if alreadyPrepared == false {\n+                       dc.Lock()\n+                       si, err := dc.prepareLocked(s.query)\n+                       dc.Unlock()\n+                       if err != nil {\n+                               s.db.putConn(dc, err)\n+                               return nil, nil, nil, err\n+                       }\n+                       s.mu.Lock()\n+                       cs = connStmt{dc, si}\n+                       s.css = append(s.css, cs)\n+                       s.mu.Unlock()\n                }\n-               s.mu.Lock()\n-               cs = connStmt{dc, si}\n-               s.css = append(s.css, cs)\n-               s.mu.Unlock()\n        }\n\n        conn := cs.dc\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-10-08T21:22:58Z",
+	"updated_at": "2014-12-08T10:46:33Z"
+}

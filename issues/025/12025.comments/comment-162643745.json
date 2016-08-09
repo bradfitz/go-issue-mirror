@@ -1,0 +1,12 @@
+{
+	"id": 162643745,
+	"body": "My simple fix made all these examples return false, but that broke real programs due to reflect.Types no longer being deep equal, because they eventually link to uncomparable values like function pointers. So I backed off somewhat. The semantics were never documented before, so I documented them as a relaxation of Go's == operator. That is, DeepEqual(x, y) is true when the Go expression x==y is both valid (compiles, does not panic) and true, and it is also true in some enumerated cases that implement recursive equality checking. I believe this is fairly defensible, and it is only a minor adjustment from what DeepEqual used to do. It does mean that the original program still prints somewhat inconsistent results (false, true, false; was false, true, true), but now I can explain them at least.\r\n\r\n    fmt.Println(reflect.DeepEqual(math.NaN(), math.NaN()))\r\n\r\nFalse. NaN != NaN.\r\n\r\n    a := map[string]float64{\"a\": math.NaN()}\r\n    fmt.Println(reflect.DeepEqual(a, a))\r\n\r\nTrue. In Go, a == a, so there is no need to look into the map.\r\n\r\n    b := []float64{math.NaN()}\r\n    fmt.Println(reflect.DeepEqual(b, b))\r\n\r\nFalse. In Go, slices are not comparable, so elements are compared, and b[0] != b[0].\r\n\r\nAn argument might be made for special-casing NaN-equality, but we'd still have the problem that non-nil funcs always compare unequal: main != main. And it's basically impossible to get that one right in programs that aren't statically linked, which is why Go disallows func value equality checks. Given that the example above could be written with s/float64/func()/ and s/math.NaN()/main/, the argument for special-casing NaN seems weakened to the point of not being worth doing.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-07T20:02:08Z",
+	"updated_at": "2015-12-07T20:02:08Z"
+}

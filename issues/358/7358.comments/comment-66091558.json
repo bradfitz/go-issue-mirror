@@ -1,0 +1,12 @@
+{
+	"id": 66091558,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eAs the docs say, things with cycles don't get collected and therefore don't get\nfinalized. This is working as intended, or at least working as implemented.\n\nThe finalizer order is implemented by treating the entries in the finalizer table as\nroots. That is, if you have a pointer p to a block of memory and p has a finalizer, then\np's memory is treated as containing roots, even though p is not a root, so that the\nthings p points at will not be freed before the finalizer for p runs.\n\nThis is certainly not something I want to touch before Go 1.3. There is plenty broken in\nthe garbage collector right now: we don't need more new code to debug. I also don't\nthink we need to solve it at all. In general people overuse finalizers; spending effort\non making them \"better\" will only exacerbate the problem.\n\nFor the specific case of the malloc issue, it is possible to get the properties you want\nwithout adding the self loop, and therefore you can avoid needing any change regarding\ncycles.\n\ntype Foo struct {\n    cptr *cFoo\n}\n\ntype cFoo struct {\n    p *C.foo\n}\n\nGive out the *Foo but set the finalizer on the *cFoo. If the Foo gets copied, then the\nright things still happen.\n\nYour original report suggests that you know about this workaround but have rejected it.\nI don't see why we need to make the runtime noticeably more complex just to avoid an\nextra struct. Either trust users not to copy the Foo, or put in the indirection.\u003c/pre\u003e\n\n_Labels changed: removed **release-go1.3**._\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-26T15:06:04Z",
+	"updated_at": "2014-12-08T10:40:56Z"
+}

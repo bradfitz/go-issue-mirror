@@ -1,0 +1,12 @@
+{
+	"id": 226393482,
+	"body": "ch can be nil if the two conditions for initialising the timer are not\nsatisfied. A nil channel is never considered ready for selection.\n\nOn Thu, 16 Jun 2016, 14:55 Zhiheng Huang \u003cnotifications@github.com\u003e wrote:\n\n\u003e @ianlancetaylor \u003chttps://github.com/ianlancetaylor\u003e It runs this method\n\u003e\n\u003e func (rm *retryManager) run() {\n\u003e     var timer *time.Timer\n\u003e     var ch \u003c-chan time.Time\n\u003e     n := time.Duration(1)\n\u003e     if rm.defaultDriver != nil \u0026\u0026 rm.backupDriver != nil {\n\u003e         timer = time.NewTimer(n * time.Second)\n\u003e         ch = timer.C\n\u003e     }\n\u003e     for {\n\u003e         if timer != nil {\n\u003e             if rm.retryDone {\n\u003e                 timer.Stop()\n\u003e             } else {\n\u003e                 timer.Reset(n * time.Second)\n\u003e             }\n\u003e         }\n\u003e         select {\n\u003e         case re := \u003c-rm.dbchan:\n\u003e             re.err \u003c- rm.encodeAndWrite(re.retryEntry)\n\u003e             rm.retryDone = false\n\u003e         case \u003c-ch:\n\u003e             err := rm.retry()\n\u003e             if err != nil {\n\u003e                 n *= 2\n\u003e                 if n \u003e 60 {\n\u003e                     n = 60\n\u003e                 }\n\u003e                 break\n\u003e             }\n\u003e             n = 1\n\u003e         case q := \u003c-rm.quit:\n\u003e             q \u003c- struct{}{}\n\u003e             return\n\u003e         }\n\u003e     }\n\u003e }\n\u003e\n\u003e And panic I expected should happen inside rm.retry().\n\u003e\n\u003e —\n\u003e You are receiving this because you are subscribed to this thread.\n\u003e Reply to this email directly, view it on GitHub\n\u003e \u003chttps://github.com/golang/go/issues/16069#issuecomment-226388159\u003e, or mute\n\u003e the thread\n\u003e \u003chttps://github.com/notifications/unsubscribe/AAAcA_vL__TPhBiRFKWzwjHNqBEthIdYks5qMNdbgaJpZM4I2Iwt\u003e\n\u003e .\n\u003e\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-16T05:45:25Z",
+	"updated_at": "2016-06-16T05:45:25Z"
+}

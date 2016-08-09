@@ -1,0 +1,12 @@
+{
+	"id": 162255734,
+	"body": "I've got a working implementation of archive/zip that can read/write password protected archives. The code is at https://github.com/alexmullins/zip. \r\n\r\nDetails:\r\nThe encryption/decryption method used is WinZip AES Encryption Specification (http://www.winzip.com/aes_info.htm). There are 2 other encryption methods specified in the original Zip Spec (https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT, Sections 6 and 7) which aren't implemented. The method described in Section 6, also known as ZipCrypto, is generally considered 'weak' and isn't advisable to use. The method described in Section 7 seems to be exclusively used with PKWARE products as I haven't seen any other opensource implementations support it. \r\n\r\nPublic API additions:\r\n\r\n* FileHeader.DeferAuth\r\n* func (*FileHeader) IsEncrypted\r\n* func (*FileHeader) SetPassword\r\n* func (*Writer) Encrypt\r\n\r\nCurrent roadblocks: \r\n* The method to turn a password into a master-key is PBKDF2 and I'm getting that functionality from the 3rd party package golang.org/x/crypto/pbkdf2. \r\n\r\n* Duplicating the cipher.NewCTR implementation from Go's Standard Library. (See here: https://github.com/alexmullins/zip/blob/master/crypto.go#L109). It was clarified for me that Go uses a right-aligned counter which is the standard way of doing it. WinZip AES uses a left-aligned counter.  The difference between the two is: \r\n\r\n\u003e Go CTR:\r\n\u003e 00000000000000000000000000000001\r\n\u003e 00000000000000000000000000000002\r\n\u003e\r\n\u003e WinZip CTR:\r\n\u003e 01000000000000000000000000000000\r\n\u003e 02000000000000000000000000000000\r\n\r\nAny feedback is welcome. \r\nThanks.",
+	"user": {
+		"login": "alexmullins",
+		"id": 174546,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-05T23:08:09Z",
+	"updated_at": "2016-01-15T21:35:11Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66095584,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003esrc/pkg/runtime/iface.goc\n\n#pragma textflag NOSPLIT\nfunc assertE2T(t *Type, e Eface) (ret byte, ...) {\n\tassertE2Tret(t, e, \u0026ret);\n}\n\n(here the ret is standing in for a variable-sized return value)\ntranslates via goc2c to C code:\n\nvoid\nruntime·assertE2T(Type* t, Eface e, byte ret,  ...)\n{\n\tret = 0;\n\tFLUSH(\u0026ret);\n#line 264 \"/Users/rsc/g/go/src/pkg/runtime/iface.goc\"\n\n\tassertE2Tret(t, e, \u0026ret);\n\tFLUSH(\u0026ret);\n}\n\nbut this is not correct when the return value has size 0 bytes. The ret=0 smashes the\nfirst byte beyond (= the first byte \"of\") the return value.\n\npackage main\ntype T struct{}\nvar x interface{} = T{}\nfunc main() {\n\tz := 256 + 1\n\t_ = x.(T)\n\tprintln(z)\n}\n\nprints 256.\n\nGoing to have to audit all the \u0026ret uses in goc files and change them back to standard C\ncode to avoid the implicit zeroing.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-02T16:28:52Z",
+	"updated_at": "2014-12-08T10:45:07Z"
+}

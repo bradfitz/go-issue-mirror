@@ -1,0 +1,12 @@
+{
+	"id": 66088122,
+	"body": "\u003ca id=\"c15\"\u003e\u003c/a\u003eComment 15:\n\n\u003cpre\u003eDoes this patch to (the current) pkg/runtime/sys_x86.c help?\n\ndiff -r db15aed35700 src/pkg/runtime/sys_x86.c\n--- a/src/pkg/runtime/sys_x86.c\tWed Jan 08 12:41:26 2014 -0800\n+++ b/src/pkg/runtime/sys_x86.c\tWed Jan 08 17:47:13 2014 -0800\n@@ -27,7 +27,6 @@\n runtime·rewindmorestack(Gobuf *gobuf)\n {\n \tbyte *pc;\n-\tFunc *f;\n \n \tpc = (byte*)gobuf-\u003epc;\n \tif(pc[0] == 0xe9) { // jmp 4-byte offset\n@@ -38,12 +37,18 @@\n \t\tgobuf-\u003epc = gobuf-\u003epc + 2 + *(int8*)(pc+1);\n \t\treturn;\n \t}\n-\tif(pc[0] == 0xcc) { // breakpoint inserted by gdb\n-\t\tf = runtime·findfunc(gobuf-\u003epc);\n-\t\tif(f != nil) {\n-\t\t\tgobuf-\u003epc = f-\u003eentry;\n-\t\t\treturn;\n-\t\t}\n+\tif(pc[0] == 0xcc) {\n+\t\t// This is a breakpoint inserted by gdb.  We could use\n+\t\t// runtime·findfunc to find the function.  But if we\n+\t\t// do that, then we will continue execution at the\n+\t\t// function entry point, and we will not hit the gdb\n+\t\t// breakpoint.  So for this case we don't change\n+\t\t// gobuf-\u003epc, so that when we return we will execute\n+\t\t// the jump instruction and carry on.  This means that\n+\t\t// stack unwinding may not work entirely correctly\n+\t\t// (\u003ca href=\"http://golang.org/issue/5723)\"\u003ehttp://golang.org/issue/5723)\u003c/a\u003e but the user is\n+\t\t// running under gdb anyhow.\n+\t\treturn;\n \t}\n \truntime·printf(\"runtime: pc=%p %x %x %x %x %x\\n\", pc, pc[0], pc[1], pc[2], pc[3], pc[4]);\n \truntime·throw(\"runtime: misuse of rewindmorestack\");\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-09T01:47:49Z",
+	"updated_at": "2014-12-08T10:37:39Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 177365129,
+	"body": "I understand the desire for a memory backpressure mechanism, but I see some issues with the proposed solution.\r\n\r\nFor one, modern Linux systems (and probably other platforms) tend to make this difficult at the OS level itself. In practice, mmap operations generally let you overcommit memory (in fact, we depend on this on amd64) and things don't fail until you attempt to fault too much memory in. But at that point, the OS doesn't have much recourse but to kill your process. It is possible to configure Linux to disallow overcommit via `/proc/sys/vm/overcommit_memory`, though that tends to interfere with unexpected things (it may interfere with our overcommit, though that may be fixable). But maybe you have to disable overcommit for systems that depends on memory backpressure in any language.\r\n\r\nSecond, it's unclear what should happen if the failing allocation happens to be in a system goroutine. System goroutines don't allocate much, but they do allocate. Even the garbage collector has to allocate a bit for its work lists. Performing an immediate STW GC when allocation fails handles this situation much better, since it's a global solution to the global problem of an application being out of memory. A similar implementation-related problem is that if an allocation fails on a user goroutine but in the runtime, it's often on the \"system stack\" and making it possible to unwind a panic from the system stack would be a huge effort.\r\n\r\nFinally, even if your defer releases reference to the memory used by a transaction, that memory won't be freed until the next GC, so allocations will continue to fail. Do you perform a full GC both before and after handling the panic? Do you require the recovery handler to perform a full GC?",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-31T02:49:40Z",
+	"updated_at": "2016-01-31T02:49:40Z"
+}

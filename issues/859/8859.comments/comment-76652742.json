@@ -1,0 +1,12 @@
+{
+	"id": 76652742,
+	"body": "I managed to get a stack trace, and I think I have a diagnosis.\r\n\r\nUnder some network conditions (I don't understand which), the `SYS_READ` syscall in [`syscall.read`](https://github.com/golang/go/blob/master/src/syscall/zsyscall_darwin_amd64.go#L970) fills the buffer and sets `e1` to `35` (`EAGAIN`). `35` is converted to an `error` [a few lines down](https://github.com/golang/go/blob/master/src/syscall/zsyscall_darwin_amd64.go#L973), which allocates. The error is passed up to `io.ReadFull` via `io.ReadAtLeast`. Both calls explicitly document that they return a `nil` error iff the buffer is not full. In this case, the buffer gets filled on the first request, so the error from `syscall.read` gets swallowed. As a result, the `t.Fatal` is not triggered, so we never actually *saw* the `EAGAIN` in the test results.\r\n\r\nIt's not obvious to me what the right fix is. Perhaps we should ignore `EAGAIN` in `syscall.read` if we have a full buffer? I also don't know whether this a complete diagnosis.\r\n\r\nIncidentally, this has nothing to do with the kernel patch. The patch is extremely narrow in scope and concerned with the handling of profiling signals, which are not even in use when this test fails.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-02T03:09:53Z",
+	"updated_at": "2015-03-02T03:09:53Z"
+}

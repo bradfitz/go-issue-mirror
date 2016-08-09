@@ -1,0 +1,27 @@
+{
+	"id": 84200783,
+	"number": 11040,
+	"state": "closed",
+	"title": "cmd/compile: compiler crash on valid code",
+	"body": "Test case:\r\n\r\npackage p\r\n\r\nvar s1, s2, s3, s4 string\r\n\r\nfunc F() bool {\r\n\treturn s1 == s2 \u0026\u0026 ((s3 == \"x\") != (s4 == \"x\") || s3 == s4)\r\n}\r\n\r\nThis is valid code that should compile without error.  Building this with last weeks's sources, I get:\r\n\r\nnaddr [0xc20818cdc0]\r\n.   ANDAND u(100) l(6) tc(1) bool\r\n.   .   EQ u(2) l(6) tc(1) bool\r\n.   .   .   LEN u(2) a(true) l(6) tc(1) int\r\n.   .   .   .   NAME-p.s3 u(1) a(true) l(3) x(0+0) class(PEXTERN) tc(1) used(true) string\r\n.   .   .   LITERAL-1 u(1) a(true) x(0+0) tc(1) int\r\n.   .   CALLFUNC u(100) l(6) tc(1) bool\r\n.   .   .   NAME-runtime.eqstring u(1) a(true) l(2) x(0+0) class(PFUNC) tc(1) used(true) FUNC-func(string, string) bool\r\n.   .   CALLFUNC-list\r\n.   .   .   AS u(1) l(6) tc(1)\r\n.   .   .   .   INDREG-SP a(true) l(6) x(0+0) tc(1) string\r\n.   .   .   .   NAME-p.s3 u(1) a(true) l(3) x(0+0) class(PEXTERN) tc(1) used(true) string\r\n\r\n.   .   .   AS u(1) l(6) tc(1)\r\n.   .   .   .   INDREG-SP a(true) l(6) x(16+0) tc(1) string\r\n.   .   .   .   LITERAL-\"x\" u(1) a(true) l(6) tc(1) string\r\n../../foo1.go:6: internal compiler error: naddr: bad \u0026\u0026 \r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x5c8057]\r\n\r\ngoroutine 1 [running]:\r\ncmd/compile/internal/gc.hcrash()\r\n\t/home/iant/go/src/cmd/compile/internal/gc/subr.go:105 +0x57\r\ncmd/compile/internal/gc.Fatal(0x844e90, 0x10, 0xc20808c460, 0x2, 0x2)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/subr.go:198 +0x2b4\r\ncmd/compile/internal/gc.Naddr(0xc2081a4010, 0xc20818cdc0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gsubr.go:311 +0x1680\r\ncmd/compile/internal/amd64.gins(0x3036, 0xc20818cdc0, 0xc20818da40, 0x40e4fe)\r\n\t/home/iant/go/src/cmd/compile/internal/amd64/gsubr.go:629 +0x12d\r\ncmd/compile/internal/gc.bgenx(0xc208188a00, 0x0, 0xc208199901, 0x0, 0xc20819b6c0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:2061 +0x18d3\r\ncmd/compile/internal/gc.Bgen(0xc208188a00, 0xc20819bc01, 0x0, 0xc20819b6c0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:1739 +0x4e\r\ncmd/compile/internal/gc.bgenx(0xc2081888c0, 0xc208183a40, 0xc208199501, 0x0, 0x0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:1889 +0xe07\r\ncmd/compile/internal/gc.Bvgen(0xc2081888c0, 0xc208183a40, 0x1)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:1751 +0x77\r\ncmd/compile/internal/gc.bgenx(0xc208199400, 0xc208183a40, 0x7e4d01, 0x0, 0x0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:1890 +0xe35\r\ncmd/compile/internal/gc.Bvgen(0xc208199400, 0xc208183a40, 0xc208018701)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:1751 +0x77\r\ncmd/compile/internal/gc.cgen_wb(0xc208199400, 0xc208183a40, 0x100)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:372 +0x270b\r\ncmd/compile/internal/gc.Cgen(0xc208199400, 0xc208183a40)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:19 +0x37\r\ncmd/compile/internal/gc.cgen_wb(0xc208188640, 0xc208183a40, 0x0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:309 +0x1746\r\ncmd/compile/internal/gc.Cgen_as_wb(0xc208183a40, 0xc208188640, 0x0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:959 +0x16c\r\ncmd/compile/internal/gc.Cgen_as(0xc208183a40, 0xc208188640)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:910 +0x37\r\ncmd/compile/internal/gc.gen(0xc20818e8c0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:860 +0x18b\r\ncmd/compile/internal/gc.Genlist(0xc208165a40)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:219 +0x37\r\ncmd/compile/internal/gc.cgen_ret(0xc208188500)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/cgen.go:2623 +0x3e\r\ncmd/compile/internal/gc.gen(0xc208188500)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:884 +0xfac\r\ncmd/compile/internal/gc.Genlist(0xc208165700)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/gen.go:219 +0x37\r\ncmd/compile/internal/gc.compile(0xc2081837c0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/pgen.go:463 +0xb57\r\ncmd/compile/internal/gc.funccompile(0xc2081837c0)\r\n\t/home/iant/go/src/cmd/compile/internal/gc/dcl.go:1474 +0x1c0\r\ncmd/compile/internal/gc.Main()\r\n\t/home/iant/go/src/cmd/compile/internal/gc/lex.go:468 +0x1e99\r\ncmd/compile/internal/amd64.Main()\r\n\t/home/iant/go/src/cmd/compile/internal/amd64/galign.go:127 +0x590\r\nmain.main()\r\n\t/home/iant/go/src/cmd/compile/main.go:26 +0x18c",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-06-02T21:19:18Z",
+	"created_at": "2015-06-02T20:37:26Z",
+	"updated_at": "2016-06-25T02:10:05Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

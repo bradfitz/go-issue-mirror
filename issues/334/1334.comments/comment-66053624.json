@@ -1,0 +1,12 @@
+{
+	"id": 66053624,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eCan reproduce this latest bug by changing stdio/file.go to say\n\n\npackage stdio\n\n/*\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\n#include \u0026lt;sys/stat.h\u0026gt;\n#include \u0026lt;errno.h\u0026gt;\n#include \u0026lt;resolv.h\u0026gt;\n\nchar* greeting = \"hello, world\";\n*/\nimport \"C\"\nimport \"unsafe\"\n\ntype File C.FILE\n\nvar Stdout = (*File)(C.stdout)\nvar Stderr = (*File)(C.stderr)\n\nvar res = \u0026C._res\n\nThe solution will be to make the generation of _cgo_main.c \npart of cgo instead of pushing it into the shell script where\nit currently is.\n\nFor hello, something like\n\nint main() { return 0; }\nint crosscall2;\nextern char __stderrp[];\nvoid *mystderrp = __stderrp;\nextern char _res[];\nvoid *mystderrx = _res;\nextern char greeting[];\nvoid *mygreeting = greeting;\n\ncreates a working binary (refers to _res but not greeting,\nwhich is internal).  \n\nI am waiting for some other cgo changes to get reviewed\nand submitted first but I think we're getting there.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-12-16T22:47:52Z",
+	"updated_at": "2014-12-22T05:53:33Z"
+}

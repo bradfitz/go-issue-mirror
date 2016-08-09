@@ -1,0 +1,12 @@
+{
+	"id": 235741857,
+	"body": "\u003e Are there any circumstances under which a fix for this would be part of go1.7?\r\n\r\nIt's now been pushed to master and should get cherry-picked in the last batch before the release. We're keeping a close eye on it and running internal tests, which I should have the results of tomorrow.\r\n\r\n\u003e On a related note, I always wondered why GC credit/debit is per-g rather than per-p. What's the reasoning behind that? Have we tried to make it per-p? There are obviously pros and cons. But per-p looks more reasonable to me.\r\n\r\nI don't think it would be bad to do it per P. The reason we do it per G is that the time a goroutine spends helping the garbage collector is supposed to be proportional to its own allocation rate, so that the cost of assisting roughly balances across the bytes you allocate. Whether or not this actually matters, I'm really not sure. Doing it per P would still maintain the really important invariant that allocation not outpace scanning.\r\n\r\nI have been considering moving the assist to when a span is acquired from the mcentral to reduce the overhead to the hot allocation path. In that case, it may make more sense to track it per P, along with the mcache. If I also change assists to always queue if there's not enough global credit (and not do any scan work of their own), then there might not be any need to track assist debt at all, per P or per G.\r\n\r\n\u003e Is it the case that per-g credit can be left unused for lots of goroutines? Or there is something that prevents that?\r\n\r\nCurrently, left over credit is recycled along with the g struct. This seems to work fine in practice, but of course, if lots of goroutines build up spare credit and then exit and new goroutines don't replace the exited goroutines, we'll lose track of this built-up credit. A while ago I wrote https://go-review.googlesource.com/c/24703/ to flush this credit to the global credit pool on goroutine exit, but it didn't seem to have any effect, so it never got merged.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-27T22:31:32Z",
+	"updated_at": "2016-07-27T22:31:32Z"
+}

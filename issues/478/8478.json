@@ -1,0 +1,27 @@
+{
+	"id": 51288259,
+	"number": 8478,
+	"state": "closed",
+	"title": "cmd/cgo: inconsistent mapping of void* to *byte under -{c,go}defs",
+	"body": "\u003cpre\u003eAs of revision 0015a25415455c390ae135bef7de2d5e2b10ee88:\n\n$ cat test.go\n// +build ignore\n\npackage test\n\n/*\ntypedef struct {\n        void *p;\n        void **q;\n        void ***r;\n} s;\n*/\nimport \u0026quot;C\u0026quot;\n\ntype S C.s\n\n$ go tool cgo -cdefs test.go\n// Created by cgo -cdefs - DO NOT EDIT\n// cgo -cdefs test.go\n\n\ntypedef struct S S;\n\n#pragma pack on\n\nstruct S {\n        byte    *p;\n        byte    **q;\n        void    ***r;\n};\n\n\n#pragma pack off\n\n$ go tool cgo -godefs test.go\n// Created by cgo -godefs - DO NOT EDIT\n// cgo -godefs test.go\n\npackage test\n\ntype S struct {\n        P       *byte\n        Q       **byte\n        R       **unsafe.Pointer\n}\n\n\nAt a minimum, this seems inconsistent to me, and we can simplify cmd/cgo somewhat\n(namely eliminating typeConv.todoFlds) if we're okay with simply always mapping\n\u0026quot;void *\u0026quot; to \u0026quot;*byte\u0026quot;.  I've looked over the uses of -cdefs and\n-godefs in the runtime and syscall packages, and I don't see any types that should\nchange as a consequence of this.\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:07Z",
+	"created_at": "2014-08-06T03:46:47Z",
+	"updated_at": "2016-06-25T01:39:02Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66087676,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI've poked at this a bit and wanted to get some feedback before I continued.\n\nAs written, hi only allocs once, since b is allocated on the stack. A quick benchmem run\nbears this out. If b's cap is much larger or unknown at compile time, then yes, two\nallocs occur.\n\nI cobbled together a very crude patch that returns a string header in case cases, as\nsuggested. It is possibly underpowered, but it found only a few opportunities in the\nstdlib for such an optimization:\n\nstrings/replace.go:502\nstrings/strings.go:367\nstrings/strings.go:430\nstrconv/quote.go:82\nstrconv/quote.go:349\nencoding/base64/base64.go:121\nos/env.go:26\npath/filepath/path.go:314\nnet/url/url.go:168\nnet/url/url.go:211\n\nRunning the existing benchmarks, the only alloc count improvements are:\n\nstrings BenchmarkByteStringMatch: 2 -\u003e 1\nstrings BenchmarkHTMLEscapeNew: 2 -\u003e 1\nstrings BenchmarkCountTortureOverlapping: 4 -\u003e 2\nstrconv BenchmarkUnquoteHard: 2 -\u003e 1\nnet/url BenchmarkString: 44 -\u003e 39\n\nExtending to rune slices adds only two call sites:\n\ncompress/gzip/gunzip.go:118\ntesting/quick/quick.go:127\n\nI'd need non-trivial direction and input to bring my patch up to snuff...or more likely,\nrewrite it from scratch after some hints. (I am finding my way by touch; all the tests\npass, though, so that's something.)\n\nGiven all the above, should I continue to pursue this?\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-24T19:51:02Z",
+	"updated_at": "2014-12-08T10:37:14Z"
+}

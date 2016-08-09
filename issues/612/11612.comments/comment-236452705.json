@@ -1,0 +1,12 @@
+{
+	"id": 236452705,
+	"body": "I think I finally figured out my wrong assumption. I thought you applied the algorithm during CFG construction, but you applied it afterwards.\r\n\r\nI found at least two difference to the original algorithm in `lookupVarOutgoing`\r\n\r\n1. If the block has only one predecessor, the implementations skips the block, but does not register the resulting value in `s.defvars` (as the paper would). This may lead to runtime issues for long chains of such blocks. However, it is certainly not the reason for the out of memory.\r\n2. When the function finds a block with multiple predecessors, it creates a new FwdRef, do some bookkeeping, and returns it immediately. In contrast, the paper would recursively handle the new FwdRef. This leads to a lot of unnecessary operations.\r\n\r\nExample:\r\n`x = 42`\r\n`if (...) {`\r\n`  if (...) {`\r\n`  }`\r\n`}`\r\n`use(x)`\r\n\r\nLet's assume we resolve the FwdRef after the outer `if`. Then, we find the definition `x = 42` as first phi operand and would create a new FwdRef after the inner `if` as second phi operand. In the next step, we resolve the new FwdRef after the inner `if`, finding `x = 42` both times, which results in a Copy operation. Thus, we end up with\r\n\r\n`v0:  42`\r\n`if (...) {`\r\n`  if (...) {`\r\n`  }`\r\n`  v1: Copy(v0)`\r\n`}`\r\n`v2: Phi(v0, v1)`\r\n`use(v2)`\r\n\r\nIn contrast, the paper would construct:\r\n`v0:  42`\r\n`if (...) {`\r\n`  if (...) {`\r\n`  }`\r\n`}`\r\n`use(v0)`",
+	"user": {
+		"login": "UniQP",
+		"id": 1321557,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-31T19:52:13Z",
+	"updated_at": "2016-07-31T19:52:13Z"
+}

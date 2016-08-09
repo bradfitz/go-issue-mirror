@@ -1,0 +1,28 @@
+{
+	"id": 148080144,
+	"number": 15277,
+	"state": "closed",
+	"title": "cmd/compile: must flush dead but modified arguments back to stack before each call",
+	"body": "I've been working on timely reclamation of some large buffers in a local program using Go 1.6. One source of retention is function arguments (including receiver). We've marked the arguments as permanently live, which means that for the purposes of garbage collection it is important to be able to nil them out and have that take effect. This works fine in Go 1.6, but it looks like the SSA backend does not flush back writes to arguments that SSA believes are dead. For the current liveness analysis, they're never dead, at least in the sense that the GC looks at them, so they should always be flushed back.\n\nConsider:\n\n```\npackage main\n\nfunc f(x []byte) {\n\tprintln(\"hi\")\n\tx = nil\n\tprintln(\"hi again\")\n\tpanic(1)\n}\n\nfunc main() {\n\tf(make([]byte, 100))\n}\n```\n\n```\n$ go run -gcflags -ssa=0 /tmp/x.go\nhi\nhi again\npanic: 1\n\ngoroutine 1 [running]:\npanic(0x498c0, 0xc82000a118)\n\t/Users/rsc/go/src/runtime/panic.go:500 +0x18a\nmain.f(0x0, 0x0, 0x0)                               \u003c\u003c\u003c\u003c\u003c\u003c\u003c CLEARED\n\t/tmp/x.go:7 +0xbe\nmain.main()\n\t/tmp/x.go:11 +0x74\nexit status 2\n$ go run /tmp/x.go\nhi\nhi again\npanic: 1\n\ngoroutine 1 [running]:\npanic(0x49880, 0xc82000a118)\n\t/Users/rsc/go/src/runtime/panic.go:500 +0x18a\nmain.f(0xc82003bee4, 0x64, 0x64)                    \u003c\u003c\u003c\u003c\u003c\u003c\u003c NOT CLEARED\n\t/tmp/x.go:7 +0xab\nmain.main()\n\t/tmp/x.go:11 +0x4b\nexit status 2\n$ \n```\n\n@dr2chase mentioned that perhaps local variables can get flushed into \"dead\" argument slots too. If that's true, that needs to be fixed too. It might be fixed automatically by making SSA understand args are always live, but if not it needs a separate fix. Because the args are always live, it's especially important not to put local variables there. Local variables are how programmers can switch to something with more limited liveness, as in:\n\n```\nfunc f(x []byte) {\n\tx1 := x\n\tx = nil\n\t// now x1 will be dropped by GC once it is no longer needed\n\t...\n}\n```\n\nIt would be bad here if x1 simply got allocated to x's slot and ended up pinned live.\n\nThere is a separate question of whether the args should be permanently live, but that ship may have sailed. Changing that would get into issues about finalizers and early reclamation that we've basically avoided by having a mechanism for something that stays live even though the compiler can't quite see why. Abandoning that would require a lot of testing and care. For Go 1.7 we just need to make sure that SSA understands the historical liveness rules and lets programmers keep programming against them.\n\nHere is a variant of the above program suitable for testing:\n\n```\npackage main\n\nimport \"runtime\"\n\nfunc f(x []byte, start int64) {\n\tif delta := inuse() - start; delta \u003c 9\u003c\u003c20 {\n\t\tprintln(\"after alloc: expected delta at least 9MB, got: \", delta)\n\t}\n\tx = nil\n\tif delta := inuse() - start; delta \u003e 1\u003c\u003c20 {\n\t\tprintln(\"after alloc: expected delta below 1MB, got: \", delta)\n\t}\n}\n\nfunc main() {\n\tx := inuse()\n\tf(make([]byte, 10\u003c\u003c20), x)\n}\n\nfunc inuse() int64 {\n\truntime.GC()\n\tvar st runtime.MemStats\n\truntime.ReadMemStats(\u0026st)\n\treturn int64(st.Alloc)\n}\n```\n\n```\n$ go run -gcflags=-ssa=0 /tmp/x.go\n$ go run /tmp/x.go\nafter alloc: expected delta below 1MB, got:  10494512\n$ \n```\n\n/cc @randall77 @dr2chase",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2016-05-18T19:25:49Z",
+	"created_at": "2016-04-13T14:32:01Z",
+	"updated_at": "2016-05-26T03:24:08Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

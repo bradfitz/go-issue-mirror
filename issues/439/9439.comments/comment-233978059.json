@@ -1,0 +1,12 @@
+{
+	"id": 233978059,
+	"body": "I'm interested in working on this as this behaviour of govet caused me some confusion recently.\r\n\r\nI did some digging. The way this fails is:\r\n  cmd/vet/main.go: doPackage creates a _local_ Package and calls check() on it\r\n  cmd/vet/types.go: (*Package).check() creates go/types.Config and calls Check(). Check ultimately returns an error when the import fails. There isn't a good way to determine an import failure from any other type of error from Check.\r\n\r\nWhen check() creates types.Config, it builds it with importer.Default(). This provides a convenient hook pass a wrapped Importer/ImporterFrom, one that delegates all calls but collects failure evidence.\r\n\r\ncheck() could then update the _local_ Package with failed imports, which would then be available to go vet for error reporting. I would suggest keeping a map[string]bool in the package var and reporting any failed imports at the end. E.g:\r\n\r\nif len(failedImports) \u003e 0 {\r\n  warnf(\"unable to import the following packages, go install them and rerun: ...\")\r\n}\r\n\r\nI could have a CL for this in a few days if this SG.",
+	"user": {
+		"login": "seanrees",
+		"id": 381193,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-20T15:05:30Z",
+	"updated_at": "2016-07-20T15:05:30Z"
+}

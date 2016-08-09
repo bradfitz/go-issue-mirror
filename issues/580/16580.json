@@ -1,0 +1,21 @@
+{
+	"id": 169015558,
+	"number": 16580,
+	"state": "open",
+	"title": "x/tools/cmd/eg: vendor and PWD lead to type mismatch",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n    go1.7rc4, with golang/tools@9e7459099f9afd6a15464d69d93c6eed49bb545d\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n    darwin/amd64\r\n\r\n3. What did you do?\r\n\r\n    I have an `eg` template that replaces calls to a function in one package (\"dep1\" below) with calls to a similar function in a second package (\"dep2\"). I ran `eg` with the template in a repo with a vendor directory that includes only the first package.\r\n\r\n4. What did you expect to see?\r\n\r\n    I expected `eg` to successfully run, updating the function call if present.\r\n\r\n5. What did you see instead?\r\n\r\n    The `eg` invocation fails when my current working directory is in the directory containing the vendor directory, or a subdirectory of it. The invocation succeeds if I `cd` to anywhere else.\r\n\r\n```\r\n$ go env GOPATH\r\n/tmp/eg\r\n$ cd \"$GOPATH/src/prog\" \u0026\u0026 eg -w -t \"$GOPATH/src/prog/tmpl.go\" -- \"$GOPATH/src/prog/main.go\"\r\n/tmp/eg/src/prog/tmpl.go:15:9: cannot use t (variable of type prog/vendor/dep1.T) as dep1.T value in argument to dep2.F\r\neg: couldn't load packages due to errors: template\r\n$ cd \"$GOPATH\" \u0026\u0026 eg -w -t \"$GOPATH/src/prog/tmpl.go\" -- \"$GOPATH/src/prog/main.go\"\r\n=== /tmp/eg/src/prog/main.go (1 matches)\r\n```\r\n\r\nHere are the contents of the GOPATH where I've reproduced the issue:\r\n\r\n./src/dep1/dep1.go:\r\n```\r\npackage dep1\r\n\r\ntype T int\r\n\r\nvar A T\r\n\r\nfunc F(t T) {}\r\n```\r\n\r\n./src/dep2/dep2.go:\r\n```\r\npackage dep2\r\n\r\nimport \"dep1\"\r\n\r\nfunc F(t dep1.T) {}\r\n```\r\n\r\n./src/prog/vendor/dep1/dep1.go:\r\n```\r\npackage dep1\r\n\r\ntype T int\r\n\r\nvar A T\r\n\r\nfunc F(t T) {}\r\n```\r\n\r\n./src/prog/main.go:\r\n```\r\npackage main\r\n\r\nimport \"dep1\"\r\n\r\nfunc main() {\r\n\tdep1.F(dep1.A)\r\n}\r\n```\r\n\r\n./src/prog/tmpl.go:\r\n```\r\n// +build ignore\r\n\r\npackage eg\r\n\r\nimport (\r\n\t\"dep1\"\r\n\t\"dep2\"\r\n)\r\n\r\nfunc before(t dep1.T) {\r\n\tdep1.F(t)\r\n}\r\n\r\nfunc after(t dep1.T) {\r\n\tdep2.F(t)\r\n}\r\n```\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-08-02T23:49:15Z",
+	"updated_at": "2016-08-04T15:49:00Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

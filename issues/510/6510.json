@@ -1,0 +1,27 @@
+{
+	"id": 51285297,
+	"number": 6510,
+	"state": "open",
+	"title": "runtime: windows syscall does not use XMM registers to pass float args",
+	"body": "\u003cpre\u003eCurrently in sys_windows_amd64.s line 41-ish\n\nloadregs:\n  // Load first 4 args into correspondent registers.                                                                                          \n  MOVQ  0(SI), CX\n  MOVQ  8(SI), DX\n  MOVQ  16(SI), R8\n  MOVQ  24(SI), R9\n\nBut if an arg is a float32/float64 it should be loaded into an xmm register instead\n\n\u003ca href=\"http://msdn.microsoft.com/en-us/library/ms235286.aspx\"\u003ehttp://msdn.microsoft.com/en-us/library/ms235286.aspx\u003c/a\u003e\n\nIn the \u0026quot;Calling Convention\u0026quot; section.\n\u0026quot;\nThe arguments are passed in registers RCX, RDX, R8, and R9. If the arguments are\nfloat/double, they are passed in XMM0L, XMM1L, XMM2L, and XMM3L.\n\u0026quot;\n\nPerhaps the easy thing is to just load them into both sets of 4?\nThen you wouldn't have to type check going out...\n\nFigured I shouldn't try submitting a patch for something so low level without any\nprevious submissions.\n\nI am no windows pro, so I may just be confused here.\n\nI discovered this trying to call glClearColor (which takes only 4 floats) with\nsyscall.Syscall6.  I got random colors every run, which was fairly interesting.\nUsed a fake opengl32.dll (from GLIntercept) and a Printf right before Syscall6 to\ndiscover my values were not being pushed all the way through unless they were integers.\n\nI didn't look into 32bit windows and float args. It may have similar problem.\nHopefully this makes sense my brain hurts. I hate windows.\u003c/pre\u003e",
+	"user": {
+		"login": "bryanturley",
+		"id": 1634211,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 47,
+	"created_at": "2013-09-29T19:20:27Z",
+	"updated_at": "2016-05-18T01:31:29Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

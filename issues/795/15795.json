@@ -1,0 +1,27 @@
+{
+	"id": 156194268,
+	"number": 15795,
+	"state": "open",
+	"title": "cmd/go: `test -cover` does not include xtests (`_test` package) in coverage percentage or profile",
+	"body": "#### Version of Go\r\n`1.6`, also replicated on `devel +4b6e560`.\r\n\r\n#### Operating system and processor architecture\r\nOperating System: `darwin`\r\nProcessor Architecture: `amd64`\r\n\r\n#### What I did\r\n  * `git clone https://github.com/leighmcculloch/static.git`\r\n  * `git checkout with-xtests`\r\n  * `go test -cover`\r\n  * `git diff with-xtests..with-tests` – change the tests package from `static_test` to `static`\r\n  * `git checkout with-tests`\r\n  * `go test -cover`\r\n\r\n#### What I expected to see\r\nI expected to see a coverage percentage for the `static` package that included the test files that are in the same directory but have their package at the top of their files named `static_test`. I expected that it wouldn't matter if the tests were in the package `static_test` or `static`, the coverage should be the same.\r\n```\r\n$ git checkout with-xtests\r\nSwitched to branch 'with-xtests'\r\nYour branch is up-to-date with 'origin/with-xtests'.\r\n\r\n$ go test -cover\r\nPASS\r\ncoverage: 93.9% of statements\r\nok      github.com/leighmcculloch/static        0.023s\r\n\r\n$ git checkout with-tests\r\nSwitched to branch 'with-tests'\r\nYour branch is up-to-date with 'origin/with-tests'.\r\n\r\n$ go test -cover\r\nPASS\r\ncoverage: 93.9% of statements\r\nok      github.com/leighmcculloch/static        0.028s\r\n```\r\n\r\nAdditionally expected that looking at the coverage in the HTML format would show most lines green.\r\n\r\n#### What I saw instead\r\nThe coverage percentage for the `static` package is only `20.4%` and is not including tests that are named as being in the `static_test` package, even though those tests are in the same directory as the `static` package and are being executed.\r\n\r\nWhen I change the package the tests live in from `static_test` to `static`, they are included in the coverage and the coverage is `93.9%`.\r\n```\r\n$ git checkout with-xtests\r\nSwitched to branch 'with-xtests'\r\nYour branch is up-to-date with 'origin/with-xtests'.\r\n\r\n$ go test -cover\r\nPASS\r\ncoverage: 20.4% of statements\r\nok      github.com/leighmcculloch/static        0.023s\r\n\r\n$ git checkout with-tests\r\nSwitched to branch 'with-tests'\r\nYour branch is up-to-date with 'origin/with-tests'.\r\n\r\n$ go test -cover\r\nPASS\r\ncoverage: 93.9% of statements\r\nok      github.com/leighmcculloch/static        0.028s\r\n```\r\n\r\nAdditionally saw that looking at the coverage in the HTML format showed most lines red.\r\n\r\n#### What I've attempted so far to fix it\r\nI've looked (naively) at the source of [cmd/go/test.go](https://github.com/golang/go/blob/master/src/cmd/go/test.go) and I can see the tests grouped in `pxtest` are not recompiled, there are no coverVars associated with pxtest. I attempted to fix this by adding the `p.GoFiles` to the `pxtest`s `coverVars` but I ended up with errors like the below. I'm guessing this is because there's an assumption being made somewhere that files included in coverage are in the same package as the tests.\r\n```\r\n/var/folders/yr/llg1db9x72v7dgycypwy9pyc0000gq/T/go-build725799557/github.com/leighmcculloch/static/_test/_testmain.go:109: undefined: static_test.GoCover_6 in static_test.GoCover_6.Count\r\n```\r\n\r\nI plan to continue looking at this in more depth, but hoped I could get some suggestions, pointers or confirmation of where I should be looking.",
+	"user": {
+		"login": "leighmcculloch",
+		"id": 351529,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-05-23T03:36:01Z",
+	"updated_at": "2016-07-13T21:09:29Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

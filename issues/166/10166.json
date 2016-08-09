@@ -1,0 +1,26 @@
+{
+	"id": 61696166,
+	"number": 10166,
+	"state": "open",
+	"title": "runtime/pprof: SIGPROF crashes process on netbsd/amd64",
+	"body": "This is on \r\n```\r\n$ uname -a\r\nNetBSD edamame.mirbsd.org 7.0_BETA NetBSD 7.0_BETA (GENERIC.201501181820Z) amd64\r\n$ go version\r\ngo version devel +3b1d692 Sat Mar 14 10:47:19 2015 +0000 netbsd/amd64\r\n```\r\nAt tip, the runtime/pprof test fails, which also makes all.bash fail:\r\n\r\n```\r\n=== RUN TestMemoryProfiler\r\n--- PASS: TestMemoryProfiler (0.02s)\r\n=== RUN TestCPUProfile\r\nexit status 255\r\nFAIL    runtime/pprof   0.038s\r\n```\r\n\r\nLooking at ktrace output, it looks like the SIGPROF is what kills the process:\r\n\r\n```\r\n 16246      3 pprof.test RET   compat_60__lwp_park -1 errno 4\r\nInterrupted system call\r\n 16246      3 pprof.test PSIG  SIGPROF caught handler=0x456980\r\nmask=(): code=SI_TIMER sent by pid=0, uid=0 with sigval 0x2)\r\n 16246      3 pprof.test CALL  setcontext(0x40)\r\n 16246      3 pprof.test RET   setcontext -1 errno 14 Bad address\r\n 16246      3 pprof.test CALL  exit(0xffffffffffffffff)\r\n```\r\n\r\nAccording to Minux:\r\n\r\n\u003e has NetBSD changed kernel signal handler ABI?\r\n\u003e or there might some stack/register corruption in runtime.sigtramp. The implicit\r\n\u003e setcontext(2) is picking up a wrong address for ucontext. Should we preserve\r\n\u003e callee-saved registers in runtime.sigtramp? I'd start by setting a break on\r\n\u003e runtime.sigtramp, and then disassemble the function it should return to and try\r\n\u003e understand where does 0x40 come from.",
+	"user": {
+		"login": "bsiegert",
+		"id": 866330,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 0,
+	"created_at": "2015-03-14T21:14:33Z",
+	"updated_at": "2016-01-26T02:51:15Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

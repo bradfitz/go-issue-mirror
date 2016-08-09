@@ -1,0 +1,12 @@
+{
+	"id": 231558247,
+	"body": "Having a goroutine which periodically checks memory use, or which listens on a channel for memory warnings doesn't do me a lot of good because I need to kill off the code that's doing the problematic memory allocations.\r\n\r\nWhile it's true that OOM is a global property, it's usually the case that transaction processing code is where the bulk of allocations are being done, so it's that code that needs to be aborted/limited. This is why the panic on soft memory limit exceeded approach can help, while other notification mechanisms would not help. It's not a real OOM, it's just an early warning that soon you will be in trouble. runtime.SetSoftMemoryLimit() would affect only the calling goroutine. If you architect your application so that transaction processing is limited to specific goroutines, and those goroutines have asked for the early warning panic, they can recover from those panics by aborting the transaction and hence freeing up memory. Everyone else runs as normal, since there is still memory available.\r\n\r\nIn a way, this is similar to my original suggestion of a memory buffer that's set aside and only used when there is an OOM panic, but it's probably simpler and cleaner to implement in the runtime. A key difference from the user perspective is that with the soft limit panic, you need to set a limit, rather than keep allocating until you actually run out of memory. It's not as automatic, but you can make do with this approach. It would be vastly better than the current situation.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-09T22:02:08Z",
+	"updated_at": "2016-07-09T22:06:07Z"
+}

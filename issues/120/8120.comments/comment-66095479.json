@@ -1,0 +1,12 @@
+{
+	"id": 66095479,
+	"body": "\u003ca id=\"c8\"\u003e\u003c/a\u003eComment 8:\n\n\u003cpre\u003eThis looks like an escape analysis problem.\n\n\ta := \"a\"\n\tu := U{\u0026a}\n\tv := NewV(u)\n\na should escape because it is passed (via U) to NewV and stored in the heap.  But the\ncompiler stack-allocates a and passes its address down.\n\n\t0x0019 00025 (what_test.go:59)\tLEAQ\tgo.string.\"a\"+0(SB),BX\n\t0x0021 00033 (what_test.go:59)\tMOVQ\t(BX),BP\n\t0x0024 00036 (what_test.go:59)\tMOVQ\tBP,\"\".a+32(SP)\n\t0x0029 00041 (what_test.go:59)\tMOVQ\t8(BX),BP\n\t0x002d 00045 (what_test.go:59)\tMOVQ\tBP,\"\".a+40(SP)\n\t0x0032 00050 (what_test.go:60)\tMOVQ\t\"\".statictmp_0019+0(SB),AX\n\t0x003a 00058 (what_test.go:60)\tLEAQ\t\"\".a+32(SP),AX\n\t0x003f 00063 (what_test.go:61)\tMOVQ\tAX,\"\".u+24(SP)\n\t0x0044 00068 (what_test.go:61)\tMOVQ\tAX,(SP)\n\t0x0048 00072 (what_test.go:61)\tPCDATA\t$1,$1\n\t0x0048 00072 (what_test.go:61)\tCALL\t,\"\".NewV(SB)\n\nThis screws up stack copying because there is a pointer to the stack living in the heap.\n When the stack is copied, that pointer is now junk because the copier couldn't adjust\nit.  Bad times.\n\nSet StackDebug, StackFromSystem, and StackFaultOnFree to 1 in pkg/runtime/stack.c to see\nthis trace:\n\ncopystack [0x2208514000 0x2208516000]/8192 -\u003e [0x2208520000 0x2208524000]/16384\nstackfree 0x2208514000 8192\n...\nunexpected fault address 0x2208515ef8\nfatal error: fault\n[signal 0xa code=0x2 addr=0x2208515ef8 pc=0x43529]\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-01T00:33:59Z",
+	"updated_at": "2014-12-08T10:45:01Z"
+}

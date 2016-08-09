@@ -1,0 +1,12 @@
+{
+	"id": 217629933,
+	"body": "The problem is that you are running an unbounded number of concurrent requests, each with it's own client, all competeting for bounded resources, causing them to pile up, taking more and more memory and slowing down the requests even more.\r\n\r\n(I used the \"net/http/pprof\" package, [explained here](https://blog.golang.org/profiling-go-programs), to look at the goroutine blocking profile)\r\n\r\nYou should use a bounded number of goroutines for requests. The easiest way is to spawn some worker goroutines and send the URLs via a channel.\r\n\r\nAlso you shouldn't create a new http.Client for each request. Instead use a single http.Client for all requests. The http.Client is designed to be used by many Goroutines simultaneously and keeps it's own pool of connections which then can be reused for new connections (as long as you use the same http.Client).\r\n\r\n[Here is a adjusted version of your code](https://play.golang.org/p/zwSRqZWHi_) that bounds the number of concurrent requests, keeping the memory usage to ~ 3MB (in my case). I also added some comments and change a bit of the logic to be more idiomatic.\r\n\r\nAlso note that tools like top and ps can report much higher memory usage then what is actually used. If you want more accurate values you can use runtime.MemStats as done in the code I linked.\r\n\r\nThe next time please use the golang-nuts mailing list or stack overflow before creating a new issue.",
+	"user": {
+		"login": "nuss-justin",
+		"id": 6443781,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-07T11:25:13Z",
+	"updated_at": "2016-05-07T11:25:13Z"
+}

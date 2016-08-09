@@ -1,0 +1,12 @@
+{
+	"id": 66060262,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eI forgot to mention it earlier, but while implementing this, I realized it's very much\nrelated to implementing HTTP/1.1 pipelining.   In both cases we need to listen for\nwrites from the client while the ServeHTTP function is running.  Currently we run\nServeHTTP in the same goroutine, which has this comment before it:\n\n                // HTTP cannot have multiple simultaneous active requests.[*]\n                // Until the server replies to this request, it can't read another,\n                // so we might as well run the handler in this goroutine.\n                // [*] Not strictly true: HTTP pipelining.  We could let them all process\n                // in parallel even if their responses need to be serialized.\n                handler.ServeHTTP(w, w.req)\n\nI'd like to also support pipelining at some point (though SPDY is better).\n\nI do agree with Blake, though, that he's not requesting something crazy or non-HTTP-ish.\n We do tell people often that the reason you can't kill goroutines is because you're\nsupposed to send an exit message on a channel to a goroutine instead, telling it to\nstop.  That's what this bug is about:  letting the HTTP server tell a ServeHTTP\ngoroutine that if it's doing something expensive that it can stop.  It's not about\nwhether it's streaming it or what output format it's sending, or whether the request\nwill ever end.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-12-14T01:03:34Z",
+	"updated_at": "2014-12-08T10:13:23Z"
+}

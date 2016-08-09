@@ -1,0 +1,12 @@
+{
+	"id": 155213318,
+	"body": "Okay, @fenderle helped me figure this out, it looks like BSD makes some sort of adjustment to the actual limit here:\r\n\r\nhttps://github.com/freebsd/freebsd/blob/master/sys/kern/uipc_sockbuf.c#L385-L399\r\n\r\nwhich gets triggered from here:\r\n\r\nhttps://github.com/freebsd/freebsd/blob/master/sys/kern/uipc_sockbuf.c#L420\r\n\r\nso the actual buffer limit is _not_ 8388608, it's actually \r\n\r\n```\r\nsb_max_adj = (u_quad_t)sb_max * MCLBYTES / (MSIZE + MCLBYTES);\r\n8388608 * (1 \u003c\u003c 11) / (256 + (1 \u003c\u003c 11))  =  8388608 * (2048) / (2304)  = 7456540\r\n```\r\n\r\n(where 8388608 == `kern.ipc.maxsockbuf`)\r\n\r\nSo I think we can close this issue....I don't think it's within Go's domain to adjust for this, BSD is weird.",
+	"user": {
+		"login": "sparrc",
+		"id": 7155926,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-09T22:03:38Z",
+	"updated_at": "2015-11-09T22:06:41Z"
+}

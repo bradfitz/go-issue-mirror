@@ -1,0 +1,12 @@
+{
+	"id": 66073049,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **zarcardfly**:\n\n\u003cpre\u003ehi, I try as your recommended:\n    hg clone -u release \u003ca href=\"https://code.google.com/p/go\"\u003ehttps://code.google.com/p/go\u003c/a\u003e\n    cd go\n    hg update default\n    cd src\n    ./all.bash\nI checked the code version:\n~/hg/go $ hg summary\nparent: 15135:7e135713451d tip\n src: gofmt -w -s\nbranch: default\ncommit: 1 modified\nupdate: (current)\n\nAnd I run my program ‘\u003ca href=\"http://play.golang.org/p/IKPtSqNs53\"\u003ehttp://play.golang.org/p/IKPtSqNs53\u003c/a\u003e’, the problem still exists.\nThe number of goroutines is more than 40 now, and the connections are 'leaking' too.\n\nI checked the code and debuged with gdb, here is my preliminary analysis:\nThere are two goroutines for a new created persistConn.\nThe reader goroutine is stuck in readLoop():559:\n557 \n558         for alive {\n559                 pb, err := pc.br.Peek(1)\n560 \n561                 pc.lk.Lock()\nThe writer goroutine is stuck in writeLoop():661:\n660         for {\n661                 select {\n662                 case wr := \u0026lt;-pc.writech:\n\nIn my code, line 667 returned a none nil err 'http: Request.ContentLength=3 with Body\nlength 5', the 'pc' was maked broken, and pc.bw was't flushed, so line 559 in reader\ngoroutine would never returned. The writer goroutine go back to line 661, and stuck\nthere. \n667                         err := wr.req.Request.write(pc.bw, pc.isProxy, wr.req.extra)\n668                         if err == nil {\n669                                 err = pc.bw.Flush()\n670                         }\n671                         if err != nil {\n672                                 pc.markBroken()\n673                         }       \n674                         wr.ch \u0026lt;- err\nBecause the persistConn was new created or picked from Transport.idleConn, no one could\nobtain it again, it was 'leaked', with two goroutines and one connection.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-12-15T09:22:52Z",
+	"updated_at": "2014-12-22T06:21:14Z"
+}

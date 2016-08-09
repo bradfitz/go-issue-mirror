@@ -1,0 +1,22 @@
+{
+	"id": 51280997,
+	"number": 3689,
+	"state": "closed",
+	"title": "panics during testing with a goyacc generated parser have incorrect file:line in error message",
+	"body": "\u003cpre\u003eWhen a panic is received in a unit test that has a goyacc generated parser linked in,\nthe file:line number in the stack trace is not correct, and is probably nonexistant.\n\nAttached is a minimal test case.  Here is the output:\n\ngunstar% make\ngo test\nerror syntax error\npanic: ugh [recovered]\n\tpanic: ugh\n\ngoroutine 3 [running]:\ntesting._func_003(0x2b21cb3befa8, 0x2b21cb3be100, 0x2b21cb3befb8, 0x2b21cb3bef00)\n\t/usr/lib/go/src/pkg/testing/testing.go:268 +0xf6\n----- stack segment boundary -----\n_/home/jaq/src/bug.TestBug()\n\t/home/jaq/src/bug/parser.go:349 +0x86\ntesting.tRunner(0xf840000e00, 0x565728, 0x0, 0x0)\n\t/usr/lib/go/src/pkg/testing/testing.go:273 +0x6f\ncreated by testing.RunTests\n\t/usr/lib/go/src/pkg/testing/testing.go:349 +0x788\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x400c00, 0x565728, 0x100000001, 0x1, 0x55b4d8, ...)\n\t/usr/lib/go/src/pkg/testing/testing.go:350 +0x7ab\ntesting.Main(0x400c00, 0x565728, 0x100000001, 0x56ab78, 0x0, ...)\n\t/usr/lib/go/src/pkg/testing/testing.go:285 +0x7a\nmain.main()\n\t/tmp/go-build623385241/_/home/jaq/src/bug/_test/_testmain.go:43 +0x91\n\ngoroutine 2 [syscall]:\ncreated by runtime.main\n\t/usr/lib/go/src/pkg/runtime/proc.c:221\nexit status 2\nFAIL\t_/home/jaq/src/bug\t0.004s\nmake: *** [test] Error 1\n\n\nNote the lines\n_/home/jaq/src/bug.TestBug()\n\t/home/jaq/src/bug/parser.go:349 +0x86\n\nTestBug appears in main_test.go and the panic occurs at line 9.\n\nHowever parser.go is only 339 lines long.\n\nparser.go is full of //line parser.y:XX comments.\n\nIt appears that some line counter is not reset after parser.go is complete, as the stack\ntrace claims the panic occurs at line 349 of parser.go, which is 339 + 9 (+/- fencepost\nerrors)\n\nNote that even putting //line main_test.go:2 at the top of main_test.go does not change\nthe behaviour of the output: the error is still claimed to be within parser.go.\n\nYou can build and run the test with the Makefile (necessary to run go tool yacc).  The\nparser.go file is not necessary to download to reproduce, but is included to see what I\ngenerated.\n\nThis is the smallest test I could get -- possibly you can use a smaller .y file -- the\nimportant part is to get the code linked in so a call to yyParse is necessary to prevent\nthe code from being orphaned and excluded.\n\n\nI am using\ngo version weekly.2012-03-27 +ac7250065a04\ninstalled freshly from launchpad's golang-tip package.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3689/0/main_test.go\"\u003emain_test.go\u003c/a\u003e (121 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3689/0/Makefile\"\u003eMakefile\u003c/a\u003e (82 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3689/0/parser.y\"\u003eparser.y\u003c/a\u003e (362 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3689/0/parser.go\"\u003eparser.go\u003c/a\u003e (5496 bytes)",
+	"user": {
+		"login": "jaqx0r",
+		"id": 3038203,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:19:28Z",
+	"created_at": "2012-05-31T06:44:37Z",
+	"updated_at": "2016-06-24T22:19:48Z"
+}

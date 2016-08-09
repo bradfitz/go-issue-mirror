@@ -1,0 +1,12 @@
+{
+	"id": 74210351,
+	"body": "@dvyukov io_submit is the Linux AIO API (as opposed to POSIX AIO). It's a separate codepath and dependent on the filesystem doing the right thing; the implementations have been problematic, and using aio introduces a whole bunch of risk. The original implementation assumed O_DIRECT and this air remains; non-O_DIRECT operation is even more problematic. O_DIRECT is not safe to use for generic file operations because others accessing the file will use buffer cache. Without O_DIRECT e.g. the generic version of io_submit falls back to synchronous processing. Some filesystems don't handle unaligned accesses well. In some circumstances (e.g. journaling details, file space not preallocated, etc), io_submit has to wait until the operation completes, instead of just submitting an async request; this tends to be more typical without O_DIRECT. The default limit for pending requests is only 128; after that io_submit starts blocking. Finally, io_submit only helps with the basic read/write workload, no `open(2)`, `stat(2)` etc.\r\n\r\nI'm not saying it won't work, but I also would not be surprised if a change moving file IO to io_submit got reverted within a few months.",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-13T06:19:20Z",
+	"updated_at": "2015-02-13T06:19:20Z"
+}

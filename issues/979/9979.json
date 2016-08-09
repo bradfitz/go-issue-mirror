@@ -1,0 +1,33 @@
+{
+	"id": 58686182,
+	"number": 9979,
+	"state": "closed",
+	"title": "go/parser: EmptyStmt.Semicolon.End() is off by one",
+	"body": "If you parse\n\n\tfunc f() {\n\t\tgoto label\n\tlabel:\n\t}\n\nThen you get a LabeledStmt containing an EmptyStmt, and the EmptyStmt.Semicolon has as its value the offset of the } character, and then EmptyStmt.Semicolon.End() returns that+1, which means that the End is recorded as just beyond the closing brace. If you try to delete the statement from the program using the reported boundaries, you end up deleting the brace.\n\nFull test case:\n\n\tpackage main\n\t\n\timport (\n\t\t\"fmt\"\n\t\t\"go/ast\"\n\t\t\"go/parser\"\n\t\t\"go/token\"\n\t\t\"log\"\n\t)\n\t\n\tfunc main() {\n\t\tfset := token.NewFileSet()\n\t\tf, err := parser.ParseFile(fset, \"x.go\", prog, 0)\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\tast.Inspect(f, func(x ast.Node) bool {\n\t\t\tif x != nil {\n\t\t\t\tfmt.Printf(\"%T at %d,%d\\n\", x, x.Pos(), x.End())\n\t\t\t}\n\t\t\treturn true\n\t\t})\n\t}\n\t\n\tvar prog = `package p\n\t\n\tfunc f() {\n\t\tgoto L\n\tL:\n\t}\n\t`\n\nPrints:\n\n\t*ast.File at 1,35\n\t*ast.Ident at 9,10\n\t*ast.FuncDecl at 12,35\n\t*ast.Ident at 17,18\n\t*ast.FuncType at 12,20\n\t*ast.FieldList at 18,20\n\t*ast.BlockStmt at 21,35\n\t*ast.BranchStmt at 24,30\n\t*ast.Ident at 29,30\n\t*ast.LabeledStmt at 31,35\n\t*ast.Ident at 31,32\n\t*ast.EmptyStmt at 34,35\n\nYou can see that the EmptyStmt has the same end as the BlockStmt (and for that matter the FuncDecl and File).\nIt should be nested inside those.\n\nI am kind of confused by the definition of EmptyStmt.Semicolon. What is the \"preceding semicolon\" when there's no semicolon due to semicolon insertion? It's tempting to say it is the \\n, but there's not always a \\n either.\n\nJust to explore, consider changing var prog to\n\n\tvar prog = `package p;func f(){goto L;L:}`\n\nThen the +1 in Semicolon.End cannot be right, because there is nothing safe to +1 over. Contrast this with:\n\n\tvar prog = `package p;func f(){goto L;L:;}`\n\nIt seems like the fix requires an extra field in EmptyStmt to distinguish real semicolons from implicit semicolons.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-02-24T21:36:12Z",
+	"created_at": "2015-02-24T02:49:22Z",
+	"updated_at": "2016-06-25T02:01:50Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,31 @@
+{
+	"id": 149937239,
+	"number": 15395,
+	"state": "open",
+	"title": "runtime: significant performance improvement on single core machines",
+	"body": "**1. What version of Go are you using (`go version`)?**\r\n\r\n```\r\ngo version go1.5.4 linux/amd64\r\n```\r\n\r\n**2. What operating system and processor architecture are you using (`go env`)?**\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/root/go\"\r\nGOTOOLDIR=\"/root/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nHosts are running stock Ubuntu 15.10:\r\n\r\n```\r\n# uname -r\r\n4.2.0-27-generic\r\n```\r\n\r\n**3. What did you do?**\r\n**4. What did you expect to see?**\r\n**5. What did you see instead?**\r\n\r\nLooking into performance of running containers on [Docker](https://github.com/docker/docker), we realized there's a significant difference when running on a single core machine versus a multi core machine. The result seem independent of the `GOMAXPROCS` value (using `GOMAXPROCS=1` on the multi core machine remains significantly slower).\r\n\r\nSingle core:\r\n\r\n```\r\n# time ./docker run --rm busybox true\r\nreal    0m0.255s\r\n```\r\n\r\nMulti core:\r\n\r\n```\r\n# time ./docker run --rm busybox true\r\nreal    0m0.449s\r\n```\r\n\r\nWe cannot attribute that difference to Go with a 100% certainty, but we could use your help explaining some of the profiling results we've obtained so far.\r\n\r\n##### Profiling / trace\r\n\r\nWe instrumented the code to find out where that difference materialized, and what comes out is that it is quite evenly distributed. However, syscalls are consistently taking much more time on the multi core machine (as made obvious with slower syscalls such as `syscall.Unmount`).\r\n\r\nUsing `go tool trace` to dig further, it appears that we're seeing discontinuities in goroutine execution on the multi core machine that the single core one doesn't expose, even with `GOMAXPROCS=1`.\r\n\r\nSingle core ([link to the trace file](https://www.dropbox.com/s/onxw64prot30kzo/layerStore-singleCore-1?dl=1))\r\n\r\n![image](https://cloud.githubusercontent.com/assets/1564054/14695355/2d8d7f38-0726-11e6-8bd5-9ee58d13e94f.png)\r\n\r\nMulti core with `GOMAXPROCS=1` ([link to the trace file](https://www.dropbox.com/s/unkchqgegmrey5u/layerStore-multiCore-gomaxprocs1?dl=1))\r\n\r\n![image](https://cloud.githubusercontent.com/assets/1564054/14695342/0a8a565a-0726-11e6-8bfc-aca8e0da85fe.png)\r\n\r\n[Link to the binary which produced the trace files](https://www.dropbox.com/s/kni7ngcqqfutx1x/docker?dl=1).\r\n\r\n##### Host information\r\n\r\nThe two hosts are virtual machines running on the same Digital Ocean zone, with the exact same CPU (`Intel(R) Xeon(R) CPU E5-2630L v2 @ 2.40GHz`). The issue was also reproduced locally with Virtual Box VM with different core numbers.\r\n\r\nPlease let us know if there's any more information we can provide, or if you need us to test with different builds of Go. Thanks for any help you can provide!\r\n\r\nCc @crosbymichael @tonistiigi.",
+	"user": {
+		"login": "icecrime",
+		"id": 1564054,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-04-21T02:01:08Z",
+	"updated_at": "2016-08-01T23:31:37Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

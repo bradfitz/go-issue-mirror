@@ -1,0 +1,27 @@
+{
+	"id": 51285000,
+	"number": 6319,
+	"state": "closed",
+	"title": "cmd/6l: linker crashes",
+	"body": "\u003cpre\u003eThe linker crashes on the attached stand-alone file.\n\n$ hg id\n14b4ad05c021 tip\n\nmac:camlistore.org bradfitz$ go tool 6g make.go\nmac:camlistore.org bradfitz$ go tool 6l make.6\ngo tool 6l: signal: segmentation fault\n\nBut without inlining, it's fine:\n\nmac:camlistore.org bradfitz$ go tool 6g -l make.go\nmac:camlistore.org bradfitz$ go tool 6l make.6\nmac:camlistore.org bradfitz$\n\n\nThe part that causes the crash is:\n\n\tif !*quiet {\n                // XXXXXX This next line causes the linker to crash.\n\t\t// But remove the actualBinDir call and it's fine.\n                log.Printf(\u0026quot;Success. Binaries are in %s\u0026quot;, actualBinDir(binDir))\n        }\n}\n\nfunc actualBinDir(dir string) string {\n\tif *buildARCH == runtime.GOARCH \u0026amp;\u0026amp; *buildOS == runtime.GOOS {\n\t        return dir\n\t}\n        return filepath.Join(dir, *buildOS+\u0026quot;_\u0026quot;+*buildARCH)\n}\n\nAnd gdb says:\n\n(gdb) exec ~/go/pkg/tool/darwin_amd64/6l\nReading symbols for shared libraries .. done\n(gdb) run -o make make.6\nStarting program: /Users/bradfitz/go/pkg/tool/darwin_amd64/6l -o make make.6\nReading symbols for shared libraries . done\nReading symbols for shared libraries ................................ done\n\nProgram received signal EXC_BAD_ACCESS, Could not access memory.\nReason: KERN_INVALID_ADDRESS at address: 0x00000001007e0000\nblk (start=\u0026lt;value temporarily unavailable, due to optimizations\u0026gt;, addr=\u0026lt;value\ntemporarily unavailable, due to optimizations\u0026gt;, size=\u0026lt;value temporarily\nunavailable, due to optimizations\u0026gt;) at /Users/bradfitz/go/src/cmd/6l/../ld/data.c:502\n502\t\t\t\tcput(*p++);\n(gdb) l\n497\t\t\tfor(; addr \u0026lt; sym-\u0026gt;value; addr++)\n498\t\t\t\tcput(0);\n499\t\t\tp = sym-\u0026gt;p;\n500\t\t\tep = p + sym-\u0026gt;np;\n501\t\t\twhile(p \u0026lt; ep)\n502\t\t\t\tcput(*p++);\n503\t\t\taddr += sym-\u0026gt;np;\n504\t\t\tfor(; addr \u0026lt; sym-\u0026gt;value+sym-\u0026gt;size; addr++)\n505\t\t\t\tcput(0);\n506\t\t\tif(addr != sym-\u0026gt;value+sym-\u0026gt;size) {\nCurrent language:  auto; currently minimal\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6319/0/make.go\"\u003emake.go\u003c/a\u003e (19593 bytes)",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:34:45Z",
+	"created_at": "2013-09-04T04:13:52Z",
+	"updated_at": "2016-06-25T01:18:02Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

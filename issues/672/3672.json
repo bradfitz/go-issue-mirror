@@ -1,0 +1,33 @@
+{
+	"id": 51280974,
+	"number": 3672,
+	"state": "closed",
+	"title": "net/http: Client can't close HTTP stream.",
+	"body": "\u003cpre\u003eI can't seem to close an HTTP response body while it's still sending data.  I ran into\nthis in an app I was writing, but I believe the following client and server demonstrate\nthe problem (sorry, not sure how to write a trustworthy test for this):\n\n\n// server.go:\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc foreverYoung(w http.ResponseWriter, req *http.Request) {\n\tw.Header().Set(\u0026quot;Content-type\u0026quot;, \u0026quot;application/javascript\u0026quot;)\n\tw.Header().Set(\u0026quot;Access-Control-Allow-Origin\u0026quot;, \u0026quot;*\u0026quot;)\n\tw.WriteHeader(200)\n\n\tfor {\n\t\tw.Write([]byte(\u0026quot;young\\r\\n\u0026quot;))\n\t\tw.(http.Flusher).Flush()\n\t\ttime.Sleep(time.Second)\n\t}\n}\n\nfunc main() {\n\thttp.HandleFunc(\u0026quot;/\u0026quot;, foreverYoung)\n\tlog.Fatal(http.ListenAndServe(\u0026quot;:4334\u0026quot;, nil))\n}\n\n\n\n\n// client.go:\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\nfunc main() {\n\tresp, err := http.Get(\u0026quot;\u003ca href=\"http://localhost:4334/\u0026quot\"\u003ehttp://localhost:4334/\u0026quot\u003c/a\u003e;)\n\tif err == nil {\n\t\tfunc() {\n\t\t\tdefer resp.Body.Close()\n\t\t\tfor {\n\t\t\t\tb := []byte{0}\n\t\t\t\t_, err := resp.Body.Read(b)\n\t\t\t\tif err != nil {\n\t\t\t\t\tlog.Fatalf(\u0026quot;Error reading stuff: %v\u0026quot;, err)\n\t\t\t\t}\n\t\t\t\tos.Stdout.Write(b)\n\t\t\t\tif b[0] == byte('\\n') {\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t}()\n\t} else {\n\t\tlog.Fatalf(\u0026quot;Error in stream: %v\u0026quot;, err)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "dustin",
+		"id": 1779,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:19:22Z",
+	"created_at": "2012-05-28T07:44:11Z",
+	"updated_at": "2016-06-24T22:19:35Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

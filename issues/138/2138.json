@@ -1,0 +1,28 @@
+{
+	"id": 51278783,
+	"number": 2138,
+	"state": "closed",
+	"title": "pkg/scanner: Scanner.Pos() column/offset off by 1 on illegal UTF-8 encoding",
+	"body": "by **ijknacho**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nGiven:\n  package main\n\n  import (\n    \u0026quot;bytes\u0026quot;\n    \u0026quot;fmt\u0026quot;\n    \u0026quot;io\u0026quot;\n    \u0026quot;scanner\u0026quot;\n  )\n\n  func runScanner(r io.Reader) {\n    var s scanner.Scanner\n    s.Init(r)\n    s.Error = func(s *scanner.Scanner, text string) {\n      pos := s.Pos()\n      fmt.Printf(\u0026quot;  pos = %v, text = %v\\n\u0026quot;, pos, text)\n    }\n    _ = s.Scan()\n  }\n\n  func main() {\n    // NUL at column 1\n    buf := bytes.NewBufferString(\u0026quot;\u0026quot;)\n    buf.WriteByte(0x0)\n    fmt.Printf(\u0026quot;scan of %q:\\n\u0026quot;, buf.Bytes())\n    runScanner(buf)\n\n    // NUL at column 4 \n    buf = bytes.NewBufferString(\u0026quot;abc\u0026quot;)\n    buf.WriteByte(0x0)\n    fmt.Printf(\u0026quot;scan of %q:\\n\u0026quot;, buf.Bytes())\n    runScanner(buf)\n\n    // bad unicode at column 1\n    buf = bytes.NewBufferString(\u0026quot;\u0026quot;)\n    buf.WriteByte(0x80)\n    fmt.Printf(\u0026quot;scan of %q:\\n\u0026quot;, buf.Bytes())\n    runScanner(buf)\n\n    // BUG:\n    // bad unicode at column 4, but scanner reports column 3\n    buf = bytes.NewBufferString(\u0026quot;abc\u0026quot;)\n    buf.WriteByte(0x80)\n    fmt.Printf(\u0026quot;scan of %q:\\n\u0026quot;, buf.Bytes())\n    runScanner(buf)\n  }\n\nWhat is the expected output?\nscan of \u0026quot;abc\\x80\u0026quot;:\n  pos = 1:4, text = illegal UTF-8 encoding\n\nWhat do you see instead?\nscan of \u0026quot;abc\\x80\u0026quot;:\n  pos = 1:3, text = illegal UTF-8 encoding\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux version 2.6.32-131.6.1.el6.x86_64\n\nWhich revision are you using?  (hg identify)\nd5785050f61d (release-branch.r59) release.r59/release\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:11:29Z",
+	"created_at": "2011-08-08T10:13:27Z",
+	"updated_at": "2016-06-24T19:33:10Z"
+}

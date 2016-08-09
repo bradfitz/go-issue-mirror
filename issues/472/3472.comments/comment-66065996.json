@@ -1,0 +1,12 @@
+{
+	"id": 66065996,
+	"body": "\u003ca id=\"c14\"\u003e\u003c/a\u003eComment 14 by **kballard**:\n\n\u003cpre\u003eI think it's fair to say ReadFull should never return (len(p),io.EOF), but it should\ncertainly feel free to return (len(p),SomeOtherError). If you care about the ability to\nboth handle an error that happens after reading n bytes, as well as processing those n\nbytes anyway, then you should be checking the first return value from the function. The\nproblem with discarding the error when the entire buffer is read is this is assuming\nthat subsequent calls to Read() will return the same error. While I believe subsequent\ncalls to Read() should in fact return the same error, I don't believe this is actually\nrequired (or even necessarily should be required, in case someone comes up with a\ntransient error value).\n\nThat said, a Read() implementation that returns (len(p), ErrThatsNotIoEOF) might be\nconsidered broken anyway. It's certainly unexpected to be handed an error (besides\nio.EOF) at the same time as you're handed all the data you asked for. If we really want\nto fix ReadFull to never return (len(p),err) then this may be done best by specifying\nthat Read() should not return (len(p),errBesidesIoEOF).\n\nI agree that we shouldn't make implicit assumptions, which is why we should explicitly\ndocument the acceptable return values from Read(). Any implementation which returns\n(0,nil) will break code (e.g. cause ReadFull() to go into an infinite loop, etc). I\nsuspect that most gophers right now assume Read() cannot return (0,nil), and are\ntherefore writing code that assumes that either n \u003e 0 or err != nil. This assumption\nshould be codified in the documentation so nobody decides to implement a non-blocking\nreader that returns (0,nil) (this is actually the perfect example of a transient\nerror—such a non-blocking reader should return (0,ErrThatIndicatesNoData), but\nsubsequent Read()s could then return (\u003e0,nil), although this may be better-implemented\nas a separate function than Read()).\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-06-05T19:27:58Z",
+	"updated_at": "2014-12-08T10:18:09Z"
+}

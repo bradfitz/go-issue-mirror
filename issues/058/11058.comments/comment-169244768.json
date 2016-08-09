@@ -1,0 +1,12 @@
+{
+	"id": 169244768,
+	"body": "@nadiasvertex I can reproduce the crash in runtime.rt0_go. It is crashing on https://github.com/nadiasvertex/go/blob/master/src/runtime/asm_amd64.s#L112 line. I have used objdump to disassemble test.dll. Here is the interesting part:\r\n```\r\n    6dc8bae3:\te8 18 38 00 00       \tcallq  6dc8f300 \u003cruntime.settls\u003e\r\n    6dc8bae8:\t65 48 8b 1c 25 28 00 \tmov    %gs:0x28,%rbx\r\n    6dc8baef:\t00 00 \r\n    6dc8baf1:\t64 48 c7 03 23 01 00 \tmovq   $0x123,%fs:(%rbx)\r\n    6dc8baf8:\t00 \r\n    6dc8baf9:\t48 8b 05 78 e2 07 00 \tmov    0x7e278(%rip),%rax        # 6dd09d78 \u003cruntime.m0+0x58\u003e\r\n```\r\nIf you compare it to a similar part of simple Go executable (my go.exe):\r\n```\r\n  4e2551:\te8 ea 3c 00 00       \tcallq  4e6240 \u003cruntime.settls\u003e\r\n  4e2556:\t65 48 8b 1c 25 28 00 \tmov    %gs:0x28,%rbx\r\n  4e255d:\t00 00 \r\n  4e255f:\t48 c7 83 00 00 00 00 \tmovq   $0x123,0x0(%rbx)\r\n  4e2566:\t23 01 00 00 \r\n  4e256a:\t48 8b 05 27 9f 79 00 \tmov    0x799f27(%rip),%rax        # c7c498 \u003cruntime.m0+0x58\u003e\r\n```\r\nyou will see that `g(BX)` is transldated into `0x0(%rbx)`, while your new test.dll has `%fs:(%rbx)`. I suspect that translation is your problem. I don't know how `g(BX)` gets converted, perhaps others will help.\r\n\r\nMind you, I am not sure if you should spend your time fixing this. Because, even if you will make existing code work, you would have to come up with a different way to do TLS inside of your DLL (see discussion before).\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-06T06:18:01Z",
+	"updated_at": "2016-01-06T06:18:01Z"
+}

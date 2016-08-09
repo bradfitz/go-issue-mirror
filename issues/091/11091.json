@@ -1,0 +1,33 @@
+{
+	"id": 85645384,
+	"number": 11091,
+	"state": "closed",
+	"title": "encoding/asn1: requiring DER for Boolean is too strict for some certificates",
+	"body": "ASN.1 / X.690 has two very different standards for Boolean in BER and DER.  BER says \r\n\u003eIf the boolean value is\r\n\u003eTRUE\r\n\u003ethe octet shall have any non-zero value, as a sender's option.\r\n(8.2)\r\nand DER says \r\n\u003eIf the encoding represents the boolean value TRUE, its single contents octet shall have all eight bits set to one.\r\n(11.1)\r\n\r\nGo 1.4.2 follows the DER rule (see https://github.com/golang/go/blob/master/src/encoding/asn1/asn1.go#L57) , with the additional requirement (not stated in the spec) that FALSE is 0x00.\r\n\r\nAll certificate authorities I have seen generate DER-compliant values.  Some tools, though, generate certificates that seem to follow BER here, instead.  Here is an example PEM:\r\n\r\n```\r\n-----BEGIN CERTIFICATE-----\r\nMIIDATCCAemgAwIBAgIQOgJHM+7r/xvxxeliFvXjeDANBgkqhkiG9w0BAQUFADAq\r\nMRMwEQYDVQQKEwpXV0dyYWluZ2VyMRMwEQYDVQQDEwpHcmFpbmdlckNBMB4XDTA5\r\nMTAwNjE5MjYyN1oXDTE0MTAwNjE5MjYyN1owKjETMBEGA1UEChMKV1dHcmFpbmdl\r\ncjETMBEGA1UEAxMKR3JhaW5nZXJDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC\r\nAQoCggEBAK9f9Sd0psEPBeu4nbbLMfSoKXz/kEmX2RAQfMTemYs9XK9VtOGI8eSg\r\ndLUoF5XIk0fztiaNdHc7mBsgF4Ji94k804kN171knxCpYP2VVDgDH4q9/lU8ZfnT\r\nlHOWyzTjlq8UwoA56Ss5rBVH/6mHESNgVumSAWpZgWPZjicfwyItXPBePIjZTP0C\r\niWh4Ay23EHPvVvQiPGzFQXgDtRE6AriQltY7/F+KNvlb/Ha8VI5dgGB2RHRwA2Xx\r\nfLsidCN05G3Jo8RkCjN/Wr3epder32/cjGFrmWk8TfJWxkYew8KX+hbBewNfBsCC\r\nDmcj3KCkCp1Waee/uw8ATw8cHpRsik0CAwDh3aMjMCEwDgYDVR0PAQH/BAQDAgGG\r\nMA8GA1UdEwEB/wQFMAMBAQEwDQYJKoZIhvcNAQEFBQADggEBAEg2pybpiFgdc7dz\r\nYku+Pf87cZbKMY6IEFwCIa0t+SUQ2R/gjzoWFJgkGmg0haoCBjD0bO+CROOoS/k0\r\nz+hTvhHQsGIZVExguP9hOzgHEYQFpPPO5pmveJVqP6AD94DCfOFBSPu6F+fmo4Jl\r\nSilbQhZ87SkF0MG3+Js1df1JTm083sCJvGSKD/kmy/8AtCyrTW/e9cYw3TLUdGY7\r\nE230B9A5EcWpzZreO1qBcwuA7hmvhyGDQmz6yx16mgpr23tgMpGVs/JnRiOS+xDV\r\n5rjYnn8DpSc7qr7LoZtfLjZZ/JUyrt4AIx+ZuvUjuNTZN7+IU4l2W5V+wHjuIrRt\r\nA+MgdxE=\r\n-----END CERTIFICATE-----\r\n```\r\nThis certificate has the value 0x01 for TRUE in the critical extension BasicConstraints.  asn1.go throws a syntax error on it and prevents connection to any server using this CA.  \r\n\r\nOpenSSL's x509 mode, Python, and Java all successfully evaluate this certificate. Checking source for them shows that they are following the more relaxed BER rules for booleans - anything other than a 0 is TRUE.  I believe Go should be able to as well.",
+	"user": {
+		"login": "dtertman",
+		"id": 11013254,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-06-08T19:29:04Z",
+	"created_at": "2015-06-05T22:19:10Z",
+	"updated_at": "2016-06-25T02:10:30Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

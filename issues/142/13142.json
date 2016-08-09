@@ -1,0 +1,17 @@
+{
+	"id": 115021262,
+	"number": 13142,
+	"state": "closed",
+	"title": "compress/gzip causes deadlock when PipeReader is given.",
+	"body": "I tried to decompress gzip stream from pipe reader with compress/gzip, but it causes deadlock. Curious to say, the same code works well with compress/bzip2.\r\n\r\nHere is PoC code: \r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"bufio\"\r\n\t\"compress/gzip\"\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\trd, wr := io.Pipe()\r\n\t// unzipper := bzip2.NewReader(rd) // This works well in contrast.\r\n\tunzipper, err := gzip.NewReader(rd)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tgo func() {\r\n\t\tfile, err := os.Open(\"foo.gz\")\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tdefer file.Close()\r\n\t\tio.Copy(wr, file)\r\n\t\twr.Close()\r\n\t}()\r\n\tbrd := bufio.NewReader(unzipper)\r\n\tfor {\r\n\t\tline, err := brd.ReadString('\\n')\r\n\t\tif err != nil {\r\n\t\t\tif err == io.EOF {\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tfmt.Print(line)\r\n\t}\r\n\tfmt.Println(\"ok\")\r\n}\r\n```\r\n\r\nand, I got the following error message:\r\n\r\n```\r\n\u003e go build ./cmd/temp \u0026\u0026 ./temp\r\nfatal error: all goroutines are asleep - deadlock!\r\n\r\ngoroutine 1 [semacquire]:\r\nsync.runtime_Syncsemacquire(0x820296040)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/runtime/sema.go:237 +0x201\r\nsync.(*Cond).Wait(0x820296030)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/sync/cond.go:62 +0x9b\r\nio.(*pipe).read(0x820296000, 0x82023b000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/io/pipe.go:52 +0x2d2\r\nio.(*PipeReader).Read(0x82024c020, 0x82023b000, 0x1000, 0x1000, 0x0, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/io/pipe.go:134 +0x50\r\nbufio.(*Reader).fill(0x820238120)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/bufio/bufio.go:97 +0x1e9\r\nbufio.(*Reader).Read(0x820238120, 0x82029808d, 0xa, 0x200, 0x0, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/bufio/bufio.go:207 +0x260\r\nio.ReadAtLeast(0x88203cf2c8, 0x820238120, 0x82029808d, 0xa, 0x200, 0xa, 0x0, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/io/io.go:298 +0xe6\r\nio.ReadFull(0x88203cf2c8, 0x820238120, 0x82029808d, 0xa, 0x200, 0x0, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/io/io.go:316 +0x62\r\ncompress/gzip.(*Reader).readHeader(0x820298000, 0x107401, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/compress/gzip/gunzip.go:173 +0xe2\r\ncompress/gzip.NewReader(0x88203cf1f0, 0x82024c020, 0x1efa08, 0x0, 0x0)\r\n\t/Users/maki/.brew/Cellar/go/1.5.1/libexec/src/compress/gzip/gunzip.go:89 +0x207\r\nmain.main()\r\n\t/Users/maki/gocode/src/github.com/Maki-Daisuke/cmd/temp/main.go:14 +0x1ca\r\n```\r\n\r\nYes, I used Homebrewed Go version 1.5.1 on Mac OS X (Yosemite). Should I test the code another  environment?\r\n",
+	"user": {
+		"login": "Maki-Daisuke",
+		"id": 203648,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-04T15:12:04Z",
+	"created_at": "2015-11-04T10:28:39Z",
+	"updated_at": "2015-11-04T15:15:54Z"
+}

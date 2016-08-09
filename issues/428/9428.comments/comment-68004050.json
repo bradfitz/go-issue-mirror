@@ -1,0 +1,12 @@
+{
+	"id": 68004050,
+	"body": "I'm now able to reproduce this issue with a smaller\r\nprogram, without having to run `go tool 8g`.\r\n\r\nTo reproduce this issue reliably, you need a first program\r\nforking a second one, forking a third one.\r\n\r\n* /tmp/proc1 https://play.golang.org/p/bmvVPB_Zpf\r\n* /tmp/proc2 https://play.golang.org/p/76T-7JRpI8\r\n* /tmp/proc3 https://play.golang.org/p/krdvVrzBe2\r\n\r\n```\r\nterm% pwd\r\n/usr/djc\r\nterm% /tmp/proc1\r\nproc1 start\r\nproc1 getwd /usr/djc\r\nproc1 chdir /sys/src/9/pc\r\nproc1 getwd /sys/src/9/pc\r\nproc2 start\r\nproc2 getwd /sys/src/9/pc\r\nproc3 start\r\nproc3 getwd /sys/src/9/pc\r\nproc2 getwd /sys/src/9/pc\r\nproc1 getwd /usr/djc\r\n```\r\n\r\nIf you comment `run(\"/tmp/proc3\")` in proc2, you get a race:\r\n\r\n```\r\nterm% /tmp/proc1\r\nproc1 start\r\nproc1 getwd /usr/djc\r\nproc1 chdir /sys/src/9/pc\r\nproc1 getwd /sys/src/9/pc\r\nproc2 start\r\nproc2 getwd /sys/src/9/pc\r\nproc2 getwd /sys/src/9/pc\r\nproc1 getwd /usr/djc\r\n```\r\n\r\n```\r\nterm% /tmp/proc1\r\nproc1 start\r\nproc1 getwd /usr/djc\r\nproc1 chdir /sys/src/9/pc\r\nproc1 getwd /sys/src/9/pc\r\nproc2 start\r\nproc2 getwd /sys/src/9/pc\r\nproc2 getwd /sys/src/9/pc\r\nproc1 getwd /sys/src/9/pc\r\n```\r\n\r\nThe final working directory in proc1 is either /usr/djc or /sys/src/9/pc.\r\nI suspect there could be an issue somewhere in forkAndExecInChild.",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-23T22:08:31Z",
+	"updated_at": "2014-12-23T22:08:31Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51288092,
+	"number": 8367,
+	"state": "closed",
+	"title": "net/http: Broken If-Range handling in ServeFile and friends unless caller sets ETag manually",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.3 linux/amd64\n\nWhat steps reproduce the problem?\n\n1. You will need an MPEG4 version 2 video file that your browser agrees to play. It\nneeds to be the specific kind of mp4 that has metadata at the end of the file. I'm sorry\nbut I don't currently have a publicly available example of one. Put it as video.mp4 in\nthe directory with the attached files.\n\n2. Download the attached *.go and *.html and \u0026quot;go run buggy-logging.go\u0026quot;\n\n3. Open \u003ca href=\"http://localhost:8000/\"\u003ehttp://localhost:8000/\u003c/a\u003e\ntested with Chrome 36.0.1985.97 beta on linux\n\n4. Click play\n\nAs the bug depends on browser caching behavior, I find I typically need to \u0026quot;Empty\ncache and hard reload\u0026quot;, and then perform steps 3 \u0026amp; 4 twice to trigger it.\n\n5. You should see just a black screen, no video playing. Log attached as bug.log. I have\ndone a similar run with \u0026quot;go run buggy.go\u0026quot;, which skips the logging, to prove\nthat my logging kludge does not change behavior.\n\nLog attached as \u0026quot;bug.log\u0026quot;\n\n6. Control-C the buggy-logging version, go run etag-logging.go\n\n7. \u0026quot;Empty cache and hard reload\u0026quot; and perform steps 3 \u0026amp; 4 (twice?) again.\n\n8. You should see the video play.\n\nLog attached as \u0026quot;etag.log\u0026quot;\n\n\n\n\nThe difference in the logs is:\n\nGET /video.mp4\nRange: bytes=798054665-798503344\nIf-Range: Wed, 25 Jun 2014 17:12:18 GMT\n\n200 OK  this causes the bug\n\nvs\n\nGET /video.mp4\nRange:bytes=798054665-798503344\nIf-Range: fake\n\n206 OK  this works\nContent-Range: bytes 798054665-798503344/798503345\n\n\nThe above seems to be caused by net/http not sending an Etag, only Last-Modified, but\nonly accepting ETags for If-Range. I would recommend either\n\n1. Make net/http serveFile provide an ETag (if not already set in ResponseWriter) from\nhashing FileInfo.Size(), .ModTime().Unix(), .ModTime().Nanosecond(), and on unix,\nsyscall.Stat_t.Ctim.Sec, .Ctim.Nsec, .Dev, .Ino\nOR\n2. checkETag() should fall back to w.Header().get(\u0026quot;Last-Modified\u0026quot;) if the\nresponse has no ETag\n\nThe first one seems preferable, and the stat call is done already, so there's no real\ncost to it.\n\nChrome should also probably know to handle the failure right. It seems like this is\nreported as \u003ca href=\"https://code.google.com/p/chromium/issues/detail?id=74852\"\u003ehttps://code.google.com/p/chromium/issues/detail?id=74852\u003c/a\u003e -- but net/http\nshould not trigger that logic when no actual file change happened.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/index.html\"\u003eindex.html\u003c/a\u003e (209 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/buggy-logging.go\"\u003ebuggy-logging.go\u003c/a\u003e (842 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/buggy.go\"\u003ebuggy.go\u003c/a\u003e (484 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/etag-logging.go\"\u003eetag-logging.go\u003c/a\u003e (875 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/bug.log\"\u003ebug.log\u003c/a\u003e (1082 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/8367/0/etag.log\"\u003eetag.log\u003c/a\u003e (2295 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:46:30Z",
+	"created_at": "2014-07-14T18:41:39Z",
+	"updated_at": "2016-06-25T01:38:01Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

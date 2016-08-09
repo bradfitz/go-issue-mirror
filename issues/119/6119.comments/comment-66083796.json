@@ -1,0 +1,12 @@
+{
+	"id": 66083796,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI think I see the problem.\n\nTo iterate through the map, the compiler allocates a hash_iter object on the stack. \nThis object contains, among other things, a pointer to the big main bucket table.  When\nthe stack is scanned, this pointer is a root that keeps the bucket table live.\n\nOn one processor this isn't a problem, because the hash table header object gets scanned\nfirst and as a side effect marks the main bucket table as scanned.  On a multiprocessor,\nhowever, while one thread is still busy with the hash table header (marking overflow\nbuckets and the like), the other thread gets this reference to the main bucket table and\nseeing it hasn't been marked yet, proceeds to conservatively scan the whole thing.  It's\ngot lots of things in it that look like pointers, and these end up keeping the big slice\narrays alive.\n\nThe fix is to prevent GC from following pointers directly into the internals of the hash\nmap.  All GC access should be done through the Hmap via gc_iter/gc_next.  One way is to\nmake the pointer in the the hash_iter structure a uintptr instead of a byte*.  That\nshould hide it from the GC, at least when we have precise stack scanning on.  Probably\nbetter is to have the hashtable implementation allocate all of its internals as\nFlagNoPointers so that even if the GC did get a hold of an internal pointer, it won't\nscan any internals.\u003c/pre\u003e\n\n\n\n_Status changed to **Started**._",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-13T05:40:05Z",
+	"updated_at": "2014-12-08T10:33:39Z"
+}

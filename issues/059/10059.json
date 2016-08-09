@@ -1,0 +1,22 @@
+{
+	"id": 59570260,
+	"number": 10059,
+	"state": "closed",
+	"title": "cmd/go: clean sub command should interop with generate a bit better",
+	"body": "We currently have a file that is generated via `go generate` to which the `.go` suffix is added to the filename.  When packaging we run `go clean` which proceeds to delete the source file, this was unexpected. Here is a minimal example:\r\n\r\n```\r\n~/t  \r\n❯ tail -n +1 main.go print.dummy\r\n==\u003e main.go \u003c==\r\npackage main\r\n\r\n//go:generate cp print.dummy print.dummy.go\r\n\r\nfunc main() {\r\n\tprintIt(\"hi\")\r\n}\r\n\r\n==\u003e print.dummy \u003c==\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc printIt(s string) {\r\n\tfmt.Println(s)\r\n}\r\n\r\n~/t  \r\n❯ go generate \u0026\u0026 ls\r\nmain.go  print.dummy  print.dummy.go\r\n                                                                                                                                                                                                                                                                    \r\n~/t  \r\n❯ go clean -x\r\ncd /home/mmlb/t\r\nrm -f t t.exe t.test t.test.exe main main.exe print.dummy print.dummy.exe\r\n```\r\n\r\nI expect that the `$source.file -\u003e $source.file.go` pattern is probably common enough that `go clean` should special case it. I was very surprised to see `go clean -x` purposefully deleting the file even though the match is documented/specified.\r\n\r\nA couple of options are possible to handle this case:\r\n\r\n1. Do not delete `MAINFILE` if it is not executable.\r\nIt seems `MAINFILE` is deleted due to it being an expected binary generated via `go build *.go` or similar.\r\n\r\n2. Special case a file that shares the root file name of a `.go` source file as long as the root contains a `.` in the name.",
+	"user": {
+		"login": "mmlb",
+		"id": 708570,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-03-03T23:24:43Z",
+	"created_at": "2015-03-02T23:37:00Z",
+	"updated_at": "2016-06-25T02:02:29Z"
+}

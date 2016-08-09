@@ -1,0 +1,12 @@
+{
+	"id": 66066360,
+	"body": "\u003ca id=\"c28\"\u003e\u003c/a\u003eComment 28:\n\nThis issue was updated by revision f61f18d694028e5dd466dde11aa1c84bb3a434e.\n\u003cpre\u003eAn io.Reader is permitted to return either (n, nil)\nor (n, io.EOF) on EOF or other error.\n\nThe tls package previously always returned (n, nil) for a read\nof size n if n bytes were available, not surfacing errors at\nthe same time.\n\nAmazon's HTTPS frontends like to hang up on clients without\nsending the appropriate HTTP headers. (In their defense,\nthey're allowed to hang up any time, but generally a server\nhangs up after a bit of inactivity, not immediately.) In any\ncase, the Go HTTP client tries to re-use connections by\nlooking at whether the response headers say to keep the\nconnection open, and because the connection looks okay, under\nheavy load it's possible we'll reuse it immediately, writing\nthe next request, just as the Transport's always-reading\ngoroutine returns from tls.Conn.Read and sees (0, io.EOF).\n\nBut because Amazon does send an AlertCloseNotify record before\nit hangs up on us, and the tls package does its own internal\nbuffering (up to 1024 bytes) of pending data, we have the\nAlertCloseNotify in an unread buffer when our Conn.Read (to\nthe HTTP Transport code) reads its final bit of data in the\nHTTP response body.\n\nThis change makes that final Read return (n, io.EOF) when\nan AlertCloseNotify record is buffered right after, if we'd\notherwise return (n, nil).\n\nA dependent change in the HTTP code then notes whether a\nclient connection has seen an io.EOF and uses that as an\nadditional signal to not reuse a HTTPS connection. With both\nchanges, the majority of Amazon request failures go\naway. Without either one, 10-20 goroutines hitting the S3 API\nleads to such an error rate that empirically up to 5 retries\nare needed to complete an API call.\n\nLGTM=agl, rsc\nR=agl, rsc\nCC=golang-codereviews\n\u003ca href=\"https://golang.org/cl/76400046\"\u003ehttps://golang.org/cl/76400046\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-03-25T18:01:01Z",
+	"updated_at": "2014-12-08T10:18:28Z"
+}

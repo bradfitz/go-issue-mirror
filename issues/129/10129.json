@@ -1,0 +1,27 @@
+{
+	"id": 60601943,
+	"number": 10129,
+	"state": "closed",
+	"title": "cmd/yacc/testdata/expr: bad handling of negative numbers",
+	"body": "    $ cd src/cmd/yacc/testdata/expr\r\n    $ go generate\r\n    $ go run expr.go\r\n    \u003e 1 + (-2)\r\n    -4\r\n    \u003e -3 \r\n    panic: runtime error: invalid memory address or nil pointer dereference\r\n    [signal 0xb code=0x1 addr=0x0 pc=0x484622]\r\n    \r\n    goroutine 1 [running]:\r\n    math/big.(*Rat).Set(0x0, 0xc20803a1c0, 0xc20803a1c0)\r\n    \t/usr/local/google/home/mdempsky/wd/go/src/math/big/rat.go:340 +0xa2\r\n    math/big.(*Rat).Neg(0x0, 0xc20803a1c0, 0x3)\r\n    \t/usr/local/google/home/mdempsky/wd/go/src/math/big/rat.go:355 +0x32\r\n    main.(*exprParserImpl).Parse(0xc20800a3f0, 0x7fe62f3cc7c0, 0xc20803e0e0, 0x0)\r\n    \t/usr/local/google/home/mdempsky/wd/go/src/cmd/yacc/testdata/expr/expr.y:59 +0x1432\r\n    main.exprParse(0x7fe62f3cc7c0, 0xc20803e0e0, 0x3)\r\n    \t/usr/local/google/home/mdempsky/wd/go/src/cmd/yacc/testdata/expr/yaccpar:90 +0x50\r\n    main.main()\r\n    \t/usr/local/google/home/mdempsky/wd/go/src/cmd/yacc/testdata/expr/expr.y:200 +0x425\r\n    exit status 2\r\n\r\nBoth of these errors are because the production rule for \"expr: '-' expr\" is implicitly expecting $$ to already be initialized.  In the first case, it happens to still point to the math/big.Rat that was used to store \"1\", so \"1\" gets overwritten with \"-2\" (and thus -2 + -2 == -4).  In the second case, $$ hasn't been initialized yet (because it only ever contained the '-' token), hence the nil pointer dereference panic.\r\n\r\nArguably, maybe cmd/yacc should make sure that $$ is zero-initialized at the start of each grammar action?  That would have at least turned the first example into another panic, rather than silently corrupting memory and producing the wrong output.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 0,
+	"closed_at": "2015-03-11T04:21:11Z",
+	"created_at": "2015-03-11T02:44:23Z",
+	"updated_at": "2016-06-25T02:03:01Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

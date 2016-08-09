@@ -1,0 +1,12 @@
+{
+	"id": 108661806,
+	"body": "I took a brief look at Go's inflate implementation and found some other issues.\r\n\r\nThe length codes 286 and 287 are marked as reserved in RFC1951, but the implementation does not check for those values and [defaults everything above 285 as 285](https://github.com/golang/go/blob/5cc8561333313c4318d980fea9b5c2dab596b503/src/compress/flate/inflate.go#L495).\r\n\r\nThus, a malformed stream, specially constructed to use reserved values [passes Go's implementation](http://play.golang.org/p/g9RxLYBu2j):\r\n```python\r\n[\r\n    \"1\", \"01\",           # Last, fixed block\r\n    \"00000110\",          # Symbol '0' literal\r\n    \"11100011\", \"00000\", # Reserved symbol 287 (Go treats this as Length: 258, Distance: 1)\r\n    \"0000000\",           # EOM marker\r\n]\r\n# Composes into \"\\x33\\x18\\x07\\x00\"\r\n```\r\n\r\nInstead, this value should crash:\r\n```bash\r\npython -c 'import zlib; print zlib.decompress(\"\\x33\\x18\\x07\\x00\", -15);'\r\n# zlib.error: Error -3 while decompressing data: invalid literal/length code\r\n```\r\n\r\nI've never contributed to Go before, but I'd be interested in scrubbing the inflate implementation and make sure it works as expected (both for valid inputs and invalid inputs).",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-04T00:52:59Z",
+	"updated_at": "2015-06-04T01:07:13Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 145250985,
+	"body": "After digging around for a while I think I found the problem and a potential fix (for my architecture).\r\n\r\n\"0\"[0] is converted into a constant during walkexpr, which of course will trigger an error for -\"0\"[0]; however, codegen expects this to be handled on the front end in the code for agenr\r\n\r\n```\r\n// ...\r\nif Isconst(nr, CTINT) {\r\n  if Isconst(nl, CTSTR) {\r\n    Fatalf(\"constant string constant index\") // front end should handle\r\n  }\r\n  v := uint64(Mpgetfix(nr.Val().U.(*Mpint)))\r\n  if Isslice(nl.Type) || nl.Type.Etype == TSTRING {\r\n    if Debug['B'] == 0 \u0026\u0026 !n.Bounded {\r\n      p1 := Thearch.Ginscmp(OGT, Types[Simtype[TUINT]], \u0026nlen, Nodintconst(int64(v)), +1)\r\n      Ginscall(Panicindex, -1)\r\n      Patch(p1, Pc)\r\n    }\r\n  // ...\r\n  }\r\n}\r\n// ...\r\n```\r\n\r\nI was able to write code that correctly fixed this by loading the string into a register, and then loading the byte at that correct index but this seemed inefficient since the byte that needs to be loaded is known at compile time. To address this I've added this code to cgen_wb that checks for this case and loads the byte directly into the register.\r\n\r\nAt cgen.go:542\r\n```\r\n// In ODOT, ODOTPTR, OINDEX, OIND, ONAME case\r\n  if n.Op == OINDEX \u0026\u0026 Isconst(n.Left, CTSTR) \u0026\u0026 Isconst(n.Right, CTINT) {\r\n    ind := Mpgetfix(n.Right.Val().U.(*Mpint))\r\n    Nodconst(n, n.Type, int64(n.Left.Val().U.(string)[ind]))\r\n\r\n    var n1 Node\r\n    Regalloc(\u0026n1, n.Type, res)\r\n    Cgen(n, \u0026n1)\r\n\r\n    cgen_wb(\u0026n1, res, wb)\r\n    Regfree(\u0026n1)\r\n    return\r\n  }\r\n```\r\n\r\nOnce I add this code to another place it passes all tests on my architecture and OS. Can I get some feedback before I move further with this fix? Is this approach valid?",
+	"user": {
+		"login": "anthonycanino1",
+		"id": 10179790,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-03T14:04:12Z",
+	"updated_at": "2015-10-03T14:04:12Z"
+}

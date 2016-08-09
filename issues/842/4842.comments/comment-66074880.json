@@ -1,0 +1,12 @@
+{
+	"id": 66074880,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eNow that DialOpt is in (\u003ca href=\"https://code.google.com/p/go/source/detail?r=54731addb542\"\u003ehttps://code.google.com/p/go/source/detail?r=54731addb542\u003c/a\u003e /\ndocs: \u003ca href=\"http://tip.golang.org/pkg/net/#DialOpt)\"\u003ehttp://tip.golang.org/pkg/net/#DialOpt)\u003c/a\u003e, this is easier.\n\nThere are two API possibilities.\n\na) lazy.\nb) explicit.\n\nIn the lazy API, the connect would be like:\n\n  conn, err := net.DialOpt(\"google.com:80\", net.FastOpen())\n\n... and a fake net.Conn is returned immediately.  No possibility for timeouts or errors.\n Not until the first Write does the actual sendto system call (on Linux) get called. \nThis is what Chrome does.\n\nWith the explicit API alternative (my preference), the API will probably be like: \n\n  conn, err := net.DialOpt(\"google.com:80\", net.InitialData(\"GET / HTTP/1.0\\r\\n\\r\\n\"))\n\nWhere net.InitialData returns a DialOption (\u003ca href=\"http://tip.golang.org/pkg/net/#DialOption)\"\u003ehttp://tip.golang.org/pkg/net/#DialOption)\u003c/a\u003e\nthat enables TFO if the client supports it (on Linux: checking the low bit of\n/proc/sys/net/ipv6/tcp_fastopen) and otherwise just does a Write after connect.\n\nSpeaking with Yuchung Cheng, it seems there's enough momentum beh that something like it\nwill be formalized one way or another, it will be formalized one way or another.  And\nLinux 3.8 supporting it (client \u0026 server) is promising (and Windows in an alternate\nform).  Thus I'd like to keep \"TFO\" or \"TCPFastOpen\" out of the Go API name and make the\nDialOption be just net.InitialData(...).  Up for debate whether that's a []byte, string,\nor io.Reader.  Probably a []byte for consistency with Write.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-27T22:58:55Z",
+	"updated_at": "2014-12-08T10:25:45Z"
+}

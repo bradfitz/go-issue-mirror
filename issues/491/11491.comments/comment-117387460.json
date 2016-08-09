@@ -1,0 +1,12 @@
+{
+	"id": 117387460,
+	"body": "I promise you that it can be a problem :-) (or I wouldn't have spent as long in gdb this morning)\r\n\r\nThe situation is like this:\r\n\r\nYou compile some go packages into a shared library. These go packages contain a type T of say 128 bytes but do not put T into a map, so the shared library contains a reasonably small zerovalue, say 64 bytes long. type.T.zero is set to point at this zerovalue.\r\n\r\nThen, you link a package that does put T into a map against this shared library. When a map access misses, it copies type.T.zero into the value it returns. Only the first 64 bytes of this are guaranteed to be zero! Hilarity ensues.\r\n\r\n(It's actually a bit more complicated than that because runtime.zerovalue is a global symbol currently, so all type.*.zero pointers end up pointing to the one from the executable, but the effect is similar).\r\n\r\nI think all this type.*.zero maintenance is a bit silly really -- it's always the same pointer for all statically defined types, so why not just have a single zeroptr?  I implemented this in ee83e7d7e3284fafccfbf2dc313a5f62d58ce021 and it seems to be a net reduction in complexity. The linker could assist by making sure that zeroptr initially points at a buffer at least as large as runtime.zerovalue today but that would only make things a little simpler.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-01T01:36:05Z",
+	"updated_at": "2015-07-01T01:36:05Z"
+}

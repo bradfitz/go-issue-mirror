@@ -1,0 +1,12 @@
+{
+	"id": 168569178,
+	"body": "Interestingly, swapping `a` and `b` does generate a cycle error:\r\n\r\n```\r\npackage main\r\n\r\nvar (\r\n\tb, a = f()\r\n\tc    = b\r\n)\r\n\r\nfunc f() (int, int) {\r\n\treturn c, c\r\n}\r\n\r\nfunc main() {}\r\n```\r\n\r\n`cmd/compile/internal/gc/sinit.go:init1` is responsible for producing a list of definitions needing initialization code in dependency order, and for detecting initialization loops. `init1` incorrectly marks function nodes as `InitDone` prior to traversing them.\r\n\r\nHence, in the first example, it will not detect the cycle on `b` because that involves traversing `f` twice:\r\n\r\n```\r\na, b = f()\r\na\r\nf()\r\nf // mark f as done, but still traverse it\r\nc\r\nb\r\nf()\r\n// f has been marked done, so it is not checked and the cycle is undetected\r\n```\r\n\r\nIn the second example, it will detect the cycle because `f` only has to be traversed once:\r\n\r\n```\r\nb, a = f()\r\nf()\r\nf\r\nc\r\nb // cycle detected\r\n```\r\n",
+	"user": {
+		"login": "kvu787",
+		"id": 1964733,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-04T02:54:03Z",
+	"updated_at": "2016-01-04T02:54:03Z"
+}

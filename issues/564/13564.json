@@ -1,0 +1,22 @@
+{
+	"id": 121524463,
+	"number": 13564,
+	"state": "closed",
+	"title": "net: LookupAddr adds trailing dots to entries from /etc/hosts",
+	"body": "Here is a program:\n\n\tpackage main\n\t\n\timport (\n\t\t\"fmt\"\n\t\t\"net\"\n\t)\n\t\n\tfunc main() {\n\t\tfmt.Println(net.LookupAddr(\"127.0.0.1\"))\n\t}\n\nWhen run, it prints:\n\n\t$ go run /tmp/x.go\n\t[localhost.] \u003cnil\u003e\n\nThis is incorrect, given this /etc/hosts:\n\n\t$ cat /etc/hosts\n\t##\n\t# Host Database\n\t#\n\t# localhost is used to configure the loopback interface\n\t# when the system is booting.  Do not change this entry.\n\t##\n\t127.0.0.1\tlocalhost\n\t255.255.255.255\tbroadcasthost\n\t::1             localhost \n\nNames obtained from the DNS system are rooted and have a trailing dot. Names obtained from /etc/hosts should not.\n\nThis is a partial regression from Go 1.5 and should be fixed for Go 1.6.\n\nIt looks like Go 1.5 was inconsistent based on what routines were being used:\n\n\t$ GODEBUG=netdns=go go1.5 run /tmp/x.go\n\t[localhost] \u003cnil\u003e\n\t$ GODEBUG=netdns=cgo go1.5 run /tmp/x.go\n\t[localhost.] \u003cnil\u003e\n\nand now netdns=go has been changed to match netdns=cgo:\n\n\t$ GODEBUG=netdns=go go run /tmp/x.go\n\t[localhost.] \u003cnil\u003e\n\t$ GODEBUG=netdns=cgo go run /tmp/x.go\n\t[localhost.] \u003cnil\u003e\n\nI'm not sure that's the right fix.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-08T03:15:03Z",
+	"created_at": "2015-12-10T16:25:25Z",
+	"updated_at": "2016-01-13T13:00:16Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

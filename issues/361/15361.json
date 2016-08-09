@@ -1,0 +1,27 @@
+{
+	"id": 149356629,
+	"number": 15361,
+	"state": "open",
+	"title": "runtime: GC assists are inefficient at the beginning of marking",
+	"body": "go version devel +318da8d Sat Apr 16 02:55:03 2016 +0000 linux/amd64\r\n\r\nI've looked at http benchmark trace:\r\n![trace](https://cloud.githubusercontent.com/assets/1095328/14628858/f047c932-0601-11e6-8405-ce35de5bb539.png)\r\n[trace.zip](https://github.com/golang/go/files/225283/trace.zip)\r\n\r\nAt the beginning of marking all goroutines are both in debt and cannot scan anything (because GC goroutines are busy with roots and did not produce enough workbufs yet). So what happens is that all procs cycle through all runnable goroutines and park them on assistQueue. That's first 200us of GC with small goroutine boxes all blocking in gcAssistAlloc.\r\n\r\ngcAssistAlloc must be able to help with root scanning, because it may be the only available GC work. Switching to other goroutines makes small sense, because the first malloc will trigger assist and will bring us to where we started.\r\n\r\nMaybe it also makes sense to give goroutines some temporal credit in the beginning of GC. Currently we start concurrent phase just to force every goroutine to assist. If it turns out that we need aggressive assists, we can make up for it later. But in the expected case GC is triggered at such point that we don't need any assists. The idea is similar to https://go-review.googlesource.com/#/c/20969 but not black and white (GOGC=199 requires assists, while GOGC=200 does not need them entirely).\r\n\r\nYou can also see that Proc 4 is idle for some reason and does not help GC.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-04-19T06:01:31Z",
+	"updated_at": "2016-04-19T14:40:58Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

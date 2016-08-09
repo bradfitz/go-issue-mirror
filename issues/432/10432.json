@@ -1,0 +1,21 @@
+{
+	"id": 68049852,
+	"number": 10432,
+	"state": "open",
+	"title": "cmd/compile: inefficient increment of global array ",
+	"body": "go version devel +a02d925 Sun Apr 12 12:14:36 2015 +0300 linux/amd64\r\n\r\nProgram is:\r\n```go\r\nvar tab *[256]byte\r\n\r\nfunc foo(i int) {\r\n\ttab[i\u0026255]++\r\n}\r\n```\r\n\r\nCurrently it is compiled to:\r\n```\r\n0000000000400c30 \u003cmain.foo\u003e:\r\n  400c30:       64 48 8b 0c 25 f8 ff    mov    %fs:0xfffffffffffffff8,%rcx\r\n  400c37:       ff ff \r\n  400c39:       48 3b 61 10             cmp    0x10(%rcx),%rsp\r\n  400c3d:       77 07                   ja     400c46 \u003cmain.foo+0x16\u003e\r\n  400c3f:       e8 cc 24 04 00          callq  443110 \u003cruntime.morestack_noctxt\u003e\r\n  400c44:       eb ea                   jmp    400c30 \u003cmain.foo\u003e\r\n  400c46:       48 8b 44 24 08          mov    0x8(%rsp),%rax\r\n  400c4b:       48 8b 1d 36 a0 0a 00    mov    0xaa036(%rip),%rbx        # 4aac88 \u003cmain.tab\u003e\r\n  400c52:       48 25 ff 00 00 00       and    $0xff,%rax\r\n  400c58:       48 83 fb 00             cmp    $0x0,%rbx\r\n  400c5c:       74 41                   je     400c9f \u003cmain.foo+0x6f\u003e\r\n  400c5e:       48 3d 00 01 00 00       cmp    $0x100,%rax\r\n  400c64:       73 32                   jae    400c98 \u003cmain.foo+0x68\u003e\r\n  400c66:       48 8d 1c 03             lea    (%rbx,%rax,1),%rbx\r\n  400c6a:       0f b6 2b                movzbl (%rbx),%ebp\r\n  400c6d:       48 8b 1d 14 a0 0a 00    mov    0xaa014(%rip),%rbx        # 4aac88 \u003cmain.tab\u003e\r\n  400c74:       48 83 fb 00             cmp    $0x0,%rbx\r\n  400c78:       74 1a                   je     400c94 \u003cmain.foo+0x64\u003e\r\n  400c7a:       48 3d 00 01 00 00       cmp    $0x100,%rax\r\n  400c80:       73 0b                   jae    400c8d \u003cmain.foo+0x5d\u003e\r\n  400c82:       48 8d 1c 03             lea    (%rbx,%rax,1),%rbx\r\n  400c86:       48 ff c5                inc    %rbp\r\n  400c89:       40 88 2b                mov    %bpl,(%rbx)\r\n  400c8c:       c3                      retq   \r\n  400c8d:       e8 be a3 01 00          callq  41b050 \u003cruntime.panicindex\u003e\r\n  400c92:       0f 0b                   ud2    \r\n  400c94:       89 03                   mov    %eax,(%rbx)\r\n  400c96:       eb e2                   jmp    400c7a \u003cmain.foo+0x4a\u003e\r\n  400c98:       e8 b3 a3 01 00          callq  41b050 \u003cruntime.panicindex\u003e\r\n  400c9d:       0f 0b                   ud2    \r\n  400c9f:       89 03                   mov    %eax,(%rbx)\r\n  400ca1:       eb bb                   jmp    400c5e \u003cmain.foo+0x2e\u003e\r\n```\r\n\r\nWhile it could be compiled to something along the lines of:\r\n```\r\n0000000000400c30 \u003cmain.foo\u003e:\r\n\tmov 0x8(%rsp),%rax\r\n\tmov 0xaa036(%rip),%rbx        # 4aac88 \u003cmain.tab\u003e\r\n\tadd $1, (%rbx, %rax)\r\n\tret\r\n```\r\n\r\nHere are several issues:\r\n1. Address calculation, bounds check and nil check are done twice.\r\n2. Nil check is not necessary here, as the increment itself will trigger paging fault if tab is nil.\r\n3. Bounds check is not necessary as i\u0026255 is guaranteed to be \u003c256.\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-04-13T09:13:31Z",
+	"updated_at": "2015-11-04T20:39:12Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

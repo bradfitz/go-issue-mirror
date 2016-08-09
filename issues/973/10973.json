@@ -1,0 +1,22 @@
+{
+	"id": 81800181,
+	"number": 10973,
+	"state": "closed",
+	"title": "syscall(windows): callbacks from winapi not firing in Go",
+	"body": "I see some weirdness while trying to interface with the WaveOut API in Windows (8.1, 64-bit, go1.4.2).\r\n\r\nA callback I defined in Go and passed to WaveOut is supposed to be triggered multiple times by the lowlevel library on certain events. After a certain point these callbacks don't seem to run in Go but running my app through apimonitor shows that the lowlevel library actually tries to fire them:\r\n\r\n![apimonitor_dump](https://cloud.githubusercontent.com/assets/1913867/7854007/f5b5dea0-050c-11e5-83ef-76bc9341347e.png)\r\n\r\nI tried to reproduce the issue with some standalone code, this is what I have (Note: Of course the actual issue might not be related, I don't know exactly what the winmm API and the sound interface driver are doing. Plus my low-level coding skills are lame so the whole thing could be completely wrong):\r\n\r\nSample dll:\r\n```c++\r\n#include \"stdafx.h\"\r\n#include \"callbackwtfcpp.h\"\r\n\r\nBOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)\r\n{\r\n\treturn TRUE;\r\n}\r\n\r\ntypedef int (__stdcall *GoCallback)(int data);\r\n\r\nGoCallback _cb;\r\n\r\nDWORD WINAPI myThread(LPVOID lpParameter)\r\n{\r\n\t_cb(2);\r\n\treturn 0;\r\n}\r\n\r\nextern \"C\"\r\n{\r\n\tvoid CALLBACK Set(GoCallback cb)\r\n\t{\r\n\t\t_cb = cb;\r\n\t}\r\n\r\n\tvoid CALLBACK Fire(void)\r\n\t{\r\n\t\t_cb(1);\r\n\r\n\t\tDWORD myThreadID;\r\n\t\tHANDLE myHandle = CreateThread(0, 0, myThread, 0, 0, \u0026myThreadID);\r\n\t\tWaitForSingleObject(myHandle, 500);\r\n\t\tCloseHandle(myThread);\r\n\t}\r\n}\r\n```\r\n\r\nSample Go:\r\n```go\r\npackage main\r\n\r\nimport (\r\n  \"fmt\"\r\n  \"syscall\"\r\n)\r\n\r\nfunc main () {\r\n  dll := syscall.MustLoadDLL(`callbackwtfcpp.dll`)\r\n  set := dll.MustFindProc(\"Set\")\r\n  fire := dll.MustFindProc(\"Fire\")\r\n\r\n  callback := syscall.NewCallback(func(data int) (ret uintptr) {\r\n    fmt.Printf(\"from callback: %v\\n\", data)\r\n    return\r\n  })\r\n\r\n  set.Call(callback)\r\n  fire.Call()\r\n\r\n  dll.Release()\r\n}\r\n```\r\n\r\nWhat I expect to see on the terminal is\r\n```\r\nfrom callback: 1\r\nfrom callback: 2\r\n```\r\n\r\nbut I only see:\r\n```\r\nfrom callback: 1\r\n```\r\n",
+	"user": {
+		"login": "cromega",
+		"id": 1913867,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-05-31T23:58:28Z",
+	"created_at": "2015-05-28T07:16:27Z",
+	"updated_at": "2016-06-25T02:09:41Z"
+}

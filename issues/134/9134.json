@@ -1,0 +1,27 @@
+{
+	"id": 51289138,
+	"number": 9134,
+	"state": "closed",
+	"title": "net/http: docs show insufficient way to cleanup Response Body",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.4rc1 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. View the docs at \u003ca href=\"http://tip.golang.org/pkg/net/http/\"\u003ehttp://tip.golang.org/pkg/net/http/\u003c/a\u003e\n\nWhat happened?\n\nDocs show the following method for cleaning up response bodies:\n\nresp, err := http.Get(\u0026quot;\u003ca href=\"http://example.com/\u0026quot\"\u003ehttp://example.com/\u0026quot\u003c/a\u003e;)\nif err != nil {\n\t// handle error\n}\ndefer resp.Body.Close()\n\nWhat should have happened instead?\n\nThe method shown above does not handle the case where both resp and err are non-nil,\nwhich was preserved for compatibility reasons in #3795. If the response was a redirect\nand the CheckRedirect func returned an error, the http.Client will return both the\nResponse and an error. That response's Body would never be closed under the example\nshown above, and its connection would leak.\n\nUnfortunately, I suspect this compatibility fix has probably led to lots of potential\nleaks in Go code in the wild. Since breaking Go 1 compatibility is not an option, the\ndocs for Go 1 should show people how to correctly clean up after responses without\nleaking conns \u0026amp; file descriptors.\n\nInstead, the following should work and would not leak:\n\nresp, err := http.Get(\u0026quot;\u003ca href=\"http://example.com/\u0026quot\"\u003ehttp://example.com/\u0026quot\u003c/a\u003e;)\nif resp != nil {\n\tdefer resp.Body.Close()\n}\nif err != nil {\n\t// handle error\n}\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "bgentry",
+		"id": 114033,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-03-31T11:15:57Z",
+	"created_at": "2014-11-19T19:53:02Z",
+	"updated_at": "2016-03-31T13:00:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

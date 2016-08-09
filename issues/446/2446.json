@@ -1,0 +1,31 @@
+{
+	"id": 51279225,
+	"number": 2446,
+	"state": "closed",
+	"title": "cmd/6g: better floating point register optimization",
+	"body": "\u003cpre\u003eFrom Charlie Dorian:\n\nAs I mentioned, I explored using constants versus array elements in a\npolynomial evaluation. I wrote three functions,\n   func poly1(x float64) float64 {\n     return x * ((x*P[0]+P[1])*x+P[2]) / ((x*Q[0]+Q[1])*x+Q[2])\n   }\n   func poly2(x float64) float64 {\n     p := (x*P[0]+P[1])*x+P[2]; q := (x*Q[0]+Q[1])*x+Q[2]\n     return x * p / q\n   }\n   func poly3(x float64) float64 {\n     p := (x*P0+P1)*x+P2; q := (x*Q0+Q1)*x+Q2\n     return x * p / q\n   }\ntimed them (subtracting the function call overhead, results were\n4.36ns, 5.15ns and 7.28ns) and examined the assembly code the compiler\nproduced.\n\nThe 6g compiler produces perfect code for poly1. For poly2, 6g adds\ncode for the temporaries. When the escape analysis is improved, I\nassume that they will be optimized away.\n\nFor poly3, 6g generates suboptimal code. For example:\n   ...\n   0044 (p.go:59) MOVSD   x+0(FP),X5\n   0045 (p.go:60) MOVSD   X5,X0\n   0046 (p.go:60) MOVSD   $(1.60119522476751850e-04),X1\n   0047 (p.go:60) MULSD   X1,X0\n   0048 (p.go:60) MOVSD   $(1.19135147006586390e-03),X1\n   0049 (p.go:60) ADDSD   X1,X0\n   0050 (p.go:60) MULSD   X5,X0\n   ...\nshould be:\n   ...\n   MOVSD   x+0(FP),X5\n   MOVSD   $(1.60119522476751850e-04),X0\n   MULSD   X5,X0\n   ADDSD   $(1.19135147006586390e-03),X0\n   MULSD   X5,X0\n   ...\nWhen I wrote an assembly version of poly1, using constants and \u0026quot;ADDSD\nimmediate,X1\u0026quot; instructions, it took 4.35ns. (I'd like to  suggest that\n6g also generate \u0026quot;MULSD immediate, X1\u0026quot; instructions, but I haven't yet\ndone enough testing to say that it doesn't.)\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:13:03Z",
+	"created_at": "2011-11-11T20:18:52Z",
+	"updated_at": "2016-06-24T21:20:25Z"
+}

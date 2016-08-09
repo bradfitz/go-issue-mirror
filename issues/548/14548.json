@@ -1,0 +1,27 @@
+{
+	"id": 137017935,
+	"number": 14548,
+	"state": "closed",
+	"title": "runtime, net: spurious wakeups in netpoll using kevent",
+	"body": "1. What version of Go are you using (`go version`)?\r\n\r\n`go version go1.6 darwin/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n    GOARCH=\"amd64\"\r\n    GOOS=\"darwin\"\r\n\r\n3. What did you do?\r\n\r\nOpen and close a lot of sockets to localhost in multiple goroutines, writing to the client side of each socket as soon as `net.Dial` returns.\r\n\r\nRunnable example here: https://github.com/tamird/go-conn-repro. This is the same repro case as #14539, but this issue is about the low-level networking problem discovered here rather than the error handling in `crypto/tls`.\r\n\r\n4. What did you expect to see?\r\n\r\nAll connections should succeed.\r\n\r\n5. What did you see instead?\r\n\r\nSometimes, connections hang and cause the test to time out. With the patch from https://go-review.googlesource.com/#/c/19990/ to return errors properly, we see that `net.Conn.Write` is returning \"socket is not connected\", i.e.` ENOTCONN`.\r\n\r\nAnalysis: \r\n\r\n`runtime/netpoll.go` may have spurious wakeups, in which a goroutine blocked in `pollDesc.WaitWrite` may be released even though the socket is not writeable, and likewise for reads.  This is normally fine: `WaitWrite` and `WaitRead` are used in loops so if the goroutine is woken up too early it just gets `EAGAIN` from the system call and goes back to sleep. However, there is at least one case when an early wakeup results in an error other than `EAGAIN`: a socket that has not yet completed its asynchronous `connect(2)` call will return `ENOTCONN` for some system calls including `getpeername` and `write`. In addition, because the connection has not yet completed, the socket does not yet have an error to be returned by `getsockopt(SOL_SOCKET, SO_ERROR)`, so [`netFD.connect`](https://github.com/golang/go/blob/3cb870d47b5611465c46c6a6512b7f059584c66f/src/net/fd_unix.go#L71) believes the connection has completed successfully. Once `connect` and `Dial` return, the connection is presumably writeable but the first call to `Write` may fail (this is exacerbated by the faulty error handling in `crypto/tls`, but is problematic in any case).\r\n\r\nMy evidence that this in fact happening comes from running the above test case under `dtruss`. Compare a successful connection:\r\n\r\n```\r\nconnect(0x9, 0xC8202BB42C, 0x10)\t\t = -1 Err#36\r\nkevent(0x6, 0xC82004ACA8, 0x2)\t\t = 0 0\r\nkevent(0x6, 0x0, 0x0)\t\t = 1 0\r\ngetsockopt(0x9, 0xFFFF, 0x1007)\t\t = 0 0\r\ngetsockname(0x9, 0xC82004AEE4, 0xC82004AEE0)\t\t = 0 0\r\ngetpeername(0x9, 0xC82004AEE4, 0xC82004AEE0)\t\t = 0 0\r\nsetsockopt(0x9, 0x6, 0x1)\t\t = 0 0\r\nwrite(0x9, \"\\026\\003\\001\\0\", 0x84)\t\t = 132 0\r\n```\r\n\r\nwith an unsuccessful one:\r\n\r\n```\r\nconnect(0x7, 0xC82038078C, 0x10)\t\t = -1 Err#36\r\nkevent(0x6, 0xC820176CA8, 0x2)\t\t = 0 0\r\nwrite(0x9, \"\\025\\003\\003\\0\", 0x1F)\t\t = 31 0\r\nclose(0x9)\t\t = 0 0\r\nkevent(0x6, 0x0, 0x0)\t\t = 0 0\r\ngetsockopt(0x7, 0xFFFF, 0x1007)\t\t = 0 0\r\ngetsockname(0x7, 0xC820176EE4, 0xC820176EE0)\t\t = 0 0\r\ngetpeername(0x7, 0xC820176EE4, 0xC820176EE0)\t\t = -1 Err#57\r\nsetsockopt(0x7, 0x6, 0x1)\t\t = 0 0\r\nwrite(0x7, \"\\0\", 0x84)\t\t = -1 Err#57\r\n```\r\n\r\n(errno translations: 36=`EINPROGRESS`, 57=`ENOTCONN`). In the successful case, `getsockopt` is not called until `kevent` returns with a new event. In the failing case, there is no call to `kevent` with non-empty results in between the `connect` and `getsockopt` calls, so there must be a lingering wakeup caused by reuse of `pollDesc` objects that started before this snippet, which unblocks the goroutine and allows it to proceed to call `getsockopt`.\r\n\r\n[`netpoll.go`] refers to the possibility of getting stale notifications, but says they are handled by the use of the `seq` field. This appears to be the case for deadlines, but `seq` does not appear to be consulted on the path between kqueue and waking up the goroutine.\r\n\r\nI see two approaches to fixing this: either remove the possibility of spurious wakeups from `netpoll.go` so that a return from `WaitWrite` guarantees that the fd became writeable (e.g. check `seq` or `fd` when unblocking a waiter), or make `netFD.connect` tolerant of spurious wakeups by testing for the writeability of the socket before returning (e.g. attempt to `Write(nil)` and if it returns `ENOTCONN` go back into the `WaitWrite` loop). \r\n\r\nAll my analysis of this bug has been on OSX and I don't know which parts of this may vary on other platforms. This may shed some light on a [TODO](https://github.com/golang/go/blob/3cb870d47b5611465c46c6a6512b7f059584c66f/src/net/tcpsock_posix.go#L223) in `tcpsock_posix.go`.",
+	"user": {
+		"login": "bdarnell",
+		"id": 160562,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2016-03-16T03:09:53Z",
+	"created_at": "2016-02-28T06:55:06Z",
+	"updated_at": "2016-03-21T21:18:31Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

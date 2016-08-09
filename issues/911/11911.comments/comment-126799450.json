@@ -1,0 +1,12 @@
+{
+	"id": 126799450,
+	"body": "I believe I understand the cause of the unfinished concurrent sweep. It happens when next_gc (the GC trigger heap size) is within a few megs of the size of the retained heap at the end of GC. The proportional sweep works by using this \"heap distance\" and the number of spans that need to be swept to compute a sweep ratio. We perform extra sweeping to satisfy this ratio in mCentral_CacheSpan, which is what gets a span for a P to allocate from. However, it computes the extra pages to sweep based on how many heap bytes have been allocated since the end of the last GC. This is where the problem lies. During mark termination GC flushes all mcaches, so as soon as it starts the world again all of the Ps will repopulate their mcaches and go through this sweep debt calculation. But at this point there have hardly been any bytes allocated, so very little is swept. Since the distance to the next GC trigger is very small, the Ps are able to allocate right up to the GC trigger just from these cached spans. Since they don't get new cached spans, proportional sweep simply doesn't kick in and we wind up at the GC trigger with a bunch of unswept pages.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-31T20:03:31Z",
+	"updated_at": "2015-07-31T20:03:31Z"
+}

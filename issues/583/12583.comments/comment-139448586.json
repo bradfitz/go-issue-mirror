@@ -1,0 +1,12 @@
+{
+	"id": 139448586,
+	"body": "@davecheney I'm not sure exactly what alternative solution you're asking me to contrast against, so hopefully this is what you mean:\r\n\r\nSuppose for concreteness we want to combine cmd/gofmt and cmd/vet into a single executable, and that we don't have help from the Go toolchain.  We might try to introduce a wrapper program like:\r\n\r\n    package main\r\n    import (\r\n        \"os\"\r\n        gofmt_main \"cmd/gofmt\"\r\n        vet_main \"cmd/vet\"\r\n    )\r\n    func main() {\r\n        switch os.Args[0] {\r\n        case \"gofmt\":\r\n            gofmt_main.Main()\r\n        case \"vet\":\r\n            vet_main.Main()\r\n        }\r\n    }\r\n\r\nand transform cmd/gofmt and cmd/vet into packages that export a Main function (either manually or with a simple source rewriting tool).\r\n\r\nHowever, the direct naive approach of simply changing the package name and a single function name is insufficient, because package initializers will still run.  E.g., both cmd/gofmt and cmd/vet's flags will be registered with package flag, so \"gofmt -help\" would list vet's irrelevant flags, and vice versa.  Worse, if you try to add in cmd/fix, it's -r flag would conflict with cmd/gofmt's.\r\n\r\nThat's why in my proof-of-concept CL I implemented the switch in package runtime, so it can also control which set of package initializer routines is executed.\r\n\r\nI expect it's possible to source-to-source transform Go code to remove all implicit initializers so this approach could still work without toolchain support, but I think it would be rather non-trivial and perhaps require transforming the standard library sources too.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-11T04:13:56Z",
+	"updated_at": "2015-09-11T04:13:56Z"
+}

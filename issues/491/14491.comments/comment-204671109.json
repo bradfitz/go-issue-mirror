@@ -1,0 +1,12 @@
+{
+	"id": 204671109,
+	"body": "I ran into the same issue on 3.19.0-32-generic x86_64 GNU/Linux. Linux Mint Rosa 17.3, based on Ubuntu 14.04.3 LTS. \r\n\r\nFilesystem ext4 on LVM on LUKS encrypted drive.\r\n\r\ngo version go1.6 linux/amd64\r\n\r\nMy code parses logfiles and for testing writes each hit to a file in the file system: During a test run I got this:\r\n````\r\npanic: stat febtest1/DOC00004649.json: no such file or directory\r\n\r\ngoroutine 57570 [running]:\r\npanic(0x546060, 0xc828c591b0)\r\n\t/usr/local/go/src/runtime/panic.go:464 +0x3e6\r\nworkers/hits2elasticlogweb.(*HitFileStorage).Store(0xc82001e420, 0x7f7d4b5e0080, 0xc828956480, 0x0, 0x0)\r\n\t/home/wvandepieterman/Projects/Development/idea-workspace/log-processing/src/workers/hits2elasticlogweb/hitfilestorage.go:243 +0x4dd\r\nworkers/hits2elasticlogweb.processHit(0xc82000ef50, 0xc828956480, 0xc82431b080, 0x7f7d4b624450, 0xc82001e420)\r\n\t/home/wvandepieterman/Projects/Development/idea-workspace/log-processing/src/workers/hits2elasticlogweb/hitworker.go:146 +0x15d\r\ncreated by workers/hits2elasticlogweb.(*worker).start\r\n\t/home/wvandepieterman/Projects/Development/idea-workspace/log-processing/src/workers/hits2elasticlogweb/hits2elasticlogweb.go:100 +0x94c\r\n````\r\nCode responsible for the panic:\r\n````{.numberLines startFrom=\"233\"}\r\n233\tif update {\r\n234\t\tioutil.WriteFile(hfs.Name+string(os.PathSeparator)+id+`.json`, h.ToJSON(true), 0644)\r\n235\t} else {\r\n236\t\thc := new(Hit)\r\n237\t\t*hc = *h.(*Hit)\r\n238\t\thc.Id = id\r\n239\t\tioutil.WriteFile(hfs.Name+string(os.PathSeparator)+id+`.json`, hc.ToJSON(true), 0644)\r\n240\t}\r\n241\tistat, err := os.Stat(hfs.Name + string(os.PathSeparator) + id + `.json`)\r\n242\tif err != nil {\r\n243\t\tpanic(err.Error())\r\n244\t}\r\n````\r\n\r\nImmediately after writing the file, I stat it to get the size. Cop out I know, but it demonstrates the point TheHippo is making. \r\n\r\nLooking at it a few seconds later:\r\n````\r\n$ ls -ltr febtest1/DOC00004649.json \r\n-rw-r--r-- 1 wvandepieterman wvandepieterman 27887 Apr  2 00:36 febtest1/DOC00004649.json\r\n````\r\n\r\nIf I'm allowed an opinion, I think a convenience and utility method WriteFile should guarantee that the file exists after it has completed and thus should call Sync. If you want performance you code it \"manually\" and take control of the Syncronization or not.  ",
+	"user": {
+		"login": "dotwilbert",
+		"id": 12401718,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-02T08:11:05Z",
+	"updated_at": "2016-04-02T08:20:21Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 70354289,
+	"body": "Wait, I just found that your IAMSTATIC variable is declared bool.\r\n\r\nI understand what's happening now.\r\n\r\ncmd/ld -X only supports setting string variables, so what really\r\nhappens is that the linker changes the type to string and layout\r\nthe following in the binary for variable IAMSTATIC:\r\n\r\nIAMSTATIC:\r\n      *byte  // pointer to the string content\r\n      int // length of the string\r\n\r\nBut any Go code referencing the IAMSTATIC variable will still\r\nthink it's a bool, just load the first byte it and see if it's non-zero.\r\nOn x86, the first byte happens to be the least significant byte of\r\nthe string address.\r\n\r\nIf it happens that the \"true\" string is laid out at some address\r\nwhose least-significant byte is 0 (i.e. aligned to 256-byte), the\r\nbinary will read a false IAMSTATIC.\r\n\r\nPlease change the IAMSTATIC variable to a string, and\r\nuse a string == \"true\". This is not a Go bug. I will see if cmd/ld\r\ncould detect the misuse, but no promises.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-17T04:30:26Z",
+	"updated_at": "2015-01-17T05:02:21Z"
+}

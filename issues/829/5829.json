@@ -1,0 +1,33 @@
+{
+	"id": 51284250,
+	"number": 5829,
+	"state": "closed",
+	"title": "net/http: tls.Config.ServerName ignored on line 501 of net/http/transport.go",
+	"body": "by **mail@stefanofratini.it**:\n\n\u003cpre\u003eHello\n\nI've been struggling with an annoying problem with HTTPS communication between 2 golang\npowered hosts (both go1.1 powered)\n\nThe server component uses a certificate signed by a CA that I've generated with openssl\n\nThe client component connects to the server via https using the public key of CA as the\nrootCA for the connection\n\nEverything works fine if the client connects to the server using a DNS name. Instead if\nthe client connects specifying an IP address in the URL and using the ServerName field\nof the tls.Config struct:\n\ntr := \u0026amp;http.Transport{\n\t\tTLSClientConfig: \u0026amp;tls.Config{RootCAs: certPool, ServerName: \u0026quot;host-name\u0026quot;},\n\t}\n\nthe hostname validation fails.\n\nIt seemed to me like the ServerName field was somewhere ignored and I think I was\ncorrect.\n\nI've identified the problem at the following lines (starting from 501) of\nnet/http/transport.go\n\nif t.TLSClientConfig == nil || !t.TLSClientConfig.InsecureSkipVerify {\n\t\t\tif err = conn.(*tls.Conn).VerifyHostname(cm.tlsHost()); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\nThe correct code should be instead\n\nif t.TLSClientConfig == nil || !t.TLSClientConfig.InsecureSkipVerify {\n\t\t\tif err = conn.(*tls.Conn).VerifyHostname(cfg.ServerName); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\nI've recompiled GO and tested the new code successfully\n\nI'm not sure what's the best way to contribute new code as I'm not a Mercurial expert...\nApologies if I'm entering this in the wrong place\n\n**Which compiler are you using (5g, 6g, 8g, gccgo)?**\nNot sure, default linux compiler\n\n**Which operating system are you using?**\nLubuntu 12.04\n\n**Which version are you using?  (run 'go version')**\nGo1.1\n\nStefano\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:31:59Z",
+	"created_at": "2013-07-02T07:24:39Z",
+	"updated_at": "2016-06-24T22:51:19Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

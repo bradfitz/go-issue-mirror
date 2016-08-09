@@ -1,0 +1,33 @@
+{
+	"id": 51280155,
+	"number": 3125,
+	"state": "closed",
+	"title": "runtime: LockOSThread() during init() no longer locks the main thread.",
+	"body": "by **runningwild**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Run the following program (only works on linux due to calling Gettid())\n\npackage main\n\nimport (\n  \u0026quot;runtime\u0026quot;\n  \u0026quot;fmt\u0026quot;\n  \u0026quot;syscall\u0026quot;\n)\n\nfunc init() {\n  runtime.LockOSThread()\n}\n\nfunc main() {\n  fmt.Printf(\u0026quot;PId: %d\\n\u0026quot;, syscall.Getpid())\n  fmt.Printf(\u0026quot;TId: %d\\n\u0026quot;, syscall.Gettid())\n}\n\nWhat is the expected output?\nTwo identical numbers.  On linux the thread id of the main thread is equal to the\nprocess id, so Gettid() should be equal to Getpid() when called from the main thread.\n\nWhat do you see instead?\nTwo different numbers.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nOn linux 8g, on darwin 6g.\n\nWhich operating system are you using?\nOSX 10.6.8\nUbuntu 11.10\n\nWhich revision are you using?  (hg identify)\nTried at tip: ba6e737d68be\nAlso at weekly.2012-02-22\n\nPlease provide any additional information below.\nThis bug was introduced in revision b96e722aad5a\nI can alleviate the problem by applying the following diff, all of the tests pass with\nthis change but I don't know enough about this code to know if it is actually safe:\n\n--- a/src/pkg/runtime/proc.c\tThu Feb 23 14:28:16 2012 -0500\n+++ b/src/pkg/runtime/proc.c\tFri Feb 24 14:27:26 2012 -0800\n@@ -211,4 +211,2 @@\n \tm-\u0026gt;nomemprof--;\n-\n-\tscvg = runtime·newproc1((byte*)runtime·MHeap_Scavenger, nil, 0, 0,\nruntime·schedinit);\n }\n@@ -230,2 +228,3 @@\n \truntime·sched.init = true;\n+\tscvg = runtime·newproc1((byte*)runtime·MHeap_Scavenger, nil, 0, 0, runtime·main);\n \tmain·init();\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2014-12-08T10:16:15Z",
+	"created_at": "2012-02-24T22:28:49Z",
+	"updated_at": "2016-06-24T21:28:43Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

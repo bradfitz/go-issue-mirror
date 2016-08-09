@@ -1,0 +1,21 @@
+{
+	"id": 72106058,
+	"number": 10631,
+	"state": "open",
+	"title": "net: mishandling of dotted labels in domain names",
+	"body": "The DNS master zone and wire formats in RFC 1035 allow arbitrary binary strings within labels.  This is explicitly reaffirmed in section 11 of RFC 2181: \"Those [length] restrictions aside, any binary string whatever can be used as the label of any resource record. [...] Implementations of the DNS protocols must not place any restrictions on the labels that can be used.\"\r\n\r\nHowever, currently the Go DNS resolver decodes DNS wire format domain names into dotted notation without accounting for dots within a label.  For example, \"dig\" correctly resolves the following CNAME chain:\r\n\r\n    $ dig -t txt go.cname-bug.dempsky.org.\r\n    [...]\r\n    ;; ANSWER SECTION:\r\n    go.cname-bug.dempsky.org. 300   IN      CNAME   foo\\.bar.cname-bug.dempsky.org.\r\n    foo\\.bar.cname-bug.dempsky.org. 300 IN  CNAME   foo.bar.cname-bug.dempsky.org.\r\n    foo.bar.cname-bug.dempsky.org. 300 IN   TXT     \"ok\"\r\n\r\nBut this Go program:\r\n\r\n    package main\r\n    import (\r\n            \"fmt\"\r\n            \"net\"\r\n    )\r\n    func main() {\r\n            fmt.Println(net.LookupTXT(\"go.cname-bug.dempsky.org.\"))\r\n    }\r\n\r\nfails on Linux with the output:\r\n\r\n    [] lookup foo.bar.cname-bug.dempsky.org. on 127.0.1.1:53: too many redirects\r\n\r\n(I'm curious what it outputs on Windows and/or Plan 9, since Go uses the native OS resolver library on those platforms.)\r\n\r\nFixing net.LookupTXT would be relatively easy, but it's less clear what the other net.LookupFoo methods should return if they would need to return a dotted label to the caller.\r\n\r\nFor comparison, the BIND DNS client library's ns_name_ntop function uses RFC 1035 escaping: the \"special\" characters `\".;\\()@$` are escaped with a `\\`, other \"printable\" characters (\u003e0x20 \u0026\u0026 \u003c0x7f) are encoded directly, and anything else uses a `\\ddd` decimal escape sequence.  (Decimal escapes aren't universal though; at least djbdns and AWS Route 53 use octal escapes instead.)\r\n\r\nIn issue #1167, @rsc interpreted RFC 2181 as saying \"clients can impose whatever restrictions they choose\"** to justify disallowing querying arbitrary domain names.  Taking that as precedent, it could instead be appropriate to make these functions return a similar \"invalid domain name\" DNSError if a dotted label is discovered.  And relevantly, the BIND DNS client library returns \"host not found\" errors if during host name resolution it finds a CNAME record that points to a non-host-name.  E.g., running `host gai.cname-bug.dempsky.org.` succeeds, but using getaddrinfo on that name will fail, because _gai.cname-bug.dempsky.org is not a valid host name.\r\n\r\n  ** Though I think that's a misinterpretation of \"Clients of the DNS can impose whatever restrictions are appropriate to their circumstances on the values they use as keys for DNS lookup requests, and on the values returned by the DNS.\"  I believe it's actually referring to how specific applications of DNS such as host name resolution might apply the stricter *host* name requirements from RFC 1123, even though *domain* names are more general.  Notably, LookupHost and LookupIP are documented as resolving \"host\"s, whereas LookupMX, LookupNS, LookupSRV, and LookupTXT resolve \"domain name\"s.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-04-30T09:10:26Z",
+	"updated_at": "2015-07-15T03:09:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

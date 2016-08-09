@@ -1,0 +1,12 @@
+{
+	"id": 66067772,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI am not sure the performance of strconv is so terrible. These benchmarks are not\nmeasuring apples and oranges. For one thing, the default Java float to string conversion\nis more like Go's 'g', -1 than Go's 'e', 10.  \n\nThese are the numbers I get for the original test:\n\nOriginal test:\nBenchmarkFloat32ToStr\t  500000\t      5212 ns/op\nBenchmarkFloat64ToStr\t  200000\t      7980 ns/op\n\nAnd these are the numbers using 'g', -1:\n\nUse 'g', -1:\nBenchmarkFloat32ToStr\t  500000\t      6910 ns/op\nBenchmarkFloat64ToStr\t  500000\t      5436 ns/op\n\nThen, the test is still allocating lots of tiny strings. A real Go program, if this were\na bottleneck, would use AppendFloat with a buffer, so let's make the test measure that\n(as the commented out benchmarks do):\n\nUse AppendFloat:\nBenchmarkFloat32ToStr\t  500000\t      4731 ns/op\nBenchmarkFloat64ToStr\t  500000\t      3235 ns/op\n\nThat's 2.5x improved over the original.\n\nThe same applies to integer conversions:\n\nOriginal:\nBenchmarkFormatIntByQH\t 1000000\t      1301 ns/op\n\nUse AppendInt:\nBenchmarkFormatIntByQH\t 5000000\t       685 ns/op\n\nI am using a 64-bit machine while you appear to be using a 32-bit machine. If I run the\n32-bit compilers on the latest copy of the code, I get about a 2x slowdown. This could\nprobably be improved:\n\nBenchmarkFloat32ToStr\t  200000\t      8444 ns/op\nBenchmarkFloat64ToStr\t  200000\t      7323 ns/op\nBenchmarkFormatIntByQH\t 1000000\t      1379 ns/op\n\nAlso, note that by measuring the implicit string conversion in your Java benchmarks you\nare very likely to be measuring implementations written in C, not Java.\u003c/pre\u003e\n\n_Labels changed: added **priority-later**, removed **priority-triage**._\n\n\n_Status changed to **LongTerm**._\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3725/2/x_test.go\"\u003ex_test.go\u003c/a\u003e (824 bytes)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-06-12T13:22:15Z",
+	"updated_at": "2014-12-08T10:19:39Z"
+}

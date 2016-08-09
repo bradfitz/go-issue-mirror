@@ -1,0 +1,21 @@
+{
+	"id": 99497163,
+	"number": 12058,
+	"state": "open",
+	"title": "cmd/go: #cgo pkg-config: add conditional --static flag to pkg-config",
+	"body": "I found this case when working on Docker. Docker can be linked either statically or dynamically. For static linking, one has to specify all the libraries explicitly, including those required indirectly (i.e. by libraries that you use). For dynamic linking, one needs to specify only the libraries one uses directly. For example, when linking against libxml2 on Linux, for the case of dynamic linking you have to specify only -lxml2, while for the static linking case you have to also specify all the libraries used by libxml2 (like -lz -lm -llzma).\r\n\r\nFortunately, pkg-config supports this:\r\n```\r\n$ pkg-config --libs libxml-2.0\r\n-lxml2 \r\n$ pkg-config --libs --static libxml-2.0\r\n-lxml2 -lz -llzma -lm \r\n```\r\nI was expecting Go to add --static flag when the result is going to be statically linked, unfortunately it never happens. My current workaround is to do this:\r\n```\r\n// #cgo pkg-config: --static libxml-2.0\r\n```\r\nIt solves my issues, but the problem with this approach is this leads to \"overlinking\" in the dynamic case, as described e.g. here: https://wiki.openmandriva.org/en/Overlinking_issues_in_packaging\r\n\r\nIs it possible to implement conditionally adding --static to pkg-config invocation?",
+	"user": {
+		"login": "kolyshkin",
+		"id": 4522509,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 18,
+	"created_at": "2015-08-06T18:28:52Z",
+	"updated_at": "2015-10-05T22:09:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

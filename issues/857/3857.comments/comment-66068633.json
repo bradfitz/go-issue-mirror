@@ -1,0 +1,12 @@
+{
+	"id": 66068633,
+	"body": "\u003ca id=\"c14\"\u003e\u003c/a\u003eComment 14:\n\n\u003cpre\u003e\u003e ... We should allow what the database engines can handle.\n\nGreat.\n\n\u003e ... Within a single transaction I believe that it is plausible for a database to\nrequire sequential use of queries. ...\n\nI disagree. I have implemented ODBC go driver recently \u003ca href=\"http://code.google.com/p/odbc/\"\u003ehttp://code.google.com/p/odbc/\u003c/a\u003e.\nThere are quite a few ODBC industrial database drivers (MS SQL Server, IBM DB2, Oracle\nand many others). Nowhere in ODBC documentation did I see any restriction on \"concurrent\nor parallel\" API execution - everything is expressed in connections, statements and\nrowsets. You get token for each, you do what is acceptable to do, you release the token\nback to the driver manager.\n\nI have also tried to write program that does \"simultaneous\" queries against sqlite\n(\u003ca href=\"https://golang.org/issue/3857?c=7)\"\u003ehttps://golang.org/issue/3857?c=7)\u003c/a\u003e and I see no complains.\n\n\u003e ... If some databases deadlock when you try to run a second query in a transaction\nwithout consuming the results of the first, then database/sql should detect this case\nand give a nice\nerror instead of letting things deadlock. ...\n\nI am certain, most databases will detect deadlock and will provide appropriate message.\n\n\u003e ... I'm not trying to artificially limit what the package can do, ...\n\nBut you are. See my TestSimultaneousQueries fails with \"throw: all goroutines are asleep\n- deadlock!\". The message should be originated by code implementing database/sql/driver,\nnot database/sql itself.\n\n\u003e ... just to give a better error if indeed the database cannot handle what is being\nasked.\n\nI say, leave it to the database to deal with that. I would say more, I can imagine a\nsituation where transaction would deadlock even when all statements are executed\nsequentially: \n\n1) tran1 updates record1 in table1;\n2) tran2 updates record2 in table2;\n3) tran1 updates record2 in table2;\n4) tran2 updates record1 in table1;\n\nThis will deadlock, but database is smart enough and will fail one of tran1 or tran2\ntransactions and let the other proceed. We can't diagnose these. We shouldn't even try\nto.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-09-14T02:21:11Z",
+	"updated_at": "2014-12-08T10:20:22Z"
+}

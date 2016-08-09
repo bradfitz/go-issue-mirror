@@ -1,0 +1,12 @@
+{
+	"id": 66095749,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe panic is very easy to fix, that panic stack trace points directly to the problem (`p\n:= pkgs[0]` is done, but there's no check if `len(pkgs) == 0`).\n\nHowever, I'm not sure what's a better correct behavior for `go build -o ./out\n...does_not_exist`. There are two choices. Either a warning and no output like the other\ncommands.\n\nAlternatively, maybe the best thing to do for `go build -o ./out ...does_not_exist` is\nthe same as for `go build -o ./out ...matches_multiple_pkgs`, which is:\n\nfatalf(\"go build: cannot use -o with multiple packages\")\n\nIt's a design decision of, if the user specifies -o option, should the command always\nwrite _some_ output and fail with error if it can't (i.e. either matches multiple\npackages, or no packages, or build error, etc.). Or should it write output if pattern\nmatches one package, but do nothing when pattern matches no packages.\n\nThinking about it more, I think I would prefer it to be more consistent and fail if\npattern matches multiple or 0 packages, which can be done by changing:\n\n\tif len(pkgs) \u0026gt; 1 {\n\t\tfatalf(\"go build: cannot use -o with multiple packages\")\n\t}\n\nto:\n\n\tif len(pkgs) \u0026gt; 1 {\n\t\tfatalf(\"go build: cannot use -o with multiple packages\")\n\t} else if len(pkgs) \u0026lt; 1 {\n\t\tfatalf(\"go build: cannot use -o with no packages\")\n\t}\n\nOr something along those lines.\n\nThat way, if someone has a script that executes `go build -o binary_name ...some_pkg`,\nthat command will only return success status if ./binary_name is successfully written,\nand hence it's more consistent and reliable.\u003c/pre\u003e",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-07T05:06:09Z",
+	"updated_at": "2014-12-22T06:35:23Z"
+}

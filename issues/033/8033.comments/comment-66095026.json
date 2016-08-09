@@ -1,0 +1,12 @@
+{
+	"id": 66095026,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI can reproduce this problem on linux-386:\n\n# go test -v -run=Alloc\n=== RUN TestAllocs\n--- FAIL: TestAllocs (1.02 seconds)\n        context_test.go:349: WithTimeout(bg, 10*time.Millisecond) allocs = 9.000000 want 7\nFAIL\nexit status 1\nFAIL    code.google.com/p/go.net/context        1.023s\n\n\nif I change some test parameters:\n\ndiff --git a/context/context_test.go b/context/context_test.go\n--- a/context/context_test.go\n+++ b/context/context_test.go\n@@ -310,9 +310,9 @@\n \t\t\tgccgoLimit: 3,\n \t\t},\n \t\t{\n-\t\t\tdesc: \"WithTimeout(bg, 1*time.Nanosecond)\",\n+\t\t\tdesc: \"WithTimeout(bg, 10*time.Millisecond)\",\n \t\t\tf: func() {\n-\t\t\t\tc, _ := WithTimeout(bg, 1*time.Nanosecond)\n+\t\t\t\tc, _ := WithTimeout(bg, 10*time.Millisecond)\n \t\t\t\t\u0026lt;-c.Done()\n \t\t\t},\n \t\t\tlimit:      7,\n@@ -345,7 +345,7 @@\n \t\t\t// TOOD(iant): Remove this when gccgo does do escape analysis.\n \t\t\tlimit = test.gccgoLimit\n \t\t}\n-\t\tif n := testing.AllocsPerRun(1000, test.f); n \u0026gt; limit {\n+\t\tif n := testing.AllocsPerRun(100, test.f); n \u0026gt; limit {\n \t\t\tt.Errorf(\"%s allocs = %f want %d\", test.desc, n, int(limit))\n \t\t}\n \t}\n\nWindows OS timers resolution is around 10-15 milliseconds. I'm not sure what waiting for\n1*time.Nanosecond does here.\n\nIf nothing else, I will disable the test.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-16T04:58:41Z",
+	"updated_at": "2014-12-22T06:34:54Z"
+}

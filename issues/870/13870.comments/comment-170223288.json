@@ -1,0 +1,12 @@
+{
+	"id": 170223288,
+	"body": "yeah, there are sample test result below, we written 10kb bytes.\r\nenv: Debian GNU/Linux 8.2  4core 4g ram\r\n\r\ntest code\r\n```go\r\nfunc BenchmarkBigWrite(b *testing.B) {\r\n\ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tw.Write(bigBs) // bigBs is 10kb bytes\r\n\t}))\r\n\tdefer s.Close()\r\n\tb.SetParallelism(100)\r\n\tb.ResetTimer()\r\n\tb.RunParallel(func(pb *testing.PB) {\r\n\t\tfor pb.Next() {\r\n\t\t\tres, err := http.Get(s.URL)\r\n\t\t\tif err != nil {\r\n\t\t\t\tlog.Fatal(err)\r\n\t\t\t}\r\n\t\t\t_, err = ioutil.ReadAll(res.Body)\r\n\t\t\tres.Body.Close()\r\n\t\t\tif err != nil {\r\n\t\t\t\tlog.Fatal(err)\r\n\t\t\t}\r\n\t\t}\r\n\t})\r\n}\r\n```\r\n\r\nstandard net/http, three times\r\n```go\r\ngo test -test.bench=\".*\" -benchmem -benchtime=5s\r\nBenchmarkBigWrite-4\t  100000\t     79756 ns/op\t   37929 B/op\t      72 allocs/op\r\nok  \tmytest/httpbuf\t8.857s\r\nBenchmarkBigWrite-4\t  100000\t     78570 ns/op\t   37948 B/op\t      72 allocs/op\r\nok  \tmytest/httpbuf\t8.665s\r\nBenchmarkBigWrite-4\t  100000\t     79072 ns/op\t   37876 B/op\t      72 allocs/op\r\nok  \tmytest/httpbuf\t8.718s\r\n```\r\n\r\nchange http/server.go 479L\r\n```go\r\nbw := newBufioWriterSize(checkConnErrorWriter{c}, 4\u003c\u003c10)\r\n```\r\nto\r\n```go\r\nbw := newBufioWriterSize(checkConnErrorWriter{c}, 10\u003c\u003c10)\r\n\r\ngo test -test.bench=\".*\" -benchmem -benchtime=5s\r\nBenchmarkBigWrite-4\t  100000\t     69645 ns/op\t   39890 B/op\t      73 allocs/op\r\nok  \tmytest/httpbuf\t7.692s\r\nBenchmarkBigWrite-4\t  100000\t     69816 ns/op\t   39961 B/op\t      73 allocs/op\r\nok  \tmytest/httpbuf\t7.702s\r\nBenchmarkBigWrite-4\t  100000\t     67768 ns/op\t   39856 B/op\t      73 allocs/op\r\nok  \tmytest/httpbuf\t7.516s\r\n```\r\n",
+	"user": {
+		"login": "felixhao",
+		"id": 3312434,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-09T10:34:47Z",
+	"updated_at": "2016-01-09T10:34:47Z"
+}

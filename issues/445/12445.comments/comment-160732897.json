@@ -1,0 +1,12 @@
+{
+	"id": 160732897,
+	"body": "The problem with\r\n```\r\nuintptr(unsafe.Pointer(\u0026s)) + unsafe.Offsetof(s.f) == uintptr(unsafe.Pointer(\u0026s.f))\r\n```\r\nis that it can be viewed as making assumptions about atomicity with respect to garbage collection.  The issue is not rules of integer equality, it is instead about what GC activity might occur between evaluating `uintptr(unsafe.Pointer(\u0026s))` and `uintptr(unsafe.Pointer(\u0026s.f))`.  If it is indeed a matter of exactly what the Go spec says, then one cost of some future collector might be the lock/barrier operations needed to obtain that atomicity -- be careful what you are asking for, because you just might get it.\r\n\r\nI'd be far happier if the runtime had a variant of kortschak's `offset(a,b)` function that returned `difference int, related bool`.  Arguing against this is that it might require some extra cost to determine that two pointers are unrelated, arguing for it is that it would keep unsafe stuff out of user's code and would be appropriately future-proof against changes in the garbage collector.  Against the extra cost, you have that if the unrelated case is common, then you avoid doing all the calculations with lengths and sizes and proceed directly to code that does updates in any order whatsoever.\r\n\r\nTo someone who's worked on GC (and optimizers, and concurrency) it is extremely nervous-making to see people so happy to assign precise semantics to unsafe code (and generally, so happy to use unsafe code).",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-30T19:27:01Z",
+	"updated_at": "2015-11-30T19:27:01Z"
+}

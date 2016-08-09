@@ -1,0 +1,25 @@
+{
+	"id": 148374071,
+	"number": 15299,
+	"state": "open",
+	"title": "x/tools/cmd/goimports: import blocks consistency",
+	"body": "\r\nHaving the following files inside `$GOPATH/src`:\r\n```\r\n$ tree\r\n.\r\n├── code.google.com\r\n│   └── p\r\n│       └── x\r\n│           └── b\r\n│               └── b.go\r\n└── github.com\r\n    ├── foo\r\n    │   └── bar\r\n    │       └── bar.go\r\n    └── x\r\n        └── a\r\n            └── a.go\r\n```\r\n\r\nAnd the `bar.go` file containing:\r\n\r\n```\r\npackage bar\r\n\r\nimport (\r\n    \"fmt\"\r\n)\r\n\r\nvar (\r\n    _ = fmt.Println\r\n    _ = a.Foo\r\n    _ = b.Foo\r\n)\r\n```\r\n\r\nRunning `goimports -d github.com/foo/bar` results in:\r\n```\r\n@@ -2,6 +2,9 @@\r\n\r\n import (\r\n \t\"fmt\"\r\n+\r\n+\t\"code.google.com/p/x/b\"\r\n+\t\"github.com/x/a\"\r\n )\r\n\r\n var (\r\n ```\r\n\r\nThis seems like the correct thing to do according to https://github.com/golang/go/wiki/CodeReviewComments#imports, adding a single new import block for external code.\r\n\r\nHowever if we change the `bar.go` file to:\r\n```\r\npackage bar\r\n\r\nimport (\r\n\t\"fmt\"\r\n\r\n\t\"github.com/x/a\"\r\n)\r\n\r\nvar (\r\n\t_ = fmt.Println\r\n\t_ = a.Foo\r\n\t_ = b.Foo\r\n)\r\n```\r\n\r\nAnd execute `goimports -d github.com/foo/bar` again, the result is quite different:\r\n```\r\n@@ -3,6 +3,8 @@\r\n import (\r\n \t\"fmt\"\r\n\r\n+\t\"code.google.com/p/x/b\"\r\n+\r\n \t\"github.com/x/a\"\r\n )\r\n```\r\n\r\nInstead of adding the new import path to the existing block of external code, a new block is created. This only seems to happen if the added import path is from a domain not yet present in the existing external block. This seems weird as goimports itself adds them together if they weren't present.\r\n\r\nSo my question, is this the expected behavior for goimports or is this a bug? If it's confirmed a bug I may take a shot at creating a CL to fix it.",
+	"user": {
+		"login": "cezarsa",
+		"id": 11041,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-04-14T14:10:32Z",
+	"updated_at": "2016-04-14T14:15:50Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 4,
+		"+1": 4
+	}
+}

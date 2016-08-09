@@ -1,0 +1,28 @@
+{
+	"id": 60138942,
+	"number": 10097,
+	"state": "closed",
+	"title": "build: coordinator status pages hang early in build process",
+	"body": "With the new live-streaming stuff, the handleLogs handler appears to hang before the buildlet is up.  \r\n\r\nWhen the the overall status page says e.g.:\r\n\r\n```\r\nfreebsd-386-gce101 rev 1d0a9eb8ab223089f50bc2e3f9466edc96d2f3e1, running in VM buildlet-freebsd-386-gce101-1d0a9eb8-rn8e6c8c, 23.130435746s ago\r\n         2015-03-06T18:19:01Z instance_create_requested\r\n```\r\n\r\nAnd the VM isn't even up, then  clicking that link will go to /logs?.... and just hang until there is sufficient build output (512 bytes?).\r\n\r\nI thought I had tried to fix this, but apparently I didn't.  I think despite the flush, the browser is still trying to MIME-sniff the page and doesn't yet have enough output, even though we do:\r\n\r\n```\r\nfunc handleLogs(w http.ResponseWriter, r *http.Request) {\r\n        st := getStatus(builderRev{r.FormValue(\"name\"), r.FormValue(\"rev\")}, r.FormValue(\"st\"))\r\n        if st == nil {\r\n                http.NotFound(w, r)\r\n                return\r\n        }\r\n        w.Header().Set(\"Content-Type\", \"text/plain; charset=utf-8\")\r\n        writeStatusHeader(w, st)\r\n        \r\n        w.(http.Flusher).Flush()\r\n```\r\n\r\nMaybe we need to also send:\r\n\r\n```\r\n       X-Content-Type-Options: nosniff\r\n```\r\n\r\nTo tell the browser that we really mean it.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"closed_at": "2015-03-11T23:57:06Z",
+	"created_at": "2015-03-06T18:23:56Z",
+	"updated_at": "2016-06-25T02:02:45Z"
+}

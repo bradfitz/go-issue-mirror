@@ -1,0 +1,33 @@
+{
+	"id": 52587339,
+	"number": 9409,
+	"state": "closed",
+	"title": "go/build: MultiplePackageError values swapped.",
+	"body": "This issue is present in the latest commit on `master` branch, f34964ed344d67d9370bb96060b9c1406d344fc2.\r\n\r\n`MultiplePackageError` is defined in [src/go/build/build.go#L420-L426](https://github.com/golang/go/blob/f34964ed344d67d9370bb96060b9c1406d344fc2/src/go/build/build.go#L420-L426) with `Dir`, then `Packages`, and finally `Files`:\r\n\r\n```Go\r\n// MultiplePackageError describes a directory containing\r\n// multiple buildable Go source files for multiple packages.\r\ntype MultiplePackageError struct {\r\n\tDir      string   // directory containing files\r\n\tPackages []string // package names found\r\n\tFiles    []string // corresponding files: Files[i] declares package Packages[i]\r\n}\r\n```\r\n\r\nIt is used in the following incorrect way in [src/go/build/build.go#L690-L692](https://github.com/golang/go/blob/f34964ed344d67d9370bb96060b9c1406d344fc2/src/go/build/build.go#L690-L692):\r\n\r\n```Go\r\n} else if pkg != p.Name {\r\n\treturn p, \u0026MultiplePackageError{p.Dir, []string{firstFile, name}, []string{p.Name, pkg}}\r\n}\r\n```\r\n\r\nIf one rewrites that composite literal to use keyed fields, the mistake becomes obvious:\r\n\r\n```Go\r\nreturn p, \u0026MultiplePackageError{\r\n\tDir:      p.Dir,\r\n\tPackages: []string{firstFile, name}, // Packages being set to filenames.\r\n\tFiles:    []string{p.Name, pkg},     // Files being set to package names.\r\n}\r\n```\r\n\r\nNotably, the last 2 parameter values should be swapped.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-22T21:54:09Z",
+	"created_at": "2014-12-21T06:13:27Z",
+	"updated_at": "2016-06-25T01:57:03Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

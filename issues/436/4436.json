@@ -1,0 +1,33 @@
+{
+	"id": 51282142,
+	"number": 4436,
+	"state": "closed",
+	"title": "net/http/httptest: Server.Close should also client connections ",
+	"body": "\u003cpre\u003eFrom email discussions of the failure in\n\u003ca href=\"http://build.golang.org/log/6ff3bf8d00581f05902a4cf1af9b51555f12686e\"\u003ehttp://build.golang.org/log/6ff3bf8d00581f05902a4cf1af9b51555f12686e\u003c/a\u003e\n\nTestServerContentType uses http.Get, which uses the default transport, which reuses TCP\nkeep-alive connections to the HTTP server, keyed on the (scheme, host, port, proxy). \nThe previous test calling \u0026quot;defer ts.Close()\u0026quot; only closes the *listener* for\nthe previous test, not already-connected connections.  So if TestB comes along after\nTestA is closed and TestB gets the same port number and calls Get, it might get a TCP\nconnection that's still connected to TestA's handler.\n\nAll of our tests do call ts.Close(), but few call\n\u003ca href=\"http://golang.org/pkg/net/http/httptest/#Server.CloseClientConnections\"\u003ehttp://golang.org/pkg/net/http/httptest/#Server.CloseClientConnections\u003c/a\u003e .  I think\nhttptest.Close should call httptest.CloseClientConnections, and block waiting for those\nto die.\n\nAnd/or an httptest.Server should also make an *http.Client \u0026amp; Transport with its own\npool of connections for tests to use, rather than using the global http.Get function.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:23:37Z",
+	"created_at": "2012-11-25T18:59:51Z",
+	"updated_at": "2016-06-24T22:28:44Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

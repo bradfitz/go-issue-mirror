@@ -1,0 +1,22 @@
+{
+	"id": 145642796,
+	"number": 15097,
+	"state": "closed",
+	"title": "test: goprint.go is timing dependent",
+	"body": "The plan9_arm builder is occasionally failing in test/goprint.go, for example [here](http://build.golang.org/log/dc1d20083ee84f40c8e0a43a143be74267a58a25).\r\n\r\nLike #15096, this is a timing dependency + slow builder issue rather than being specifically a Plan 9 issue.  It's a simple test:\r\n```\r\nfunc main() {\r\n\tgo println(42, true, false, true, 1.5, \"world\", (chan int)(nil), []int(nil), (map[string]int)(nil), (func())(nil), byte(255))\r\n\ttime.Sleep(100*time.Millisecond)\r\n}\r\n```\r\nSince the parent goroutine doesn't wait for the child to terminate, this will only succeed if the child can run and deliver all its output in a tenth of a second.  On the plan9_arm builder, running 16 go programs (4 simultaneous shards x 4 tests per shard) in 1GB of RAM, this doesn't always happen.\r\n\r\nDoubling the sleep time is a quick fix but costs all the builders 0.1 second, without being an absolute guarantee of success.\r\n\r\nInstead, would it make sense to check explicitly for termination of the child goroutine, something like this? (assuming there are no garbage collectors or other hidden goroutines in the background):\r\n```\r\nfunc main() {\r\n\tgo println(42, true, false, true, 1.5, \"world\", (chan int)(nil), []int(nil), (map[string]int)(nil), (func())(nil), byte(255))\r\n\tfor i := 0; i \u003c 10 \u0026\u0026 runtime.NumGoroutine() \u003e 1; i++ {\r\n\t\ttime.Sleep(50*time.Millisecond)\r\n\t}\r\n}\r\n```\r\n",
+	"user": {
+		"login": "millerresearch",
+		"id": 17780869,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-04-06T18:45:21Z",
+	"created_at": "2016-04-04T10:23:09Z",
+	"updated_at": "2016-04-06T18:45:21Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66078879,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThese are actually two different issues:\n\nA)\n\ncrash1.gif has an no palette information and thus the decoded\nimage has a zero length Palette and image.Palletted.At returns\na nil color.Color in this case. See \n\u003ca href=\"http://tip.golang.org/src/pkg/image/image.go?s=22798:22839#L814\"\u003ehttp://tip.golang.org/src/pkg/image/image.go?s=22798:22839#L814\u003c/a\u003e\nThe final panic happens in \n\u003ca href=\"http://tip.golang.org/src/pkg/image/draw/draw.go?s=14011:14050#L473\"\u003ehttp://tip.golang.org/src/pkg/image/draw/draw.go?s=14011:14050#L473\u003c/a\u003e\nwhich does not check on this nil value.\n\nimage.Paletted is the only image type which returns a nil\ncolor.Color in a call to At(x,y).\n\nPossible fixes: Either check for nil Color during draw or have\nimage.Paletted.At return a color.RGBA{} default value like in\nthe case of (x,y) not in the image bounds.\n\n\nB)\n\nchrash2.gif has a palette with 128 entries but pixel (0,35)\nreferences color no 255 and thus panics in\n\u003ca href=\"http://tip.golang.org/src/pkg/image/image.go?s=22929:22948#L814\"\u003ehttp://tip.golang.org/src/pkg/image/image.go?s=22929:22948#L814\u003c/a\u003e\nIt could be argued, that the gif is malformed and decoding\nshould fail.\n\n\nIt seems that other tools (checked GIMP only) handle both cases\ngracefully by substituting black in both cases above.\u003c/pre\u003e",
+	"user": {
+		"login": "vdobler",
+		"id": 701382,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-05-06T11:41:41Z",
+	"updated_at": "2014-12-08T10:29:12Z"
+}

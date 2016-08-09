@@ -1,0 +1,12 @@
+{
+	"id": 66073534,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI uploaded a patch for this to \u003ca href=\"https://golang.org/cl/7069056\"\u003ehttps://golang.org/cl/7069056\u003c/a\u003e.\n\nCompiling the above example now produces this output:\n\n$ go tool 6c -S rotate.c\n(rotate.c:2)\tTEXT\trotate+0(SB),$0-8\n(rotate.c:4)\tMOVL\tx+0(FP),!!AX\n(rotate.c:4)\tROLL\t$3,!!AX\n(rotate.c:5)\tRET\t,!!\n(rotate.c:5)\tRET\t,!!\n(rotate.c:5)\tEND\t,!!\n\nHowever, the peep hole optimizer is still suboptimal with regards to register shuffling:\n\n$ cat rotate2.c\nunsigned int\nrotate(unsigned int x, unsigned int y)\n{\n\tx = (x \u0026lt;\u0026lt; 3) | (x \u0026gt;\u0026gt; (sizeof(x) * 8 - 3));\n\ty = (y \u0026lt;\u0026lt; 5) | (y \u0026gt;\u0026gt; (sizeof(y) * 8 - 5));\n\tx = (x \u0026lt;\u0026lt; 7) | (x \u0026gt;\u0026gt; (sizeof(x) * 8 - 7));\n\ty = (y \u0026lt;\u0026lt; 9) | (y \u0026gt;\u0026gt; (sizeof(y) * 8 - 9));\n\treturn x ^ y;\n}\n\n$ go tool 6c -S rotate2.c\n(rotate2.c:2)\tTEXT\trotate+0(SB),$0-8\n(rotate2.c:4)\tMOVL\tx+0(FP),!!AX\n(rotate2.c:4)\tROLL\t$3,!!AX\n(rotate2.c:4)\tMOVL\tAX,!!DX\n(rotate2.c:5)\tMOVL\ty+4(FP),!!AX\n(rotate2.c:5)\tROLL\t$5,!!AX\n(rotate2.c:5)\tMOVL\tAX,!!CX\n(rotate2.c:6)\tMOVL\tDX,!!AX\n(rotate2.c:6)\tROLL\t$7,!!AX\n(rotate2.c:6)\tMOVL\tAX,!!DX\n(rotate2.c:7)\tMOVL\tCX,!!AX\n(rotate2.c:7)\tROLL\t$9,!!AX\n(rotate2.c:7)\tMOVL\tAX,!!CX\n(rotate2.c:8)\tMOVL\tDX,!!AX\n(rotate2.c:8)\tXORL\tCX,!!AX\n(rotate2.c:8)\tRET\t,!!\n(rotate2.c:8)\tRET\t,!!\n(rotate2.c:8)\tEND\t,!!\n\n\nCommenting out \"case AROLL:\" in subprop() makes this generate optimal code, and I can't\nthink of any reason why AROLL would need special handling here but (e.g.) AADDL\nwouldn't.  But I don't grok this code well enough to be confident.\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-01-08T19:28:35Z",
+	"updated_at": "2014-12-22T06:21:34Z"
+}

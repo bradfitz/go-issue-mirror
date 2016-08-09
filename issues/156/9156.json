@@ -1,0 +1,27 @@
+{
+	"id": 51289168,
+	"number": 9156,
+	"state": "closed",
+	"title": "net/http: ServeContent / FileServer mime issue",
+	"body": "by **neven.jacmenovic**:\n\n\u003cpre\u003eI am experiencing two different behaviors of the same code compiling and running on\nVista vs. Windows 7. \n\nWhen static css file is being served via ServeContent or FileServe on Windows 7, the\nmime type sent to browser is set and send correctly (text/css). However, when I execute\nsame code on Vista it gets transferred as text/plain. As I side effect Chrome won't show\ncss file and reports in console:  \u0026quot;Resource interpreted as Stylesheet but\ntransferred with MIME type text/plain: \u0026quot;\u003ca href=\"http://localhost:8080/css/styles.css\u0026quot\"\u003ehttp://localhost:8080/css/styles.css\u0026quot\u003c/a\u003e;.\n\nThe only way to make it work is to force mime type via Header().Set\n\npseudo example1:\nhttp.Handle(\u0026quot;/css/\u0026quot;, http.StripPrefix(\u0026quot;/css/\u0026quot;,\nhttp.FileServer(http.Dir(config.FILES.TEMPLATES+\u0026quot;/css/\u0026quot;))))\n\n\npseudo example2:\nhttp.HandleFunc(\u0026quot;/css/\u0026quot;, ServeStatic)\n...\nfunc ServeStatic(w http.ResponseWriter, r *http.Request) {\n\tdir := http.Dir(config.FILES.TEMPLATES)\n\tfile := r.URL.Path\n\tf, err := dir.Open(file)\n\tif err != nil {\n\t\tlog.Error(\u0026quot;HTTP error: %s\u0026quot;, err.Error())\n\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)\n\t}\n\tdefer f.Close()\n\n\tfi, err := f.Stat()\n\tif err != nil {\n\t\tlog.Error(\u0026quot;HTTP error: %s\u0026quot;, err.Error())\n\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)\n\t}\n//\tw.Header().Set(\u0026quot;Content-Type\u0026quot;, \u0026quot;text/css; charset=utf-8\u0026quot;)\n\thttp.ServeContent(w, r, file, fi.ModTime(), f)\n}\n\n\n\nWindows 7 - Request URL: \u003ca href=\"http://localhost:8080/css/styles.css\"\u003ehttp://localhost:8080/css/styles.css\u003c/a\u003e\nResponse headers:\n1. Accept-Ranges:bytes\n2. Content-Length: 2829\n3. Content-Type: text/css; charset=utf-8\n4. Date: Sun, 23 Nov 2014 14:26:40 GMT\n5. Last-Modified: Sun, 12 Oct 2014 08:53:41 GMT\n\nVista - Request URL: \u003ca href=\"http://localhost:8080/css/styles.css\"\u003ehttp://localhost:8080/css/styles.css\u003c/a\u003e\n1. Accept-Ranges:bytes\n2. Content-Length:7658\n3. Content-Type:text/plain; charset=utf-8\n4. Date:Mon, 24 Nov 2014 12:33:23 GMT\n5. Last-Modified:Sat, 17 May 2014 09:36:02 GMT\n\nI would be glad to provide more information if needed, at this point I am clueless where\nto search for evidence if this is 1.4RC related or Vista related.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:50:01Z",
+	"created_at": "2014-11-24T12:37:56Z",
+	"updated_at": "2016-06-25T01:44:51Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

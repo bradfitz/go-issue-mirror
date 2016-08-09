@@ -1,0 +1,12 @@
+{
+	"id": 119021374,
+	"body": "For anyone else stuck on this... I have rewritten using [github.com/gorilla/websocket](http://github.com/gorilla/websocket) and disabled the CheckOrigin function.\r\n\r\nThis program works with Chrome and Safari.\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"github.com/gorilla/websocket\"\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n)\r\n\r\n// Specify options for gorilla websocket\r\nvar upgrader = websocket.Upgrader{\r\n\tReadBufferSize:  1024,\r\n\tWriteBufferSize: 1024,\r\n\tCheckOrigin: func(r *http.Request) bool {\r\n\t\treturn true\r\n\t},\r\n}\r\n\r\n// Create a handler function that calls an upgrade to websocket session using our upgrader parameters\r\nfunc handler(w http.ResponseWriter, r *http.Request) {\r\n\tconn, err := upgrader.Upgrade(w, r, nil)\r\n\tif err != nil {\r\n\t\tlog.Println(err)\r\n\t\treturn\r\n\t}\r\n\r\n\tfor {\r\n\t\tmessageType, r, err := conn.NextReader()\r\n\t\tif err != nil {\r\n\t\t\treturn\r\n\t\t}\r\n\t\tw, err := conn.NextWriter(messageType)\r\n\t\tif err != nil {\r\n\t\t\t//return err\r\n\t\t}\r\n\t\tif _, err := io.Copy(w, r); err != nil {\r\n\t\t\t//return err\r\n\t\t}\r\n\t\tif err := w.Close(); err != nil {\r\n\t\t\t//return err\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\r\n\thttp.HandleFunc(\"/\", handler)\r\n\tlog.Printf(\"Listening for SECURE websocket connections on port 8000.\")\r\n\tlog.Fatal(http.ListenAndServeTLS(\":8000\", \"cert.pem\", \"cert.key\", nil))\r\n\r\n}\r\n```",
+	"user": {
+		"login": "integrii",
+		"id": 98695,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-06T22:50:11Z",
+	"updated_at": "2015-07-06T22:52:39Z"
+}

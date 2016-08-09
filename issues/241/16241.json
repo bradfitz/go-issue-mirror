@@ -1,0 +1,25 @@
+{
+	"id": 163408127,
+	"number": 16241,
+	"state": "open",
+	"title": "sync/atomic: operations cause unnecessary escapes",
+	"body": "The atomic Load* and Store* operations cause their argument to unnecessarily escape. For example, in the following program, x is heap allocated:\r\n\r\n```go\r\npackage main\r\n\r\nimport \"sync/atomic\"\r\n\r\nfunc main() {\r\n\tvar x int32\r\n\tatomic.StoreInt32(\u0026x, 42)\r\n}\r\n```\r\n\r\nThis is fairly low priority, since it's silly to use atomics on variables unless they're shared, and if the variable is shared it has to be in the heap anyway, but we should fix it since the same code path may be used for both shared and unshared data (there will obviously be unnecessary overhead from the atomics, but we can address the additional heap allocation overhead). This has been right for the runtime-internal atomics for some time, and we should simply copy what they do. In particular, we need to be careful with the \\*Pointer functions, since their values potentially *do* escape.\r\n\r\nPointed out by https://github.com/OneOfOne/lfchan/issues/3#issuecomment-229894433",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-07-01T14:32:25Z",
+	"updated_at": "2016-07-01T14:32:25Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

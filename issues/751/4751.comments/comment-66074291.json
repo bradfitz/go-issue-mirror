@@ -1,0 +1,12 @@
+{
+	"id": 66074291,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI believe this may be a problem with the escape analysis, although I could have been\nstaring at the problem all day and become blind.\n\nConsider this code,\n\u003ca href=\"http://bazaar.launchpad.net/~gophers/juju-core/trunk/view/head:/state/relation.go#L205\"\u003ehttp://bazaar.launchpad.net/~gophers/juju-core/trunk/view/head:/state/relation.go#L205\u003c/a\u003e,\nwhich generates this escape analysis\n\n./relation.go:151: (*Relation).removeOps ignoreService does not escape\n./relation.go:151: (*Relation).removeOps departingUnit does not escape\n./relation.go:177: (*Relation).removeOps D literal does not escape\n./relation.go:208: (*Relation).removeOps ... argument does not escape\n./relation.go:208: (*Relation).removeOps \u0026cleanupDoc literal does not escape\n\ncDoc is a pointer to a cleanupDoc which is added to a slice of *cleanupDoc, I believe\nthis is an error. If we change the declaration slightly,\n\n=== modified file 'state/relation.go'\n--- state/relation.go   2013-01-25 18:33:16 +0000\n+++ state/relation.go   2013-02-04 05:49:59 +0000\n@@ -202,7 +202,7 @@\n                        Update: D{{\"$inc\", D{{\"relationcount\", -1}}}},\n                })\n        }\n-       cDoc := \u0026cleanupDoc{\n+       cDoc := cleanupDoc{\n                Id:     bson.NewObjectId(),\n                Kind:   \"settings\",\n                Prefix: fmt.Sprintf(\"r#%d#\", r.Id()),\n@@ -210,9 +210,10 @@\n        return append(ops, txn.Op{\n                C:      r.st.cleanups.Name,\n                Id:     cDoc.Id,\n-               Insert: cDoc,\n+               Insert: \u0026cDoc,\n        }), nil\n }\n\n\nThen the following escape analysis is present\n\nlucky(~/src/launchpad.net/juju-core/state) % go build -gcflags -m | grep relation.go |\ngrep cDoc\n./relation.go:209: moved to heap: cDoc\n./relation.go:213: \u0026cDoc escapes to heap\n\nand the test passes.\n\nI hope my analysis is correct, I am trying to generate a simple test case now.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-02-04T05:53:47Z",
+	"updated_at": "2014-12-08T10:25:14Z"
+}

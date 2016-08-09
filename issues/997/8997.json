@@ -1,0 +1,21 @@
+{
+	"id": 51288966,
+	"number": 8997,
+	"state": "open",
+	"title": "net/rpc: strange behavior in rpc using default codec",
+	"body": "by **HongF.Yue**:\n\n\u003cpre\u003ego version:go version go1.3.3 linux/amd64\n\nI discovered a strange behavior related to 0 value in reply structure. The codes below\nwill produce this problem.\n---------------------------------------------------\n```go\n//rpc server\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;net\u0026quot;\n\t\u0026quot;net/rpc\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\ntype Args struct {\n\tA int\n}\n\ntype Rsp struct {\n\tA int\n}\n\ntype Echoer int\n\nvar isFirst = true\n\nfunc (t *Echoer) Echo(args *Args, reply *Rsp) error {\n\tif isFirst {\n\t\treply.A = args.A\n\t\tisFirst = false\n\t} else {\n\t\treply.A = 0\n\t}\n\tfmt.Println(\u0026quot;reply-----\u0026quot;, reply.A)\n\treturn nil\n}\n\nfunc main() {\n\techoer := new(Echoer)\n\trpc.Register(echoer)\n\n\ttcpAddr, err := net.ResolveTCPAddr(\u0026quot;tcp\u0026quot;, \u0026quot;:1234\u0026quot;)\n\tcheckError(err)\n\n\tlistener, err := net.ListenTCP(\u0026quot;tcp\u0026quot;, tcpAddr)\n\tcheckError(err)\n\n\tfor {\n\t\tconn, err := listener.Accept()\n\t\tif err != nil {\n\t\t\tcontinue\n\t\t}\n\t\trpc.ServeConn(conn)\n\t}\n\n}\n\nfunc checkError(err error) {\n\tif err != nil {\n\t\tfmt.Println(\u0026quot;Fatal error \u0026quot;, err.Error())\n\t\tos.Exit(1)\n\t}\n}\n```\n---------------------------------------------------\n```go\n//rpc client\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/rpc\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\ntype Args struct {\n\tA int\n}\n\ntype Rsp struct {\n\tA int\n}\n\nfunc main() {\n\tif len(os.Args) != 2 {\n\t\tfmt.Println(\u0026quot;Usage: \u0026quot;, os.Args[0], \u0026quot;server:port\u0026quot;)\n\t\tos.Exit(1)\n\t}\n\tservice := os.Args[1]\n\tclient, err := rpc.Dial(\u0026quot;tcp\u0026quot;, service)\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;dialing:\u0026quot;, err)\n\t}\n\targs := Args{3}\n\tvar rsp Rsp\n\tfor {\n\t\terr = client.Call(\u0026quot;Echoer.Echo\u0026quot;, args, \u0026amp;rsp)\n\t\tif err != nil {\n\t\t\tlog.Fatal(\u0026quot;arith error:\u0026quot;, err)\n\t\t}\n\t\tfmt.Printf(\u0026quot;Echoer: A=%d\\n\u0026quot;, rsp.A)\n\t\ttime.Sleep(time.Second * 2)\n\t}\n}\n```\n------------------------------------------\nThe output of server:\nreply----- 3\nreply----- 0\nreply----- 0\nreply----- 0\n\nThe output of client:\nEchoer: A=3\nEchoer: A=3         //why is not A=0\nEchoer: A=3\nEchoer: A=3\n\nThe client should print A=3 on the first time and others would be A=0. More test code\nshowed that this behavior related to zero values in the RPC reply. When server reply\nzero values, client print last reply which is not zero. \n\nWhen I change codec to msgpack, this problem doesn't happen. I also found that in rpc\nclient code, when I move ```var rsp Rsp``` to inner of for loop, everything goes well. \n\nIs this a bug? or I misunderstand somewhere of golang?\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-10-25T02:56:48Z",
+	"updated_at": "2015-04-14T19:45:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

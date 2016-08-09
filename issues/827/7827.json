@@ -1,0 +1,22 @@
+{
+	"id": 51287265,
+	"number": 7827,
+	"state": "closed",
+	"title": "go.tools/go/types: Info.Defs invariant is broken",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\ngo version go1.2.1 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n\u003ca href=\"http://play.golang.org/p/DsqvUuSHk-\"\u003ehttp://play.golang.org/p/DsqvUuSHk-\u003c/a\u003e\nNote: This must be run locally, not in the playground\n\nWhat happened?\n\nThe following output is produced:\n\n`Defs:\n   _ (17): func p._() (17)\n   x (23): var x int (23)\n   y (26): var y int (26)\n   x (37): var x int (23)\n   z (40): var z int (40)\nUses:\n   println (51): builtin println (0)\n   x (59): var x int (23)\n   y (62): var y int (26)\n   z (65): var z int (40)\n`\n\nNote in particular the line \u0026quot;  x (37): var x int (23)\u0026quot; under \u0026quot;Defs\u0026quot;.\nThe \u0026quot;(37)\u0026quot; is the id.Pos() of the \u0026quot;x\u0026quot; in the statement \u0026quot;x, z :=\n5, 6;\u0026quot;, and the \u0026quot;(23)\u0026quot; is info.Defs[id].Pos(). According to the\ndocumentation, there the Defs map should have the following invariant: \u0026quot;Defs[id] ==\nnil || Defs[id].Pos() == id.Pos()\u0026quot;. This clearly breaks that invariant.\n\nThis statement is, syntactically, a short variable declaration, with x redeclared and z\nnewly declared.\n\nWhat should have happened instead?\n\nIn order for the invariant to hold, I guess this should have been considered one of the\n\u0026quot;Uses\u0026quot; of \u0026quot;x\u0026quot; rather than one of the \u0026quot;Defs\u0026quot; of\n\u0026quot;x\u0026quot; (which is what happens with an assignment to x that part of a syntactic\nassignment statement rather than a redeclaration in a short declaration). As you can\nsee, though, the ast.Ident at position 37 does not show up in the Uses map at all.\n\nPlease provide any additional information below.\n\u003ca href=\"http://godoc.org/code.google.com/p/go.tools/go/types#Info\"\u003ehttp://godoc.org/code.google.com/p/go.tools/go/types#Info\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "davidthomas426",
+		"id": 1478120,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:43:23Z",
+	"created_at": "2014-04-20T19:24:36Z",
+	"updated_at": "2016-06-25T01:32:42Z"
+}

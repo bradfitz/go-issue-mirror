@@ -1,0 +1,26 @@
+{
+	"id": 51286953,
+	"number": 7604,
+	"state": "open",
+	"title": "cmd/cgo: cgo breaks multiple cgo packages linked with libgcc  ",
+	"body": "by **jim.deng**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version devel +358e2b416518 Wed Mar 19 09:00:58 2014 -0700 darwin/amd64\n\nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n\n1. Create a source tree that can be downloaded below:\n\n  src/main/main.go   \u003ca href=\"http://play.golang.org/p/3y44TXNfEf\"\u003ehttp://play.golang.org/p/3y44TXNfEf\u003c/a\u003e\n  src/hello/hello.go   \u003ca href=\"http://play.golang.org/p/iJZL_tuvDm\"\u003ehttp://play.golang.org/p/iJZL_tuvDm\u003c/a\u003e\n  src/world/world.go \u003ca href=\"http://play.golang.org/p/V7m4penOiv\"\u003ehttp://play.golang.org/p/V7m4penOiv\u003c/a\u003e\n\n2. Install android standalone ndk 49d following 4/ Invoking the compiler (the easy way):\n\n  \u003ca href=\"http://www.kandroid.org/ndk/docs/STANDALONE-TOOLCHAIN.html\"\u003ehttp://www.kandroid.org/ndk/docs/STANDALONE-TOOLCHAIN.html\u003c/a\u003e\n  \u003ca href=\"https://developer.android.com/tools/sdk/ndk/index.html\"\u003ehttps://developer.android.com/tools/sdk/ndk/index.html\u003c/a\u003e\n\n3.  Run  the following command to build\nexport PATH=/path/to/android/toolchain-r9d/bin:$PATH\n\nCGO_CFLAGS='-I /Users/jim_deng/workspace/android/toolchain-r9d/include -march=armv7-a\n-mfloat-abi=softfp' \\ \nCGO_LDFLAGS='-Wl,--fix-cortex-a8' \\ \nCC=arm-linux-androideabi-gcc \\ \nCXX=arm-linux-androideabi-g++ \\ \nGOOS=linux \\ \nGOARCH=arm \\ \nCGO_ENABLED=1 \\ \ngo build -tags android -x\n\nWhat happened?\n\nGot multiple definition of '__aeabi_dcmpge' errors ...\n\u003ca href=\"http://hastebin.com/sodekeqibi.mel\"\u003ehttp://hastebin.com/sodekeqibi.mel\u003c/a\u003e\n\nWhat should have happened instead?\n\ngo build should succeed\n\nPlease provide any additional information below.\n\n* Background discussion: \u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!topic/golang-nuts/73NvFzLZpSY\n* android tool chain cannot be linked with -lpthread.  I have to patch cgo not to add\n-lpthread in the linker.\n--- a/src/pkg/runtime/cgo/cgo.go        Wed Mar 19 09:00:58 2014 -0700\n+++ b/src/pkg/runtime/cgo/cgo.go        Thu Mar 20 17:31:16 2014 -0700\n@@ -14,7 +14,7 @@\n-#cgo linux LDFLAGS: -lpthread\n+#cgo linux,!android LDFLAGS: -lpthread\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Suggested"
+		}
+	],
+	"comments": 3,
+	"created_at": "2014-03-21T00:33:25Z",
+	"updated_at": "2015-04-14T19:45:22Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

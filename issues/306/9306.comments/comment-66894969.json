@@ -1,0 +1,12 @@
+{
+	"id": 66894969,
+	"body": "If you really want to avoid cgo on windows, that is probably the way to go. The generator\r\nneed to take care of floating point arguments and returns and probably you also need\r\nto generate the corresponding C wrapper for functions taking floating point arguments\r\nand returning floating point result.\r\n\r\nThat said, there does exist an easier way to avoid gcc, which I'd call frozen cgo. The idea\r\nis that we preprocess all the cgo files, and compile the _cgo.o and include it as cgo_.syso\r\nin the package directory.\r\n\r\nThis approach should work well for cases where we know the interface won't change\r\n(for example, all the C code is statically linked in the syso file). And it also relies on the\r\nfact windows does not support external linking. However, not supporting external linking\r\nalso means the syso can't use much C++.\r\n\r\nThe frozen cgo approach does work. As an example, given this simple cgo program:\r\npackage main\r\n/*\r\nint f() { return 42; }\r\n*/\r\nimport \"C\"\r\nfunc main() {\r\nprintln(C.f())\r\n}\r\n\r\nFirst go build -work cgo.go, record the $WORK it showed.\r\n\r\nAnd then create a new directory, and copy these four files into it:\r\ncp $WORK/command-line-arguments/_obj/_all.o cgo_$GOOS_$GOARCH.syso\r\ncp $WORK/command-line-arguments/_obj/_cgo_gotypes.o z_cgo_gotypes_$GOOS_$GOARCH.go\r\ncp $WORK/command-line-arguments/_obj/_cgo_imports.go z_cgo_imports_$GOOS_$GOARCH.go\r\ncp $WORK/command-line-arguments/_obj/cgo.cgo1.go z_cgo_$GOOS_$GOARCH.go\r\n\r\nAnd go build -x inside that directory. You will see that cgo and gcc are not invoked.\r\n\r\nThis generalizes all cgo programs, just copy _all.o to cgo_$GOOS_$GOARCH.syso,\r\nand all the Go files inside work directory, replace their leading underscore (go build won't build\r\nany files with underscore as prefix) and append _$GOOS_$GOARCH to their base name\r\n(we must treat all these as platform dependent).\r\n\r\nAlthough this means that you need to separate windows support to separate package and\r\nprecompile for both 386 and amd64, this should be much easier than to use the syscall package\r\nand create wrappers because all this can be automated.\r\n\r\nThis is the first time I publicly discuss this concept, hopefully it has not been proposed before. :-)",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-13T22:57:14Z",
+	"updated_at": "2014-12-13T22:58:24Z"
+}

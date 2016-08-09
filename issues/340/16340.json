@@ -1,0 +1,22 @@
+{
+	"id": 165228985,
+	"number": 16340,
+	"state": "closed",
+	"title": "Proposal: a sane, simple, Goish way to handle uncaught panics",
+	"body": "# Proposal: a sane, simple, Goish way to handle uncaught panics\r\n\r\nI'd like to discuss a mechanism for catching/handling/logging panics before they cause the entire Go program to exit, similar to Java's [setDefaultUncaughtExceptionHandler](https://goo.gl/7ctwQx), but Goish.\r\n\r\n## The problem\r\n\r\nYou've carefully wrapped your calls to that third-party library with a `defer`/`recover`, but then that code executes `go func() { x := 0; fmt.Println(3/x) }()`, and your entire process exits before you can notice, log a stack trace, recover, etc.\r\n\r\n## Basic mechanism:\r\n\r\nAdd `runtime.SetUncaughtPanicDeferred(func())`, which accepts and sets a (global) no-arg function.\r\n\r\nWhen a panic occurs, all deferred functions are popped and executed. If all deferred functions run without `recover`ing, _and the entire process is about to exit, and the global handler function is not nil, execute it _as it it were a normal deferred function_.\r\n\r\nAs a normal deferred function, the handler may call `recover`, may exit without error, or may re-panic.\r\n\r\n## What this is not:\r\n\r\n- [Atexit](https://groups.google.com/forum/#!searchin/golang-dev/atexit/golang-dev/Va8cKb3NdwE): \"not lgtm. Atexit is a way to make your program wedge instead of exiting. It's too easy to misuse, even limited to package testing.\" -- rsc\r\n\r\n- [OnPanic](https://groups.google.com/forum/#!searchin/golang-dev/atexit/golang-dev/rXs4TG1gdXw): \"This cannot go into the runtime. It is a disastrous idea.\" -- Rob Pike\r\n\r\n- Trying to run code while crashing, or running code in a weird, unusual way. The pseudo-deferred is run in precisely the same manner that an actual deferred function would have run, had there been one.\r\n\r\n- a way to try to catch things that normal `defer`/`recover` pairs would not catch\r\n\r\n## Alternative solutions/proposals:\r\n\r\n- [panicwrap](https://github.com/mitchellh/panicwrap): fork, and have the parent parse stderr of the child to watch for panics\r\n\r\n- https://groups.google.com/forum/#!topic/golang-nuts/xahrOSZYpf4 - have `panic`/`recover` work on goroutine subtrees\r\n\r\n- writing a wrapper function, and using it _every_ time you would have used the `go` keyword:\r\n    ```\r\n    func Go(f func()) {\r\n        go func() {\r\n            defer func() {\r\n                if p := recover(); p != nil {\r\n                    logging.Errorf(\"Uncaught panic from Goroutine: %v\", p)\r\n                    panic(p)\r\n                }\r\n            }()\r\n            f()\r\n        }()\r\n    }\r\n    ```\r\n\r\n## Implementation concerns\r\n\r\n- `gccgo` has its own implementation of panic and recover, so this would require changes there too.\r\n- currently, deferred functions are followed by a small piece of code that handles what happens if they return - a similar piece of code would need to be generated for the pseudo-deferred function\r\n\r\n## Questions\r\n\r\nThe biggest question: is this useful/necessary?  I chatted with a couple of Go team members, and they didn't immediately hate the idea…\r\n\r\nIn my particular case, I'm working with a deployment system that reliably logs to persistent storage (via Kafka) when using explicit calls to logging functions, but loses panics dumped to stderr -- a bad \"12-factor\" violation that we plan to fix when we can.\r\n\r\nBut, it does seem like it comes up often (I quoted only some of the past discussions), and has spawned some … interesting … workarounds.\r\n\r\n",
+	"user": {
+		"login": "zellyn",
+		"id": 33625,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-07-15T12:43:01Z",
+	"created_at": "2016-07-13T03:23:21Z",
+	"updated_at": "2016-07-15T12:43:02Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51280888,
+	"number": 3614,
+	"state": "closed",
+	"title": "encoding/json: panic on recover",
+	"body": "\u003cpre\u003e$ go version\ngo version go1.0.1\n\nThe bug exists in the tip of the tree as well.\n\nI see the following stack trace:\n\npanic: reflect.Value.SetString using unaddressable value [recovered]\n\tpanic: interface conversion: string is not error: missing method Error\n\ngoroutine 1 [running]:\nencoding/json._func_001(0x7f1761674c38, 0x7f1761678100, 0x7f1761678fb8, 0x7f1761678b68)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:123 +0xaf\n----- stack segment boundary -----\nreflect.flag.mustBeAssignable(0x182, 0x1800000182)\n\t/usr/local/go/src/pkg/reflect/value.go:268 +0x166\nreflect.Value.SetString(0x52f9c0, 0xf840229170, 0x182, 0xf8400a7c58, 0x500000005, ...)\n\t/usr/local/go/src/pkg/reflect/value.go:1336 +0x25\nencoding/json.(*decodeState).literalStore(0xf8400740d0, 0xf8401c29c0, 0x5900000007,\n0x52f9c0, 0xf840229170, ...)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:651 +0x730\nencoding/json.(*decodeState).literal(0xf8400740d0, 0x52f9c0, 0xf840229170, 0x182)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:581 +0xb7\n----- stack segment boundary -----\nencoding/json.(*decodeState).value(0xf8400740d0, 0x52f9c0, 0xf840229170, 0x182)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:252 +0x1b1\nencoding/json.(*decodeState).object(0xf8400740d0, 0x5b6400, 0xf840229150, 0x192)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:550 +0xa1c\nencoding/json.(*decodeState).value(0xf8400740d0, 0x52c020, 0xf8400adf48, 0x146)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:249 +0x1da\nencoding/json.(*decodeState).object(0xf8400740d0, 0x5aea40, 0xf8400adf40, 0x196)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:550 +0xa1c\nencoding/json.(*decodeState).value(0xf8400740d0, 0x525fb8, 0xf84007a388, 0x160)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:249 +0x1da\nencoding/json.(*decodeState).unmarshal(0xf8400740d0, 0x525fa8, 0xf84007a388, 0x0, 0x0,\n...)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:136 +0x159\nencoding/json.Unmarshal(0xf8401c2990, 0x8900000059, 0x525fa8, 0xf84007a388, 0x0, ...)\n\t/usr/local/go/src/pkg/encoding/json/decode.go:65 +0xef\n\nIt's because the code in encoding/json assumes (in its recover section) that it was\nthrown runtime.Error or error. See\n\u003ca href=\"http://code.google.com/p/go/source/browse/src/pkg/encoding/json/decode.go#123\"\u003ehttp://code.google.com/p/go/source/browse/src/pkg/encoding/json/decode.go#123\u003c/a\u003e\n\nAt the same time, reflect.Value is happy to panic with string:\n\u003ca href=\"http://code.google.com/p/go/source/browse/src/pkg/reflect/value.go#268\"\u003ehttp://code.google.com/p/go/source/browse/src/pkg/reflect/value.go#268\u003c/a\u003e\n\nThis is an inconsistency that masks the real cause and confuses the programmer.\u003c/pre\u003e",
+	"user": {
+		"login": "krasin",
+		"id": 21159,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:19:05Z",
+	"created_at": "2012-05-11T23:22:57Z",
+	"updated_at": "2016-06-24T22:18:56Z",
+	"milestone": {
+		"id": 1067193,
+		"number": 9,
+		"title": "Go1.0.2"
+	}
+}

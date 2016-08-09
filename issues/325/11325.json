@@ -1,0 +1,33 @@
+{
+	"id": 90065031,
+	"number": 11325,
+	"state": "closed",
+	"title": "x/tools/go/types: panics on invalid constant",
+	"body": "The following program crashes with the panic:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"go/ast\"\r\n\t\"go/parser\"\r\n\t\"go/token\"\r\n\r\n\t_ \"golang.org/x/tools/go/gcimporter\"\r\n\t\"golang.org/x/tools/go/types\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(`\r\npackage a\r\nvar v = 0\u003e\u003e1.1\r\n`)\r\n\tfset := token.NewFileSet()\r\n\tf, err := parser.ParseFile(fset, \"src.go\", data, parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n\t_, err = types.Check(\"pkg\", fset, []*ast.File{f})\r\n\tif err != nil {\r\n\t\treturn\r\n\t}\r\n}\r\n```\r\n```\r\npanic: 11/10 not an Int\r\n\r\ngoroutine 1 [running]:\r\ngolang.org/x/tools/go/types.(*Checker).handleBailout(0x4c20803c270, 0x4c20802de60)\r\n\tsrc/golang.org/x/tools/go/types/check.go:218 +0xfc\r\ngolang.org/x/tools/go/exact.Uint64Val(0x7f4fb20bf128, 0x4c208032ac0, 0x7f4fb20beae8, 0x76e4c0)\r\n\tsrc/golang.org/x/tools/go/exact/exact.go:245 +0x2ef\r\ngolang.org/x/tools/go/types.(*Checker).shift(0x4c20803c270, 0x4c208032a40, 0x4c208032a80, 0x15)\r\n\tsrc/golang.org/x/tools/go/types/expr.go:651 +0x186\r\ngolang.org/x/tools/go/types.(*Checker).binary(0x4c20803c270, 0x4c208032a40, 0x7f4fb20beef8, 0x4c20801e320, 0x7f4fb20beef8, 0x4c20801e340, 0x15)\r\n\tsrc/golang.org/x/tools/go/types/expr.go:735 +0x14d\r\ngolang.org/x/tools/go/types.(*Checker).exprInternal(0x4c20803c270, 0x4c208032a40, 0x7f4fb20bef30, 0x4c20803aa20, 0x0, 0x0, 0x40a100)\r\n\tsrc/golang.org/x/tools/go/types/expr.go:1382 +0x31b6\r\ngolang.org/x/tools/go/types.(*Checker).rawExpr(0x4c20803c270, 0x4c208032a40, 0x7f4fb20bef30, 0x4c20803aa20, 0x0, 0x0, 0x0)\r\n\tsrc/golang.org/x/tools/go/types/expr.go:908 +0x80\r\ngolang.org/x/tools/go/types.(*Checker).expr(0x4c20803c270, 0x4c208032a40, 0x7f4fb20bef30, 0x4c20803aa20)\r\n\tsrc/golang.org/x/tools/go/types/expr.go:1436 +0x6e\r\ngolang.org/x/tools/go/types.(*Checker).varDecl(0x4c20803c270, 0x4c208036af0, 0x4c2080340a0, 0x1, 0x1, 0x0, 0x0, 0x7f4fb20bef30, 0x4c20803aa20)\r\n\tsrc/golang.org/x/tools/go/types/decl.go:158 +0x38e\r\ngolang.org/x/tools/go/types.(*Checker).objDecl(0x4c20803c270, 0x7f4fb20bf040, 0x4c208036af0, 0x0, 0x4c20802dd88, 0x0, 0x8)\r\n\tsrc/golang.org/x/tools/go/types/decl.go:81 +0x441\r\ngolang.org/x/tools/go/types.(*Checker).packageObjects(0x4c20803c270, 0x4c20800a690, 0x1, 0x1)\r\n\tsrc/golang.org/x/tools/go/types/resolver.go:393 +0x1ff\r\ngolang.org/x/tools/go/types.(*Checker).Files(0x4c20803c270, 0x4c20802df30, 0x1, 0x1, 0x0, 0x0)\r\n\tsrc/golang.org/x/tools/go/types/check.go:230 +0x103\r\ngolang.org/x/tools/go/types.(*Config).Check(0x4c208032940, 0x6550f0, 0x3, 0x4c208032840, 0x4c20802df30, 0x1, 0x1, 0x0, 0x4c20805ef10, 0x0, ...)\r\n\tsrc/golang.org/x/tools/go/types/api.go:340 +0xbb\r\ngolang.org/x/tools/go/types.Check(0x6550f0, 0x3, 0x4c208032840, 0x4c20802df30, 0x1, 0x1, 0x4c208070300, 0x0, 0x0)\r\n\tsrc/golang.org/x/tools/go/types/api.go:42 +0x9b\r\nmain.main()\r\n\tgotypes.go:22 +0x1e0\r\n```\r\n\r\nShould return an error instead.\r\n\r\non commit af817890aa7b628234075a6cb01a3a435fb8317d",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-06-22T22:53:01Z",
+	"created_at": "2015-06-22T10:37:07Z",
+	"updated_at": "2016-06-25T02:11:41Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

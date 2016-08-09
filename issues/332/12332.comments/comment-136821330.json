@@ -1,0 +1,12 @@
+{
+	"id": 136821330,
+	"body": "@griesemer presently, the context only contains two fields;\r\n  - the rounding mode\r\n  - the status\r\n\r\nThe status will be _incorporated as a field in the number struct_, which size will become 128bits + 8bits = 136bits.\r\n\r\n    type Quad struct {\r\n        val    C.decQuad    // val is 128 bits floating-point value\r\n        status C.uint8_t    // all errors that occured during generation of val\r\n    }\r\n\r\nWhen an operation fails, it will set the proper error status flags in this field, where it can be checked.\r\n\r\nThe rounding mode for most operations, like Add, Multiply, etc, can be the always ROUND_HALF_EVEN, as rounding mode has no effect except for pathological cases.\r\nFor operations like RoundWithMode, and explicit rounding argument is passed.\r\n\r\nThe \"merging\" of context, that is, the status field, happens like this:\r\n\r\n    r = a.Add(b)\r\n\r\n`r.status` will be set to   `a.status | b.status | operation status`\r\n\r\nPhilosophically, the status contains information like `Invalid operation`, `Division impossible`, etc, which are meta-data to the value itself.\r\nA `NaN` or another value has no sense if we don't know how it has been generated, and if errors occurred during its generation.\r\nThat's why the status field should be an inherent part of the number.\r\n\r\nWhen I will have made another prototype package, things will become clearer.\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "rin01",
+		"id": 9582469,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-01T18:31:31Z",
+	"updated_at": "2015-09-01T18:31:31Z"
+}

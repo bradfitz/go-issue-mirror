@@ -1,0 +1,12 @@
+{
+	"id": 97649336,
+	"body": "Are you sure your uid/gid are both 1000?\r\n\r\n$ cat issue10626.go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"os\"\r\n\t\"os/exec\"\r\n\t\"syscall\"\r\n)\r\n\r\nfunc main() {\r\n\tcmd := exec.Command(os.Args[1], os.Args[2:]...)\r\n\tcmd.Stdout = os.Stdout\r\n\tcmd.Stderr = os.Stderr\r\n\tcmd.Stdin = os.Stdin\r\n\tcmd.SysProcAttr = \u0026syscall.SysProcAttr{}\r\n\tcmd.SysProcAttr.Cloneflags = syscall.CLONE_NEWUSER\r\n\tcmd.SysProcAttr.UidMappings = []syscall.SysProcIDMap{\r\n\t\t{ContainerID: 0, HostID: syscall.Getuid(), Size: 1},\r\n\t}\r\n\tcmd.SysProcAttr.GidMappings = []syscall.SysProcIDMap{\r\n\t\t{ContainerID: 0, HostID: syscall.Getgid(), Size: 1},\r\n\t}\r\n\tif err := cmd.Run(); err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n}\r\n$ go build issue10626.go\r\n$ ./issue10626 /bin/bash\r\n# id\r\nuid=0(root) gid=0(root) groups=0(root),65534(nobody)\r\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-30T03:29:18Z",
+	"updated_at": "2015-04-30T03:29:50Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 109353703,
+	"number": 12811,
+	"state": "closed",
+	"title": "net: IPNet missing network mask on Windows",
+	"body": "Go 1.5.1 on Windows the \u003ccode\u003eIPNet\u003c/code\u003e structure retuned by \u003ccode\u003enet.Interfaces().Addrs()\u003c/code\u003e does not return the actual network mask of the IP address.\r\n\r\nThe current code uses the \u003ccode\u003epuni.Address.SockaddrLength\u003c/code\u003e, but this only returns the default mast of the network and NOT the actual mask!  Instead you need to use \u003ccode\u003epuni.OnLinkPrefixLength\u003c/code\u003e\r\n\r\nFix:\r\nIn the \u003ccode\u003einterfaceAddrTable\u003c/code\u003e function in interface_windows.go change:\r\n\u003ccode\u003epuni.Address.SockaddrLength\u003c/code\u003e to \u003ccode\u003epuni.OnLinkPrefixLength\u003c/code\u003e\r\nin lines 167, 171, 182, 196\r\n\r\nexample:\r\n\u003ccode\u003e\r\nifa := \u0026net.IPNet{IP: make(net.IP, net.IPv4len), Mask: net.CIDRMask(int(puni.Address.SockaddrLength), 8 * net.IPv4len)}\r\n\u003c/code\u003e \r\nchange to\r\n\u003ccode\u003e\r\nifa := \u0026net.IPNet{IP: make(net.IP, net.IPv4len), Mask: net.CIDRMask(int(puni.OnLinkPrefixLength), 8 * net.IPv4len)}\r\n\u003c/code\u003e \r\n\r\nThis will only work on Widows Vista/Windows2008 and above.  For Windows XP/Windows 2003 you need to implement the following C code in Go to get the correct prefix length (network mask):\r\n\r\n\u003ccode\u003e\r\n/* Prior to Windows Vista the FirstPrefix pointed to the list with single prefix for each IP address assigned to the adapter. Order of FirstPrefix does not match order of FirstUnicastAddress, so we need to find corresponding prefix  */\r\n\r\n        IP_ADAPTER_PREFIX* prefix;\r\n        prefix_len = 0;\r\n\r\n        for (prefix = adapter-\u003eFirstPrefix; prefix; prefix = prefix-\u003eNext) {\r\n          /* We want the longest matching prefix. */\r\n          if (prefix-\u003eAddress.lpSockaddr-\u003esa_family != sa-\u003esa_family ||\r\n              prefix-\u003ePrefixLength \u003c= prefix_len)\r\n            continue;\r\n\r\n          if (address_prefix_match(sa-\u003esa_family, sa,\r\n              prefix-\u003eAddress.lpSockaddr, prefix-\u003ePrefixLength)) {\r\n            prefix_len = prefix-\u003ePrefixLength;\r\n          }\r\n        }\r\n\r\n        /* If there is no matching prefix information, return a single-host\r\n         * subnet mask (e.g. 255.255.255.255 for IPv4).\r\n         */\r\n        if (!prefix_len)\r\n          prefix_len = (sa-\u003esa_family == AF_INET6) ? 128 : 32;\r\n\u003c/code\u003e\r\n\r\nI'll leave this exercise up to the Go guys.",
+	"user": {
+		"login": "akevinbailey",
+		"id": 13941653,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2015-12-10T08:04:25Z",
+	"created_at": "2015-10-01T18:14:22Z",
+	"updated_at": "2015-12-10T08:04:25Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

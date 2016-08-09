@@ -1,0 +1,12 @@
+{
+	"id": 156851539,
+	"body": "Analysis: in `convlit1` function inside `const.go`. What happens for a `float` constant is that the node is converted to `float` using\r\n```\r\nn.SetVal(Val{truncfltlit(n.Val().U.(*Mpflt), t)})\r\n```\r\nNote the call to `truncfltlit`, that truncates a float literal to `float32` or `float64` precision. For the above snippet, both the denominators get truncated to `0`. After that we enter the `evconst` function, and the following check fails\r\n\r\n```\r\nmpcmpfltc(rv.U.(*Mpflt), 0) == 0\r\n```\r\n[here](https://github.com/golang/go/blob/master/src/cmd/compile/internal/gc/const.go#L893), because `rv` is `0`, and the compiler calls `Yyerror(\"division by zero\")`.\r\n\r\nFor `complex` values, the compiler executes\r\n\r\n```\r\nn.SetVal(tocplx(n.Val()))\r\n```\r\n\r\nunfortunately, the `tocplx` function does not truncate `float` values. It just does \r\n\r\n```\r\nmpmovefltflt(\u0026c.Real, v.U.(*Mpflt))\r\n```\r\n\r\ni.e. it moves the value of the real part to `c`. For that reason `evconst` actually gets `1e-1000`, so the following check\r\n\r\n```\r\nmpcmpfltc(\u0026rv.U.(*Mpcplx).Real, 0) == 0 \u0026\u0026 mpcmpfltc(\u0026rv.U.(*Mpcplx).Imag, 0) == 0\r\n```\r\n\r\n[here](https://github.com/golang/go/blob/master/src/cmd/compile/internal/gc/const.go#L923) passes, because rv (the real part) in not zero, and the \r\n\r\n```\r\nYyerror(\"complex division by zero\")\r\n```\r\n\r\nlines is not called.\r\n\r\nI have a simple patch for this (we just need to call `truncfltlit` after the `tocplx` call in `convlit1`) that passes `all.bash`. I will email it if nobody else already have a CL for this.\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-15T20:39:13Z",
+	"updated_at": "2015-11-15T20:39:13Z"
+}

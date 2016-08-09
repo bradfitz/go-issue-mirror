@@ -1,0 +1,28 @@
+{
+	"id": 117480340,
+	"number": 13298,
+	"state": "closed",
+	"title": "x/net/http2: Transport should do transparent gzip like HTTP/1",
+	"body": "```go\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"compress/gzip\"\r\n\tb64 \"encoding/base64\"\r\n\t\"encoding/json\"\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"net/url\"\r\n\t\"strconv\"\r\n)\r\n\r\nconst (\r\n\tConsumerKey    = \"XXXXXXXXXXXXXXXXXXXXXX\"\r\n\tConsumerSecret = \"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\"\r\n)\r\n\r\nfunc main() {\r\n\tclient := http.DefaultClient\r\n\tencodedKeySecret := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(\"%s:%s\",\r\n\t\turl.QueryEscape(ConsumerKey),\r\n\t\turl.QueryEscape(ConsumerSecret))))\r\n\treqBody := bytes.NewBuffer([]byte(`grant_type=client_credentials`))\r\n\treq, err := http.NewRequest(\"POST\", \"https://api.twitter.com/oauth2/token\", reqBody)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err, client, req)\r\n\t}\r\n\treq.Header.Add(\"Authorization\", fmt.Sprintf(\"Basic %s\", encodedKeySecret))\r\n\treq.Header.Add(\"Content-Type\", \"application/x-www-form-urlencoded;charset=UTF-8\")\r\n\treq.Header.Add(\"Content-Length\", strconv.Itoa(reqBody.Len()))\r\n\tresp, err := client.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err, resp)\r\n\t}\r\n\tdefer resp.Body.Close()\r\n\r\n\tvar respBody []byte\r\n\t// WHY THIS IS REQUIRED?\r\n\tif resp.Header.Get(\"Content-Encoding\") == \"gzip\" {\r\n\t\tgr, err := gzip.NewReader(resp.Body)\r\n\t\tif err != nil {\r\n\t\t\tlog.Fatal(err)\r\n\t\t}\r\n\t\trespBody, err = ioutil.ReadAll(gr)\r\n\t} else {\r\n\t\trespBody, err = ioutil.ReadAll(resp.Body)\r\n\t}\r\n\tif err != nil {\r\n\t\tlog.Fatal(err, respBody)\r\n\t}\r\n\r\n\tvar b struct {\r\n\t\tAccessToken string `json:\"access_token\"`\r\n\t}\r\n\tjson.Unmarshal(respBody, \u0026b)\r\n\ttwitterEndPoint := \"https://api.twitter.com/1.1/application/rate_limit_status.json\"\r\n\treq, err = http.NewRequest(\"GET\", twitterEndPoint, nil)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\treq.Header.Add(\"Authorization\",\r\n\t\tfmt.Sprintf(\"Bearer %s\", b.AccessToken))\r\n\tresp, err = client.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err, resp)\r\n\t}\r\n\tdefer resp.Body.Close()\r\n\trespBody, err = ioutil.ReadAll(resp.Body)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tfmt.Println(\"response Status:\", resp.Status)\r\n\tfmt.Println(\"response Headers:\", resp.Header)\r\n\tfmt.Println(string(respBody))\r\n}\r\n```\r\ntry with your consumer keys. twitter send http2 response in recently.\r\nthe response Body should be decoded because content-encoding is gzip. but not decoded Body.\r\n\r\n/cc @bradfitz ",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2015-11-26T17:15:37Z",
+	"created_at": "2015-11-18T00:05:46Z",
+	"updated_at": "2015-11-26T17:15:37Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

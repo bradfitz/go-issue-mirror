@@ -1,0 +1,26 @@
+{
+	"id": 104948386,
+	"number": 12503,
+	"state": "open",
+	"title": "proposal: net: allow Dialer to use custom resolver",
+	"body": "I mentioned in #12476 that I would like to detect the time it took for DNS resolution phase of the Dial process in `Dialer.Dial` . The solution posted there was very hacky and adds unnecessarily to the API.\r\n\r\n@bradfitz suggested\r\n\r\n\u003e Perhaps `net.Dialer` could have an optional `Resolver`, akin to how `http.Client` has an optional `Transport`, or `http.Server` has an optional `ErrorLog`, etc.\r\n\r\nThis seems like an excellent idea. Here is how I propose we go about it by adding minimal complexity and preserving code compatibility.\r\n\r\nI propose net package adds a new `Resolver` interface.\r\n\r\n```\r\ntype Resolver interface {\r\n\tResolve(host string, deadline time.Time) (addrs []IPAddr, err error)\r\n}\r\n```\r\n\r\nThe signature of `Resolver.Resolve` is same as `lookupIPDeadline` which `Dial` eventually uses. `Dialer` gets an optional field `CustomResolver` of type `Resolver`.\r\n\r\nThe `Resolver` object (or `nil`) gets passed around thru the resolution process.\r\n\r\n`Dialer.Dial` -\u003e `resolveAddrList` -\u003e `internetAddrList` .\r\n\r\n`internetAddrList` currently always uses `lookupIPDeadline`, it would need to be changed such that if the passed custom resolver is not nil then use it, otherwise use `lookupIPDeadline`.\r\n\r\nOther functions calling `resolveAddrList` or `internetAddrList`  would need to be modified to add an extra `nil` argument . This does not break code compatibility because they are unexported functions.\r\n\r\nBenefits of allowing a custom `Resolver`\r\n\r\n* Allowing me to collect timing information as mentioned in #12476\r\n* Allowing users to implement their own DNS logic. Failovers, etc.\r\n* Mocking for tests.\r\n* Client side caching, pre-fetching, etc.\r\n* In time, other packages ( like the superb github.com/miekg/dns ) could provide their own `Resolver` implementations.\r\n* Great for people like me who rely on Go to write network debugging tools.\r\n",
+	"user": {
+		"login": "sajal",
+		"id": 25007,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 13,
+	"created_at": "2015-09-04T18:55:54Z",
+	"updated_at": "2016-07-19T21:59:13Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

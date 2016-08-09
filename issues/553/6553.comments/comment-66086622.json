@@ -1,0 +1,12 @@
+{
+	"id": 66086622,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eApplying \u003ca href=\"https://golang.org/cl/90370043\"\u003ehttps://golang.org/cl/90370043\u003c/a\u003e and running with -test.cpu=2 makes the\ntest fail reliably on my system, instead of intermittently.\n\nI don't see how to make the test as written work. Consider the following (after applying\nCL 90370043):\n\n$ go test -c net\n$ GODEBUG=allocfreetrace=1 ./net.test -test.cpu=2 -test.run=TestDialFailPDLeak -test.v\n2\u003e aft.log\n$ grep \"single object\" aft.log | awk -F \",\" '{print $3}' | sort | uniq -c | sort -n -r |\nhead\n2523  single object of net.TCPAddr)\n2503  single object of net.OpError)\n2500  single object of syscall.SockaddrInet4)\n2500  single object of struct { F uintptr; A0 *sync.WaitGroup; A1 **net.Dialer; A2\n**testing.T })\n2500  single object of net.netFD)\n 689  single object)\n  43  single object of errors.errorString)\n  26  single object of net.Interface)\n  22  single object of syscall.SockaddrDatalink)\n  22  single object of syscall.InterfaceMessage)\n\nEvery pass through the loop allocates a net.TCPAddr, a net.OpError, a\nsyscall.SockaddrInet4, a closure, and a net.netFD. The test as written assumes that\nnothing in the loop allocates, and thus any allocs must be due to allocPollDesc. I'm not\nsure how to alter the test to fix this, aside perhaps from instrumenting allocPollDesc\ndirectly.\n\nSuggestions?\u003c/pre\u003e",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-22T17:46:11Z",
+	"updated_at": "2014-12-08T10:36:14Z"
+}

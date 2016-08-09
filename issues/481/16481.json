@@ -1,0 +1,28 @@
+{
+	"id": 167221309,
+	"number": 16481,
+	"state": "closed",
+	"title": "x/net/http2: return flow control when stream closes with buffered data",
+	"body": "\r\nI ran into a case where my http2 transport cannot send any data to my http2 server with the existing connection. The issue is client sent some data in a stream, when server receives it, there was a stream error (or stream closed) and the data received was discarded., server never got a chance to send windowupdate for this client connection, client can no longer send more data, even for new streams.  \r\n\r\nI did some simple changes and this issue is fixed, but I am not sure if this is the right way to fix. Could you advice? Is there a similar issue for server sending to client?\r\n\r\n    Here is the change I made:\r\n\r\n    diff --git a/http2/server.go b/http2/server.go\r\n    index f368738..b924c3d 100644\r\n    --- a/http2/server.go\r\n    +++ b/http2/server.go\r\n    @@ -1277,6 +1277,9 @@ func (sc *serverConn) processSettingInitialWindowSize(val uint32) error {\r\n     \r\n     func (sc *serverConn) processData(f *DataFrame) error {\r\n            sc.serveG.check()\r\n    +       if len(f.Data()) \u003e 0 {\r\n    +               sc.sendWindowUpdate(nil, len(f.Data())) // conn-level\r\n    +       }\r\n            // \"If a DATA frame is received whose stream is not in \"open\"\r\n            // or \"half closed (local)\" state, the recipient MUST respond\r\n            // with a stream error (Section 5.4.2) of type STREAM_CLOSED.\"\r\n    @@ -1764,7 +1767,7 @@ func (sc *serverConn) noteBodyReadFromHandler(st *stream, n int) {\r\n     \r\n     func (sc *serverConn) noteBodyRead(st *stream, n int) {\r\n            sc.serveG.check()\r\n    -       sc.sendWindowUpdate(nil, n) // conn-level\r\n    +       //sc.sendWindowUpdate(nil, n) // conn-level\r\n            if st.state != stateHalfClosedRemote \u0026\u0026 st.state != stateClosed {\r\n                    // Don't send this WINDOW_UPDATE if the stream is closed\r\n                    // remotely.\r\n",
+	"user": {
+		"login": "wujieliulan",
+		"id": 2224380,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"closed_at": "2016-07-26T23:04:37Z",
+	"created_at": "2016-07-24T07:19:38Z",
+	"updated_at": "2016-08-02T00:00:17Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

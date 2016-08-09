@@ -1,0 +1,22 @@
+{
+	"id": 51280901,
+	"number": 3623,
+	"state": "closed",
+	"title": "fail to retrieve English error message on windows",
+	"body": "\u003cpre\u003eI can't reproduce it myself, because I do not have non-English version of Windows. But I\nnoticed it here: \u003ca href=\"https://golang.org/issue/3583?c=12\"\u003ehttps://golang.org/issue/3583?c=12\u003c/a\u003e\n(\u003ca href=\"http://goo.gl/aVQyW)\"\u003ehttp://goo.gl/aVQyW)\u003c/a\u003e.\n\nIt seems to me that recent change (\u003ca href=\"http://golang.org/cl/5673068)\"\u003ehttp://golang.org/cl/5673068)\u003c/a\u003e does not work\non some computers, because they do not have English error messages. Perhaps, we should\ngo and fetch *native* error message, if we can't get English message. Perhaps, we could\njust say \u0026quot;winapi error #2\u0026quot;, but mentioning FormatMessage in the message is not\nhelpful.\n\nHere is a little program to test fetching both English and *native* messages, for\npeople, who have non-English computers, to comment:\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;strconv\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n\t\u0026quot;unicode/utf16\u0026quot;\n)\n\ntype myErrno uintptr\n\nfunc (e myErrno) Error() string {\n\tvar flags uint32 = syscall.FORMAT_MESSAGE_FROM_SYSTEM | syscall.FORMAT_MESSAGE_ARGUMENT_ARRAY | syscall.FORMAT_MESSAGE_IGNORE_INSERTS\n\tb := make([]uint16, 300)\n\tn, err := syscall.FormatMessage(flags, 0, uint32(e), 0, b, nil)\n\tif err != nil {\n\t\treturn \u0026quot;error \u0026quot; + strconv.Itoa(int(e)) + \u0026quot; (FormatMessage failed with err=\u0026quot; + strconv.Itoa(int(err.(myErrno))) + \u0026quot;)\u0026quot;\n\t}\n\t// trim terminating \\r and \\n\n\tfor ; n \u0026gt; 0 \u0026amp;\u0026amp; (b[n-1] == '\\n' || b[n-1] == '\\r'); n-- {\n\t}\n\treturn string(utf16.Decode(b[:n]))\n}\n\nfunc main() {\n\tconst n = 2\n\tfmt.Printf(\u0026quot;English message for errno=%d is: %v\\n\u0026quot;, n, syscall.Errno(n))\n\tfmt.Printf(\u0026quot;*Native* message for errno=%d is: %v\\n\u0026quot;, n, myErrno(n))\n}\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 10,
+	"closed_at": "2014-12-08T10:19:08Z",
+	"created_at": "2012-05-15T06:03:30Z",
+	"updated_at": "2016-06-24T22:19:03Z"
+}

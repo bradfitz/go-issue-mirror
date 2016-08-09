@@ -1,0 +1,33 @@
+{
+	"id": 136345559,
+	"number": 14504,
+	"state": "closed",
+	"title": "cmd/compile: useless copies inserted by the register allocator",
+	"body": "While investigating some missed optimizations I found that the register allocator inserts some useless copies. In two cases a function is compiled almost the same but one has a useless copy in it.\r\n\r\nFor example (*mspan).layout\r\n\r\nBAD:\r\n```\r\nafter regalloc [78996 ns]\r\n\r\nb1:\r\nv1 = InitMem \u003cmem\u003e\r\nv7 = VarDef \u003cmem\u003e {size} v1\r\nv11 = VarDef \u003cmem\u003e {n} v7\r\nv15 = VarDef \u003cmem\u003e {total} v11\r\nv19 = VarDef \u003cmem\u003e {total} v15\r\nv2 = SP \u003cuintptr\u003e : SP\r\nv20 = MOVQstoreconst \u003cmem\u003e {total} v2 v19\r\nv23 = VarDef \u003cmem\u003e {n} v20\r\nv24 = MOVQstoreconst \u003cmem\u003e {n} v2 v23\r\nv27 = VarDef \u003cmem\u003e {size} v24\r\nv28 = MOVQstoreconst \u003cmem\u003e {size} v2 v27\r\nv29 = Arg \u003c*mspan\u003e {s} : s[*mspan]\r\nv46 = LoadReg \u003c*mspan\u003e v29 : CX\r\nv30 = LoweredNilCheck \u003cvoid\u003e v46 v28\r\nCheck v30 → b3\r\nb3: ← b1\r\nv34 = MOVQload \u003cuintptr\u003e [32] v46 v28 : DX\r\nv38 = VarDef \u003cmem\u003e {total} v28\r\nv59 = SHLQconst \u003cuintptr\u003e [13] v34 : AX\r\nv39 = MOVQstore \u003cmem\u003e {total} v2 v59 v38\r\nv45 = MOVQload \u003cuintptr\u003e [64] v46 v39 : CX\r\nv47 = VarDef \u003cmem\u003e {size} v39\r\nv48 = MOVQstore \u003cmem\u003e {size} v2 v45 v47\r\nv63 = CMPQconst \u003cflags\u003e v45\r\nUGT v63 → b6 b4\r\nb6: ← b3\r\nv55 = MOVQload \u003cuintptr\u003e {total} v2 v48 : DX\r\nv65 = VarDef \u003cmem\u003e {n} v48\r\nv31 = Copy \u003cuintptr\u003e v55 : AX   // EXTRA EXTRA EXTRA\r\nv62 = DIVQU \u003cuintptr\u003e v31 v45 : AX\r\nv66 = MOVQstore \u003cmem\u003e {n} v2 v62 v65\r\nPlain → b5\r\nb5: ← b4 b6\r\nv67 = Phi \u003cmem\u003e v48 v66\r\nRet v67\r\nb4: ← b3\r\nPlain → b5\r\n```\r\n\r\nOK:\r\n```\r\nafter regalloc [66233 ns]\r\n\r\nb1:\r\nv1 = InitMem \u003cmem\u003e\r\nv7 = VarDef \u003cmem\u003e {size} v1\r\nv11 = VarDef \u003cmem\u003e {n} v7\r\nv15 = VarDef \u003cmem\u003e {total} v11\r\nv19 = VarDef \u003cmem\u003e {total} v15\r\nv2 = SP \u003cuintptr\u003e : SP\r\nv20 = MOVQstoreconst \u003cmem\u003e {total} v2 v19\r\nv23 = VarDef \u003cmem\u003e {n} v20\r\nv24 = MOVQstoreconst \u003cmem\u003e {n} v2 v23\r\nv27 = VarDef \u003cmem\u003e {size} v24\r\nv28 = MOVQstoreconst \u003cmem\u003e {size} v2 v27\r\nv29 = Arg \u003c*mspan\u003e {s} : s[*mspan]\r\nv61 = LoadReg \u003c*mspan\u003e v29 : CX\r\nv30 = LoweredNilCheck \u003cvoid\u003e v61 v28\r\nCheck v30 → b3\r\nb3: ← b1\r\nv34 = MOVQload \u003cuintptr\u003e [32] v61 v28 : DX\r\nv38 = VarDef \u003cmem\u003e {total} v28\r\nv46 = SHLQconst \u003cuintptr\u003e [13] v34 : AX\r\nv39 = MOVQstore \u003cmem\u003e {total} v2 v46 v38\r\nv45 = MOVQload \u003cuintptr\u003e [64] v61 v39 : CX\r\nv47 = VarDef \u003cmem\u003e {size} v39\r\nv48 = MOVQstore \u003cmem\u003e {size} v2 v45 v47\r\nv53 = CMPQconst \u003cflags\u003e v45\r\nUGT v53 → b4 b7\r\nb4: ← b3\r\nv55 = MOVQload \u003cuintptr\u003e {total} v2 v48 : AX\r\nPlain → b6\r\nb6: ← b4\r\nv65 = VarDef \u003cmem\u003e {n} v48\r\nv62 = DIVQU \u003cuintptr\u003e v55 v45 : AX\r\nv66 = MOVQstore \u003cmem\u003e {n} v2 v62 v65\r\nPlain → b5\r\nb5: ← b7 b6\r\nv67 = Phi \u003cmem\u003e v48 v66\r\nRet v67\r\nb7: ← b3\r\nPlain → b5\r\n```\r\n\r\nBAD has an extra \"v31 = Copy \u003cuintptr\u003e v55 : AX\". In BAD v31 and v55 are in the same block, but in OK v31 and v55 are in blocks b4 \u0026 b6 which haven't been merged in a previous pass.",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-04-20T15:32:03Z",
+	"created_at": "2016-02-25T10:33:52Z",
+	"updated_at": "2016-04-20T15:32:03Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"id": 89016670,
+	"body": "@michael-schaller apologies for my latency on this issue.\r\n\r\nI've just checked and we do not need to do anything to support this use case anymore.\r\n\r\nSince SWIG code is now built using CGO instead of the old plan-9 C compilers, you can simply use a `build.go` file containing `import \"C\"` and `#cgo key: value` directives as part of your package containing the `.swig` file. I've put together a simple example to demonstrate this (see below).\r\n\r\n*At this point, unless there is opposition to using the `#cgo` directives in combination with SWIG code for some reason,* **we can close this issue.**\r\n\r\n```\r\n$ tree\r\n.\r\n├── main.go\r\n├── mylib\r\n│   ├── build.sh\r\n│   ├── mylib.c\r\n└── mypkg\r\n    ├── code.c\r\n    ├── mypkg.go\r\n    └── mypkg.swig\r\n\r\n2 directories, 6 files\r\n```\r\n\r\nThe `main.go` program is very simple (and external from the SWIG wrapper package):\r\n\r\n```\r\n$ cat main.go\r\npackage main\r\n\r\nimport \"cflags/mypkg\"\r\n\r\nfunc main() {\r\n  mypkg.DoStuff()\r\n}\r\n```\r\n\r\n`mylib` is a simple C dynamic library I built:\r\n\r\n```\r\n$ cat mylib/build.sh \r\ngcc -c -Wall -Werror -fPIC mylib.c\r\ngcc -shared -o libmylib.so mylib.o\r\n```\r\n\r\n```\r\n$ cat mylib/mylib.c\r\nint mylib_add(int a, int b) {\r\n\treturn a + b;\r\n}\r\n```\r\n\r\nThen I declared a simple C function in the SWIG package to retrieve a preprocessor-defined value (see `-DGENERIC_VALUE=32` below):\r\n\r\n```\r\n$ cat mypkg/code.c \r\nint generic_value = GENERIC_VALUE;\r\n\r\nint get_generic_value(void) {\r\n\treturn generic_value;\r\n}\r\n```\r\n\r\nThe SWIG package has the grunt of the code and our `#cgo` build directives:\r\n\r\n```\r\n$ cat mypkg/mypkg.go\r\npackage mypkg\r\n\r\n// #cgo CFLAGS: -DGENERIC_VALUE=32\r\n// #cgo LDFLAGS: -L${SRCDIR}/../mylib/ -lmylib\r\nimport \"C\"\r\n\r\nimport \"log\"\r\n\r\nfunc DoStuff() {\r\n\t// Test that the GENERIC_VALUE defined in the C compiler flags is correct.\r\n\tv := Get_generic_value()\r\n\tif v != 32 {\r\n\t\tlog.Fatal(\"got unexpected value\")\r\n\t}\r\n\tlog.Println(\"got the right value\", v)\r\n\tlog.Println(\"mylib_add(2, 2):\", Mylib_add(2, 2))\r\n}\r\n```\r\n\r\n```\r\n$ cat mypkg/mypkg.swig \r\n/* A trivial example of using CGO compiler flags with SWIG.  */\r\n\r\nint get_generic_value(void);\r\n\r\nint mylib_add(int a, int b);\r\n```\r\n\r\nBuild and run it:\r\n\r\n```\r\ncd mylib/\r\n./build.sh # builds libmylib.so\r\ncd ..\r\ngo build # builds the main program binary named 'cflags'\r\n\r\n# run the program with libmylib.so on LD_LIBRARY_PATH:\r\nLD_LIBRARY_PATH=mylib/ ./cflags\r\n```\r\n\r\nwhich produces:\r\n\r\n```\r\n2015/04/02 12:22:27 got the right value 32\r\n2015/04/02 12:22:27 mylib_add(2, 2): 4\r\n```",
+	"user": {
+		"login": "slimsag",
+		"id": 3173176,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2015-04-02T19:25:54Z",
+	"updated_at": "2015-04-02T19:26:08Z"
+}

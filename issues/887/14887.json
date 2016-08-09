@@ -1,0 +1,17 @@
+{
+	"id": 142202500,
+	"number": 14887,
+	"state": "closed",
+	"title": "net/http/transport: fixed wait time in TestTransportPersistConnLeak is too short",
+	"body": "The plan9_arm builder sometimes [fails](https://build.golang.org/log/a12567110edf3ee68fb10b408cb549096702eba7) in net/http/transport tests with output like:\r\n```\r\n --- FAIL: TestTransportPersistConnLeak\r\n     transport_test.go:1032: goroutine growth: 59 -\u003e 162 -\u003e 66 (delta: 7)\r\n     transport_test.go:1033: too many new goroutines\r\n```\r\nThis test has a fixed sleep time of 100ms to allow goroutines to exit after CloseIdleConnections is called.  On a Raspberry Pi running many simultaneous tests, this is not always long enough.\r\n\r\nA similar function `TestTransportPersistConnLeakShortBody` has a sleep time of 400ms for the same purpose (originally 50ms but revised upwards in [CL 12960046](https://golang.org/cl/12960046)). This seems to be plenty of time for plan9_arm, but on faster hosts will usually be much more than necessary.\r\n\r\nInstead of just increasing the sleep time, I propose replacing the fixed sleep in both tests by calls to a new function which will do shorter sleeps in a loop until the number of goroutines reaches the desired threshold or an overall timeout expires.",
+	"user": {
+		"login": "millerresearch",
+		"id": 17780869,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-03-20T22:54:11Z",
+	"created_at": "2016-03-20T20:36:51Z",
+	"updated_at": "2016-03-20T22:54:11Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51277818,
+	"number": 1448,
+	"state": "closed",
+	"title": "gccgo: path.walkDir doesn't cope with large dirs",
+	"body": "by **m@capitanio.org**:\n\n\u003cpre\u003ecommit 581fe6126b6f6db3ae0a939e51427406dc52c802\ngit-svn-id: svn+ssh://gcc.gnu.org/svn/gcc/trunk@169328\n138bc75d-0d04-0410-961f-82ee72b054a4\n\nWalking through e.g. /proc gives the error\n\u0026quot;opendir: Too many open files\u0026quot;\n\nusual ulimit -a\nopen files (-n) 1024\n\n(6* works even by ulimit -n 5)\n\n\u0026lt;code\u0026gt;\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;path\u0026quot;\n\t\u0026quot;strings\u0026quot;\n)\n\nvar exitCode = 0\n\nfunc setExit(err int) {\n\tif err \u0026gt; exitCode {\n\t\texitCode = err\n\t}\n}\n\ntype V struct{}\n\nvar i int = 0\n\nfunc (v V) VisitDir(path string, f *os.FileInfo) bool {\n\tfmt.Printf(\u0026quot;dir: %s\\n\u0026quot;, path)\n\treturn true\n}\n\nfunc (v V) VisitFile(path string, f *os.FileInfo) {\n\tfmt.Printf(\u0026quot;file: %d %s\\n\u0026quot;, i, path)\n\ti++\n}\n\nfunc error(format string, args ...interface{}) {\n\tsetExit(2)\n\ts := fmt.Sprintf(format, args...)\n\tif strings.Contains(s, \u0026quot;Too many\u0026quot;) {\n\t\tpanic(s)\n\t}\n\tfmt.Fprintf(os.Stderr, \u0026quot;walkdir: \u0026quot;+s)\n}\n\nfunc walkDir(root string) {\n\terrors := make(chan os.Error)\n\tdone := make(chan bool)\n\tgo func() {\n\t\tfor e := range errors {\n\t\t\terror(\u0026quot;walk error: %s\u0026quot;, e)\n\t\t}\n\t\tdone \u0026lt;- true\n\t}()\n\tpath.Walk(root, V{}, errors)\n\tclose(errors)\n\t\u0026lt;-done // wait for all errors\n}\n\nfunc main() {\n\targc := len(os.Args)\n\tp := \u0026quot;/proc\u0026quot;\n\tswitch argc {\n\tcase 1:\n\tcase 2:\n\t\tp = os.Args[1]\n\tdefault:\n\t\tfmt.Println(\u0026quot;Usage: walkdir [path]\u0026quot;)\n\t\tos.Exit(1)\n\t}\n\twalkDir(p)\n\tfmt.Println(\u0026quot;files: \u0026quot;, i)\n\tos.Exit(exitCode)\n}\n\u0026lt;/code\u0026gt;\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:08:23Z",
+	"created_at": "2011-01-27T14:57:31Z",
+	"updated_at": "2016-06-24T19:24:29Z"
+}

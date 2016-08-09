@@ -1,0 +1,27 @@
+{
+	"id": 137777123,
+	"number": 14594,
+	"state": "open",
+	"title": "x/build/coordinator: make oauth2 build green",
+	"body": "The `oauth2` repo is currently broken on the build dashboard because the coordinator doesn't know how to fetch dependencies external to the Go sub-repos.\r\n\r\n```\r\n../../gopath/src/golang.org/x/oauth2/google/default.go:20:2: cannot find package \"google.golang.org/cloud/compute/metadata\" in any of:\r\n\t/tmp/workdir/go/src/google.golang.org/cloud/compute/metadata (from $GOROOT)\r\n\t/tmp/workdir/gopath/src/google.golang.org/cloud/compute/metadata (from $GOPATH)\r\n```\r\n\r\nOptions:\r\n\r\n1. Teach the coordinator how to fetch packages from repos other than the Go sub-repos.\r\n\r\n  - I'm not in favor of this approach due to the complete lack of versioning (that already exists, but could be perceived as \"worse\" when we're talking about repos outside our control).\r\n\r\n2. Use a build tag to exclude packages from continuous build. Something like \"gobuildfarm\". Then packages that shouldn't be tested can specify `// +build !gobuildfarm` in their source files.\r\n\r\n  - I feel somewhat ambivalent about this approach. It sets an odd precedent. It can be used to make the build green when it's actually not. That seems bad.\r\n\r\n3. Skip packages that have dependencies outside the Go project.\r\n\r\n  - This seems promising. We already know which packages these are. The question is, how do we keep an eye on the packages we're skipping? We don't want to silently lose test coverage by adding an external dependency.\r\n\r\n4. Remove oauth2 from the build dashboard as it'll likely never be able to build using only the sub-repos.\r\n\r\n  - This has some appeal, because there was no solid reason to make oauth2 a `golang.org/x/` repo in the first place. Maybe it doesn't belong on the build dashboard.\r\n\r\nMy instinct points to options 3 or 2.\r\n\r\ncc @bradfitz @rakyll ",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"created_at": "2016-03-02T05:27:29Z",
+	"updated_at": "2016-04-19T01:41:29Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

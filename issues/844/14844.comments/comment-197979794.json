@@ -1,0 +1,12 @@
+{
+	"id": 197979794,
+	"body": "@ianlancetaylor According to the spec (\"If the left operand of a non-constant shift expression is an untyped constant, it is first converted to the type it would assume if the shift expression were replaced by its left operand alone.\"), there's no difference in typing of `1.0` in A and B --- for typing purposes, it is as if the shift doesn't exist.\r\n\r\nSpecifically, in B, `1.0` is an untyped constant no matter the type of the shift count (\"Except for shift operations, if one operand is an untyped constant and the other operand is not, the constant is converted to the type of the other operand.\"; i.e., shifts are special, and the shift count type has no influence on the type of the shift result whatsoever - nor does it matter here if `s` is constant or not).\r\n\r\nWe do accept `a[1.0]` and thus we should accept `a[1.0 \u003c\u003c s]` since the type of this non-constant shift depends only on the type that the left operand would assume.\r\n\r\nIf `1.0 \u003c\u003c s` would indeed assume a floating-point result independent of context (in this case its use in an index expression), then an operation such as `var m int = 1.0 \u003c\u003c s` would be invalid as well. However, this is explicitly permitted (see example in http://golang.org/ref/spec#Operators).\r\n\r\nThat is, it really depends on what the context is. The question is, for index expressions, does the context require an integer value? The spec says: \"(If a is not a map) the (non-constant) index x must be of integer type or untyped\" (http://golang.org/ref/spec#Index_expressions).\r\n\r\nI believe the spec is vague here. But since we accept `1.0` as integer value (which would become a float64 in `c := 1.0`), it makes sense to accept `1.0 \u003c\u003c s` as integer value (which would become a float64 in `c := 1.0 \u003c\u003c s`) since for non-constant shifts only the type of the left operand matters.\r\n\r\nI argue that gotype is correct and the compiler(s) should accept this code. Alternatively, the spec could be made more restrictive in this case, but that would add extra rules which don't seem to be necessary.",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-17T17:13:54Z",
+	"updated_at": "2016-03-17T17:14:58Z"
+}

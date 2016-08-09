@@ -1,0 +1,27 @@
+{
+	"id": 125203813,
+	"number": 13842,
+	"state": "open",
+	"title": "runtime: eliminate usleep(100) in getfull",
+	"body": "Currently we use a usleep(100) loop in getfull to \"pause\" when we're waiting for GC work during STW mark termination. This both wastes CPU and increases STW latency. It has also caused several problems on platforms where 100us sleeps don't work well: it used to require us to raise the system-wide timer resolution on Windows (#8687), and on Unix platforms without high-resolution timers (older Linux on ARM, OpenBSD, and Solaris), this actually gives up the entire rest of the time slice and seriously interferes with profiling signals (#13405).\r\n\r\nWe should replace this with a more explicit synchronization mechanism. Conveniently, because getfull is only ever used during STW, this synchronization doesn't have to involve anything beyond getfull and putfull. There are two wake-up conditions that, together, are sufficient: a new buffer is added to the full list, or work.nproc == work.nwait. The former case only happens in putfull. Ideally we can sharpen that to \"a new buffer is added to the full list and there's a blocked getfull\" without introducing races. The latter case requires waking all blocked getfulls, so we have to be careful to not race with another getfull blocking. However, we do know that if work.nproc == work.nwait, some non-blocked getfull will have detected that condition, so it can trigger the global wake up.\r\n\r\n/cc @RLH ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-01-06T15:54:45Z",
+	"updated_at": "2016-05-17T14:14:29Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

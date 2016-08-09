@@ -1,0 +1,12 @@
+{
+	"id": 74364421,
+	"body": "This looks like a general bug in how our heap allocation works vs. how GC thinks it works.  GC expects a single, contiguous heap, but we don't get that, at least on 32 bit (64 bit also?).  The pointer in question is the buckhash pointer from runtime/mprof.go:144.\r\n\r\nHere are the sequence of SysAlloc allocations:\r\n\r\nalloc heap at [0x1016e000,0x1026e000]\r\nbuckhash @ 0x301c0000\r\nalloc heap at [0x1026e000,0x1036e000]\r\nalloc heap at [0x1036e000,0x1049e000]\r\nalloc heap at [0x1049e000,0x106fe000]\r\nalloc heap at [0x106fe000,0x10bbe000]\r\nalloc heap at [0x10bbe000,0x1153e000]\r\nalloc heap at [0x1153e000,0x1283e000]\r\nalloc heap at [0x1283e000,0x14e3e000]\r\nalloc heap at [0x14e3e000,0x19a3e000]\r\nalloc heap at [0x19a3e000,0x2323e000]\r\nalloc heap at [0x303b0000,0x433b0000]\r\n\r\nNote that the heap allocation at the end skipped over the buckhash allocation that happened early on (presumably because our requested size didn't fit adjacent to the last allocation because the buckhash allocation was in the way).  We now have a \"hole\" in the heap, but the GC pointer checking code doesn't know that.  It sees the pointer 0x301c0000 which is between arena_start=0x1016e000 and arena_used=0x433b0000 and barfs because there is no MSpan describing the 0x301c0000 address.\r\n\r\nWe should allocate \"out of heap\" MSpans for the ranges which the sysAlloc calls skipped over.  GC can ignore pointers to those areas.  It's a bit complicated because maybe sysAlloc could come back and fill in holes, so the \"out of heap\" MSpans might need to be split.\r\n\r\nOr we could just turn off this check for 1.4.2.\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-14T06:40:50Z",
+	"updated_at": "2015-02-14T06:41:18Z"
+}

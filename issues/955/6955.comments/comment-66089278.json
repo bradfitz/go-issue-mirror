@@ -1,0 +1,12 @@
+{
+	"id": 66089278,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eFrom Linux poll(3) and Solaris poll(2) (applies to select(2) too, for\nvarious reasons):\n\n  A file descriptor for a socket that is  connecting asynchronously\n  will indicate that it is ready for writing, once a connection has\n  been established.\n\nThe network poller sees this event, and tells the runtime about it (via\nruntime.netpollready). The runtime doesn't care. Because no goroutines\nwant to use that fd yet, it won't return the list of goroutines ready to\nrun, it will return nil. Because netpollready didn't return anything,\ngp (in runtime.netpoll) will not be initialized, it will be nil, and\nthe code will loop. Once the code loops, it will loop for a while,\nbecause select(2) will continue telling us about that fd.\n\nRemoving the fd from the fd set is not a valid fix, because eventually\nsomebody will care about that fd, but nobody will be able to tell the\nruntime that the fd is actually ready; we ate the notification!\n\nThe fundamental problem here is that epoll and kqueue are edge-triggered\nwhile select(2) is level-triggered. I don't know how to solve this\nproblem.\u003c/pre\u003e",
+	"user": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-15T23:32:31Z",
+	"updated_at": "2014-12-08T10:38:44Z"
+}

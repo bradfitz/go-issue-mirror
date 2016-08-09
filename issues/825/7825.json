@@ -1,0 +1,27 @@
+{
+	"id": 51287262,
+	"number": 7825,
+	"state": "closed",
+	"title": "x/net/websocket: protocol implementation fails to respond to PingFrame without payload",
+	"body": "by **opennota**:\n\n\u003cpre\u003eRFC 6455 states, that Ping frame payload is optional:\n\n    \u003ca href=\"https://tools.ietf.org/html/rfc6455#section-5.5.2\"\u003ehttps://tools.ietf.org/html/rfc6455#section-5.5.2\u003c/a\u003e:\n\n    A Ping frame MAY include \u0026quot;Application data\u0026quot;.\n\n\nHowever, the protocol implementation reads a frame using io.ReadFull, that returns\nio.EOF error, if no bytes are read, and this io.EOF is treated as an error on the next\nline.\n\nThe following patch solves this issue:\n\n--- hybi.go.backup      2014-04-20 17:03:27.811047258 +0700\n+++ hybi.go     2014-04-20 17:30:58.371147981 +0700\n@@ -291,7 +291,7 @@\n        case PingFrame:\n                pingMsg := make([]byte, maxControlFramePayloadLength)\n                n, err := io.ReadFull(frame, pingMsg)\n-               if err != nil \u0026amp;\u0026amp; err != io.ErrUnexpectedEOF {\n+               if err != nil \u0026amp;\u0026amp; err != io.ErrUnexpectedEOF \u0026amp;\u0026amp; err !=\nio.EOF {\n                        return nil, err\n                }                                                                                                    \n                io.Copy(ioutil.Discard, frame)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-08-04T03:35:12Z",
+	"created_at": "2014-04-20T10:44:26Z",
+	"updated_at": "2016-08-05T16:08:30Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

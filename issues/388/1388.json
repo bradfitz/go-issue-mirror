@@ -1,0 +1,28 @@
+{
+	"id": 51277738,
+	"number": 1388,
+	"state": "closed",
+	"title": "http: Status-Line with empty Reason-Phrase not supported",
+	"body": "\u003cpre\u003e51c777dbccb9 release.2010-12-22/release\n\nGo doesn't permit a HTTP response status line like:\n\nHTTP/1.0 303_\n\n(where the \u0026quot;_\u0026quot; above is a trailing space, not an underscore)\n\nUnfortunately, App Engine's dev_appserver.py generates such responses.  However, they\nappear to be valid:\n\nHTTP/1.1's definition:\n\n\u003ca href=\"http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1\"\u003ehttp://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1\u003c/a\u003e\n\n      Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF\n...\n      Reason-Phrase  = *\u0026lt;TEXT, excluding CR, LF\u0026gt;\n\nLooking at Go's src/pkg/http/request.go and its readLineBytes() func, which is called by\nReadResponse, the problem is that whitespace is stripped from the end before the split:\n\n\nfunc readLineBytes(b *bufio.Reader) (p []byte, err os.Error) {\n...\n\n        // Chop off trailing white space.                                                                                                                    \n        var i int\n        for i = len(p); i \u0026gt; 0; i-- {\n                if c := p[i-1]; c != ' ' \u0026amp;\u0026amp; c != '\\r' \u0026amp;\u0026amp; c != '\\t' \u0026amp;\u0026amp; c != '\\n' {\n                        break\n                }\n\t}\n        return p[0:i], nil\n}\n\n\n\nfunc ReadResponse(r *bufio.Reader, requestMethod string) (resp *Response, err os.Error) {\n...\n        // Parse the first line of the response.                                                                                                             \n\tline, err := readLine(r)\n...\n        f := strings.Split(line, \u0026quot; \u0026quot;, 3)\n        if len(f) \u0026lt; 3 {\n                return nil, \u0026amp;badStringError{\u0026quot;malformed HTTP response\u0026quot;, line}\n        }\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:08:06Z",
+	"created_at": "2011-01-05T15:34:32Z",
+	"updated_at": "2016-06-24T19:23:43Z"
+}

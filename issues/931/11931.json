@@ -1,0 +1,33 @@
+{
+	"id": 98101488,
+	"number": 11931,
+	"state": "closed",
+	"title": "cmd/compile: escape analysis bug involving interfaces",
+	"body": "We started seeing this panic in our tests at ipfs.io. I didn't try go1.5beta1 but its in beta 2 and 3. (They work fine in 1.4.x)\r\n\r\n\r\n```\r\n[cryptix@higgs ~] uname -a\r\nLinux higgs 4.0.7-2-ARCH #1 SMP PREEMPT Tue Jun 30 07:50:21 UTC 2015 x86_64 GNU/Linux\r\n[cryptix@higgs ~] go version\r\ngo version devel +d3ffc97 Wed Jul 29 23:50:20 2015 +0000 linux/amd64\r\n[cryptix@higgs ~] go get  github.com/ipfs/go-ipfs/cmd/ipfs\r\n[cryptix@higgs ~] go test github.com/ipfs/go-ipfs/test/integration\r\nunexpected fault address 0x0\r\nfatal error: fault\r\n[signal 0xb code=0x80 addr=0x0 pc=0x40b911]\r\n\r\ngoroutine 328 [running]:\r\nruntime.throw(0xb2e3c8, 0x5)\r\n\t/home/cryptix/go15exp/src/runtime/panic.go:527 +0x96 fp=0xc820055340 sp=0xc820055328\r\nruntime.sigpanic()\r\n\t/home/cryptix/go15exp/src/runtime/sigpanic_unix.go:27 +0x2ab fp=0xc820055390 sp=0xc820055340\r\nruntime.mapaccess2_faststr(0x93b560, 0xc82004f800, 0xc82055c1b0, 0x22, 0xc838d780c2, 0xe97a60)\r\n\t/home/cryptix/go15exp/src/runtime/hashmap_fast.go:352 +0x3f1 fp=0xc8200553f0 sp=0xc820055390\r\ngithub.com/ipfs/go-ipfs/p2p/peer.(*metrics).RecordLatency(0xc8205a4098, 0xc82055c1b0, 0x22, 0x4c472)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/p2p/peer/metrics.go:45 +0xb3 fp=0xc820055460 sp=0xc8200553f0\r\ngithub.com/ipfs/go-ipfs/routing/dht.(*IpfsDHT).sendRequest(0xc82067a000, 0x7fd87e9b00c0, 0xc82056ac40, 0xc82055c1b0, 0x22, 0xc820104af0, 0x0, 0x0, 0x0)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/routing/dht/dht_net.go:103 +0xdc2 fp=0xc820055828 sp=0xc820055460\r\ngithub.com/ipfs/go-ipfs/routing/dht.(*IpfsDHT).findProvidersSingle(0xc82067a000, 0x7fd87e9b00c0, 0xc82056ac40, 0xc82055c1b0, 0x22, 0xc82065fc80, 0x22, 0x0, 0x0, 0x0)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/routing/dht/dht.go:276 +0x3d8 fp=0xc820055920 sp=0xc820055828\r\ngithub.com/ipfs/go-ipfs/routing/dht.(*IpfsDHT).findProvidersAsyncRoutine.func1(0x7fd87e9b00c0, 0xc82056ac40, 0xc82055c1b0, 0x22, 0x1, 0x0, 0x0)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/routing/dht/routing.go:217 +0x157 fp=0xc820055c18 sp=0xc820055920\r\ngithub.com/ipfs/go-ipfs/routing/dht.(*dhtQueryRunner).queryPeer(0xc82067c480, 0x7fd8809f84b8, 0xc8205fed80, 0xc82055c1b0, 0x22)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/routing/dht/query.go:251 +0x789 fp=0xc820055f08 sp=0xc820055c18\r\ngithub.com/ipfs/go-ipfs/routing/dht.(*dhtQueryRunner).spawnWorkers.func1(0x7fd8809f84b8, 0xc8205fed80)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/routing/dht/query.go:195 +0x53 fp=0xc820055f48 sp=0xc820055f08\r\ngithub.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/goprocess.(*process).Go.func1(0xc8206c6ec0, 0xc8205fed80, 0xc8205feea0)\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/goprocess/impl-mutex.go:112 +0x51 fp=0xc820055f88 sp=0xc820055f48\r\nruntime.goexit()\r\n\t/home/cryptix/go15exp/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc820055f90 sp=0xc820055f88\r\ncreated by github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/goprocess.(*process).Go\r\n\t/tmp/gotest/src/github.com/ipfs/go-ipfs/Godeps/_workspace/src/github.com/jbenet/goprocess/impl-mutex.go:115 +0x3eb\r\n\r\n...\r\n```\r\n([Full trace log](https://gist.githubusercontent.com/cryptix/c48c65f029f32925bbd0/raw/f886776739caabdc35a6723da532b5bfcdad7c50/gistfile1.txt))\r\n\r\nIt seems to come from [this](https://github.com/ipfs/go-ipfs/blob/master/p2p/peer/metrics.go#L60) map lookup but I can't figure out whats wrong with it. I wish I had a more minimal test case.\r\n",
+	"user": {
+		"login": "cryptix",
+		"id": 111202,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-07-30T17:40:11Z",
+	"created_at": "2015-07-30T07:18:46Z",
+	"updated_at": "2016-08-05T16:11:40Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

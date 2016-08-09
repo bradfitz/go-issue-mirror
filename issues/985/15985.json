@@ -1,0 +1,21 @@
+{
+	"id": 158843263,
+	"number": 15985,
+	"state": "open",
+	"title": "Proposal: x/net/ethernet: new package for ethernet sockets",
+	"body": "At this time, no official `x/net` package is available to create and use ethernet sockets in Go.  I have written a couple of packages which can be used for this purpose, but I'd like to try to create an  `x/net/ethernet` package as an official Go `x/net` subproject.\r\n\r\nMy packages can be found at:\r\n- https://github.com/mdlayher/raw\r\n- https://github.com/mdlayher/ethernet\r\n\r\nEthernet sockets are useful for low-level networking applications like ARP, LLDP, ATA over Ethernet, and a wide variety of other networking protocols.  This package would make use of Linux's raw sockets and the BSD family's BPF to enable this functionality, and I already have working examples for these operating systems in my `raw` package.  Adding support for other operating systems should be possible over time, but I have no personal experience working with ethernet sockets outside of Linux and BSD.\r\n\r\nThe proposed API could look something like:\r\n\r\n```\r\npackage ethernet\r\n\r\n// An Ethernet frame, which the Conn and RawConn types marshal\r\n// and unmarshal to transport data\r\ntype Frame struct {\r\n    // Contains usual Ethernet fields\r\n}\r\n\r\n// net.Addr implementation which indicates source or destination\r\n// hardware address of Ethernet frame\r\ntype Addr struct {\r\n    HardwareAddr net.HardwareAddr\r\n}\r\nfunc (a *Addr) Network() string\r\nfunc (a *Addr) String() string\r\n\r\n// Protocol identifier used to filter traffic by EtherType\r\ntype EtherType uint16\r\n\r\n// A net.PacketConn which wraps and unwraps bytes from ethernet\r\n// frames seamlessly.\r\ntype Conn struct {}\r\nfunc Listen(ifi *net.Interface, et EtherType) (*Conn, error)\r\nfunc (c *Conn) Close() error\r\nfunc (c *Conn) LocalAddr() net.Addr\r\nfunc (c *Conn) ReadFrom(b []byte) (int, net.Addr, error)\r\nfunc (c *Conn) SetBPF(filter []bpf.RawInstruction) error\r\nfunc (c *Conn) SetDeadline(t time.Time) error\r\nfunc (c *Conn) SetReadDeadline(t time.Time) error\r\nfunc (c *Conn) SetWriteDeadline(t time.Time) error\r\nfunc (c *Conn) WriteTo(b []byte, addr net.Addr) (int, error)\r\n\r\n// A modified Conn which returns all Ethernet frame data on incoming\r\n// frames and enables writing arbitrary outgoing frames.\r\ntype RawConn struct{}\r\nfunc ListenRaw(ifi *net.Interface, et EtherType) (*RawConn, error)\r\nfunc (c *RawConn) Close() error\r\nfunc (c *RawConn) ReadFrom(b []byte) (f *Frame, p []byte, error)\r\nfunc (c *RawConn) SetBPF(filter []bpf.RawInstruction) error\r\nfunc (c *RawConn) SetDeadline(t time.Time) error\r\nfunc (c *RawConn) SetReadDeadline(t time.Time) error\r\nfunc (c *RawConn) SetWriteDeadline(t time.Time) error\r\nfunc (c *RawConn) WriteTo(f *Frame, b []byte) error\r\n```\r\n\r\nI am curious if 802.11Q VLAN tags should be included in this package.  In general, the operating system seamlessly handles adding and removing VLAN tags as needed, so it may not be necessary, but could also be nice to have.\r\n\r\nIn addition, since the runtime network poller is not accessible outside of package `net` at the moment, the `SetDeadline` methods may just return an error until implemented later.  See my other proposal at #15984 .\r\n\r\nIf implemented, this package would fix #8432.\r\n\r\nThanks for your time, and please feel free to ask for clarification if needed.",
+	"user": {
+		"login": "mdlayher",
+		"id": 1926905,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-06-07T05:42:19Z",
+	"updated_at": "2016-06-24T22:36:33Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

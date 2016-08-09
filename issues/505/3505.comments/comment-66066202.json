@@ -1,0 +1,12 @@
+{
+	"id": 66066202,
+	"body": "\u003ca id=\"c9\"\u003e\u003c/a\u003eComment 9:\n\n\u003cpre\u003eHere’s what I see from GCC: (on linux)\n\n  struct issue_3505_inner {a int@0; b int@4} size=8\n  struct issue_3505_zero {a long int@0; b int@8; c [-1]t_issue_3505_inner@12} size=16\n  struct issue_3505_flex {a long int@0; b int@8; c [-1]t_issue_3505_inner@12} size=16\n  struct issue_3505_one {a long int@0; b int@8; c [1]t_issue_3505_inner@12} size=24\n\nThe structure and bit offsets look fine; I expect [] and [0] to be the same.\nThe sizes are off, however.\nThe DWARF code assumes that the last field should have size zero if it’s flexible, but\nthat’s not the case.\nThe only reason DWARF knows these are flexible are the lack of upper bounds for the\ndimensions.\n\nHere’s what I see from LLVM: (on mac)\n\n  struct issue_3505_inner {a int@0; b int@4} size=8\n  struct issue_3505_zero {a long int@0; b int@8; c [1]t_issue_3505_inner@12} size=16\n  struct issue_3505_flex {a long int@0; b int@8; c [1]t_issue_3505_inner@12} size=16\n  struct issue_3505_one {a long int@0; b int@8; c [1]t_issue_3505_inner@12} size=24\n\nNotice that everything we don’t compute is the same.\nThe difference here is that a dimension (0, unfortunately) is specified in all cases.\nThis should fall back to the code that looks if the size is the same as the last offset,\nbut this isn’t the case for this structure (in neither LLVM nor GCC).\n\nMy proposal:\n\nAssume that any terminal array of size 1 or fewer is a variable length array.\n 1. Before C90, the incantation seems to have been struct { type field[1]; }\n 2. With C90, the somewhat more explicit form struct { type field[0]; } seems to be allowed\n 3. With C99, the explicit form struct { type field[]; } was added\n\nThis will have no effect on nonterminal arrays or where the terminal array has 2+\nelements.\nThis will adversely affect one-length terminal arrays in cgo which are accessed directly\n(see below).\nThis will interpret both LLVM and GCC DWARF-2 output for the same C code identically.\n\nTo work around the adverse effect above, we could remove bounds checking from cgo for\nflexible arrays.\n\nI think with the above two changes, we'd be able to handle this odd case and still be\nbackward compatible.\n\nThoughts?\u003c/pre\u003e",
+	"user": {
+		"login": "kylelemons",
+		"id": 322213,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-04-12T02:36:23Z",
+	"updated_at": "2014-12-08T10:18:20Z"
+}

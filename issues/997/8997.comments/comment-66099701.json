@@ -1,0 +1,12 @@
+{
+	"id": 66099701,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **HongF.Yue**:\n\n\u003cpre\u003eI rebuild and run server code in -race flag, and edit rpc server code as below:\n----------------------------------------\n//rpc server\npackage main\n\nimport (\n\t\"fmt\"\n\t\"net\"\n\t\"net/rpc\"\n\t\"os\"\n)\n\ntype Args struct {\n\tA int\n}\n\ntype Rsp struct {\n\tA int\n}\n\ntype Echoer int\n\nvar isFirst = true\n\nfunc (t *Echoer) Echo(args *Args, reply *Rsp) error {\n\tif isFirst {\n\t\treply.A = args.A\n\t\tisFirst = false\n\t} else {\n\t\treply.A = 0\n\t}\n\tfmt.Println(\"reply-----\", reply.A)\n\treturn nil\n}\n\nfunc main() {\n\techoer := new(Echoer)\n\trpc.Register(echoer)\n\n\ttcpAddr, err := net.ResolveTCPAddr(\"tcp\", \":1234\")\n\tcheckError(err)\n\n\tlistener, err := net.ListenTCP(\"tcp\", tcpAddr)\n\tcheckError(err)\n\n\tconn, err := listener.Accept()\n\tcheckError(err)\n\trpc.ServeConn(conn)\n}\n\nfunc checkError(err error) {\n\tif err != nil {\n\t\tfmt.Println(\"Fatal error \", err.Error())\n\t\tos.Exit(1)\n\t}\n}\n----------------------------------\nThe output of both client and server have nothing different from original. And sending\nCtrl-C to client, server exit with no warning or error. \n\nThe Processor of this server is only one, I don't think this problem is related to\nconcurrent or race condition. Maybe some strange behavior of gob codec (zero value) is\nthe answer.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-10-26T03:12:21Z",
+	"updated_at": "2014-12-08T10:49:28Z"
+}

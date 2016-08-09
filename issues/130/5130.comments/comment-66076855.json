@@ -1,0 +1,12 @@
+{
+	"id": 66076855,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eMy current diagnosis is that the Darwin linker on 10.6 has a bug.  It does not correctly\nhandle a X86_64_RELOC_UNSIGNED relocation with a size other than 64 bits.  You can see\nthe bug at line 4592 of\n\u003ca href=\"http://opensource.apple.com/source/ld64/ld64-95.2.12/src/ld/MachOReaderRelocatable.hpp\"\u003ehttp://opensource.apple.com/source/ld64/ld64-95.2.12/src/ld/MachOReaderRelocatable.hpp\u003c/a\u003e .\n It does an unconditional 64-bit load regardless of the relocation length.  It then\nchecks to see that the loaded address is within the target section.\n\n6l is using 32 bit addresses to load variable addresses.  This is unusual on a 64-bit\nsystem but it works fine provided the linker always puts the code in the low order 32\nbits of the address space.  Unfortunately this triggers the bug in the Darwin linker.\n\nIn 10.7 the linker appears to have been completely rewritten, and it no longer has this\nbug.\n\nOne possible fix would be to change 6l to convert MOVQ from an absolute address to use\nRIP-relative addressing instead.  That would continue using a 32-bit address, but would\nproduce a relocation that the Darwin 10.6 linker can understand.  I don't know how\ncomplex that would be.  I also don't know if there are other cases that would have to be\naddressed.\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-27T00:45:05Z",
+	"updated_at": "2014-12-08T10:27:26Z"
+}

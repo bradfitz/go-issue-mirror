@@ -1,0 +1,32 @@
+{
+	"id": 148218761,
+	"number": 15290,
+	"state": "open",
+	"title": "runtime: heavy time.Now usage cause taskgated to consume lots of cpu",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version devel +bd72497 Mon Apr 11 01:52:10 2016 +0000 darwin/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\ndarwin/amd64\r\n\r\n3. What did you do?\r\nRun this program\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"time\"\r\n)\r\n\r\nfunc main() {\r\n        t1 := time.Now().Add(-1 * time.Second) // ensure there is no collision on first iteration\r\n        for {\r\n                t2 := time.Now()\r\n                d := t2.Sub(t1)\r\n                if d == 0 {\r\n                        fmt.Println(\"collision at\", t2)\r\n                }\r\n                t1 = t2\r\n        }\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\nThis program should cause 100% cpu usage.\r\n\r\n5. What did you see instead?\r\n\r\nThe program causes 100% cpu usage, but `taskgated` is also heavily used , around 20% on my system. \r\n\r\nhttps://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man8/taskgated.8.html\r\n\r\nReports that taskgated is responsible for implemting the mach `task_for_pid` syscall (?), so it looks like we're calling this syscall many times, we should probably not do that and cache the task port once per process.\r\n",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-04-14T00:35:14Z",
+	"updated_at": "2016-04-14T15:06:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

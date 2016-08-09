@@ -1,0 +1,22 @@
+{
+	"id": 51276791,
+	"number": 676,
+	"state": "closed",
+	"title": "template formatter chaining",
+	"body": "\u003cpre\u003eA recent issue with the HTMLFormatter mishandling []byte values  has\nprompted a discussion about restructuring the way template formatters work.  \n\nSee the thread here:\n\n\u003ca href=\"http://groups.google.com/group/golang-dev/t/9e19c6b2f578c5ad\"\u003ehttp://groups.google.com/group/golang-dev/t/9e19c6b2f578c5ad\u003c/a\u003e\n\nAnd relevant notes from rsc:\n\n--\n\nThe most interesting formatters, at least in the template code\nI've written or seen, are the ones that take a particular\nrich data type and do something type-specific.  For example,\ngodoc has formatters that format a syntax tree as HTML or\nas text.  The directory listings have a tiny little formatter\ncalled dir/ that takes a *os.Dir and emits a \u0026quot;/\u0026quot; if it is a\ndirectory, and \u0026quot;\u0026quot; otherwise, which puts the / on adler32/ on\nthe \u003ca href=\"http://golang.org/src/pkg/hash/\"\u003ehttp://golang.org/src/pkg/hash/\u003c/a\u003e page.  There are probably\nmore that I'm forgetting, but it's important not to make those\nharder.\n\nOne possibility would be to change the signature of the\nformatters to allow\n\nfunc Formatter(w io.Writer, value T, format string)\n\nfor any type T, and have Execute treat T = string or T = []byte\nas meaning \u0026quot;if it's not that type already, convert to a string\nrepresentation and then pass that type\u0026quot;.  So you'd have\n\nfunc HTMLFormatter(w io.Writer, value []byte, format string)\n\nand Execute would then do the conversions, but\n\nfunc DirSlash(w io.Writer, value *os.Dir, format string)\nfunc HTMLAst(w io.Writer, value ast.Expr, format string)\n\nwould still work too (and Execute could give a good error\nwhen the value isn't the expected type).\n\nThat opens the door to the possibility of using formatters\nthat accept []byte in pseudo-pipelines, like\n\n{foo|ast|html}\n\nas long as the ast formatter can handle foo and then the\nhtml formatter can handle []byte.  Execute would run \u0026quot;ast\u0026quot;\nwriting to a bytes.Buffer and then run \u0026quot;html\u0026quot; passing\nbuf.Bytes() writing to wherever it usually writes to.\n\nThe reflect package didn't have Call when we wrote template,\nso this wasn't an option we could have even considered.\nJson-template does pipelines now but there it's easier to\njust keep returning new values and taking old values, because\nthere are no static types in the program.\u003c/pre\u003e",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:05:28Z",
+	"created_at": "2010-03-18T22:37:24Z",
+	"updated_at": "2016-06-24T19:14:39Z"
+}

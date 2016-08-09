@@ -1,0 +1,22 @@
+{
+	"id": 113700322,
+	"number": 13071,
+	"state": "closed",
+	"title": "cmd/compile: functions with switches cannot be inlined",
+	"body": "Using ```go1.5```\r\n\r\nConsider the following package:\r\n```go\r\npackage main\r\n\r\ntype dictDecoder struct {\r\n\thist []byte\r\n\twrPos int\r\n}\r\n\r\nfunc (dd *dictDecoder) LastBytesA() (p1, p2 byte) {\r\n\tif dd.wrPos \u003e 1 {\r\n\t\treturn dd.hist[dd.wrPos-1], dd.hist[dd.wrPos-2]\r\n\t} else if dd.wrPos \u003e 0 {\r\n\t\treturn dd.hist[dd.wrPos-1], dd.hist[len(dd.hist)-1]\r\n\t} else {\r\n\t\treturn dd.hist[len(dd.hist)-1], dd.hist[len(dd.hist)-2]\r\n\t}\r\n}\r\n\r\nfunc (dd *dictDecoder) LastBytesB() (p1, p2 byte) {\r\n\tswitch {\r\n\tcase dd.wrPos \u003e 1:\r\n\t\treturn dd.hist[dd.wrPos-1], dd.hist[dd.wrPos-2]\r\n\tcase dd.wrPos \u003e 0:\r\n\t\treturn dd.hist[dd.wrPos-1], dd.hist[len(dd.hist)-1]\r\n\tdefault:\r\n\t\treturn dd.hist[len(dd.hist)-1], dd.hist[len(dd.hist)-2]\r\n\t}\r\n}\r\n```\r\n\r\nUsing ```go build -gcflags=-S dict.go```, I see that LastBytesA and LastBytesB produce the exact same assembly output.\r\n\r\nHowever, ```go build -gcflags=-m dict.go``` reports that only LastByteA can be inlined and not LastBytesB:\r\n```bash\r\n# command-line-arguments\r\n./main4.go:8: can inline (*dictDecoder).LastBytesA\r\n./main4.go:8: (*dictDecoder).LastBytesA dd does not escape\r\n./main4.go:18: (*dictDecoder).LastBytesB dd does not escape\r\n```\r\n\r\nI expect both LastBytesA and LastBytesB to be inline-able if they produce the same assembly output. This would be nice since (IMHO), switch statements are cleaner for some if-elseif-elseif-elseif-else blocks.\r\n",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-03-21T23:05:27Z",
+	"created_at": "2015-10-27T22:07:26Z",
+	"updated_at": "2016-03-21T23:05:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

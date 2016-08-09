@@ -1,0 +1,28 @@
+{
+	"id": 51288800,
+	"number": 8864,
+	"state": "closed",
+	"title": "runtime: type.gc[0] can be dangling pointer",
+	"body": "\u003cpre\u003eIf the type flags have KindGCProg set, then type.gc[1] is a gc program and type.gc[0] is\nnil or a pointer to bss space for the unrolled program.\n\nIf the type flags do not have KindGCProg set, then type.gc[0] and type.gc[1] are the\nactual bitmap bits.\n\nTypes are allocated on the heap sometimes, by copying other types and modifying them. In\nparticular, PtrTo starts with the type for a generic pointer and then tweaks some fields.\n\nThis punning is not compatible with a precise garbage collector. When PtrTo copies the\ngeneric pointer structure into the heap-allocated PtrType, it ends up with type.gc[0] =\n0x88. Luckily that's obviously not a pointer, but there is no guarantee that all cases\nthat might do this generate \u0026quot;obvious\u0026quot; non-pointers.\n\nI am going to change the meaning of flag\u0026amp;KindGCProg == 0. Instead of inlining the\nbitmap into gc[0] and gc[1], gc[0] will point at a 16-byte rodata symbol holding the\nbits. The rodata symbols will be dedup'ed based on their contents, so all the many\npointer types will share a single copy of the {0x88} bitmap.\n\nThis way, gc[0] and gc[1] are always pointers, never integers.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:48:58Z",
+	"created_at": "2014-10-03T20:03:20Z",
+	"updated_at": "2016-06-25T01:42:37Z"
+}

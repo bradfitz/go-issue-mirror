@@ -1,0 +1,33 @@
+{
+	"id": 97454999,
+	"number": 11881,
+	"state": "closed",
+	"title": "crypto/tls: Missing attribute in tls.ConnectionState struct",
+	"body": "Hi,\r\n\r\n\r\n\r\n### Summary\r\n\r\nIn some situations, `ConnectionState.ServerName` is not enough and the access to the certificate used to negociate the connection is needed.\r\nThis issue targets any stateless protocol that can use SNI and an field (inside the protocol) to identify a virtual host.\r\nIn Case of HTTP with TLS , SNI ServerName and the Host header provide valid strings that may differ.\r\n\r\n\r\n### Solution\r\n\r\nAdding a `ServerCertificate *x509.Certificate` attribute to `tls.ConnectionState` struct\r\n\r\n`tls.Conn` has access to `tls.Config` so `ServerCertificate` can be set when `(*tls.Conn)ConnectionState()` is called.\r\n\r\n\r\n### Illustrations of the problem\r\n\r\nthe context is a HTTPS offloader/reverse-proxy that have 2 differents certificates each for a different *.FQDN in CommonName ; precisely, cert-1 has *.FQDN-1 CommonName and cert-2 has *.FQDN-2 CommonName\r\n\r\n\r\n#### Good case (easily produced with any browser)\r\n\r\n 1. client connects to the server with a SNI header to `foo.FQDN-1` and a Host: `foo.FQDN-1`\r\n 2. server sets `request.TLS.ServerName` and call ServeHTTP `foo.FQDN-1`\r\n 3. inside ServeHTTP, `request.TLS.ServerName` and `req.Host` have the **same** value\r\n 4. ServeHTTP answers a redirection to `bar.FQDN-1`\r\n 5. client reuses the same connection \u0026 Session Ticket because the Certificate's `CommonName` allow it\r\n 6. inside ServerHTTP , `request.TLS.ServerName` and `req.Host` have **different** values because `req.TLS.ServerName` was set in the first connection\r\n\r\na call to `req.TLS.ServerCertificate.VerifyHostname(req.Host)` will return `nil` to confirm that `bar.FQDN-1` can be served on the same connection.\r\n\r\n\r\n#### Bad case\r\n\r\n 1. client connects to the server with a SNI header to `foo.FQDN-1` and a Host: `foo.FQDN-1`\r\n 2. server sets `request.TLS.ServerName` and call ServeHTTP `foo.FQDN-1`\r\n 3. client crafts a HTTP request to `foo.FQDN-2` and reuse the previous connection\r\n 4. inside ServerHTTP ,  `request.TLS.ServerName` and `req.Host` have **different** values\r\n\r\nHere, a call to `req.TLS.ServerCertificate.VerifyHostname(req.Host)` will return an error. this call provide an elegant way to mitigate the situation.\r\n\r\nThere are others way to mitigate this situation but are also more complicated.\r\n",
+	"user": {
+		"login": "nathanaelle",
+		"id": 748761,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-02T16:08:17Z",
+	"created_at": "2015-07-27T12:46:20Z",
+	"updated_at": "2016-08-05T16:11:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51928048,
+	"number": 9312,
+	"state": "open",
+	"title": "x/crypto/openpgp: silently fail to read keyring when smartcard stub is present",
+	"body": "When a GPG secring contains a smartcard stub, the openpgp package fails to read the keyring correctly and does not return an error. A call to `openpgp.ReadKeyRing()` will returns the entities that precedes the stub, excluding the entity located right before the stub.\r\n\r\nFor example, if a secring contains 3 entities and the smartcard stub is in position 3, then `openpgp.ReadKeyRing()` will only return the first entity. The second entity and the stub are ignored. No error is returned.\r\n\r\nSteps to reproduce:\r\n\r\n**1. Create a keyring with two regular 1024 bits RSA keys**\r\n\r\n```bash\r\n$ mkdir /tmp/testgolangopenpgp\r\n```\r\n```bash\r\n$ gpg --batch --no-default-keyring --keyring /tmp/testgolangopenpgp/pubring.gpg --secret-keyring /tmp/testgolangopenpgp/secring.gpg --gen-key \u003c\u003c EOF\r\n\u003e Key-Type: 1\r\n\u003e Key-Length: 1024\r\n\u003e Subkey-Type: 1\r\n\u003e Subkey-Length: 1024\r\n\u003e Name-Real: test key 1\r\n\u003e Name-Email: testkey1@example.net\r\n\u003e Expire-Date: 12m\r\n\u003e EOF\r\ngpg: keyring `/tmp/testgolangopenpgp/secring.gpg' created\r\ngpg: keyring `/tmp/testgolangopenpgp/pubring.gpg' created\r\n..+++++\r\n...+++++\r\n.....+++++\r\n..+++++\r\ngpg: key 4BACAA9F marked as ultimately trusted\r\n```\r\n```bash\r\n$ gpg --batch --no-default-keyring --keyring /tmp/testgolangopenpgp/pubring.gpg --secret-keyring /tmp/testgolangopenpgp/secring.gpg --gen-key \u003c\u003c EOF\r\n\u003e Key-Type: 1\r\n\u003e Key-Length: 1024\r\n\u003e Subkey-Type: 1\r\n\u003e Subkey-Length: 1024\r\n\u003e Name-Real: test key 2\r\n\u003e Name-Email: testkey2@example.net\r\n\u003e Expire-Date: 12m\r\n\u003e EOF\r\n.+++++\r\n.+++++\r\n+++++\r\n+++++\r\ngpg: key 56CE5F62 marked as ultimately trusted\r\n```\r\n**2. Import a smartcard stub from a yubikey into the keyring**\r\n```bash\r\n$ gpg --no-default-keyring --keyring /tmp/testgolangopenpgp/pubring.gpg --secret-keyring /tmp/testgolangopenpgp/secring.gpg --allow-secret-key-import --import yubikeystub yubikeytest1_stub.asc \r\ngpg: key 4FB5544F: already in secret keyring\r\ngpg: key 59BEDBFC: already in secret keyring\r\ngpg: Total number processed: 2\r\ngpg:       secret keys read: 2\r\ngpg:  secret keys unchanged: 2\r\n\r\n/tmp/testgolangopenpgp/secring.gpg\r\n----------------------------------\r\nsec   1024R/4BACAA9F 2014-12-14 [expires: 2015-12-09]\r\nuid                  test key 1 \u003ctestkey1@example.net\u003e\r\nssb   1024R/AEC9CD3A 2014-12-14\r\n\r\nsec   1024R/56CE5F62 2014-12-14 [expires: 2015-12-09]\r\nuid                  test key 2 \u003ctestkey2@example.net\u003e\r\nssb   1024R/A1E03C73 2014-12-14\r\n\r\nsec\u003e  2048R/59BEDBFC 2014-12-14 [expires: 2015-12-09]\r\n      Card serial no. = 0000 00000001\r\nuid                  Yubikey Smartcard test1 \u003cyubikeytest1@example.net\u003e\r\nssb\u003e  2048R/9B633300 2014-12-14\r\nssb\u003e  2048R/A8DE1BB7 2014-12-14\r\n```\r\n**3. Attempt to read the entities in the keyring. Only the first entity is returned.**\r\n```bash\r\n$ go run readkeyring.go \r\nfound 1 entities in keyring\r\nreading entity with fingerprint 2FA49C2800342153CA439C90ADC366D34BACAA9F\r\n```\r\n**source code:**\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"code.google.com/p/go.crypto/openpgp\"\r\n\t\"encoding/hex\"\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc main() {\r\n\tsecringFile, err := os.Open(\"/tmp/testgolangopenpgp/secring.gpg\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer secringFile.Close()\r\n\tkeyring, err := openpgp.ReadKeyRing(secringFile)\r\n\tif err != nil {\r\n\t\terr = fmt.Errorf(\"Keyring access failed: '%v'\", err)\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Printf(\"found %d entities in keyring\\n\", len(keyring))\r\n\tfor _, entity := range keyring {\r\n\t\tfingerprint := strings.ToUpper(hex.EncodeToString(entity.PrimaryKey.Fingerprint[:]))\r\n\t\tfmt.Println(\"reading entity with fingerprint\", fingerprint)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "jvehent",
+		"id": 415617,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2014-12-14T19:00:21Z",
+	"updated_at": "2015-12-16T06:49:31Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

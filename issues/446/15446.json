@@ -1,0 +1,28 @@
+{
+	"id": 151098682,
+	"number": 15446,
+	"state": "closed",
+	"title": "net/http: Post http://example.com: net/http: HTTP/1 transport connection broken: readLoopPeekFailLocked: EOF",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n```\r\ngo version devel +d78c84c Mon Apr 25 23:22:56 2016 +0000 linux/amd64\r\n```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/erik\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/erik/src/github.com/golang/go\"\r\nGOTOOLDIR=\"/home/erik/src/github.com/golang/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build769409056=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nSend HTTP POST requests to a host that seems to close the connection some specific time after the response. We see the error `Post http://example.com: net/http: HTTP/1 transport connection broken: readLoopPeekFailLocked: EOF` multiple times per second when doing around 100 requests per second.\r\n\r\nIt's hard to debug on live traffic and I haven't been able to reproduce this in a clean example.\r\n\r\nThe error seems to come from [`roundTrip()`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1572) which means the request is already in flight. But it also comes from [`readLoopPeekFailLocked()`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1304) which is called from [`readLoop()`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1154) in the case of no expected responses.\r\n\r\nI'm guessing the connection is closed after a request. Because [`pc.readLoopPeekFailLocked(err)`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1154) is called after `err` is wrapped in a [`beforeRespHeaderError{err}`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1149) the [`peekErr == io.EOF`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1300) in [`readLoopPeekFailLocked()`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1292) is false and the error gets assigned to `pc.closed` while the connection is already in use. After that I'm not sure, the connection must have somehow already been chosen for the next request. Otherwise it wouldn't make sense that [`pc.numExpectedResponses == 0`](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1153) while we are inside [the loop to wait for a response](https://github.com/golang/go/blob/585590549a3c6e26e7963081e11478a1913744a6/src/net/http/transport.go#L1572).\r\n\r\nIs there any debugging (logging things) I can do on the live traffic to help find this bug?",
+	"user": {
+		"login": "erikdubbelboer",
+		"id": 522870,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-05-18T15:14:29Z",
+	"created_at": "2016-04-26T10:32:00Z",
+	"updated_at": "2016-07-23T00:00:15Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 56024436,
+	"number": 9736,
+	"state": "closed",
+	"title": "runtime: plan9 system allocator leaks memory",
+	"body": "Plan9 memory allocator (sysAlloc/sysFree) does not actually free memory. It can free only the last allocated block.\r\n\r\nMost of the memory in runtime is persistent so it did not hit us very badly.\r\nHowever, there are several cases where runtime grows arrays by factor of 2, e.g. alloc 4K; alloc 8K; free 4K; alloc 16K; free 8K and so on. Also execution tracer allocates a bunch of 64K blocks and frees them when tracing stops. These will lead to leaks whenever you trace your server.\r\n\r\nThe easiest thing to do is to add a freelist of blocks of size 64K only (in sysFree/sysAlloc). This will eliminate the tracer leaks.\r\nThe more comprehensive fix is to implement a sorted freelist with coalescing and splitting.\r\n\r\n@0intro @ality ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 0,
+	"closed_at": "2015-02-26T21:48:18Z",
+	"created_at": "2015-01-30T11:46:37Z",
+	"updated_at": "2016-06-25T01:59:43Z"
+}

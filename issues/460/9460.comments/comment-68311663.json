@@ -1,0 +1,12 @@
+{
+	"id": 68311663,
+	"body": "The issue here is that the AST (go/ast) doesn't record the position of semicolons for the 'for' statement and thus comments get placed afterwards. The true fix would be to record all semicolon positions, but we don't do this elsewhere because it just costs extra space and such comments are exceedingly rare. This was a pre-2009 design decision; we're not going to change it now.\r\n\r\nThe other option is to heuristically assume that in a for-loop such semicolons are assumed to be immediate following (and adjacent) to the pre-, cond-, or post-expression in a for loop. This would fix this case but then misplace a comment in the situation\r\n\r\n   for i := 0; i \u003c n; /* foo */ i++ {...\r\n\r\nwhere the /* foo */ comment is supposed to be _before_ the post-statement. This might be an option if the assumption is that comments are likely to be _after_ an expression rather than before (which is not unreasonable).\r\n\r\nThis is not urgent, and there's a trivial work-around: simply put the comment before the 1 in your example and the meaning doesn't get distorted. This program\r\n\r\npackage main\r\n\r\nfunc main() {\r\n        for i := 0; i \u003c /* 9000 */ 1; i++ {\r\n                _ = i\r\n        }\r\n}\r\n\r\ngets formatted as is.\r\n\r\nLeaving open for now as a reminder for future AST changes.\r\n\r\n\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-29T22:42:56Z",
+	"updated_at": "2014-12-29T22:42:56Z"
+}

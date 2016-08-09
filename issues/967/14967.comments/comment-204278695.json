@@ -1,0 +1,12 @@
+{
+	"id": 204278695,
+	"body": "So, the issue is that the Solaris grp.h header checks to see if the current compilers supports symbol renaming and if so, uses that:\r\n\r\n```\r\n#ifdef __PRAGMA_REDEFINE_EXTNAME\r\n...\r\n#pragma redefine_extname getgrnam_r __posix_getgrnam_r\r\n...\r\n  extern int getgrnam_r(const char *, struct group *, char *, size_t,\r\n      struct group **);\r\n#endif\r\n```\r\nRefer to:\r\nhttps://gcc.gnu.org/onlinedocs/gcc-4.4.5/gcc/Symbol_002dRenaming-Pragmas.html\r\n\r\nBoth gcc and Solaris Studio support this extension, and presumably, clang/llvm does as well.\r\n\r\n```\r\n#ifdef __lint\r\n...\r\n#define getgrnam_r __posix_getgrnam_r\r\n#else\r\n...\r\nstatic int \r\ngetgrnam_r(const char *__cb, struct group *__grp, char *__buf, int __len,\r\n    struct group **__res)\r\n{\r\n        return (__posix_getgrnam_r(__cb, __grp, __buf, __len, __res));\r\n}\r\n#endif\r\n```\r\n\r\nSo Go appears to be looking at the wrong symbol; it should be looking at __posix_getgrnam_r, but is looking at getgrnam_r instead.\r\n\r\nThe following should workaround Go's lack of support for the symbol rename:\r\n```\r\ndiff --git a/src/os/user/lookup_unix.go b/src/os/user/lookup_unix.go\r\nindex 97b649c..c7c0356 100644\r\n--- a/src/os/user/lookup_unix.go\r\n+++ b/src/os/user/lookup_unix.go\r\n@@ -16,7 +16,7 @@ import (\r\n )\r\n \r\n /*\r\n-#cgo solaris CFLAGS: -D_POSIX_PTHREAD_SEMANTICS\r\n+#cgo solaris CFLAGS: -D_POSIX_PTHREAD_SEMANTICS -D__lint\r\n #include \u003cunistd.h\u003e\r\n #include \u003csys/types.h\u003e\r\n #include \u003cpwd.h\u003e\r\n```",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-01T07:09:53Z",
+	"updated_at": "2016-04-01T07:11:15Z"
+}

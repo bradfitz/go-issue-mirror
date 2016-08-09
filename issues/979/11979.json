@@ -1,0 +1,21 @@
+{
+	"id": 98548611,
+	"number": 11979,
+	"state": "open",
+	"title": "runtime: whole span reclaimer is expensive",
+	"body": "Objects larger than 32K are handled by a large object allocator (largeAlloc) because they fall outside the size classes for which there are span caches. Currently, in order to control heap growth, the large object allocator sweeps until it reclaims the number of pages being allocated before performing the allocation (mHeap_Alloc_m -\u003e mHeap_ReclaimList). This path is also taken when growing the heap.\r\n\r\nHowever, this process can be quite expensive. It first tries sweeping large object spans. *If* this succeeds, the process is fairly efficient; it may require looking at a large number of spans that don't have a free object, but it's not clear if it's possible to eliminate this linear constant. However, empirically, this often fails. This may simply be because earlier large allocations swept spans that were larger than they were allocating and they didn't keep track of this credit. In this case, it falls back to sweeping small object spans until it's able to free enough (potentially non-contiguous) pages that way. As a result of this, in the x/benchmarks garbage benchmark, the large object sweeper winds up sweeping ~30 times more bytes than it's trying to allocate.\r\n\r\nI believe we can eliminate this entire mechanism if, during marking, the garbage collector also keeps a per span \"super mark\" that is set if any objects in the span are marked. At the point where we would set this, we already have the span and, assuming we're willing to dedicate a byte per span for this, it can be set with a blind (possibly even non-temporal) write. At the end of GC, after mark termination, we can immediately free these spans (both large object spans and small object spans with no reachable objects). It takes roughly 1ms per heap GB to walk the span list, so even assuming a little more overhead for adding free spans to span lists, it seems very likely this would take less time than we currently spend sweeping these spans. This is also trivially parallelizable, and we probably have to do this walk anyway (#11484). Additionally, this will reduce load on concurrent sweep and coalesce neighboring spans much earlier, making larger regions of memory available for large object allocation immediately.\r\n\r\nThis idea is based on various (mostly pairwise) discussions between myself, @RLH, @rsc, and @dvyukov.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-08-01T16:38:43Z",
+	"updated_at": "2015-11-04T19:29:11Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

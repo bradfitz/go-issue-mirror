@@ -1,0 +1,21 @@
+{
+	"id": 158985597,
+	"number": 15995,
+	"state": "open",
+	"title": "crypto/x509: CertificateRequest does not support attributes not covered by pkix.AttributeTypeAndValueSET",
+	"body": "Prior to Go 1.5 it was not possible to parse CSRs which included single attributes like challenge password( OID 1.2.840.113549.1.9.7) See https://github.com/cloudflare/cfssl/issues/115\r\n\r\nThis issue was addressed in CL [#8160](https://go-review.googlesource.com/#/c/8160/) https://github.com/cloudflare/go/commit/23fca3da84e991bf8b85e1919b65a4ac390814fa by ignoring those attributes. \r\n\r\nCurrently there is no good way to parse and marshal a CSR with attributes that don't fit in the structure defined by `pkix.AttributeTypeAndValueSET`. Challenge Password is a necessary attribute when implementing the [SCEP Protocol](https://tools.ietf.org/html/draft-nourse-scep-23#section-8.3) which is widely used in IoT and Mobile Device Management environments like the Apple MDM [spec](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/iPhoneOTAConfiguration/OTASecurity/OTASecurity.html). \r\nTo extract or add a challenge password attribute, the CSR has to be unmarshalled and modified separately from the `x509/crypto`. Here's an example [workaround](https://github.com/micromdm/scep/commit/4a4f8bc7f7bc34083b0737060db8ef7b55005472) which reimplements parsing and marshaling the CertificateRequest type.  \r\n\r\nThe `x509/crypto` library should have a method for handling special attributes in the CSR. As CL [#8160](https://go-review.googlesource.com/#/c/8160/) mentions in the review comments, one possible solution is to add a `RawAttributes` field to the CertificateRequest struct. \r\n",
+	"user": {
+		"login": "groob",
+		"id": 1526945,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-06-07T17:57:10Z",
+	"updated_at": "2016-06-07T18:35:19Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 144846177,
+	"number": 15040,
+	"state": "closed",
+	"title": "cmd/go: On Windows, sometimes (but not always) uses backslashes in printed import paths.",
+	"body": "```bash\r\n$ go version\r\ngo version go1.6 windows/386\r\n\r\n$ go env\r\nset GOARCH=386\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=386\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=C:\\Documents and Settings\\Dmitri\\Dmitri\\GoLand\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_386\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m32 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n(For testing purposes only, I don't actually use Windows XP.)\r\n\r\n#### What did you do?\r\n\r\nOn **Windows** (or any other OS where `os.PathSeparator` is not `/`), I started with a clean GOPATH, and ran the following command two times in a row:\r\n\r\n```bash\r\ngo get -d -u -v golang.org/x/net/context\r\n```\r\n\r\n#### What did you expect to see?\r\n\r\n```bash\r\n$ go get -d -u -v golang.org/x/net/context\r\n...\r\ngolang.org/x/net (download)\r\n\r\n$ go get -d -u -v golang.org/x/net/context\r\n...\r\ngolang.org/x/net (download)\r\n```\r\n\r\n#### What did you see instead?\r\n\r\n```bash\r\n$ go get -d -u -v golang.org/x/net/context\r\n...\r\ngolang.org/x/net (download)\r\n\r\n$ go get -d -u -v golang.org/x/net/context\r\n...\r\ngolang.org\\x\\net (download)\r\n```\r\n\r\nNotice the backslashes instead of forward slashes in the second line of output.\r\n\r\n(I've snipped irrelevant parts of output with `...`.)\r\n\r\n## Cause\r\n\r\nIt happens in [src/cmd/go/get.go#L412](https://github.com/golang/go/blob/a62ae9f62fcfca02075b70e6e0aa757f4fd8f5ec/src/cmd/go/get.go#L412). That prints value of `rootPath`, which comes from one of two paths, depending on [src/cmd/go/get.go#L347](https://github.com/golang/go/blob/a62ae9f62fcfca02075b70e6e0aa757f4fd8f5ec/src/cmd/go/get.go#L347). The problem is in the top-most path, when `rootPath` value comes from `vcsForDir` which contains a bug (it doesn't do what its documentation says it does).\r\n\r\nThis is a bug that was reported and fixed in `golang.org/x/tools/go/vcs.FromDir`, an exported copy of that function. It was fixed in golang/tools@5804fef4c0556d3e5e7d2440740a3d7aced7d58b. However, it hasn't [yet](https://github.com/shurcooL/backlog/issues/1) been backported to `cmd/go`.\r\n\r\nI have a CL that I'll submit now that resolves this issue.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-12T06:26:06Z",
+	"created_at": "2016-03-31T09:45:58Z",
+	"updated_at": "2016-04-12T06:26:06Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 68812504,
+	"body": "@randall77 I haven't thought through how iteration interacts with this. Maybe golang-dev has some good ideas?\r\n\r\nMy rough impression is that the evacuation work has to be complete by the time we'd need a subsequent resize. It looks like you guarantee this by doing evacuate work on writes and doubling the size. If the size doesn't double, then we might run into problems (needing another evacuate before the current one has finished). I wonder if the overflow compaction could happen only when the table was already twice the size it needed to be.\r\n\r\nIf we've got a table with 6000 elements, it will fit in a hmap with 1024 buckets (if loadFactor is 6.5). When it runs out of overflow buckets due to churn, maybe we resize it to 2048 buckets. When it runs out of overflow buckets again (but still has ~6000 elements), we can notice that it's already twice as big as required and evacuate it to a new table of the same size. This same-size evacuation might have to run twice as fast to finish in time, but it's still a constant factor.\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-06T01:24:04Z",
+	"updated_at": "2015-01-06T01:24:04Z"
+}

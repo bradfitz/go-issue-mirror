@@ -1,0 +1,27 @@
+{
+	"id": 59832809,
+	"number": 10079,
+	"state": "closed",
+	"title": "cmd/gc: incorrect nosplit stack calculation",
+	"body": "https://go-review.googlesource.com/#/c/3742/ failed noopt builder:\r\n\r\n```\r\nruntime.atomicstorep: nosplit stack overflow\r\n\t504\tassumed on entry to runtime.atomicstorep\r\n\t472\tafter runtime.atomicstorep uses 32\r\n\t464\ton entry to runtime.writebarrierptr_noshadow\r\n\t424\tafter runtime.writebarrierptr_noshadow uses 40\r\n\t416\ton entry to runtime.shadowptr\r\n\t384\tafter runtime.shadowptr uses 32\r\n\t376\ton entry to runtime.inheap\r\n\t512\tafter runtime.inheap uses -136\r\n\t504\ton entry to runtime.panicindex\r\n\t512\tafter runtime.panicindex uses -8\r\n\t504\ton entry to runtime.gopanic\r\n\t512\tafter runtime.gopanic uses -8\r\n\t504\ton entry to runtime.printany\r\n\t512\tafter runtime.printany uses -8\r\n\t504\ton entry to runtime.assertE2I2\r\n\t512\tafter runtime.assertE2I2 uses -8\r\n\t504\ton entry to runtime.getitab\r\n\t512\tafter runtime.getitab uses -8\r\n\t504\ton entry to runtime.newobject\r\n\t512\tafter runtime.newobject uses -8\r\n\t504\ton entry to runtime.mallocgc\r\n\t512\tafter runtime.mallocgc uses -8\r\n\t504\ton entry to runtime.startGC\r\n\t512\tafter runtime.startGC uses -8\r\n\t504\ton entry to runtime.gc\r\n\t512\tafter runtime.gc uses -8\r\n\t504\ton entry to runtime.semacquire\r\n\t512\tafter runtime.semacquire uses -8\r\n\t504\ton entry to runtime.acquireSudog\r\n\t-48\tafter runtime.acquireSudog uses 552\r\nruntime.chansend1: nosplit stack overflow\r\n\t504\tassumed on entry to runtime.chansend1\r\n\t448\tafter runtime.chansend1 uses 56\r\n\t440\ton entry to runtime.chansend\r\n\t512\tafter runtime.chansend uses -72\r\n\t504\ton entry to runtime.releaseSudog\r\n\t64\tafter runtime.releaseSudog uses 440\r\n\t56\ton entry to runtime.throw\r\n\t24\tafter runtime.throw uses 32\r\n\t16\ton entry to runtime.startpanic\r\n\t8\tafter runtime.startpanic uses 8\r\n\t0\ton entry to runtime.systemstack\r\n\t-8\ton entry to function pointer\r\n\t-16\ton entry to runtime.morestack\r\n```\r\n\r\nhttp://build.golang.org/log/549c56185ba7b762a995a6aa71f4f865c14286e1\r\n\r\nBut that calculation looks incorrect for several reasons:\r\n1. Functions can not consume negative amount of stack\r\n2. runtime.mallocgc is not a nosplit function, so it should break the sequence\r\n3. It must break all tests, because all tests send to channel, but it broke only runtime test\r\n\r\n@rsc ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-01T15:42:13Z",
+	"created_at": "2015-03-04T17:36:45Z",
+	"updated_at": "2016-06-25T02:02:37Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

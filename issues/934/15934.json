@@ -1,0 +1,27 @@
+{
+	"id": 158097825,
+	"number": 15934,
+	"state": "closed",
+	"title": "cmd/compile: performance regression on SSA",
+	"body": "Using `go1.7beta1`\r\n\r\nConsider the following benchmark:\r\n```go\r\npackage bzip2\r\n\r\nimport \"bytes\"\r\nimport \"testing\"\r\n\r\nconst mask  = 0xffffffffffff\r\nconst magic = 0x314159265359\r\n\r\nvar filter = func() (c [256]bool) {\r\n\tfor i := uint(0); i \u003c 8; i++ {\r\n\t\tc[0xff\u0026(magic\u003e\u003ei)] = true\r\n\t}\r\n\treturn c\r\n}()\r\n\r\nfunc BenchmarkSync(b *testing.B) {\r\n\tbuf := bytes.Repeat([]byte{0x31, 0x41, 0x59, 0x26, 0x53, 0x59}, 1\u003c\u003c18)\r\n\r\n\tb.SetBytes(int64(len(buf)))\r\n\tb.ResetTimer()\r\n\r\n\tvar ofs []int64\r\n\tfor n := 0; n \u003c b.N; n++ {\r\n\t\tofs = ofs[:0]\r\n\r\n\t\tvar sync uint64\r\n\t\tfor i, b := range buf {\r\n\t\t\tsync = sync\u003c\u003c8 | uint64(b)\r\n\t\t\tif filter[byte(sync\u003e\u003e8)] \u0026\u0026 i \u003e= 6 \u0026\u0026 (false ||\r\n\t\t\t\tsync\u0026(mask\u003c\u003c7) == magic\u003c\u003c7 || sync\u0026(mask\u003c\u003c8) == magic\u003c\u003c8 ||\r\n\t\t\t\tsync\u0026(mask\u003c\u003c5) == magic\u003c\u003c5 || sync\u0026(mask\u003c\u003c6) == magic\u003c\u003c6 ||\r\n\t\t\t\tsync\u0026(mask\u003c\u003c3) == magic\u003c\u003c3 || sync\u0026(mask\u003c\u003c4) == magic\u003c\u003c4 ||\r\n\t\t\t\tsync\u0026(mask\u003c\u003c1) == magic\u003c\u003c1 || sync\u0026(mask\u003c\u003c2) == magic\u003c\u003c2) {\r\n\t\t\t\tofs = append(ofs, int64(i-6))\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n}\r\n```\r\n\r\nWhen running *without* SSA:\r\n```\r\n$ go test -bench . -gcflags=-ssa=0 sync_test.go\r\nBenchmarkSync-4   \t     300\t   4131087 ns/op\t 380.74 MB/s\r\n```\r\n\r\nWhen running *with* SSA:\r\n```\r\n$ go test -bench . -gcflags=-ssa=1 sync_test.go\r\nBenchmarkSync-4   \t     300\t   5482100 ns/op\t 286.91 MB/s\r\n```\r\n\r\nThis is a 25% decrease in performance and might be worth investigating why SSA is doing worse.\r\n\r\n/cc @randall77 \r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-06-02T18:53:55Z",
+	"created_at": "2016-06-02T09:34:30Z",
+	"updated_at": "2016-06-02T18:53:55Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

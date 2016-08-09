@@ -1,0 +1,12 @@
+{
+	"id": 66091691,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eok.\n\nThat means the linker must keep track of which stringheader is referenced,\nseems doable but it will need big changes to go.string.* section.\n\nbut perhaps we should first solve the 1.5GB RSS problem of 6g first.\n(also cmd/6g will generate a 33040637 bytes rw.6!)\n\nalso, it turns out our go.string.* has fairly big space inefficiency problem.\neach Go string is stored like this in the binary in the go.string.* section:\n  pointer *byte // points to the payload, always this address + sizeof(uintptr)*2, redundant\n  len uintptr // not redundant, but the compiler could almost always inline this number.\n  payload byte[len+1] // always has 0-termination. why??\n  padding byte[padlen] // pad to next uintptr-aligned for next StringHeader.\n\nwhich means that each (8*n+k) byte string will take (8-k) bytes more.\n(e.g. a 8 byte string will take 8 extra bytes of padding. Yes. you read this correctly.)\n\nThe problem seems to be just don't store StringHeader and always either\nconstruct in runtime or (in this case) store in the temporary statictmp_0020.\n\nwhich means we can concatenate all strings in the go.string.* section,\nand this also enables substring reuse optimization (e.g. if there are both \"a\" and \"ab\"\nstrings in a Go program, we only store \"ab\" in the string section)\n\nToo big a change for the current linker, let's consider this when cmd/link takes over.\u003c/pre\u003e\n\n_Labels changed: added **release-go1.4**, **repo-main**._\n\n\n_Status changed to **Accepted**._",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-22T23:21:04Z",
+	"updated_at": "2014-12-08T10:41:04Z"
+}

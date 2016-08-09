@@ -1,0 +1,27 @@
+{
+	"id": 121275472,
+	"number": 13548,
+	"state": "open",
+	"title": "archive/tar: add support for writing tar containing sparse files",
+	"body": "I've created a [Github Repo](https://github.com/grubernaut/Golang-Tar) with all the needed steps for reproducing this on Ubuntu 12.04 using Go1.5.1. I've also verified that using Go1.5.2 still experiences this error.\r\n\r\nRun `vagrant create` then `vagrant provision` from repository root.\r\n```\r\nvagrant create\r\nvagrant provision\r\n```\r\n\r\nExpected Output:\r\n```\r\n$ vagrant provision\r\n==\u003e default: Running provisioner: shell...\r\n    default: Running: inline script\r\n==\u003e default: stdin: is not a tty\r\n==\u003e default: go version go1.5.2 linux/amd64\r\n==\u003e default: Creating Sparse file\r\n==\u003e default: Proving file is truly sparse\r\n==\u003e default: 0 -rw-r--r-- 1 root root 512M Dec  9 15:26 sparse.img\r\n==\u003e default: Compressing in Go without sparse\r\n==\u003e default: Compressing in Go with sparse\r\n==\u003e default: FileInfo File Size: 536870912\r\n==\u003e default: Proving non-sparse in Go gained size on disk\r\n==\u003e default: 512M -rw-r--r-- 1 root root 512M Dec  9 15:26 non_sparse/sparse.img\r\n==\u003e default: Proving sparse in Go DID keep file size on disk\r\n==\u003e default: 0 -rw-r--r-- 1 root root 0 Dec  9 15:26 sparse/sparse.img\r\n==\u003e default: Compressing via tar w/ Sparse Flag set\r\n==\u003e default: Proving sparse via tar DID keep file size on disk\r\n==\u003e default: 0 -rw-r--r-- 1 root root 512M Dec  9 15:26 tar/sparse.img\r\n```\r\n\r\nActual Output:\r\n```\r\n$ vagrant provision\r\n==\u003e default: Running provisioner: shell...\r\n    default: Running: inline script\r\n==\u003e default: stdin: is not a tty\r\n==\u003e default: go version go1.5.2 linux/amd64\r\n==\u003e default: Creating Sparse file\r\n==\u003e default: Proving file is truly sparse\r\n==\u003e default: 0 -rw-r--r-- 1 root root 512M Dec  9 15:35 sparse.img\r\n==\u003e default: Compressing in Go without sparse\r\n==\u003e default: Compressing in Go with sparse\r\n==\u003e default: Proving non-sparse in Go gained size on disk\r\n==\u003e default: 513M -rw-r--r-- 1 root root 512M Dec  9 15:35 non_sparse/sparse.img\r\n==\u003e default: Proving sparse in Go DID NOT keep file size on disk\r\n==\u003e default: 512M -rw-r--r-- 1 root root 512M Dec  9 15:35 sparse/sparse.img\r\n==\u003e default: Compressing via tar w/ Sparse Flag set\r\n==\u003e default: Proving sparse via tar DID keep file size on disk\r\n==\u003e default: 0 -rw-r--r-- 1 root root 512M Dec  9 15:35 tar/sparse.img\r\n```\r\n\r\nThe Vagrantfile supplied in the repository runs the following shell steps:\r\n\r\n* Installs Go\r\n* Creates a sparse file via `truncate -s 512M sparse.img`\r\n* Proves that the file is sparse via `ls -lash sparse.img`\r\n* Runs `compress.go` via `go run compress.go`\r\n* Untars the archives created by `compress.go` via `tar -xf`\r\n* Verifies that the extracted files did not maintain sparse files, both with and without the sparse type set in the tar file's header. `ls -lash sparse.img`\r\n* Uses GNU/Tar to compress the sparse file with the sparse flag set `tar -Scf sparse.tar sparse.img`\r\n* Extracts the archive created by GNU/Tar `tar -xf sparse.tar`\r\n* Proves that GNU/Tar maintained sparse files `ls -lash sparse.img`\r\n\r\nThis is somewhat related to #12594.\r\n\r\nI could also be creating the archive incorrectly, and have tried a few different methods for creating the tar archive, each one however, did not keep the sparse files intact upon extraction of the archive. This also cannot be replicated in OSX as HGFS+ does not have a concept of sparse files, and instantly destroys any file sparseness, hence the need for running and testing the reproduction case in a vagrant vm. \r\n\r\nAny thoughts or hints into this would be greatly appreciated, thanks! ",
+	"user": {
+		"login": "grubernaut",
+		"id": 3082319,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2015-12-09T15:49:12Z",
+	"updated_at": "2016-05-09T20:46:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

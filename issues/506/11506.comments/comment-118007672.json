@@ -1,0 +1,12 @@
+{
+	"id": 118007672,
+	"body": "You seem to assume that the entity that benefits from reduced latency is a goroutine only. This is true when a goroutine services a request and needs to acquire some aux resource (e.g. a database connection). But this is not true for all producer-consumer/pipelining scenarios, where the entity that benefits from reduced latency is a _message_ in a chan. Today messages in chans are serviced strictly FIFO and with minimal latency: the next _running_ goroutine picks up the first message in a chan. What you propose improves the database connection pool scenario but equally worsens the producer-consumer scenario. Because under your proposal we handoff the first message in the chan to a goroutine that will run who-knows-when, and a goroutine that drives by the chan next moment either blocks or services the second message ahead of the first one. If we switch the implementation we will start receiving complaints about the other scenarios.\r\nAlso sase synchronization primitives is usually the wrong level for fairness. They can't ensure user-perceived fairness. Consider that to service a request you need to do 10 DB queries. DB pool has fair\r\nqueue, however older requests (that do 10-th query ) complete with newer requests (that do first query). As the result some requests can experience no waiting time, while others can wait for a hundred of requests in total.\r\nWhat you propose is known to significantly reduce performance due to requirement of lock-step scheduling order. Which becomes significantly worse if you add a bunch of unrelated goroutines to the mix, so that you have lock-step with a very long step time.\r\nRegarding the unnecessary wakeup, it's easy to fix. See #8900.\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-02T11:52:28Z",
+	"updated_at": "2015-07-02T11:52:28Z"
+}

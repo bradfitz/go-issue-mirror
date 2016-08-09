@@ -1,0 +1,12 @@
+{
+	"id": 200331019,
+	"body": "Looks like this is caused by connection pooling.  I adjusted your sleep to 30s so I could run netstat.  You can see that the listening socket is closed, but there are still connections open to the server which will get re-used to that server process.\r\n\r\nCalling `transport.CloseIdleConnections()` in the client (or server?) should fix it.\r\n\r\n```\r\ntcp        0      0 127.0.0.1:56000         127.0.0.1:39670         ESTABLISHED 4568/z          \r\ntcp        0      0 127.0.0.1:39670         127.0.0.1:56000         ESTABLISHED 4568/z          \r\ntcp6       0      0 2a02:24e0:ff1:ce0:38118 2a00:1450:4009:810:::80 ESTABLISHED 4568/z          \r\n```\r\n\r\nIt would be nice to close all existing connections after `server.Serve` returns, but I'm not sure how to do that!",
+	"user": {
+		"login": "ncw",
+		"id": 536803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-23T12:43:27Z",
+	"updated_at": "2016-03-23T12:43:27Z"
+}

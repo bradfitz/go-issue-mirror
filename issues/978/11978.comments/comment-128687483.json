@@ -1,0 +1,12 @@
+{
+	"id": 128687483,
+	"body": "\u003e So it really seems the only situation where ErrBadConn is the correct response is on an error prior to socket write.\r\n\r\nRight; you need to return it to get a bad connection to be discarded from the pool.  So the order of events for e.g. Exec should be:\r\n\r\n  1. See if the connection is already marked bad.  If so, return ErrBadConn\r\n  2. Write the query, its parameters etc. into the socket\r\n  3. If a network error happens before you're completely \"done\" with processing the resulting row set or database-level error, mark the connection bad, and return the network error directly back to database/sql\r\n  4. If the query was processed completely (in postgres' case, that would mean you saw ReadyForQuery), return either the result or the error from the database without marking the connection bad\r\n\r\nNote that even without this issue, you *already* have to have the \"bad\" marker on a connection implemented because of #11264, so implementing it like this should not result in any unreasonable extra work.\r\n\r\n\u003e I suppose the driver can be blamed, but it feels like retry on Query and Exec is a foot-gun waiting to happen -- for minimal convenience improvement.\r\n\r\nFine, maybe, but how would you discard bad connections from the pool in whatever it is you're suggesting?\r\n\r\n\u003e This is not a theoretical assertion either, both drivers I tested, pq and my own pgx, trigger this undesirable behaviour.\r\n\r\nLast time this came up on `pq`'s issue tracker, I argued that `pq`'s current behavior is broken, but lost that argument.",
+	"user": {
+		"login": "johto",
+		"id": 951744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-07T12:28:26Z",
+	"updated_at": "2015-08-07T12:30:56Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66053569,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe node == nil test in go/ast/walk.go:48 does test if the interface variable node is\nnil. Often (most of the time) it is not nil because it has a dynamic type, but the\nactual value for that type is nil, which then causes a crash in the visitor. In some\nways this is expected behavior, but at the same time it's confusing. Clearly we need to\nfind a more satisfying solution.\n\n\nHere's a self-contained version of the same code:\n\npackage main\n\nimport (\n\t\"go/parser\"\n\t\"go/ast\"\n\t\"fmt\"\n)\n\ntype visitor struct{}\n\nfunc (v *visitor) Visit(node interface{}) ast.Visitor {\n\tif n, ok := node.(ast.Node); ok {\n\t\tfmt.Printf(\"%p \", n)\n\t\tfmt.Printf(\"%T \", n)\n\t\tif n != nil {\n\t\t\t// n != nil (has a type)\n\t\t\tfmt.Printf(\"%v \", n.Pos())  // crash if value of n is nil\n\t\t}\n\t\tfmt.Println()\n\t}\n\treturn v\n}\n\nfunc main() {\n\ttree, _ := parser.ParseFile(\"\", []byte(src), parser.Trace)\n\tast.Walk(new(visitor), tree)\n}\n\nvar src = `package test\ntype T struct{\n\ta int //\"foo\"\n}\n`\u003c/pre\u003e\n\n_Labels changed: added **packagebug**._\n\n\n_Status changed to **Thinking**._",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-12-07T20:57:45Z",
+	"updated_at": "2014-12-08T10:07:49Z"
+}

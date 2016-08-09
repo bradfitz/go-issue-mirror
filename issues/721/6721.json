@@ -1,0 +1,27 @@
+{
+	"id": 51285624,
+	"number": 6721,
+	"state": "closed",
+	"title": "math/rand: rand.Float{32,64}() can erroneously return 1",
+	"body": "by **akalin**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. call rand.Float32() a lot of times\n\nWhat is the expected output?\n\nIt should always return a number \u0026lt; 1.\n\nWhat do you see instead?\n\nSometimes, it returns 1. See \u003ca href=\"http://play.golang.org/p/BYLctrSX4B\"\u003ehttp://play.golang.org/p/BYLctrSX4B\u003c/a\u003e\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\nnot sure, but it repros on play.golang.org\n\nWhich operating system are you using?\n\nOS X\n\nWhich version are you using?  (run 'go version')\n\ngo version go1.1.2 darwin/amd64\n\nLooking at the source of rand.Float32() there are a few problems:\n\n- Float64() is basically float32(rand.Float64()), so it's possible that if the 64-bit\nfloat is really close to 1, it might get rounded to 1 when cast (I think).\n- Float64() does float64(r.Int63()) / (1 \u0026lt;\u0026lt; 63), but float64s only have 52+1\nfractional bits, so if the returned int63() is close to 2**63, then doing the division\nmay round to 1.\n\nA few solutions:\n- Change the docs to say that the returned float is in [0, 1] instead of [0, 1), but the\ncode probably has to be changed anyway since there's probably a bias against getting 1.\n- Loop until the generated number is \u0026lt; 1.\n- Take the high bits of Int63() and stuff them into the fractional bits, setting the\nexponent to -1.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:37:19Z",
+	"created_at": "2013-11-06T03:42:11Z",
+	"updated_at": "2016-06-25T01:21:54Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

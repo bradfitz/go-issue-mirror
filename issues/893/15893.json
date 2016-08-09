@@ -1,0 +1,21 @@
+{
+	"id": 157535400,
+	"number": 15893,
+	"state": "open",
+	"title": "reflect: allow newlines in 'conventional' tag format",
+	"body": "(Go1.6)\r\n\r\nThe conventional tag formatting allows some kinds of whitespace in the \"value\" part of the tag, but not others.  Specifically, it fails quietly when there is a newline: \r\n\r\n\r\n    package main\r\n\r\n    import (\r\n\t    \"fmt\"\r\n\t    \"reflect\"\r\n    )\r\n\r\n    type Foo struct {\r\n       Bar string  `key:\"some value with whitespace\"`\r\n       Baz string `key:\"some value with \r\n                 \t\ta different kind\r\n                 \t\tof whitespace\"`\r\n    }\r\n\r\n    func main() {\r\n\t    typ := reflect.TypeOf([]Foo{}).Elem()\r\n\t    for i := 0; i \u003c typ.NumField(); i++ {\r\n\t    \tfmt.Printf(\"%d %s\\n\", i, typ.Field(i).Tag.Get(\"key\"))\r\n\t    }\r\n    }\r\n\r\nThe output is:\r\n\r\n    0 some value with whitespace\r\n    1 \r\n\r\nas you can see in the [Go Playground](https://play.golang.org/p/1qrgAfdiPh).\r\n\r\nIt does not make sense for \"some whitespace but not others\" to be allowed here, and this should be an easy fix.   It would be very good to allow newlines here, as it would greatly improve the ability to format code without having to employ the workaround of writing one's own tag parser.\r\n\r\nThe canonical use case that I keep coming up against is embedding SQL into struct tags when I write DTO models, but one can think of dozens more....\r\n\r\neg.\r\n\r\n    type PersonNameModel struct {\r\n\t    db *lhqm.Connection\r\n\t    Create *sql.Stmt\t\t\t\t`query:\"INSERT INTO PersonName(firstname,lastname,middle,preftitle)\r\n\t                            \t                        VALUES($1,$2,$3,$4)\"`\r\n\t    RetrieveById *sql.Stmt\t\t\t`query:\"SELECT * FROM PersonName WHERE id=$1\"`\r\n\t    RetreiveByLastName *sql.Stmt\t`query:\"SELECT * FROM PersonName WHERE lastname LIKE '%'||$1||'%'\"` \r\n\t    RetreiveByFirstName *sql.Stmt\t`query:\"SELECT * FROM PersonName WHERE firstname LIKE '%'||$1||'%'\"`\r\n\t    RetreiveAltnamesByPerson *sql.Stmt\t\t`query:\"SELECT pn.* FROM PersonName pn, PersonAlternateName pan \r\n\t                                                WHERE pan.personId = $1 \r\n\t\t\t\t\t\t\t\t\t\t\t\t\t  AND pan.personNameId = pn.id)\"`\r\n    }\r\n\r\nThe first and last fields' queries above were not being prepared by my code that iterates over the struct fields looking for `*sql.Stmt` fields with \"query\" tags!   I have to put them all on a single line, or re-write the tag parser...",
+	"user": {
+		"login": "dtromb",
+		"id": 4296744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-05-30T17:12:52Z",
+	"updated_at": "2016-05-30T20:34:40Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

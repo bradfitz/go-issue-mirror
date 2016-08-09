@@ -1,0 +1,27 @@
+{
+	"id": 51285376,
+	"number": 6566,
+	"state": "closed",
+	"title": "runtime: memory profiler is inaccurate when GOMAXPROCS\u003e1",
+	"body": "\u003cpre\u003eI'm finding that memory profiling is inaccurate in recent versions of tip. Allocations\nare underreported, and frees are underreported even further (making it look like vast\namounts of memory are still in use).\n\nI've written a test that demonstrates this behavior - it's at\n\u003ca href=\"http://play.golang.org/p/QUMOyGNTIg\"\u003ehttp://play.golang.org/p/QUMOyGNTIg\u003c/a\u003e . Ten worker goroutines allocate a total of 1\nmillion 8kB slices. The alloc/free counts from runtime.ReadMemStats are correct, but the\nfigures from runtime.MemProfile (used by e.g. net/http/pprof) are inaccurate.\n\nThe test passes with go1.1.2, it passes with GOMAXPROCS=1, and it passes if there's only\none goroutine allocating memory.\n\nIt fails on recent versions of tip with GOMAXPROCS=2 with several goroutines allocating\nmemory.\n\n\n\n$ ./go1.1.2/bin/go version\ngo version go1.1.2 linux/amd64\n$ ./go1.1.2/bin/go test -cpu=1 ~/profile_test.go \nok  \tcommand-line-arguments\t3.180s\n$ ./go1.1.2/bin/go test -cpu=2 ~/profile_test.go \nok  \tcommand-line-arguments\t4.916s\n\n$ ./go1.2.094fb360be8d/bin/go version\ngo version devel +094fb360be8d Tue Oct 08 16:53:56 2013 +1100 linux/amd64\n$ ./go1.2.094fb360be8d/bin/go test -cpu=1 ~/profile_test.go \nok  \tcommand-line-arguments\t4.233s\n$ ./go1.2.094fb360be8d/bin/go test -cpu=2 ~/profile_test.go \n--- FAIL: TestProfileLeak-2 (3.92 seconds)\n\tprofile_test.go:38: found bucket: size 8192, count 1000000\n\tprofile_test.go:84: n1 707328, s1 5794430976\n\tprofile_test.go:93: n2 37248, s2 305135616\n\tprofile_test.go:97: poor accuracy when measuring accuracy: 70.7% of allocations reported\n\tprofile_test.go:101: profiler claims garbage: 37248 slices totalling 305135616 bytes\nFAIL\nFAIL\tcommand-line-arguments\t3.927s\n\n$ ./go1.2.5f680cab75f6/bin/go version\ngo version devel +5f680cab75f6 Fri Oct 11 11:30:03 2013 +1100 linux/amd64\n$ ./go1.2.5f680cab75f6/bin/go test -cpu=1 ~/profile_test.go\nok  \tcommand-line-arguments\t4.203s\n$ ./go1.2.5f680cab75f6/bin/go test -cpu=2 ~/profile_test.go\n--- FAIL: TestProfileLeak-2 (5.22 seconds)\n\tprofile_test.go:38: found bucket: size 8192, count 1000000\n\tprofile_test.go:84: n1 674240, s1 5523374080\n\tprofile_test.go:93: n2 30848, s2 252706816\n\tprofile_test.go:97: poor accuracy when measuring accuracy: 67.4% of allocations reported\n\tprofile_test.go:101: profiler claims garbage: 30848 slices totalling 252706816 bytes\nFAIL\nFAIL\tcommand-line-arguments\t5.219s\u003c/pre\u003e",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:36:20Z",
+	"created_at": "2013-10-11T01:10:15Z",
+	"updated_at": "2016-06-25T01:20:30Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

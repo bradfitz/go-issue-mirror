@@ -1,0 +1,27 @@
+{
+	"id": 51281632,
+	"number": 4094,
+	"state": "closed",
+	"title": "cmd/6g: potential bug in registerization?",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Hack componentgen using the attached patch.\n2. Compile and run the following code\n\npackage main\n\nimport (\n\t\u0026quot;image\u0026quot;\n\t\u0026quot;image/color\u0026quot;\n)\n\ntype Image interface {\n\timage.Image\n\tSet(x, y int, c color.Color)\n}\n\nfunc clip(dst Image, r *image.Rectangle, src image.Image, sp *image.Point, mask\nimage.Image, mp *image.Point) {\n\t*r = r.Intersect(dst.Bounds())\n}\n\nvar Clip = clip\n\nfunc main() {\n\tdst := image.NewRGBA(image.Rect(0, 0, 100, 100))\n\tsrc := image.NewRGBA(image.Rect(0, 0, 100, 100))\n\tmask := image.NewRGBA(image.Rect(0, 0, 100, 100))\n\tr, sp, mp :=\n\t\timage.Rect(0, 0, 100, 100),\n\t\timage.ZP,\n\t\timage.ZP\n\tclip(dst, \u0026amp;r, src, \u0026amp;sp, mask, \u0026amp;mp)\n}\n\n3. Observe that compiling with -N suppresses the error.\n\ngo tool 6g -Rv says:\n\nBefore optimization:\n\n0001 (draw.go:15) MOVQ    dst+8(FP),BP\n0002 (draw.go:15) MOVQ    BP,(SP)\n0003 (draw.go:15) MOVQ    dst+0(FP),BX\n0004 (draw.go:15) MOVQ    40(BX),BX\n0005 (draw.go:15) CALL    ,BX\n0006 (draw.go:15) LEAQ    8(SP),BX\n0007 (draw.go:15) LEAQ    (BX),BP\n0008 (draw.go:15) MOVL    (BP),R8\n0009 (draw.go:15) MOVL    R8,autotmp_0000+0(SP)\n0010 (draw.go:15) MOVL    4(BP),R8\n0011 (draw.go:15) MOVL    R8,autotmp_0000+4(SP)\n0012 (draw.go:15) LEAQ    8(BX),BP\n0013 (draw.go:15) MOVL    (BP),R8\n0014 (draw.go:15) MOVL    R8,autotmp_0000+8(SP)\n0015 (draw.go:15) MOVL    4(BP),R8\n0016 (draw.go:15) MOVL    R8,autotmp_0000+12(SP)\n...\n\nClobbers BX:\nregisterize autotmp_0000+0 (bit=35 et=INT32) in BX\n0009 (draw.go:15) MOVL    R8,autotmp_0000+0(SP) ===change== 0009 (draw.go:15) MOVL   \nR8,BX\n0023 (draw.go:15) MOVL    autotmp_0000+0(SP),R9 ===change== 0023 (draw.go:15) MOVL   \nBX,R9\n\nAfter:\n0001 (draw.go:15) MOVQ    dst+8(FP),BP\n0002 (draw.go:15) MOVQ    BP,(SP)\n0003 (draw.go:15) MOVQ    dst+0(FP),BX\n0004 (draw.go:15) MOVQ    40(BX),BX\n0005 (draw.go:15) CALL    ,BX\n0006 (draw.go:15) LEAQ    8(SP),BX\n0007 (draw.go:15) LEAQ    (BX),BP\n0008 (draw.go:15) MOVL    (BP),R8\n0009 (draw.go:15) MOVL    R8,BX\n0010 (draw.go:15) MOVL    4(BP),R8\n0011 (draw.go:15) MOVL    R8,DX\n0012 (draw.go:15) LEAQ    8(BX),BP\n0013 (draw.go:15) MOVL    (BP),R8\n0014 (draw.go:15) MOVL    R8,CX\n0015 (draw.go:15) MOVL    4(BP),R8\n0016 (draw.go:15) MOVL    R8,AX\n\n\nWhat is the expected output? What do you see instead?\n\nExpected:\nnothing\n\nGot:\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x8 pc=0x400c42]\n\ngoroutine 1 [running]:\nmain.clip(0xf840023000, 0xf840020600, 0x7fd4396bdf38, 0xf840023040, 0xf8400205d0, ...)\n\t/opt/remy/go.clean/src/draw/draw.go:15 +0x42\nmain.main()\n\t/opt/remy/go.clean/src/draw/draw.go:28 +0x24d\n\ngoroutine 2 [syscall]:\ncreated by runtime.main\n\t/opt/remy/go.clean/src/pkg/runtime/proc.c:220\nexit status 2\n\n\nPlease use labels and text to provide additional information.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4094/0/componentgen.patch\"\u003ecomponentgen.patch\u003c/a\u003e (4626 bytes)",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:21:47Z",
+	"created_at": "2012-09-18T11:07:30Z",
+	"updated_at": "2016-06-24T22:24:47Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

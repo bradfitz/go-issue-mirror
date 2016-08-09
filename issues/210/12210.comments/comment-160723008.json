@@ -1,0 +1,12 @@
+{
+	"id": 160723008,
+	"body": "@fazalmajid I assume this is still happening at the current development head? In your Aug 25 comment you ran and caught the crash under gdb, showing that it was in morestack. Can you run 'where' to see what called morestack?\r\n\r\nFWIW, although gdb pins the blame on that line of morestack, the problem is actually the previous line, an INT $3 instruction which causes the SIGTRAP. The processor behavior is to advance the PC during the trap, which is likely why you see the line after it being given in the trace. But either way the caller is what we want to know more about.\r\n\r\nThe relevant code is:\r\n\r\n\tTEXT runtime·morestack(SB),NOSPLIT,$0-0\r\n\t\t// Cannot grow scheduler stack (m-\u003eg0).\r\n\t\tget_tls(CX)\r\n\t\tMOVQ\tg(CX), BX\r\n\t\tMOVQ\tg_m(BX), BX\r\n\t\tMOVQ\tm_g0(BX), SI\r\n\t\tCMPQ\tg(CX), SI\r\n\t\tJNE\t2(PC)\r\n\t\tINT\t$3\r\n\t\r\n\t\t// Cannot grow signal stack (m-\u003egsignal).\r\n\t\tMOVQ\tm_gsignal(BX), SI\r\n\r\nand the problem is therefore that somehow morestack has been called on a system stack. The question is why. It would also be interesting to see the output of `x/100xg $rsi` at the point where the fault happens. That should be the first 100 words of the g == g-\u003em-\u003eg0 struct.\r\n\r\nThanks.\r\n\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-30T18:52:03Z",
+	"updated_at": "2015-11-30T18:52:03Z"
+}

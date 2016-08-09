@@ -1,0 +1,12 @@
+{
+	"id": 71845123,
+	"body": "You can wrap both the `io.ReadSeeker` and the `http.ResponseWriter` with something that counts the bytes copied:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"io\"\r\n        \"log\"\r\n        \"net/http\"\r\n        \"strings\"\r\n        \"time\"\r\n)\r\n\r\nfunc main() {\r\n        http.HandleFunc(\"/\", handler)\r\n        log.Fatal(http.ListenAndServe(\"localhost:8080\", nil))\r\n}\r\n\r\nfunc handler(rw http.ResponseWriter, r *http.Request) {\r\n        rs := strings.NewReader(\"content\")\r\n        crs := \u0026countingReadSeeker{ReadSeeker: rs}\r\n        crw := \u0026countingResponseWriter{ResponseWriter: rw}\r\n        http.ServeContent(crw, r, \"file.txt\", time.Now(), crs)\r\n        log.Printf(\"read %v bytes, wrote %v bytes\", crs.count, crw.count)\r\n}\r\n\r\ntype countingReadSeeker struct {\r\n        io.ReadSeeker\r\n        count int64\r\n}\r\n\r\nfunc (r *countingReadSeeker) Read(b []byte) (n int, err error) {\r\n        n, err = r.ReadSeeker.Read(b)\r\n        r.count += int64(n)\r\n        return\r\n}\r\n\r\ntype countingResponseWriter struct {\r\n        http.ResponseWriter\r\n        count int64\r\n}\r\n```",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-28T14:43:36Z",
+	"updated_at": "2015-01-28T14:43:36Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 109799614,
+	"body": "I believe the unmarked object is the backing store of the stk slice in cmd/go/pkg.go:packagesAndErrors. This is a []string (as type importStack), and a pointer to it is passed down to loadPackage and many other functions from there. stk is on packagesAndErrors's stack because it never escapes, but the backing store is in the heap.\r\n\r\nThe only obviously interesting thing that happens to stk is that *importStack has a push method that does an append on the pointed-to slice. But the disassembly of the push method certainly appears to be executing a write barrier when it writes the new backing store through the receiver.\r\n\r\nHere's a representative checkmarks failure with some annotations:\r\n\r\n```\r\nruntime:greyobject: checkmarks finds unexpected unmarked object obj=0xc208844070\r\nruntime: found obj at *(0xc2081457a0+0x68)\r\n# ^ AKA 0xc208145808\r\nbase=0xc2081457a0 k=0x61040a2 s.start*_PageSize=0xc20813e000 s.limit=0x0 s.sizeclass=0 s.elemsize=0\r\nobj=0xc208844070 k=0x6104422 s.start*_PageSize=0xc208844000 s.limit=0xc208845ff0 s.sizeclass=8 s.elemsize=112\r\n *(obj+0) = 0xc20816e858\r\n *(obj+8) = 0xd\r\n *(obj+16) = 0xc2087bb531\r\n *(obj+24) = 0x5\r\n *(obj+32) = 0xc2087bbbd1\r\n *(obj+40) = 0x5\r\n *(obj+48) = 0xc2088325d1\r\n *(obj+56) = 0x6\r\n *(obj+64) = 0x9463c0\r\n *(obj+72) = 0x7\r\n *(obj+80) = 0x0\r\n *(obj+88) = 0x0\r\n *(obj+96) = 0x0\r\n *(obj+104) = 0x0\r\n# ^ This is the backing store of stk with a few short strings in it.\r\nfatal error: checkmark found unmarked object\r\n\r\n...\r\n\r\ngoroutine 1 [runnable]:\r\n...\r\nmain.(*Package).load(0xc20880c400, 0xc208145808, 0xc20878db00, 0x0, 0x0, 0x0)\r\n\t/home/austin/go.dev/src/cmd/go/pkg.go:624 +0x4eaa fp=0xc208145448 sp=0xc208144b00\r\nmain.loadPackage(0xc20816e858, 0xd, 0xc208145808, 0x0)\r\n\t/home/austin/go.dev/src/cmd/go/pkg.go:952 +0x958 fp=0xc208145748 sp=0xc208145448\r\n# ^ 0xc208145808 is the location of the pointer to the unmarked object.\r\n# In the code, this is \u0026stk passed to loadPackage.\r\nmain.packagesAndErrors(0xc208094d80, 0x3f, 0x48, 0x0, 0x0, 0x0)\r\n\t/home/austin/go.dev/src/cmd/go/pkg.go:1014 +0x3b4 fp=0xc208145938 sp=0xc208145748\r\n# ^ checkmarks base is between sp and fp of packagesAndErrors.\r\n...\r\n```\r\n",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-07T21:05:39Z",
+	"updated_at": "2015-06-07T21:05:39Z"
+}

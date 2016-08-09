@@ -1,0 +1,33 @@
+{
+	"id": 87053530,
+	"number": 11146,
+	"state": "closed",
+	"title": "archive/zip: file with wrong checksum is successfully decompressed",
+	"body": "The following program crashes with the panic:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/zip\"\r\n\t\"bytes\"\r\n\t\"hash/crc32\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\nfunc main() {\r\n\tdata := []byte(\"PK\\x03\\x040000000000000000\" +\r\n\t\t\"000000\\x01\\x00\\x00\\x000\\x01\\x00\\x00\\xff\\xff0000\" +\r\n\t\t\"0000000000000000PK\\x01\\x02\" +\r\n\t\t\"0000\\b0\\b\\x00000000000000\" +\r\n\t\t\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x000000PK\\x05\\x06\\x00\\x00\" +\r\n\t\t\"\\x00\\x0000\\x01\\x0000008\\x00\\x00\\x00\\x00\\x00\")\r\n\tz, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfor _, f := range z.File {\r\n\t\tr, err := f.Open()\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tc, err := ioutil.ReadAll(r)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tif crc := crc32.ChecksumIEEE(c); crc != f.CRC32 {\r\n\t\t\tprintln(crc, f.CRC32)\r\n\t\t\tpanic(\"bad checksum\")\r\n\t\t}\r\n\t\tr.Close()\r\n\t}\r\n}\r\n```\r\n```\r\n0 808464432\r\npanic: bad checksum\r\n```\r\n\r\ngo version devel +b0532a9 Mon Jun 8 05:13:15 2015 +0000 linux/amd64",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-06-14T20:54:14Z",
+	"created_at": "2015-06-10T17:59:00Z",
+	"updated_at": "2016-06-25T02:10:49Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 90658226,
+	"number": 11377,
+	"state": "open",
+	"title": "go/parser: more robust error handling",
+	"body": "I'm going to try to start filing bugs against go/parser when I notice things that trigger less than ideal error messages in the course of ordinary usage (via goimports, go test, and so on), because I think there are some simple cases that can be improved. I expect most of the initial ones will be about getting too many errors. Here's the first one.\n\n\tpackage p\n\t\n\tfunc bad() {\n\t\tif f()) {\n\t\t\treturn\n\t\t}\n\t}\n\t\n\tfunc F1() {}\n\tfunc F2() {}\n\tfunc F3() {}\n\tfunc F4() {}\n\tfunc F5() {}\n\tfunc F6() {}\n\tfunc F7() {}\n\tfunc F8() {}\n\tfunc F9() {}\n\tfunc F10() {}\n\nThis produces:\n\n\t$ gofmt /tmp/xx.go\n\t/tmp/xx.go:4:8: expected '{', found ')'\n\t/tmp/xx.go:9:6: expected '(', found 'IDENT' F1\n\t/tmp/xx.go:10:6: expected '(', found 'IDENT' F2\n\t/tmp/xx.go:11:6: expected '(', found 'IDENT' F3\n\t/tmp/xx.go:12:6: expected '(', found 'IDENT' F4\n\t/tmp/xx.go:13:6: expected '(', found 'IDENT' F5\n\t/tmp/xx.go:14:6: expected '(', found 'IDENT' F6\n\t/tmp/xx.go:15:6: expected '(', found 'IDENT' F7\n\t/tmp/xx.go:16:6: expected '(', found 'IDENT' F8\n\t/tmp/xx.go:17:6: expected '(', found 'IDENT' F9\n\t/tmp/xx.go:18:6: expected '(', found 'IDENT' F10\n\t$ \n\nThis is a reduced version of a real case I had, where an extra paren in a function near the top of a long source file triggered many many messages. In this program, the braces are still balanced, so there should be a good signal for the parser to recover by the end of the function (and ideally the end of the enclosing block, although here they are the same).\n\nThis is a case where the yacc grammar's error recovery is actually doing better:\n\n\t$ go tool compile /tmp/xx.go\n\t/tmp/xx.go:4: syntax error: unexpected ), expecting {\n\t/tmp/xx.go:7: syntax error: unexpected }\n\t$\n\nAlso the IDENT in the go/parser error is probably not helpful to the user. It's an internal detail.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-06-24T12:13:20Z",
+	"updated_at": "2015-11-05T16:05:28Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

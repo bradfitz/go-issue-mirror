@@ -1,0 +1,21 @@
+{
+	"id": 138236142,
+	"number": 14618,
+	"state": "open",
+	"title": "x/mobile/cmd/gomobile init doesn't allow for android NDK platform selection",
+	"body": "The Problem\r\n----------------\r\n\r\nI'm working on a prototype android google cardboard app that will need to use OpenGL ES 3.0/3.1 and most of the application is written in Go. I had a prototype up and running using OpenGL ES 2.0 but when I made the switch to ES 3.0 I found that I needed to write my own wrappers. I used the following block at the beginning of the wrapper to include the gl3.h header file:\r\n\r\n```\r\n/*\r\n#cgo LDFLAGS: -lGLESv3  -lEGL\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cGLES3/gl3.h\u003e\r\n#include \u003cGLES3/gl3ext.h\u003e\r\n#include \u003cGLES3/gl3platform.h\u003e\r\n*/\r\nimport \"C\"\r\n```\r\n\r\nWhat happened was that I would get error messages when compiling in Android Studio with the gomobile bind portion of the process stating that it couldn't find the `\u003cGLES3/glh3.h\u003e` file.\r\n\r\nWhen I investigated, it turns out that `gomobile init` for android arm always uses platform-15 from the NDK -- this platform version doesn't include the GLES3 headers because it doesn't support OpenGL ES 3.0 (requires platform 18+, per http://developer.android.com/guide/topics/graphics/opengl.html)\r\n\r\nThe Hack\r\n------------\r\n\r\n1) I changed `mobile/cmd/gomobile/env.go` ndkConfig to point to platform-19.\r\n2) I changed `mobile/cmd/gomobile/init.go` useStrippedNDK to `false` so that it would download the full NDK as the stripped version doesn't have the platform minimum I needed.\r\n\r\nWith these changes a fresh `gomobile init` caused me to have the right platform headers in `$GOPATH/pkg/gomobile/android-ndk-r10e/arm/sysroot/usr/include` as well as the right libs in the parallel lib directory. From there I was able to compile the OpenGL ES 3.0 wrapper I was making and run the compiled app on my phone using specific gles3 shaders and functions.\r\n\r\nWhat I Wanted To See\r\n-----------------------------\r\n\r\nAfter I found the problem to be that `gomobile init` always uses the same platform, I think the best solution for me would be to have a flag for `gomobile init` to specify the platform level to support and another flag to control whether or not the full NDK is downloaded so that you don't have to modify the source code.\r\n\r\n\r\nSystem Details \r\n------------------\r\ngo version go1.6 windows/amd64\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=C:/gocode\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1",
+	"user": {
+		"login": "tbogdala",
+		"id": 128242,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-03-03T16:57:34Z",
+	"updated_at": "2016-03-15T00:01:13Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

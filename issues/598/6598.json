@@ -1,0 +1,21 @@
+{
+	"id": 51285423,
+	"number": 6598,
+	"state": "open",
+	"title": "misc/gdb: freezes and consumes CPU when using \"info locals\"",
+	"body": "by **newton688**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Compile a relatively large Go program (e.g. github.com/sirnewton01/godev) with the go\nbuild/install -gcflags \u0026quot;-N -l\u0026quot; option recommended here:\n\u003ca href=\"http://golang.org/doc/gdb\"\u003ehttp://golang.org/doc/gdb\u003c/a\u003e\n2. Launch gdb providing the path to the program binary\n2. Set a breakpoint in a section where there are plenty of complex local variables (e.g.\nfile.go:173 in the godev project)\n3. Run the program and make it hit the breakpoint (e.g. navigate to\n\u003ca href=\"http://127.0.0.1:2022/navigate/table.html#\"\u003ehttp://127.0.0.1:2022/navigate/table.html#\u003c/a\u003e and expand different folders)\n4. After the breakpoint it hit issue an \u0026quot;info locals\u0026quot; command and try to page\nthrough the full list of local variables\n\nWhat is the expected output?\nIt is expected that uninitialized variables should show up albeit in an undefined state\n(e.g. weird characters, 0x0, or just blank).\n\nWhat do you see instead?\nInstead, gdb freezes. Only Ctrl-C seems to bring it back. When using an application that\nuses gdb/MI for a GUI interface gdb is totally unresponsive.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\ngc\n\nWhich operating system are you using?\nUbuntu 12.04\n\nWhich version are you using?  (run 'go version')\ngo version devel +f4d1cb8d9a91 Thu Sep 19 22:34:33 2013 +1000 linux/amd64\n-This is 1.2RC1 according to the godeb distribution\n\nPlease provide any additional information below.\nI poked around in the runtime-gdb.py script and found that the to_string() of the\nStringTypePrinter appears to the the culprit for the excessive CPU consumption. If I\nchange the implementation of this function the following the CPU problems disappear:\n\n        def to_string(self):\n                l = int(self.val['len'])\n                if l \u0026lt; 102400 and l \u0026gt; -1:\n                        return self.val['str'].string(\u0026quot;utf-8\u0026quot;, \u0026quot;ignore\u0026quot;, l)\n                return self.val['len']\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2013-10-16T13:09:27Z",
+	"updated_at": "2015-04-14T19:45:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

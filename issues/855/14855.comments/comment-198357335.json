@@ -1,0 +1,12 @@
+{
+	"id": 198357335,
+	"body": "Yes, no matter what the programmer does as far as racy writes, the GC must not lose track of and free a pointer that is still referenced. Obviously programs that corrupt memory or that hide pointers in uintptr fields may crash, but not all racy programs corrupt memory.\r\n\r\nMuch like Java, Go's memory model states that if there is a race on a single word, a future or concurrent read must see some past write. The memory model also states that multi-word writes behave like multiple single-word writes.\r\n\r\nSuppose the initial state of the world is:\r\n\r\n    *x = make([]byte, 16) // call this x1\r\n\r\nand then goroutine g1 does:\r\n\r\n    *x = make([]byte, 16) // call this x2\r\n\r\nand goroutine g2 does\r\n\r\n    *x = (*x)[:8]\r\n\r\nAlthough there is a race here, the guarantees about the semantics of racy programs mean that this cannot cause arbitrary memory corruption. Because the slice assignments are like three individual word assignments and because the base pointers, lengths, and caps here are valid in any combination, the result should be a valid memory state. Specifically, once both goroutines end, *x should hold one of x1[:8:16] or x1[:16:16] or x2[:8:16] or x2[:16:16]. None of those is addressing memory beyond an underlying allocation, so there's no corruption possible.\r\n\r\nNow suppose that while these goroutines are running, the GC is also running, and consider only the slice base pointer. It could happen in the current SSA-generated code that the GC starts, then g2 reads x1 from *x on the rhs of its assignment, then g1 writes x2 to *x, then the GC scans the memory object holding *x, seeing x2. Then g2 writes x1 back to *x in its assignment, without a write barrier. Now we're in a state where the GC thinks x2 is the live pointer stored in *x, and has not seen and will never see x1. Eventually the GC will collect x1 despite it being referenced by *x, eventually causing memory corruption in a program that had none.\r\n\r\nThis is why every pointer write to the heap must use a write barrier. Optimizations to eliminate write barriers must do so by eliminating the pointer writes entirely.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-18T13:31:13Z",
+	"updated_at": "2016-03-18T13:31:13Z"
+}

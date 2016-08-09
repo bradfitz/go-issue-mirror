@@ -1,0 +1,26 @@
+{
+	"id": 149040950,
+	"number": 15345,
+	"state": "open",
+	"title": "debug/pe: extend package so it can be used by cmd/link",
+	"body": "CC: @minux @ianlancetaylor @crawshaw \r\n\r\ncmd/link and debug/pe share no common code, but they should - they do the same thing. If package debug/pe is worth its weight, it should be used by cmd/link. I accept that this was impossible to do when cmd/link was a C program, but now cmd/link is written in Go.\r\n\r\nI also tried to use debug/pe in github.com/alexbrainman/goissue10776/pedump, and it is not very useful. I endup coping and changing some debug/pe code.\r\n\r\nI also think there is some luck of PE format knowledge between us. So improving debug/pe structure and documentation should help with that.\r\n\r\nI tried to rewrite src/cmd/link/internal/ld/ldpe.go by using debug/pe (see CL 14289). I had to extend debug/pe for that task. Here is the list of externally visible changes I had to do:\r\n\r\n- PE relocations have SymbolTableIndex field that is an index into symbols table. But File.Symbols slice has Aux lines removed as it is built, so SymbolTableIndex cannot be used to index into File.Symbols. We cannot change File.Symbols behavior. So I propose we introduce File.COFFSymbols slice that is like File.Symbols, but with Aux lines left untouched.\r\n\r\n- I have introduced StringTable that was used to convert long names in PE symbol table and PE section table into Go strings.\r\n\r\n- I have also introduced Section.Relocs to access PE relocations.\r\n\r\nI propose we add the above things to debug/pe and use new debug/pe to rewrite ldpe.go and pe.go in cmd/link/internal/ld.\r\n\r\nAlex\r\n\r\nPS: You can google for pecoff.doc for PE detials.",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 13,
+	"created_at": "2016-04-18T04:44:21Z",
+	"updated_at": "2016-05-04T03:00:13Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

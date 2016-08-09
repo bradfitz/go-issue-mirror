@@ -1,0 +1,33 @@
+{
+	"id": 52700905,
+	"number": 9425,
+	"state": "closed",
+	"title": "log: GC crash using logger in 1.4",
+	"body": "I am having a garbage collection crash [(dump)](https://gist.github.com/vinibaggio/0e8be5f07b81dbdb49d6) in 1.4 in the code snipped below.\r\nIn 1.3.3, the same program prints \"Hello\" and successfully exits:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"reflect\"\r\n\t\"sync\"\r\n)\r\n\r\ntype Bus struct {\r\n\tlisteners map[reflect.Type][]reflect.Value\r\n}\r\n\r\n// Register adds a new event listener.\r\n// Assumes a function with one parameter as fn argument\r\nfunc (b *Bus) Register(fn interface{}) {\r\n\tv := reflect.ValueOf(fn)\r\n\tt := v.Type()\r\n\r\n\t// Map the argument type to the listener.\r\n\targ := t.In(0)\r\n\tb.listeners[arg] = append(b.listeners[arg], v)\r\n}\r\n\r\n// Emit dispatches an event to all registered listeners.\r\n// A WaitGroup is returned which can optionally be used to block on all handlers\r\n// completing (note: the bus makes no attempt to ensure the handlers actually\r\n// complete).\r\nfunc (b *Bus) Emit(event interface{}) *sync.WaitGroup {\r\n\tvar v reflect.Value\r\n\targs := make([]reflect.Value, 1)\r\n\r\n\tv = reflect.ValueOf(event)\r\n\targs[0] = v\r\n\r\n\tvar wg sync.WaitGroup\r\n\tfor _, fn := range b.listeners[v.Type()] {\r\n\t\twg.Add(1)\r\n\t\tgo func() {\r\n\t\t\tfn.Call(args)\r\n\t\t\twg.Done()\r\n\t\t}()\r\n\t}\r\n\treturn \u0026wg\r\n}\r\n\r\nfunc main() {\r\n\tbus := \u0026Bus{\r\n\t\tlisteners: map[reflect.Type][]reflect.Value{},\r\n\t}\r\n\r\n\tbus.Register(func(i int) {\r\n\t\tlog.Println(\"Hello\")\r\n\t})\r\n\r\n\twg := bus.Emit(1)\r\n\twg.Wait()\r\n}\r\n```\r\n\r\nMy go version is 1.4 in OSX, using Homebrew package management:\r\n```\r\n$ go version\r\ngo version go1.4 darwin/amd64\r\n```\r\n\r\nFor reference: [golang-nuts thread on the issue](https://groups.google.com/forum/#!topic/golang-nuts/rR6LgEEdRxM)",
+	"user": {
+		"login": "vinibaggio",
+		"id": 33053,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-23T03:21:08Z",
+	"created_at": "2014-12-22T23:45:13Z",
+	"updated_at": "2016-06-25T01:57:07Z",
+	"milestone": {
+		"id": 906464,
+		"number": 3,
+		"title": "Go1.4.1"
+	}
+}

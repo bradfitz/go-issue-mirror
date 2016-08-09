@@ -1,0 +1,12 @@
+{
+	"id": 66065744,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThanks.  I was definitely expecting an error and not actual information.  Strange.\nIf you could indulge me in one more program, can you check whether printing\ntime.Local.String() prints \"UTC\" or \"Local\"?  If it prints \"UTC\" that will confirm \nthat, somehow, syscall.GetTimeZoneInformation failed on startup even though\nit is working for you when called from main.  If it prints \"Local\" then I will be\neven more confused.\n\nThe zone information in your output looks completely reasonable: it says that the\nzone is at +5:30 and is named \"India Standard Time\", with no switch to daylight\nsavings time.  If presented with that information during initialization, it looks to\nme like package time would correctly be showing IST +5:30.\n\nIf time.Local.String() prints \"UTC\" the question is why did the syscall fail during\nstartup.  If time.Local.String() prints \"Local\" the question is why did the init not\nrecord the results (or perhaps not run at all).\n\nIf you would like to try to debug this, the relevant code is\nsrc/pkg/time/zoneinfo_windows.go's initLocal.  You can't import fmt in that package, but\nyou can use the built-in print.  I would try adding these prints:\n\nfunc initLocal() {\nprintln(\"initLocal called\")\n\tvar i syscall.Timezoneinformation\n\tif _, err := syscall.GetTimeZoneInformation(\u0026i); err != nil {\nprintln(\"GTZI failed:\", err.Error())\n\t\tlocalLoc.name = \"UTC\"\n\t\treturn\n\t}\nprintln(\"GTZI success\")\n\tinitLocalFromTZI(\u0026i)\n}\n\nand then 'go install time' and re-build and re-run your program that prints\ntime.Now().Zone().\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-30T13:14:53Z",
+	"updated_at": "2014-12-08T10:17:57Z"
+}

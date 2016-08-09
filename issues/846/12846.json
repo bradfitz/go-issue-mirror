@@ -1,0 +1,17 @@
+{
+	"id": 109895352,
+	"number": 12846,
+	"state": "closed",
+	"title": "runtime: buildmode=c-shared segfaults on linux/arm (ARMv7)",
+	"body": "* What version of Go are you using (go version)?\r\n\r\n    % go version\r\n    go version go1.5.1 linux/arm\r\n\r\n* What operating system and processor architecture are you using?\r\n\r\n    % echo $GOOS/$GOARCH $GOARM\r\n    linux/arm 7\r\n\r\nMy machine is Rasberry Pi 2.\r\n\r\n    % uname -a\r\n    Linux raspberrypi 4.1.7-v7+ #817 SMP PREEMPT Sat Sep 19 15:32:00 BST 2015 armv7l GNU/Linux\r\n    % gcc --version | head -n 1\r\n    gcc (Raspbian 4.8.4-1) 4.8.4\r\n\r\n* What did you do?\r\n\r\nI tried to build a c-shared object on Raspberry Pi 2, based on the articles below.\r\n\r\n* [Building Go 1.5 on the Raspberry Pi _ Dave Cheney](http://dave.cheney.net/2015/09/04/building-go-1-5-on-the-raspberry-pi)\r\n* [Building Python modules with Go 1.5 - Filippo.io](https://blog.filippo.io/building-python-modules-with-go-1-5/)\r\n\r\nHere is Go code exports `Sum` function.\r\n\r\n`sum.go`\r\n\r\n    sum.go\r\n    \r\n    package main\r\n    \r\n    import \"C\"\r\n    \r\n    //export Sum\r\n    func Sum(a, b int) int {\r\n\t\t\treturn a + b\r\n    }\r\n    \r\n    func main() {}\r\n\r\nAnd the following C code calls `Sum` function.\r\n\r\n`main.c`\r\n\r\n    #include \u003cstdio.h\u003e\r\n    #include \"sum.h\"\r\n    \r\n    int main() {\r\n      printf(\"1 + 2 = %d\\n\", Sum(1, 2));\r\n      return 0;\r\n    }\r\n\r\nTo build a shared object, I execute the commands below.\r\n\r\n    % go build -buildmode=c-shared -o ./sum.so ./sum.go\r\n    % gcc -c ./main.c\r\n    % gcc ./main.o ./sum.so\r\n\r\nThen I run `./a.out`, it segfaults.\r\n\r\n    % ./a.out\r\n    zsh: segmentation fault  ./a.out\r\n\r\nWhat did I something wrong? Thanks.\r\n\r\n--------\r\n\r\nFYI, `buildmode=c-archive` also occurs an error.\r\n\r\n    % go build -buildmode=c-archive -o ./sum.a ./sum.go\r\n    % gcc ./main.o ./sum.a\r\n    ./sum.a(000001.o): In function `x_cgo_sys_thread_create':\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_libinit.c:20: undefined reference to `pthread_create'\r\n    ./sum.a(000001.o): In function `_cgo_sys_thread_start':\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_linux_arm.c:25: undefined reference to `pthread_sigmask'\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_linux_arm.c:33: undefined reference to `pthread_attr_getstacksize'\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_linux_arm.c:36: undefined reference to `pthread_create'\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_linux_arm.c:38: undefined reference to `pthread_sigmask'\r\n    ./sum.a(000001.o): In function `x_cgo_init':\r\n    /home/pi/tmp/go1.5/src/runtime/cgo/gcc_linux_arm.c:66: undefined reference to `pthread_attr_getstacksize'\r\n    collect2: error: ld returned 1 exit status\r\n\r\nSo `./sum.a` works fine when I passed gcc `-pthread` option.\r\n\r\n    % gcc -pthread ./main.o ./sum.a\r\n    % ./a.out\r\n    1 + 2 = 3\r\n\r\nHowever, `./sum.so` segfaults even though I passed gcc `-pthread`.\r\n\r\n    % gcc -pthread ./main.o ./sum.so\r\n    % ./a.out\r\n    zsh: segmentation fault  ./a.out",
+	"user": {
+		"login": "moutend",
+		"id": 5410013,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2015-10-06T07:25:59Z",
+	"created_at": "2015-10-05T22:01:36Z",
+	"updated_at": "2015-10-07T14:36:49Z"
+}

@@ -1,0 +1,32 @@
+{
+	"id": 153842295,
+	"number": 15616,
+	"state": "open",
+	"title": "x/review/git-codereview: Change-Id hook silently doesn't run anymore when codereview.cfg is not present",
+	"body": "This is a regression introduced in\r\nhttps://go-review.googlesource.com/#/c/19560/\r\n\r\nBefore that change, if the hooks were installed for a private `foobar.com` Gerrit origin (i.e. not `googlesource.com`), they would all run. After that change, the hook code tries to figure out if Gerrit is in use, and when not, the Change-Id line is silently not added. Unfortunately, the heuristic to determine if Gerrit is in use (`haveGerrit()`) errs on the negative side. Consequently `git-codereview mail` is rejected by Gerrit because of the missing Change-Id. The failure is hard to debug because the hooks seem correctly installed, and it is especially annoying as git-codereview may have removed old working hooks in the past [1] to install its own.\r\n\r\nOne workaround is to create a `codereview.cfg` file in repo's root with a valid gerrit value. But it's not that great because for most installations it should be self-evident what is the Gerrit origin, it feels like a unwarranted burden on a lot of people (see: #15073) to introduce that file in many old and new gerrit repos.\r\n\r\nThe hard problem seems to be the runtime determination of what hooks should be running. Specifically, in the change above, Russ described how he wants the \"issue\" hook to run on non-Gerrit repo, but not the Change-Id one.\r\n\r\nI propose to remove runtime determination of what hooks should run in favor of explicit configuration. i.e. `git-codereview hooks` would evolve to the following:\r\n\r\n* Like current behavior, any git-codereview sub-command would install all the hooks, if and only if a valid Gerrit is detected.\r\n\r\n* Like current behavior, if `git-codereview hooks` is run manually, it would force hooks installation regardless of `haveGerrit()` value. But, unlike current behavior it would also enable all the hook functions: issuerepo, gofmt, change-id. (See below how hooks are enabled).\r\n\r\n* If arguments are passed to `git-codereview hooks`, where arguments could be any sub-set of 'issuerepo', 'gofmt' and 'change-id', then it would only enable those.\r\n\r\nThe git hook script should probably stay a simple exec as it is today, because it is hard to replace and extend in the future. On the other hand, git provides a very powerful `git config` set of commands that git-coderereview could run on behalf of the user to set and get the different expected behaviors. https://go-review.googlesource.com/#/c/19684/ proposes something similar for reading the configuration, although I suggest we take it further and lean on the dedicated git interfaces to do the writing and reading.\r\n\r\nI'm happy to work on a CL if that solution is deemed acceptable.\r\n\r\n1. https://github.com/golang/review/blob/77ae237af753cd4f4820e67cdf058aea410bccc7/git-codereview/hook.go#L31",
+	"user": {
+		"login": "yannk",
+		"id": 40152,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-05-09T18:44:26Z",
+	"updated_at": "2016-06-10T15:00:46Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

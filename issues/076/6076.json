@@ -1,0 +1,36 @@
+{
+	"id": 51284643,
+	"number": 6076,
+	"state": "closed",
+	"title": "net/http: TestChunkReaderAllocs fails",
+	"body": "\u003cpre\u003ehg id\nd881cb1ffc14 tip\n\nc:\\\u0026gt;http.test.exe -test.short\n--- FAIL: TestChunkReaderAllocs (0.02 seconds)\n        chunked_test.go:67: 15 mallocs; want \u0026lt;= 1\n2013/08/08 11:10:02 net/http: invalid byte ' ' in Cookie.Value; dropping invalid bytes\n2013/08/08 11:10:02 net/http: invalid byte '\\x00' in Cookie.Value; dropping invalid bytes\n2013/08/08 11:10:02 net/http: invalid byte '\u0026quot;' in Cookie.Value; dropping invalid\nbytes\n2013/08/08 11:10:02 net/http: invalid byte ';' in Cookie.Path; dropping invalid\nbytes\nFAIL\n\nIt looks to me that gc kicks in during the test and it calls mallocgc that counts\nallocations, therefore test fails. If you apply patch attached, you can see this stack\ntrace:\n\nPanicOnMalloc: #4 size=4096 type=6287489\nPanicOnMalloc: #3 size=117 type=0\nPanicOnMalloc: #2 size=41 type=0\nPanicOnMalloc: #1 size=46 type=0\nfatal error: ALEX\n\nruntime stack:\nruntime.throw(0x91e35b)\n\t/root/go/root/src/pkg/runtime/panic.c:498 +0x67\nruntime.mallocgc(0x2e, 0x0, 0x13)\n\t/root/go/root/src/pkg/runtime/malloc.goc:67 +0xdd\nruntime.settype_flush(0x925340)\n\t/root/go/root/src/pkg/runtime/malloc.goc:620 +0x1fc\ngc(0x3116643c)\n\t/root/go/root/src/pkg/runtime/mgc0.c:2087 +0x60\nmgc(0x1115e5a0)\n\t/root/go/root/src/pkg/runtime/mgc0.c:2065 +0x2d\nruntime.mcall(0x6ffe0)\n\t/root/go/root/src/pkg/runtime/asm_386.s:188 +0x33\n\ngoroutine 4 [garbage collection]:\nruntime.gc(0x0)\n\t/root/go/root/src/pkg/runtime/mgc0.c:2034 +0x2b0 fp=0x31166448\nruntime.mallocgc(0x1000, 0x5ff081, 0x1)\n\t/root/go/root/src/pkg/runtime/malloc.goc:155 +0x288 fp=0x31166484\ncnew(0x5ff080, 0x1000, 0x1)\n\t/root/go/root/src/pkg/runtime/malloc.goc:731 +0xa9 fp=0x31166494\nruntime.cnewarray(0x5ff080, 0x1000)\n\t/root/go/root/src/pkg/runtime/malloc.goc:744 +0x3b fp=0x311664a4\nmakeslice1(0x5f54c0, 0x1000, 0x1000, 0x311664e4)\n\t/root/go/root/src/pkg/runtime/slice.c:56 +0x47 fp=0x311664b0\nruntime.makeslice(0x5f54c0, 0x1000, 0x0, 0x1000, 0x0, ...)\n\t/root/go/root/src/pkg/runtime/slice.c:37 +0x96 fp=0x311664d0\nbufio.(*Reader).allocBuf(0x11153600)\n\t/root/go/root/src/pkg/bufio/bufio.go:90 +0xc4 fp=0x3116650c\nbufio.(*Reader).fill(0x11153600)\n\t/root/go/root/src/pkg/bufio/bufio.go:109 +0x2a fp=0x31166564\nbufio.(*Reader).ReadSlice(0x11153600, 0xa, 0x0, 0x0, 0x0, ...)\n\t/root/go/root/src/pkg/bufio/bufio.go:307 +0x186 fp=0x311665bc\nnet/http.readLine(0x11153600, 0x0, 0x0, 0x0, 0x0, ...)\n\t/root/go/root/src/pkg/net/http/chunked.go:91 +0x57 fp=0x311665dc\nnet/http.(*chunkedReader).beginChunk(0x1117d820)\n\t/root/go/root/src/pkg/net/http/chunked.go:47 +0x2c fp=0x311665fc\nnet/http.(*chunkedReader).Read(0x1117d820, 0x11153630, 0x2b, 0x2b, 0x40a70e, ...)\n\t/root/go/root/src/pkg/net/http/chunked.go:65 +0x6c fp=0x3116663c\nio.ReadAtLeast(0xf1c4a8, 0x1117d820, 0x11153630, 0x2b, 0x2b, ...)\n\t/root/go/root/src/pkg/io/io.go:288 +0xb4 fp=0x31166668\nio.ReadFull(0xf1c4a8, 0x1117d820, 0x11153630, 0x2b, 0x2b, ...)\n\t/root/go/root/src/pkg/io/io.go:306 +0x5e fp=0x31166690\nnet/http.TestChunkReaderAllocs(0x111595a0)\n\t/root/go/root/src/pkg/net/http/chunked_test.go:64 +0x37d fp=0x3116679c\ntesting.tRunner(0x111595a0, 0x92000c)\n\t/root/go/root/src/pkg/testing/testing.go:360 +0x88 fp=0x311667c8\nruntime.goexit()\n\t/root/go/root/src/pkg/runtime/proc.c:1332 fp=0x311667cc\ncreated by testing.RunTests\n\t/root/go/root/src/pkg/testing/testing.go:440 +0x69b\n\ngoroutine 1 [chan receive]:\nruntime.park(0x40a6c0, 0x111535fc, 0x91d44d)\n\t/root/go/root/src/pkg/runtime/proc.c:1280 +0x63\nruntime.chanrecv(0x5f6500, 0x111535d0, 0x31151644, 0x0, 0x0)\n\t/root/go/root/src/pkg/runtime/chan.c:359 +0x49f\nruntime.chanrecv1(0x5f6500, 0x111535d0, 0x0, 0x111535d0)\n\t/root/go/root/src/pkg/runtime/chan.c:451 +0x2f\ntesting.RunTests(0x6ef344, 0x920000, 0xa4, 0xa4, 0x921d01)\n\t/root/go/root/src/pkg/testing/testing.go:441 +0x6b6\ntesting.Main(0x6ef344, 0x920000, 0xa4, 0xa4, 0x91b960, ...)\n\t/root/go/root/src/pkg/testing/testing.go:372 +0x6a\nmain.main()\n\tnet/http/_test/_testmain.go:409 +0x82\nruntime.main()\n\t/root/go/root/src/pkg/runtime/proc.c:200 +0x102\nruntime.goexit()\n\t/root/go/root/src/pkg/runtime/proc.c:1332\n\ngoroutine 2 [syscall]:\nruntime.notetsleepg(0x31167f9c, 0xf8475800, 0xd)\n\t/root/go/root/src/pkg/runtime/lock_sema.c:253 +0x73\nruntime.MHeap_Scavenger()\n\t/root/go/root/src/pkg/runtime/mheap.c:461 +0xc2\nruntime.goexit()\n\t/root/go/root/src/pkg/runtime/proc.c:1332\ncreated by runtime.main\n\t/root/go/root/src/pkg/runtime/proc.c:167\n\n\nAlex\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6076/0/patch.diff\"\u003epatch.diff\u003c/a\u003e (1433 bytes)",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Testing"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:33:26Z",
+	"created_at": "2013-08-08T01:26:27Z",
+	"updated_at": "2016-06-24T22:54:28Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

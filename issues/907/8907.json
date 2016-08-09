@@ -1,0 +1,22 @@
+{
+	"id": 51288853,
+	"number": 8907,
+	"state": "closed",
+	"title": "go.tools/go/buildutil: Incorrect logic for skipping folders, results in hidden folders, test folders being included as Go packages.",
+	"body": "\u003cpre\u003eThe business logic of which packages are included in buildutil.ForEachPackage does not\nmatch that of cmd/go tool. This causes problems for\ncode.google.com/p/go.tools/refactor/importgraph.\n\nIf you look at ForEachPackage code:\n\n// Prune search if we encounter any directory with these base names:\nswitch filepath.Base(dir) {\ncase \u0026quot;testdata\u0026quot;, \u0026quot;.hg\u0026quot;:\n\treturn\n}\n\nThis does not match the business logic that is used in cmd/go. Compare with\ncmd/go/main.go matchPackages():\n\n// Avoid .foo, _foo, and testdata directory trees.\n_, elem := filepath.Split(path)\nif strings.HasPrefix(elem, \u0026quot;.\u0026quot;) || strings.HasPrefix(elem, \u0026quot;_\u0026quot;) ||\nelem == \u0026quot;testdata\u0026quot; {\n\treturn filepath.SkipDir\n}\n\nbuildutil should do the same. Currently, it will go inside internal folders of git\nrepositories inside .git, since \u0026quot;.hg\u0026quot; doesn't match that (there's also .bzr,\netc.). It will also go inside folders that begin with \u0026quot;_\u0026quot;. Those tend to be\nvendored packages or folders with individual test files.\n\nThis causes importgraph.Build() to return errors since it includes far too many \u0026quot;Go\npackages\u0026quot; that should not be considered as Go packages (e.g., _test or other\nfolders containing .go files that do not make up an actual valid Go package and are\nmeant to be used individually). It also creates more work for it as it has to needlessly\nexplore hidden folders, etc.\n\nAs far as I can tell, the same business logic as cmd/go for filtering out\nfiles/directories should be used in buildutil.\u003c/pre\u003e",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:49:06Z",
+	"created_at": "2014-10-08T06:46:10Z",
+	"updated_at": "2016-06-25T01:42:49Z"
+}

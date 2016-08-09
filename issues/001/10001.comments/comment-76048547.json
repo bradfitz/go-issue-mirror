@@ -1,0 +1,12 @@
+{
+	"id": 76048547,
+	"body": "Changing Close() to not write to file.fd yet still only close once per the comment is pretty straightforward (see below).  However, setting file.fd to -1 has the positive side affect that file operations after Close() will not be using a stale fd at the syscall level, so we should keep the -1 assignment unless we want to take the file.closedMutex every operation which defeats the purpose.\r\n\r\n```\r\ndiff --git a/src/os/file_unix.go b/src/os/file_unix.go\r\nindex ff4fc7d..1f31860 100644\r\n--- a/src/os/file_unix.go\r\n+++ b/src/os/file_unix.go\r\n@@ -8,6 +8,7 @@ package os\r\n \r\n import (\r\n        \"runtime\"\r\n+       \"sync\"\r\n        \"sync/atomic\"\r\n        \"syscall\"\r\n )\r\n@@ -26,6 +27,9 @@ type file struct {\r\n        name    string\r\n        dirinfo *dirInfo // nil unless directory being read\r\n        nepipe  int32    // number of consecutive EPIPE in Write\r\n+\r\n+       closeMutex sync.Mutex\r\n+       closed     bool\r\n }\r\n \r\n // Fd returns the integer Unix file descriptor referencing the open file.\r\n@@ -99,14 +103,22 @@ func (f *File) Close() error {\r\n }\r\n \r\n func (file *file) close() error {\r\n-       if file == nil || file.fd \u003c 0 {\r\n+       if file == nil {\r\n+               return syscall.EINVAL\r\n+       }\r\n+\r\n+       file.closeMutex.Lock()\r\n+       alreadyClosed := file.closed\r\n+       file.closed = true\r\n+       file.closeMutex.Unlock()\r\n+\r\n+       if alreadyClosed {\r\n                return syscall.EINVAL\r\n        }\r\n        var err error\r\n        if e := syscall.Close(file.fd); e != nil {\r\n                err = \u0026PathError{\"close\", file.name, e}\r\n        }\r\n-       file.fd = -1 // so it can't be closed again\r\n \r\n        // no need for a finalizer anymore\r\n        runtime.SetFinalizer(file, nil)\r\n```",
+	"user": {
+		"login": "tarm",
+		"id": 476641,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-25T20:25:30Z",
+	"updated_at": "2015-02-25T20:25:30Z"
+}

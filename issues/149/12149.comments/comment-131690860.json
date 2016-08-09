@@ -1,0 +1,12 @@
+{
+	"id": 131690860,
+	"body": "Here is a version that does not require a web server.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"html/template\"\r\n\t\"log\"\r\n\t\"os\"\r\n)\r\n\r\ntype Page struct {\r\n\tScheme string\r\n\tDomain string\r\n}\r\n\r\n\r\nconst text = `\u003c!DOCTYPE html\u003e\r\n\u003chtml lang=\"en\"\u003e\r\n\u003chead\u003e\r\n  \u003cmeta charset=\"UTF-8\"\u003e\r\n  \u003ctitle\u003e\u003c/title\u003e\r\n\u003c/head\u003e\r\n\u003cbody\u003e\r\n  \u003cscript type=\"text/template\" charset=\"utf-8\"\u003e\r\n    \u003cdiv data=\"{{.Scheme}}://{{.Domain}}/qr\"\u003e\u003c/div\u003e\r\n    \u003cdiv data=\"{{.Scheme}}://{{.Domain}}/qr\"\u003e\u003c/div\u003e  \u003c!-- problems here --\u003e\r\n  \u003c/script\u003e\r\n\u003c/body\u003e\r\n\u003c/html\u003e\r\n`\r\n\r\nfunc main() {\r\n\tp := \u0026Page{\r\n\t\tScheme: \"http\",\r\n\t\tDomain: \"meican.loc\",\r\n\t}\r\n\tt, err := template.New(\"index\").Parse(text)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\terr = t.Execute(os.Stdout, p)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n}\r\n```\r\n\r\nWith text/template, the (core of the) output is\r\n\r\n    \u003cdiv data=\"http://meican.loc/qr\"\u003e\u003c/div\u003e\r\n    \u003cdiv data=\"http://meican.loc/qr\"\u003e\u003c/div\u003e  \u003c!-- problems here --\u003e\r\n\r\nwhile with html/template, it is\r\n\r\n    \u003cdiv data=\"http://meican.loc/qr\"\u003e\u003c/div\u003e\r\n    \u003cdiv data=\"http://\"meican.loc\"/qr\"\u003e\u003c/div\u003e  \u003c!-- problems here --\u003e\r\n\r\nIt does indeed seem like a bug in html/template.\r\n\r\n",
+	"user": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-17T06:11:09Z",
+	"updated_at": "2015-08-17T06:13:22Z"
+}

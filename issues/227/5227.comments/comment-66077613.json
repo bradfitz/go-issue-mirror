@@ -1,0 +1,12 @@
+{
+	"id": 66077613,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eNo this does not look like the correct fix, because it would break linkmode=auto.\n\niant: I can find two possible ways of fixing:\n\nEither this:\n\n--- a/src/cmd/ld/ldelf.c\tTue Apr 09 12:41:58 2013 +0900\n+++ b/src/cmd/ld/ldelf.c\tTue Apr 09 07:40:40 2013 +0200\n@@ -571,7 +571,7 @@\n \t\t\ts = sym.sym;\n \t\t\tif(s-\u0026gt;size \u0026lt; sym.size)\n \t\t\t\ts-\u0026gt;size = sym.size;\n-\t\t\tif(s-\u0026gt;type == 0 || s-\u0026gt;type == SXREF)\n+\t\t\tif(s-\u0026gt;type == 0 || s-\u0026gt;type == SXREF || s-\u0026gt;type == SHOSTOBJ)\n \t\t\t\ts-\u0026gt;type = SBSS;\n \t\t\tcontinue;\n \t\t}\n\nOr this:\n\ndiff -r c40f15e9e5ca src/cmd/ld/lib.c\n--- a/src/cmd/ld/lib.c\tTue Apr 09 12:41:58 2013 +0900\n+++ b/src/cmd/ld/lib.c\tTue Apr 09 07:40:40 2013 +0200\n@@ -311,13 +311,14 @@\n \t// Switch to internal.\n \tif(linkmode == LinkAuto) {\n \t\tlinkmode = LinkInternal;\n-\t\t// Drop all the cgo_import_static declarations.\n-\t\t// Turns out we won't be needing them.\n-\t\tfor(s = allsym; s != S; s = s-\u0026gt;allsym)\n-\t\t\tif(s-\u0026gt;type == SHOSTOBJ)\n-\t\t\t\ts-\u0026gt;type = 0;\n \t}\n-\t\n+\n+\t// Drop all the cgo_import_static declarations.\n+\t// Turns out we won't be needing them.\n+\tfor(s = allsym; s != S; s = s-\u0026gt;allsym)\n+\t\tif(s-\u0026gt;type == SHOSTOBJ)\n+\t\t\ts-\u0026gt;type = 0;\n+\n \t// Now that we know the link mode, trim the dynexp list.\n \tx = CgoExportDynamic;\n \tif(linkmode == LinkExternal)\n\nWhich one do you think is better (if any is OK at all).\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-04-09T05:42:02Z",
+	"updated_at": "2014-12-22T06:24:08Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 142356805,
+	"number": 14896,
+	"state": "open",
+	"title": "proposal: net/http: ServeContentStream",
+	"body": "[`net/http.ServeContent`](https://golang.org/src/net/http/fs.go?s=3711:3815#L112) is an extremely useful utility for serving byte blobs and files. However, it requires an `io.ReadSeeker` with a valid `Seek`, so that it can a) determine the total size and b) seek around in the file to serve content ranges.\r\n\r\nI recently found myself in a situation where I had an `io.Reader`, and really wanted to be able to handle `Accept-Range`, `If-Not-Modified`, etc. I had the total size and modtime ahead of time, so that was taken care of. But because `ServeContent` takes an `io.ReadSeeker`, I was left with two choices: either wrap the stream in an object that can do a fake \"seek\", or reimplement stuff like [`Accept-Range` parsing](https://golang.org/src/net/http/fs.go?s=16529:16589), which is super fiddly.\r\n\r\nI think my situation probably isn't that uncommon - any time you're serving data from an underlying store or database which supports streaming data off disk, but doesn't let you seek around in it, and you want to serve that over HTTP with `Accept-Range` support, you end up with this problem. To that end, I'd like to propose a sister method to `ServeContent`, maybe something like:\r\n\r\n`func ServeContentStream(w ResponseWriter, req *Request, name string, modtime time.Time, size int64, content io.Reader)`\r\n\r\nThe implementation should be pretty simple. `serveContent`, which `ServeContent` backends to, already accepts a size argument (or more accurately, a `sizeFunc`). It could be changed to take an `io.Reader` as well, and attempt to type-assert the reader to an `io.Seeker` when and if it needs to. If that fails, it could discard bytes off the stream in order to serve successive ranges. \r\n\r\nNote that the bits that require `Seek` are only for `Accept-Range`, where the ranges are known in advance and can be ordered; a backwards seek is never required. Discarding bytes is obviously not ideal; but it's way better than buffering the whole blob into memory to wrap it in a `bytes.Reader`.\r\n\r\nObviously, I'd be happy to put in the work myself to make this change! Just filing an issue first since that's what the docs say to do. =)",
+	"user": {
+		"login": "colinmarc",
+		"id": 821775,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-03-21T14:00:49Z",
+	"updated_at": "2016-04-07T15:35:32Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

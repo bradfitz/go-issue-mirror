@@ -1,0 +1,27 @@
+{
+	"id": 51283937,
+	"number": 5629,
+	"state": "closed",
+	"title": "cmd/cgo: SIGSEGV using C++ files in package on Darwin",
+	"body": "\u003cpre\u003ehi,\n\nI tried the new C++ support of CGo from \u003ca href=\"https://golang.org/cl/8248043/\"\u003ehttps://golang.org/cl/8248043/\u003c/a\u003e\n\nunfortunately, there are a few shortcomings:\non linux (archlinux kernel-3.9.2, gcc-4.8.1), one has to explicitly add -lstdc++ to:\n//#cgo LDFLAGS: -lstdc++\n\nand, on darwin, the following compiles:\n//#cgo LDFLAGS: -static-libstdc++\n\nbut segfaults at runtime:\nSIGSEGV: segmentation violation\nPC=0x7fff8147568a\nsignal arrived during cgo execution\n\nttt._Cfunc_MyPrint(0xc0bc0)\n\tttt/_obj/_cgo_defun.c:44 +0x2f\nttt.T()\n\tttt/_obj/ttt.cgo1.go:15 +0x45\nmain.main()\n\t/Users/binet/dev/hg-go/gopath/src/ttt/ttt-run/run.go:10 +0x18\n\n$ gdb ttt-run\n(gdb) run\nStarting program: /Users/binet/dev/hg-go/gopath/bin/ttt-run \nReading symbols for shared libraries ++. done\nfoo\n\nProgram received signal EXC_BAD_ACCESS, Could not access memory.\nReason: KERN_INVALID_ADDRESS at address: 0xffffffffffffffe8\n0x00007fff8147568a in std::ostream::sentry::sentry ()\n(gdb) bt\n#0  0x00007fff8147568a in std::ostream::sentry::sentry ()\n#1  0x00007fff81475b0d in std::__ostream_insert\u0026lt;char, std::char_traits\u0026lt;char\u0026gt;\n\u0026gt; ()\nDie: DW_TAG_unspecified_type (abbrev = 10, offset = 144)\n\thas children: FALSE\n\tattributes:\n\t\tDW_AT_name (DW_FORM_string) string: \u0026quot;\u0026lt;unspecified\u0026gt;\u0026quot;\nDwarf Error: Cannot find type of die [in module\n/Users/binet/dev/hg-go/gopath/bin/ttt-run]\n\nto reproduce:\n\nmkdir -p $GOPATH/src/ttt\ncd $GOPATH/src/ttt\ncat \u0026gt;| ttt.go \u0026lt;\u0026lt; EOF\npackage ttt\n\n// #include \u0026quot;ttt.h\u0026quot;\n// #cgo LDFLAGS: -static-libstdc++\nimport \u0026quot;C\u0026quot;\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc T() {\n fmt.Printf(\u0026quot;foo\\n\u0026quot;)\n C.MyPrint()\n}\nEOF\n\ncat \u0026gt;| ttt.h \u0026lt;\u0026lt; EOF\n#ifndef TTT_TTT_H\n#define TTT_TTT_H 1\n\n#ifdef __cplusplus\nextern \u0026quot;C\u0026quot; {\n#endif\n\nvoid MyPrint(void);\n\n#ifdef __cplusplus\n}\n#endif\n\n#endif /* !TTT_TTT_H */\nEOF\n\ncat \u0026gt;| ttt.cxx \u0026lt;\u0026lt; EOF\n#include \u0026quot;ttt.h\u0026quot;\n#include \u0026lt;iostream\u0026gt;\n\nextern \u0026quot;C\u0026quot; {\nvoid MyPrint() {\n  std::cout \u0026lt;\u0026lt; \u0026quot;hello from c++\u0026quot; \u0026lt;\u0026lt; std::endl;\n}\n}\nEOF\n\nand finally, a simple go-executable:\ncat \u0026gt;| run.go \u0026lt;\u0026lt; EOF\npackage main\n\nimport \u0026quot;ttt\u0026quot;\n\nfunc main() {\n ttt.T()\n}\nEOF\n\nThe expected outcome of running that executable should be:\n$ go run run.go\nfoo\nhello from c++\n\n===\n$ go version\ngo version devel +103cf9db59e1 Mon Jun 03 11:52:36 2013 +1000 darwin/amd64\n\nparting notes:\nI suppose the code in cmd/go/build.go should also detect libstdc++.a (on linux; on\ndarwin that's spelled libstdc++-static.a IIRC) in the same fashion than for libgcc.a.\n\nthe attached tar-ball contains the code snippets above (but sans the -static-libstdc++\nbits)\n\nhth,\n-s\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5629/0/ttt.tar.gz\"\u003ettt.tar.gz\u003c/a\u003e (563 bytes)",
+	"user": {
+		"login": "sbinet",
+		"id": 1070920,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:30:41Z",
+	"created_at": "2013-06-04T09:15:09Z",
+	"updated_at": "2016-06-24T22:41:49Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

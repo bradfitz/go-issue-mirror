@@ -1,0 +1,22 @@
+{
+	"id": 51288900,
+	"number": 8946,
+	"state": "closed",
+	"title": "net/http: http.Client not properly handling broken connections ",
+	"body": "by **eyakubovich**:\n\n\u003cpre\u003eWhat does 'go version' print?\ngo version devel +5c372df9654a Wed Oct 15 13:33:00 2014 -0400 linux/amd64\n \nWhat steps reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n \n1. Run the http server: \u003ca href=\"http://play.golang.org/p/J-DOxv7l8P\"\u003ehttp://play.golang.org/p/J-DOxv7l8P\u003c/a\u003e\nThe server accepts connections and abruptly closes them via timeout.\n2. Run the client program designed to illustrate the bug:\n\u003ca href=\"http://play.golang.org/p/J-DOxv7l8P\"\u003ehttp://play.golang.org/p/J-DOxv7l8P\u003c/a\u003e\n \nWhat happened?\nHere's an output of a sample run:\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: read tcp 127.0.0.1:80: connection reset by peer\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: http: can't write HTTP request on broken connection\n[]\nresp err= Get \u003ca href=\"http://localhost/foo\"\u003ehttp://localhost/foo\u003c/a\u003e: EOF\n \nWhat should have happened instead?\nThe client makes independent http requests in a loop and each line is the result of the\nrequest: either an error or body. All requests should produce the same behavior -- it\ncan be an empty body or EOF error when performing ioutil.ReadAll(resp.Body). The request\nitself should not fail. Furthermore, at least some of the requests currently fail\nimmediately as they are attempted to be made on already broken connections.\n \nPlease provide any additional information below.\nI would like to emphasize that the problem is with the HTTP client, not the server. The\ndemo server is there to exercise the client into handling broken connections. From doing\npreliminary investigation, it looks like the first time the http client properly returns\nempty body but the transport ends up returning the broken connection back to the pool.\nThis results in the next request failing and transport \u0026quot;cleaning itself out\u0026quot;,\ncausing the pattern to repeat.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-12-09T18:36:48Z",
+	"created_at": "2014-10-16T21:37:54Z",
+	"updated_at": "2015-12-09T18:36:48Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 144156077,
+	"number": 15004,
+	"state": "closed",
+	"title": "cmd/compile: only combine loads if there is a single use of each",
+	"body": "When we combine loads into a single load, we need to make sure that each load we're combining only has one use.  We'd like to keep the invariant that if you do:\r\n```\r\n a := b[0]\r\n ...use a here...\r\n ...use a there...\r\n```\r\nthen we're guaranteed that we use the same value of `a` in both places, regardless of races or whatever other nastiness is happening.  In other words, we can't issue the `b[0]` load twice, we have to issue it only once and use the result for all occurrences of `a`.\r\n\r\nThe load combining rules currently violate that rule.  We need to either make sure that all loads we're combining have only one use (the use of the combination value), or we extract the individual loads back from the combined load in case they are used elsewhere.\r\n\r\nThe obvious Uses==1 condition on the rewrite rule doesn't quite work, as mid-rewrite those loads have other dead uses that haven't been cleaned up yet.  We need a more exact Uses count to make that condition work.\r\n\r\n@tzneal ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2016-04-24T03:05:57Z",
+	"created_at": "2016-03-29T04:53:32Z",
+	"updated_at": "2016-04-24T03:05:57Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

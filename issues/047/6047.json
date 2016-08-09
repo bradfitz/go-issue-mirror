@@ -1,0 +1,30 @@
+{
+	"id": 51284599,
+	"number": 6047,
+	"state": "closed",
+	"title": "runtime/pprof: multithreaded CPU profiles incorrect on NetBSD",
+	"body": "\u003cpre\u003eMultithreaded CPU profiles do not work on OS X, but worse they give little indication\nthat they are broken.\nSingle-threaded profiles kind of work, but only because we play games changing the\nsignal mask every time we start executing Go code, so we incur overhead on every thread\nswitch, and that in turn is suspected of causing deadlocks (see \u003ca href=\"https://golang.org/issue/5519\"\u003eissue #5519\u003c/a\u003e). Also, many\ntimes you can't quite be sure you hit the single-threaded case, so the profiles are not\ntruly believable. For years I have pulled out my Linux laptop when I want to do real\nperformance work with profiles.\n\nThe fundamental problem is that OS X delivers the profiling signals to the wrong thread\n(golang.org/change/35b716c94225). The signal mask trick is an attempt to work around\nthis, but it's incomplete and misleading.\n\nI intend to remove the workarounds from package runtime, so that CPU profiles on OS X\nwill typically be empty, because the wrong thread will receive the signals. That will\navoid giving out inaccurate information. It should also fix \u003ca href=\"https://golang.org/issue/5519\"\u003eissue #5519\u003c/a\u003e and simplify the\nscheduler.\n\nThe correct place to fix this bug is in the OS X kernel. I filed an Apple Bug Report in\n2011 (again see golang.org/change/35b716c94225) but the problem remains.\n\nFor people who insist on accurate profiling on OS X and are a bit adventurous, it may be\npossible to modify the kernel to deliver the profiling signal correctly. See\n\u003ca href=\"http://godoc.org/code.google.com/p/rsc/cmd/pprof_mac_fix\"\u003ehttp://godoc.org/code.google.com/p/rsc/cmd/pprof_mac_fix\u003c/a\u003e for details, and heed the\nwarnings in its documentation.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		},
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 26,
+	"closed_at": "2016-01-06T16:00:25Z",
+	"created_at": "2013-08-05T19:38:27Z",
+	"updated_at": "2016-02-02T18:00:12Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

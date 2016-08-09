@@ -1,0 +1,12 @@
+{
+	"id": 162649890,
+	"body": "I see.\r\n\r\nFor what it's worth, I'll comment that I found it surprising that a func `json.Indent` which is supposed to take poorly formatted/unformatted JSON input, would seemingly randomly produce slightly different output (before I read the docs fully). I expected, as part of indenting/formatting, that any unformatted variation of the same JSON input would produce same output.\r\n\r\nIt'd also be consistent with other funcs in `encoding/json` (like [`json.Encoder.Encode`](https://godoc.org/encoding/json#Encoder.Encode) and [`json.MarshalIndent`](https://godoc.org/encoding/json#MarshalIndent)), as well as `go/format.Source` formatting, I believe.\r\n\r\nAlso, this is the additional code I needed to add to my code to produce expected/consistent output:\r\n\r\n```diff\r\n@@ -21,6 +21,14 @@ func run() error {\r\n \r\n        var out bytes.Buffer\r\n        err = json.Indent(\u0026out, in, \"\", \"\\t\")\r\n        if err != nil {\r\n                return err\r\n        }\r\n+       // TODO: Maybe not here; see https://github.com/golang/go/issues/13520.\r\n+       // Add a newline, if there isn't one already.\r\n+       if l := out.Len(); l != 0 \u0026\u0026 out.Bytes()[l-1] != '\\n' {\r\n+               err = out.WriteByte('\\n')\r\n+               if err != nil {\r\n+                       return err\r\n+               }\r\n+       }\r\n \r\n```\r\n\r\nThat wouldn't be needed if `json.Indent` behaved as documented.\r\n\r\nI think I like the behavior as documented better, and would hope the implementation is fixed (since that would make `json.Indent` slightly better), but I'll leave to decide what's best overall to you.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-07T20:24:52Z",
+	"updated_at": "2015-12-07T20:28:31Z"
+}

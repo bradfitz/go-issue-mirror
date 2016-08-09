@@ -1,0 +1,12 @@
+{
+	"id": 233421027,
+	"body": "\u003e Actually, I realize now that the filepath.Walk (at least with our definition of os.FileInfo) is inherently slow, as its API guarantees you get a complete FileInfo with each call, which requires us to do a stat per file, even if the user doesn't want it.\r\n\u003e\r\n\u003e I think I'll move away from using filepath.Walk for goimports.\r\n\r\nI've run into a similar situation.\r\n\r\nI created `filepath.Walk`-like functionality for [`http.FileSystem`](https://godoc.org/net/http#FileSystem) in https://godoc.org/github.com/shurcooL/httpfs/vfsutil#Walk. In my use cases, I often worked with virtual filesystems where files did not exist on disk, but rather virtually after doing some computation. So the act of \"opening\" a file was an a relatively expensive action. I ran into the same problem, the `filepath.Walk` behavior was suboptimal. It would open a virtual file (potentially somewhat expensive), do a stat on it to pass its `os.FileInfo` to walk func, then close the file. Then, inside the walk func, I would often need to access the file contents, so I'd have to open it again (somewhat expensive).\r\n\r\nFor those specific needs, I ended up creating https://godoc.org/github.com/shurcooL/httpfs/vfsutil#WalkFiles which would pass both the `os.FileInfo` but also the file contents as an `io.ReadSeeker`:\r\n\r\n```Go\r\n// WalkFiles walks the filesystem rooted at root, calling walkFn for each file or\r\n// directory in the filesystem, including root. In addition to FileInfo, it passes an\r\n// ReadSeeker to walkFn for each file it visits.\r\nfunc WalkFiles(fs http.FileSystem, root string, walkFn WalkFilesFunc) error { ... }\r\n\r\n// WalkFilesFunc is the type of the function called for each file or directory visited by Walk.\r\n// It's like filepath.WalkFunc, except it provides an additional ReadSeeker parameter for file being visited.\r\ntype WalkFilesFunc func(path string, info os.FileInfo, rs io.ReadSeeker, err error) error\r\n```\r\n\r\nThat worked well for my needs, but I like your idea of just not passing `os.FileInfo` at all, since computing even that can be expensive and sometimes not neccessary for caller. So it'd be simpler, more general, and more performant to just give the file path to walk func and let it do what it needs (stat, read file, etc.).",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-18T18:46:25Z",
+	"updated_at": "2016-07-19T04:05:14Z"
+}

@@ -1,0 +1,23 @@
+{
+	"id": 142722912,
+	"number": 14915,
+	"state": "closed",
+	"title": "net/http/httptest: make easier way to create Requests for testing",
+	"body": "When `http.NewRequest` is called, it does not fill in `(http.Request).RequestURI`, but `http.Server` *does* fill in `(http.Request).RequestURI`, which has caused issues writing tests that use a `httptest.ResponseRecorder` instead of a `httptest.Server`.\r\n\r\nA test case:\r\n\r\n```\r\npackage issue\r\n\r\nimport (\r\n\t\"net/http\"\r\n\t\"net/http/httptest\"\r\n\t\"testing\"\r\n)\r\n\r\nfunc TestNewRequestRequestURI(t *testing.T) {\r\n\tvar httpServerRequestURI string\r\n\th := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\thttpServerRequestURI = r.RequestURI\r\n\t})\r\n\r\n\tsrv := httptest.NewServer(h)\r\n\tdefer srv.Close()\r\n\r\n\treq, err := http.NewRequest(\"GET\", srv.URL+\"/path\", nil)\r\n\tif err != nil {\r\n\t\tt.Fatal(err)\r\n\t}\r\n\r\n\tnewRequestRequestURI := req.RequestURI\r\n\r\n\tresp, err := http.DefaultClient.Do(req)\r\n\tif err != nil {\r\n\t\tt.Fatal(err)\r\n\t}\r\n\tresp.Body.Close()\r\n\r\n\tif newRequestRequestURI != httpServerRequestURI {\r\n\t\tt.Fatalf(\"NewRequest().RequestURI = %#v, but sending to server yielded %#v\",\r\n\t\t\tnewRequestRequestURI, httpServerRequestURI)\r\n\t}\r\n}\r\n```\r\n\r\nWhich yields:\r\n\r\n```\r\n--- FAIL: TestNewRequestRequestURI (0.00s)\r\n\ttest_test.go:33: NewRequest().RequestURI = \"\", but sending to server yielded \"/path\"\r\nFAIL\r\nexit status 1\r\nFAIL\tissue\t0.004s\r\n```\r\n\r\nOn `go version go1.6 linux/amd64` and `go version devel +c12e1b0 Tue Mar 22 17:09:29 2016 +0000 linux/amd64`.",
+	"user": {
+		"login": "encryptio",
+		"id": 67937,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-03-22T23:31:46Z",
+	"created_at": "2016-03-22T17:36:33Z",
+	"updated_at": "2016-03-22T23:31:46Z"
+}

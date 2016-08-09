@@ -1,0 +1,28 @@
+{
+	"id": 51276180,
+	"number": 207,
+	"state": "closed",
+	"title": "cgo reads C consts/enums incorrectly",
+	"body": "by **Ostsol**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nwrap.go:\n\npackage myenum\n\n// typedef enum {\n//     NONE = 0,\n//     ONE = 1,\n//     TWO = 2,\n//     THREE = 3\n// } numbers;\n// const int cone = 2;\n// int enum_to_int (numbers enu) {\n//     return (int) enu;\n// }\n// int return_int (int num) {\n//     return num;\n// }\nimport \u0026quot;C\u0026quot;\nimport \u0026quot;fmt\u0026quot;\n\nfunc PrintEnum () {\n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.cone)); \n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.ONE)); \n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.enum_to_int (C.numbers (C.ONE)))); \n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.return_int (C.int (C.ONE)))); \n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.enum_to_int (C.numbers (C.cone)))); \n    fmt.Printf (\u0026quot;%d\\n\u0026quot;, int (C.return_int (C.cone)));\n}\n\nWhat is the expected output? What do you see instead?\n\nAll Printfs in the above code should print '1'.  Trying each line one at a \ntime, commenting out the others: the first two will produce segmentation \nfaults and the next two produce the error:\n\n./hello: symbol lookup error: ./hello: undefined symbol: ONE\n\nOnly the last two print the correct result and only through those two \nredundant C functions, enum_to_int and return_int.\n\nWhat is your $GOOS?  $GOARCH?\n\nlinux AMD64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\nchangeset:   4052:b72ec78019b4\ntag:         tip\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Sun Nov 15 00:00:05 2009 -0800\nsummary:     cc: drop redundant strcpy\n\nPlease provide any additional information below.\n\nThe wrap.cgo2.go shows that cgo interprets consts and enums as pointers to \nintegers, rather than normal integers.\n\n// Created by cgo - DO NOT EDIT \npackage myenum \n\nimport \u0026quot;unsafe\u0026quot; \n\ntype _ unsafe.Pointer \n\ntype _C_int int32 \ntype _C_void [0]byte \nvar _C_ONE *_C_int \nvar _C_cone *_C_int \nfunc _C_return_int(_C_int) _C_int\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2014-12-08T10:03:39Z",
+	"created_at": "2009-11-15T18:07:36Z",
+	"updated_at": "2016-06-24T19:04:58Z"
+}

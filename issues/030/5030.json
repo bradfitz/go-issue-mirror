@@ -1,0 +1,27 @@
+{
+	"id": 51283014,
+	"number": 5030,
+	"state": "closed",
+	"title": "net: TCP listen queue size set to 0 on Linux",
+	"body": "by **ryan_disabled@heroku.com**:\n\n\u003cpre\u003ego version devel +25b2d31c3148 Mon Mar 11 16:23:06 2013 -0700 linux/amd64\n\nSample program:\n\npackage main\n\nimport (\n    \u0026quot;net/http\u0026quot;\n    \u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n        http.HandleFunc(\u0026quot;/\u0026quot;, func(w http.ResponseWriter, r *http.Request) {\n            fmt.Fprintf(w, \u0026quot;ok\u0026quot;)\n        })\n        http.ListenAndServe(\u0026quot;:8000\u0026quot;, nil)\n}\n\nCompile this program, run the program and run:\n\nab -n 1000 -c 10 \u003ca href=\"http://localhost:8000/\"\u003ehttp://localhost:8000/\u003c/a\u003e\n\nExpected output:\n\n...\n\n100%     50 (longest request)\n\nActual output:\n\n...\n\n100%     3000 (longest request)\n\nWhich compiler are you using: 6g\n\nAdditional information:\n\nRunning ss -l, we found that Send-Q column for the listen socket was 0. This led us to\nbelieve that maxListenerBacklog() was returning 0. We applied the following patch to the\nfunction:\n\ndiff -r 25b2d31c3148 src/pkg/net/sock_linux.go\n--- a/src/pkg/net/sock_linux.go\tMon Mar 11 16:23:06 2013 -0700\n+++ b/src/pkg/net/sock_linux.go\tTue Mar 12 01:16:29 2013 +0000\n@@ -7,6 +7,7 @@\n import \u0026quot;syscall\u0026quot;\n\n func maxListenerBacklog() int {\n+    return 99\n \tfd, err := open(\u0026quot;/proc/sys/net/core/somaxconn\u0026quot;)\n \tif err != nil {\n \t\treturn syscall.SOMAXCONN\n\nThis patch caused Send-Q to show 99 for the listen socket. This patch also caused ab  to\nproduce the expected output when run against the sample program.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2014-12-08T10:26:53Z",
+	"created_at": "2013-03-12T01:18:31Z",
+	"updated_at": "2016-06-24T22:35:26Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

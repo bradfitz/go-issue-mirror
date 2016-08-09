@@ -1,0 +1,33 @@
+{
+	"id": 51282219,
+	"number": 4491,
+	"state": "closed",
+	"title": "runtime: program re-enables SIGHUP",
+	"body": "by **alexandre.normand@opower.com**:\n\n\u003cpre\u003eI'm hoping someone can shed some light on this one but I, unfortunately, can't provide\nthat much details nor an example that could be tried outside of our organisation. \n\nHere's the story:\nI have a small go program that uses encoding/json and net/http to submit jobs to one of\nour apps. After submission, the program polls that same app (using http/json) until it\nsees the jobs going to completion (or failure). This has been implemented using channels\nand go routines (one go routine sees that a job gets submitted and waits for its\ncompletion). It gets fancier with the notion of checkpoints that have been implemented\nby simply waiting for some jobs to complete before starting other jobs (again, via new\ngo routines). At any given time, there are never more than 10 go routines running in\nparallel (which sleep for 1 minute between each http call). \n\nThe program runs fine when executed on my MacBook Pro but since it can run for 10+ hours\nbefore completion, I've been trying to run that on one of the many Linux servers using\n{{{nohup}}}. It looks like when starting the process with nohup and logging out of the\nsystem, the program never runs to completion. The stdout/stderr is redirected to a file\nand it looks like the process vanishes after a few hours at most (sometimes after less\nthan 1 hour). I can't really tell what the exit code is either since not having an open\nsession when that happens, I'm not seeing it. \n\nTo add to the mystery, when keeping a session open on that host running the program and\ntailing the log file, it seems to _then_ be able to run to completion. I can't rule out\nsomething killing that process but it I'm very confident that it's not the case since\nI'm running other scripts on those machines which have been running for days without\ninterruption.  \n\nWhat steps will reproduce the problem?\n1. Use a go program that's a mix of http/json/log statements/sleeps/go routines.\n2. Start it using {{{nohup program \u0026gt; output.log 2\u0026gt;\u0026amp;1 \u0026amp;}}}\n3. Wait for it...and it's gone before it completes. \n\nWhat is the expected output?\nThe program should either go to completion or print a panic.\n\nWhat do you see instead?\nNothing, the process just ends abruptly with no trace. This looks like I'm running\nthrough some os.Exit() call somewhere in the go packages I'm using but it's not clear\nwhat that would be and why. \n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nLinux  2.6.32-220.7.1.el6.x86_64\n\nWhich version are you using?  (run 'go version')\ngo1.0.3\n\nPlease provide any additional information below.\nI can provide my code (one main go source and an additional package) but I would have to\nremove urls and obfuscate some of it which would render it pretty much usable except for\nvisual inspection.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 36,
+	"closed_at": "2014-12-08T10:23:54Z",
+	"created_at": "2012-12-05T05:52:35Z",
+	"updated_at": "2016-06-24T22:29:20Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

@@ -1,0 +1,33 @@
+{
+	"id": 108410561,
+	"number": 12754,
+	"state": "closed",
+	"title": "proposal: expanding interface function signature matching",
+	"body": "# Shortly\r\n\r\nRather than interfaces matching strictly on the function signature, they would also consider if a signature's arguments, or returns implement an interface for a match.\r\n\r\nOr in other words, make this code example compile and work:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n)\r\n\r\ntype SomeReader struct {\r\n}\r\n\r\nfunc (sr *SomeReader) Read(p []byte) (in int, err *ErrorSomeReader) {\r\n     return 0, \u0026ErrorSomeReader{}\r\n}\r\n\r\ntype ErrorSomeReader struct {\r\n}\r\n\r\nfunc (esr *ErrorSomeReader) Error() string {\r\n     return \"SomeReaderError\"\r\n}\r\n\r\nfunc main() {\r\n       sr := \u0026SomeReader{}\r\n        _, err := ioutil.ReadAll(sr)\r\n\tfmt.Println(\"Error\", err)\r\n}\r\n```\r\n\r\nIn today's go an interface matches a function only if the full signature matches exactly. So the above fails with the error:\r\n```\r\ncannot use sr (type *SomeReader) as type io.Reader in argument to ioutil.ReadAll:\r\n\t*SomeReader does not implement io.Reader (wrong type for Read method)\r\n\t\thave Read([]byte) (int, *ErrorSomeReader)\r\n\t\twant Read([]byte) (int, error)\r\n```\r\n\r\nHowever, `*ErrorSomeReader` implements error and thus `*SomeReader` seems like it should be an `io.Reader`, but is not. \r\n\r\nThis example is usefull to understand how this would work, but not why it should be added. \r\n\r\n# The Rationale\r\n\r\nThe real reason to add this arises when you have interfaces defined relative to other interfaces. Consider some code for doing verification of access with users and groups:\r\n```\r\npackage verify\r\n\r\ntype User interface {\r\n\tGroup() Group\r\n}\r\n\r\ntype Group interface {\r\n\tName() string\r\n\tPermittedPaths() []string\r\n}\r\n\r\nfunc VerifyAccess(u User, path string) (string, bool) {\r\n\tfor _, g := range u.Groups() {\r\n\t\tfor _, p := range g.PermittedPaths() {\r\n\t\t\tif p == path {\r\n\t\t\t\treturn p.Name(), true\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\treturn \"\", false\r\n}\r\n```\r\n\r\nBecause `verify.User` is defined relative to `verify.Group`, any use of  `package verify` must also now define itself with a direct tie into `verify`. Even when a `verify.User` isn't what they want. Callers probably have a much richer defintion of the group returned by a user. This breaks one of the nicest things about Go's interfaces: that packages can simply define what they need of an object without placing restrictions on a caller.\r\n\r\nWith this change _any_ type with a method `Group()` returning any type with the methods `Name() string, PermittedPaths() []string` can be used by `verify.VerifyAccess`. A user of this package does not need to define it's almost undoubtedly richer user and group with the restricted view required by `package verify`.\r\n\r\nWith this change packages ask for behaviors of a more complicated nature without tying implementers to a limited view of the world. Thus we can write code which captures more generic and common sets of operations. Code becomes automatically more composable (in the functional sense) as any object which implements desired behaviors is permitted. And we don't loose any type safety. Finally it may encourage returning more \"bare\" types and less spurious interfaces.\r\n\r\nThis isn't totally new in realm of language design either. I believe Hakell's TypeClasses allow similar expressions.*\r\n\r\n*I am not a Haskell expert by any stretch of the imagination.\r\n\r\n# The Downsides\r\nJust some obvious ones:\r\n1.  It is less immediately obvious if a type implements an interface.\r\n2.  This might be difficult to understand? I certainly had a bit of trouble reaching a succinct explanation of it. \r\n3.  Compiler complexity considerations. I have no idea how hard this would be to actually implement.\r\n\r\n\r\n\r\n## Timeline\r\nThis would obviously probably fall into a Go 2.0, though such a change would explicitly not break any currently compiling code.\r\n",
+	"user": {
+		"login": "rfliam",
+		"id": 718129,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		},
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2015-10-24T02:42:36Z",
+	"created_at": "2015-09-25T21:24:49Z",
+	"updated_at": "2015-10-24T02:42:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

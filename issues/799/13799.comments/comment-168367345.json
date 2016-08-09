@@ -1,0 +1,12 @@
+{
+	"id": 168367345,
+	"body": "I'll add some more details that haven't been mentioned already.\r\n\r\nWe've tried running with `-race` flag to enable race detector, and it did not catch issues. Which is not surprising since there's no concurrency in the sample program.\r\n\r\nHowever, some of the panics/errors like \"fatal error: concurrent map read and map write\" make it sound as if concurrency is somehow involved.\r\n\r\nAnother note. Since func `test` operates on local variables only, it should be safe to run it concurrently (if I'm not mistaken):\r\n\r\n```Go\r\nfor iter := 0; ; iter += 4 {\r\n\tif iter%48 == 0 {\r\n\t\tfmt.Println(iter)\r\n\t}\r\n\tgo test(iter)\r\n\tgo test(iter + 1)\r\n\tgo test(iter + 2)\r\n\ttest(iter + 3)\r\n}\r\n```\r\n\r\nIn my testing, doing that makes the `gc` compiler result in a panic much, much sooner (well under 50 iterations in most cases). The 2 other compilers I've tried (`gccgo` and `gopherjs`) continue to work without panics, so it's only `gc` compiler that is exhibiting this behavior.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-02T06:06:29Z",
+	"updated_at": "2016-01-02T06:09:14Z"
+}

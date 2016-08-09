@@ -1,0 +1,33 @@
+{
+	"id": 51286502,
+	"number": 7301,
+	"state": "closed",
+	"title": "runtime: GOEXPERIMENT=precisestack GOGC=0 ./all.bash fails",
+	"body": "\u003cpre\u003eWe're getting occasional failures in the garbage collector when it tries to scan an\ninterface and gets a bad interface table pointer.\n\nsync to tip\nset GOEXPERIMENT=precisestack\nset GOGC=0\nrun all.bash\n\nWith GOGC=0 it crashes reliably.\n\nSIGSEGV: segmentation violation\nPC=0x46daa4\n\nscaninterfacedata(0x2, 0x7f7c76899290, 0x1, 0x7f7c769b5dc0)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:1428 +0x84\nscanbitvector(0x7f7c76899290, 0x732f0c, 0x4c4501, 0x7f7c769b5dc0)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:1461 +0x11e\nscanframe(0x7f7c769b5c50, 0x7f7c769b5dc0)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:1525 +0x16e\nruntime.gentraceback(0x46eed2, 0x7f7c76899108, 0x0, 0xc20812eb40, 0x0, ...)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/traceback_x86.c:155 +0x3ff\naddstackroots(0xc20812eb40, 0x7f7c769b5dc0)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:1581 +0x168\nmarkroot(0xc20802e000, 0x9)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:1278 +0xbe\nruntime.parfordo(0xc20802e000)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/parfor.c:105 +0xa3\ngc(0x7f7c76899130)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:2170 +0x259\nmgc(0xc20812eb40)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:2111 +0x2e\nruntime.mcall(0x47e1f7)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/asm_amd64.s:181 +0x4b\n\ngoroutine 21 [garbage collection]:\nruntime.gc(0xc200000000)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/mgc0.c:2082 +0x1b2 fp=0x7f7c76899140\nruntime.mallocgc(0x8, 0x66df00, 0x0)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/malloc.goc:218 +0x1b8 fp=0x7f7c768991b8\nruntime.new(0x66df00, 0x47f6c8)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/runtime/malloc.goc:815 +0x32 fp=0x7f7c768991d8\nos/exec.(*Cmd).stdin(0xc208165040, 0xc2080561c8, 0xc208087600, 0x3d)\n\t/usr/local/google/home/khr/sandbox/go-ro2/src/pkg/os/exec/exec.go:148 +0x40 fp=0x7f7c76899280\n...\n\nIt is dying here:\n\n\t\t\ttab = *(Itab**)scanp;\n\t\t\tif(tab-\u0026gt;type-\u0026gt;size \u0026lt;= sizeof(void*) \u0026amp;\u0026amp; (tab-\u0026gt;type-\u0026gt;kind \u0026amp; KindNoPointers))\n\t\t\t\treturn;\n\n  46da9d:\t48 8b 0a             \tmov    (%rdx),%rcx     ; tab = *(Itab**)scanp;\n  46daa0:\t48 8b 41 08          \tmov    0x8(%rcx),%rax  ; tab-\u0026gt;type\n  46daa4:\t48 8b 00             \tmov    (%rax),%rax     ; tab-\u0026gt;type-\u0026gt;size --- faults here\n  46daa7:\t48 83 f8 08          \tcmp    $0x8,%rax\n  46daab:\t77 a2                \tja     46da4f \u0026lt;scaninterfacedata+0x2f\u0026gt;\n\nrax is junk (0x672f6c61636f6c2f) at the faulting instruction.  rcx is 0xc208087600,\nwhich is apparently not an *Itab like it should be.\n\nPossibly related to \u003ca href=\"https://golang.org/issue/7205\"\u003eissue #7205\u003c/a\u003e.\u003c/pre\u003e",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:40:39Z",
+	"created_at": "2014-02-10T23:47:35Z",
+	"updated_at": "2016-06-25T01:27:17Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

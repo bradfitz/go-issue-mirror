@@ -1,0 +1,36 @@
+{
+	"id": 51281821,
+	"number": 4218,
+	"state": "closed",
+	"title": "math/big: data race on cacheBase10",
+	"body": "\u003cpre\u003e14574:2c2052f38c3c tip\n\nAdd the following test to math/big tests:\n\nfunc TestScanPiParallel(t *testing.T) {\n\tc := make(chan bool)\n\tfor i := 0; i \u0026lt; 2; i++ {\n\t\tgo func() {\n\t\t\tTestScanPi(t)\n\t\t\tc \u0026lt;- true\n\t\t}()\n\t}\n\tfor i := 0; i \u0026lt; 2; i++ {\n\t\t\u0026lt;-c\n\t}\n}\n\nThreadSanitizer says:\n\nWARNING: DATA RACE at 0x000000ac6ab0\nRead by goroutine 4:\n  math/big.divisors()\n      src/pkg/math/big/nat.go:956 +0x1aa\n  math/big.nat.string()\n      src/pkg/math/big/nat.go:807 +0x84d\n  math/big.nat.decimalString()\n      src/pkg/math/big/nat.go:731 +0x7e\n  math/big.TestScanPi()\n      src/pkg/math/big/nat_test.go:407 +0x1d6\n  math/big.func·006()\n      src/pkg/math/big/nat_test.go:416 +0x3a\n\nPrevious write by goroutine 3:\n  math/big.divisors()\n      src/pkg/math/big/nat.go:970 +0xa90\n  math/big.nat.string()\n      src/pkg/math/big/nat.go:807 +0x84d\n  math/big.nat.decimalString()\n      src/pkg/math/big/nat.go:731 +0x7e\n  math/big.TestScanPi()\n      src/pkg/math/big/nat_test.go:407 +0x1d6\n  math/big.func·006()\n      src/pkg/math/big/nat_test.go:416 +0x3a\n\nGoroutine 4 (running) created at:\n  math/big.TestScanPiParallel()\n      src/pkg/math/big/nat_test.go:418 +0xac\n  testing.tRunner()\n      src/pkg/testing/testing.go:301 +0x86\n\nGoroutine 3 (finished) created at:\n  math/big.TestScanPiParallel()\n      src/pkg/math/big/nat_test.go:418 +0xac\n  testing.tRunner()\n      src/pkg/testing/testing.go:301 +0x86\n\nThe issue is in the following code. If table[k-1].ndigits != 0 it does not mean that the\ntable is fully initialized. Occasionally I see \u0026quot;div by zero\u0026quot; crashes when\nrunning in parallel.\n\n\t// extend table\n\tif table[k-1].ndigits == 0 {\n\t\tif cached {\n\t\t\tcacheLock.Lock() // begin critical section\n\t\t}\n\n\t\t// add new entries as needed\n\t\tvar larger nat\n\t\tfor i := 0; i \u0026lt; k; i++ {\n\t\t\tif table[i].ndigits == 0 {\n\t\t\t\tif i == 0 {\n\t\t\t\t\ttable[i].bbb = nat(nil).expWW(bb, Word(leafSize))\n\t\t\t\t\ttable[i].ndigits = ndigits * leafSize\n\t\t\t\t} else {\n\t\t\t\t\ttable[i].bbb = nat(nil).mul(table[i-1].bbb, table[i-1].bbb)\n\t\t\t\t\ttable[i].ndigits = 2 * table[i-1].ndigits\n\t\t\t\t}\n\n\t\t\t\t// optimization: exploit aggregated extra bits in macro blocks\n\t\t\t\tlarger = nat(nil).set(table[i].bbb)\n\t\t\t\tfor mulAddVWW(larger, larger, b, 0) == 0 {\n\t\t\t\t\ttable[i].bbb = table[i].bbb.set(larger)\n\t\t\t\t\ttable[i].ndigits++\n\t\t\t\t}\n\n\t\t\t\ttable[i].nbits = table[i].bbb.bitLen()\n\t\t\t}\n\t\t}\n\n\t\tif cached {\n\t\t\tcacheLock.Unlock() // end critical section\n\t\t}\n\t}\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:22:29Z",
+	"created_at": "2012-10-09T08:50:32Z",
+	"updated_at": "2016-06-24T22:26:17Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

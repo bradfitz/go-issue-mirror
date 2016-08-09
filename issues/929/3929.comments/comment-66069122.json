@@ -1,0 +1,12 @@
+{
+	"id": 66069122,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThe following code shows what happens in more detail:\n\n    ar := []int{1,2,3}\n    fmt.Println(ar[1], ar, ar[:1], ar[2:])\n    n, ar := ar[1], append(ar[:1], ar[2:]...)\n    fmt.Println(n, ar)\n\nThe result for 6g is:\n\n    2 [1 2 3] [1] [3]\n    3 [1 3]\n\nand for gccgo:\n\n    2 [1 2 3] [1] [3]\n    2 [1 3]\n\nClearly ar at the end is correctly [1] + [3] = [1 3]. The spec says about assignments:\n\n\"The assignment proceeds in two phases. First, the operands of index expressions and\npointer indirections (including implicit pointer indirections in selectors) on the left\nand the expressions on the right are all evaluated in the usual order. Second, the\nassignments are carried out in left-to-right order.\" (\n\u003ca href=\"http://tip.golang.org/ref/spec#Assignments\"\u003ehttp://tip.golang.org/ref/spec#Assignments\u003c/a\u003e )\n\nThere's nothing special on the left, so we just need to look at the right. The\nexpressions are evaluated \"in the usual order\", i.e.:\n\n\"When evaluating the operands of an expression, assignment, or return statement, all\nfunction calls, method calls, and communication operations are evaluated in lexical\nleft-to-right order.\" ( \u003ca href=\"http://tip.golang.org/ref/spec#Order_of_evaluation\"\u003ehttp://tip.golang.org/ref/spec#Order_of_evaluation\u003c/a\u003e )\n\nThere's only one function call (append), so it is evaluated at some point. However, the\nevaluation of append w/ respect to the evaluation of ar[1] is not specified. There are\nseveral scenarios:\n\n1) ar[1] is evaluated before the append: n is 2 (as in gccgo).\n\n2) ar[1] is evaluated after the append, and append uses the underlying array of ar for\nthe result (because the capacity of ar[:1] is still 3, and the result has length 2):\nThen the underlying array of the original ar looks like [1 3 3], the new length is 2, so\nthe result is [1 3]. When ar[1] is evaluated (afterwards), the result is 1.\n\n3) ar[1] is evaluated after the append, and append creates a new underlying array (this\nwould be a sub-optimal implementation): In this case, the underlying array for ar would\nnot be changed by append, and so n (i.e., the original ar[1]) would be 2.\n\nThus, this code is working as intended.\u003c/pre\u003e\n\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-08-09T20:58:08Z",
+	"updated_at": "2014-12-08T10:20:48Z"
+}

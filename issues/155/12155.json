@@ -1,0 +1,17 @@
+{
+	"id": 101179829,
+	"number": 12155,
+	"state": "closed",
+	"title": "sync: Lock stuck after a time.Ticker receive",
+	"body": "I get the same behaviour with \"go1.5rc1 linux/amd64\" and \"go1.4.2 linux/amd64\".\r\n\r\n# Steps to reproduce\r\nThe following program *sometimes* gets stuck using a bit of CPU (around 40% consistantly):\r\n\r\n```\r\n// Undetected dead lock.\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\ntype myType struct {\r\n\tmu     sync.Mutex\r\n\tkill   chan struct{}\r\n\tticker *time.Ticker\r\n}\r\n\r\nfunc New(interval time.Duration) *myType {\r\n\tt := \u0026myType{\r\n\t\tkill:   make(chan struct{}),\r\n\t\tticker: time.NewTicker(interval),\r\n\t}\r\n\tgo func(m *myType) {\r\n\t\tfor {\r\n\t\t\tselect {\r\n\t\t\tcase \u003c-m.kill:\r\n\t\t\t\tm.ticker.Stop()\r\n\t\t\t\treturn\r\n\t\t\tcase \u003c-m.ticker.C:\r\n\t\t\t\tfmt.Printf(\"ticker locking\\n\")\r\n\t\t\t\tm.mu.Lock()\r\n\t\t\t\tfmt.Printf(\"tick\\n\")\r\n\t\t\t\tm.mu.Unlock()\r\n\t\t\t\tfmt.Printf(\"ticker unlocked\\n\")\r\n\t\t\t}\r\n\t\t}\r\n\t}(t)\r\n\treturn t\r\n}\r\n\r\nfunc (m *myType) Close() {\r\n\tfmt.Printf(\"closing\\n\")\r\n\tm.mu.Lock()\r\n\tm.kill \u003c- struct{}{}\r\n\tm.mu.Unlock()\r\n\tfmt.Printf(\"closed\\n\")\r\n}\r\n\r\nfunc main() {\r\n\t// Close acquires the lock but the ticker goroutine gets a ticker event\r\n\t// and tries to acquire the lock as well: program uses 100% cpu and is stalled\r\n\t// using nanoseconds to emphasize the issue\r\n\t// got the issue with tickers using 100ms\r\n\tm := New(time.Duration(10) * time.Nanosecond)\r\n\t// sleeping for a little while helps on go1.5rc1 in reproducing the problem\r\n\ttime.Sleep(time.Duration(20) * time.Nanosecond)\r\n\tm.Close()\r\n}\r\n```\r\n\r\n# Expected results\r\nThe ticker may or may not print \"acquiring lock\", \"tick\", \"lock released\" without getting stuck trying to get the lock.\r\n\r\n# Actual results\r\nDepending on the run, one of the following:\r\n- no output\r\n- ticker locking\r\ntick\r\nticker unlocked\r\nclosing\r\nclosed\r\n- closing\r\nclosed\r\n- closing\r\nticker locking\r\n\r\nThe last output hangs.\r\n\r\n# Additional information\r\nI purpotedly sleep and tick for a tiny small amount of time to increase the chances of the issue occuring. In my original program, I had a ticker ticking in the range of 100ms to 300ms and had my program sometimes getting stuck for no reason.",
+	"user": {
+		"login": "pierrec",
+		"id": 368228,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-15T14:22:49Z",
+	"created_at": "2015-08-15T14:08:57Z",
+	"updated_at": "2015-08-15T23:42:15Z"
+}

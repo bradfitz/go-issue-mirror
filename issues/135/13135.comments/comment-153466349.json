@@ -1,0 +1,12 @@
+{
+	"id": 153466349,
+	"body": "The panic reported here is unrelated to chunked-extensions.\r\n\r\nThe panic comes from finishRequest trying to call `Request.Body.Close()`, but the `Request.Body` is set to nil by the handler (via `httputil.DumpRequest`, oddly). That panic can be reproduced just by writing an `http.Handler` which is only:\r\n\r\n```go\r\n   req.Body = nil\r\n```\r\n\r\nBut if you actually looked at the error value from httputil.DumpRequest, you can see that it's a valid error, not a panic:\r\n\r\n`http: suspiciously long trailer after chunked body`\r\n\r\nThat's it not understanding chunk extensions.\r\n\r\nThe reason that DumpRequest sets the body to nil is because it can't synthesize an equivalent body after failing to read it in the first place. (see docs for DumpRequest on why it needs to do that... the body is just an io.Reader and can't be rewound, so it's recorded instead)\r\n\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-03T19:44:09Z",
+	"updated_at": "2015-11-03T19:44:09Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 68832305,
+	"body": "This looks a bit tricky.  We have several structs like the following in the runtime:\r\n\r\ntype interfacetype struct {\r\n\ttyp  _type\r\n\tmhdr []imethod\r\n\tm    [0]imethod\r\n}\r\n\r\nThe [0] is really a placeholder for a variable-length array to follow.\r\n\r\nThen to get the address of the nth imethod in interfacetype i, we do:\r\n   add(unsafe.Pointer(i), unsafe.Sizeof(interfacetype{}) + n * unsafe.Sizeof(imethod{}))\r\n\r\nThat math is all wrong if we add a byte and then round the size of interfacetype.\r\n(Why don't we use \u0026i.mhdr[n] instead of that math?  I'm not sure.  Maybe just to avoid the bounds check?  Could do \u0026i.m + n * ... also.)\r\n\r\nOther structs which use the [0] at the end trick include m, g, stackmap, itab, and uncommontype.\r\n\r\nIt is possible that users depend on this trick as well.\r\nI'm thinking the add-a-byte at malloc time for objects with trailing zero fields is the safer way to go.  We already round up to size classes so I don't think any code would be surprised by the allocated size being slightly larger than the requested size.",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-06T06:47:44Z",
+	"updated_at": "2015-01-06T06:47:44Z"
+}

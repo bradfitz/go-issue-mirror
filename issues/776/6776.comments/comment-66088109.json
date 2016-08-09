@@ -1,0 +1,12 @@
+{
+	"id": 66088109,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eThis occurs when you set a breakpoint on a function that will be preempted or need to\ngrow the stack. My guess is that the use of gdb causes a delay such that when the\nprogram starts running again, the next function sees a preemption check. That's how the\nprogram ends up in morestack.\n\nrewindmorestack assumes that it can look at the program code to understand how the stack\nwill be unwound. The goal there is to simulate the next instruction, which is either a\n1-byte or 4-byte jump. rewindmorestack is unhappy because that next instruction has been\noverwritten with a breakpoint instruction, which it did not expect and cannot handle.\n\nWe could probably rearrange the code to avoid the instruction decode here, but that\nwould have other implications. In particular, we have been talking about changing the\nway stack traces in general work, to recognize the beginning and end of a function by\npattern matching the code instead of recording explicit tables. That code would have\nsimilar confusion if it saw breakpoints. \n\nIn general, we assume we can look at code to see what is going on, and gdb is breaking\nthat assumption by editing the code to implement breakpoints and letting the executing\nprogram see them.\n\nI am not sure how to resolve this tension. Only certain instructions are problematic in\nthis way; perhaps there is a way to tell gdb not to set breakpoints on those\ninstructions, ever.\n\nThis won't be fixed for Go 1.2, which is imminent. One workaround is not to use gdb to\nsingle-step through functions. (Most of us debug by print statements, which is why we\ndidn't run into this earlier.)\n\nI have marked this bug Go1.2.1, so that we are sure to consider it when issuing Go\n1.2.1. However, depending on what we decide the answer is, the fix may be delayed\nfurther, whether to a later point release or to Go 1.3.\u003c/pre\u003e\n\n_Labels changed: added **priority-later**, **go1.2.1**, removed **priority-triage**._\n\n\n_Status changed to **Thinking**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-11-24T00:49:55Z",
+	"updated_at": "2014-12-08T10:37:39Z"
+}

@@ -1,0 +1,36 @@
+{
+	"id": 51277949,
+	"number": 1536,
+	"state": "closed",
+	"title": "bug in handling of embedding plus interfaces with non-exported methods",
+	"body": "by **daveroundy**:\n\n\u003cpre\u003e====================\npackage hiding\n\ntype Public interface {\n\tprivate()\n}\n\ntype PublicType struct{}\nfunc (p *PublicType) private() {\n\t// This should do something private\n}\n====================\npackage main\n\nimport (\n\t\u0026quot;hiding\u0026quot;\n)\n\ntype MyPublic struct {\n\thiding.PublicType\n}\n\nfunc MakeMyPublic() hiding.Public {\n\treturn \u0026amp;MyPublic{ hiding.PublicType{} }\n}\n\nfunc main() {\n\tMakeMyPublic()\n}\n====================\n\nThese compile fine, but die at runtime with:\n\nbin/main \npanic: interface conversion: *main.MyPublic is not hiding.Public: missing method private\n\nruntime.panic+0xa7 /mnt/home/droundy/src/go/src/pkg/runtime/proc.c:1023\n\truntime.panic(0x410398, 0xf840014000)\nitab+0xff /mnt/home/droundy/src/go/src/pkg/runtime/iface.c:125\n\titab(0x410bf0, 0x410130, 0x100000000, 0x1, 0x0, ...)\nruntime.convT2I+0x55 /mnt/home/droundy/src/go/src/pkg/runtime/iface.c:192\n\truntime.convT2I(0x410130, 0x410bf0, 0xf840000000, 0x40bb5a)\nmain.MakeMyPublic+0x43 /tmp/bug-test/main.go:12\n\tmain.MakeMyPublic(0x4279f8, 0x0)\nmain.main+0x1c /tmp/bug-test/main.go:16\n\tmain.main()\nruntime.mainstart+0xf /mnt/home/droundy/src/go/src/pkg/runtime/amd64/asm.s:77\n\truntime.mainstart()\nruntime.goexit /mnt/home/droundy/src/go/src/pkg/runtime/proc.c:149\n\truntime.goexit()\n\nThis should either be a compile-time failure or should be fine at runtime.  I'd prefer\nthe latter.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1536/0/hiding.go\"\u003ehiding.go\u003c/a\u003e (151 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1536/0/main.go\"\u003emain.go\u003c/a\u003e (193 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2014-12-08T10:08:46Z",
+	"created_at": "2011-02-21T01:35:57Z",
+	"updated_at": "2016-06-24T19:25:36Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

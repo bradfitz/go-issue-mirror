@@ -1,0 +1,27 @@
+{
+	"id": 95122662,
+	"number": 11722,
+	"state": "closed",
+	"title": "x/crypto/ssh: HostKeyCallback fails for servers with multiple keys",
+	"body": "I'm implementing an ssh client using the ssh package; my program checks the server's public key using ClientConfig.HostKeyCallback ( https://godoc.org/golang.org/x/crypto/ssh#ClientConfig ).\r\n\r\nUnfortunately, it fails login to some servers if the server has multiple keys (e.g., ssh_host_ecdsa_key, ssh_host_rsa_key, and ssh_host_dsa_key) and the client has a public key other than ECDSA.\r\n\r\nSSH client in Google Go always lists the host key algorithms in the SSH_MSG_KEXINIT message in this order:\r\n* ECDSA256\r\n* ECDSA384\r\n* ECDSA521\r\n* RSA\r\n* DSA\r\n \r\nSee the source code:\r\nhttps://github.com/golang/crypto/blob/c10c31b5e94b6f7a0283272dc2bb27163dcea24b/ssh/common.go#L42\r\nhttps://github.com/golang/crypto/blob/c10c31b5e94b6f7a0283272dc2bb27163dcea24b/ssh/handshake.go#L237\r\n \r\nIf the server has both ECDSA and RSA keys, and the client knows only the RSA public key, the implementation in Google Go will always use ECDSA, so the SSH handshake will fail. Only the ECDSA public key will be passed to ClientConfig.HostKeyCallback, then the SSH handshake will fail.\r\n\r\n\r\nI studied the source code of the original ssh tool (http://www.openssh.com/).\r\n \r\nIn order_hostkeyalgs function (file sshconnect2.c), they find all public keys in known_hosts for this host and place the corresponding algorithms at the beginning of the list of host key algorithms in SSH_MSG_KEXINIT. For example, if the client has an RSA key for this host, the list of algorithms passed to the server will be:\r\n \r\n* ssh-rsa (we have a key for it in known_hosts)\r\n* ECDSA\r\n* ... (other algorithms supported by the client)\r\n \r\n \r\n \r\nRFC 4253, chapter 7.1 says:\r\n\u003e The first algorithm on the client's name-list that satisfies the requirements and is also supported by the server MUST be chosen.  If there is no such algorithm, both sides MUST disconnect.\r\n \r\n \r\nSo, the implementation in Google Go seems to be incorrect.",
+	"user": {
+		"login": "kankowski",
+		"id": 3303319,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-08-04T13:07:07Z",
+	"created_at": "2015-07-15T07:07:22Z",
+	"updated_at": "2016-08-05T16:10:33Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 58535513,
+	"number": 9962,
+	"state": "closed",
+	"title": "bcrypt: suspected bug",
+	"body": "\r\nhttps://github.com/golang/crypto/blob/master/bcrypt/bcrypt.go#L196 and L197 seem wrong, as the loop over variable j seems to be not useful/used in the c.Encrypt() call.\r\n\r\n~~~\r\nfunc bcrypt(password []byte, cost int, salt []byte) ([]byte, error) {\r\n\tcipherData := make([]byte, len(magicCipherData))\r\n\tcopy(cipherData, magicCipherData)\r\n\r\n\tc, err := expensiveBlowfishSetup(password, uint32(cost), salt)\r\n\tif err != nil {\r\n\t\treturn nil, err\r\n\t}\r\n\r\n\tfor i := 0; i \u003c 24; i += 8 {\r\n\t\tfor j := 0; j \u003c 64; j++ {  ## what does this j loop do???\r\n\t\t\tc.Encrypt(cipherData[i:i+8], cipherData[i:i+8])  ## there is no j in here, so what is the point???\r\n\t\t}\r\n\t}\r\n\r\n\t// Bug compatibility with C bcrypt implementations. We only encode 23 of\r\n\t// the 24 bytes encrypted.\r\n\thsh := base64Encode(cipherData[:maxCryptedHashSize])\r\n\treturn hsh, nil\r\n}\r\n~~~",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-02-23T04:21:58Z",
+	"created_at": "2015-02-23T02:21:59Z",
+	"updated_at": "2016-06-25T02:01:42Z"
+}

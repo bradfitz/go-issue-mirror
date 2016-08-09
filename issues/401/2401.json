@@ -1,0 +1,27 @@
+{
+	"id": 51279159,
+	"number": 2401,
+	"state": "closed",
+	"title": "Non-blocking select with more than one channel segfaults on arm",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile and run the following test program which panics (see below). The extra go\nroutine is to stop the deadlock detection.\n\npackage main\n\nimport \u0026quot;time\u0026quot;\n\nfunc main() {\n\tch1 := make(chan bool)\n\tch2 := make(chan bool)\n\tgo func() {\n\t\ttime.Sleep(3e9)\n\t\tch1 \u0026lt;- true\n\t}()\n\n\tselect {\n\tcase \u0026lt;-ch1:\n\tcase \u0026lt;-ch2:\n\tdefault:\n\t}\n}\n\n2. Split the non blocking select into two consecutive calls and it succeeds:\npackage main\n\nimport \u0026quot;time\u0026quot;\n\nfunc main() {\n\tch1 := make(chan bool)\n\tch2 := make(chan bool)\n\tgo func() {\n\t\ttime.Sleep(3e9)\n\t\tch1 \u0026lt;- true\n\t}()\n\tselect {\n\tcase \u0026lt;-ch1:\n\tdefault:\n\t}\n\n\tselect {\n\tcase \u0026lt;-ch2:\n\tdefault:\n\t}\n}\n\nWhat is the expected output?\nNothing\n\nWhat do you see instead?\nunexpected fault address 0x15d01078\nthrow: fault\n[signal 0xb code=0x2 addr=0x15d01078 pc=0x14960]\n\ngoroutine 1 [running]:\nmain.main()\n\t/Users/james/g/src/test/test.go:13 +0x130\n\ngoroutine 2 [runnable]:\nmain._func_001(0x10500180, 0x0)\n\t/Users/james/g/src/test/test.go:11\ncreated by main.main\n\t/Users/james/g/src/test/test.go:11 +0xa0\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n5g\n\nWhich operating system are you using?\ncustom arm linux based off of timesys (equivalent of buildroot et all)\nuname -a:\nLinux torch-5112522801 2.6.27-ts-armv5l_trimble-PR3 #201 PREEMPT Tue Jan 18 15:57:53 MST\n2011 armv5tejl unknown\n\nWhich revision are you using?  (hg identify)\nweekly\nbe3b74cabc5d\n\nPlease provide any additional information below.\n\nRunning the test executable through objdump the offending asm seems to be in runtime.xch:\n\n00014958 \u0026lt;runtime.xchg\u0026gt;:\n   14958:       e52de014        str     lr, [sp, #-20]!\n   1495c:       e59d1018        ldr     r1, [sp, #24]\n   14960:       e5911000        ldr     r1, [r1]\n\nRunning with runtime.showframe returning 1 gives the following stack dump:\n\nunexpected fault address 0x15d01078\nthrow: fault\n[signal 0xb code=0x2 addr=0x15d01078 pc=0x14960]\n\ngoroutine 1 [running]:\nruntime.throw(0x6e04a, 0x15d01078)\n\t/Users/james/go/src/pkg/runtime/runtime.c:114 +0x40\nruntime.sigpanic()\n\t/Users/james/go/src/pkg/runtime/linux/thread.c:306 +0xc0\nruntime.xchg(0x15d01078, 0x1, 0x100)\n\t/Users/james/go/src/pkg/runtime/arm/atomic.c:29 +0x8\nfutexlock(0x15d01078, 0x15c04)\n\t/Users/james/go/src/pkg/runtime/linux/thread.c:125 +0x30\nruntime.lock(0x15d01078, 0x15d01050)\n\t/Users/james/go/src/pkg/runtime/linux/thread.c:187 +0x4c\nsellock(0x1050e000, 0x40000000)\n\t/Users/james/go/src/pkg/runtime/chan.c:764 +0xbc\nselectgo(0x40040fac, 0x4)\n\t/Users/james/go/src/pkg/runtime/chan.c:850 +0x268\nruntime.selectgo(0x1050e000, 0x10501500)\n\t/Users/james/go/src/pkg/runtime/chan.c:803 +0x10\nmain.main()\n\t/Users/james/g/src/test/test.go:13 +0x130\nruntime.mainstart()\n\t/Users/james/go/src/pkg/runtime/arm/asm.s:68 +0x14\n\ngoroutine 2 [runnable]:\nmain._func_001(0x10500180, 0x0)\n\t/Users/james/g/src/test/test.go:11\nruntime.goexit()\n\t/Users/james/go/src/pkg/runtime/proc.c:236\ncreated by main.main\n\t/Users/james/g/src/test/test.go:11 +0xa0\u003c/pre\u003e",
+	"user": {
+		"login": "jmckaskill",
+		"id": 32387,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:12:50Z",
+	"created_at": "2011-10-26T21:05:23Z",
+	"updated_at": "2016-06-24T21:19:51Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

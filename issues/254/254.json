@@ -1,0 +1,28 @@
+{
+	"id": 51276244,
+	"number": 254,
+	"state": "closed",
+	"title": "cgo turns typedef void* function arguments into unsafe.Pointer",
+	"body": "by **eden.li**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n$ cat \u0026lt;\u0026lt;EOF \u0026gt; lazy_func_arg.go\npackage cgo_lazy_func_args\n\n/*\nstruct st { int i; };\ntypedef struct st *st_st;\ntypedef void *vptr;\nvoid testArgs(vptr expectVptr, st_st expectStructPtr) { };\n*/\nimport \u0026quot;C\u0026quot;\n\nfunc main() {\n    var (\n        a    C.vptr = nil;\n        b    C.st_st = nil;\n    );\n    C.testArgs(a, b)\n}\nEOF\n\n$ cgo lazy_func_arg.go\n$ 6g -o /dev/null lazy_func_arg.cgo[12].go\nlazy_func_arg.cgo1.go:18: cannot use a (type _C_vptr) as type unsafe.Pointer\n\nWhat is the expected output? What do you see instead?\n\nSince Go treats unsafe.Pointer in a special way, the lax C rule-emulation\nin cgo/gcc.go is too aggressive in this case.  It should leave vptr alone\nand render the Go-side declaration as:\n\n  func _C_testArgs(_C_vptr, *_Cstruct_st)\n\nInstead of:\n\n  func _C_testArgs(unsafe.Pointer, *_Cstruct_st)\n\nWhat is your $GOOS?  $GOARCH?\n\ndarwin amd64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\nchangeset:   4110:89320216c4da\ndate:        Tue Nov 17 20:44:35 2009 -0800\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:03:51Z",
+	"created_at": "2009-11-18T06:54:59Z",
+	"updated_at": "2016-06-24T19:05:32Z"
+}

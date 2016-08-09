@@ -1,0 +1,25 @@
+{
+	"id": 51276253,
+	"number": 260,
+	"state": "closed",
+	"title": "time.Sleep() on amd64 linux can't sleep \u003c10ms",
+	"body": "by **wmundt42**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Run the following program with -duration=5000000\n\npackage main\n\nimport \u0026quot;time\u0026quot;\nimport \u0026quot;fmt\u0026quot;\nimport \u0026quot;flag\u0026quot;\n\nvar Duration = flag.Int64(\u0026quot;duration\u0026quot;, 10000, \u0026quot;time to sleep for\u0026quot;)\nvar Count = flag.Int64(\u0026quot;count\u0026quot;, 100, \u0026quot;times to sleep\u0026quot;)\n\nfunc main() {\n        flag.Parse();\n\n        t1 := time.Nanoseconds();\n        for i := int64(0); i \u0026lt; *Count; i++ {\n                time.Sleep(*Duration)\n        }\n        t2 := time.Nanoseconds();\n\n        delta := (t2 - t1) / *Count;\n        off := delta - *Duration;\n        offpct := float(off) / float(*Duration) * 100;\n\n        fmt.Println(\u0026quot;asked to sleep for\u0026quot;, *Duration, \u0026quot;-- actually slept\nfor\u0026quot;, t2-t1);\n        fmt.Println(\u0026quot;off by \u0026quot;, off, \u0026quot;ns, or\u0026quot;, offpct, \u0026quot;percent\u0026quot;);\n}\n\nWhat is the expected output? What do you see instead?\n\nExpected, more oe less: \nasked to sleep for 5000000 -- actually slept for 500000000\noff by 0 ns, or 0.000 percent\n\nActual:\nasked to sleep for 5000000 -- actually slept for 1022879000\noff by  5228790 ns, or 104.5758 percent\n\nWhat is your $GOOS?  $GOARCH?\n\nlinux amd64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\n4130:e1069e80ef83\n\nPlease provide any additional information below.\n\nIt appears that time.Sleep rounds up to the nearest 10ms, at least when\ncalled repeatedly.  Since time.Ticker is implemented in terms of Sleep,\nthis means Tickers -- at least on this platform -- can't seem to tick more\noften than every 10ms.\n\nIt may be relevant that the machine in question is a VM running under\nVMWare ESXI; uname -a says \u0026quot;Linux wmtest2 2.6.24-24-server #1 SMP Tue Jun\n30 20:24:57 UTC 2009 x86_64 GNU/Linux\u0026quot;\n\nIf this is expected behavior, these limitations should be documented on\nboth time.Sleep and time.Ticker.\n\nWorkaround for ticker use case: it is possible to process ticks more often\nby setting up multiple 10ms Tickers and a goroutine to mux the channels.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:03:53Z",
+	"created_at": "2009-11-18T20:13:40Z",
+	"updated_at": "2016-06-24T19:05:35Z"
+}

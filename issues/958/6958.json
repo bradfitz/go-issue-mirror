@@ -1,0 +1,22 @@
+{
+	"id": 51285989,
+	"number": 6958,
+	"state": "closed",
+	"title": "go packaged through fink tries to modify files in the go language tree",
+	"body": "by **schwehr**:\n\n\u003cpre\u003eHi,\n\nI am a packager for fink (apt-get managed packages on mac osx) and trying to get go to\nwork properly when installed via fink.  I could use some help getting the package setup\ncorrectly.  I am not sure why go wants to modify files in its own tree.  Is there a\nsetup step that was missed?\n\nI've modified\n\u003ca href=\"http://fink.cvs.sourceforge.net/viewvc/fink/dists/10.7/stable/main/finkinfo/languages/go.info?view=log\"\u003ehttp://fink.cvs.sourceforge.net/viewvc/fink/dists/10.7/stable/main/finkinfo/languages/go.info?view=log\u003c/a\u003e\nto use go 1.1.2 that can be seen here:\n\n\u003ca href=\"https://sourceforge.net/p/fink/package-submissions/4378/\"\u003ehttps://sourceforge.net/p/fink/package-submissions/4378/\u003c/a\u003e\n\nI'm guessing that once go is built, maybe we are missing a step where we have to run go\nto build a bunch of static archives?\n\nThanks!\n-kurt\n\n\n\n# Mac osx 10.9 \nxcodebuild -version\n# Xcode 5.0.1\n\nfink selfupdate\nfink install go\n\nfink list -i go | grep -i language\n i \tgo\t1.1.2-1\tConcurrent programming language\n\n# Quick summary of what the info file does:\n\nperl -pi -e 's/C.malloc\\(C.size_t\\(bufSize\\)\\)/C.malloc\\(C.ulong\\(bufSize\\)\\)/'\nsrc/pkg/os/user/lookup_unix.go\nexport GOROOT_FINAL=%p/lib/go\n  cd src\n  ./all.bash\n\nmkdir -p %i/lib/go/src\n  cp -r bin include lib pkg %i/lib/go\n  cp -r src/pkg %i/lib/go/src\n\n # for godoc\n ln -s ../../share/doc/go/doc %i/lib/go/doc\n\n mkdir %i/bin\n cd bin\n for i in *; do\n    ln -s ../lib/go/bin/$i %i/bin/$i\n done\n\n\ncd\nmkdir go\ncd go\nexport GOPATH=$HOME/go\nexport PATH=$PATH:$GOPATH/bin\nmkdir -p $GOPATH/src/github.com/$USER\necho $GOPATH/src/github.com/$USER\n# /Users/schwehr/go/src/github.com/schwehr\nmkdir $GOPATH/src/github.com/$USER/hello\n\ncat \u0026lt;\u0026lt; EOF \u0026gt; $GOPATH/src/github.com/$USER/hello/hello.go\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tfmt.Printf(\u0026quot;Hello, world.\\n\u0026quot;)\n}\nEOF\n\ngo build github.com/$USER/hello\n\ngo install github.com/$USER/hello\n# go install errors: open /sw/lib/go/pkg/darwin_amd64/errors.a: permission denied\n# go install math: open /sw/lib/go/pkg/darwin_amd64/math.a: permission denied\ngo version\ngo version go1.1.2 darwin/amd64\n\ngo env\nGOARCH=\u0026quot;amd64\u0026quot;\nGOBIN=\u0026quot;\u0026quot;\nGOCHAR=\u0026quot;6\u0026quot;\nGOEXE=\u0026quot;\u0026quot;\nGOHOSTARCH=\u0026quot;amd64\u0026quot;\nGOHOSTOS=\u0026quot;darwin\u0026quot;\nGOOS=\u0026quot;darwin\u0026quot;\nGOPATH=\u0026quot;/Users/schwehr/go\u0026quot;\nGORACE=\u0026quot;\u0026quot;\nGOROOT=\u0026quot;/sw/lib/go\u0026quot;\nGOTOOLDIR=\u0026quot;/sw/lib/go/pkg/tool/darwin_amd64\u0026quot;\nCC=\u0026quot;gcc\u0026quot;\nGOGCCFLAGS=\u0026quot;-g -O2 -fPIC -m64 -pthread -fno-common\u0026quot;\nCGO_ENABLED=\u0026quot;1\u0026quot;\n\n\n# Trying to see what go wants to do:\ngo install -n -v github.com/schwehr/hello\n\nerrors\nmkdir -p $WORK/errors/_obj/\nmkdir -p $WORK/\ncd /sw/lib/go/src/pkg/errors\n/sw/lib/go/pkg/tool/darwin_amd64/6g -o $WORK/errors/_obj/_go_.6 -p errors -complete -D\n_/sw/lib/go/src/pkg/errors -I $WORK ./errors.go\n/sw/lib/go/pkg/tool/darwin_amd64/pack grcP $WORK $WORK/errors.a $WORK/errors/_obj/_go_.6\nmkdir -p /sw/lib/go/pkg/darwin_amd64/\ncp $WORK/errors.a /sw/lib/go/pkg/darwin_amd64/errors.a\n\n# But that already exists!!!!\nls -l /sw/lib/go/pkg/darwin_amd64/errors.a\n# -rw-r--r--  1 root  admin  6948 Nov 27 23:27 /sw/lib/go/pkg/darwin_amd64/errors.a\n\n# Go should really not be trying to do this kind of thing!\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:38:45Z",
+	"created_at": "2013-12-15T21:13:36Z",
+	"updated_at": "2016-06-25T01:23:55Z"
+}

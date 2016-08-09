@@ -1,0 +1,12 @@
+{
+	"id": 167605047,
+	"body": "You only call `parseHTTPConnError` twice in the boulder codebase.\r\n\r\n1) Your first use is after a call to *http.Client.Do, where you create the http.Client on the line immediately before the call, and the http.Transport right above it. But http.Transport has a `DialTLS` hook you can use. Implement that hook (with a normal tcp.Dial followed by a tls.Conn+tls.Handshake (without VerifyHostname) and return any specific error value you want for TLS errors.\r\n\r\n2) Your second call is after tls.DialWithDialer. But you don't need to do that all in one step. Dial first with your Dialer, and then give the connection to the crypto/tls package after you have it (with tls.Conn+tls.Handshake again), and then you know which step failed.\r\n\r\nBoth of your problems are because you call some convenience method that does N things and then try to infer from the error value which step of N failed, instead of just doing N things in serial.\r\n\r\nYes, it's possible we could make the error values from those convenience methods better typed, but it's probably not worth the API pollution \u0026 mental overhead for readers new to the packages.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-28T17:09:23Z",
+	"updated_at": "2015-12-28T17:09:23Z"
+}

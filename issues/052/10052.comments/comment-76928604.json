@@ -1,0 +1,12 @@
+{
+	"id": 76928604,
+	"body": "I'm afraid that my original post confused some people.  By \"a program in a chroot may start with fd 2 closed\", I meant \"fd 2 is destroyed by the *runtime itself* at startup\".  This is about a bug in the runtime, not about whether we ensure fd 0, 1, and 2 are opened at startup.  Sorry about any confusion.\r\n\r\nI guess the same thing could happen with sys_{freebsd,netbsd,openbsd,dragonfly}_{amd64,386,arm}.s.\r\n\r\nThe following proof-of-concept patch fixes the issue for me.  Even with this patch, -1 from open() is still passed to read() and close(), but it is far better than 2 (or any errno) being passed to them.\r\n\r\n```patch\r\n--- src/runtime/sys_freebsd_amd64.s.orig\t2015-02-18 13:38:34.000000000 +0900\r\n+++ src/runtime/sys_freebsd_amd64.s\t2015-03-03 19:34:47.536974847 +0900\r\n@@ -91,8 +91,11 @@ TEXT runtime·open(SB),NOSPLIT,$-8\r\n \tMOVL\tperm+12(FP), DX\t\t// arg 3 mode\r\n \tMOVL\t$5, AX\r\n \tSYSCALL\r\n+\tJB\t3(PC)\r\n \tMOVL\tAX, ret+16(FP)\r\n \tRET\r\n+\tMOVL\t$-1, ret+16(FP)\r\n+\tRET\r\n \r\n TEXT runtime·close(SB),NOSPLIT,$-8\r\n \tMOVL\tfd+0(FP), DI\t\t// arg 1 fd\r\n@@ -107,8 +110,11 @@ TEXT runtime·read(SB),NOSPLIT,$-8\r\n \tMOVL\tn+16(FP), DX\t\t// arg 3 count\r\n \tMOVL\t$3, AX\r\n \tSYSCALL\r\n+\tJB\t3(PC)\r\n \tMOVL\tAX, ret+24(FP)\r\n \tRET\r\n+\tMOVL\t$-1, ret+24(FP)\r\n+\tRET\r\n \r\n TEXT runtime·write(SB),NOSPLIT,$-8\r\n \tMOVQ\tfd+0(FP), DI\t\t// arg 1 fd\r\n```\r\n\r\nI do not know if there is a spec.  Here are links to the implementations.  Please see \"jb\" instruction in the AMD64/i386 cases and \"bcs\" in the ARM case.\r\n\u003chttps://svnweb.freebsd.org/base/releng/10.1/lib/libc/amd64/SYS.h?view=markup\u003e\r\n\u003chttps://svnweb.freebsd.org/base/releng/10.1/lib/libc/i386/SYS.h?view=markup\u003e\r\n\u003chttps://svnweb.freebsd.org/base/releng/10.1/lib/libc/arm/SYS.h?view=markup\u003e",
+	"user": {
+		"login": "kamadak",
+		"id": 4836155,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-03T11:24:26Z",
+	"updated_at": "2015-03-03T13:00:26Z"
+}

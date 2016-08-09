@@ -1,0 +1,17 @@
+{
+	"id": 115128475,
+	"number": 13149,
+	"state": "closed",
+	"title": "Panics in tests do not allow m.Run() to return in TestMain functions",
+	"body": "If a test panics and you are using a TestMain function, the call to `m.Run()` does not return, which makes cleaning up from that test hard/impossible.\r\n\r\n```\r\npackage wat\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"testing\"\r\n)\r\n\r\nfunc TestOk(t *testing.T) {\r\n\tt.Logf(\"I am ok\")\r\n}\r\n\r\nfunc TestPanic(t *testing.T) {\r\n\tpanic(\"oh noes\")\r\n}\r\n\r\nfunc TestMain(m *testing.M) {\r\n\tfmt.Fprintf(os.Stderr, \"starting tests!\\n\")\r\n\tresult := m.Run()\r\n\tfmt.Fprintf(os.Stderr, \"finished tests!\\n\")\r\n\r\n\tos.Exit(result)\r\n}\r\n```\r\n\r\nIf I run `go test -v -run TestOk wat_test.go`, I get:\r\n```\r\nstarting tests!\r\n=== RUN   TestOk\r\n--- PASS: TestOk (0.00s)\r\n        wat_test.go:10: I am ok\r\nPASS\r\nfinished tests!\r\nok      command-line-arguments  0.006s\r\n```\r\n\r\nHowever if I run `go test -v -run TestPanic wat_test.go`, I get:\r\n```\r\nstarting tests!\r\n=== RUN   TestPanic\r\n--- FAIL: TestPanic (0.00s)\r\npanic: oh noes [recovered]\r\n        panic: oh noes\r\n\r\ngoroutine 17 [running]:\r\n(some stack frames deleted)\r\ntesting.tRunner(0x820368000, 0x24e258)\r\n        /usr/local/go/src/testing/testing.go:456 +0x98\r\ncreated by testing.RunTests\r\n        /usr/local/go/src/testing/testing.go:561 +0x86d\r\n\r\ngoroutine 1 [chan receive]:\r\ntesting.RunTests(0x1ca2d0, 0x24e240, 0x2, 0x2, 0x1)\r\n        /usr/local/go/src/testing/testing.go:562 +0x8ad\r\ntesting.(*M).Run(0x8202efef8, 0x8202dc018)\r\n        /usr/local/go/src/testing/testing.go:494 +0x70\r\n(some stack frames deleted)\r\nmain.main()\r\n        command-line-arguments/_test/_testmain.go:54 +0x113\r\nexit status 2\r\nFAIL    command-line-arguments  0.010s\r\n```\r\n\r\nNotice that in the latter case \"finished test!\" was not printed because the process exited before m.Run() could return.  The source of this is `panic(err)` statement in `tRunner` of testing.go.  If, instead of panicking, the function cleanly exited (as in a normal failed test) I think everything would work out.\r\n\r\n\u003e What version of Go are you using (go version)?\r\ngo version go1.5.1 darwin/amd64\r\n\r\n\u003e What operating system and processor architecture are you using?\r\nMacOS v10.10.5",
+	"user": {
+		"login": "ianrose14",
+		"id": 1097565,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-11-05T01:48:52Z",
+	"created_at": "2015-11-04T19:25:53Z",
+	"updated_at": "2015-11-05T01:48:52Z"
+}

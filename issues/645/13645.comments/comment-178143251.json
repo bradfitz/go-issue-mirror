@@ -1,0 +1,12 @@
+{
+	"id": 178143251,
+	"body": "The following patch exacerbates the problem with locked Gs by locking *all* Gs. In theory this should work, but it causes the runtime test to regularly freeze in much the same way as seen in these test failures. (It also causes TestMainGoroutineID to fail for uninteresting reasons.)\r\n\r\n```patch\r\ndiff --git a/src/runtime/proc.go b/src/runtime/proc.go\r\nindex 2bc3c92..cfb1172 100644\r\n--- a/src/runtime/proc.go\r\n+++ b/src/runtime/proc.go\r\n@@ -2647,6 +2652,8 @@ func newproc(siz int32, fn *funcval) {\r\n        })\r\n }\r\n \r\n+var lockOSThreadFunc uintptr\r\n+\r\n // Create a new g running fn with narg bytes of arguments starting\r\n // at argp and returning nret bytes of results.  callerpc is the\r\n // address of the go statement that created this.  The new g is put\r\n@@ -2703,6 +2710,10 @@ func newproc1(fn *funcval, argp *uint8, narg int32, nret int32, callerpc uintptr\r\n        newg.sched.pc = funcPC(goexit) + sys.PCQuantum // +PCQuantum so that previous instruction is in same function\r\n        newg.sched.g = guintptr(unsafe.Pointer(newg))\r\n        gostartcallfn(\u0026newg.sched, fn)\r\n+       if lockOSThreadFunc == 0 {\r\n+               lockOSThreadFunc = funcPC(LockOSThread)\r\n+       }\r\n+       gostartcallfn(\u0026newg.sched, (*funcval)(unsafe.Pointer(\u0026lockOSThreadFunc)))\r\n        newg.gopc = callerpc\r\n        newg.startpc = fn.fn\r\n        if isSystemGoroutine(newg) {\r\n```",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-01T19:28:03Z",
+	"updated_at": "2016-02-01T19:28:03Z"
+}

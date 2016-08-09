@@ -1,0 +1,28 @@
+{
+	"id": 139811015,
+	"number": 14742,
+	"state": "closed",
+	"title": "cmd/compile: better line numbers for identifiers",
+	"body": "I noticed that in functions like:\r\n```\r\npackage main\r\n\r\nimport \"runtime\"\r\n\r\nvar sink *int\r\n\r\nfunc f(x, y int) int {\r\n\tsink = \u0026x\r\n\truntime.GC()\r\n\treturn x + y\r\n}\r\n```\r\nThe evaluation of x on line 10 gets assigned different line numbers by SSA and by the legacy compiler.  SSA gives the evaluation of \"x\" line 7:\r\n```\r\n\t0x004b 00075 (/home/khr/go/tmp5.go:7)\tMOVQ\t\"\".\u0026x+16(SP), CX\r\n\t0x0050 00080 (/home/khr/go/tmp5.go:7)\tMOVQ\t(CX), CX\r\n```\r\nThe legacy compiler gives it line 10:\r\n```\r\n\t0x004a 00074 (/home/khr/go/tmp5.go:10)\tMOVQ\t\"\".\u0026x+16(SP), BX\r\n\t0x004f 00079 (/home/khr/go/tmp5.go:10)\tMOVQ\t(BX), BX\r\n```\r\n\r\nThe reason is that after walk, in the statement \"return x + y\" the line numbers of \"return\" and \"+\" are 10 but the line numbers of \"x\" and \"y\" are 7.  SSA is using the deepest line number it can lay its hands on, so when evaluating \"x\" it uses line 7 for the instructions that evaluate \"x\".\r\n\r\nThe legacy compiler seems to use the line number of the containing statement (as far as I can tell).  Modifying the SSA compiler to do the same (ignoring line numbers on expressions) makes SSA produce similar output to the legacy compiler.\r\n\r\nUnder more complicated examples, SSA can tend to jump back and forth between the line numbers of the variable declarations and the line numbers where those variables are used.  That seems suboptimal.  It would be clearer (and compress better) if the line numbers were all from the use points.\r\n\r\nI don't think we can fix walk's output, as all the \"x\"s in the function are aliased to the same Node, so they can only have 1 line number.  Maybe we just ignore line numbers from ONAMEs? (i.e. they inherit their line number from their parent in the AST)\r\n\r\n@dr2chase ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-04-27T15:04:05Z",
+	"created_at": "2016-03-10T07:35:16Z",
+	"updated_at": "2016-04-27T15:04:05Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

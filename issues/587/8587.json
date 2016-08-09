@@ -1,0 +1,27 @@
+{
+	"id": 51288403,
+	"number": 8587,
+	"state": "closed",
+	"title": "encoding/json: inconsistent behavior in *(numeric type), string tag option, and nil values",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version go1.3.1 linux/amd64\n\nWhat steps reproduce the problem?\n\u003ca href=\"http://play.golang.org/p/s_AebxMbdg\"\u003ehttp://play.golang.org/p/s_AebxMbdg\u003c/a\u003e\n\n1. Define a struct with a field of type *int64, with the json ,string tag option\n2. Create a new instance of that struct, leaving the field nil\n3. Marshal with json.Marshal\n4. Unmarshal with json.Unmarshal\n\nWhat happened?\nError during unmarshalling: err unmarshalling json: invalid use of ,string struct tag,\ntrying to unmarshal \u0026quot;\u0026quot; into *int64\n\nWhat should have happened instead?\nSuccessfully decoded the json string from encoding the zero value of the struct\n\nPlease provide any additional information below.\nIn encoding/json/decode.go:\nfunc (d *decodeState) object(v reflect.Value):\n566\t\t\tif destring {\n   567\t\t\t\td.value(reflect.ValueOf(\u0026amp;d.tempstr))\n   568\t\t\t\td.literalStore([]byte(d.tempstr), subv, true)\n   569\t\t\t\td.tempstr = \u0026quot;\u0026quot; // Zero scratch space for successive values.\n   570\t\t\t} else {\n   571\t\t\t\td.value(subv)\n   572\t\t\t}\n\nAfter a call to d.value, the null literal is handled and the d.tempstr field is left\nempty. The call to d.literalStore then assumes it received an empty string\n(\u0026quot;\u0026quot;), as this is what d.value would do in the case that the json value was an\nempty string, and results in an error being returned in func (d *decodeState)\nliteralStore, L631. At the moment there doesn't seem to be an easy way to differentiate\nthe two cases. \nOne note (not sure if it's relevant or not) is that it seems tempstr is only used with a\n,string tag option. \n\nI've worked through a few ideas, but they end up requiring a wrapper around the\nd.tempstr field (converted to an []byte or *string) to determine whether or not it is\nnil or an empty string, or a new field to track that difference. \n\nNot sure if it's worth it (or desirable), but a final comment is that as this logic\nassumes the ,string case:\n 629\t\tif len(item) == 0 {\n   630\t\t\t//Empty string given\n   631\t\t\td.saveError(fmt.Errorf(\u0026quot;json: invalid use of ,string struct tag, trying to unmarshal %q into %v\u0026quot;, item, v.Type()))\n   632\t\t\treturn\n   633\t\t}\nand is therefore only reached in the if destring {} block (L567), it should be possible\nto move it out of the literalStore func and into the if destring {} block.\u003c/pre\u003e",
+	"user": {
+		"login": "matt-duch",
+		"id": 1303097,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:47:40Z",
+	"created_at": "2014-08-25T21:45:59Z",
+	"updated_at": "2016-06-25T01:40:09Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

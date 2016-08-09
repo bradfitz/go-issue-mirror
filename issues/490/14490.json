@@ -1,0 +1,17 @@
+{
+	"id": 136051980,
+	"number": 14490,
+	"state": "closed",
+	"title": "proposal: Why not provide SetDeadline(time.Duration) instead of SetDeadline(time.Time) ?",
+	"body": "Why not provide `SetDeadline(time.Duration)` instead of `SetDeadline(time.Time)` ?\r\n\r\nThe net.Conn object provides `SetDeadline(time.Time)/SetReadDeadline/SetWriteDeadline` to set timeout, but those methods were designed for passing an absolute time to determine timeout duration, it's unnecessary and wasting performance.\r\n\r\nfor example:\r\n```go\r\n// user code\r\nfor{\r\n\tconn.SetDeadline(time.Now().Add(time.Second))\r\n\tconn.Read(buf)\r\n\t....\r\n}\r\n```\r\nIn the golang internal, SetDeadline() -\u003e fd.setDeadline() -\u003e setDeadlineImpl(), the setDeadlineImpl is:\r\n```go\r\n// src/net/fd_poll_runtime.go\r\nfunc setDeadlineImpl(fd *netFD, t time.Time, mode int) error {\r\n\td := runtimeNano() + int64(t.Sub(time.Now()))  // to duration, syscall occurred again\r\n\tif t.IsZero() {\r\n\t\td = 0\r\n\t}\r\n\t......\r\n}\r\n```\r\nI provide an absolute time then it will be converted to duration in golang internal. Why do such a thing to waste performance?\r\n\r\nWhy not provide methods like this:\r\n```go\r\nfor{\r\n\tconn.SetDeadline(time.Second) // use time.Duration directly\r\n\tconn.Read(buf)\r\n\t....\r\n}\r\n```\r\nor \r\n```go\r\nconn.SetDeadline(time.Second) // Set once, but it will have an effect until it has been set up again.\r\nfor{\r\n\tconn.Read(buf)\r\n\t....\r\n}\r\n```",
+	"user": {
+		"login": "spance",
+		"id": 3322424,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-02-24T14:20:11Z",
+	"created_at": "2016-02-24T12:47:59Z",
+	"updated_at": "2016-02-24T15:21:06Z"
+}

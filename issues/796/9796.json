@@ -1,0 +1,30 @@
+{
+	"id": 56868865,
+	"number": 9796,
+	"state": "closed",
+	"title": "encoding/xml: Data race in xml/encoder due to getTypeInfo and shared slice",
+	"body": "Analysis described in http://stackoverflow.com/a/28374852/723947.  For convenience, here's a copy of the analysis:\r\n\r\nA user described a data race with the following trace:\r\n\r\n    2015/02/06 13:53:43  Total GoRoutine Channels Created 2\r\n    2015/02/06 13:53:43 \u003cfamily\u003e\u003cfamil_name\u003e\u003c/famil_name\u003e\u003cmembers\u003e\u003cperson\u003e\u003cname\u003eABCD\u003c/name\u003e\u003cage\u003e0\u003c/age\u003e\u003c/person\u003e\u003cperson\u003e\u003cname\u003edummy\u003c/name\u003e\u003cage\u003e0\u003c/age\u003e\u003c/person\u003e\u003c/members\u003e\u003c/family\u003e\r\n    ==================\r\n    WARNING: DATA RACE\r\n    Write by goroutine 6:\r\n      runtime.slicecopy()\r\n          /usr/local/go/src/runtime/slice.go:94 +0x0\r\n      encoding/xml.(*parentStack).push()\r\n          /usr/local/go/src/encoding/xml/marshal.go:908 +0x2fb\r\n      encoding/xml.(*printer).marshalStruct()\r\n          /usr/local/go/src/encoding/xml/marshal.go:826 +0x628\r\n      encoding/xml.(*printer).marshalValue()\r\n          /usr/local/go/src/encoding/xml/marshal.go:531 +0x1499\r\n      encoding/xml.(*Encoder).Encode()\r\n          /usr/local/go/src/encoding/xml/marshal.go:153 +0xb8\r\n      encoding/xml.Marshal()\r\n          /usr/local/go/src/encoding/xml/marshal.go:72 +0xfb\r\n      main.ToXml()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:51 +0x227\r\n      main.func·001()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:61 +0x74\r\n    \r\n    Previous read by goroutine 5:\r\n      encoding/xml.(*parentStack).trim()\r\n          /usr/local/go/src/encoding/xml/marshal.go:893 +0x2ae\r\n      encoding/xml.(*printer).marshalStruct()\r\n          /usr/local/go/src/encoding/xml/marshal.go:836 +0x203\r\n      encoding/xml.(*printer).marshalValue()\r\n          /usr/local/go/src/encoding/xml/marshal.go:531 +0x1499\r\n      encoding/xml.(*Encoder).Encode()\r\n          /usr/local/go/src/encoding/xml/marshal.go:153 +0xb8\r\n      encoding/xml.Marshal()\r\n          /usr/local/go/src/encoding/xml/marshal.go:72 +0xfb\r\n      main.ToXml()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:51 +0x227\r\n      main.func·001()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:61 +0x74\r\n    \r\n    Goroutine 6 (running) created at:\r\n      main.AsyncExecute()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:67 +0x15d\r\n      main.main()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:80 +0x2bf\r\n    \r\n    Goroutine 5 (finished) created at:\r\n      main.AsyncExecute()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:67 +0x15d\r\n      main.main()\r\n          /Users/kadalamittai/selfie/go/src/github.com/ivam/goal/command/data_race.go:80 +0x2bf\r\n    ==================\r\n\r\n\r\nI analyzed this.  There's an implicit shared value due to the use of getTypeInfo() which is a type description of the struct. Other parts of the XML encoder assume that they can write and read type info, and this is unsafe, as the race detector is telling us.\r\n\r\nThe p.stack attribute that's reporting as the source of the data race originates from a part of the typeInfo shared value, where a slice of tinfo.parents gets injected on line 821.\r\n\r\n    if err := s.trim(finfo.parents); err != nil {\r\n\r\nThat's ultimately where the sharing is happening with the potential for read and writing, because later on there are appends happening on the slice, and that can do mutation on the slice.\r\n\r\nWhat should probably happen instead is that the finfo.parents should be sliced and capacity-restricted so that any potential append won't do a write on the shared value.\r\n\r\nThat is, line 821 could probably be be changed from:\r\n\r\n    if err := s.trim(finfo.parents); err != nil {\r\n\r\nto:\r\n\r\n    parentLen := len(finfo.parents)\r\n    if err := s.trim(finfo.parents[:parentLen:parentLen)]); err != nil {\r\n\r\nto correct the issue.",
+	"user": {
+		"login": "dannyyoo",
+		"id": 7536863,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2015-03-03T14:06:12Z",
+	"created_at": "2015-02-06T21:13:41Z",
+	"updated_at": "2016-08-05T16:09:05Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51285541,
+	"number": 6673,
+	"state": "closed",
+	"title": "runtime: sysmon looping when idle",
+	"body": "\u003cpre\u003esysmon does not go to sleep when 1 proc blocks on a syscall and all other Ps remain idle\n(GOMAXPROCS\u0026gt;1). In the simple case of a C.sleep(forever), the process wakes up 100\ntimes a second until a GC occurs much later and sysmon gets put back to sleep. At least,\nthis is what appears to be happening from looking at debug.schedtrace output.\n\nIn the case of an app that idles often, this is giving the process a lot of unnecessary\nwakeups.\n\ngo version devel +2d1e1adf8ece Tue Oct 22 10:37:33 2013 -0400 darwin/amd64\n\n$ cat sleep.go\npackage main\n\n/*\n#include \u0026quot;unistd.h\u0026quot;\n*/\nimport \u0026quot;C\u0026quot;\n\nfunc main() {\n        C.sleep(1000)\n}\n\n$ GOMAXPROCS=2 GODEBUG=\u0026quot;schedtrace=1,scheddetail=1\u0026quot; go run sleep.go 2\u0026gt;\nschedtrace\n\nAt the 2 minute mark we can see that the GC happens, and notice idleprocs value before\nthe GC.\n\nSCHED 119996ms: gomaxprocs=2 idleprocs=1 threads=6 idlethreads=2 runqueue=0 gcwaiting=0\nnmidlelocked=1 nmspinning=0 stopwait=0 sysmonwait=0\n  P0: status=2 schedtick=2 syscalltick=1 m=-1 runqsize=0/128 gfreecnt=0\n  P1: status=0 schedtick=2 syscalltick=1 m=-1 runqsize=0/128 gfreecnt=0\n  M5: p=-1 curg=3 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=3\n  M4: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M3: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M2: p=-1 curg=2 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M1: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=1 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M0: p=0 curg=1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=1\n  G1: status=3(stack unsplit) m=0 lockedm=0\n  G2: status=3(stack split) m=2 lockedm=-1\n  G3: status=3() m=-1 lockedm=5\nSCHED 120009ms: gomaxprocs=2 idleprocs=2 threads=6 idlethreads=2 runqueue=0 gcwaiting=0\nnmidlelocked=1 nmspinning=0 stopwait=0 sysmonwait=0\n  P0: status=0 schedtick=3 syscalltick=1 m=-1 runqsize=0/128 gfreecnt=1\n  P1: status=0 schedtick=3 syscalltick=3 m=-1 runqsize=0/128 gfreecnt=0\n  M5: p=-1 curg=3 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=3\n  M4: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M3: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M2: p=-1 curg=2 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M1: p=-1 curg=-1 mallocing=0 throwing=0 gcing=0 locks=1 dying=0 helpgc=0 spinning=0 lockedg=-1\n  M0: p=0 curg=1 mallocing=0 throwing=0 gcing=0 locks=0 dying=0 helpgc=0 spinning=0 lockedg=1\n  G1: status=3(stack unsplit) m=0 lockedm=0\n  G2: status=3(stack split) m=2 lockedm=-1\n  G3: status=3() m=-1 lockedm=5\n  G4: status=6(garbage collection) m=-1 lockedm=-1\u003c/pre\u003e",
+	"user": {
+		"login": "james4k",
+		"id": 766002,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:37:00Z",
+	"created_at": "2013-10-27T06:50:22Z",
+	"updated_at": "2016-06-25T01:21:30Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

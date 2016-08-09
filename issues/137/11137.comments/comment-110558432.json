@@ -1,0 +1,12 @@
+{
+	"id": 110558432,
+	"body": "/cc @robpike for opinions\r\n\r\nCL 10882 has a quick-and-dirty implementation. It looks for durations that are integer literals, i.e. that are missing units. The idea is that if someone went to the trouble of writing `1 * time.Nanosecond`, they probably mean it, and that if someone wrote `1e9`, the code would be much clearer if they used `time.Second`.\r\n\r\nIt allows things like `time.Duration(30)`, because most instances of that I encountered were of the form `time.Duration(30) * time.Second`. The explicit conversion is unnecessary, but it is clear and probably correct.\r\n\r\nThis check flags a few instances inside the standard library:\r\n\r\n```\r\nflag/flag_test.go:104: time.Duration without unit: 7\r\ntime/internal_test.go:34: time.Duration without unit: 1\r\ntime/sleep_test.go:76: time.Duration without unit: 1\r\ntime/sleep_test.go:124: time.Duration without unit: 1\r\ntime/sleep_test.go:430: time.Duration without unit: 1\r\ntime/tick_test.go:70: time.Duration without unit: 1\r\ntime/time_test.go:330: time.Duration without unit: 1\r\ntime/time_test.go:958: time.Duration without unit: 1\r\ntime/time_test.go:987: time.Duration without unit: 1\r\ntime/time_test.go:988: time.Duration without unit: 1000\r\ntime/time_test.go:1005: time.Duration without unit: 1\r\ntime/time_test.go:1006: time.Duration without unit: 60000000000\r\ntime/time_test.go:1023: time.Duration without unit: 1\r\ntime/time_test.go:1024: time.Duration without unit: 3600000000000\r\n```\r\n\r\nI think that these would all be clearer with a unit.\r\n\r\nRunning it over a large open source corpus flags a whole bunch of code. I didn't see anything that was obviously a bug, although most of the code flagged would definitely benefit from units; `time.Second` is much nicer than `1e9`.\r\n\r\n(Incidentally, since vet has moved into the main repo, I've changed the milestone from Unreleased to Unplanned.)\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-10T02:09:51Z",
+	"updated_at": "2015-06-10T02:09:51Z"
+}

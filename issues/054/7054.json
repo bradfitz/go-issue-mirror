@@ -1,0 +1,30 @@
+{
+	"id": 51286122,
+	"number": 7054,
+	"state": "open",
+	"title": "spec, pkg: Optional types",
+	"body": "\u003cpre\u003eUser story:\n\nI'm currently writing a REST API in Go, which uses the encoding/json package. The Update\npart of CRUD gets tricky if you want to do partial updates because there is no way to\ntell if something was left out of the JSON.\n\nThe structure, for example, could look like this:\n\ntype Message struct {\n    Name     string\n    Title       string\n    Message string\n    Date       time.Time\n}\n\nWith an update I may only want to update Title. To do this I have to change the\nstructure to this:\n\ntype Message struct {\n    Name *string\n    Title *string\n    Message *string\n    Date *time.Time\n}\n\nThis allows each value to have 3 states: nil, empty \u0026quot;\u0026quot;, or non-empty.\nUnfortunately this approach isn't very desirable because the values themselves don't\nlive in the struct, and this can create garbage that needs to be collected.\n\nWith structs that have an optional time.Time, changing it to *time.Time doesn't solve\nthe problem either. You can't tell the difference between {\u0026quot;Date\u0026quot;:null} and {}\n(remove expiration date vs don't touch it).\n\nA possible solution to this is by wrapping the types like this:\n\ntype Int struct {\n\tint\n\tset bool\n}\n\nAnd this works very well. In fact, database/sql does this.\n\nFull example of Int: \u003ca href=\"http://play.golang.org/p/GbsOucDAPZ\"\u003ehttp://play.golang.org/p/GbsOucDAPZ\u003c/a\u003e\nExample of Time: \u003ca href=\"http://play.golang.org/p/OpVVOVBIwc\"\u003ehttp://play.golang.org/p/OpVVOVBIwc\u003c/a\u003e\n\nUnfortunately there is no standardization for wrappers like this. I can use\nsql.NullInt64 and keep my data store, model, and controller layers separate. Since my\ndata store needs to be interchangeable, what if I'm not using SQL?\n\nA standard package to hold these wrapper types would be desirable. And they could\ninclude methods like MarshalJSON and UnmarshalJSON. But what happens when a custom\npackage needs methods such as these?\n\nSolutions:\n\nOption 1 - A standard package for wrapper types could be created. Either there needs to\nbe a way to attach methods to a type declared in one package from another, or the\nencoding packages need to be aware of these types just as they are the primitives.\n\nPros -- If the packages are aware of these types (and don't use Marshaler/Unmarshaler\nmethods) only an addition pkg written in Go needs to be added.\n\nCons -- This only works well for primitive types. Custom types such a time.Time rely on\nMarshaler/Unmarshaler methods. These method are difficult to add for custom encoders /\ndatabase packages, etc.. (packages that use reflect).\n\nOption 2 - A type extension, which could be expressed something like:\n\ntype Message struct {\n    Name ?string\n    Title ?string\n    Message ?string\n    Date ?time.Time\n}\n\nInternally it would be the same as the wrappers and it would work with a built-int\nisset() method. Otherwise the interaction would be identical to the regular types, so\nyou could do something like msg.Name = \u0026quot;Luke\u0026quot; instead of something like\nmsg.Name.Set(\u0026quot;Luke\u0026quot;). This would also be true with the reflect package, with\nthe addition of Value.IsSet.\n\nThis should be kept distinct from pointers. unset(msg.Name) instead of msg.Name = nil.\nAn unset() method would set a value to it's zero value and reset the internal bool.\n\nPros -- Use these types like normal types. Marshal/Unmarshal method would be inherited\nfrom the types themselves.\n\nCons -- The spec needs to change to allow support for this. I cannot speak for the\nchallenges in doing this.\u003c/pre\u003e",
+	"user": {
+		"login": "lukescott",
+		"id": 486224,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "LongTerm"
+		}
+	],
+	"comments": 2,
+	"created_at": "2014-01-02T20:58:35Z",
+	"updated_at": "2016-03-11T16:59:37Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

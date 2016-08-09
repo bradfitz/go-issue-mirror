@@ -1,0 +1,27 @@
+{
+	"id": 51284709,
+	"number": 6122,
+	"state": "closed",
+	"title": "net: Dial(\"ip\", ...) fails on Windows with \"ConnectEx ip4: An invalid argument was specified\"",
+	"body": "by **jleimon**:\n\n\u003cpre\u003eDESCRIPTION\n\nThe following APIs:\n\n  net.Dial(\u0026quot;ip4\u0026quot;, ...)\n  net.Dial(\u0026quot;ip6\u0026quot;, ...)\n  net.Dial(\u0026quot;ip\u0026quot;, ...) \n\nAre broken on Windows.\n\n\nREPRODUCING THE PROBLEM\n\n1. Build and run the program.\n\n\u003ca href=\"http://play.golang.org/p/BFiRzN5Irm\"\u003ehttp://play.golang.org/p/BFiRzN5Irm\u003c/a\u003e\n\n\nEXPECTED OUTPUT\n\nTEST:  net.Dial(\u0026quot;ip4:1\u0026quot;, \u0026quot;127.0.0.1\u0026quot;)  ... PASS\n\n\nACTUAL OUTPUT\n\nTEST:  net.Dial(\u0026quot;ip4:1\u0026quot;, \u0026quot;127.0.0.1\u0026quot;)  ... FAIL\n  dial ip4 127.0.0.1: ConnectEx ip4: An invalid argument was supplied.\npanic: dial ip4 127.0.0.1: ConnectEx ip4: An invalid argument was supplied.\n\ngoroutine 1 [running]:\nmain.main()\n        c:/WORKSTATION/WORKSPACE/go_net_test/test_dial_ip4/test_dial_ip4.go:14 +0x118\n\ngoroutine 2 [runnable]:\nruntime.MHeap_Scavenger()\n        c:/go_src/src/pkg/runtime/mheap.c:443\nruntime.goexit()\n        c:/go_src/src/pkg/runtime/proc.c:1365\n\nCOMPILER\n\n8g\n\n\nOPERATING SYSTEM\n\nWindows 7 Professional Service Pack 1 [Version 6.1.7601]\n\n\nGO VERSION\n\ngo version devel +745f029d8e08 Mon Aug 12 13:47:18 2013 -0700 windows/386\n\n\nOTHER NOTES\n\nI have traced the go code to a call to oi.Submit (ConnectEx) that is failing, but I'm\nnot sure why. (See below)\n\nCall Stack for  Dial(network, address string)\n\n  ----\u0026gt; Dial(network, address string)\n    ----\u0026gt; resolveAndDial(network, address, d.LocalAddr, d.deadline())\n      | \n      | \n      ----\u0026gt; resolveAddr(\u0026quot;dial\u0026quot;, net, addr, deadline)\n      ----\u0026gt; dial(net, addr, localAddr, ra, deadline)\n        ----\u0026gt; dialIP(net, la, ra, deadline) [iprawsock_posix.go]\n          ----\u0026gt; internetSocket(net, laddr.toAddr(), raddr.toAddr(), deadline, syscall.SOCK_RAW, proto, \u0026quot;dial\u0026quot;, sockaddrToIP) [ipsock_posix.go]\n            ----\u0026gt; socket(net, family, sotype, proto, ipv6only, la, ra, deadline, toAddr) [sock_posix.go]\n              ----\u0026gt; fd.connect(ulsa, ursa) [fd_windows.go]\n                ----\u0026gt; iosrv.ExecIO(\u0026amp;o, fd.wdeadline.value())  [fd_windows.go]\n                  ----\u0026gt; oi.Submit() [fd_windows.go] (ConnectEx)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:33:40Z",
+	"created_at": "2013-08-12T21:49:44Z",
+	"updated_at": "2016-06-24T22:54:57Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

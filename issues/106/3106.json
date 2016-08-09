@@ -1,0 +1,28 @@
+{
+	"id": 51280130,
+	"number": 3106,
+	"state": "closed",
+	"title": "go/parser: confusing first error message",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n- use gofmt (for instance) to parse the program below\n\nWhat is the expected output? What do you see instead?\n-  the first error message is confusing; the actual error is the 2nd error\n- should try to handle cases like this better\n\nTest case:\n\npackage main\n\nfunc f() {\n\tvar m Mutex\n\tc := MakeCond(\u0026amp;m)\n\tpercent := 0\n\tconst step = 10\n\tfor i := 0; i \u0026lt; 5; i++ {\n\t\tgo func() { // #### FIRST ERROR REPORTED HERE\n\t\t\tfor {\n\t\t\t\t// Emulates some useful work.\n\t\t\t\ttime.Sleep(1e8)\n\t\t\t\tm.Lock()\n\t\t\t\tdefer // #### ACTUAL PROBLEM IS HERE\n\t\t\t\tif percent == 100 {\n\t\t\t\t\tm.Unlock()\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t\tpercent++\n\t\t\t\tif percent % step == 0 {\n\t\t\t\t\t//c.Signal()\n\t\t\t\t}\n\t\t\t\tm.Unlock()\n\t\t\t}\n\t\t}()\n\t}\n\tfor {\n\t\tm.Lock()\n\t\tif percent == 0 || percent % step != 0 {\n\t\t\tc.Wait()\n\t\t}\n\t\tfmt.Print(\u0026quot;,\u0026quot;)\n\t\tif percent == 100 {\n\t\t\tm.Unlock()\n\t\t\tbreak\n\t\t}\n\t\tm.Unlock()\n\t}\n}\n\ngofmt -l example_test.go \nexample_test.go:9:6: expected function/method call\nexample_test.go:15:5: expected function/method call\nexample_test.go:25:4: expected ';', found '('\nexample_test.go:27:2: expected declaration, found 'for'\nexample_test.go:28:3: expected declaration, found 'IDENT' m\nexample_test.go:29:3: expected declaration, found 'if'\nexample_test.go:30:4: expected declaration, found 'IDENT' c\nexample_test.go:31:3: expected declaration, found '}'\nexample_test.go:32:3: expected declaration, found 'IDENT' fmt\nexample_test.go:33:3: expected declaration, found 'if'\nexample_test.go:34:4: expected declaration, found 'IDENT' m\nexample_test.go:35:4: expected declaration, found 'break'\nexample_test.go:36:3: expected declaration, found '}'\nexample_test.go:37:3: expected declaration, found 'IDENT' m\nexample_test.go:38:2: expected declaration, found '}'\nexample_test.go:39:1: expected declaration, found '}'\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:16:10Z",
+	"created_at": "2012-02-23T00:03:54Z",
+	"updated_at": "2016-06-24T21:28:29Z"
+}

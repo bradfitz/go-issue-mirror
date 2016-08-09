@@ -1,0 +1,17 @@
+{
+	"id": 52177300,
+	"number": 9356,
+	"state": "closed",
+	"title": "runtime: access violation during cgo call in github.com/mattn/go-sqlite3 on windows 7 64-bit",
+	"body": "OS: Windows 7 64-bit\r\nGCC version: gcc (x86_64-posix-seh-rev1, Built by MinGW-W64 project) 4.9.1\r\nGo version: 1.4 (but also happens on 1.2+, didn't check \u003c 1.2)\r\n\r\nDescription:\r\nwhen the below program is compiled and run, the go program either panics or crashes outright.\r\n\r\nWe did some spelunking and from what we can tell, the crash happens when sqlite3 tries to call a kernel32.dll function from its aSyscall array. The function pointer is supposed to point to an import jump table, but instead points to a page close to the jump table that has some garbage in it.  Sampling other function pointers in the aSyscall array show they properly go the the import jump table.\r\n\r\nWe've used github.com/mattn/go-sqlite3 for quite a while with no issues.  We made some unrelated changes and recompiled our application and suddenly hit the issue.  Recompiling the program without the changes stopped triggering the bug, but once we found the issue we've been able to hit it with smaller programs (see the program below)\r\n\r\nWe suspect a linker issue, which is why we reported it here.\r\n\r\nRepro instructions:\r\n1) go get github.com/mattn/go-sqlite3\r\n2) compile the following go program:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"database/sql\"\r\n\t\"fmt\"\r\n\r\n\t_ \"github.com/mattn/go-sqlite3\"\r\n)\r\n\r\nfunc main() {\r\n\tdb, err := sql.Open(\"sqlite3\", \"foo.db\")\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"unable to open: %s\", err)\r\n\t\treturn\r\n\t}\r\n\trows, err := db.Query(\".tables;\")\r\n\tif err == nil {\r\n\t\trows.Close()\r\n\t}\r\n\tdb.Close()\r\n}\r\n```\r\n\r\nAn example of the output:\r\n```\r\nException 0xc0000005 0x8 0x646138 0x646138\r\nPC=0x646138\r\nsignal arrived during cgo execution\r\n\r\ngithub.com/mattn/go-sqlite3._Cfunc_sqlite3_close_v2(0x8966b8, 0xc000000000)\r\n        github.com/mattn/go-sqlite3/_obj/_cgo_gotypes.go:182 +0x4a\r\ngithub.com/mattn/go-sqlite3.(*SQLiteConn).Close(0xc08204a018, 0x0, 0x0)\r\n        c:/work/repro/src/github.com/mattn/go-sqlite3/sqlite3.go:320 +0x44\r\ndatabase/sql.(*driverConn).finalClose(0xc08200e1e0, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:322 +0x125\r\ndatabase/sql.finalCloser.(database/sql.finalClose)┬╖fm(0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:410 +0x52\r\ndatabase/sql.(*DB).Close(0xc082032000, 0x0, 0x0)\r\n        c:/go/src/database/sql/sql.go:493 +0x3c2\r\nmain.main()\r\n        c:/work/repro/src/repro/main.go:15 +0xdd\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n        c:/go/src/runtime/asm_amd64.s:2232 +0x1\r\nrax     0x0\r\nrbx     0x3\r\nrcx     0x78\r\nrdx     0x0\r\nrdi     0x896ba8\r\nrsi     0x897560\r\nrbp     0x896970\r\nrsp     0x22fce8\r\nr8      0x5db0c0\r\nr9      0x896ba8\r\nr10     0x18\r\nr11     0x5754e0\r\nr12     0x0\r\nr13     0x0\r\nr14     0x0\r\nr15     0x0\r\nrip     0x646138\r\nrflags  0x10206\r\ncs      0x33\r\nfs      0x53\r\ngs      0x2b\r\n```",
+	"user": {
+		"login": "azdagron",
+		"id": 7400314,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 31,
+	"closed_at": "2015-03-24T05:37:39Z",
+	"created_at": "2014-12-16T22:39:44Z",
+	"updated_at": "2015-11-06T21:38:54Z"
+}

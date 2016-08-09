@@ -1,0 +1,33 @@
+{
+	"id": 51279243,
+	"number": 2460,
+	"state": "closed",
+	"title": "net.Write doesn't handle timeouts in partial writes",
+	"body": "by **sebastien.paolacci**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Set a small, but large enough for sending few bytes, write timeout.\n2. Send a large buffer that can't be sent in one single pass.\n3. Make client's receive loop fast enough to respect timeout, but not to respect (number\nof chunks x timeout).\n\nWhat is the expected output?\nFull buffer sent, no timeout.\n\nWhat do you see instead?\nTimeout.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nlinux/amd64\n\nWhich revision are you using?  (hg identify)\nr60.3,tip\n\nPlease provide any additional information below.\n\nCurrent Write implementation handles partial writes, which make it really suitable for\nturn-key high level calls like io.Copy{N}, but considers timeout as being a global\ndeadline whatever the amount of data being transferred.\n\nShould applications have to deal with significantly heterogeneous transfer sizes,\ntimeout setting must be adjusted on a per call basis to reflect the more usual \u0026quot;min\nbandwidth / max inactivity\u0026quot; concept.\n\nReceiving large chunks takes longer than small ones but this doesn't provides with any\nadditional information regarding peer's status/health which timeouts are (mostly) useful\nfor.\n\nThere's a golang-nuts thread dedicated to that issue, Russ was hesitating between\ndeleting the timeout support and making the timeout reset on each byte sent, let's hope\nthe later is going to win;)\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/500f3b0e9eed3811/\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/500f3b0e9eed3811/\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:13:08Z",
+	"created_at": "2011-11-14T12:43:19Z",
+	"updated_at": "2016-06-24T21:20:36Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 74166840,
+	"body": "init1.go is \"Test that goroutines and garbage collection run during init\" and the code is simply:\r\n\r\n```\r\nvar x []byte\r\n\r\nfunc init() {\r\n        c := make(chan int)\r\n        go send(c)\r\n        \u003c-c \r\n        \r\n        const chunk = 1 \u003c\u003c 20\r\n        memstats := new(runtime.MemStats)\r\n        runtime.ReadMemStats(memstats)\r\n        sys := memstats.Sys\r\n        b := make([]byte, chunk)\r\n        for i := range b {\r\n                b[i] = byte(i%10 + '0')\r\n        }\r\n        s := string(b)\r\n        for i := 0; i \u003c 1000; i++ {\r\n                x = []byte(s)\r\n        }               \r\n        runtime.ReadMemStats(memstats)\r\n        sys1 := memstats.Sys\r\n        if sys1-sys \u003e chunk*500 {\r\n                println(\"allocated 1000 chunks of\", chunk, \"and used \", sys1-sys, \"memory\")\r\n                panic(\"init1\")\r\n        }\r\n}\r\n\r\nfunc send(c chan int) {\r\n        c \u003c- 1\r\n}\r\n\r\nfunc main() {\r\n}\r\n```\r\n\r\nIf something changed with GC or ReadMemStats or 32-bit, I would expect to see other builders failing. And if it was Windows in general, I'd expect to see windows-amd64 also failing.\r\n\r\nIt's weird that this is only windows-386.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-12T22:26:25Z",
+	"updated_at": "2015-02-12T22:26:35Z"
+}

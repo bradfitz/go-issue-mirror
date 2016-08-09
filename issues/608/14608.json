@@ -1,0 +1,22 @@
+{
+	"id": 138028043,
+	"number": 14608,
+	"state": "closed",
+	"title": "mime: cannot round-trip Word{En,De}coder",
+	"body": "WordEncoder sometimes passes text straight through, sometimes it does not. From the example_test.go:\r\n\r\n```go\r\nfmt.Println(mime.QEncoding.Encode(\"utf-8\", \"¡Hola, señor!\"))\r\nfmt.Println(mime.QEncoding.Encode(\"utf-8\", \"Hello!\"))\r\n```\r\n\r\nprints\r\n\r\n```\r\n// Output:\r\n// =?utf-8?q?=C2=A1Hola,_se=C3=B1or!?=\r\n// Hello!\r\n```\r\n\r\nThe problem is that, given an arbitrary output of a WordEncoder, how should a user tell whether or not to pass it to a WordDecoder to recover the original? A WD returns an error if the input isn't actually escaped:\r\n\r\n```go\r\nfunc main() {\r\n\ttestCases := []string{\r\n\t\t\"=?utf-8?q?=C2=A1Hola,_se=C3=B1or!?=\",\r\n\t\t\"Hello!\",\r\n\t}\r\n\tfor _, tc := range testCases {\r\n\t\td := new(mime.WordDecoder)\r\n\t\tfmt.Println(d.Decode(tc))\r\n\t}\r\n}\r\n```\r\n\r\nprints\r\n\r\n```\r\n¡Hola, señor! \u003cnil\u003e\r\n mime: invalid RFC 2047 encoded-word\r\n```\r\n\r\nRFC 2047 actually says that `Generally, an \"encoded-word\" is a sequence of printable ASCII characters that begins with \"=?\", ends with \"?=\", and has two \"?\"s in between` and, as a workaround, users of the mime package can check that before calling Decode.\r\n\r\nStill, this should probably be provided by the library, instead of users of that library. I can think of two possible solutions:\r\n1. Add a WordDecoder.CanDecode(string) bool method. The caller should call that before calling Decode.\r\n2. Export the existing errInvalidWord as ErrInvalidWord (or as a better name). The caller should check err == mime.ErrInvalidWord after calling Decode.\r\n\r\n@bradfitz, WDYT?",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-03-17T04:32:14Z",
+	"created_at": "2016-03-02T23:42:56Z",
+	"updated_at": "2016-03-17T04:32:14Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

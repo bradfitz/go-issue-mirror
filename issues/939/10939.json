@@ -1,0 +1,22 @@
+{
+	"id": 79758232,
+	"number": 10939,
+	"state": "closed",
+	"title": "encoding/json: Wrong marshal output on embeded structure with the custom marshaller",
+	"body": "Having an embeded struct with custom marshalJSON function, make the json.Marshal to use that marshal function in the base structure. \r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/json\"\r\n\t\"fmt\"\r\n)\r\n\r\n\r\ntype h0 struct {\r\n\tM []string\r\n}\r\n\r\nfunc (a h0) MarshalJSON() ([]byte, error) {\r\n\treturn json.Marshal(a.M)\r\n}\r\n\r\ntype h1 struct {\r\n\th0 `json:\"hedaer\"`\r\n\tA string\r\n\tB string\r\n}\r\n\r\nfunc main() {\r\n\r\n\tv := h1{}\r\n\tv.A = \"A\" \r\n\tv.B = \"B\"\r\n\tv.M = append(v.M, \"1\", \"2\", \"3\")\r\n\t\r\n\t\r\n\ta, err := json.Marshal(v)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tfmt.Println(string(a))\r\n}\r\n```\r\n\r\nOutput must be : \r\n\r\n```json\r\n{\"hedaer\":[\"1\",\"2\",\"3\"],\"A\":\"A\",\"B\":\"B\"}\r\n\r\n```\r\n\r\nBut is : \r\n\r\n```json\r\n[\"1\",\"2\",\"3\"]\r\n```\r\n\r\nin playground : https://play.golang.org/p/619v_hL5hh\r\n\r\nthe reason is obvious, since the function invoked on the outer structure, but I think json library must ignore this kind of marshaller functions. \r\nI test this against the latest version of go (1.4.2) in linux, and also the git version of go . \r\nAny other information is required?",
+	"user": {
+		"login": "fzerorubigd",
+		"id": 935155,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-05-23T07:21:19Z",
+	"created_at": "2015-05-23T06:59:54Z",
+	"updated_at": "2016-06-25T02:09:24Z"
+}

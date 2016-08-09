@@ -1,0 +1,27 @@
+{
+	"id": 128088669,
+	"number": 14069,
+	"state": "open",
+	"title": "cmd/asm: incorrect instruction encodings",
+	"body": "I have constructed a fairly exhaustive test suite for the x86 assembler and identified some problems. The ones in this issue are long-time bugs that appear to have been present since the beginning of the Go project. We should fix them but given the history there is no need to rush the fixes into Go 1.6.\n\nThis may not be all of them: my tests don't account for some Go renamings of instructions.\n\nI intend to fix these and check in the tests.\n\n\tADCB (BX), DL: have encoding \"1013\", want \"1213\"\n\t   0:\t10 13                \tadc    %dl,(%rbx)\n\t   0:\t12 13                \tadc    (%rbx),%dl\n\n\tANDPS (BX), X2: have encoding \"660f5413\", want \"0f5413\"\n\t   0:\t66 0f 54 13          \tandpd  (%rbx),%xmm2\n\t   0:\t0f 54 13             \tandps  (%rbx),%xmm2\n\n\tCMOVLEQ\t(BX), DX: have encoding \"0f4413\", want \"480f4e13\"\n\t   0:\t0f 44 13             \tcmove  (%rbx),%edx\n\t   0:\t48 0f 4e 13          \tcmovle (%rbx),%rdx\n\n\tMOVQ 0x123456789abcdef1, AX: have encoding \"488b0425f1debc9a\", want \"48a1f1debc9a78563412\"\n\t   0:\t48 8b 04 25 f1 de bc \tmov    0xffffffff9abcdef1,%rax\n\t   7:\t9a \n\t   0:\t48 a1 f1 de bc 9a 78 \tmovabs 0x123456789abcdef1,%rax\n\t   7:\t56 34 12 \n\n\tMOVQ AX, $0x123456789abcdef1: have encoding \"48890425f1debc9a\", want \"48a3f1debc9a78563412\"\n\t   0:\t48 89 04 25 f1 de bc \tmov    %rax,0xffffffff9abcdef1\n\t   7:\t9a \n\t   0:\t48 a3 f1 de bc 9a 78 \tmovabs %rax,0x123456789abcdef1\n\t   7:\t56 34 12",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-01-22T05:39:07Z",
+	"updated_at": "2016-05-17T20:36:37Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

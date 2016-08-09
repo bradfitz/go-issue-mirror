@@ -1,0 +1,12 @@
+{
+	"id": 66061532,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003e1) The \"//line :1\" comment makes sure error messages returned by the parser have correct\nline:col: information.\n\n2) You are correct that the offset is broken, for ParseExpr(...) it's also not defined.\nIt's trivial to use that example and provide a custom implementation that returns the\nfile set and makes the offset available (even though it may need to be corrected).\n\nFor what it's worth, your code would benefit from a helper function:\n\nfunc (f *AutoCompleteFile) offset(pos token.Position) int {\n   f.fset.Position(pos).Offset - f.correction  // f.correction == fixlen in your code\n}\n\nand then you can just write:\n\nf.offset(f.TokPos)\n\ninstead of the lengthy expression you have now. And then it doesn't matter if you have\nto correct the offset or not as it is only needed once. That is, having such a helper\nfunction would also be beneficial with the old parser API.\n\nThere are several reasons for eliminating the special partial parser entry points:\n\n1) As they were implemented, they didn't take any precautions with setting up the proper\nscopes. It could be done, but then the question arises if the scopes should be exposed\nor not, etc.\n\n2) The question arises, why only have those special partial parsers? Why not have one\nfor signatures, types, etc. It's a slippery slope that ends only when there is an entry\npoint for each production. We don't want to go there.\n\n3) Creating a custom version of ParseExpr is trivial. By using exactly one parser entry\npoint (ParseFile), we can make sure that everything is always correctly set up. It's\neasy to correct position information if necessary.\n\nIf you can provide me with a use case that cannot be handled this way, please let me\nknow. Otherwise I will consider this as closed once we freeze the API for Go 1.\u003c/pre\u003e\n\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-01-18T05:46:40Z",
+	"updated_at": "2014-12-08T10:14:25Z"
+}

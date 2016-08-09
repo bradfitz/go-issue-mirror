@@ -1,0 +1,28 @@
+{
+	"id": 131458502,
+	"number": 14231,
+	"state": "closed",
+	"title": "gccgo: net/http testcase failure after libgo move to Go 1.6rc1for ppc64/ppc64le",
+	"body": "This failure started yesterday in gcc-testresults after the libgo move to Go1.6rc1.\r\n\r\nI saw the failure on ppc64le Ubuntu 14.04, 14.10 and RHEL7.1 ppc64.  This was the only failure when running the go and libgo tests on ppc64le and ppc64 after the libgo update.\r\n\r\nIt fails consistently on ppc64 (BE) with the Server blocked error below, but on the ppc64le machine it will fail the first time and some later runs will sometimes pass or give different errors.  Still investigating that (maybe rerunning it in the way I'm doing it is not correct.)\r\n\r\nThe main failure looked like this:\r\n./a.out \r\n2016/02/04 14:32:56 httptest.Server blocked in Close after 5 seconds, waiting for connections:\r\n  *net.TCPConn 0xc209bd1178 127.0.0.1:59096 in state active\r\npanic: test timed out after 4m0s\r\n\r\ngoroutine 2403 [running]:\r\nruntime_dopanic\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/panic.c:131\r\n__go_panic\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/go-panic.c:111\r\ntesting.$nested7\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/go/testing/testing.go:729\r\nkickoff\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:235\r\ncreated by time.goFunc\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/go/time/sleep.go:129\r\n\r\ngoroutine 16 [chan receive, 1 minutes]:\r\nruntime_mcall\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:295\r\nruntime_park\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1871\r\nruntime_parkunlock\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1887\r\nchanrecv\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/chan.goc:269\r\ntesting.RunTests\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/go/testing/testing.go:582\r\ntesting.Run.pN9_testing.M\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/go/testing/testing.go:514\r\nnet_http_test.TestMain\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/main_test.go:22\r\nmain.main\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/_testmain.go:388\r\nruntime_main\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:626\r\ncreated by main\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/go-main.c:48\r\n\r\n......\r\nthere's more but I didn't include it all -- let me know if I should add it all\r\n\r\nAnother failure looked like this:\r\n\r\n./a.out \r\nPASS\r\nToo many goroutines running after net/http test(s).\r\n1 instances of:\r\nruntime_mcall\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:295\r\nruntime_park\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1871\r\nruntime_parkunlock\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1887\r\nrunfinq\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/mgc0.c:2512\r\nkickoff\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:235\r\ncreated by runtime_createfing\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/mgc0.c:2577\r\n1 instances of:\r\nruntime_mcall\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:295\r\nruntime_park\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1871\r\nruntime_parkunlock\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:1887\r\nbgsweep\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/mgc0.c:1844\r\nkickoff\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:235\r\ncreated by mgc\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/mgc0.c:2215\r\n1 instances of:\r\ngoroutine in C code; stack unavailable\r\ncreated by runtime_main\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:598\r\n1 instances of:\r\nruntime.Stack\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/mprof.goc:426\r\nhttp_test.interestingGoroutines\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/main_test.go:31\r\nhttp_test.goroutineLeaked\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/main_test.go:67\r\nnet_http_test.TestMain\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/main_test.go:23\r\nmain.main\r\n\t/home/boger/gccgo.work/trunk/bld/powerpc64le-linux/libgo/gotest12134/test/_testmain.go:388\r\nruntime_main\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/proc.c:626\r\ncreated by main\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/go-main.c:48\r\n1 instances of:\r\ngoroutine in C code; stack unavailable\r\ncreated by addtimer\r\n\t/home/boger/gccgo.work/trunk/bld/../src/libgo/runtime/time.goc:147\r\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-02-06T23:33:46Z",
+	"created_at": "2016-02-04T20:02:00Z",
+	"updated_at": "2016-02-06T23:33:46Z",
+	"milestone": {
+		"id": 1069171,
+		"number": 23,
+		"title": "Gccgo"
+	}
+}

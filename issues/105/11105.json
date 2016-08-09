@@ -1,0 +1,33 @@
+{
+	"id": 85818896,
+	"number": 11105,
+	"state": "closed",
+	"title": "runtime: \"go list std cmd\" fault",
+	"body": "Many of the builders are failing with a fault in go list std cmd such as the one below. I can reproduce this in about 1 in 10 runs with\r\n\r\n    stress go list cmd\r\n\r\nThis appears to be a combination of stack barriers and GOMAXPROCS\u003e1. With GOMAXPROCS=1 or with stack barriers disabled, it doesn't happen. \r\n\r\nI think this may be a write through an up-pointer without a write barrier. With the series ending at CL 10791 applied (which fixes checkmarks mode and some bugs in stack barriers), if you set GODEBUG=gccheckmark=1, it quickly fails with a checkmark failure from a slot in the stack that's a fair bit above the next stack barrier for that stack. I confirmed that this is *not* the known problem with unbuffered channel sends writing to a remote stack.\r\n\r\nAnnoyingly, I can't reproduce this in my memory tracing Pin tool, so I can't take the brute force approach to finding out what wrote to that stack slot. This also suggests that there may be a race involved that Pin's slow down is preventing.\r\n\r\nFrom http://build.golang.org/log/0641f2eba9b33697d963dd2e22cbffe7a99bcbd4:\r\n\r\n```\r\n2015/06/06 20:38:42 Error running go list std cmd: exit status 2, unexpected fault address 0x43202f2f\r\nfatal error: fault\r\n[signal 0xb code=0x1 addr=0x43202f2f pc=0x8167ab4]\r\n\r\ngoroutine 1 [running]:\r\nruntime.throw(0x844c358, 0x5)\r\n\t/tmp/workdir/go/src/runtime/panic.go:527 +0x7f fp=0x18af5a7c sp=0x18af5a70\r\nruntime.sigpanic()\r\n\t/tmp/workdir/go/src/runtime/sigpanic_unix.go:27 +0x276 fp=0x18af5aa8 sp=0x18af5a7c\r\nstrings.Index(0x43202f2f, 0x7279706f, 0x8442810, 0x3, 0xffffffff)\r\n\t/tmp/workdir/go/src/strings/strings.go:166 +0x104 fp=0x18af5adc sp=0x18af5aa8\r\nstrings.Contains(0x43202f2f, 0x7279706f, 0x8442810, 0x3, 0x0)\r\n\t/tmp/workdir/go/src/strings/strings.go:133 +0x39 fp=0x18af5af4 sp=0x18af5adc\r\nmain.importPaths(0x18ca2000, 0xd1, 0x140, 0x0, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/cmd/go/main.go:341 +0xfa fp=0x18af5ba0 sp=0x18af5af4\r\nmain.packagesAndErrors(0x1880a140, 0x2, 0x2, 0x0, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/cmd/go/pkg.go:1007 +0x1a4 fp=0x18af5ca4 sp=0x18af5ba0\r\nmain.packages(0x1880a140, 0x2, 0x2, 0x0, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/cmd/go/pkg.go:988 +0x64 fp=0x18af5d18 sp=0x18af5ca4\r\nmain.runList(0x864df40, 0x1880a140, 0x2, 0x2)\r\n\t/tmp/workdir/go/src/cmd/go/list.go:177 +0x192 fp=0x18af5e18 sp=0x18af5d18\r\nmain.main()\r\n\t/tmp/workdir/go/src/cmd/go/main.go:177 +0x656 fp=0x18af5fa8 sp=0x18af5e18\r\nruntime.main()\r\n\t/tmp/workdir/go/src/runtime/proc.go:111 +0x276 fp=0x18af5fd0 sp=0x18af5fa8\r\nruntime.goexit()\r\n\t/tmp/workdir/go/src/runtime/asm_386.s:1666 +0x1 fp=0x18af5fd4 sp=0x18af5fd0\r\n\r\ngoroutine 17 [syscall, locked to thread]:\r\nruntime.goexit()\r\n\t/tmp/workdir/go/src/runtime/asm_386.s:1666 +0x1\r\n\r\ngoroutine 5 [syscall]:\r\nos/signal.loop()\r\n\t/tmp/workdir/go/src/os/signal/signal_unix.go:22 +0x1a\r\ncreated by os/signal.init.1\r\n\t/tmp/workdir/go/src/os/signal/signal_unix.go:28 +0x36\r\n```\r\n\r\n/cc @RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-06-08T05:13:29Z",
+	"created_at": "2015-06-06T22:50:53Z",
+	"updated_at": "2016-06-25T02:10:37Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

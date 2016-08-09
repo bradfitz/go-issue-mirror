@@ -1,0 +1,12 @@
+{
+	"id": 66084493,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3 by **tomheinan**:\n\n\u003cpre\u003eJust chiming in to note that I've just run into this as well. My app spins up several\nthousand goroutines, each of which does a DNS lookup every ten seconds or so, and the\napp is reliably panicking after a few minutes of uptime.\n\ngo version go1.1.2 linux/amd64\nLinux 3.9.3-x86_64-linode33 #1 SMP Mon May 20 10:22:57 EDT 2013 x86_64 x86_64 x86_64\nGNU/Linux\n\nThe error in question:\n\n\tgoroutine 63910 [running]:\n\tnet.cgoLookupIPCNAME(0xc2006a65a0, 0x12, 0x0, 0x0, 0x0, ...)\n\t\tnet/_obj/_cgo_gotypes.go:188 +0x2a5\n\tnet.cgoLookupIP(0xc2006a65a0, 0x12, 0x0, 0x0, 0x0, ...)\n\t\tnet/_obj/_cgo_gotypes.go:228 +0x67\n\tnet.cgoLookupHost(0xc2006a65a0, 0x12, 0x0, 0x0, 0x0, ...)\n\t\tnet/_obj/_cgo_gotypes.go:106 +0x79\n\tnet.lookupHost(0xc2006a65a0, 0x12, 0x0, 0x0, 0x0, ...)\n\t\t/usr/local/go/src/pkg/net/lookup_unix.go:56 +0x61\n\tnet.func·019()\n\t\t/usr/local/go/src/pkg/net/lookup.go:42 +0x34\n\tcreated by net.lookupHostDeadline\n\t\t/usr/local/go/src/pkg/net/lookup.go:44 +0x22f\n\nThe actual code that's doing the DNS lookup:\n\n\t// parse the server into host/port\n\thost, port, err := net.SplitHostPort(server)\n\tif err != nil {\n\t\t// we weren't given a port; try to find one via dns\n\t\t_, addrs, srvErr := net.LookupSRV(\"minecraft\", \"udp\", server)\n\t\tif srvErr != nil {\n\t\t\t_, addrs, srvErr = net.LookupSRV(\"minecraft\", \"tcp\", server)\n\t\t}\n\t\n\t\tif srvErr != nil {\n\t\t\thost = server\n\t\t\tport = \"25565\"\n\t\t} else {\n\t\t\taddr := addrs[0]\n\t\t\thost = strings.TrimRight(addr.Target, \".\")\n\t\t\tport = strconv.FormatInt(int64(addr.Port), 10)\n\t\t}\n\t}\n\t\n\tconn, err := net.DialTimeout(\"udp\", net.JoinHostPort(host, port), 3 * time.Second)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t.. etc ..\n\nI ran into this this evening while doing a server migration - I thought perhaps it was\ndue to using a newer version of go, so I downgraded back to 1.1, but it's still crashing\nafter a few minutes, so it doesn't look like that's the issue.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-08-28T06:19:52Z",
+	"updated_at": "2014-12-08T10:34:16Z"
+}

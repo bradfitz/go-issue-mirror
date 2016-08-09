@@ -1,0 +1,12 @@
+{
+	"id": 231470556,
+	"body": "Quoting the Go1 guarantee:\r\n\r\n\u003e It is intended that programs written to the Go 1 specification will continue to compile and run correctly, unchanged, over the lifetime of that specification.\r\n\r\nAs a subset of all code accepted by Go1 any code that compiles and runs without panic will, _unchanged_ continue to compile and run without panic if this proposal were implemented.\r\n\r\nNext, according to specs:\r\n\u003e In other words, even though the dynamic type of x is known only at run time, the type of x.(T) is known to be T in a correct program.\r\n\r\nNote that Go1 only guarantees for programs that “run correctly.” And by spec, having a type assertion that will knowably at compile-time panic a type-assertion is, by definition, not a correct program.\r\n\r\nThus, the only case we're REALLY dealing with here is:\r\n`if u2, ok := u.(*U2); ok { /* this code will begin to start running */ } else { /* instead of this code */ }`\r\n\r\nFirst, let's set aside that this code is wrong wrong wrong, and the wrongiest wrong that ever wronged.\r\n\r\n`u2` will with this proposal be a valid pointer to an interface U2, which is actually—by design—identical to a pointer to an interface of U1. That is, to get at anything other than methods of U1 or U2, you would STILL have to type assert the pointed-to value into something usable.\r\n\r\nThus, the code will actually start working in a way that is guaranteed to work correctly. Because whether `u` points to an interface of type `U1`, or `U2`, then (*u).(U2), and (*u).(U1) would work if the pointer were not nil (otherwise nil-pointer deref) or the value of the pointed-to interface is not nil.\r\n\r\nNamely, there is no code where treating type *U1 and *U2 as identical could possibly cause “broken” behavior. After all, they were already “meta-semantically” identical…\r\n\r\nSo, as noted, this actually makes MORE code correct, and is a strict super-set of all currently correct code.\r\n\r\n\u003e `var u interface{} = (*U1)(nil)`\r\n\r\nI just have to say, breaking this out into what it is actually saying; this is making a variable u, which is an untyped empty interface, which is set with the concrete type to an empty interface, and a value of concrete value of nil.\r\n\r\nThis code kinda made me throw up a little in my mouth…",
+	"user": {
+		"login": "puellanivis",
+		"id": 10839126,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-08T20:56:12Z",
+	"updated_at": "2016-07-08T20:56:12Z"
+}

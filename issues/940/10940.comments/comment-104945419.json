@@ -1,0 +1,12 @@
+{
+	"id": 104945419,
+	"body": "I am using Go 1.4 on unix platforms (Linux and OSX). Below is the function I wrote to detect closed connections before attempting a Write:\r\n\r\n    func IsClosed(c net.Conn) bool {\r\n        _, err := c.Read([]byte{})\r\n        return err == io.EOF\r\n    }\r\n\r\nUnfortunately, it always return true. As far as I can tell, all versions of go have a variation of the following:\r\n\r\n    func (fd *netFD) eofError(n int, err error) error {\r\n        if n == 0 \u0026\u0026 err == nil \u0026\u0026 fd.sotype != syscall.SOCK_DGRAM \u0026\u0026 fd.sotype != syscall.SOCK_RAW {\r\n            return io.EOF\r\n        }\r\n        return err\r\n    }\r\n\r\nSo when syscall.read returns a n=0 bytes read, as it always will when 0 bytes are requested, this will always result in TCPConn.Read returning EOF\r\n\r\nAm I missing something?\r\n\r\nedit: Interestingly enough, if the TCP connection is wrapped in a TLS connection, I have the reverse problem, i.e. I never get an EOF even after the connection is closed.\r\n",
+	"user": {
+		"login": "huguesb",
+		"id": 7319881,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-23T21:22:32Z",
+	"updated_at": "2015-05-23T22:32:01Z"
+}

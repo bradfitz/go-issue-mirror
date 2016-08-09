@@ -1,0 +1,12 @@
+{
+	"id": 66088519,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eThanks for the reproduction instructions.  For me this patch avoids the crash, and I\nthink this approach is more predictable.  Is the gdb behaviour with this patch as good\nas with your proposed patch?\n\ndiff -r 65bf677ab8d8 src/pkg/runtime/sys_x86.c\n--- a/src/pkg/runtime/sys_x86.c\tMon Nov 25 13:36:16 2013 +1100\n+++ b/src/pkg/runtime/sys_x86.c\tMon Nov 25 17:04:15 2013 -0800\n@@ -27,7 +27,8 @@\n runtime·rewindmorestack(Gobuf *gobuf)\n {\n \tbyte *pc;\n-\t\n+\tFunc *f;\n+\n \tpc = (byte*)gobuf-\u003epc;\n \tif(pc[0] == 0xe9) { // jmp 4-byte offset\n \t\tgobuf-\u003epc = gobuf-\u003epc + 5 + *(int32*)(pc+1);\n@@ -37,6 +38,13 @@\n \t\tgobuf-\u003epc = gobuf-\u003epc + 2 + *(int8*)(pc+1);\n \t\treturn;\n \t}\n+\tif(pc[0] == 0xcc) { // breakpoint inserted by gdb\n+\t\tf = runtime·findfunc(gobuf-\u003epc);\n+\t\tif(f != nil) {\n+\t\t\tgobuf-\u003epc = f-\u003eentry;\n+\t\t\treturn;\n+\t\t}\n+\t}\n \truntime·printf(\"runtime: pc=%p %x %x %x %x %x\\n\", pc, pc[0], pc[1], pc[2], pc[3], pc[4]);\n \truntime·throw(\"runtime: misuse of rewindmorestack\");\n }\u003c/pre\u003e",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-11-26T01:04:32Z",
+	"updated_at": "2014-12-08T10:38:00Z"
+}

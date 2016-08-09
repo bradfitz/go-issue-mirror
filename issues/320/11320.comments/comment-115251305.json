@@ -1,0 +1,12 @@
+{
+	"id": 115251305,
+	"body": "@dvyukov could you point me to the code that reads RDTSC ticks? I was able to find code for windows that that reads the OS ticks, but not a CPU instruction.\r\n\r\n@alexbrainman Were those failures on a WinXP box on hardwre?\r\n\r\nOn WinXP when we heavily load the CPU (like the pprof stress tests do) the time per thread only has a resolution of 450 milliseconds, which is going to break pprof.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"runtime\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nconst (\r\n\tskipThreasholdMilli = 100\r\n\tT                   = 8\r\n\ttimeoutMilli        = 100\r\n)\r\n\r\nfunc main() {\r\n\tif skip() {\r\n\t\tfmt.Println(\"SKIP PPROF\")\r\n\t\tos.Exit(1)\r\n\t}\r\n}\r\n\r\ntype pass struct {\r\n\tdiff    int\r\n\tsameFor int\r\n}\r\n\r\nfunc skip() bool {\r\n\tdone := make(chan struct{})\r\n\ttime.AfterFunc(time.Millisecond*timeoutMilli, func() {\r\n\t\tclose(done)\r\n\t})\r\n\twg := \u0026sync.WaitGroup{}\r\n\tresult := make(chan pass, T)\r\n\tfor range [T]struct{}{} {\r\n\t\twg.Add(1)\r\n\t\tgo func() {\r\n\t\t\tdefer wg.Done()\r\n\t\t\tdiff, sameFor := thrash(done)\r\n\t\t\tresult \u003c- pass{diff, sameFor}\r\n\t\t}()\r\n\t}\r\n\twg.Wait()\r\n\tclose(result)\r\n\tfor p := range result {\r\n\t\tif p.diff \u003e skipThreasholdMilli {\r\n\t\t\tfmt.Println(p.diff, \" - but same for \", p.sameFor)\r\n\t\t\treturn true\r\n\t\t}\r\n\t}\r\n\treturn false\r\n}\r\n\r\nfunc nextDiffMilli() (int, int) {\r\n\tsameFor := 0\r\n\tlast := time.Now().UnixNano()\r\n\tfor {\r\n\t\tnext := time.Now().UnixNano()\r\n\t\tif last != next {\r\n\t\t\treturn int((next - last) / (1000 * 1000)), sameFor\r\n\t\t}\r\n\t\tsameFor++\r\n\t}\r\n}\r\n\r\nfunc thrash(done chan struct{}) (int, int) {\r\n\truntime.LockOSThread()\r\n\tdefer runtime.UnlockOSThread()\r\n\r\n\tdiff := 0\r\n\tsameFor := 0\r\n\tfor {\r\n\t\tselect {\r\n\t\tcase \u003c-done:\r\n\t\t\treturn diff, sameFor\r\n\t\tdefault:\r\n\t\t\tdiff, sameFor = nextDiffMilli()\r\n\t\t\tif diff \u003e skipThreasholdMilli {\r\n\t\t\t\treturn diff, sameFor\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\treturn diff, sameFor\r\n}\r\n```\r\n\r\nOutput:\r\n```\r\n468  - but same for  1136486\r\nSKIP PPROF\r\n```\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-25T13:11:25Z",
+	"updated_at": "2015-06-25T13:11:25Z"
+}

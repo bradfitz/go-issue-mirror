@@ -1,0 +1,12 @@
+{
+	"id": 208020023,
+	"body": "I went to fix this (see https://golang.org/cl/21811) but it breaks the test for issue #6458 which seems to explicitly lock-in this behavior:\r\n\r\n```\r\n--- FAIL: TestIssue6458 (0.00s)\r\n        encode_test.go:437: Marshal(x) = `{\"M\":\"foo\"}`; want `{\"M\":\"ImZvbyI=\"}`\r\nFAIL\r\nexit status 1\r\nFAIL    encoding/json   1.474s\r\n```\r\n\r\nFrom test:\r\n\r\n```go\r\nfunc TestIssue6458(t *testing.T) {\r\n        type Foo struct {\r\n                M RawMessage\r\n        }\r\n        x := Foo{RawMessage(`\"foo\"`)}\r\n\r\n        b, err := Marshal(\u0026x)\r\n        if err != nil {\r\n                t.Fatal(err)\r\n        }\r\n        if want := `{\"M\":\"foo\"}`; string(b) != want {\r\n                t.Errorf(\"Marshal(\u0026x) = %#q; want %#q\", b, want)\r\n        }\r\n\r\n        b, err = Marshal(x)\r\n        if err != nil {\r\n                t.Fatal(err)\r\n        }\r\n\r\n        if want := `{\"M\":\"ImZvbyI=\"}`; string(b) != want {\r\n                t.Errorf(\"Marshal(x) = %#q; want %#q\", b, want)\r\n        }\r\n}\r\n```\r\n\r\nI don't really like that behavior, but I'm not sure whether we can change it.\r\n\r\n@rsc?\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-10T17:19:06Z",
+	"updated_at": "2016-04-10T17:19:06Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 164371545,
+	"number": 16287,
+	"state": "closed",
+	"title": "x/crypto/ssh: goroutine leak when ssh.Channel connection is closed early",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go version go1.6.2 linux/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/kelwert/go1.6.2\"\r\nGOTOOLDIR=\"/home/kelwert/go1.6.2/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nWe've been working at rolling out a go-based ssh server to replace some old infra and we noticed that after handling a few million connections, the memory usage seems to go up from about 6MB to 30MB over the course of a day. This obviously isn't a very large leak, but it's definitely noticeable over a long period of time.\r\n\r\nAfter investigating, I think we've narrowed it down to the fact that the only function which closes the channel's request channel (`*channel.close()`) is never called if a connection dies early. It is only closed if the channel gets a `msgChannelClose` in `*channel.handlePacket`.\r\n\r\nThis leaves any server implementation using `ssh.DiscardRequests` open to a goroutine leak because the channel that function is ranging over never gets closed and therefore the goroutine never exits even when the underlying connection (and in extension, ssh-channel) is closed.\r\n\r\nI don't have a simple example yet, as writing ssh server implementation is not simple and distilling a bug down to a reproducible case isn't easy, but I'll update this when I have one.\r\n\r\n4. What did you expect to see?\r\nNo memory leak.\r\n\r\n5. What did you see instead?\r\nA very small memory leak.\r\n\r\nAdditional notes:\r\n\r\n`*channel.Close` never actually calls `*channel.close`. It simply *sends* a `msgChannelClose`.",
+	"user": {
+		"login": "belak",
+		"id": 107097,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-07-07T20:24:15Z",
+	"created_at": "2016-07-07T18:04:26Z",
+	"updated_at": "2016-07-07T20:24:15Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

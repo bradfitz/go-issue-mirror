@@ -1,0 +1,12 @@
+{
+	"id": 66053875,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003e\u003e By the way, I believe this proposal enables both use cases described with the same\nsimple API suggested by Russ.\n\ni don't think it does.\nhere's an example that i came across a while ago: implementing\na cellular automaton with concurrent calculation of cells,\na classic barrier algorithm.\n\nthe central goroutine looks like this:\n\nfunc worker(c0, c1 *cells, x0, x1 int, b *Barrier) {\n\tfor {\n\t\tcalc(c0, c1, x0, x1)\n\t\tb.Wait()\n\t\tcalc(c1, c0, x0, x1)\n\t\tb.Wait()\n\t}\n}\n\nit calculates a single stripe of cells within the rectangular cell\narray. there's one goroutine for each stripe, and source and\ndestination cell arrays alternate with each step.\n\nit's crucial that all stripes have finished processing before\nthe source and destination are swapped.\n\ni'm not sure you could easily use something like russ's proposed\nAPI to do this. e.g. this is wrong:\n\nfunc worker(c0, c1 *cells, x0, x1 int, b *Barrier) {\n\tfor {\n\t\tb.Add(1)\n\t\tcalc(c0, c1, x0, x1)\n\t\tb.Done()\n\t\tb.Wait()\n\n \t\tb.Add(1)\n\t\tcalc(c1, c0, x0, x1)\n\t\tb.Done()\n\t\tb.Wait()\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-01-05T14:39:47Z",
+	"updated_at": "2014-12-08T10:08:04Z"
+}

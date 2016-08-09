@@ -1,0 +1,27 @@
+{
+	"id": 51287084,
+	"number": 7699,
+	"state": "closed",
+	"title": "syscall: ptrace calls must all come from one thread",
+	"body": "by **tom.fogal**:\n\n\u003cpre\u003eWhat does 'go version' print?\n\nThis bug occurs on both:\n\n  go version devel +23cb4547ef55 Wed Apr 02 19:43:39 2014 +0900 linux/amd64\n\nand\n\n  go version go1.1.2 linux/amd64\n\nWhat steps reproduce the problem?\n\nos.StartProcess with 'Ptrace' set in your attr; then try to query any state for the\nprocess.\n\nThis is a sample program:\n\n  \u003ca href=\"http://play.golang.org/p/bSI7aGlcyt\"\u003ehttp://play.golang.org/p/bSI7aGlcyt\u003c/a\u003e\n\nUnfortunately it does not compile in the playground.  The environment\nmust be slightly different, as it compiles fine with the two Go\nversions listed above.\n\nWhat happened?\n\nFor me, the functionality is split about 50/50: half the time, the\nprogram on the playground works fine, which is to say it counts the\nnumber of instructions a subprocess requires to execute.  The other\nhalf of the time I receive:\n\n  error single stepping: no such process\n  panic: ptrace\n\nand a stacktrace (see lines 22--26).\n\nWhat should have happened instead?\n\nI would like the program to count the number of instructions of the\nsubprocess reliably, without panic'ing.\n\nPlease provide any additional information below.\n\nI have experimented with adding\n\n  proc.Signal(syscall.SIGSTOP)\n\ninto the program closely after the os.StartProcess.  Subjectively,\nthis seems to help, but it does not fix the problem.\n\nThis is a transliteration of a C program:\n\n  \u003ca href=\"http://eli.thegreenplace.net/files/prog_code/articles_code/debugger/simple_tracer.c\"\u003ehttp://eli.thegreenplace.net/files/prog_code/articles_code/debugger/simple_tracer.c\u003c/a\u003e\n\ninto Go.  The C program works reliably.  I checked the implementation of\nforkAndExecInChild (syscall/exec_linux.go) and it does seem to properly set\nPTRACE_TRACEME.  Perhaps the combination of other things that it does prevents the\nnormal parent-notification-when-child-does-exec operation.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:42:45Z",
+	"created_at": "2014-04-03T13:06:40Z",
+	"updated_at": "2016-03-26T05:17:55Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

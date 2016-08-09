@@ -1,0 +1,16 @@
+{
+	"id": 235142690,
+	"body": "I do think it's important to realize, as @robpike points out and as Robert's design doc says, that aliasing of constants and functions already works fine.  I don't personally think that aliasing of variables is very important, though I appreciate Rob's point above that it's nice to be consistent.  It's really only aliasing of types that matters.\r\n\r\nI want to pick up on a suggestion from @nathany above: what if instead of the alias syntax that @griesemer described, and instead of the `type T1 = T2` syntax that several people have mentioned, we instead permit `import p.N`.  The meaning of this statement would be to alias `N` from package `p` and make it available as an exported name `N` in the current package.  The package `p` must of course be imported itself.\r\n\r\nThis means that an alias is always to a name in an external package.  It means that the alias always uses the same name as it has in the external package.  We can permit it to be a `const`, `func`, `type`, or `var`--it will have the same meaning it has in the external package.  This will enforce Rob's suggestion above: it will be impossible for a single package to have an alias for the same object under two different names, because all aliases to `N` must themselves be named `N`.  It will of course be impermissible to define a new method on an imported type.  This will permit refactoring a package.  It will permit the kind of API separation into multiple packages that Robert described above.\r\n\r\nWe could require that this kind of import statement appear along with the other import statements.  I don't feel strongly about that.  It's important to note that, unlike those other import statements, this kind of import statement defines a name in package scope (it must be that way because the name is re-exported), so it may be appropriate to not mix it with the other import statements, which only change file scope.\r\n\r\nThis does mean that in a package doing an import, values with the type `N` and `p.N` will have the same type.  And it means that in some other package that imports both packages, values with the type `p1.N` and `p2.N` will have the same type.  I would argue that in a sensible program the potential for confusion is low.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	},
+	"created_at": "2016-07-26T02:10:50Z",
+	"updated_at": "2016-07-26T02:11:24Z"
+}

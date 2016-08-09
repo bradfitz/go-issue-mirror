@@ -1,0 +1,28 @@
+{
+	"id": 51276997,
+	"number": 833,
+	"state": "closed",
+	"title": "Standard makefiles have architecture-dependent variables",
+	"body": "\u003cpre\u003eThe makefiles in $(GOROOT)/src/ seem to me structured thus:\nMake.$(GOARCH) should have all of the archictecture-dependent flags\nMake.{pkg,cmd} never has to care about the system configuration, it expects such\nvariables to be \nset\n\nThe latter is only half-true... it has compiler names, which are a product of the system \narchitecture, factored out.  Thus, I think we should also have Make.$(GOOS) that defines\nos-\ndependent flags.\n\nThis would do two things: it would factor out a few of the nastier CGO things in a way\nwhich \nother build tools would be able to pull from without grepping or working around\nMake.pkg, and \nit would make it easier for people to see the things which are system dependent and that\nwhich is \nnot.  It would, however, require cgo package makefile to include Make.$(GOOS) as well as \nMake.$(GOARCH).  Which I think is legit.  Or, of course, we could automatically include\nthe GOOS \none in Make.pkg.\n\nThe patch that I included below is the best way I could come up with to make the changes\nand \nimpact the fewest people... I would prefer moving the _CGO_LDFLAGS_$(GOARCH) variables\nto \nsimply CGO_LDFLAGS in separate include files, which would require that people either\nduplicate \nthem or always use += in their makefiles.\n\nI would like people's thoughts on this.  I didn't want to submit a CL about this, as it\nseems not \njust a question about whether or not to fix it but a question about just how far the fix\nshould go.\n\nWhat is your $GOOS?  $GOARCH?\ndarwin amd64\n\nWhich revision are you using?  (hg identify)\na85ad0a64015 release.2010-05-27/release\n\ndiff -r a85ad0a64015 src/Make.386\n--- a/src/Make.386\tThu May 27 16:50:31 2010 -0700\n+++ b/src/Make.386\tThu Jun 03 15:08:06 2010 -0400\n@@ -9,3 +9,4 @@\n LD=${O}l\n OS=568vq\n CFLAGS=-FVw\n+_CGO_CFLAGS_386=-m32\ndiff -r a85ad0a64015 src/Make.amd64\n--- a/src/Make.amd64\tThu May 27 16:50:31 2010 -0700\n+++ b/src/Make.amd64\tThu Jun 03 15:08:06 2010 -0400\n@@ -9,3 +9,5 @@\n LD=${O}l\n OS=568vq\n CFLAGS=-FVw\n+_CGO_CFLAGS_amd64=-m64\n+RUNTIME_CFLAGS_amd64=-D_64BIT\ndiff -r a85ad0a64015 src/Make.darwin\n--- /dev/null\tThu Jan 01 00:00:00 1970 +0000\n+++ b/src/Make.darwin\tThu Jun 03 15:08:06 2010 -0400\n@@ -0,0 +1,5 @@\n+# Copyright 2009 The Go Authors. All rights reserved.\n+# Use of this source code is governed by a BSD-style\n+# license that can be found in the LICENSE file.\n+\n+_CGO_LDFLAGS_darwin=-dynamiclib -Wl,-undefined,dynamic_lookup\ndiff -r a85ad0a64015 src/Make.freebsd\n--- /dev/null\tThu Jan 01 00:00:00 1970 +0000\n+++ b/src/Make.freebsd\tThu Jun 03 15:08:06 2010 -0400\n@@ -0,0 +1,1 @@\n+_CGO_LDFLAGS_freebsd=-shared -lpthread -lm\ndiff -r a85ad0a64015 src/Make.linux\n--- /dev/null\tThu Jan 01 00:00:00 1970 +0000\n+++ b/src/Make.linux\tThu Jun 03 15:08:06 2010 -0400\n@@ -0,0 +1,1 @@\n+_CGO_LDFLAGS_linux=-shared -lpthread -lm\ndiff -r a85ad0a64015 src/Make.pkg\n--- a/src/Make.pkg\tThu May 27 16:50:31 2010 -0700\n+++ b/src/Make.pkg\tThu Jun 03 15:08:06 2010 -0400\n@@ -126,17 +126,8 @@\n # added _cgo_defun.$O to $OFILES, and added the installed copy of\n # package_x.so (built from x.cgo2.c) to $(INSTALLFILES).\n \n-RUNTIME_CFLAGS_amd64=-D_64BIT\n RUNTIME_CFLAGS=-I\u0026quot;$(GOROOT)/src/pkg/runtime\u0026quot; $(RUNTIME_CFLAGS_$(GOARCH))\n \n-# Have to run gcc with the right size argument on hybrid 32/64 machines.\n-_CGO_CFLAGS_386=-m32\n-_CGO_CFLAGS_amd64=-m64\n-_CGO_LDFLAGS_freebsd=-shared -lpthread -lm\n-_CGO_LDFLAGS_linux=-shared -lpthread -lm\n-_CGO_LDFLAGS_darwin=-dynamiclib -Wl,-undefined,dynamic_lookup\n-\n-\n # Compile x.cgo4.c with gcc to make package_x.so.\n \n # Compile _cgo_defun.c with 6c; needs access to the runtime headers.\u003c/pre\u003e",
+	"user": {
+		"login": "kylelemons",
+		"id": 322213,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:06:02Z",
+	"created_at": "2010-06-03T19:15:51Z",
+	"updated_at": "2016-06-24T19:16:39Z"
+}

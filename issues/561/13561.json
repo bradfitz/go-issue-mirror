@@ -1,0 +1,22 @@
+{
+	"id": 121411906,
+	"number": 13561,
+	"state": "closed",
+	"title": "net: pure Go dns does not handle UDP packets \u003e 512 octets",
+	"body": "I have found a bug in pure Go resolver that causes Dial to fail even though correct responses are returned from the server. This problem manifested itself as a failure when trying to search for docker images in docker 1.9.1 built on go1.4.3:\r\n\r\n```\r\nDEBU[0003] Calling GET /v1.21/images/search\r\nINFO[0003] GET /v1.21/images/search?term=phusion\r\nDEBU[0003] hostDir: /etc/docker/certs.d/docker.io\r\nDEBU[0003] pinging registry endpoint https://index.docker.io/v1/\r\nDEBU[0003] attempting v1 ping for registry endpoint https://index.docker.io/v1/\r\nDEBU[0003] Index server: https://index.docker.io/v1/\r\nERRO[0003] Handler for GET /v1.21/images/search returned error: Get https://index.docker.io/v1/search?q=phusion: dial tcp: lookup index.docker.io on x.x.x.x:53: no such host\r\nERRO[0003] HTTP Error                                    err=Get https://index.docker.io/v1/search?q=phusion: dial tcp: lookup index.docker.io on x.x.x.x:53: no such host statusCode=404\r\n```\r\n\r\nSimilar issues are #12712 and #12778\r\n\r\nI have tested go1.3.0 and it did not exhibit this problem, but at least 1.4.3, 1.5.1 and 1.5.2 are affected.\r\n\r\nTested using the following code:\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"io/ioutil\"\r\n    \"log\"\r\n    \"net/http\"\r\n    \"os\"\r\n)\r\n\r\nfunc main() {\r\n    resp, err := http.Get(os.Args[1])\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    page, err := ioutil.ReadAll(resp.Body)\r\n    resp.Body.Close()\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    fmt.Printf(\"%s\", page)\r\n}\r\n```\r\n\r\n**Note - we only run an IPv4 stack. IPv6 is disabled on the client**\r\n\r\n## Test fails with pure Go resolver\r\n```\r\n# /tmp/fetch-1.5.2 https://index.docker.io/v1/search?q=phusion\r\n2015/12/10 12:17:42 Get https://index.docker.io/v1/search?q=phusion: dial tcp: lookup index.docker.io on x.x.x.x:53: no such host\r\n# docker search phusion\r\nError response from daemon: Get https://index.docker.io/v1/search?q=phusion: dial tcp: lookup index.docker.io on x.x.x.x:53: no such host\r\n```\r\nDNS packet capture: [PureGO_correct_but_fails.txt](https://github.com/golang/go/files/57660/PureGO_correct_but_fails.txt)\r\n\r\nHere we see the AAAA response contains only CNAME RRs but no AAAA RRs. The resolver queries all 4 name servers and all 4 responses contain CNAME and A RRs which the resolver ignores. It then searches using the search domain (from `/etc/resolv.conf`) appended, finally determining that the host cannot be found.\r\n\r\n## Test succeeds when forced to use cGo resolver\r\n(By setting LOCALDOMAIN in the environment, as described [in the docs](https://golang.org/pkg/net/))\r\n```\r\n# LOCALDOMAIN= /tmp/fetch-1.5.2 https://index.docker.io/v1/search?q=phusion\r\n{\"num_pages\": 11, \"num_results\": 257, \"results\": [{\"is_automated\": true, ...\r\n```\r\nDNS packet capture: [CGO_correct_but_succeeds.txt](https://github.com/golang/go/files/57661/CGO_correct_but_succeeds.txt)\r\n\r\nHere we see the same AAAA and A RRs are returned but this time the resolver accepts the A records and the dial call succeeds.\r\n\r\n## Summary\r\nThe name server returns correct responses for both A and AAAA queries but the pure Go resolver ignores the A response records when the AAAA response contains no RRs.\r\n\r\nI would have also expected that since IPv6 is disabled, querying for AAAA records is redundant, but the C library does it too. That may be because many hosts will have both stacks enabled but only have IPv4 routing configured so querying AAAA may be valid and successful but will require an A query anyway. Unfortunately that means the DNS server's load gets doubled for every address resolution.\r\n\r\n## Recommendations\r\n\r\n- Review section __3. Expected Behaviour__ of [RFC4074](https://www.ietf.org/rfc/rfc4074.txt)\r\n- Enable AAAA queries only if the IPv6 stack is enabled\r\n",
+	"user": {
+		"login": "waddles",
+		"id": 236990,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-12-11T03:00:45Z",
+	"created_at": "2015-12-10T06:08:11Z",
+	"updated_at": "2015-12-11T03:00:45Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

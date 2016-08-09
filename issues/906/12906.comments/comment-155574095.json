@@ -1,0 +1,12 @@
+{
+	"id": 155574095,
+	"body": "There is a line in `os2_darwin.go:9`:\r\n```go\r\n_SI_USER     = 0 /* empirically true, but not what headers say */\r\n```\r\n@rsc , could you remember, why you used 0?\r\nConsider the following program:\r\n```C\r\n#include \u003csignal.h\u003e\r\n#include \u003cstdio.h\u003e\r\n#include \u003cstdlib.h\u003e\r\n#include \u003cunistd.h\u003e\r\n\r\nvoid sig_handler(int number, siginfo_t *info, void * unused) {\r\n  printf(\"si_code = %d\\n\", info-\u003esi_code);\r\n}\r\n\r\nint main(void) {\r\n  struct sigaction sig_action;\r\n  sig_action.sa_sigaction = sig_handler;\r\n  sigemptyset(\u0026sig_action.sa_mask);\r\n  sig_action.sa_flags=SA_SIGINFO;\r\n\r\n  if(sigaction(SIGTRAP,\u0026sig_action,NULL))   {\r\n    fprintf(stderr,\"sigaction(SIGTRAP) fail\\n\");\r\n    exit(1);\r\n  }\r\n  while (1) {\r\n    sleep(1);\r\n  }\r\n}\r\n```\r\nIf we send a signal `kill -s SIGTRAP pid`, the output will be `si_code = 1` on OSX Yosemite.\r\nThanks in advance.",
+	"user": {
+		"login": "avdva",
+		"id": 12461031,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-10T21:34:51Z",
+	"updated_at": "2015-11-10T21:34:51Z"
+}

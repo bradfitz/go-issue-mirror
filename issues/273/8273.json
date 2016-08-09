@@ -1,0 +1,36 @@
+{
+	"id": 51287953,
+	"number": 8273,
+	"state": "open",
+	"title": "text/tabwriter: character width ",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIssue:\ngofmt, or text.tabwriter, assumes that all Unicode code points occupy exactly one column\nin editors or on terminals. That assumption is not correct because most (but not all)\nChinese/Japanese/Korean characters, emojis, \u0026quot;fullwidth\u0026quot; Latin characters, etc,\noccupy two columns. As a result gofmt formats Go code like this.\n\nvar Countries = map[string]string{\n        \u0026quot;アメリカ合衆国\u0026quot;: \u0026quot;United States of America\u0026quot;,\n        \u0026quot;日本\u0026quot;:      \u0026quot;Japan\u0026quot;,\n        \u0026quot;ドイツ\u0026quot;:     \u0026quot;Germany\u0026quot;,\n        \u0026quot;フランス\u0026quot;:    \u0026quot;France\u0026quot;,\n        \u0026quot;ポーランド\u0026quot;:   \u0026quot;Poland\u0026quot;,\n}\n\nAs you can see the column of the map value is misaligned. You cannot fix this by hand\nbecause gofmt would reformat it for you in the wrong way if you do that. That's annoying.\n\nIn Unicode, there's a zero column character (ZERO WIDTH SPACE; U+200B). SOFT HYPHEN\n(U+00AD) may be displayed as a hyphen at the end of a line but may be zero-width in\nother places, depending on your display environment. These chracters also affect the\ncolumn layout.\n\nWhat is the expected output? What do you see instead?\nProposal:\nUnicode Standard Annex #11 gives the definition of column width for characters in the\nlegacy East Asian character sets. I propose to add the East Asian Width property to the\nunicode package, so that we can get the column width for a CJK character. East Asian\nFullwidth and East Asian Wide characters should be treated as two column by tabwriter.\n\n(Note: East Asian Ambiguous characters need to be treated as one column. They are\ntreated as two columns only in East Asian display environment. The character set\ncontains Cyrillic characters and others which we would never want to handle as two\ncolumn.)\n\nBecause the Annex #11 does not say anything about characters that are not in the legacy\nEast Asian character sets, we need additional rules for characters not in CJK character\nsets but in Unicode. I propose this simple rule:\n\n - ZERO WIDTH SPACE is 0 column\n - Emojis are 2 columns\n - Other code points, including U+0000, SOFT HYPHEN, and all control characters, are 1 column\n\nThis additional rule will be implemented to an unexported function in text.tabwriter.\n\nCaveats:\nI deliberately avoid defining the generic \u0026quot;wcswidth\u0026quot; function to determine the\ncolumn width for a string in the standard library. That function can never be defined in\nthe right way because there's no standard for it. Also it'd be hard to get a reasonable\ndefinition for characters with odd semantics, such as SOFT HYPHEN.\u003c/pre\u003e",
+	"user": {
+		"login": "rui314",
+		"id": 47400,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2014-06-23T18:42:07Z",
+	"updated_at": "2015-05-26T10:36:58Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

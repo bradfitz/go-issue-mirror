@@ -1,0 +1,12 @@
+{
+	"id": 100019343,
+	"body": "TCP keep-alive should already be enabled on this incoming TLS reverse connections:\r\n\r\n```go\r\n \r\nfunc listenAndServeTLS() { \r\n        addr := \":443\" \r\n        if *mode == \"dev\" {\r\n                addr = \":8119\"\r\n        }\r\n        ln, err := net.Listen(\"tcp\", addr)\r\n        if err != nil {\r\n                log.Fatalf(\"net.Listen(%s): %v\", addr, err)\r\n        }\r\n        serveTLS(ln)\r\n}\r\n\r\nfunc serveTLS(ln net.Listener) {\r\n        certPEM, err := readGCSFile(\"farmer-cert.pem\")\r\n        if err != nil {\r\n                log.Printf(\"cannot load TLS cert, skipping https: %v\", err)\r\n                return\r\n        }\r\n        keyPEM, err := readGCSFile(\"farmer-key.pem\")\r\n        if err != nil {\r\n                log.Printf(\"cannot load TLS key, skipping https: %v\", err)\r\n                return\r\n        }\r\n        cert, err := tls.X509KeyPair(certPEM, keyPEM)\r\n        if err != nil {\r\n                log.Printf(\"bad TLS cert: %v\", err)\r\n                return\r\n        }\r\n        \r\n        server := \u0026http.Server{Addr: ln.Addr().String()}\r\n        config := \u0026tls.Config{\r\n                NextProtos:   []string{\"http/1.1\"},\r\n                Certificates: []tls.Certificate{cert},\r\n        }       \r\n        tlsLn := tls.NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, config)\r\n        log.Printf(\"Coordinator serving on: %v\", tlsLn.Addr())\r\n        if err := server.Serve(tlsLn); err != nil {\r\n                log.Fatalf(\"serve https: %v\", err)\r\n        }\r\n}       \r\n        \r\ntype tcpKeepAliveListener struct {\r\n        *net.TCPListener\r\n}\r\n        \r\nfunc (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {\r\n        tc, err := ln.AcceptTCP()\r\n        if err != nil {\r\n                return\r\n        }\r\n        tc.SetKeepAlive(true)\r\n        tc.SetKeepAlivePeriod(3 * time.Minute)\r\n        return tc, nil\r\n}       \r\n\r\n```",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-07T21:06:25Z",
+	"updated_at": "2015-05-07T21:06:25Z"
+}

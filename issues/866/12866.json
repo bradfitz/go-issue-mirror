@@ -1,0 +1,28 @@
+{
+	"id": 110263383,
+	"number": 12866,
+	"state": "closed",
+	"title": "net/url: url.Error should propagate the net.Error interface",
+	"body": "At some points in a program it might interesting to find out if a network error is transient or a timeout. If the program uses Dial et. al. this is handled by calling the Temporary() or Timeout() interfaces on net.Error. But if the program uses http.Get or similar, the net.Error is hidden behind url.Error.Err. one has to use a logic like this check for transient errors:\r\n\r\n\t\t\t\ttestErr := err\r\n\t\t\t\tif e, ok := testErr.(*url.Error); ok {\r\n\t\t\t\t\ttestErr = e.Err\r\n\t\t\t\t}\r\n\t\t\t\t// As we are called regularly by cron, ignore some errors.\r\n\t\t\t\ttype timeout interface {\r\n\t\t\t\t\tTimeout() bool\r\n\t\t\t\t}\r\n\t\t\t\tif e, ok := testErr.(timeout); ok {\r\n\t\t\t\t\tif e.Timeout() {\r\n\t\t\t\t\t\terr = nil\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\n\t\t\t\ttype temporary interface {\r\n\t\t\t\t\tTemporary() bool\r\n\t\t\t\t}\r\n\t\t\t\tif e, ok := testErr.(temporary); ok {\r\n\t\t\t\t\tif e.Temporary() {\r\n\t\t\t\t\t\terr = nil\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\nIf url.Error would embed Err anonymously, any interfaces would be available without the type assertion to *url.Error.",
+	"user": {
+		"login": "jum",
+		"id": 33510,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-10-10T11:33:18Z",
+	"created_at": "2015-10-07T16:21:47Z",
+	"updated_at": "2016-02-23T17:03:59Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

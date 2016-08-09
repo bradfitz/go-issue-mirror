@@ -1,0 +1,22 @@
+{
+	"id": 51279275,
+	"number": 2484,
+	"state": "closed",
+	"title": "encoding/xml: StartElement.Copy, swapped \"copy\" function call arguments",
+	"body": "\u003cpre\u003eJust take a look at it: \n\nfunc (e StartElement) Copy() StartElement {\n\tattrs := make([]Attr, len(e.Attr))\n\tcopy(e.Attr, attrs)\n\te.Attr = attrs\n\treturn e\n}\n\n\u0026quot;copy\u0026quot; function call arguments should be swapped. This method zeroes\n\u0026quot;Attr\u0026quot; field during the copy process.\n\nCode that illustrates the issue:\n------------------------------\npackage main\n\nimport \u0026quot;encoding/xml\u0026quot;\nimport \u0026quot;bytes\u0026quot;\n\nvar test = `\u0026lt;x a=\u0026quot;1\u0026quot; b=\u0026quot;2\u0026quot; c=\u0026quot;3\u0026quot;/\u0026gt;`\n\nfunc main() {\n\tb := bytes.NewBufferString(test)\n\tparser := xml.NewParser(b)\n\tt, _ := parser.Token()\n\tse := t.(xml.StartElement)\n\tprintln(\u0026quot;before copy\u0026quot;)\n\tprintln(se.Name.Local)\n\tfor _, a := range se.Attr {\n\t\tprintln(a.Name.Local)\n\t}\n\tse = se.Copy()\n\tprintln(\u0026quot;after copy\u0026quot;)\n\tprintln(se.Name.Local)\n\tfor _, a := range se.Attr {\n\t\tprintln(a.Name.Local)\n\t}\n}\n------------------------------\noutput:\n==============================\nbefore copy\nx\na\nb\nc\nafter copy\nx\n\n\n\n==============================\n\nIssue was spotted on the latest weekly (2011-11-18)\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:13:15Z",
+	"created_at": "2011-11-19T02:49:18Z",
+	"updated_at": "2016-06-24T21:20:53Z"
+}

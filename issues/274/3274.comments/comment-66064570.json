@@ -1,0 +1,12 @@
+{
+	"id": 66064570,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003eYou were pointed to Go alignment rules:\n\u003ca href=\"http://tip.golang.org/ref/spec#Size_and_alignment_guarantees\"\u003ehttp://tip.golang.org/ref/spec#Size_and_alignment_guarantees\u003c/a\u003e. If you reread them you\nwill see that \n\n2. For a variable x of struct type: unsafe.Alignof(x) is the largest of all the values\nunsafe.Alignof(x.f) for each field f of x, but at least 1.\n\nFor your type of\n\ntype BITMAPFILEHEADER struct {\n    BfType\t\tuint16\n    BfSize\t\tuint32\n    BfReserved1\tuint16\n    BfReserved2\tuint16\n    BfOffBits\tuint32\n}\n\nall fields BfType, BfSize, BfReserved, BfReserved2 and BfOffBits will be allinged on 4\nbytes (largest of all the values (uint16 and uint32)). So BfType will start at 0 bytes\noffset, BfSize at 4, BfReserved at 8, BfReserved2 at 12 and BfOffBits at 16.\n\nGo does not have support for \"not alligned\" struct. You have to deal with it yourself,\nif outside world forces you to.\n\nFor example, if you want to write value of \"non-alligned\" BITMAPFILEHEADER struct, then\njust write all fields of it one by one: write uint16 BfType, then uint32 BfSize, then\nuint16 BfReserved1, then uint16 BfReserved6, then uint32 BfOffBits. There is nothing\nwrong with writing to the file field by field, just make sure that you output is\nbuffered.\n\nSimilar, if you need to pass pass this structire to Windows api, pack all\nBITMAPFILEHEADER struct fields into array of bytes (var b [14]byte), and pass pointer to\nthat array. Your BfType will go to b[0:1], BfSize to [2:5] and so on.\n\nAlex\n\nPS: I haven't come accross \"unalligned\" Windows structures yet, but, I beleive you, if\nyou say BITMAPFILEHEADER is. I didn't check it.\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-11T07:00:01Z",
+	"updated_at": "2014-12-08T10:17:00Z"
+}

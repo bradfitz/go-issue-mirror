@@ -1,0 +1,33 @@
+{
+	"id": 51286210,
+	"number": 7114,
+	"state": "closed",
+	"title": "go.tools/go/types: support simultaneous type-checking of \u003e1 packages augmented by *_test.go files",
+	"body": "\u003cpre\u003eThe current API and design of go/types make it impossible to type-check two or more\npackages augmented by their *_test.go files.\n\nClients have many reasons to want this, e.g. to load and type-check an entire directory\ntree of code, including tests.  This could be useful for generating cross-reference\ninformation for godoc, or querying the object reference graph (à la oracle\n\u0026quot;referrers\u0026quot;) within a given project scope, or to run pointer analysis on a\nbody of code using all available tests to improve coverage.\n\nCurrently clients may augment at most one package with its *_test.go files.  To answer\nthe query over multiple packages requires that some packages are type-checked multiple\ntimes, once with test code and all other times without.  This is not only asymptotically\nexpensive, but technically difficult too, since each run of the type checker produces a\ndifferent set of named types and objects that are not directly comparable across runs.\n\nThe reason for the current restriction is that the package import graph may become\ncyclic if multiple packages are augmented by their *_test.go files.  Consider packages A\nand B where A imports B.  A's tests may import B, but (perhaps surprisingly) B's tests\nmay also import A without error.  Attempting to compile all *.go and *_test.go files of\nboth packages would thus result in an error according to the spec.  The 'go' tool avoids\nthis error by building two separate executables, one for A+tests and one for B+tests. \nIn the A+tests executable, package B is compiled without *_test.go files, and vice versa.\n\nWhile it is true that go/types implements the spec, I don't think it goes far enough to\nenable its users to build static tools that are similar to and compatible with the code\norganization required by the 'go' tool that we strongly encourage everyone to use.\n\nI propose that we change go/types to allow multiple packages to be augmented by their\ntests.  Here are some consequences:\n\n(1) the package import graph may now become cyclic.  Some import cycles are to be\nconsidered legal.  Here's an algorithm to test import graph legality: build the import\ngraph G without *_test.go files.  If it's cyclic, report an error.  For each package P\nin the graph, make a copy of G adding just the import edges due to P's *_test.go files. \nIf the resulting graph is cyclic, report an error.\n\nThis requires go/types to have a concept of \u0026quot;a package's test files\u0026quot;.  Today\nthis concept is strictly the domain of the 'go test' tool.\n\n(2) because the import graph may be cyclic, the current recursive callback-based control\nflow of the importer mechanism will no longer be sufficient.  Let us assume without loss\nof generality that all packages are loaded from Go source, not compiler export data. \nType checking of packages will require two phases: most of the existing type-checking\ncan be done during a postorder visitation of the package import graph; then a\ncycle-checking phase must occur once all packages are loaded.\n\n(3) it is possible that augmenting of a package by its test files changes the meaning of\nits production (non-test) code due to additions or changes to the method sets of its\ntypes.  For example, if package A declares a type T that has a method f by promotion,\nand a_test.go declares a method (T).f explicitly, then the method denoted by (T).f\nwithin a.go will have changed.  Similarly, if a_test.go also declares a method (T).g,\nthen the assignability of T to interface{g()} in the production code will have changed\ndue to the augmentation.  I think this this consequence is unavoidable, but unlikely to\nbe a significant problem in practice; I include it here only for completeness.\n\nI believe this change is strongly desirable and quite feasible but that it will require\nAPI changes and thus should not be put off until after the API is frozen.\u003c/pre\u003e",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:39:34Z",
+	"created_at": "2014-01-13T17:47:27Z",
+	"updated_at": "2016-06-25T01:25:31Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

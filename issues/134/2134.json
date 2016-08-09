@@ -1,0 +1,27 @@
+{
+	"id": 51278776,
+	"number": 2134,
+	"state": "open",
+	"title": "x/net/websocket: Read/Copy fail with long frames",
+	"body": "by **nroos@webware-experts.de**:\n\n\u003cpre\u003eWhen using io.Copy() with a websocket as source, this fails if incoming websocket frames\nare too large.\n\nThe reason is because io.Copy() uses a buffer with a default size for the Read().\nwebsocket.Read() in turn uses bufio.ReadSlice() to read the current frame up to the\nfinal 0xff. But if the incoming websocket frame size exceeds the buffer size of\nio.Copy(), a ErrBufferFull (\u0026quot;bufio: buffer full\u0026quot;) is generated.\n\nThe websocket specification does not limit the size of a frame, so this behaviour is\nsomewhat undesirable, as the success of a io.Copy() depends on the size of internal\nbuffers and the undeterminable websocket frame size.\n\nWhat steps will reproduce the problem?\n\n1. One process needs to open a websocket connection to a Go websocket server (pseudo\ncode, obviously):\n\n   ws := websocket.Dial(\u0026quot;127.0.0.1:80\u0026quot;)\n   buf := make([]byte, 100000)\n   ws.Write(buf)\n\n2. Websocket server:\n\n   ws := accepted websocket.Conn\n   writer := io.Writer\n   err := io.Copy(writer, ws)\n\nWhat is the expected output?\n\n   err == nil\n\nWhat do you see instead?\n\n   err == bufio.ErrBufferFull\n\nWhich revision are you using?  (hg identify)\n\n   1b38d90eebcd+ (release-branch.r58) tip\n\n   (patches applied at other locations)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2011-08-05T17:19:07Z",
+	"updated_at": "2015-04-14T19:17:07Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

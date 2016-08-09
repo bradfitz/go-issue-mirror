@@ -1,0 +1,12 @@
+{
+	"id": 66068591,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eThe issue is more wide-spread than originally stated. As with return statements,\nparameter passing is also affected by the same rules (\u003ca href=\"http://golang.org/ref/spec#Calls\"\u003ehttp://golang.org/ref/spec#Calls\u003c/a\u003e -\nevaluation is \"in the usual order\" - with the respective reference).\n\nWhat is more, gc and gccgo make full use of the underspecification and produce different\nresults. For the program:\n\npackage main\n\nimport \"fmt\"\n\nfunc f() (int, string) {\n\ta := 7\n\treturn a, func() string { a = 42; return \"foo\" }()\n}\n\nfunc fa() (int, string) {\n\ta := 7\n\tx, y := a, func() string { a = 42; return \"foo\" }()\n\treturn x, y\n}\n\nfunc g() {\n\ta := 7\n\tfmt.Println(a, func() string { a = 42; return \"foo\" }())\n}\n\nfunc ga() {\n\ta := 7\n\tx, y := a, func() string { a = 42; return \"foo\" }()\n\tfmt.Println(x, y)\n}\n\nfunc h() {\n\ta := 7\n\tfmt.Println(a, func(a *int) string { *a = 42; return \"foo\" }(\u0026a))\n}\n\nfunc ha() {\n\ta := 7\n\tx, y := a, func(a *int) string { *a = 42; return \"foo\" }(\u0026a)\n\tfmt.Println(x, y)\n}\n\nfunc main() {\n\tfmt.Println(f())\n\tfmt.Println(fa())\n\tg()\n\tga()\n\th()\n\tha()\n}\n\ngc produces:\n\n42 foo\n42 foo\n42 foo\n42 foo\n42 foo\n42 foo\n\nwhile gccgo produces:\n\n7 foo\n7 foo\n42 foo\n7 foo\n42 foo\n7 foo\n\nTo make matters more confusing, gccgo appears to use different rules for assignment and\nparameter passing (again legally so given the current spec).\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-07-23T20:28:34Z",
+	"updated_at": "2014-12-08T10:20:21Z"
+}

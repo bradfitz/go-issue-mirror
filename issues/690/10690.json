@@ -1,0 +1,22 @@
+{
+	"id": 73173871,
+	"number": 10690,
+	"state": "closed",
+	"title": "cmd/internal/obj/x86: JMP $sym generates PCREL relocation, not CALL ",
+	"body": "If you build the standard library into a shared object, and try and put something like \"type B struct {\tbufio.Writer }\" into another shared library, linking fails with complaints about a R_X86_64_PC32 relocation to an undefined symbol. This turns out to be down to the wrapper methods, and basically it's because the tail call in the wrapper method ends up producing a JMP to the real implementation and a R_PCREL reloc to fill this in.  This doesn't work when the real implementation is in a separate shared object.\r\n\r\nThe obvious fix -- emitting a R_CALL reloc -- fixes this problem, but then ./test/nosplit.go fails because now the stack check machinery in the linker thinks a JMP instruction consumes a word of stack (because it assumes a R_CALL indicates a call).\r\n\r\nNot sure what to do. An R_JMP relocation?  Sounds awful.  Handling a R_PCREL against an undefined symbol as if it was an R_CALL?  Also sounds awful.  Having the stack check code disassemble the code to figure out if it's a call or a jump?  Sounds _really_ awful.\r\n",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2015-05-06T00:18:14Z",
+	"created_at": "2015-05-05T01:26:25Z",
+	"updated_at": "2016-06-25T02:07:29Z"
+}

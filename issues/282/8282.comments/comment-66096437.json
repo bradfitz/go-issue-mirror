@@ -1,0 +1,12 @@
+{
+	"id": 66096437,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003e\u003e Could this be an issue with readEvents() blocking?\nI just may have spotted a wrong mutex use:\nat fsnotify_bsd.go:120 the w.pmut is locked to get a copy of w.watches (which is fine)\nbut\nthe pmut \"Protects access to paths and finfo\" and\nthe wmut \"Protects access to watches.\"\nSo the wmut should have been used unless I'm reading it all wrong.\nThe pmut use is present in howeyc/fsnotify as well.\n\n\u003e The example included with fsnotify reads events off the channel in a separate\ngoroutine:\nOk, it may have been an intended api and it doesn't make my day any different.\n\u003ca href=\"http://play.golang.org/p/UZr1ODb8ja\"\u003ehttp://play.golang.org/p/UZr1ODb8ja\u003c/a\u003e\nThe code again does one thing: receives an event and closes and exits,\nand I cannot comprehend the difference between the two plays BUT running the new one\nwith howeyc/fsnotify no data races observed.\nwith os/fsnotify the exactly same data race present.\n\nSo that's a difference between the two packages.\nThe issue indeed may have been fixed (with the CL changes) in howeyc/fsnotify.\nFor now using howeyc/fsnotify with a separate goroutine does it for me.\u003c/pre\u003e",
+	"user": {
+		"login": "ostness",
+		"id": 148718,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-29T16:18:12Z",
+	"updated_at": "2014-12-08T10:45:59Z"
+}

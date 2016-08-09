@@ -1,0 +1,22 @@
+{
+	"id": 51277241,
+	"number": 1014,
+	"state": "closed",
+	"title": "rpc/client.go ignores errors from ReadResponseBody",
+	"body": "by **djglowacki**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n\nIn the input() method in pkg/rpc/client.go, the code around ReadResponseBody looks like:\n\n                err = client.codec.ReadResponseBody(c.Reply)\n                // Empty strings should turn into nil os.Errors\n                if response.Error != \u0026quot;\u0026quot; {\n                        c.Error = os.ErrorString(response.Error)\n                } else {\n                        c.Error = nil\n                }\n                // We don't want to block here.  It is the caller's responsibility to make\n                // sure the channel has enough buffer space. See comment in Go().\n                _ = c.Done \u0026lt;- c // do not block\n\nWhat is the expected output?\n\nThe 'err' value should be handled like the error from ReadResponseHeader a few lines\nabove:\n\n                err = client.codec.ReadResponseHeader(response)                if err != nil {\n                        if err == os.EOF \u0026amp;\u0026amp; !client.closing {\n                                err = io.ErrUnexpectedEOF\n                        }\n                        break\n                }\n\nWhat do you see instead?\n\nThe 'err' value is thrown away\n\nWhat is your $GOOS?  $GOARCH?\n\nGOOS=darwin\nGOARCH=amd64\n\nWhich revision are you using?  (hg identify)\n\n8884f7b4c775 release/release.2010-08-04\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:06:42Z",
+	"created_at": "2010-08-09T22:06:02Z",
+	"updated_at": "2016-06-24T19:18:56Z"
+}

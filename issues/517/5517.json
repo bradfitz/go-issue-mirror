@@ -1,0 +1,27 @@
+{
+	"id": 51283750,
+	"number": 5517,
+	"state": "closed",
+	"title": "runtime: CPU profiling and fork/exec go into infinite loop",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Compile and run the following program\n\npackage main\n\nimport (\n\t\u0026quot;crypto/md5\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net/http\u0026quot;\n\t_ \u0026quot;net/http/pprof\u0026quot;\n\t\u0026quot;os/exec\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\tgo work()\n\terr := http.ListenAndServe(\u0026quot;:9000\u0026quot;, nil)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nvar garbage = make([][]byte, 32)\n\nfunc work() {\n\tfor i := range garbage {\n\t\tgarbage[i] = make([]byte, 20\u0026lt;\u0026lt;20)\n\t}\n\ttick := time.NewTicker(time.Second / 30)\n\tfor _ = range tick.C {\n\t\tfor i, s := range garbage {\n\t\t\tfor j := range s {\n\t\t\t\ts[j] = byte(i+j)\n\t\t\t}\n\t\t}\n\t\tcmd := exec.Command(\u0026quot;ls\u0026quot;)\n\t\tblah, err := cmd.CombinedOutput()\n\t\tif err != nil {\n\t\t\tlog.Fatal(err)\n\t\t}\n\t\th := md5.New()\n\t\th.Write(blah)\n\t\tlog.Printf(\u0026quot;%x\u0026quot;, h.Sum(nil))\n\t}\n}\n\n2. Run go tool pprof \u003ca href=\"http://localhost:9000/debug/pprof/profile\"\u003ehttp://localhost:9000/debug/pprof/profile\u003c/a\u003e\n\nWhat is the expected output? What do you see instead?\n\nExpected: the programs gets profiled.\n\nInstead: curl times out, the program remains stuck in an infinite loop.\n\nRead \u003ca href=\"http://localhost:9000/debug/pprof/symbol\"\u003ehttp://localhost:9000/debug/pprof/symbol\u003c/a\u003e\nGathering CPU profile from \u003ca href=\"http://localhost:9000/debug/pprof/profile?seconds=30\"\u003ehttp://localhost:9000/debug/pprof/profile?seconds=30\u003c/a\u003e for 30\nseconds to\n  /home/remy/pprof/crash.1369041399.localhost-port9000\nBe patient...\nFailed to get profile: curl --max-time 90 -s -o\n/home/remy/pprof/.tmp.crash.1369041399.localhost-port9000\n'\u003ca href=\"http://localhost:9000/debug/pprof/profile?seconds=30\"\u003ehttp://localhost:9000/debug/pprof/profile?seconds=30\u003c/a\u003e': \n\nstrace output:\n\n[pid 24975] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24975] fork( \u0026lt;unfinished ...\u0026gt;\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24975] \u0026lt;... fork resumed\u0026gt; )        = ? ERESTARTNOINTR (To be restarted)\n\u0026lt;0.048847\u0026gt;\n[pid 24975] fork( \u0026lt;unfinished ...\u0026gt;\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24975] \u0026lt;... fork resumed\u0026gt; )        = ? ERESTARTNOINTR (To be restarted)\n\u0026lt;0.047955\u0026gt;\n[pid 24975] fork( \u0026lt;unfinished ...\u0026gt;\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24972] --- SIGPROF {si_signo=SIGPROF, si_code=SI_KERNEL} ---\n[pid 24975] \u0026lt;... fork resumed\u0026gt; )        = ? ERESTARTNOINTR (To be restarted)\n\u0026lt;0.048301\u0026gt;\n[pid 24975] fork( \u0026lt;unfinished ...\u0026gt;\n\nWhich version of Go am I using?\n\nThe problem happens with Go 1.0.3 and Go 1.1. When I run strace on the Go 1.1 binary,\nthe program goes out of the infinite loop after a few seconds. On Go 1.0.3, the program\nremains stuck.\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2014-12-08T10:29:57Z",
+	"created_at": "2013-05-20T09:20:28Z",
+	"updated_at": "2016-06-24T22:40:38Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

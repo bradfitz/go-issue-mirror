@@ -1,0 +1,27 @@
+{
+	"id": 71772680,
+	"number": 10605,
+	"state": "closed",
+	"title": "html/template: escapeTemplate is inefficient",
+	"body": "I have been profiling the execution of our templates using the \"html/template\" package.\r\n\r\nThe time to parse and execute a template was around 100ms. I realize that the first time the template is executed, \"html/template\" escapes it using the internal `escapeTemplate()` function. Still it seemed extremely slow to me.\r\n\r\nUsing the \"pprof\" tool, I found the culprit:\r\n\r\n```\r\ntemplate.ExecuteTemplate  4.78s\r\n...\r\ntemplate.escapeTemplate   4.30s\r\n...\r\ntemplate.tSpecialTagEnd   3.96s\r\n...\r\nstrings.ToLower           3.37s\r\n```\r\n\r\nThat seems like a lot of time spent lower-casing a string. By inserting a counter into the `tSpecialTagEnd` function, I found out that `strings.ToLower` is being called 4320 times *per request*.\r\n\r\nThe offending function looks like this:\r\n\r\n```\r\n// tSpecialTagEnd is the context transition function for raw text and RCDATA\r\n// element states.\r\nfunc tSpecialTagEnd(c context, s []byte) (context, int) {\r\n\tif c.element != elementNone {\r\n\t\tif i := strings.Index(strings.ToLower(string(s)), specialTagEndMarkers[c.element]); i != -1 {\r\n\t\t\treturn context{}, i\r\n\t\t}\r\n\t}\r\n\treturn c, len(s)\r\n}\r\n```\r\n\r\nIt occurs to me that:\r\n* the byte slice `s` is cast to a string each time (new memory allocation)\r\n* the size of this string is proportional to the length of the document\r\n* the string is lower-cased (new memory allocation)\r\n* the lower-cased string is indexed to find the first occurrence of the `specialTagEndMarker`\r\n* the lower-cased string is discarded, to be re-computed next time\r\n* this is repeated 4320 times\r\n* if the number of calls to `tSpecialTagEnd` increases linearly with file size, the time complexity is O(n^2)\r\n\r\nThe time complexity could be reduced to O(n) by either:\r\n* lower-casing the string once and caching it\r\n* indexing while lower-casing, instead of lower-casing the whole string before indexing it\r\n\r\nIt also seems unnecessary to use the `strings` package when the `bytes` package can lower-case just fine. This would save an allocation.\r\n\r\nI tried another template file that was over 1MB (about 20 html documents surrounded by \"if\" statements), and the `ExecuteTemplate` function took *20 seconds*.",
+	"user": {
+		"login": "chowey",
+		"id": 991221,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2015-04-30T16:24:15Z",
+	"created_at": "2015-04-29T04:15:06Z",
+	"updated_at": "2016-06-25T02:06:46Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

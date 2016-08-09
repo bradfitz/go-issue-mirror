@@ -1,0 +1,12 @@
+{
+	"id": 171985380,
+	"body": "It turns out that error 11 is EAGAIN, not ECHILD.\r\n\r\nI have long suspected that there is a potential bug in the GNU/Linux support, but I have never been able to write a test case for it.  The Linux kernel source code shows that if one thread calls clone while a different thread is calling exec, the call to clone can return EAGAIN (look for uses of in_exec in the kernel source code).  That suggests that newosproc in runtime/os1_linux.go should check for that case, and loop calling clone again.  But since I've never been able to write a test case showing the problem, I've never made the change.\r\n\r\nThis kind of problem, if it is indeed the problem, could certainly be kernel specific.\r\n\r\nYou could try applying this patch to runtime/os_linux.go to see if it fixes the problem.\r\n\r\n    diff --git a/src/runtime/os1_linux.go b/src/runtime/os1_linux.go\r\n    index b38cfc1..2d967a2 100644\r\n    --- a/src/runtime/os1_linux.go\r\n    +++ b/src/runtime/os1_linux.go\r\n    @@ -141,7 +141,13 @@ func newosproc(mp *m, stk unsafe.Pointer) {\r\n            // with signals disabled.  It will enable them in minit.\r\n            var oset sigset\r\n            rtsigprocmask(_SIG_SETMASK, \u0026sigset_all, \u0026oset, int32(unsafe.Sizeof(oset)))\r\n    -       ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))\r\n    +       var ret int32\r\n    +       for i := 0; i \u003c 10; i++ {\r\n    +               ret = clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))\r\n    +               if ret != _EAGAIN {\r\n    +                       break\r\n    +               }\r\n    +       }\r\n            rtsigprocmask(_SIG_SETMASK, \u0026oset, nil, int32(unsafe.Sizeof(oset)))\r\n     \r\n            if ret \u003c 0 {\r\n",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-15T15:05:45Z",
+	"updated_at": "2016-01-15T15:05:45Z"
+}

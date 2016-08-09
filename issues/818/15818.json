@@ -1,0 +1,28 @@
+{
+	"id": 156513277,
+	"number": 15818,
+	"state": "closed",
+	"title": "io: remove SizedReaderAt",
+	"body": "[CL 21492](https://golang.org/cl/21492) added this interface during the Go 1.7 cycle. The CL description says:\n\n    io: add ReadAtSizer interface\n    \n    ReadAtSizer is a common abstraction for a stateless,\n    concurrently-readable fixed number of bytes.\n    \n    This interface has existed in various codebases for over 3 years (previously\n    usually named SizeReaderAt). It is used inside Google in dl.google.com\n    (mentioned in https://talks.golang.org/2013/oscon-dl.slide) and other\n    packages. It is used in Camlistore, in Juju, in the Google API Go client, in\n    github.com/nightlyone/views, and 33 other pages of Github search results.\n    \n    It is implemented by io.SectionReader, bytes.Reader, strings.Reader, etc.\n    \n    Time to finally promote this interface to the standard library and give it a\n    standard name, blessing it as best practice.\n\n(A later CL renamed it to SizedReaderAt.)\n\nI tried in [CL 23374](https://golang.org/cl/23374) to make os.File implement this interface, since it already implements io.ReaderAt. But the natural Size method there needs to return an error: the underlying call to find the size may fail, and that failure needs to be reported. Returning 0 is incorrect, since the caller might conclude the file is empty, returning -1 may break various slice bounds preparing for a read, and returning a very large number could result in very large allocations. In this case, there needs to be some way to report an actual error.\n\nThis seems like a general problem: ReadAt can return an error, indicating that the underlying resource can go bad, but Size cannot. There's no obvious reason why Size fundamentally can't fail. Certainly if the file were accessed over the network, trying to find the Size could easily fail. Contrast this with ReadSeeker, which is often used for non-concurrent random access to data: the Seek(0, 2) operation reports the size of the data, but also an error.\n\nThis problem with the inability to report errors suggests that, contrary to the CL description, the SizedReaderAt interface may actually not be best practice. \n\nI'm going to remove it for Go 1.7:\nit's late in the Go 1.7 cycle, there are questions about the semantics, Brad is away, and anyone who really needs this interface can continue to define it themselves for another cycle. (Also the name is still awkward.)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-05-24T15:38:13Z",
+	"created_at": "2016-05-24T13:52:33Z",
+	"updated_at": "2016-05-24T18:13:55Z",
+	"milestone": {
+		"id": 1783753,
+		"number": 43,
+		"title": "Go1.7Beta"
+	}
+}

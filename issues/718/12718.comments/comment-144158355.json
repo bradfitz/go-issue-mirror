@@ -1,0 +1,12 @@
+{
+	"id": 144158355,
+	"body": "Ah. That's interesting.\r\n\r\nSo you are getting an EXC_BAD_ACCESS (that is, a segfault) from a call to glDrawElements. In particular, I believe it says it is trying to read the memory at address=0xf60. That's an amazingly small pointer.\r\n\r\nIn fact, it's probably not a pointer. The only version of glDrawElements we expose through the gl Go package is the one where the pointer is not a pointer, but an offset into a vertex attrib array. (This is the only meaning of the parameter in GLES2, but in desktop OpenGL it can be a host memory pointer.)\r\n\r\nIt looks like OS X's driver is treating indicies as a host memory pointer instead of an offset, which means you have probably got in a state where you don't have a vertex attribute array enabled. On a GLES2 device this would probably be an error, but on desktop GL this turns into a panic.\r\n\r\nTo diagnose this, please try replicating the bug with -tags gldebug, and then working backwards from the failure in the log looking for EnableVertexAttribArray and DisableVertexAttribArray. I'm guessing you don't have one enabled due to a hard-to-reproduce bug in your code.\r\n\r\n(I filed #12786 to improve debugging in a case like this.)",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-29T19:06:16Z",
+	"updated_at": "2015-09-29T19:06:16Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66096128,
+	"body": "\u003ca id=\"c16\"\u003e\u003c/a\u003eComment 16:\n\n\u003cpre\u003eWhat is the tiny amount of work that database/sql does under lock? Are the operations on\nthe databases really so fast that the locking to get at the connections is significant?\n\nThere are two things we could do for the regexp API.\n\nOne is to introduce a new type with a better name than RegexpForSingleGoroutine that\nonly one goroutine can use at a time. It would have exactly one cached machine and no\nlock when used. You could get at a RegexpForSingleGoroutine by calling a new method on\nRegexp. This would end up being similar to the \"just call regexp.Compile in each\ngoroutine\" solution but it avoids the Compile, which although usually cheap may not\nalways be. RegexpForSingleGoroutine would need all the methods that Regexp has, which is\nunfortunate.\n\nThe other thing we could do is what I just described but reuse Regexp as the type and\nkeep the lock. The speedup comes from not contending for the lock, not from not having\nthe lock. So if you had func (*Regexp) Copy() *Regexp that each goroutine could call if\nit wanted its own local contention-free copy, that would probably be good enough. And it\navoids adding a new type with many new methods.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-26T16:04:20Z",
+	"updated_at": "2014-12-08T10:45:42Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 229852554,
+	"body": "This isn't a GC problem, quite.  The test case in the CL doesn't run the garbage collector, but it does fail without the compiler change.  The problem is that stack growth requires that we precisely identify all pointers on the stack, but when we call a method like `LazyProc.Call` we can put a pointer on the stack that looks like a `uintptr`, and therefore is not modified when the stack grows.  If that value had a pointer type, everything would work fine.\r\n\r\nOne possible proper solution might be to write `FindProc` and `NewProc` so that they take a function type, and have them use `reflect.MakeFunc` to return functions of that type.  Then we will only convert to `uintptr` when calling `syscall.Syscall`, which already works.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-01T04:42:08Z",
+	"updated_at": "2016-07-01T04:42:08Z"
+}

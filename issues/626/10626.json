@@ -1,0 +1,22 @@
+{
+	"id": 72050543,
+	"number": 10626,
+	"state": "closed",
+	"title": "syscall: CLONE_NEWUSER from unprivileged user",
+	"body": "It should be possible to use `CLONE_NEWUSER` from unprivileged user, but somehow it isn't. Code:\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"log\"\r\n        \"os\"\r\n        \"os/exec\"\r\n        \"syscall\"\r\n)\r\n\r\nfunc main() {\r\n        cmd := exec.Command(os.Args[1], os.Args[2:]...)\r\n        cmd.Stdout = os.Stdout\r\n        cmd.Stderr = os.Stderr\r\n        cmd.Stdin = os.Stdin\r\n        cmd.SysProcAttr = \u0026syscall.SysProcAttr{}\r\n        cmd.SysProcAttr.Cloneflags = syscall.CLONE_NEWUSER\r\n        cmd.SysProcAttr.UidMappings = []syscall.SysProcIDMap{\r\n                {ContainerID: 0, HostID: 1000, Size: 1},\r\n        }\r\n        cmd.SysProcAttr.GidMappings = []syscall.SysProcIDMap{\r\n                {ContainerID: 0, HostID: 1000, Size: 1},\r\n        }\r\n        if err := cmd.Run(); err != nil {\r\n                log.Fatal(err)\r\n        }\r\n}\r\n```\r\nOn `./unshare /bin/zsh` returns\r\n```\r\n2015/04/29 20:14:55 fork/exec /bin/zsh: operation not permitted\r\n```\r\nStrace shows:\r\n```\r\n[pid 27482] open(\"/proc/27481/uid_map\", O_RDWR \u003cunfinished ...\u003e\r\n[pid 27480] \u003c... select resumed\u003e )      = 0 (Timeout)\r\n[pid 27482] \u003c... open resumed\u003e )        = 5\r\n[pid 27480] select(0, NULL, NULL, NULL, {0, 20} \u003cunfinished ...\u003e\r\n[pid 27482] write(5, \"0 1000 1\\n\\0\", 10) = 10\r\n[pid 27482] close(5)                    = 0\r\n[pid 27480] \u003c... select resumed\u003e )      = 0 (Timeout)\r\n[pid 27482] open(\"/proc/27481/gid_map\", O_RDWR \u003cunfinished ...\u003e\r\n[pid 27480] select(0, NULL, NULL, NULL, {0, 20} \u003cunfinished ...\u003e\r\n[pid 27482] \u003c... open resumed\u003e )        = 5\r\n[pid 27482] write(5, \"0 1000 1\\n\\0\", 10) = -1 EPERM (Operation not permitted)\r\n```\r\nCode similar to `forkAndExecInChild` from `syscall/exec_linux.go` is in `man user_namespaces`: https://gist.github.com/31920b19eb18cf4b507d\r\nI compiled it with `clang clone.c -o clone` and run as `./clone -Uz /bin/zsh`. It works from unprivileged user and mapping uids/gids inside namespace.\r\nIt is pretty cool feature, because it allows unprivileged users to create own namespaces.\r\nping @mrunalp as author of UidMappings.\r\n\r\nFor reproducing I used go from tag `go1.4.2` on x86_64 Gentoo linux with `4.0.0` kernel.",
+	"user": {
+		"login": "LK4D4",
+		"id": 101445,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 21,
+	"closed_at": "2015-06-12T23:39:16Z",
+	"created_at": "2015-04-30T03:24:21Z",
+	"updated_at": "2015-12-04T05:14:21Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

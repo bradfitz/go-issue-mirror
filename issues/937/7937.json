@@ -1,0 +1,27 @@
+{
+	"id": 51287427,
+	"number": 7937,
+	"state": "closed",
+	"title": "cmd/objdump: is broken on windows",
+	"body": "\u003cpre\u003eSimilar to \u003ca href=\"https://golang.org/issue/7899\"\u003eissue #7899\u003c/a\u003e.\n\nApply this diff (to compensate for \u003ca href=\"https://golang.org/issue/7936\"\u003eissue #7936\u003c/a\u003e):\n\ndiff --git a/src/cmd/objdump/main.go b/src/cmd/objdump/main.go\n--- a/src/cmd/objdump/main.go\n+++ b/src/cmd/objdump/main.go\n@@ -79,11 +79,11 @@\n \t\tlog.Fatalf(\u0026quot;reading %s: %v\u0026quot;, flag.Arg(0), err)\n \t}\n \n-\tstart, err := strconv.ParseUint(flag.Arg(1), 0, 64)\n+\tstart, err := strconv.ParseUint(flag.Arg(1), 16, 64)\n \tif err != nil {\n \t\tlog.Fatalf(\u0026quot;invalid start PC: %v\u0026quot;, err)\n \t}\n-\tend, err := strconv.ParseUint(flag.Arg(2), 0, 64)\n+\tend, err := strconv.ParseUint(flag.Arg(2), 16, 64)\n \tif err != nil {\n \t\tlog.Fatalf(\u0026quot;invalid end PC: %v\u0026quot;, err)\n \t}\n\nThen, this\n\n# go install cmd/objdump \u0026amp;\u0026amp; go build -o objdump.exe \u0026amp;\u0026amp; start=$(go tool\nnm objdump.exe | awk '/main.main/{print $1}') \u0026amp;\u0026amp; end=$(echo $start | sed\n's/.$/f/') \u0026amp;\u0026amp; echo $start $end \u0026amp;\u0026amp; go tool objdump objdump.exe $start $end\n8048d90 8048d9f\n/root/go/root/src/cmd/objdump/main.go:56\n 8048d90: byte 0x65\n 8048d91: byte 0x8b\n 8048d92: byte 0xd\n 8048d93: byte 0x0\n 8048d94: byte 0x0\n 8048d95: byte 0x0\n 8048d96: byte 0x0\n 8048d97: byte 0x8b\n 8048d98: byte 0x89\n 8048d99: byte 0xf8\n 8048d9a: byte 0xff\n 8048d9b: byte 0xff\n 8048d9c: byte 0xff\n 8048d9d: byte 0x8d\n 8048d9e: byte 0x84\n\nworks, while that\n \n# go install cmd/objdump \u0026amp;\u0026amp; GOOS=windows go build -o objdump.exe \u0026amp;\u0026amp;\nstart=$(go tool nm objdump.exe | awk '/main.main/{print $1}') \u0026amp;\u0026amp; end=$(echo\n$start | sed 's/.$/f/') \u0026amp;\u0026amp; echo $start $end \u0026amp;\u0026amp; go tool objdump\nobjdump.exe $start $end\n401190 40119f\n\ndoes not.\n\nhg id is b0443478e712+ tip\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:44:01Z",
+	"created_at": "2014-05-05T02:37:36Z",
+	"updated_at": "2016-06-25T01:33:42Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

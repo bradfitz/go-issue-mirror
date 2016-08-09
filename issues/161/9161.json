@@ -1,0 +1,27 @@
+{
+	"id": 51289174,
+	"number": 9161,
+	"state": "closed",
+	"title": "net/http: tests crash with nil derefs",
+	"body": "\u003cpre\u003eI've stress tested net/http with -cpu=1,2,4,8,16,32,64,128 and some tests episodically\ncrash with the following reports. The reason seems to be simply that the tests do not\ncheck errors. Here are the crashes:\n\n\n--- FAIL: TestStressSurpriseServerCloses (62.49s)\n\ttransport_test.go:513: presumed deadlock; no HTTP client activity seen in awhile\n--- FAIL: TestRoundTripGzip (30.01s)\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\n\tpanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x0 pc=0x517173]\ngoroutine 27995 [running]:\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:429 +0x2ef fp=0xc208a47b78 sp=0xc208a47b10\ntesting.func·006()\n\t/ssd/src/go1/src/testing/testing.go:442 +0x181 fp=0xc208a47c08 sp=0xc208a47b78\nruntime.call16(0xc208a47fa0, 0xc2081ce360, 0x0)\n\t/ssd/src/go1/src/runtime/asm_amd64.s:388 +0x45 fp=0xc208a47c20 sp=0xc208a47c08\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:391 +0x3f4 fp=0xc208a47c88 sp=0xc208a47c20\nruntime.panicmem()\n\t/ssd/src/go1/src/runtime/panic.go:42 +0x4e fp=0xc208a47cb0 sp=0xc208a47c88\nruntime.sigpanic()\n\t/ssd/src/go1/src/runtime/sigpanic_unix.go:24 +0x297 fp=0xc208a47cf0 sp=0xc208a47cb0\nnet/http_test.TestRoundTripGzip(0xc2084f6630)\n\t/ssd/src/go1/src/net/http/transport_test.go:636 +0x1173 fp=0xc208a47f78 sp=0xc208a47cf0\ntesting.tRunner(0xc2084f6630, 0xa59878)\n\t/ssd/src/go1/src/testing/testing.go:448 +0xbf fp=0xc208a47fd0 sp=0xc208a47f78\nruntime.goexit()\n\t/ssd/src/go1/src/runtime/asm_amd64.s:2219 +0x1 fp=0xc208a47fd8 sp=0xc208a47fd0\ncreated by testing.RunTests\n\t/ssd/src/go1/src/testing/testing.go:559 +0xa8b\n\n\n\n--- FAIL: TestTimeoutHandler-16 (30.00s)\n\tserve_test.go:1186: Get \u003ca href=\"http://127.0.0.1:56230\"\u003ehttp://127.0.0.1:56230\u003c/a\u003e: dial tcp 127.0.0.1:56230: i/o timeout\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\n\tpanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x10 pc=0x4f6811]\ngoroutine 89024 [running]:\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:429 +0x2ef fp=0xc208857c20 sp=0xc208857bb8\ntesting.func·006()\n\t/ssd/src/go1/src/testing/testing.go:442 +0x181 fp=0xc208857cb0 sp=0xc208857c20\nruntime.call16(0xc208857fa0, 0xc20897e150, 0x0)\n\t/ssd/src/go1/src/runtime/asm_amd64.s:388 +0x45 fp=0xc208857cc8 sp=0xc208857cb0\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:391 +0x3f4 fp=0xc208857d30 sp=0xc208857cc8\nruntime.panicmem()\n\t/ssd/src/go1/src/runtime/panic.go:42 +0x4e fp=0xc208857d58 sp=0xc208857d30\nruntime.sigpanic()\n\t/ssd/src/go1/src/runtime/sigpanic_unix.go:24 +0x297 fp=0xc208857d98 sp=0xc208857d58\nnet/http_test.TestTimeoutHandler(0xc208079d40)\n\t/ssd/src/go1/src/net/http/serve_test.go:1188 +0x381 fp=0xc208857f78 sp=0xc208857d98\ntesting.tRunner(0xc208079d40, 0xa59350)\n\t/ssd/src/go1/src/testing/testing.go:448 +0xbf fp=0xc208857fd0 sp=0xc208857f78\nruntime.goexit()\n\t/ssd/src/go1/src/runtime/asm_amd64.s:2219 +0x1 fp=0xc208857fd8 sp=0xc208857fd0\ncreated by testing.RunTests\n\t/ssd/src/go1/src/testing/testing.go:559 +0xa8b\n\n\n\n--- FAIL: TestStressSurpriseServerCloses (66.64s)\n\ttransport_test.go:513: presumed deadlock; no HTTP client activity seen in awhile\n--- FAIL: TestRoundTripGzip (30.01s)\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\n\tpanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x0 pc=0x517173]\ngoroutine 28912 [running]:\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:429 +0x2ef fp=0xc2088f1b78 sp=0xc2088f1b10\ntesting.func·006()\n\t/ssd/src/go1/src/testing/testing.go:442 +0x181 fp=0xc2088f1c08 sp=0xc2088f1b78\nruntime.call16(0xc2088f1fa0, 0xc2084f0390, 0x0)\n\t/ssd/src/go1/src/runtime/asm_amd64.s:388 +0x45 fp=0xc2088f1c20 sp=0xc2088f1c08\nruntime.gopanic(0x7ca9a0, 0xc20802c050)\n\t/ssd/src/go1/src/runtime/panic.go:391 +0x3f4 fp=0xc2088f1c88 sp=0xc2088f1c20\nruntime.panicmem()\n\t/ssd/src/go1/src/runtime/panic.go:42 +0x4e fp=0xc2088f1cb0 sp=0xc2088f1c88\nruntime.sigpanic()\n\t/ssd/src/go1/src/runtime/sigpanic_unix.go:24 +0x297 fp=0xc2088f1cf0 sp=0xc2088f1cb0\nnet/http_test.TestRoundTripGzip(0xc20893a630)\n\t/ssd/src/go1/src/net/http/transport_test.go:636 +0x1173 fp=0xc2088f1f78 sp=0xc2088f1cf0\ntesting.tRunner(0xc20893a630, 0xa59878)\n\t/ssd/src/go1/src/testing/testing.go:448 +0xbf fp=0xc2088f1fd0 sp=0xc2088f1f78\nruntime.goexit()\n\t/ssd/src/go1/src/runtime/asm_amd64.s:2219 +0x1 fp=0xc2088f1fd8 sp=0xc2088f1fd0\ncreated by testing.RunTests\n\t/ssd/src/go1/src/testing/testing.go:559 +0xa8b\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-04-22T10:38:27Z",
+	"created_at": "2014-11-25T08:24:26Z",
+	"updated_at": "2016-06-25T01:44:54Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

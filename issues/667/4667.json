@@ -1,0 +1,27 @@
+{
+	"id": 51282458,
+	"number": 4667,
+	"state": "closed",
+	"title": "cmd/gc: duplicate allocation created by inlining",
+	"body": "\u003cpre\u003eIn the code below, BuildOutput{1,2,3} should all allocate twice - once for the int64 and\nonce for the Output struct, and they should continue to allocate twice (at most) after\nbeing inlined into BenchmarkBuildOutput{1,2,3}. However, BenchmarkBuildOutput{2,3} show\n3 allocations each, not 2. (That is, there are three calls to new in the function.) The\nfirst two allocations are for int64 values, and the first allocation is discarded\nentirely. This looks like the compiler is reevaluating \u0026quot;new(int64)\u0026quot; multiple\ntimes, or something like that.\n\npackage foo\n\nimport (\n\t\u0026quot;testing\u0026quot;\n)\n\nconst usec = 1005\n\ntype Output struct {\n\tTimestampMsec *int64\n}\n\n// -test.benchmem reports 2 allocs/op\nfunc BuildOutput1(usec int64) *Output {\n\tmsec := usec / 1e3\n\tp := new(int64)\n\t*p = msec\n\treturn \u0026amp;Output{TimestampMsec: p}\n}\n\n// -test.benchmem reports 3 allocs/op\nfunc BuildOutput2(usec int64) *Output {\n\tmsec := usec / 1e3\n\tp := \u0026amp;msec\n\treturn \u0026amp;Output{TimestampMsec: p}\n}\n\n// -test.benchmem reports 3 allocs/op\nfunc BuildOutput3(usec int64) *Output {\n\tmsec := usec / 1e3\n\treturn \u0026amp;Output{TimestampMsec: \u0026amp;msec}\n}\n\nfunc BenchmarkBuildOutput1(b *testing.B) {\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tBuildOutput1(usec)\n\t}\n}\n\nfunc BenchmarkBuildOutput2(b *testing.B) {\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tBuildOutput2(usec)\n\t}\n}\n\nfunc BenchmarkBuildOutput3(b *testing.B) {\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tBuildOutput3(usec)\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:24:44Z",
+	"created_at": "2013-01-16T22:09:53Z",
+	"updated_at": "2016-06-24T22:31:20Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

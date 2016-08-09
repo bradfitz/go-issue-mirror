@@ -1,0 +1,12 @@
+{
+	"id": 189102510,
+	"body": "@amorgun have you tried running your solution against Go 1.6? On my machine your test cases trigger a concurrent map write panic:\r\n\r\n```\r\nMy solution: OK\r\n\r\nTest case #3\r\nfound: a \"node a\"\r\nfound: b \"node b\"\r\nfound: c \"node c\"\r\nMy solution: OK\r\n\r\nTest case #4\r\nfound: 0 \"node #0\"\r\nfound: 3 \"node #3\"\r\nfound: 1 \"node #1 with very slow fetching\"\r\nfound: 2 \"node #2\"\r\nfound: 4 \"node #4\"\r\nfound: 6 \"node #6\"\r\nfound: 5 \"node #5\"\r\nMy solution: OK\r\n\r\nTest case #5\r\nfound: 0 \"node #0\"\r\nfound: 3 \"node #3\"\r\nfound: 1 \"node #1\"\r\nfound: 4 \"node #4\"\r\nfound: 5 \"node #5\"\r\nfound: 2 \"node #2\"\r\nfatal error: concurrent map read and map writefound: 13 \"node #13\"\r\n```\r\n\r\nYour test harness has a bug:\r\n\r\n```\r\ntype warningFetcher struct {\r\n        fetcher        crawler.Fetcher\r\n        alreadyFetched map[string]bool\r\n        lock           sync.Mutex\r\n}\r\n\r\nfunc (f warningFetcher) Fetch(url string) (string, []string, error) {\r\n        f.lock.Lock()\r\n        defer f.lock.Unlock()\r\n        if f.alreadyFetched[url] {\r\n                fmt.Printf(\"WARNING: Url %s has been fetched multiple times\\n\", url)\r\n        }\r\n...\r\n```\r\n\r\nThe `Fetch` method is declared on `warningFetcher` which has an embedded `sync.Mutex`. So when you're passing around a `warningFetcher` you are copying the mutex (defeating its purpose).\r\n\r\nThe fix is to declare the `Fetch` method on `*warningFetcher` and pass the `warningFetcher` around by pointer, not by value.\r\n\r\n```\r\n-func (f warningFetcher) Fetch(url string) (string, []string, error) {\r\n+func (f *warningFetcher) Fetch(url string) (string, []string, error) {\r\n        f.lock.Lock()\r\n        defer f.lock.Unlock()\r\n        if f.alreadyFetched[url] {\r\n@@ -40,5 +41,5 @@ func (f warningFetcher) Fetch(url string) (string, []string, error) {\r\n }\r\n \r\n func newWarningFetcher(fetcher crawler.Fetcher) crawler.Fetcher {\r\n-       return warningFetcher{fetcher: fetcher, alreadyFetched: make(map[string]bool)}\r\n+       return \u0026warningFetcher{fetcher: fetcher, alreadyFetched: make(map[string]bool)}\r\n```\r\n",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-26T04:10:07Z",
+	"updated_at": "2016-02-26T04:10:07Z"
+}

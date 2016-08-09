@@ -1,0 +1,27 @@
+{
+	"id": 51280722,
+	"number": 3507,
+	"state": "closed",
+	"title": "net: race between Close and Read",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nRun go.crypto/ssh unit tests repeatedly.\n\nWhat do you see instead?\n\n=== RUN TestCipherReversal-26\n--- PASS: TestCipherReversal-26 (0.00 seconds)\n=== RUN TestDefaultCiphersExist-26\n--- PASS: TestDefaultCiphersExist-26 (0.00 seconds)\n=== RUN TestClientAuthPublickey-26\n--- PASS: TestClientAuthPublickey-26 (0.18 seconds)\n=== RUN TestClientAuthPassword-26\n--- PASS: TestClientAuthPassword-26 (0.17 seconds)\n=== RUN TestClientAuthWrongPassword-26\n--- PASS: TestClientAuthWrongPassword-26 (0.17 seconds)\n=== RUN TestClientAuthInvalidPublickey-26\n--- PASS: TestClientAuthInvalidPublickey-26 (0.17 seconds)\n=== RUN TestClientAuthRSAandDSA-26\n--- PASS: TestClientAuthRSAandDSA-26 (0.17 seconds)\n=== RUN TestClientHMAC-26\n\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x70 pc=0x515479]\n\ngoroutine 19 [running]:\nsync/atomic.CompareAndSwapUint32(0x70, 0x100000000, 0x0, 0x0, 0x4be29d, ...)\n go/src/pkg/sync/atomic/asm_amd64.s:12 +0xd\nsync.(*Mutex).Lock(0x70, 0x0)\n go/src/pkg/sync/mutex.go:40 +0x35\nnet.(*netFD).Read(0x0, 0xf8401c1000, 0x100000001000, 0x0, 0x0, ...)\n go/src/pkg/net/fd.go:417 +0x42\nnet.(*TCPConn).Read(0xf8400a95e8, 0xf8401c1000, 0x100000001000, 0xfdc00000000, 0x0, ...)\n go/src/pkg/net/tcpsock_posix.go:87 +0xce\nbufio.(*Reader).fill(0xf8400ce640, 0x100000001)\n go/src/pkg/bufio/bufio.go:77 +0xf2\nbufio.(*Reader).Read(0xf8400ce640, 0xf8400a9620, 0x500000005, 0x5, 0x0, ...)\n go/src/pkg/bufio/bufio.go:142 +0x188\ncode.google.com/p/go.crypto/ssh.(*reader).Read(0xf84013ed20, 0xf8400a9620, 0x500000005,\n0x784df0, 0x0, ...)\n go/src/pkg/code.google.com/p/go.crypto/ssh/agent.go:0 +0x72\nio.ReadAtLeast(0xf8401a0870, 0xf84013ed20, 0xf8400a9620, 0x500000005, 0x7fae00000005,\n...)\n go/src/pkg/io/io.go:254 +0xc3\nio.ReadFull(0xf8401a0870, 0xf84013ed20, 0xf8400a9620, 0x500000005, 0xf84013ed20, ...)\n go/src/pkg/io/io.go:273 +0x69\ncode.google.com/p/go.crypto/ssh.(*reader).readOnePacket(0xf84013ed20, 0xf8400d3028,\n0x7fae1d9ede70, 0x18)\n go/src/pkg/code.google.com/p/go.crypto/ssh/transport.go:85 +0xc3\ncode.google.com/p/go.crypto/ssh.(*transport).readPacket(0xf84013ed20, 0x0, 0x0, 0x0)\n go/src/pkg/code.google.com/p/go.crypto/ssh/transport.go:135 +0x25\ncode.google.com/p/go.crypto/ssh.(*ClientConn).mainLoop(0xf840196720, 0x0)\n go/src/pkg/code.google.com/p/go.crypto/ssh/client.go:190 +0x86\ncreated by code.google.com/p/go.crypto/ssh.Client\n go/src/pkg/code.google.com/p/go.crypto/ssh/client.go:38 +0x16b\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x400c00, 0x784580, 0x1b0000001b, 0x1, 0x7718b0, ...)\n go/src/pkg/testing/testing.go:350 +0x79f\ntesting.Main(0x400c00, 0x784580, 0x1b0000001b, 0x782fa8, 0x400000004, ...)\n go/src/pkg/testing/testing.go:285 +0x7a\nmain.main()\n\tgo-build173108041/code.google.com/p/go.crypto/ssh/_test/_testmain.go:103 +0x91\n\ngoroutine 2 [syscall]:\ncreated by runtime.main\n go/src/pkg/runtime/proc.c:221\n\ngoroutine 6 [syscall]:\nsyscall.Syscall6()\n go/src/pkg/syscall/asm_linux_amd64.s:40 +0x5\nsyscall.EpollWait(0xf800000006, 0xf8401a12d0, 0xa0000000a, 0xffffffff, 0xc, ...)\n go/src/pkg/syscall/zerrors_linux_amd64.go:1781 +0xa1\nnet.(*pollster).WaitFD(0xf8401a12c0, 0xf8401a21c0, 0x0, 0x0, 0x0, ...)\n go/src/pkg/net/fd_linux.go:146 +0x112\nnet.(*pollServer).Run(0xf8401a21c0, 0x0)\n go/src/pkg/net/fd.go:236 +0xe4\ncreated by net.newPollServer\n go/src/pkg/net/newpollserver.go:35 +0x388\n\ngoroutine 20 [running]:\ncreated by testing.RunTests\n go/src/pkg/testing/testing.go:349 +0x77c\n\ngoroutine 21 [runnable]:\ncode.google.com/p/go.crypto/ssh._func_005(0xf8400a95f0, 0xf8400a95d8, 0x0, 0x0)\n go/src/pkg/code.google.com/p/go.crypto/ssh/client_auth_test.go:174\ncreated by code.google.com/p/go.crypto/ssh.newMockAuthServer\n go/src/pkg/code.google.com/p/go.crypto/ssh/client_auth_test.go:174 +0x16a\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nlinux\n\nWhich version are you using?  (run 'go version')\n\ngo version weekly.2012-03-27 +75c94686a4d7\n\ngo.crypto 45667c991e8e\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2014-12-08T10:18:23Z",
+	"created_at": "2012-04-11T06:24:31Z",
+	"updated_at": "2016-06-24T22:17:38Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

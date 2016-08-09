@@ -1,0 +1,33 @@
+{
+	"id": 51279710,
+	"number": 2788,
+	"state": "closed",
+	"title": "database/sql: convert null values to []byte as nil",
+	"body": "by **jamespcooper**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nadd this test to database/sql/sql_test.go\n\nfunc TestNullByteSlice(t *testing.T) {\n\tdb := newTestDB(t, \u0026quot;\u0026quot;)\n\tdefer closeDB(t, db)\n\texec(t, db, \u0026quot;CREATE|t|id=int32,name=string\u0026quot;)\n\texec(t, db, \u0026quot;INSERT|t|id=10,name=?\u0026quot;, nil)\n\n\tvar name []byte\n\terr := db.QueryRow(\u0026quot;SELECT|t|name|id=?\u0026quot;, 10).Scan(\u0026amp;name)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif name != nil {\n\t\tt.Fatal(\u0026quot;name []byte should be nil for null column value, got: %v\u0026quot;, name)\n\t}\n\n\texec(t, db, \u0026quot;INSERT|t|id=10,name=?\u0026quot;, \u0026quot;bob\u0026quot;)\n\terr = db.QueryRow(\u0026quot;SELECT|t|name|id=?\u0026quot;, 10).Scan(\u0026amp;name)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif string(name) != \u0026quot;bob\u0026quot; {\n\t\tt.Fatal(\u0026quot;name []byte should be bob, got: %s\u0026quot;, string(name))\n\t}\n}\n\n\nWhat is the expected output?\nPassing test\n\nWhat do you see instead?\n\n--- FAIL: sql.TestNullByteSlice (0.00 seconds)\n\tsql_test.go:354: sql: Scan error on column index 0: unsupported driver -\u0026gt; Scan pair: \u0026lt;nil\u0026gt; -\u0026gt; *[]uint8\nFAIL\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nMac OS 10.6.8\n\nWhich revision are you using?  (hg identify)\n7de66de3961c+ tip\n\nPlease provide any additional information below.\nThis is a follow up to #2699.  We decided to not introduce a NullBytes struct, but we\nprobably need to modify  convert.go's  convertAssign() to handle this case\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:14:48Z",
+	"created_at": "2012-01-26T01:45:23Z",
+	"updated_at": "2016-06-24T21:24:33Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

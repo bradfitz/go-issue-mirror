@@ -1,0 +1,12 @@
+{
+	"id": 205214414,
+	"body": "@brtzsnr\r\n\r\n`radix.go:29 0x4096ca9   8401            TESTL AL, 0(CX)`  Is a nil check. It'll fail if CX == 0 (in the code this is t).\r\n\r\n`radix.go:32 0x4096cc2   48891c24        MOVQ BX, 0(SP)` Is another case for suboptimal register allocator. Here are a few more examples: https://github.com/golang/go/issues/14504.\r\n\r\n`radix.go:39 0x4096ccf   488d05cad11f00      LEAQ 0x1fd1ca(IP), AX` happens because the compiler doesn't do loop hoisting. I would love to have it for https://go-review.googlesource.com/#/c/21434/, too.\r\n\r\n`radix.go:36 0x4096cd9   751d            JNE 0x4096cf8` second jump happens because we don't merge consecutive ifs on the same variable. Same happens here.\r\n\r\n```\r\nfunc g(a bool) int {\r\n\tx := 1\r\n\tif a {\r\n\t\tx = 2\r\n\t}\r\n\tif a {\r\n\t\tx += 1\r\n\t} else {\r\n\t\tx += 2\r\n\t}\r\n\treturn x\r\n}\r\n```\r\n\r\n*-Correction-*: `radix.go:36 0x4096cd9   751d            JNE 0x4096cf8` happens because of the following. Will fix later this evening.\r\n\r\n```\r\n    v40 = Copy \u003cbool\u003e v35\r\n    If v40 -\u003e b14 b13\r\n```",
+	"user": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-04T09:40:15Z",
+	"updated_at": "2016-04-04T13:42:22Z"
+}

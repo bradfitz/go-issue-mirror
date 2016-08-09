@@ -1,0 +1,12 @@
+{
+	"id": 66894068,
+	"body": "It seems the only way to fix the data race is to override provide our own\nimplementation of io.ReadCloser. (Similar races exist for StdoutPipe and\nStderrPipe, if we fix StdinPipe, we should also fix the other two.)\n\nEither we lock the struct for Read/Close, or use a sync/atomic to load the\nunderlying fd.\n\nI don't think we can continue to use os.(*File), because otherwise we will\nhave to take the lock for the entire duration of the method call to prevent\nraces on the fd. But that means you can't Close it while there is concurrent\nWrite.\n\nso to fix this, we will need to implement the method ourselves using syscall\ndirectly.\n\nWe need to weight the pros and cons of fixing this and the effort required\nfor the user to avoid such races.\n\nLeave for others to decide.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-13T22:26:44Z",
+	"updated_at": "2014-12-13T22:26:44Z"
+}

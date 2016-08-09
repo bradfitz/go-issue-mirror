@@ -1,0 +1,22 @@
+{
+	"id": 82876488,
+	"number": 11006,
+	"state": "closed",
+	"title": "encoding/json: multiple anonymous struct fields shouldn't be ignored",
+	"body": "Currently if there are duplicate anonymous struct fields they are all ignored. I think this is wrong because the encoding process shouldn't loose information unless the output format is not capable to represent it(which is not the case).\r\nFor example marshalling AllTypes produces an empty output.\r\ntype AllTypes struct {\r\n\tType1\r\n\tType2\r\n}\r\ntype Type1 struct {\r\n\tName    string\r\n\tAddress string\r\n}\r\ntype Type2 struct {\r\n\tName    string\r\n\tAddress string\r\n}\r\nTo overcome this issue an additional step is required to create a boilerplate type specially for the encoding/decoding process. Most likely we end-up with a new type (AllTypes2) as below. This is against the composability of the language and adds additional burden to the developer(look for duplicate fields -\u003e  create a new type). \r\n\r\ntype AllTypes2 struct{\r\n   Type1 Type1\r\n  Type2 Type2\r\n}\r\n\r\nAny fix/convention that preserves the data would be fine to me but I present my proposal below too as starting point. I think it's also backward compatible.\r\n  **Use the same addressing like the native go types**.\r\n If there are duplicate anonymous fields, they should be addressed using the type name as prefix. If the type name is duplicate too both the package name and the type name should be used as prefix. For type AllTypes I would expect the output below:\r\n\r\n{\r\n  \"Type1\": {\"Name\":\"example\", \"Address\": \"example\"},\r\n  \"Type2\": {\"Name\":\"example\", \"Address\": \"example\"}\r\n}\r\n\r\n Using the same addressing as on go types makes the behaviour intuitive and easier to understand too as we have only one familiar rule instead of 3 special rules. \r\n It would make the behaviour more consistent too because the type name is already used as key on certain cases. For example type SomeType is encoded  to {\"MySlice\":[\"somedata\"]}.\r\ntype SomeType struct{\r\n   MySlice\r\n}\r\ntype MySlice []string\r\n",
+	"user": {
+		"login": "themihai",
+		"id": 1800192,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 19,
+	"closed_at": "2015-05-30T23:26:51Z",
+	"created_at": "2015-05-30T18:11:34Z",
+	"updated_at": "2016-06-25T02:09:53Z"
+}

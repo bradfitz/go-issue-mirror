@@ -1,0 +1,12 @@
+{
+	"id": 157542813,
+	"body": "I don't think this is a duplicate of #12932 because stack copying doesn't change the length of the stkbar slice. The values in the slice may be bad, but not the size.\r\n\r\nThere are plenty of places where we (necessarily) non-atomically modify the barriers on the stack and the value of g.stkbarPos. If a SIGPROF happens in the middle of this, it may see inconsistency between the barriers on the stack and g.stkbar.\r\n\r\nWe modify stkbarPos or len(g.stkbar) only in the following situations:\r\n\r\n1. The very act of hitting a stack barrier will make the stack and stkbarPos briefly inconsistent: if a SIGPROF happens after the return to stackBarrier but before stackBarrier has incremented stkbarPos, gentraceback will see more values in g.stkbar than stack barriers on the stack (which is the opposite of what's happening in this issue).\r\n\r\n2. If the SIGPROF happens during removal of stack barriers (and we're in a gchelper situation similar to #12932), it may see more values in g.stkbar than stack barriers on the stack.\r\n\r\n3. If the SIGPROF happens during gcUnwindBarriers, the situation is the same.\r\n\r\n4. They may be inconsistent during gcInstallStackBarrier, but this case is protected by gp.stackLock (and if it weren't, it would still be the opposite of this issue).\r\n\r\nWe need to do something about these, but unless I messed up the analysis, none of them should cause gentraceback to see more stack barriers on the stack than entries in g.stkbar.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-17T23:22:25Z",
+	"updated_at": "2015-11-17T23:22:44Z"
+}

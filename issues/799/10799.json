@@ -1,0 +1,33 @@
+{
+	"id": 76081828,
+	"number": 10799,
+	"state": "closed",
+	"title": "html/template: slice bounds out of range",
+	"body": "The following program crashes with panic:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"errors\"\r\n\t\"html/template\"\r\n\t\"io/ioutil\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tdata, _ := ioutil.ReadFile(os.Args[1])\r\n\tt, err := template.New(\"foo\").Funcs(funcs).Parse(string(data))\r\n\tif err != nil {\r\n\t\tif t != nil {\r\n\t\t\tpanic(\"non nil template on error\")\r\n\t\t}\r\n\t\treturn\r\n\t}\r\n\td := \u0026Data{\r\n\t\tA: 42,\r\n\t\tB: \"foo\",\r\n\t\tC: []int{1, 2, 3},\r\n\t\tD: map[int]string{1: \"foo\", 2: \"bar\"},\r\n\t\tE: Data1{42, \"foo\"},\r\n\t}\r\n\tt.Execute(ioutil.Discard, d)\r\n\treturn\r\n}\r\n\r\ntype Data struct {\r\n\tA int\r\n\tB string\r\n\tC []int\r\n\tD map[int]string\r\n\tE Data1\r\n}\r\n\r\ntype Data1 struct {\r\n\tA int\r\n\tB string\r\n}\r\n\r\nfunc (Data1) Q() string {\r\n\treturn \"foo\"\r\n}\r\n\r\nfunc (Data1) W() (string, error) {\r\n\treturn \"foo\", nil\r\n}\r\n\r\nfunc (Data1) E() (string, error) {\r\n\treturn \"foo\", errors.New(\"Data.E error\")\r\n}\r\n\r\nfunc (Data1) R(v int) (string, error) {\r\n\treturn \"foo\", nil\r\n}\r\n\r\nfunc (Data1) T(s string) (string, error) {\r\n\treturn s, nil\r\n}\r\n\r\nvar funcs = map[string]interface{}{\r\n\t\"Q\": func1,\r\n\t\"W\": func2,\r\n\t\"E\": func3,\r\n\t\"R\": func4,\r\n\t\"T\": func5,\r\n\t\"Y\": func6,\r\n\t\"U\": func7,\r\n\t\"I\": func8,\r\n}\r\n\r\nfunc func1(s string) string {\r\n\treturn s\r\n}\r\n\r\nfunc func2(s string) (string, error) {\r\n\treturn s, nil\r\n}\r\n\r\nfunc func3(s string) (string, error) {\r\n\treturn s, errors.New(\"func3 error\")\r\n}\r\n\r\nfunc func4(v int) int {\r\n\treturn v\r\n}\r\n\r\nfunc func5(v int) (int, error) {\r\n\treturn v, nil\r\n}\r\n\r\nfunc func6() int {\r\n\treturn 42\r\n}\r\n\r\nfunc func7() (int, error) {\r\n\treturn 42, nil\r\n}\r\n\r\nfunc func8() (int, error) {\r\n\treturn 42, errors.New(\"func8 error\")\r\n}\r\n```\r\n```\r\npanic: runtime error: slice bounds out of range [recovered]\r\n\tpanic: runtime error: slice bounds out of range\r\n\r\ngoroutine 1 [running]:\r\ntext/template.errRecover(0xc208041e50)\r\n\tsrc/text/template/exec.go:100 +0xb2\r\nhtml/template.htmlReplacer(0xc2080c0068, 0x2, 0x6d6ae0, 0x61, 0x61, 0x5be900, 0x0, 0x0)\r\n\tsrc/html/template/html.go:144 +0x1d7\r\nhtml/template.htmlNospaceEscaper(0xc20800eb20, 0x1, 0x1, 0x0, 0x0)\r\n\tsrc/html/template/html.go:20 +0x129\r\nreflect.Value.call(0x55d560, 0x631a98, 0x13, 0x5c24d0, 0x4, 0xc20800a840, 0x1, 0x1, 0x0, 0x0, ...)\r\n\tsrc/reflect/value.go:432 +0x1253\r\nreflect.Value.Call(0x55d560, 0x631a98, 0x13, 0xc20800a800, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n\tsrc/reflect/value.go:300 +0xb4\r\ntext/template.(*state).evalCall(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0x55d560, 0x631a98, 0x13, 0x7f3f2a955628, 0xc208015590, 0x609690, ...)\r\n\tsrc/text/template/exec.go:592 +0xb04\r\ntext/template.(*state).evalFunction(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0xc208015560, 0x7f3f2a955628, 0xc208015590, 0xc20800e860, 0x1, 0x1, ...)\r\n\tsrc/text/template/exec.go:473 +0x427\r\ntext/template.(*state).evalCommand(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0xc208015590, 0x545f80, 0xc20800eb10, 0x58, 0x0, 0x0, ...)\r\n\tsrc/text/template/exec.go:370 +0x1eb\r\ntext/template.(*state).evalPipeline(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0xc208012320, 0x545f80, 0xc20800eb10, 0x58)\r\n\tsrc/text/template/exec.go:343 +0x183\r\ntext/template.(*state).walk(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0x7f3f2a955430, 0xc208014a80)\r\n\tsrc/text/template/exec.go:178 +0x137\r\ntext/template.(*state).walk(0xc208041de0, 0x545f80, 0xc20800eb00, 0x58, 0x7f3f2a955550, 0xc2080149c0)\r\n\tsrc/text/template/exec.go:186 +0x784\r\ntext/template.(*state).walkIfOrWith(0xc208041de0, 0x13, 0x532c40, 0xc208012690, 0x16, 0xc2080122d0, 0xc2080149c0, 0x0)\r\n\tsrc/text/template/exec.go:214 +0x29e\r\ntext/template.(*state).walk(0xc208041de0, 0x532c40, 0xc208012690, 0x16, 0x7f3f2a9554c0, 0xc2080106c0)\r\n\tsrc/text/template/exec.go:197 +0x637\r\ntext/template.(*state).walk(0xc208041de0, 0x532c40, 0xc208012690, 0x16, 0x7f3f2a955550, 0xc208014870)\r\n\tsrc/text/template/exec.go:186 +0x784\r\ntext/template.(*Template).Execute(0xc208010440, 0x7f3f2a9552b8, 0xc20800e500, 0x532c40, 0xc208012690, 0x0, 0x0)\r\n\tsrc/text/template/exec.go:141 +0x3ea\r\nhtml/template.(*Template).Execute(0xc208014780, 0x7f3f2a9552b8, 0xc20800e500, 0x532c40, 0xc208012690, 0x0, 0x0)\r\n\tsrc/html/template/template.go:104 +0x9d\r\nmain.main()\r\n\t/tmp/ht.go:26 +0x543\r\n```\r\non commit abb818bc03fc19324c9271e8d4dbe5840eea18d2",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-05-19T22:45:59Z",
+	"created_at": "2015-05-13T18:37:53Z",
+	"updated_at": "2016-06-25T02:08:18Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

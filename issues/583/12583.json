@@ -1,0 +1,30 @@
+{
+	"id": 105934183,
+	"number": 12583,
+	"state": "closed",
+	"title": "proposal: support compiling multiple Go programs into a single executable file",
+	"body": "There's an existing (albeit niche) practice of compiling multiple C programs into a single executable file.  E.g., there's the [crunchgen](https://www.freebsd.org/cgi/man.cgi?format=html\u0026query=crunchgen\\(1\\)) tool used by the BSDs for combining the common command line tools like `cp`, `mv`, `ls`, etc. into a single static executable to save space in their boot media without relying on a dynamic linker.  The [BusyBox](http://www.busybox.net/) suite uses a similar idea.\r\n\r\nThis proposal is about implementing the same idea for Go, which amounts to the following changes:\r\n\r\n  1. Extend package runtime to inspect argv[0] and use that to determine what `init` and `main` routines to call, instead of always calling `main.init` and `main.main`.\r\n  2. Extend cmd/link to support linking multiple package mains into a single executable file and to generate a table of contents listing their `init` and `main` entry points.\r\n  3. Extend cmd/go to provide a way to specify additional main packages to build into an executable file, and perhaps controlling what names map to which packages.\r\n\r\nAs a hacky proof-of-concept for the first steps, I put together [CL 14499](https://golang.org/cl/14499), which I've successfully used to create a single executable that multiplexes all of the standard Go distribution tools.  By default it acts like cmd/go:\r\n\r\n    $ ./a.out -help 2\u003e\u00261 | head -1\r\n    Go is a tool for managing Go source code.\r\n\r\nBut when it's invoked with another standard tool's name, it behaves like that tool instead:\r\n\r\n    $ ln a.out doc; ./doc -help 2\u003e\u00261 | head -1\r\n    Usage of [go] doc:\r\n    $ ln a.out gofmt; ./gofmt -help 2\u003e\u00261 | head -1\r\n    usage: gofmt [flags] [path ...]\r\n    $ ln a.out vet; ./vet -help 2\u003e\u00261 | head -1\r\n    Usage of ./vet:\r\n\r\nSome statistics on file and program segment sizes in the CL description.\r\n\r\nUnlike for C, this feature needs to be part of the Go toolchain, because Go supports package initializers that run before main.  The simple crunchgen approach of renaming the `main` symbol in existing packages and adding a new multiplexing `main` wrapper function fails because we don't want (for example) `gofmt` and `vet`'s flags to interfere, so we need to control what init routines are called.\r\n\r\nThis could be useful for distributing sets of related Go programs that will always be updated in sync to reduce the distribution and install footprint sizes (e.g., the Go toolchain itself, or embedded system tools written in Go).\r\n\r\nAdmittedly, this is a rather weak use case, and overlaps significantly (albeit with somewhat different tradeoffs) with the already ongoing dynamic linker work.  I'm proposing here just in case anyone finds it particularly attractive and worth pursuing.  If not, we can revisit if a more compelling/concrete use case ever arises in the future.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-10-24T04:31:37Z",
+	"created_at": "2015-09-11T02:43:54Z",
+	"updated_at": "2015-10-24T04:31:37Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

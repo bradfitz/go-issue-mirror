@@ -1,0 +1,21 @@
+{
+	"id": 102035879,
+	"number": 12216,
+	"state": "open",
+	"title": "cmd/go: link-time symbol resolution for buildmode=c-shared",
+	"body": "version:\r\n```\r\n$ go version\r\ngo version go1.5 linux/amd64\r\n```\r\nI'm working with a software that loads plugins structured as follows. Plugins implement an interface, and the main program provides an API, so a typical call stack might look like:\r\n```\r\nmain_program_function()\r\n\\_ plugin_function()\r\n   \\_ main_program_other_function()\r\n```\r\n\r\nUp to now, the main program and the plugins are written in C. I was eager to see if I could start building plugins in Go instead of C, now that 1.5 is out, so I gave it a try with something that looks like:\r\n\r\n```go\r\npackage main\r\n\r\n// #include \"main_program_api.h\"\r\nimport \"C\"\r\n\r\n//export plugin_function\r\nfunc plugin_function() {\r\n   C.main_program_other_function()\r\n}\r\n\r\nfunc main () {\r\n // unused\r\n}\r\n```\r\nUnfortunately, this fails with:\r\n```\r\n./plugin.go:8: undefined reference to `main_program_other_function'\r\n```\r\n\r\nIan Lance Taylor suggested I pass '--unresolved-symbols' to the linker as a work around. I verified that that works as expected, both when passed via the command line:\r\n```\r\nCGO_LDFLAGS=\"-Wl,--unresolved-symbols=ignore-all\" go build -buildmode=c-shared \r\n```\r\nor via the code\r\n```go\r\n// #cgo LDFLAGS: -Wl,--unresolved-symbols=ignore-all\r\n```",
+	"user": {
+		"login": "deweerdt",
+		"id": 5094,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-08-20T01:24:08Z",
+	"updated_at": "2016-05-17T23:56:47Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51280538,
+	"number": 3395,
+	"state": "closed",
+	"title": "net: ECONNABORTED = death",
+	"body": "\u003cpre\u003eIt's possible for a connection to arrive but close while it's on the listen queue. When\nyou call accept(2) on this connection, it will return ECONNABORTED. I can't think of any\nreasons for net/http (or any other network listener APIs we have) to care about this.\nMaybe they should be logged, but they certainly shouldn't cause me to reset all the\nconnections in the listen queue (and in the case that people exit after an error in the\nlistener, all in-flight connections).\n\nAnyway, I'd like some additional input before writing a patch for this. The error isn't\n\u0026quot;Temporary\u0026quot; or \u0026quot;Timeout\u0026quot; -- it's ... Ignorable. Kind of like\nSIGPIPE, which we ignore in pkg/runtime. I thought of adding something like:\n\nfunc (e Errno) Ignorable() bool {\n  return e == ECONNABORTED\n}\n\ninto syscall_unix.go and syscall_windows.go (it means the same thing in both), and then\nadding an \u0026quot;ignorable\u0026quot; interface in net.go with OpError() implementing that\ninterface and calling into the syscall level, just like Temporary and Timeout do. I\ndon't know that this is what we want to do architecturally, though. I feel like\n\u0026quot;Ignorable\u0026quot; is the wrong word. Should we just check ne.Err ==\nsyscall.ECONNABORTED after we call l.Accept() everywhere? That seems to make less sense.\n\nAlso, I don't think it makes sense to do everywhere. There are probably applications\nwhere you're talking over a local TCP socket and this would constitute an error\ncondition -- so I don't think it's something that we should test for in AcceptTCP. I\nthink though generally where this can happen in crypto/tls, net/http, net/http/fcgi, and\nnet/rpc it's probably not a real error.\n\nI'm happy to make a patch for this issue, and I think it's probably something that\nshould go in Go1. If it doesn't, it would probably be pretty easy to DoS basically any\nGo server on a public address. I'd expect that people writing their own services would\ndetermine whether this is an issue for themselves, but I really can't think of any\nreason we shouldn't effectively ignore this error in all of our existing TCP-based APIs.\nThoughts?\u003c/pre\u003e",
+	"user": {
+		"login": "dhobsd",
+		"id": 168647,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2014-12-08T10:17:43Z",
+	"created_at": "2012-03-26T06:31:54Z",
+	"updated_at": "2016-06-24T22:16:21Z"
+}

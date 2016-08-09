@@ -1,0 +1,27 @@
+{
+	"id": 51287133,
+	"number": 7734,
+	"state": "closed",
+	"title": "sync: spurious wakeup from WaitGroup.Wait",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\ngo version devel +519230b4d06a Sun Apr 06 10:30:02 2014 -0400 + linux/amd64\n\nWhat steps reproduce the problem?\nThe following program, which uses a WaitGroup to wait for two goroutines to complete,\nshould never exit.\n\npackage main\n\nimport (\n        \u0026quot;fmt\u0026quot;\n        \u0026quot;runtime\u0026quot;\n        \u0026quot;sync\u0026quot;\n        \u0026quot;sync/atomic\u0026quot;\n)\n\nfunc main() {\n        for i := int64(0); ; i++ {\n                wg := \u0026amp;sync.WaitGroup{}\n                wg.Add(1)\n                counter := int32(0)\n                // spawn goroutine 1                                                                                                                        \n                go func() {\n                        atomic.AddInt32(\u0026amp;counter, 1)\n                        wg.Done()\n                }()\n                runtime.Gosched()\n                wg.Add(1)\n                // spawn goroutine 2                                                                                                                        \n                go func() {\n                        atomic.AddInt32(\u0026amp;counter, 1)\n                        wg.Done()\n                }()\n                // Wait for goroutine 1 and 2                                                                                                                   \n                wg.Wait()\n                if atomic.LoadInt32(\u0026amp;counter) != 2 {\n                        fmt.Println(i, \u0026quot;Spurious wakeup from Wait()\u0026quot;)\n                        return\n                }\n        }\n}\n\nWhat happened?\nIt exits because of a bug in WaitGroup. (It may take a few minutes to fail.)\n\n$ GOMAXPROCS=2 go run test.go\n26994961 Spurious wakeup from Wait()\u003c/pre\u003e",
+	"user": {
+		"login": "rui314",
+		"id": 47400,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:42:54Z",
+	"created_at": "2014-04-08T15:57:21Z",
+	"updated_at": "2016-06-25T01:31:46Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

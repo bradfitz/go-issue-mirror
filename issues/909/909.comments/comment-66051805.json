@@ -1,0 +1,12 @@
+{
+	"id": 66051805,
+	"body": "\u003ca id=\"c32\"\u003e\u003c/a\u003eComment 32 by **zhigangc**:\n\n\u003cpre\u003eI was able to prove that the bug exists on 64 bit linux as well with r60.3. The two fake\npointers prevents GC from reclaiming the two pieces of memory blocks allocated in the\nfirst two iterations of the loop. However, it may not work for you because setting two\nfake pointers is tricky.\n\nMy argument is, this is essentially a bug that can cause huge memory leaks to both 64\nbit and 32 bit servers.\n\n\nModerators, should I create a separate issue?\n\n\n\n\npackage main\n\nimport (\n        \"runtime\"\n)\n\nvar fake_pointer1 uint64 = 0xf84402d000\nvar fake_pointer2 uint64 = 0xf84000d000\n\nfunc fs() []byte {\n        //allocate 64 MB chunks\n        r := make([]byte, 64*1024*1024)\n        return r\n}\n\nfunc main() {\n        println(\"addr:\", \u0026fake_pointer1, \u0026fake_pointer2)\n        var s []byte\n        for i := 0; i \u003c 10; i++ {\n                println(\"\")\n                println(i, \"---------------\")\n                s = fs()\n                runtime.GC()\n                m := runtime.MemStats\n                println(i, \"MemStats.Alloc:\", m.Alloc)\n        }\n        _ = s\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-13T00:58:05Z",
+	"updated_at": "2014-12-08T10:06:19Z"
+}

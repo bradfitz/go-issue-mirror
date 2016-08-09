@@ -1,0 +1,17 @@
+{
+	"id": 125777110,
+	"number": 13893,
+	"state": "closed",
+	"title": "net/http: Expect 100 continue header shouldn't be deleted unnecessarily in server.go",
+	"body": "Issue in net/http/server.go for Expect \"100-continue\" support. \r\n\r\n```\r\n               // Expect 100 Continue support\r\n                req := w.req\r\n                if req.expectsContinue() {\r\n                        if req.ProtoAtLeast(1, 1) \u0026\u0026 req.ContentLength != 0 {\r\n                                // Wrap the Body reader with one that replies on the connection\r\n                                req.Body = \u0026expectContinueReader{readCloser: req.Body, resp: w}\r\n                        }\r\n                        req.Header.Del(\"Expect\")\r\n                } else if req.Header.get(\"Expect\") != \"\" {\r\n                        w.sendExpectationFailed()\r\n                        return\r\n                }\r\n```\r\n\r\nIncoming client headers. \r\n\r\n```\r\n2016-01-09 16:14:17,988 - Thread-6 - botocore.auth - DEBUG - CanonicalRequest:\r\nPUT\r\n/mybucket/filter-coffee.jpg\r\n\r\ncontent-md5:7FgxPuugREsJH7jrMSpq8A==\r\ncontent-type:image/jpeg\r\nexpect:100-continue\r\nhost:localhost:9000\r\nuser-agent:aws-cli/1.9.17 Python/2.7.6 Linux/3.13.0-38-generic botocore/1.3.17\r\nx-amz-content-sha256:85d43d9100694f7a81ae286710321225b718776a902f51a538e716b51e2a3bf1\r\nx-amz-date:20160109T104417Z\r\n\r\ncontent-md5;content-type;expect;host;user-agent;x-amz-content-sha256;x-amz-date\r\n85d43d9100694f7a81ae286710321225b718776a902f51a538e716b51e2a3bf1\r\n```\r\n\r\nWhile calculating signature of incoming headers from the client, there was as signature mismatch on the server side because server cannot generate the same canonical request which was sent over the wire. \r\n\r\nThe reason is because while all the headers are present `Expect` header is removed pro-actively https://github.com/golang/go/blob/master/src/net/http/server.go#L1455.\r\n\r\nI don't see any reason to delete this header entry (I may be wrong please correct me here), since it is a value which might be useful for the top level caller to inspect and verify. \r\n\r\nFollowing line fixes this problem. \r\n\r\n```\r\n$ git diff\r\ndiff --git a/src/net/http/server.go b/src/net/http/server.go\r\nindex ac7086c..19324d0 100644\r\n--- a/src/net/http/server.go\r\n+++ b/src/net/http/server.go\r\n@@ -1452,7 +1452,6 @@ func (c *conn) serve() {\r\n                                // Wrap the Body reader with one that replies on the connection\r\n                                req.Body = \u0026expectContinueReader{readCloser: req.Body, resp: w}\r\n                        }\r\n-                       req.Header.Del(\"Expect\")\r\n                } else if req.Header.get(\"Expect\") != \"\" {\r\n                        w.sendExpectationFailed()\r\n                        return\r\n```",
+	"user": {
+		"login": "harshavardhana",
+		"id": 622699,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-01-10T01:35:26Z",
+	"created_at": "2016-01-09T19:38:23Z",
+	"updated_at": "2016-01-10T02:10:08Z"
+}

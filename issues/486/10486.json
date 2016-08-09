@@ -1,0 +1,33 @@
+{
+	"id": 69050470,
+	"number": 10486,
+	"state": "closed",
+	"title": "runtime: panic when calling runtime.Callers after div by zero on linux/arm",
+	"body": "```go\r\npackage main\r\n\r\nimport (\r\n    \"path/filepath\"\r\n    \"runtime\"\r\n)\r\n\r\nfunc divZero() int {\r\n    defer func() {\r\n        if p := recover(); p != nil {\r\n            var pcs [512]uintptr\r\n            runtime.Callers(2, pcs[:])\r\n        }   \r\n    }() \r\n    a, b := 1, 0\r\n    return a / b\r\n}\r\n\r\nfunc main() {\r\n    divZero()\r\n    filepath.ToSlash(runtime.GOROOT())\r\n}\r\n```\r\n\r\nExpected output: none, program should exit successfully\r\n\r\nObserved output:\r\n```go\r\npi@raspberrypi ~ $ go run t.go\r\nruntime: g1: leftover defer argp=0x1031b7a0 pc=0x10c3c\r\n\tdefer 0x10336100 argp=0x1031b7a0 pc=0x10c3c\r\n\tdefer 0x10336000 argp=0x1031b7c4 pc=0x1fde4\r\nfatal error: traceback has leftover defers\r\n\r\nruntime stack:\r\nruntime.gothrow(0x87198, 0x1d)\r\n\t/usr/local/go/src/runtime/panic.go:503 +0x84\r\nruntime.gentraceback(0x10cdc, 0x1031b734, 0x41cd4, 0x103000a0, 0x0, 0x0, 0x7fffffff, 0x7ec1e7b0, 0x7ec1e7b8, 0x0, ...)\r\n\t/usr/local/go/src/runtime/traceback.go:445 +0x6bc\r\ncopystack(0x103000a0, 0x1000)\r\n\t/usr/local/go/src/runtime/stack.c:623 +0xfc\r\nruntime.newstack()\r\n\t/usr/local/go/src/runtime/stack.c:789 +0x444\r\nruntime.morestack()\r\n\t/usr/local/go/src/runtime/asm_arm.s:319 +0x4c\r\n\r\ngoroutine 1 [stack growth]:\r\nmain.func·001()\r\n\t/Users/aes/t.go:9 fp=0x1031b734 sp=0x1031b734\r\nruntime.call16(0x8bc64, 0x1033611c, 0x0, 0x0)\r\n\t/usr/local/go/src/runtime/asm_arm.s:406 +0x70 fp=0x1031b748 sp=0x1031b734\r\nruntime.gopanic(0x74290, 0x1030a020)\r\n\t/usr/local/go/src/runtime/panic.go:387 +0x3b4 fp=0x1031b780 sp=0x1031b748\r\nruntime.panicdivide()\r\n\t/usr/local/go/src/runtime/panic.go:24 +0x54 fp=0x1031b794 sp=0x1031b780\r\nmain.divZero(0x0)\r\n\t/Users/aes/t.go:16 +0x74 fp=0x1031b7a4 sp=0x1031b794\r\nmain.main()\r\n\t/Users/aes/t.go:20 +0x1c fp=0x1031b7c0 sp=0x1031b7a4\r\nruntime.main()\r\n\t/usr/local/go/src/runtime/proc.go:63 +0x108 fp=0x1031b7e4 sp=0x1031b7c0\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_arm.s:1322 +0x4 fp=0x1031b7e4 sp=0x1031b7e4\r\n\r\ngoroutine 2 [runnable]:\r\nruntime.forcegchelper()\r\n\t/usr/local/go/src/runtime/proc.go:90\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_arm.s:1322 +0x4\r\n\r\ngoroutine 3 [runnable]:\r\nruntime.bgsweep()\r\n\t/usr/local/go/src/runtime/mgc0.go:82\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_arm.s:1322 +0x4\r\n\r\ngoroutine 4 [runnable]:\r\nruntime.runfinq()\r\n\t/usr/local/go/src/runtime/malloc.go:712\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_arm.s:1322 +0x4\r\n```\r\n\r\nThis is a minimal test case whittled down from a larger application.\r\n\r\nNote the following:\r\n- I have only tested on Linux/ARM GOARM=6. The actual hardware platform tested on was a Raspberry Pi  2 Model B.\r\n- This problem manifests both from native compilation on linux/arm and darwin/amd64 -\u003e linux/arm cross compilation.\r\n- Changing `var pcs [512]uintptr` to `var pcs [256]uintptr` results in successful execution.\r\n- Removing the call to `filepath.ToSlash(runtime.GOROOT())` results in successful execution.\r\n",
+	"user": {
+		"login": "inconshreveable",
+		"id": 836692,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-07-30T16:14:22Z",
+	"created_at": "2015-04-17T02:43:48Z",
+	"updated_at": "2016-08-05T16:09:27Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

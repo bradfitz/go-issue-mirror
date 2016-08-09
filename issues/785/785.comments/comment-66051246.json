@@ -1,0 +1,12 @@
+{
+	"id": 66051246,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI added\n\nprintf(\"gp=%p, status=%d != g=%p, status=%d\\n\", gp, gp-\u0026gt;status, g, g-\u0026gt;status);\n\nbefore the throw in mgc0.c:mark and modified runtime.c to do:\n\nprintf(\"\\npanic g=%X PC=%X\\n\", g, (uint64)(uintptr)\u0026unused);\n\nand proc.c to do:\n\nprintf(\"\\ngoroutine %d @ %p [%d]:\\n\", g-\u0026gt;goid, g, g-\u0026gt;status);\n\nThere seems to be some kind of race condition, because I see:\n\ngp=0x2aea7ab40140, status=2 != g=0x2aea7ab40dc0, status=2\n\nthrow: mark - world not stopped\n\nbut then by the time the stacktraces are printed, gp's status is Grunnable (1):\n\npanic g=0x2aea7ab40dc0 PC=0x2aea7ab44fa0\nthrow+0x3e /home/alberts/go/src/pkg/runtime/runtime.c:73\n        throw(0xffffffff, 0x46a306)\nmark+0x12d /home/alberts/go/src/pkg/runtime/mgc0.c:152\n        mark()\ngc+0x1ff /home/alberts/go/src/pkg/runtime/mgc0.c:319\n        gc(0x436410, 0x2aea00000020)\nmallocgc+0x1ca /home/alberts/go/src/pkg/runtime/malloc.c:95\n        mallocgc(0x2aea00000000, 0x0, 0x0, 0x0, 0x2aea7ab45090, ...)\nmal+0x36 /home/alberts/go/src/pkg/runtime/malloc.c:236\n        mal(0x20, 0x100000000)\nruntime.mal+0x1b /home/alberts/go/src/pkg/runtime/runtime1.c:7\n        runtime.mal(0x20, 0x280200000006, 0x41648f, 0x2aea00000020)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\n\ngoroutine 4 @ 0x2aea7ab40140 [1]:\ngosched+0x4e /home/alberts/go/src/pkg/runtime/proc.c:542\n        gosched()\nmallocgc+0x322 /home/alberts/go/src/pkg/runtime/malloc.c:34\n        mallocgc(0x2aaacac4c580, 0x0, 0xaf021780763dbd00, 0x2000000000, 0x432c25, \n...)\nmal+0x36 /home/alberts/go/src/pkg/runtime/malloc.c:236\n        mal(0x20, 0x100000000)\nruntime.mal+0x1b /home/alberts/go/src/pkg/runtime/runtime1.c:7\n        runtime.mal(0x20, 0x280200000006, 0x41648f, 0x2aaa00000020)\n\u0026lt;our go functions\u0026gt;\ngoexit /home/alberts/go/src/pkg/runtime/proc.c:145\n        goexit()\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-05-18T08:13:47Z",
+	"updated_at": "2014-12-22T05:51:48Z"
+}

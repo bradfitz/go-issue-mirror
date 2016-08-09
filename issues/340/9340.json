@@ -1,0 +1,28 @@
+{
+	"id": 52077526,
+	"number": 9340,
+	"state": "closed",
+	"title": "Probable bug in commit df1739c77d4eb4f700722b4eb70b6036df96a9b9 (hashmap.go)",
+	"body": "commit df1739c77d4eb4f700722b4eb70b6036df96a9b9\r\nAuthor: Keith Randall \u003ckhr@golang.org\u003e\r\nDate:   Fri Dec 12 13:45:19 2014 -0800\r\n\r\n    runtime: if key type is reflexive, don't call equal(k, k)\r\n   \r\n    Most types are reflexive (k == k for all k of type t), so don't\r\n    bother calling equal(k, k) when the key type is reflexive.\r\n   \r\n    Change-Id: Ia716b4198b8b298687843b94b878dbc5e8fc2c65\r\n    Reviewed-on: https://go-review.googlesource.com/1480\r\n    Reviewed-by: Russ Cox \u003crsc@golang.org\u003e\r\n\r\n```go\r\n\r\n        // decide where to start\r\n-       switch {\r\n-       case h.B == 0:\r\n-               it.startBucket = 0\r\n-               it.offset = uint8(fastrand1()) \u0026 (bucketCnt - 1)\r\n-       case h.B \u003c= 31:\r\n-               it.startBucket = uintptr(fastrand1()) \u0026 (uintptr(1)\u003c\u003ch.B-1)\r\n-               it.offset = 0\r\n-       default:\r\n-               it.startBucket = (uintptr(fastrand1()) + uintptr(fastrand1())\u003c\u003c31) \u0026 (uintptr(1)\u003c\u003ch.B-1)\r\n-               it.offset = 0\r\n+       r := uintptr(fastrand1())\r\n+       if h.B \u003e 31-bucketCntBits {\r\n+               r += uintptr(fastrand1()) \u003c\u003c 31\r\n        }\r\n+       it.startBucket = r \u0026 (uintptr(1)\u003c\u003ch.B - 1)\r\n+       it.offset = uint8(r \u003e\u003e h.B \u0026 (bucketCnt - 1))\r\n```\r\nReplacement code does not do the same as removed code.\r\nI noticed segfault in api test, and followed some code and got here, this is most suspicious place :P",
+	"user": {
+		"login": "bmaxa",
+		"id": 5524409,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-16T17:40:21Z",
+	"created_at": "2014-12-16T06:19:24Z",
+	"updated_at": "2016-06-25T01:56:33Z"
+}

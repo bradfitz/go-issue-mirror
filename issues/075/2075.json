@@ -1,0 +1,28 @@
+{
+	"id": 51278695,
+	"number": 2075,
+	"state": "closed",
+	"title": "possible bug in select",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1.compile and run\n\nWhat is the expected output? What do you see instead?\n\nresult:\nfoo\nmain 1\nf1 in quit\nf1 done\nmain 2\nthrow: all goroutines are asleep - deadlock!\n\nwith GOMAXPROCS=2 result is:\n\nfoo\nmain 1\nf1 in quit\nf1 done\nmain 2\nf2 in quit\nmain 3\n\nalso leaving out all the foo stuff causes it to run to completion. i'm not sure it's a\nbug in select but it seems that the f2 does not see the pending value available in the\nquit channel. i've tried simplifying the program in various ways and it consistently\nfails but only if GOMAXPROCS is unset (==1) and the foo stuff is present.\n\nreporter uses windows; i reproduced it on amd64 darwin at tip and all the back to r56.\n\nPlease use labels and text to provide additional information.\n\npackage main\n\nimport (\n\t\u0026quot;time\u0026quot;\n)\n\nvar (\n\tfoo = make(chan bool)\n\tquit = make(chan chan\u0026lt;- bool, 1)\n)\n\nfunc main() {\n\tgo f1()\n\tgo f2()\n\tgo func() {\n\t\tfoo \u0026lt;- true\n\t}()\n\ttime.Sleep(1e9)\n\tch := make(chan bool)\n\tquit \u0026lt;- ch\n\tprintln(\u0026quot;main 1\u0026quot;)\n\t\u0026lt;-ch\n\tprintln(\u0026quot;main 2\u0026quot;)\n\t\u0026lt;-ch\n\tprintln(\u0026quot;main 3\u0026quot;)\n}\n\nfunc f1() {\n\tselect {\n\tcase ch := \u0026lt;-quit:\n\t\tprintln(\u0026quot;f1 in quit\u0026quot;)\n\t\tquit \u0026lt;- ch\n\t\tch \u0026lt;- true\n\t}\n\tprintln(\u0026quot;f1 done\u0026quot;)\n}\n\nfunc f2() {\n\tfor {\n\t\tselect {\n\t\tcase ch := \u0026lt;-quit:\n\t\tprintln(\u0026quot;f2 in quit\u0026quot;)\n\t\t\tquit \u0026lt;- ch\n\t\t\tch \u0026lt;- true\n\t\t\treturn\n\t\tcase \u0026lt;-foo:\n\t\t\tprintln(\u0026quot;foo\u0026quot;)\n\t\t}\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ken",
+		"id": 9967170,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:11:13Z",
+	"created_at": "2011-07-16T02:45:27Z",
+	"updated_at": "2016-06-24T19:32:22Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 163851421,
+	"number": 16267,
+	"state": "closed",
+	"title": "net/http: HTTP requests with InsecureSkipVerify transport don't close TCP connections",
+	"body": "1. What version of Go are you using (`go version`)?\r\n`go version go1.6.2 linux/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/user/code/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go-1.6\"\r\nGOTOOLDIR=\"/usr/lib/go-1.6/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nRun the following program. It creates an HTTP server on :8000 and spawns a goroutine that sends GET requests to the server every 1 second. The server writes nothing in the response body; body-length = 0. The client makes GET requests and does a body.Close() without reading the body. Note that the transport has `InsecureSkipVerify`.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n)\r\n\r\nfunc Server(w http.ResponseWriter, req *http.Request) {\r\n\t// If a response is written, the issue isn't triggered.\r\n\t// io.WriteString(w, \"hello, world!\\n\")\r\n}\r\n\r\nfunc Client(url string) {\r\n\treq, err := http.NewRequest(\"GET\", url, nil)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\t// This transport is what's causing unclosed connections.\r\n\ttr := \u0026http.Transport{\r\n\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},\r\n\t}\r\n\thc := \u0026http.Client{Timeout: 2 * time.Second, Transport: tr}\r\n\r\n\tresp, err := hc.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tdefer resp.Body.Close()\r\n}\r\n\r\nfunc main() {\r\n\t// Wait a bit and launch one client every second.\r\n\t// On the terminal, run `ss | grep :8000` to see\r\n\t// ESTABLISHED connections grow with every request.\r\n\r\n\tgo func() {\r\n\t\ttime.Sleep(1 * time.Second)\r\n\r\n\t\tn := 0\r\n\t\tfor {\r\n\t\t\tClient(\"http://localhost:8000\")\r\n\t\t\tfmt.Println(\"Request\", n)\r\n\t\t\tn += 1\r\n\r\n\t\t\ttime.Sleep(1 * time.Second)\r\n\t\t}\r\n\t}()\r\n\r\n\thttp.HandleFunc(\"/\", Server)\r\n\tlog.Fatal(http.ListenAndServe(\":8000\", nil))\r\n}\r\n\r\n```\r\n\r\n4. What did you expect to see?\r\nEvery request the client makes should get a 200 response from the server and immediately close the connection.\r\n\r\n5. What did you see instead?\r\nThe client keeps making requests and gets 200 back, but the underlying TCP connection is never closed. It's stuck in the `ESTABLISHED` state perpetually.\r\n\r\nCheck the open connections by running `ss | grep :8000` every few seconds. They keep growing. `netstat n | grep :8000` also shows TIME_WAIT connections.\r\n\r\n- Writing a response in `Server()` solves the issue.\r\n- Removing `InsecureSkipVerify` solves the issue.\r\n\r\n",
+	"user": {
+		"login": "knadh",
+		"id": 547147,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-07-05T17:10:15Z",
+	"created_at": "2016-07-05T13:32:11Z",
+	"updated_at": "2016-07-05T17:10:15Z"
+}

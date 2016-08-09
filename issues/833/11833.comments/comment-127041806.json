@@ -1,0 +1,12 @@
+{
+	"id": 127041806,
+	"body": "tv42: having the `/dev/urandom` fallback never block, and the `getrandom` call sometimes block, was what I had in mind when I said \"maybe it blocks, maybe it doesn't—depends on your kernel\".\r\n\r\nI do have sympathy for your point here. Wouldn't it be nice if the kernel always had good entropy and didn't start `init` until the pool was initialised?\r\n\r\nBut that's not the world that we live in. I do think that code that does the \"right\" thing and reads from `/dev/random` when generating keys has lead to multiple cases of manufacturers shipping, say, a fixed SSH host key for all devices etc just to get the thing to boot. If you have an embedded system that runs a Go server then, if `crypto/rand` blocks for the pool to be initialised the system might deadlock: without the Go server running and causing activity, the system may never collect enough entropy to unblock the server.\r\n\r\nIf your platform has a hardware entropy source to prevent this, then blocking was a unnecessary in the first place.\r\n\r\nSo I'm going to close this issue, for now because:\r\n\r\n1) Having the behaviour depend on kernel version is unpleasant. When `getrandom` is significantly more common in a few years, this concern would be ameliorated.\r\n\r\n2) The cases where blocking is helpful seem limited. If you need it (i.e. tiny system, probably just one main server process) then blocking might well deadlock the system prompting developers to do worse things to \"solve\" the problem. In larger systems, it's very likely to be superfluous.\r\n\r\nThere is a lot of uncertainty in the judgments above. This could be revised in light of more experience  but I'm going to leave it for now.",
+	"user": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-08-02T16:21:56Z",
+	"updated_at": "2015-08-02T16:21:56Z"
+}

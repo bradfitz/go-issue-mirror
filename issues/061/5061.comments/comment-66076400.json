@@ -1,0 +1,12 @@
+{
+	"id": 66076400,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003eThanks!\n\nThe following C programs fails with the same error:\n\n#include \u0026lt;sys/epoll.h\u0026gt;\n#include \u0026lt;sys/types.h\u0026gt;\n#include \u0026lt;sys/socket.h\u0026gt;\n#include \u0026lt;pthread.h\u0026gt;\n#include \u0026lt;unistd.h\u0026gt;\n#include \u0026lt;string.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;errno.h\u0026gt;\n\n#define CHECK(...) if ((__VA_ARGS__) \u0026gt;= 0); else \\\n        exit(printf(\"FAILED on line %d: %s\\n\", __LINE__, strerror(errno)))\n\nint main() {\n        int epfd, fds[2], fd1, fd2;\n        struct epoll_event ev;\n\n        CHECK(socketpair(AF_LOCAL, SOCK_STREAM, 0, fds));\n        CHECK(epfd = epoll_create1(0));\n        ev.events = EPOLLIN|EPOLLOUT|EPOLLET;\n        CHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fds[0], \u0026ev));\n        CHECK(fd1 = dup(fds[0]));\n        CHECK(close(fds[0]));\n        CHECK(close(fds[1]));\n#ifndef FIX\n        CHECK(fd2 = dup(fd1));\n        CHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fd2, \u0026ev));\n        CHECK(close(fd2));\n#else\n        (void)fd2;\n        CHECK(epoll_ctl(epfd, EPOLL_CTL_ADD, fd1, \u0026ev));\n#endif\n        CHECK(close(fd1));\n        return 0;\n}\n\nAnd if you compile it with -DFIX, then it does not.\n\nIt seems the be a serious misdesign of epoll API:\n\u003ca href=\"http://lwn.net/Articles/430804/\"\u003ehttp://lwn.net/Articles/430804/\u003c/a\u003e\nIt makes the 'automatic unregistration on close()' feature (which I was relying on)\nbasically useless (misbehaving in cases like this).\n\nFix is coming.\u003c/pre\u003e\n\n_Labels changed: added **go1.1**, removed **priority-triage**._\n\n_Owner changed to @dvyukov._\n\n_Status changed to **Started**._",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-16T13:58:55Z",
+	"updated_at": "2014-12-22T06:23:22Z"
+}

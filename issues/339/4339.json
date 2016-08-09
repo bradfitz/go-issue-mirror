@@ -1,0 +1,27 @@
+{
+	"id": 51281990,
+	"number": 4339,
+	"state": "closed",
+	"title": "cmd/cgo: wrong value of exported variables in a DLL",
+	"body": "by **hwang.dev**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Create a DLL with an exported variable(which has been properly initialized within the\nDLL).e.g. (the code is in the attachment)\nIn \u0026quot;adll.h\u0026quot;\n    typedef struct {\n        char *name;\n        void (*bar)();\n    } T;\n   __declspec(dllexport) const T exported_var;\n\nIn \u0026quot;adll.c\u0026quot;\nconst T exported_var = {\u0026quot;var\u0026quot;, \u0026amp;bar_impl};\n\n2. Write a go program to access the variable:\n   fmt.Println(C.exported_var, C.GoString(C.exported_var.name))\n   C.foo(\u0026amp;C.exported_var) // foo calls exported_var.bar\n\n\nWhat is the expected output?\n1. The correct value of C.exported_var can be obtained.\n2. C.foo(\u0026amp;C.exported_var) calls exported_var.bar without a problem.\n\nOr\n\nAn error message that the use case cannot be supported.\n\nWhat do you see instead?\n1. It just compiles without an error message.\n2. During run, wrong values got.\n3. C.foo(\u0026amp;C.exported_var) causes panic with message \u0026quot;runtime error: invalid\nmemory address or nil pointer dereference\u0026quot;.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nWindows 7 64 bit\n\nWhich version are you using?  (run 'go version')\ngo1.0.3\nC compiler: Mingw-w64/MSYS/gcc 4.7.1\n\nPlease provide any additional information below.\nI've found a workaround that a wrapper written in C will be able to get the correct\nvariable value. e.g.\n\n/*\nconst T* getVar() {\n    return \u0026amp;exported_var;\n}\n*/\nimport \u0026quot;C\u0026quot;\n\nand then:\n    fmt.Println(C.getVar(), C.GoString(C.getVar().name))\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4339/0/dllvar.zip\"\u003edllvar.zip\u003c/a\u003e (1326 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 16,
+	"closed_at": "2015-04-09T00:33:03Z",
+	"created_at": "2012-11-04T04:10:38Z",
+	"updated_at": "2016-06-24T22:27:38Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

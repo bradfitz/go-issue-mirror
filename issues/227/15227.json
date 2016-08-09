@@ -1,0 +1,26 @@
+{
+	"id": 147250287,
+	"number": 15227,
+	"state": "open",
+	"title": "all: figure out OpenBSD support story",
+	"body": "Unlike other Go target OSes, OpenBSD doesn't define a stable long-term ABI that Go can utilize.  E.g., Linux provides a stable kernel ABI, and Solaris and Windows provides stable userland ABIs, but OpenBSD only maintains userland C API compatibility.  Each release has its own one-off kernel and userland ABI.\r\n\r\nThat said, OpenBSD does (best effort) try to maintain backwards compatibility between *consecutive* releases, and it doesn't gratuitously break compatibility either.  So in combination with the Go runtime's relatively modest OS requirements and OpenBSD's non-first-class port status, treating \"OpenBSD\" as a single target OS has generally worked out okay so far.\r\n\r\nThe main hiccup is package syscall.  Since this package exposes kernel ABI structs like syscall.IfData, this struct definition can't be correct for all OpenBSD releases.\r\n\r\nAnother example is how Go implements TLS for cgo support.  Because OpenBSD doesn't (yet) support ELF's PT_TLS segment type, cmd/link knows to not emit PT_TLS on OpenBSD and runtime/cgo instead provides a pthread_create wrapper that adds enough TLS support for the Go runtime to work correctly.  But once OpenBSD does implement PT_TLS, we'll need to change both cmd/link and runtime/cgo, and there will be no way to produce a single Go executable that runs on both pre- and post-PT_TLS OpenBSD releases.\r\n\r\nOn the upside, OpenBSD upstream only maintains three releases: the current development version (referred to as \"-current\"), and the last two versioned releases.  Upstream provides no support for versioned releases older than a year, so Go shouldn't feel obligated to either.\r\n\r\nThis issue is about deciding a way to handle this.  Brainstormed solutions:\r\n\r\n1. Treat OpenBSD releases as separate OS targets.  E.g., we could have GOOS=openbsd58 and GOOS=openbsd59 to target OpenBSD 5.8 and 5.9, respectively, and GOOS=openbsd could just default to the most recent supported version.  Alternatively, we could just use GOOS=openbsd, but add a GOOPENBSD version variable like GOARM.\r\n\r\n2. Only explicitly support one OpenBSD release.  If compiled binaries happen to work on other releases too, that's just a bonus.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-OpenBSD"
+		}
+	],
+	"comments": 5,
+	"created_at": "2016-04-10T18:27:02Z",
+	"updated_at": "2016-05-11T20:29:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

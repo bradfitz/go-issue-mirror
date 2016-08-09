@@ -1,0 +1,27 @@
+{
+	"id": 51281971,
+	"number": 4326,
+	"state": "closed",
+	"title": "cmd/gc: inlining of functions with local variables is broken with shadowing.",
+	"body": "\u003cpre\u003e1. What is a short input program that triggers the error?\n\nHere are two examples:\n\n$ cat p1.go\npackage p1\n\ntype O map[string]map[string]string\n\nfunc (opts O) RemoveOption(sect, opt string) bool {\n\tif _, ok := opts[sect]; !ok {\n\t\treturn false\n\t}\n\t_, ok := opts[sect][opt]\n\tdelete(opts[sect], opt)\n\treturn ok\n}\n$ cat p2.go\npackage p2\n\nimport \u0026quot;./p1\u0026quot;\n\nfunc NewO() p1.O { return nil }\n$ cat main.go\npackage main\n\nimport \u0026quot;./p2\u0026quot;\n\nfunc main() {\n\tp2.NewO().RemoveOption(\u0026quot;hello\u0026quot;, \u0026quot;world\u0026quot;)\n}\n\n$ cat q1.go\npackage q1\n\nfunc Deref(typ interface{}) interface{} {\n      if typ, ok := typ.(*int); ok {\n            return *typ\n      }\n      return typ\n}\n$ cat q2.go\npackage main\n\nimport \u0026quot;./q1\u0026quot;\n\nfunc main() {\n      x := 1\n      y := q1.Deref(\u0026amp;x)\n      if y != 1 {\n            panic(\u0026quot;y != 1\u0026quot;)\n      }\n}\n\n2. What is the full compiler output?\n\n$ go tool 8g -I. p1.go\n$ go tool 8g -I. p2.go\n$ go tool 8g -I. main.go\nmain.go:3: p1.ok redeclared in this block\n\tprevious declaration at main.go:3\ngo tool 8g: exit status 1\n\n$ go tool 8g -I. q1.go\n$ go tool 8g -I. q2.go\nq2.go:3: invalid type assertion: q1.typ.(*int) (non-interface type *int on left)\nq2.go:7: tempname called with nil type\nq2.go:7: internal compiler error: typename \u0026lt;T\u0026gt;\ngo tool 8g: exit status 1\n\n3. What version of the compiler are you using?  (Run it with the -V flag.)\n\n8g version devel +5bc48b616305 Thu Nov 01 13:04:08 2012 +1100\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/4326/0/inlining.tar.gz\"\u003einlining.tar.gz\u003c/a\u003e (530 bytes)",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:22:59Z",
+	"created_at": "2012-11-01T09:49:18Z",
+	"updated_at": "2016-06-24T22:27:31Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

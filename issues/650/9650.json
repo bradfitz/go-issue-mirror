@@ -1,0 +1,27 @@
+{
+	"id": 54966468,
+	"number": 9650,
+	"state": "closed",
+	"title": "encoding/json: Decoding gives errPhase when unmarshaling a non-string literal into a TextUnmarshaler",
+	"body": "**updated**\r\n\r\nWhen decoding a non-string literal into an `encoding.TextUnmarshaler` (such as `net.IP`), `json.Unmarshal` returns `errPhase` (\"JSON decoder out of sync - data changing underfoot?\").\r\n\r\nReading the code, it seems like it's supposed to return a type error when this happens\r\n([source](https://github.com/golang/go/blob/2dfa4f4eb0522b2e4c59a2f8677613fe50f2b078/src/encoding/json/decode.go#L682)). But the `errPhase` ends up taking precedence and obscuring this message.\r\n\r\nI'm not sure why `UnmarshalText` should only work for string literals, though.\r\n\r\n[Example play here.](http://play.golang.org/p/CVS6SO0Tzn)\r\n\r\nCode:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n  \"encoding/json\"\r\n  \"fmt\"\r\n  \"net\"\r\n  \"strconv\"\r\n)\r\n\r\ntype X int\r\n\r\nfunc (x *X) UnmarshalText(b []byte) error {\r\n  n, err := strconv.ParseInt(string(b), 10, 64)\r\n  if err != nil {\r\n    return err\r\n  }\r\n  *x = X(n)\r\n  return nil\r\n}\r\n\r\nfunc main() {\r\n  var x X\r\n  err := x.UnmarshalText([]byte(\"123\"))\r\n  fmt.Println(x, err) // 123 \u003cnil\u003e\r\n\r\n  // Works if the string is quoted\r\n  err = json.Unmarshal([]byte(`\"234\"`), \u0026x)\r\n  fmt.Println(x, err) // 234 \u003cnil\u003e\r\n\r\n  // Otherwise it gives an errPhase\r\n  err = json.Unmarshal([]byte(\"123\"), \u0026x)\r\n  fmt.Println(err) // JSON decoder out of sync - data changing underfoot?\r\n  err = json.Unmarshal([]byte(\"true\"), \u0026x)\r\n  fmt.Println(err) // JSON decoder out of sync - data changing underfoot?\r\n  err = json.Unmarshal([]byte(\"null\"), \u0026x)\r\n  fmt.Println(err) // JSON decoder out of sync - data changing underfoot?\r\n\r\n  // Happens with real types like net.IP\r\n\r\n  var ip net.IP\r\n  err = json.Unmarshal([]byte(\"8080\"), \u0026ip)\r\n  fmt.Println(err) // JSON decoder out of sync - data changing underfoot?\r\n\r\n}\r\n```\r\n",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-07-15T05:35:06Z",
+	"created_at": "2015-01-21T01:39:48Z",
+	"updated_at": "2016-07-18T19:45:38Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

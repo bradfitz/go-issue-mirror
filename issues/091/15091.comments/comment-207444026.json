@@ -1,0 +1,12 @@
+{
+	"id": 207444026,
+	"body": "Unclear whether race detector is inserting bad code or if this is a fumbled conversion.\r\nautotmp_3 appears after \"walk\", target of an assignment:\r\n\r\n```\r\n.   .   .   .   .   AS u(1) l(8) tc(1)\r\n.   .   .   .   .   .   NAME-sample.autotmp_3 u(1) a(true) l(8) x(0+0) class(PAUTO) esc(N) tc(1) used(true) PTR64-*int\r\n.   .   .   .   .   .   INDREG-SP a(true) l(8) x(32+0) tc(1) runtime.val·1 PTR64-*int\r\n```\r\nRace detector inserts what looks like a use before initialization, though we could have botched the conversions, too:\r\n```\r\n.   .   .   CALLFUNC u(100) l(8) tc(1)\r\n.   .   .   .   NAME-runtime.raceread u(1) a(true) x(0+0) class(PFUNC) tc(1) used(true) FUNC-func(uintptr)\r\n.   .   .   CALLFUNC-list\r\n.   .   .   .   AS u(2) l(8) tc(1)\r\n.   .   .   .   .   INDREG-SP a(true) l(8) x(0+0) tc(1) uintptr\r\n.   .   .   .   .   CONVNOP u(2) l(8) tc(1) uintptr\r\n.   .   .   .   .   .   CONVNOP u(2) l(8) tc(1) TUNSAFEPTR-unsafe.Pointer\r\n.   .   .   .   .   .   .   ADDR u(2) l(8) tc(1) PTR64-*int\r\n.   .   .   .   .   .   .   .   IND u(2) l(8) tc(1) addrtaken int\r\n.   .   .   .   .   .   .   .   .   NAME-sample.autotmp_3 u(1) a(true) l(8) x(0+0) class(PAUTO) esc(N) tc(1) used(true) PTR64-*int\r\n```\r\n\r\nFor reasons not 100% clear, this ends up with autotmp_3 treated as if it were an argument to the function, which ultimately fails because of course it isn't.\r\n\r\nAny insights into what the race detector is doing here would be welcome, I am going to look both at that and at the convert op code.",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-08T14:02:46Z",
+	"updated_at": "2016-04-08T14:02:46Z"
+}

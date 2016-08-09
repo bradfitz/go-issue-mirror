@@ -1,0 +1,22 @@
+{
+	"id": 51284659,
+	"number": 6088,
+	"state": "closed",
+	"title": "x/crypto/ssh: Session.Wait() hangs while reading from msg channel after sending EOF to os.Stdin",
+	"body": "by **mischief@offblast.org**:\n\n\u003cpre\u003eHi, I'm using go.crypto/ssh to implement an ssh client. I connected\nos.Stdin/Stdout/Stderr to Sesion.Stdin/Stdout/Stderr, allocated a PTY and started a\nshell. Sending EOF to stdin will cause Session.Wait() to never return while waiting for\na message or close() on clientChan.msg.\n\nThe expected behavior here would be for go.crypto/ssh to catch the EOF from\nSession.Stdin, send an eof to the remote side's program. Currently, it seems to just\nkill Stdin locally and hang it. It might be that the remote program is not a shell, and\nsome program like cat. In that case, an EOF would simply stop the remote cat process. If\nit were the shell, the shell would quit, and send a channel close message back to\ngo.crypto/ssh, indicating the session is done.\n\nMy program can be seen here:\n\u003ca href=\"https://bitbucket.org/mischief/scpu/src/51d57a77fcb4799b99424aac782f4ba061b1df01/scpu.go?at=default\"\u003ehttps://bitbucket.org/mischief/scpu/src/51d57a77fcb4799b99424aac782f4ba061b1df01/scpu.go?at=default\u003c/a\u003e\n\nI'm using go tip, and I'm testing this on debian 7 and 9front hosts, and connecting to\nan openbsd 5.3 server.\n\nIncriminating backtrace after sending EOF:\n\ngdb$ goroutine 1 bt                                                                     \n                                                                                 \n#0  0x0000000000417a06 in runtime.park (unlockf=void, lock=void, reason=void) at\n/srv/go/src/pkg/runtime/proc.c:1224\n#1  0x00000000004055f3 in runtime.chanrecv (c=void, ep=void, selected=void,\nreceived=void) at /srv/go/src/pkg/runtime/chan.c:391\n#2  0x0000000000405a75 in runtime.chanrecv2 (t=void, c=void) at\n/srv/go/src/pkg/runtime/chan.c:464\n#3  0x0000000000432b76 in code.google.com/p/go.crypto/ssh.(*Session).wait\n(s=0xc210036770, ~anon0=...) at\n/tmp/scpu/src/code.google.com/p/go.crypto/ssh/session.go:415\n#4  0x0000000000432a23 in code.google.com/p/go.crypto/ssh.(*Session).Wait\n(s=0xc210036770, ~anon0=...) at\n/tmp/scpu/src/code.google.com/p/go.crypto/ssh/session.go:397\n#5  0x000000000040187c in main.interactive (session=0xc210036770, ~anon1=...) at\n/tmp/scpu/src/bitbucket.org/mischief/scpu/scpu.go:99\n#6  0x000000000040145a in main.main () at\n/tmp/scpu/src/bitbucket.org/mischief/scpu/scpu.go:74\n#7  0x0000000000415954 in runtime.main () at /srv/go/src/pkg/runtime/proc.c:182\n#8  0x0000000000417bd0 in ?? () at /srv/go/src/pkg/runtime/proc.c:1267\n#9  0x0000000000000000 in ?? ()\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"closed_at": "2015-08-18T11:08:26Z",
+	"created_at": "2013-08-09T09:37:38Z",
+	"updated_at": "2015-08-18T11:08:26Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 218000832,
+	"body": "Hi there. Just ran across the same issue in #15615 (thanks to @bradfitz for pointing me to this thread). \r\n\r\nI don't think it makes sense to \"magically\" fix the file paths on every syscall, tbh. My concern is, obviously, the speed. I traverse a huge directory tree, and I don't want Go internals to be analyzing and fixing the path deep in the loop, when the proper solution in my case would be to provide a `\\\\?\\`-prefixed canonical path just once in the call to `filepath.Walk()`.\r\n\r\nWhat makes sense to me is to have some helper function, e.g. `filepath.Canonicalize()` that, under Windows, would replace all `/` with `\\` and prepend `\\\\?\\` (or return an error if the provided path is not absolute). This way everyone can use such a function as early as possible (when processing user input or external data), and forget about _\"if windows then ... else ...\"_ kind of code. The very existence of such a function, along with its documentation, will make other developers aware of OS-specific caveats. Other corresponding FS-related functions might then provide a link in their documentation to that function.\r\n\r\nInternal functions that return the file path, like `os.Getwd()`, `os.TempDir()` or `filepath.Abs()` could also benefit from returning a canonicalized path that other functions can safely consume.",
+	"user": {
+		"login": "iafan",
+		"id": 1728158,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-09T21:50:14Z",
+	"updated_at": "2016-05-09T21:53:38Z"
+}

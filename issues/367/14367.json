@@ -1,0 +1,33 @@
+{
+	"id": 134369154,
+	"number": 14367,
+	"state": "closed",
+	"title": "cmd/compile: optimize away useless ANDs and ORs",
+	"body": "Using ```go1.5.3```\r\n\r\nThe following code has a few useless expressions:\r\n```go\r\nreturn 0 | // Useless OR with 0\r\n\t((n \u0026 0xff) \u003c\u003c 56) | // Useless AND with 0xff followed by left-shift 56\r\n\t((n \u0026 0xff00) \u003c\u003c 40) |\r\n\t((n \u0026 0xff0000) \u003c\u003c 24) |\r\n\t((n \u0026 0xff000000) \u003c\u003c 8) |\r\n\t((n \u0026 0xff00000000) \u003e\u003e 8) |\r\n\t((n \u0026 0xff0000000000) \u003e\u003e 24) |\r\n\t((n \u0026 0xff000000000000) \u003e\u003e 40) |\r\n\t((n \u0026 0xff00000000000000) \u003e\u003e 56) // Useless AND with 0xff00... followed by right-shift 56\r\n```\r\n\r\nThe instructions with ```#``` marks are unnecessary. It would be nice if the compiler did not generate them.\r\n```\r\n\"\".bswap64a t=1 size=160 value=0 args=0x10 locals=0x0\r\n\t...\r\n\t0x0005 00005 (byteswap.go:14)    MOVQ    AX, BX\r\n#\t0x0008 00008 (byteswap.go:14)    ANDQ    $255, BX\r\n\t0x000f 00015 (byteswap.go:14)    SHLQ    $56, BX\r\n#\t0x0013 00019 (byteswap.go:14)    ORQ $0, BX\r\n\t0x0017 00023 (byteswap.go:14)    MOVQ    AX, BP\r\n\t0x001a 00026 (byteswap.go:14)    ANDQ    $65280, BP\r\n\t0x0021 00033 (byteswap.go:14)    SHLQ    $40, BP\r\n\t0x0025 00037 (byteswap.go:14)    ORQ BP, BX\r\n\t0x0028 00040 (byteswap.go:14)    MOVQ    AX, BP\r\n\t0x002b 00043 (byteswap.go:14)    ANDQ    $16711680, BP\r\n\t0x0032 00050 (byteswap.go:14)    SHLQ    $24, BP\r\n\t0x0036 00054 (byteswap.go:14)    ORQ BP, BX\r\n\t0x0039 00057 (byteswap.go:14)    MOVQ    $4278190080, BP\r\n\t0x003e 00062 (byteswap.go:14)    ANDQ    AX, BP\r\n\t0x0041 00065 (byteswap.go:14)    SHLQ    $8, BP\r\n\t0x0045 00069 (byteswap.go:14)    ORQ BP, BX\r\n\t0x0048 00072 (byteswap.go:14)    MOVQ    $1095216660480, BP\r\n\t0x0052 00082 (byteswap.go:14)    ANDQ    AX, BP\r\n\t0x0055 00085 (byteswap.go:14)    SHRQ    $8, BP\r\n\t0x0059 00089 (byteswap.go:14)    ORQ BP, BX\r\n\t0x005c 00092 (byteswap.go:14)    MOVQ    $280375465082880, BP\r\n\t0x0066 00102 (byteswap.go:14)    ANDQ    AX, BP\r\n\t0x0069 00105 (byteswap.go:14)    SHRQ    $24, BP\r\n\t0x006d 00109 (byteswap.go:14)    ORQ BP, BX\r\n\t0x0070 00112 (byteswap.go:14)    MOVQ    $71776119061217280, BP\r\n\t0x007a 00122 (byteswap.go:14)    ANDQ    AX, BP\r\n\t0x007d 00125 (byteswap.go:14)    SHRQ    $40, BP\r\n\t0x0081 00129 (byteswap.go:14)    ORQ BP, BX\r\n#\t0x0084 00132 (byteswap.go:14)    MOVQ    $-72057594037927936, BP\r\n\t0x008e 00142 (byteswap.go:14)    ANDQ    AX, BP\r\n\t0x0091 00145 (byteswap.go:14)    SHRQ    $56, BP\r\n\t0x0095 00149 (byteswap.go:14)    ORQ BP, BX\r\n\t0x0098 00152 (byteswap.go:14)    MOVQ    BX, \"\".~r1+16(FP)\r\n\t0x009d 00157 (byteswap.go:14)    RET\r\n```",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-04-10T00:27:24Z",
+	"created_at": "2016-02-17T19:03:03Z",
+	"updated_at": "2016-04-10T00:27:24Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

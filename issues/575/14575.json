@@ -1,0 +1,27 @@
+{
+	"id": 137379000,
+	"number": 14575,
+	"state": "closed",
+	"title": "os/exec: Cmd adds random slashes to paths on run",
+	"body": "**What version of Go are you using (`go version`)?**\r\n```\r\ngo version go1.6 windows/amd64\r\n```\r\n\r\n**What operating system and processor architecture are you using (`go env`)?**\r\n```\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=C:\\Users\\dogan\\go\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\nset GO15VENDOREXPERIMENT=1\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n**What did you do?**\r\n\r\nRun 7za (7-zip) and extract files\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n\t\"strings\"\r\n)\r\n\r\nfunc main() {\r\n\tzipcmd := `7za x \"%s\" -aoa -r -o\"%s\" *.xml`\r\n\tzippath := \"C:\\\\test.zip\"\r\n\toutputpath := \"C:\\\\testfolder\\\\\"\r\n\r\n\tcmdStr := fmt.Sprintf(zipcmd, zippath, outputpath)\r\n\tcmdSlice := strings.Fields(cmdStr)\r\n\tfmt.Println(\"command:\", cmdStr)\r\n\r\n\tcmd := exec.Command(cmdSlice[0], cmdSlice[1:]...)\r\n\tfmt.Println(\"cmd.Args:\", cmd.Args)\r\n\r\n\tcmdoutput, err := cmd.CombinedOutput()\r\n\tfmt.Println(\"output:\", string(cmdoutput), err)\r\n}\r\n```\r\n\r\n**What did you expect to see?**\r\n\r\n```\r\ndogan@DOGAN-PC E:\\Projects\\Go\\test\r\n$ 7za x \"C:\\test.zip\" -aoa -r -o\"C:\\testfolder\\\" *.xml\r\n\r\n7-Zip (a) [32] 15.07 beta : Copyright (c) 1999-2015 Igor Pavlov : 2015-09-17\r\n\r\nScanning the drive for archives:\r\n1 file, 6225 bytes (7 KiB)\r\n\r\nExtracting archive: C:\\test.zip\r\n--\r\nPath = C:\\test.zip\r\nType = zip\r\nPhysical Size = 6225\r\n\r\nEverything is Ok\r\n\r\nFiles: 4\r\nSize:       9014\r\nCompressed: 6225\r\n```\r\n**What did you see instead?**\r\n\r\n```\r\ndogan@DOGAN-PC E:\\Projects\\Go\\test\r\n$ go run test.go\r\ncmdStr: 7za x \"C:\\test.zip\" -aoa -r -o\"C:\\testfolder\\\" *.xml\r\ncmd.Args: [7za x \"C:\\test.zip\" -aoa -r -o\"C:\\testfolder\\\" *.xml]\r\noutput:\r\n7-Zip (a) [32] 15.07 beta : Copyright (c) 1999-2015 Igor Pavlov : 2015-09-17\r\n\r\nScanning the drive for archives:\r\n\r\nERROR: The filename, directory name, or volume label syntax is incorrect.\r\n\\C:\\test.zip\r\n\r\n\r\n\r\nSystem ERROR:\r\nThe filename, directory name, or volume label syntax is incorrect.\r\n exit status 2   \r\n```\r\n\r\n*cmd.CombinedOutput()*, *cmd.Output()*, and *cmd.Run()* adds / prefixes `\\` to `C:\\test.zip`\r\n\r\nHere's example `test.zip` file: [test.zip](https://github.com/golang/go/files/151760/test.zip)\r\n\r\nI can't do put space between `-o` and `\"C:\\testfolder\"` because 7-Zip doesn't work that way.\r\n\r\n**Second test, same error, this time, it puts `\\` at `-o` argument:**\r\n\r\n```go\r\ncmd := exec.Command(\"7za\", \"x\", \"C:\\\\test.zip\", \"-aoa\", \"-r\", `-o\"C:\\testfolder\\\"`, \"*.xml\")\r\nfmt.Println(\"cmd.Args:\", cmd.Args)\r\n\r\ncmdoutput, err := cmd.CombinedOutput()\r\nfmt.Println(\"output:\", string(cmdoutput), err)\r\n```\r\n\r\n```\r\ndogan@DOGAN-PC E:\\Projects\\Go\\test\r\n$ go run test.go\r\ncmd.Args: [7za x C:\\test.zip -aoa -r -o\"C:\\testfolder\\\" *.xml]\r\noutput:\r\n7-Zip (a) [32] 15.07 beta : Copyright (c) 1999-2015 Igor Pavlov : 2015-09-17\r\n\r\nScanning the drive for archives:\r\n1 file, 3725 bytes (4 KiB)\r\n\r\nExtracting archive: C:\\test.zip\r\n--\r\nPath = C:\\test.zip\r\nType = zip\r\nPhysical Size = 3725\r\n\r\n\r\n\r\nERROR:\r\nCan not create output directory: \\C:\\testfolder\\\\\\\r\n\r\n\r\nSystem ERROR:\r\nThe filename, directory name, or volume label syntax is incorrect.\r\n exit status 2\r\n```\r\n",
+	"user": {
+		"login": "dogancelik",
+		"id": 486818,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2016-03-01T05:51:41Z",
+	"created_at": "2016-02-29T21:17:26Z",
+	"updated_at": "2016-03-01T17:58:53Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

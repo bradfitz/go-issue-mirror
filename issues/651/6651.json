@@ -1,0 +1,27 @@
+{
+	"id": 51285505,
+	"number": 6651,
+	"state": "closed",
+	"title": "database/sql: Erroneous ErrNoRows when using QueryRow(\"INSERT INTO ... RETURNING ...\") when violating database constraint.",
+	"body": "by **lee.hambley**:\n\n\u003cpre\u003eSteps to reproduce the problem:\n\nIf possible, include a link to a program on play.golang.org.\n\n1. Use PostgreSQL\n2. Use the lib/pq driver (latest, `78760269eebe5e70b28bb94bff676d7b28df275d\nsrc/github.com/lib/pq (heads/master)`), \n3. Use a table with a constraint\n4. Violate that constraint when inserting using RETURNING. (i.e duplicate unique key)\n5. Notice that when `sql.DB.QueryRow().Scan()` is used, `ErrNoRows` is returned before\nerrors are correctly checked for.\n\nWhat is the expected output?\n\nIt is expected that `sql.QueryRow` will return a stub `*sql.Row` which will return an\nerror of type `*pq.Error` representing the constraint violation error. Typically\nsomething like this \u003ca href=\"https://github.com/lib/pq/blob/master/error.go#L157\"\u003ehttps://github.com/lib/pq/blob/master/error.go#L157\u003c/a\u003e\n\nWhat do you see instead?\n\n`sql.QueryRow()` does not properly handle this case. It first checks for number of\nreturned rows (none, as we have failed to insert), and then returns `sql.ErrNoRows`\nbefore checking if there is an error returned by the query.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g (standard Go code, no cgo as far as I am aware, `go build -x my/package` isn't\nshowing anything useful)\n\nWhich operating system are you using?\n\nOSX 10.9 Mavericks 64bit\n\nWhich version are you using?  (run 'go version')\n\ngo version go1.1.2 darwin/amd64\n\nPlease provide any additional information below.\n\nThere is an extensive Github thread (closed)\n[here](\u003ca href=\"https://github.com/lib/pq/issues/77)\"\u003ehttps://github.com/lib/pq/issues/77)\u003c/a\u003e, discussing first, a similar issue, and then\nre-opened with my findings at [this\ncomment](\u003ca href=\"https://github.com/lib/pq/issues/77#issuecomment-26920256)\"\u003ehttps://github.com/lib/pq/issues/77#issuecomment-26920256)\u003c/a\u003e. Specifically\nsomeone has identified a possible weakness in the error checking of `func (rs *Rows)\nNext() bool`, where `rs.lasterr` is only checked against `io.EOF` before being\noverwritten and returned as `nil`.\n\nThe attached file isn't a complete running piece of software, but it is an extracted\nsample, the same that is found in the GitHub thread.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6651/0/known_issues_test.go\"\u003eknown_issues_test.go\u003c/a\u003e (1191 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2014-12-08T10:36:52Z",
+	"created_at": "2013-10-23T21:17:56Z",
+	"updated_at": "2016-06-25T01:21:14Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

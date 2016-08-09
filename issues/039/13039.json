@@ -1,0 +1,28 @@
+{
+	"id": 113111818,
+	"number": 13039,
+	"state": "closed",
+	"title": "debug/dwarf: cgo use causing build panic",
+	"body": "I have a go code example that is causing \"go build\" to panic using go version go1.5.1 linux/amd64.  The C struct declaration in that sample is awkward, but is a simplification of a pattern I found in upstream library headers.\r\n```go\r\npackage main;\r\n/*\r\ntypedef struct aaa *AAA;\r\ntypedef AAA BBB;\r\nstruct aaa { BBB val; };\r\n\r\nstatic inline AAA new_thingy(void) {\r\n    return (AAA)0;\r\n}\r\n\r\nstatic inline void thingy_thing(AAA t) {\r\n    (void)t;\r\n}\r\n\r\nstatic inline void doit() {\r\n    thingy_thing(new_thingy());\r\n}\r\n*/\r\nimport \"C\"\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n    fmt.Println(\"ENTER\")\r\n    C.doit()\r\n    C.thingy_thing(C.new_thingy())\r\n    fmt.Println(\"LEAVE\")\r\n}\r\n```\r\nreproduces the problem.  I found that a small patch to the go sources will allow this example to build and run cleanly, but it's not a good solution and it's not portable code.\r\n\r\n```diff\r\ndiff --git a/src/debug/dwarf/type.go b/src/debug/dwarf/type.go\r\nindex a5daa1d..8fb1375 100644\r\n--- a/src/debug/dwarf/type.go\r\n+++ b/src/debug/dwarf/type.go\r\n@@ -259,7 +259,14 @@ type TypedefType struct {\r\n \r\n func (t *TypedefType) String() string { return t.Name }\r\n \r\n-func (t *TypedefType) Size() int64 { return t.Type.Size() }\r\n+func (t *TypedefType) Size() int64 {\r\n+    if t.Type == nil {\r\n+        println(\"unresolved typedef, pretending \\\"\" + t.String() +\r\n+            \"\\\" is some kind of pointer for now\")\r\n+        return 8\r\n+    }\r\n+    return t.Type.Size()\r\n+}\r\n \r\n // typeReader is used to read from either the info section or the\r\n // types section.\r\n```\r\nwhich assumes that any time t.Type is not defined it's always an opaque struct pointer, and futher assumes that pointers are always 8 bytes.  I'm certain a better solution is possible.",
+	"user": {
+		"login": "tlby",
+		"id": 3189927,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-01-14T02:05:55Z",
+	"created_at": "2015-10-23T22:37:49Z",
+	"updated_at": "2016-03-02T02:07:35Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 104867409,
+	"number": 12498,
+	"state": "closed",
+	"title": "runtime: deadlock due to blocked glibc-internal signals",
+	"body": "The following code demonstrates the bug. The expected behaviour is that the program exits. Instead, the program hangs forever.\r\n\r\nI did not experience these issues with Go 1.4; I suspect it is a result of the changes introduced in #9400, involving SIGSETXID.\r\n\r\n    go version go1.5 linux/amd64\r\n    Linux andover 4.1.2-2-ARCH #1 SMP PREEMPT Wed Jul 15 08:30:32 UTC 2015 x86_64 GNU/Linux\r\n\r\n  - The deadlock occurs regardless of whether you run the program as root, as setxid is attempted on all threads even if they all ultimately fail.\r\n  - Tested to occur with at least GOMAXPROCS=1 and GOMAXPROCS=8.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"os/signal\"\r\n\t\"syscall\"\r\n)\r\n\r\n/*\r\n#define _GNU_SOURCE\r\n#include \u003cunistd.h\u003e\r\n*/\r\nimport \"C\"\r\n\r\nfunc main() {\r\n\tsignal.Notify(make(chan os.Signal, 10), syscall.SIGINT)\r\n\tfmt.Printf(\"rv: %v\\n\", C.setresgid(99, 99, 99))\r\n}\r\n```",
+	"user": {
+		"login": "hlandau",
+		"id": 2270010,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-11-25T14:45:23Z",
+	"created_at": "2015-09-04T10:40:51Z",
+	"updated_at": "2015-11-25T14:45:23Z",
+	"milestone": {
+		"id": 1295987,
+		"number": 27,
+		"title": "Go1.5.2"
+	}
+}

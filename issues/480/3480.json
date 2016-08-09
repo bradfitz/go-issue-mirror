@@ -1,0 +1,25 @@
+{
+	"id": 51280672,
+	"number": 3480,
+	"state": "closed",
+	"title": "encoding/json: handle NaN and Inf",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Run \u003ca href=\"http://play.golang.org/p/FN7C1ZUqpw\"\u003ehttp://play.golang.org/p/FN7C1ZUqpw\u003c/a\u003e\n\tjs, err := json.Marshal(math.NaN())\n\tfmt.Print(\u0026quot;JSON: \\\u0026quot;\u0026quot;, string(js), \u0026quot;\\\u0026quot; Error: \\\u0026quot;\u0026quot;,err,\u0026quot;\\\u0026quot;\u0026quot;)\n\nWhat is the expected output?\nJSON: \u0026quot;null\u0026quot; Error: \u0026quot;nil\u0026quot;\n\nWhat do you see instead?\nJSON: \u0026quot;\u0026quot; Error: \u0026quot;json: unsupported value: NaN\u0026quot;\n\nWhich version are you using?\ngo1\n\nThis is a bit weird. I would't mind the error since it might be a reasonable idea to\nnotify the user that the encoding didn't preserve, although I would prefer no error at\nall.\n\nThe RFC draft describing JSON (\u003ca href=\"http://tools.ietf.org/html/rfc4627)\"\u003ehttp://tools.ietf.org/html/rfc4627)\u003c/a\u003e explicitly forbids\nthe use of NaN and (-)Inf as numbers, so does the ECMAScript Specification (regardless\nof version) but  pretty clear about the handling such values.\nPage 220 NOTE 4 of the ECMA-262 ECMAScript Language Specification 5.1 edition (\n\u003ca href=\"http://goo.gl/gY9PK\"\u003ehttp://goo.gl/gY9PK\u003c/a\u003e ) contains the following sentence:\n\n\u0026quot;\u0026quot;\u0026quot;\nNOTE 4\n...\nNaN and Infinity regardless of sign are\nrepresented as the String null.\n\u0026quot;\u0026quot;\u0026quot;\n\n\n\n\nOn a more general note:\n\nThe fact that the json package doesn't always return valid JSON that is complete with\nrespect to the values that are representable always was mystery to me. Especially since\nthe same page of the ECMAScript specification explicitly explains how this should be\nhandled:\n\n\u0026quot;\u0026quot;\u0026quot;\nNOTE 5\nValues that do not have a JSON representation (such as undefined and functions) do not\nproduce a String.\nInstead they produce the undefined value. In arrays these values are represented as the\nString null. In objects an\nunrepresentable value causes the property to be excluded from stringification.\n\u0026quot;\u0026quot;\u0026quot;\n\nTo handle these cases properly without breaking existing code I propose changing the\nbehavior of json.Marshal in general. It shouldn't stop if it encounters an\nunrepresentable value, but simply produce null and emit the errors anyway.\n\n(The case of functions as values of interface variables/fields probably deserves some\ndiscussion, since it would be a bit awkward in a statically typed language to decide if\na field should be left out depending on it's value.)\u003c/pre\u003e",
+	"user": {
+		"login": "MaVo159",
+		"id": 917690,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:18:12Z",
+	"created_at": "2012-04-05T15:26:54Z",
+	"updated_at": "2016-06-24T22:17:21Z"
+}

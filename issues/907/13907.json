@@ -1,0 +1,28 @@
+{
+	"id": 125960100,
+	"number": 13907,
+	"state": "closed",
+	"title": "math/big: Exp(x, x, x) returns x sometimes (instead of 0)",
+	"body": "On #13515 (closed), @ysmolsky points out http://play.golang.org/p/QVWwgKMdCu.\n\nThat program sets:\n\n    x = 0xffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca237327ffffffffffffffff208552bb9ed529077096966d670c354e4abc9804f1746c08ca237327fffffffffffff\n\nand then runs y.Exp(x, x, x) and finds that y == x instead of x == 0.\n\nIn fact much smaller numbers lead to the same result. The leading f's are important, because the Montgomery code works in a space where the answer is reduced to the bit length but not necessarily to the modulus. In some cases it appears that the final reduction is missed.\n\nThis program generates random cases that fail:\n\n\tpackage main\n\t\n\timport (\n\t\t\"log\"\n\t\t\"math/big\"\n\t)\n\t\n\tfunc main() {\n\t\tx := new(big.Int)\n\t\ty := new(big.Int)\n\t\tfor size := 8; size \u003c 64; size += 8 {\n\t\t\tbytes := make([]byte, size)\n\t\t\tfor i := 0; i \u003c size/2; i++ {\n\t\t\t\tbytes[i] = 0xFF\n\t\t\t}\n\t\t\tfound := 0\n\t\t\tfor loop := 0; ; {\n\t\t\t\tfor i := size / 2; i \u003c size; i++ {\n\t\t\t\t\tbytes[i] = byte(rand.Intn(256))\n\t\t\t\t}\n\t\t\t\tbytes[size-1] |= 1 // make it odd\n\t\t\t\tx.SetBytes(bytes)\n\t\t\t\ty.Exp(x, x, x)\n\t\t\t\tif y.BitLen() != 0 {\n\t\t\t\t\tif found == 0 {\n\t\t\t\t\t\tlog.Printf(\"#%d: %x =\u003e %x\\n\", loop, bytes, y)\n\t\t\t\t\t}\n\t\t\t\t\tfound++\n\t\t\t\t}\n\t\t\t\tloop++\n\t\t\t\tif found \u003e 0 \u0026\u0026 loop \u003e= 1000 {\n\t\t\t\t\tlog.Printf(\"size=%d found=%d/%d\\n\", size, found, loop)\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t\tif loop \u003e= 1\u003c\u003c20 {\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\nIn fact this program seems to show that _every_ odd x with one word of leading f's has this problem. On 32-bit systems `x = 0xffffffff00000001` and on 64-bit systems `x = 0xffffffffffffffff0000000000000001` both exhibit the problem.\n\nI will do the obvious thing and explicitly reduce the result.\n\n/cc @vkrasnov",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-13T01:43:57Z",
+	"created_at": "2016-01-11T14:45:09Z",
+	"updated_at": "2016-01-13T12:00:11Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

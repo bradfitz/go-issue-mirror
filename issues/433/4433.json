@@ -1,0 +1,33 @@
+{
+	"id": 51282134,
+	"number": 4433,
+	"state": "closed",
+	"title": "database/sql: driver.ErrBadConn masked in *sql.DB.Begin",
+	"body": "by **jane.chalfant**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n1. Encounter driver.ErrBadConn when calling driver.Conn.Begin from within *sql.DB.begin\n2. Observe that *sql.DB.Begin does not call *sql.DB.begin again up to 10 times, as\ndriver.ErrBadConn != fmt.Errorf(\u0026quot;sql: failed to Begin transaction: %v\u0026quot;,\ndriver.ErrBadConn)\n\nWhat is the expected output?\nUp to 9 subsequent attempts to call *sql.DB.begin()\n\nWhat do you see instead?\nImmediate failure after driver.ErrBadConn is encountered.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nMac OS X 10.8.2\n\nWhich version are you using?  (run 'go version')\n1.0.3\n\nPlease provide any additional information below.\n\nIt appears to me that there database/sql intends to retry many driver operations\n(Prepare, Exec, Begin) up to 10 times if a driver.ErrBadConn is encountered. This retry\nlogic doesn't get applied in *sql.DB.Begin, as *sql.DB.begin will create a new, more\ninformative error which then causes \u0026quot;err != driver.ErrBadConn\u0026quot; to resolve to\ntrue.\n\nConsider the following code, if ci.Begin() returns driver.ErrBadConn:\n\nfunc (db *DB) Begin() (*Tx, error) {\n\tvar tx *Tx\n\tvar err error\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\ttx, err = db.begin()\n\t\tif err != driver.ErrBadConn {\n\t\t\tbreak\n\t\t}\n\t}\n\treturn tx, err\n}\n\nfunc (db *DB) begin() (tx *Tx, err error) {\n\tci, err := db.conn()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttxi, err := ci.Begin()\n\tif err != nil {\n\t\tdb.putConn(ci, err)\n\t\treturn nil, fmt.Errorf(\u0026quot;sql: failed to Begin transaction: %v\u0026quot;, err)\n\t}\n\treturn \u0026amp;Tx{\n\t\tdb:  db,\n\t\tci:  ci,\n\t\ttxi: txi,\n\t}, nil\n}\n\nNote that the error returned from db.begin() will not be driver.ErrBadConn, it will be\nthe result of this:\n\nfmt.Errorf(\u0026quot;sql: failed to Begin transaction: %v\u0026quot;, driver.ErrBadConn)\n\nOne possible solution would be to return driver.ErrBadConn\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:23:36Z",
+	"created_at": "2012-11-25T05:27:37Z",
+	"updated_at": "2016-06-24T22:28:41Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

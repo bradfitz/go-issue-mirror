@@ -1,0 +1,22 @@
+{
+	"id": 51281335,
+	"number": 3906,
+	"state": "closed",
+	"title": "bufio: Reader.ReadLine reusing memory of []byte output",
+	"body": "by **adriansinclair2007**:\n\n\u003cpre\u003eI have this code (I don't think that the messing with tty buffering is related):\nexec.Command(\u0026quot;/bin/stty\u0026quot;, \u0026quot;-f\u0026quot;, \u0026quot;/dev/tty\u0026quot;,\n\u0026quot;sane\u0026quot;).Run()\nfmt.Println(\u0026quot;What file should I archive the level to?\u0026quot;)\npath, _, error := stdin.ReadLine()\nfmt.Println(\u0026quot;Rename the new level:\u0026quot;)\nname, _, error := stdin.ReadLine()\nexec.Command(\u0026quot;/bin/stty\u0026quot;, \u0026quot;-f\u0026quot;, \u0026quot;/dev/tty\u0026quot;,\n\u0026quot;-icanon\u0026quot;, \u0026quot;min\u0026quot;, \u0026quot;1\u0026quot;).Run()\n\nwhere stdin is defined as follows:\nbufio.NewReader(os.stdin)\n\nIt was having strange problems so I logged the `path' variable and it showed me nothing\nlike what I input the first time, but showed me a somewhat corrupted version of my input\nto the second prompt.\n\nI fixed this by converting the []byte to a string (resulting in a copy) before I\nprompted for the next input, so it seems clear that the memory allocated for `path' was\nbeing prematurely reused. Maybe a bug in the bufio package, or maybe a bug in the\ngarbage collector (seems less likely).\n\nI have go1, and I think it compiled with 6g (`go env' reports GOCHAR=\u0026quot;6\u0026quot;)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:40Z",
+	"created_at": "2012-08-04T18:31:57Z",
+	"updated_at": "2016-06-24T22:22:33Z"
+}

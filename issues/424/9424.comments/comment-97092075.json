@@ -1,0 +1,12 @@
+{
+	"id": 97092075,
+	"body": "@bradfitz that's a good point.  I'm trying to navigate through them all.  I'm actually concerned with all possible timeout values I can set.  I have a finite time period by which I can retry a transaction, so I'd like to set every timeout.  Also all tx are run through TLS.\r\n\r\nBut here is what I'm basically doing to the client before sending:\r\n\r\n```go\r\ntype Config struct {\r\n\tConnectTimeout   time.Duration\r\n\tReadWriteTimeout time.Duration\r\n}\r\n\r\nfunc timeoutDialer(config *Config) func(network, add string) (c net.Conn, err error) {\r\n  return func(network, addr string) (net.Conn, error) {\r\n    conn, err := net.DialTimeout(network, addr, config.ConnectTimeout)\r\n    if err != nil {\r\n      return nil, err\r\n    }\r\n    conn.SetDeadline(time.Now().Add(config.ReadWriteTimeout))\r\n    return conn, nil\r\n  }\r\n}\r\n}\r\n\r\nclient := \u0026http.Client{\r\n  Transport: \u0026http.Transport{\r\n    Proxy: nil,\r\n    Dial: timeoutDialer(config),\r\n  },\r\n}\r\n```\r\n\r\nQuestion: would this configuration cover TLS handshake timeout or no?",
+	"user": {
+		"login": "davisford",
+		"id": 186677,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-28T14:53:27Z",
+	"updated_at": "2015-04-28T14:53:27Z"
+}

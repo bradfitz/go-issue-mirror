@@ -1,0 +1,12 @@
+{
+	"id": 156589672,
+	"body": "It is indeed possible to call publish from a different goroutine: https://gist.github.com/db47h/0bb10754d2993c0526e1\r\n\r\nYou can ignore the cruft with event waiting or polling depending on lifecycle stage. I was exploring how to eventually support the \"pause\" state on Android or automatically pause the app and display a pause screen on desktop when it has lost focus.\r\n\r\nThis example is biased towards desktops: it runs as fast as possible, the game world is updated by [fixed time steps](http://gafferongames.com/game-physics/fix-your-timestep/) and rendering happens when possible. \r\n\r\nWell, right now onUpdate is only changing the color of the triangle but I intend to update this so the user can fling the triangle around so we can show something that justifies the complexity of the thing.\r\n\r\nThe interesting bit is in \"drawing whenever possible\": since I do not want to wait for app.Publish to complete, I used a goroutine as you suggested, and trigger the Publish by sending on a.pubC (happens at the end of onPaint()). If the next attempt to Publish happens before the first one has completed, my main loop would block, so I had to implement a *published* notification (it sends a custom event via app.Send()).\r\n\r\nI guess a more mobile/energy friendly app might just be happy with a blocking version of app.Publish, so I don't know either if making a app.Publish asynchronous is a good idea or worth the added complexity for *all* users.",
+	"user": {
+		"login": "db47h",
+		"id": 879556,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-13T23:29:28Z",
+	"updated_at": "2015-11-13T23:29:28Z"
+}

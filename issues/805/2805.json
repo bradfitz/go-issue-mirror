@@ -1,0 +1,28 @@
+{
+	"id": 51279730,
+	"number": 2805,
+	"state": "closed",
+	"title": "openpgp: crash in signatureWriter.Write",
+	"body": "by **shazled**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\npackage main\n\nimport (\n\t\u0026quot;bytes\u0026quot;\n\t\u0026quot;code.google.com/p/go.crypto/openpgp\u0026quot;\n\t\u0026quot;crypto/rand\u0026quot;\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\n\t// Create new entities\n\tentity1, err := openpgp.NewEntity(rand.Reader, time.Now(), \n\t\t\u0026quot;Test user 1\u0026quot;, \u0026quot;test1\u0026quot;, \u0026quot;test1@localhost\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;Cannot create new PGP entity\u0026quot;, err)\n\t}\n\n\tprintln(\u0026quot;Entity can sign? \u0026quot;, entity1.PrimaryKey.CanSign())\n\n\tentity2, err := openpgp.NewEntity(rand.Reader, time.Now(), \n\t\t\u0026quot;Test user 2\u0026quot;, \u0026quot;test2\u0026quot;, \u0026quot;test2@localhost\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;Cannot create new PGP entity\u0026quot;, err)\n\t}\n\n\t// The buffer that holds the encrypted message\n\tencrypted := new(bytes.Buffer)\n\n\t// The message to encrypt\n\tcontent := \u0026quot;The quick brown fox\u0026quot;\n\n\t// Setup encryption\n\tenc, err := openpgp.Encrypt(encrypted, []*openpgp.Entity{entity2}, entity1, nil)\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;Encryption setup: \u0026quot;, err)\n\t}\n\n\t// Encrypt\n\t_, err = enc.Write([]byte(content))\n\tif err != nil {\n\t\tlog.Fatal(\u0026quot;Encryption: \u0026quot;, err)\n\t}\n\n\t// Indicate that this is the end of the message\n\tenc.Close()\n\n\tprintln(encrypted.String())\n}\n\n\n\nWhat is the expected output?\n\nA PGP encrypted buffer\n\nWhat do you see instead?\n\nEntity can sign?  true\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal 0xb code=0x1 addr=0x24 pc=0x80606b9]\n\ngoroutine 1 [running]:\ncode.google.com/p/go.crypto/openpgp.signatureWriter.Write(0x1867e120, 0x18679eb0,\n0x1867e200, 0x18679ee0, 0x9, ...)\n\t/home/saul/go/src/pkg/code.google.com/p/go.crypto/openpgp/write.go:277 +0x45\ncode.google.com/p/go.crypto/openpgp.(*signatureWriter).Write(0x1867e060, 0x1867e080,\n0x13, 0x13, 0x13, ...)\n\t/home/saul/go/src/pkg/code.google.com/p/go.crypto/openpgp/canonical_text.go:0 +0x72\nmain.main()\n\t/home/saul/play/auricular-go/bug.go:42 +0x435\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g, 8g\n\nWhich operating system are you using?\n\nFedora 16 (Linux), Mint XFCE (Linux)\n\nWhich revision are you using?  (hg identify)\n\nf4b96aaf712d tip\n\nPlease provide any additional information below.\n\nIf an entity isn't used to sign the encryption is successful.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2805/0/bug.go\"\u003ebug.go\u003c/a\u003e (1060 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:14:52Z",
+	"created_at": "2012-01-28T13:52:36Z",
+	"updated_at": "2016-06-24T21:24:44Z"
+}

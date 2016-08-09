@@ -1,0 +1,29 @@
+{
+	"id": 51284339,
+	"number": 5885,
+	"state": "open",
+	"title": "runtime: crash when receiving multiple signals on C threads on NetBSD",
+	"body": "\u003cpre\u003erun the following program on netbsd/386:\npackage main\n\n/*\n#include \u0026lt;signal.h\u0026gt;\n#include \u0026lt;pthread.h\u0026gt;\n\nstatic void *thread(void *p) {\n\t(void)p;\n\tconst int N = 100;\n\tint i;\n\tfor (i = 0; i \u0026lt; N; i++)\n\t\tpthread_kill(pthread_self(), SIGCHLD);\n\treturn NULL;\n}\nvoid testSendSIG() {\n\tconst int M = 10;\n\tpthread_t tid[M];\n\tint i;\n\tfor (i = 0; i \u0026lt; M; i++)\n\t\tpthread_create(\u0026amp;tid[i], 0, thread, NULL);\n\tfor (i = 0; i \u0026lt; M; i++)\n\t\tpthread_join(tid[i], 0);\n}\n*/\nimport \u0026quot;C\u0026quot;\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os\u0026quot;\n\t\u0026quot;os/signal\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\tch, wait := make(chan os.Signal), make(chan bool)\n\tsignal.Notify(ch, syscall.SIGCHLD)\n\tgo func() {\n\t\twait2 := wait\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase v := \u0026lt;-ch:\n\t\t\t\tfmt.Println(\u0026quot;got\u0026quot;, v)\n\t\t\t\twait \u0026lt;- false\n\t\t\tcase \u0026lt;-wait2:\n\t\t\t\twait2 = nil\n\t\t\t}\n\t\t}\n\t}()\n\twait \u0026lt;- true\n\tC.testSendSIG()\n\t\u0026lt;-wait\n}\n\n\nit will crash as follows:\nSIGSEGV: segmentation violation\nPC=0x3e8\n\n\ngoroutine 1 [syscall]:\nmain._Cfunc_testSendSIG(0x80b0ca0)\n\tcommand-line-arguments/_obj/_cgo_defun.c:43 +0x31\nmain.main()\n\tcommand-line-arguments/_obj/signal.cgo1.go:34 +0x14c\n\ngoroutine 3 [syscall]:\nos/signal.loop()\n\t/home/builder/go.hg/src/pkg/os/signal/signal_unix.go:21 +0x1e\ncreated by os/signal.init·1\n\t/home/builder/go.hg/src/pkg/os/signal/signal_unix.go:27 +0x31\n\ngoroutine 4 [select]:\nmain.func·001()\n\tcommand-line-arguments/_obj/signal.cgo1.go:23 +0x15c\ncreated by main.main\n\tcommand-line-arguments/_obj/signal.cgo1.go:31 +0x12a\n\ngoroutine 5 [runnable]:\nruntime.exitsyscall()\n\t/home/builder/go.hg/src/pkg/runtime/proc.c:1466 +0x109\nruntime.cgocallbackg(0x18438c2c, 0x18438c3c, 0x4)\n\t/home/builder/go.hg/src/pkg/runtime/cgocall.c:244 +0x76\nruntime.cgocallback_gofunc(0x0, 0x0)\n\t/home/builder/go.hg/src/pkg/runtime/asm_386.s:583 +0x5a\nruntime.goexit()\n\t/home/builder/go.hg/src/pkg/runtime/proc.c:1289\n\neax     0x0\nebx     0x18439250\necx     0x1\nedx     0x0\nedi     0x805c540\nesi     0x18401780\nebp     0x813b160\nesp     0x18438bd8\neip     0x3e8\neflags  0x10216\ncs      0x1b\nfs      0xab\ngs      0xb3\u003c/pre\u003e",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "OS-NetBSD"
+		}
+	],
+	"comments": 12,
+	"created_at": "2013-07-14T19:20:28Z",
+	"updated_at": "2016-01-26T02:43:36Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"id": 106613549,
+	"number": 12628,
+	"state": "open",
+	"title": "cmd/compile: turn nilcheckelim into branchelim",
+	"body": "nilcheckelim is effective and fast, but only eliminates nil checks. There are other kinds of duplicate branches that it would be nice to also elide.\r\n\r\nFor example, consider code like:\r\n\r\n```go\r\nfunc f_ssa(e interface{}) int {\r\n  if e.(int) \u003c 0 {\r\n    return -1\r\n  }\r\n  return e.(int) * 2\r\n}\r\n```\r\n\r\nEach of the type assertions will generate a branch to check e's dynamic type, but the subsequent checks are unnecessary, and could be eliminated with very similar logic to nilcheckelim. Code like this, in which an interface is type asserted repeatedly, shows up in the compiler, so it is not theoretical.\r\n\r\nI'd expect the souped-up optimization to also handle (silly) code like:\r\n\r\n```go\r\nfunc f_ssa(i int) int {\r\n  var x int\r\n  if i \u003c 3 {\r\n    x += 1\r\n  }\r\n  if i \u003c 3 {\r\n    x += 2\r\n  }\r\n  return x\r\n}\r\n```\r\n\r\n(The compiled code should only have one branch.)\r\n\r\n/cc @randall77 @tzneal @dr2chase ",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2015-09-15T18:12:17Z",
+	"updated_at": "2016-05-17T23:42:02Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

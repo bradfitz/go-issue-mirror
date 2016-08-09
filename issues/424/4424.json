@@ -1,0 +1,30 @@
+{
+	"id": 51282124,
+	"number": 4424,
+	"state": "closed",
+	"title": "cmd/gc: racewalk: false positive on empty structs",
+	"body": "\u003cpre\u003e14937:f2755950769b tip\n\npackage main\n\ntype Empty struct {}\n\ntype X struct {\n\ty int64\n\tEmpty\n}\n\ntype Y struct {\n\tx X\n\ty int64\n}\n\nfunc main() {\n\tc := make(chan X)\n\tvar y Y\n\tgo func() {\n\t\tx := y.x  // line 19\n\t\tc \u0026lt;- x\n\t}()\n\ty.y = 42  // line 22\n\t\u0026lt;-c\n}\n\ngo run -race says:\n\nWARNING: DATA RACE\nRead by goroutine 2:\n  main.func·001()\n      /tmp/race.go:19 +0x46\n\nPrevious write by goroutine 0:\n  main.main()\n      /tmp/race.go:22 +0xd0\n\nThis is caused by the fact that racewalk emits the following code for \u0026quot;x :=\ny.x\u0026quot;\nraceread(\u0026amp;y.x.y)\nraceread(\u0026amp;y.x.Empty)\nThe Empty field is physically non-existent, but it's \u0026quot;address\u0026quot; equals to\naddress of \u0026amp;y.y.\n\nRacewalk must not emit read of \u0026amp;y.x.Empty at all.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:23:34Z",
+	"created_at": "2012-11-22T15:10:54Z",
+	"updated_at": "2016-06-24T22:28:34Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

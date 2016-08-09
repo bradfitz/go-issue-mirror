@@ -1,0 +1,28 @@
+{
+	"id": 51278271,
+	"number": 1764,
+	"state": "closed",
+	"title": "spec: specify behavior of x := int8(-128); x /= -1",
+	"body": "\u003cpre\u003eSame for other int sizes (with corresponding most negative value).\n\nRight now panics sometimes, not others.\nShould at least be consistent.\n\nShould it just be -128?  Or panic?\n\nAssigned to gri for discussion \u0026amp; spec change.\n\n---------- Forwarded message ----------\nFrom: Chris Mihelich \u0026lt;umbricola@gmail.com\u0026gt;\nDate: Thu, Apr 28, 2011 at 12:23\nSubject: [go-nuts] Signed integer division overflow\nTo: golang-nuts@googlegroups.com\n\n\nHi Go implementors,\n\nI thank you that the language spec makes some effort to specify the behavior of\noverflowing signed integer arithmetic, a pleasing contrast to C's unhelpful stance on\nthat subject.\n\nBut the spec neglects to say what happens when you overflow an m-bit signed integer\nrepresentation by dividing -2^(m-1) by -1 in that type.\n\nWith x86-64 gc tools (compiled from source earlier this week) on my Intel Mac (OS X\n10.5.8), I find that dividing intm(-2^(m-1)) by intm(-1) panics for m = 16, 32, and 64\nwith the somewhat misleading error string \u0026quot;integer divide by zero\u0026quot;. \nStrangely, for m = 8, there is no panic and the result is int8(-128); i.e., the\ninfinite-width result is reduced modulo 2^8.  The underlying causes seem to be as\nfollows.\n\nFor m \u0026gt;= 16 the division uses the x86 idiv instruction for that integer width.  If\nthat instruction cannot represent its result in m bits, either because of overflow or\nbecause the divisor is zero, the CPU raises the #DE (divide error) exception.  That\ntranslates into SIGFPE with si_code = FPE_INTDIV.  In principle we should get si_code =\nFPE_INTDIV if the divisor was zero but si_code = FPE_INTOVF if the divisor was nonzero\nand the division overflowed, but in practice we can't count on the kernel to try that\nhard, apparently.\n\nFor m = 8 the division is compiled differently: the arguments are sign-extended to 32\nbits by movsx, then divided by a 32-bit idiv, and finally the low 8 bits are written out\nas the result.  Because int32(-128)/int32(-1) gives int32(128) with no overflow, this\nsequence produces the overwrapped value int8(128) without faulting.\n\nThe remainder extraction intm(-2^(m-1)) % intm(-1) also panics for m = 16, 32, 64 (and\nnot for m = 8) even though its result, namely 0, is representable.  That's because it\ndoes an idiv on the way to finding the remainder, and the idiv blows up.\n\nIs there any reason why Go shouldn't specify that overflowing divisions overwrap without\npanicking, like other overflowing signed integer arithmetic operations?  It doesn't\ncost much running time relative to the fairly high cost of an integer division to guard\nthe idiv instructions when we can't prove statically that the divisor isn't -1.\n\nI would also suggest that on x86 platforms, the runtime FPE handler should do the work\nthe kernel is neglecting to do to differentiate between division by 0 and division by -1\nwith overflow and return a sensible error message for each.  The FPE handler knows the\ninteger register values and instruction pointer at the fault, so it could read the\nfaulting instruction to figure out which register contains the dividend and then check\nwhether the saved value of that register has -1 in the relevant subrange of its bits. \nI could write you this code if you like.\n\nChris\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:09:47Z",
+	"created_at": "2011-05-01T19:49:16Z",
+	"updated_at": "2016-06-24T19:28:25Z"
+}

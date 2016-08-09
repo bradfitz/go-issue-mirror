@@ -1,0 +1,22 @@
+{
+	"id": 166147247,
+	"number": 16408,
+	"state": "closed",
+	"title": "cmd/compile: converting []byte to string could re-use non-escaping memory",
+	"body": "In a program like:\r\n\r\n```go\r\npackage alloc_test\r\n\r\nimport \"testing\"\r\n        \r\nvar s = \"some string to be doubled by foo\"\r\n\r\nfunc foo() string {\r\n        buf := make([]byte, len(s)*2)\r\n        copy(buf, s)\r\n        copy(buf[:len(s)], s)\r\n        return string(buf)\r\n}\r\n\r\nfunc BenchmarkGarbage(b *testing.B) {\r\n        b.ReportAllocs()\r\n        for i := 0; i \u003c b.N; i++ {\r\n                foo()\r\n        }\r\n}\r\n```\r\n\r\nThe `string(buf)` conversion allocates memory, even though the `buf` variable should not escape, and is only used by string(buf) at the exit of the function.\r\n\r\nThis results in two allocations per call to `foo`:\r\n\r\n```\r\nBenchmarkGarbage-2   20000000     108 ns/op     128 B/op     2 allocs/op\r\n```\r\n\r\nMore practically, this affects things like `filepath.Join` or `path.Join` which uses `strings.Join` (which looks like `foo` above)\r\n\r\nI thought we had this bug open already but I can't find it.\r\n\r\n/cc @randall77 @josharian \r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-07-18T17:45:29Z",
+	"created_at": "2016-07-18T17:25:18Z",
+	"updated_at": "2016-07-18T17:45:29Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51277780,
+	"number": 1419,
+	"state": "closed",
+	"title": "Sending on a closed channel should fail after 0 or ∞ times, not a finite N \u003e 0.",
+	"body": "\u003cpre\u003e\u003ca href=\"http://golang.org/doc/go_spec.html#Close_and_closed\"\u003ehttp://golang.org/doc/go_spec.html#Close_and_closed\u003c/a\u003e says \u0026quot;values sent to a closed\nchanned are ignored\u0026quot;. This statement isn't qualified.\n\nIn practice, however, it's \u0026quot;ignored... up to a point\u0026quot;.\n$GOROOT/src/pkg/runtime/chan.c will throw \u0026quot;too many operations on a closed\nchannel\u0026quot;. Too many (Emax) is 2048.\n\nPeople have repeatedly read the spec and believed that writing to a closed channel is OK\nand will be a no-op. Can we either change the spec or the implementation?\n\nThe current behavior might lead to code that works under small loads but fails\nmysteriously under large loads. Either sending on a closed channel should fail\nimmediately, or it should be permitted indefinitely.\n\nOf those two, the \u0026quot;∞ option\u0026quot; is \u0026quot;symmetric\u0026quot; with receiving from a\nclosed channel returning a zero value indefinitely, is consistent with the existing\nspec, and if a programmer wanted panicking behavior he could just do \u0026quot;close(c); c =\nnil\u0026quot;. On the other hand, an erroneous program could easily spin the CPU sending an\ninfinite number of values on a closed channel, which isn't a particularly good failure\nmode.\n\n\n\nThe counter-argument, or argument for keeping the implementation status quo, is that\nit's useful that one can send (a few elements) on a closed channel as it may simplify\ncode (around the time a channel is closed, not each sender has to be super-careful to\neither check that the channel is closed, or otherwise know that it cannot send anymore).\u003c/pre\u003e",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:08:14Z",
+	"created_at": "2011-01-17T01:01:00Z",
+	"updated_at": "2016-06-24T19:24:08Z"
+}

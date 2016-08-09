@@ -1,0 +1,12 @@
+{
+	"id": 67565567,
+	"body": "Yes, that looks like the problem.  A pointer to \u0026bucket.value[5] might be at the end of the bucket if the values are 0-sized.\r\n\r\nThis seems to be a generic problem with taking the address of zero-sized things.  I can manufacture a pointer to the end of an object like this:\r\n\r\npackage main\r\n\r\ntype T struct {\r\n\ta, b, c, d int\r\n\tz [8]struct{}\r\n}\r\n\r\nvar t *T\r\n\r\nfunc main() {\r\n\tt = new(T)\r\n\r\n\tprintln(\u0026t.a)\r\n\tprintln(\u0026t.b)\r\n\tprintln(\u0026t.c)\r\n\tprintln(\u0026t.d)\r\n\tprintln(\u0026t.z[6])\r\n}\r\n\r\nprints\r\n0x2080e8000\r\n0x2080e8008\r\n0x2080e8010\r\n0x2080e8018\r\n0x2080e8020\r\n\r\nThat last pointer points to the next object.\r\n\r\nWe could solve this one in the compiler, replacing \u0026(zero-sized thing) with a pointer to the zero object.  But it's an ugly pile of special-case code in the hashmap implementation :(",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-18T22:07:34Z",
+	"updated_at": "2014-12-18T22:07:34Z"
+}

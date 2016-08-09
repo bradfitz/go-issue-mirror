@@ -1,0 +1,12 @@
+{
+	"id": 66091683,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI believe the problem is that the hard limit for your process is actually higher than it\ncan possibly be set by a non-root user. So trying to set it that high with ulimit -S -n\nfails. My guess is that if you run\n\nulimit -S -n\nulimit -H -n\nsysctl -a|grep kern.maxfiles\n\nyou will find that the -H -n number is set to kern.maxfiles and is higher than\nkern.maxfilesperproc. Being higher than kern.maxfilesperproc sets up the situation where\nulimit -S -n $(ulimit -H -n) fails: the hard limit is unachievable by an ordinary\nprocess.\n\nI would argue you have misconfigured your system. Whatever kern.maxfilesperproc says,\nthat should be the hard limit you put in launchd.conf (or vice versa, you should change\nthe kern.maxfilesperproc to allow what you are setting in launchd.conf).\n\nI don't want to do the CL 9324044 workaround, because what will happen on some systems\nis that ulimit -S is too small, ulimit -H is unachievably high, we ignore the failure to\nchange -S, and then a test breaks later. I'd rather stop the build early.\n\nI will add a comment to run.bash with a brief explanation and pointing at this issue, so\nthat if someone else runs into this they can find this discussion instead of having to\ndebug the probem anew.\u003c/pre\u003e\n\n\n\n_Status changed to **WorkingAsIntended**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-02-24T16:26:40Z",
+	"updated_at": "2014-12-08T10:41:03Z"
+}

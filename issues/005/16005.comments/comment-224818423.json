@@ -1,0 +1,12 @@
+{
+	"id": 224818423,
+	"body": "\u003e Unless you disable Keep-Alive connections in the Transport, then you should expect the Transport to maintain a pool of idle connections.\r\n\r\nSure. But also I expect Transport object to clean up after itself when it doesn't used anymore - i.e. when all references to that object is gone.\r\n\r\n\u003e If you don't close those connections or re-use the Transport, you will leak Transports.\r\n\r\nIs this mean only correct way to create own Transport is to manually make sure it will be garbage-collected when it doesn't needed anymore? For example, in simple case when this Transport isn't shared between multiple clients use something like this (untested)?\r\n```go\r\ntr := \u0026http.Transport{…}\r\nclient := \u0026http.Client{Transport: tr}\r\nruntime.SetFinalizer(client, func(c *http.Client){ c.Transport.CloseIdleConnections() })\r\n```\r\nIf this is the case, then it probably should be noted in documentation with warning about leaking sockets and goroutines otherwise.\r\n\r\n\u003e Hmm, well ExpectContinueTimeout disables http2 in the client, so maybe that's related. You're saying that you see Transports escaping even if you don't call CloseIdleConnections?\r\n\r\nWithout defining `ExpectContinueTimeout` it leaks no matter is I call `CloseIdleConnections()` or not.",
+	"user": {
+		"login": "powerman",
+		"id": 1354301,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-09T07:17:33Z",
+	"updated_at": "2016-06-09T07:17:33Z"
+}

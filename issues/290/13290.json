@@ -1,0 +1,21 @@
+{
+	"id": 117367224,
+	"number": 13290,
+	"state": "open",
+	"title": "net/http: send User-Agent in proxy CONNECT",
+	"body": "I am using a http proxy to connect to an https target. This proxy forbids connections from unknown user-agents.\r\nI am building a new request to have control over the request headers:\r\n```\r\nreq, err := http.NewRequest(\"GET\", rdurl.String(), nil)\r\nreq.Header.Set(\"User-Agent\", \"Wget/1.9.1\")\r\n```\r\nBut even with this change in the user-agent, I am getting a 403 Forbidden answer from the proxy. When dumping the http connection with wireshark, I see that the go http stack is using the default user-agent instead of the one I specified on the request.  \r\nI think I could trace the problem back to the dialConn function in transport.go:\r\n```\r\nfunc (t *Transport) dialConn(cm connectMethod) (*persistConn, error){\r\n        .....        \r\n        conn := pconn.conn\r\n        connectReq := \u0026Request{\r\n                Method: \"CONNECT\",\r\n                URL:    \u0026url.URL{Opaque: cm.targetAddr},\r\n                Host:   cm.targetAddr,\r\n                Header: make(Header),\r\n        }\r\n        ...\r\n}\r\n```\r\nIn this function, a new request is being built to the CONNECT to the proxy, with a new empty header being allocated. This header is only filled with the proxy authentication if any. I would expect this Header to be filled, as well, with the elements set in the upper request. Alternatively, the Header should be copied from the other request and the proxy authentication later appended.\r\n\r\nGo Version: go1.5.1 linux/amd64\r\nThanks!",
+	"user": {
+		"login": "cdcs",
+		"id": 1036373,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2015-11-17T14:37:00Z",
+	"updated_at": "2016-05-18T00:48:12Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

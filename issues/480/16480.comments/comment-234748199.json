@@ -1,0 +1,12 @@
+{
+	"id": 234748199,
+	"body": "I don't think there's anything Solaris-specific here.\r\n\r\nThe os package does the same thing on all POSIX systems (file_posix.go):\r\n\r\n```go\r\nfunc Chtimes(name string, atime time.Time, mtime time.Time) error {\r\n        var utimes [2]syscall.Timespec\r\n        utimes[0] = syscall.NsecToTimespec(atime.UnixNano())\r\n        utimes[1] = syscall.NsecToTimespec(mtime.UnixNano())\r\n        if e := syscall.UtimesNano(name, utimes[0:]); e != nil {\r\n                return \u0026PathError{\"chtimes\", name, e}\r\n        }\r\n        return nil\r\n}\r\n```\r\n\r\n... where syscall.UtimesNano always converts to microseconds. Many operating systems have `utimens` etc support but we don't appear to ever use it.\r\n\r\nThe os.Chtimes documentation is a little misleading:\r\n\r\n\u003e    The underlying filesystem may truncate or round the values to a less precise\r\n\u003e    time unit. If there is an error, it will be of type *PathError.\r\n\r\n... since it's not really the filesystem truncating things.\r\n\r\nThis seems fixable.\r\n\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-24T00:05:02Z",
+	"updated_at": "2016-07-24T00:05:02Z"
+}

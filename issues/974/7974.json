@@ -1,0 +1,25 @@
+{
+	"id": 51287479,
+	"number": 7974,
+	"state": "closed",
+	"title": "net: document errata on SetLinger of TCPConn",
+	"body": "\u003cpre\u003eThe linger option to TCPConn doesn't work as we expect especially \u0026quot;If sec \u0026gt; 0,\nClose blocks for at most sec seconds waiting for data to be sent and acknowledged.\u0026quot;\npart because current  TCPConn.Close implementation never blocks anything instead of\nretuning syscall.EWOULDBLOCK or similar.\n\nfunc (fd *netFD) Close() error {\n        (snip)\n        // Unblock any I/O.  Once it all unblocks and returns,\n        // so that it cannot be referring to fd.sysfd anymore,\n        // the final decref will close fd.sysfd.  This should happen\n        // fairly quickly, since all the I/O is non-blocking, and any\n        // attempts to block in the pollDesc will return errClosing.\n}\n\nOther matters to be attended to;\n\n- A conventional issue on TCP socket closing w/ lingering. When we call TCPConn.Close to\nSetLinger(0) configured sockets on active-close side, TCPConn.Read on passive-close side\nreturns syscall.ECONNRESET or similar instead of io.EOF because lingering usually causes\nsending RSTs. It really depends on underlying protocol stack implementation, though.\n\n- Another conventional issue on TCP socket closing w/ lingering. SetLinger(sec \u0026gt; 0)\nusually causes 2MSL close wait, SetLinger(sec \u0026gt; 0) configured sockets remain inside\nthe kernel for a short time (2MSL).\n\nPerhaps we should encourage people not to use SetLinger and recommend to use CloseRead,\nCloseWrite instead.\u003c/pre\u003e",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:44:10Z",
+	"created_at": "2014-05-12T15:26:43Z",
+	"updated_at": "2016-06-25T01:34:03Z"
+}

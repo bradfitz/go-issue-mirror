@@ -1,0 +1,28 @@
+{
+	"id": 151721244,
+	"number": 15482,
+	"state": "closed",
+	"title": "cmd/trace: large traces fail to open in the trace-viewer",
+	"body": "1. What version of Go are you using (`go version`)?\r\n\r\nRecent master (https://go.googlesource.com/go/+/0436a89a2c5afad41356dc1dff7c745cd30636a7)\r\n```\r\nMartins-MacBook-Pro:src martin$ git rev-parse master...\r\n681c388e65af000772ed9e5484942610de917846\r\n0436a89a2c5afad41356dc1dff7c745cd30636a7\r\n^0436a89a2c5afad41356dc1dff7c745cd30636a7\r\nMartins-MacBook-Pro:src martin$ $GOROOT/bin/go version\r\ngo version devel +1ad70de Wed Apr 27 14:58:01 2016 -0400 darwin/amd64\r\n```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nMartins-MacBook-Pro:src martin$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/Users/martin/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/martin/shopify/go:/Users/martin/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/Users/martin/go/go\"\r\nGOTOOLDIR=\"/Users/martin/go/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n\r\n3. What did you do?\r\n\r\nI'm trying to use the tracing facilities to diagnose a production issue in our system. 30 second trace generates ~200MB trace containing ~45M events. Running the trace tool on it takes a while to parse it but seems to succeed (I instrumented the trace cmd binary to see what's going on inside). Attempting to open the full trace of this size crashes the JS side (\"Aw snap!\" screen). Going into the goroutine list and trying to filter it down to a single goroutine (~1M events) fails on the JS side with `Uncaught TypeError: tr.importer.Import is not a constructor` which is something I hoped https://go-review.googlesource.com/#/c/22013 has already fixed.\r\n\r\nI can't really upload the production trace here, so I was trying to reproduce with a different trace. I couldn't reproduce with a shorter trace ~1M = ~200K events, so in the end I instrumented the trace command itself to run a trace while processing the production trace. That gave me a trace of ~45M = ~13M events and that one seems to reproduce the issue.\r\n\r\nHere's how I compiled the trace command (given the above environment)\r\n```\r\nMartins-MacBook-Pro:src martin$ $GOROOT/bin/go build -x -o ~/bin/gotrace cmd/trace\r\nWORK=/var/folders/d6/sqkwj26x2mx7f2tf_wk_9vym0000gn/T/go-build090429502\r\nmkdir -p $WORK/cmd/trace/_obj/\r\nmkdir -p $WORK/cmd/trace/_obj/exe/\r\ncd /Users/martin/go/go/src/cmd/trace\r\n/Users/martin/go/go/pkg/tool/darwin_amd64/compile -o $WORK/cmd/trace.a -trimpath $WORK -p main -complete -buildid 1ec24b4565ae96218700656adedb607074140dfa -D _/Users/martin/go/go/src/cmd/trace -I $WORK -pack ./goroutines.go ./main.go ./pprof.go ./trace.go\r\ncd .\r\n/Users/martin/go/go/pkg/tool/darwin_amd64/link -o $WORK/cmd/trace/_obj/exe/a.out -L $WORK -extld=clang -buildmode=exe -buildid=1ec24b4565ae96218700656adedb607074140dfa $WORK/cmd/trace.a\r\nmkdir -p /Users/martin/bin/\r\nmv $WORK/cmd/trace/_obj/exe/a.out /Users/martin/bin/gotrace\r\n```\r\n\r\nAnd this is how I ran the trace (the logging instrumentation is mine, and also trimming the trace at 1M events because anything more than that seems to crash the JS viewer)\r\n```\r\nMartins-MacBook-Pro:pprof2 martin$ gotrace ~/bin/gotrace trace\r\n2016/04/28 14:35:50 parsing trace\r\n2016/04/28 14:36:09 parsed 12894141 events\r\n2016/04/28 14:36:13 tracing 12894141 events\r\n2016/04/28 14:36:18 traced 1000000 events, 1814 frames\r\n2016/04/28 14:36:21 sent serialized trace\r\n```\r\n\r\nI'll upload the trace file and binary as a gist or something and link it below.\r\n\r\n\r\n4. What did you expect to see?\r\n\r\nWell, I was hoping to take a look at the production trace, no luck so far.\r\n\r\n\r\n5. What did you see instead?\r\n\r\n:crash: \u0026  :burn: :-). Seriously though, I realize these are big traces, but that's what they seem to be from production systems. Either we can figure out how to deal with them in full size or we provide some ways to filter the traces to something the viewer can manage. Otherwise the tool won't be very usable in production scenarios.\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "mkobetic",
+		"id": 871693,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"closed_at": "2016-05-12T17:56:55Z",
+	"created_at": "2016-04-28T19:15:39Z",
+	"updated_at": "2016-05-12T17:56:55Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

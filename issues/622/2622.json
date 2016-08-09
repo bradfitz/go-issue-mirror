@@ -1,0 +1,33 @@
+{
+	"id": 51279471,
+	"number": 2622,
+	"state": "closed",
+	"title": "database/sql: sqlite corruption",
+	"body": "\u003cpre\u003eFor investigation later:\n\n--------\n\nFrom: Vadik Vygonets\nto: golang-nuts \n\nMerry solstice, List!\n\nLinux, amd64.  When reading a blob from sqlite3 using (*Row)Scan(),\nthe first 8 bytes get damaged in transit.  (*Rows)Scan() works\nthough.  I didn't test other drivers.\n\nTest program:\n\npackage main\n\nimport (\n       \u0026quot;exp/sql\u0026quot;\n       \u0026quot;fmt\u0026quot;\n       _ \u0026quot;github.com/mattn/go-sqlite3\u0026quot;\n)\n\nvar blob = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,\n15}\n\nfunc main() {\n       db, _ := sql.Open(\u0026quot;sqlite3\u0026quot;, \u0026quot;foo.db\u0026quot;)\n       db.Exec(\u0026quot;create table foo (id integer primary key, bar\nblob[16])\u0026quot;)\n       db.Exec(\u0026quot;insert or replace into foo (id, bar) values(?,?)\u0026quot;, 0,\nblob)\n       b := make([]byte, 16)\n       db.QueryRow(\u0026quot;select bar from foo where id = ?\u0026quot;, 0).Scan(\u0026amp;b)\n       fmt.Printf(\u0026quot;%x\\n\u0026quot;, b)\n}\n\nOutput looks something like this (somewhat different number every\ntime):\nb09c7a030000000008090a0b0c0d0e0f\n\nLong story short, (*Row)Scan() calls (*Rows /*sic*/ )Close(), which\nresults in C.sqlite3_finalize(), which is where the damage happens (I\ndidn't look inside).  It seems like the bug is in the definition of\nexp/sql API, but I don't know enough about promises the driver should\nmake to tell for sure.\n\nBut don't let it distract you from drinking gluhwein, ok?\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2014-12-08T10:13:57Z",
+	"created_at": "2011-12-26T23:06:24Z",
+	"updated_at": "2016-06-24T21:22:30Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

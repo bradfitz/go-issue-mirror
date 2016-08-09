@@ -1,0 +1,33 @@
+{
+	"id": 67656480,
+	"number": 10413,
+	"state": "closed",
+	"title": "image/jpeg: Decode hangs",
+	"body": "Run the following program on the following input:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"bytes\"\r\n    \"image/jpeg\"\r\n    \"io/ioutil\"\r\n    \"os\"\r\n)\r\n\r\nfunc main() {\r\n    data, _ := ioutil.ReadFile(os.Args[1])\r\n    img, err := jpeg.Decode(bytes.NewReader(data))\r\n    if err != nil {\r\n        return\r\n    }\r\n    var w bytes.Buffer\r\n    err = jpeg.Encode(\u0026w, img, nil)\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n}\r\n```\r\n\r\nhttps://drive.google.com/file/d/0B20Uwp8Hs1oCTzlVWFBmZ2lHS0k/view?usp=sharing\r\n\r\nThe program hangs (waited for several minutes, while file size is 502 bytes).\r\n\r\nAbort stack:\r\n```\r\nSIGABRT: abort\r\nPC=0x450c5d m=0\r\n\r\ngoroutine 1 [running]:\r\nimage/jpeg.(*decoder).readByte(0xc20806c000, 0xc208047ad9, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/reader.go:188 +0x5d fp=0xc2080479b8 sp=0xc208047998\r\nimage/jpeg.(*decoder).readByteStuffedByte(0xc20806c000, 0x4a94d9, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/reader.go:220 +0x167 fp=0xc2080479f8 sp=0xc2080479b8\r\nimage/jpeg.(*decoder).ensureNBits(0xc20806c000, 0x8, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/huffman.go:50 +0x34 fp=0xc208047a48 sp=0xc2080479f8\r\nimage/jpeg.(*decoder).decodeHuffman(0xc20806c000, 0xc20806e060, 0x2, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/huffman.go:183 +0xfb fp=0xc208047ae8 sp=0xc208047a48\r\nimage/jpeg.(*decoder).processSOS(0xc20806c000, 0x6, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/scan.go:253 +0x1a33 fp=0xc208047de8 sp=0xc208047ae8\r\nimage/jpeg.(*decoder).decode(0xc20806c000, 0x7fe7cbfa51c0, 0xc208016450, 0x573300, 0x0, 0x0, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/reader.go:622 +0xa4e fp=0xc208047e88 sp=0xc208047de8\r\nimage/jpeg.Decode(0x7fe7cbfa51c0, 0xc208016450, 0x0, 0x0, 0x0, 0x0)\r\n\t/ssd/src/go10/src/image/jpeg/reader.go:765 +0x69 fp=0xc208047ed0 sp=0xc208047e88\r\nmain.main()\r\n\t/tmp/jpeg.go:12 +0x132 fp=0xc208047f90 sp=0xc208047ed0\r\n```\r\n\r\nPerf profile:\r\n```\r\n 13.59%  jpeg  jpeg               [.] image/jpeg.(*decoder).decodeHuffman                                                                                 10.97%  jpeg  jpeg               [.] image/jpeg.(*decoder).processSOS                                                            \r\n 10.60%  jpeg  jpeg               [.] runtime.mallocgc                                                                                                     5.12%  jpeg  jpeg               [.] image/jpeg.(*decoder).receiveExtend                                                           \r\n  4.73%  jpeg  jpeg               [.] image/jpeg.(*decoder).ensureNBits                                                                                    4.44%  jpeg  jpeg               [.] runtime.memmove                                                                                                      4.31%  jpeg  jpeg               [.] image/jpeg.idct \r\n```\r\n\r\nThe code seems to be looping in processSOS.\r\n\r\nMy repository is on commit 8ac129e.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-04-22T00:21:13Z",
+	"created_at": "2015-04-10T18:38:25Z",
+	"updated_at": "2016-06-25T02:05:21Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

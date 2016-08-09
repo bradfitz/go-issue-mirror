@@ -1,0 +1,33 @@
+{
+	"id": 51282086,
+	"number": 4403,
+	"state": "closed",
+	"title": "net: io.Copy to timed-out net.Conn hangs?",
+	"body": "\u003cpre\u003eon OS X, patching in un-mailed \u003ca href=\"http://golang.org/cl/6851061\"\u003ehttp://golang.org/cl/6851061\u003c/a\u003e which adds this\nnet/http test:\n\nfunc TestTransportDustinRace(t *testing.T) {\n        mux := NewServeMux()\n        mux.HandleFunc(\u0026quot;/get\u0026quot;, func(w ResponseWriter, r *Request) {\n                io.Copy(w, neverEnding('a'))\n        })\n        mux.HandleFunc(\u0026quot;/put\u0026quot;, func(w ResponseWriter, r *Request) {\n                io.Copy(ioutil.Discard, r.Body)\n        })\n        ts := httptest.NewServer(mux)\n        defer ts.Close()\n\n        client := \u0026amp;Client{\n                Transport: \u0026amp;Transport{\n                        Dial: func(n, addr string) (net.Conn, error) {\n                                conn, err := net.Dial(n, addr)\n                                if err != nil {\n                                        return nil, err\n                                }\n                                conn.SetDeadline(time.Now().Add(50 * time.Millisecond))\n                                return conn, nil\n                        },\n                        DisableKeepAlives: true,\n                },\n        }\n\n        for i := 0; i \u0026lt; 50; i++ {\n                println(\u0026quot;iter\u0026quot;, i)\n                sres, err := client.Get(ts.URL + \u0026quot;/get\u0026quot;)\n                if err != nil {\n                        t.Logf(\u0026quot;Error issuing GET: %v\u0026quot;, err)\n                        return\n                }\n                req, _ := NewRequest(\u0026quot;PUT\u0026quot;, ts.URL+\u0026quot;/put\u0026quot;, sres.Body)\n                res, err := client.Do(req)\n                println(fmt.Sprintf(\u0026quot;iteration %d; res=%v, err=%v\u0026quot;, i, res, err))\n                t.Logf(\u0026quot;iteration %d; res=%v, err=%v\u0026quot;, i, res, err)\n        }\n        println(\u0026quot;done\u0026quot;)\n}\n\nthe test hangs after \u0026quot;done\u0026quot;, before the testserver deferred Close() call,\nbecause the /get handler's io.Copy (from neverEnding('a') to the ResponseWriter) never\ncompletes, always waiting for writability:\n\ngoroutine 219 [chan receive]:\nnet.(*pollServer).WaitWrite(0xc200088de0, 0xc2002b4cc0, 0xc200088c90, 0x23,\n0xffffffffffffff01, ...)\n\t/Users/bradfitz/go/src/pkg/net/fd_unix.go:251 +0x63\nnet.(*netFD).Write(0xc2002b4cc0, 0xc200512000, 0x1000, 0x1000, 0x0, ...)\n\t/Users/bradfitz/go/src/pkg/net/fd_unix.go:536 +0x391\nnet.(*conn).Write(0xc200473c38, 0xc200512000, 0x1000, 0x1000, 0xffffffff, ...)\n\t/Users/bradfitz/go/src/pkg/net/net.go:129 +0xd3\nbufio.(*Writer).Flush(0xc20050d200, 0xff8, 0xff8, 0xc200514000)\n\t/Users/bradfitz/go/src/pkg/bufio/bufio.go:456 +0xb9\nbufio.(*Writer).Write(0xc20050d200, 0xc200514000, 0x8000, 0x8000, 0x0, ...)\n\t/Users/bradfitz/go/src/pkg/bufio/bufio.go:492 +0x1ef\nnet/http.(*response).Write(0xc20050d280, 0xc200514000, 0x8000, 0x8000, 0x8000, ...)\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:501 +0x461\nnet/http.(*writerOnly).Write(0xc20050e270, 0xc200514000, 0x8000, 0x8000, 0x8000, ...)\n\t/Users/bradfitz/go/src/pkg/net/http/chunked.go:0 +0x65\nio.Copy(0xc2000db1e0, 0xc20050e270, 0xc2000db0f0, 0x19961, 0x8c8000, ...)\n\t/Users/bradfitz/go/src/pkg/io/io.go:367 +0x236\nnet/http.(*response).ReadFrom(0xc20050d280, 0xc2000db0f0, 0x19961, 0xc2000db120, 0x0,\n...)\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:168 +0x1ae\nio.Copy(0xc2000db0c0, 0xc20050d280, 0xc2000db0f0, 0x19961, 0x0, ...)\n\t/Users/bradfitz/go/src/pkg/io/io.go:357 +0xa2\nnet/http_test.func·104(0xc2000ea880, 0xc20050d280)\n\t/Users/bradfitz/go/src/pkg/net/http/transport_test.go:907 +0x9c\nnet/http.HandlerFunc.ServeHTTP(0x96ac0, 0xc2000ea880, 0xc20050d280, 0xc2001bf410,\n0x310420, ...)\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:733 +0x3b\nnet/http.(*ServeMux).ServeHTTP(0xc200088cf0, 0xc2000ea880, 0xc20050d280, 0xc2001bf410,\n0x3de6d, ...)\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:992 +0x61\nnet/http/httptest.(*waitGroupHandler).ServeHTTP(0xc2000cf320, 0xc2000ea880,\n0xc20050d280, 0xc2001bf410, 0x0, ...)\n\t/Users/bradfitz/go/src/pkg/net/http/httptest/server.go:180 +0x8f\nnet/http.(*conn).serve(0xc200332f00, 0x0)\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:696 +0x55d\ncreated by net/http.(*Server).Serve\n\t/Users/bradfitz/go/src/pkg/net/http/server.go:1120 +0x36d\n\nwhy?\n\nKeeping this assigned to me, but help would be appreciated if anybody is bored.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 20,
+	"closed_at": "2014-12-08T10:23:25Z",
+	"created_at": "2012-11-16T23:34:18Z",
+	"updated_at": "2016-06-24T22:28:19Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

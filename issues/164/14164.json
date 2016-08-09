@@ -1,0 +1,28 @@
+{
+	"id": 130013986,
+	"number": 14164,
+	"state": "closed",
+	"title": "cmd/compile: unexported interface method declared in body of exported inlined function causes import error",
+	"body": "Version: `go1.6rc1/darwin`\r\n\r\nNote that `go1.5.x` does not have this issue. Maybe this is a new feature by design that I don't know, but the error message does not tell the point of problem.\r\n\r\nLet's have a package with the following contents,\r\n\r\n```go\r\n// file: a.go\r\npackage a\r\n\r\nfunc Hello() {\r\n}\r\n\r\nfunc IsInternalErr(err error) (ok bool) {\r\n    _, ok = err.(interface{internal()})\r\n    return\r\n}\r\n\r\n// file: a_test.go\r\npackage a\r\n\r\nimport \"testing\"\r\n\r\nfunc TestHello(t *testing.T) {\r\n    Hello()\r\n}\r\n```\r\n\r\nThen test it,\r\n```\r\n$ go test a\r\n# testmain\r\n/var/folders/c3/vzt2kvj51f14fs5nsr992z_w0000gn/T/go-build849241500/a/_test/_testmain.go:12: syntax error: unexpected @\r\nFAIL a [build failed]\r\n```\r\n\r\nNote that the problem is not about testing. If this package is used by a program, it reports the problem at the line of `import`.\r\n\r\nIn the function `IsInternalErr()`, change this line,\r\n\r\n```go\r\n  _, ok = err.(interface{internal()})\r\n```\r\n\r\nto the following with capitalized interface method name `Internal`,\r\n\r\n```go\r\n  _, ok = err.(interface{Internal()})\r\n```\r\n\r\nthe problem is gone.",
+	"user": {
+		"login": "albertjin",
+		"id": 640151,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-02-01T20:30:26Z",
+	"created_at": "2016-01-30T17:17:36Z",
+	"updated_at": "2016-02-01T20:30:26Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51280518,
+	"number": 3385,
+	"state": "closed",
+	"title": "time: geographical time zone names and Daylight saving time (DST)",
+	"body": "\u003cpre\u003eThe function `time.Parse(alayout, avalue string)` already accepts numerical (`-0700`,\n`+07:00`, …) and ‘named’ (`EST`, `CET`, …) time zones, but it should also accept\ngeographical ones like `Europe/Berlin` or `America/New_York` as specified by the\n[\u003ca href=\"https://en.wikipedia.org/wiki/Tz_database\"\u003ehttps://en.wikipedia.org/wiki/Tz_database\u003c/a\u003e tz database]. Right now, it doesn’t:\n{{{\nparsing time \u0026quot;23.03.2012 22:14 Europe/Berlin\u0026quot; as \u0026quot;02.01.2006 15:04\nMST\u0026quot;: cannot parse \u0026quot;Europe/Berlin\u0026quot; as \u0026quot;MST\u0026quot;\n}}}\n\nThis is important because in some parts of the world (like the USA or Europe) rules for\n[\u003ca href=\"https://en.wikipedia.org/wiki/Daylight_saving_time\"\u003ehttps://en.wikipedia.org/wiki/Daylight_saving_time\u003c/a\u003e Daylight saving time (DST)] are in\nforce, but most people does’t care to write down timezones because they only\n‘think’ in local time. This is why the tz database works with geographical time zone\nnames – it delivers the programmer from DSR stuff:\n\n`2012-03-23T22:14 Europe/Berlin` should evaluate into `+01:00` (CET/Winter time), but\n\n`2012-06-23T15:00 Europe/Berlin` should evaluate into `+02:00` (CEST/Summer time)\n\n\nThis file `time-dst.go` illustrates the problem:\n{{{\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\t\n\t// working:\n\tmytime(\u0026quot;23.03.2012 22:14 CET\u0026quot;)\n\tmytime(\u0026quot;23.06.2012 15:00 CEST\u0026quot;)\n\t\n\t// failing:\n\tmytime(\u0026quot;23.03.2012 22:14 Europe/Berlin\u0026quot;)\n\tmytime(\u0026quot;23.06.2012 15:00 Europe/Berlin\u0026quot;)\n\t\n}\n\nfunc mytime(s string) {\n\tvar format = \u0026quot;02.01.2006 15:04 MST\u0026quot; // Reference: Mon Jan 2 15:04:05 MST 2006 (MST is GMT-0700)\n\t\n\tvar d, err = time.Parse(format, s)\n\tif err == nil {\n\t\tfmt.Println(d.Format(time.RFC3339))\n\t} else {\n\t\tfmt.Println(err)\n\t}\n\tfmt.Println()\n}\n}}}\n\nFinally, i’m using the `6g` compiler (c1702f36df03 (release-branch.r60)\nrelease/release.r60.3) in a Debian based GNU/Linux distribution who must not be named ;).\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3385/0/time-dst.go\"\u003etime-dst.go\u003c/a\u003e (502 bytes)",
+	"user": {
+		"login": "zephyr",
+		"id": 161678,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2014-12-08T10:17:39Z",
+	"created_at": "2012-03-24T03:48:31Z",
+	"updated_at": "2016-06-24T22:16:15Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

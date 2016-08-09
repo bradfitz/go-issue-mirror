@@ -1,0 +1,12 @@
+{
+	"id": 100992160,
+	"body": "I think this is closed by recent improvements to escape analysis, commit 7fbb1b36c37ac49db78042adc7533fb4ab83a4bc\r\nThe code for netpoll is now escape/leak-free:\r\n```\r\nruntime/netpoll_kqueue.go:101: inlining call to guintptr.ptr\r\nruntime/netpoll_kqueue.go:53: can inline netpollclose\r\nruntime/netpoll_kqueue.go:16: kevent ch does not escape\r\nruntime/netpoll_kqueue.go:16: kevent ev does not escape\r\nruntime/netpoll_kqueue.go:16: kevent ts does not escape\r\nruntime/netpoll_kqueue.go:72: netpoll \u0026ts does not escape\r\nruntime/netpoll_kqueue.go:76: netpoll \u0026events[0] does not escape\r\nruntime/netpoll_kqueue.go:86: netpoll \u0026events[i] does not escape\r\nruntime/netpoll_kqueue.go:95: netpoll \u0026gp does not escape\r\nruntime/netpoll_kqueue.go:33: netpollopen pd does not escape\r\nruntime/netpoll_kqueue.go:38: netpollopen \u0026ev[0].ident does not escape\r\nruntime/netpoll_kqueue.go:46: netpollopen \u0026ev[0] does not escape\r\nruntime/netpoll_kqueue.go:59: netpollarm pd does not escape\r\n```\r\n\r\nand the little test case:\r\n\r\n```\r\npackage main\r\nimport \"fmt\"\r\ntype T struct {\r\n    x int\r\n}\r\nfunc noescape(p **T) {\r\n    t := *p\r\n    fmt.Println(t)\r\n}\r\nfunc main() {\r\n    t := \u0026T{42}\r\n    noescape(\u0026t)\r\n}\r\n```\r\nproduces\r\n```\r\ndrchase$ go tool 6g -m esc_dv.go\r\nesc_dv.go:8: t escapes to heap\r\nesc_dv.go:6: leaking param content: p\r\nesc_dv.go:8: noescape ... argument does not escape\r\nesc_dv.go:11: \u0026T literal escapes to heap\r\nesc_dv.go:12: main \u0026t does not escape\r\n```\r\n",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-11T17:42:57Z",
+	"updated_at": "2015-05-11T17:42:57Z"
+}

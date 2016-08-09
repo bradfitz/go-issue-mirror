@@ -1,0 +1,12 @@
+{
+	"id": 176571273,
+	"body": "Looked into this, issue is here: https://github.com/golang/mobile/blob/master/app/android.go#L220\r\n\r\nDividing the density by 72 isn't sufficient for determining PixelsPerPt, this would only give a very rough approximation that's not suitable for use.\r\n\r\nThere is a java api intended to provide this: http://developer.android.com/reference/android/util/DisplayMetrics.html#xdpi\r\n\r\nI could not find anything in NDK for this. Regardless, at least five years ago the xdpi and ydpi were considered unreliable as hardware vendors shipped with incorrect values but no one notices since these values are not used anywhere in the system. So, while a jni binding to retrieve the value would fix this, it's not clear if its going to be reported correctly across all devices in use today.\r\n\r\nThe mobile/geom package sheds some light on the intention here but it looks to be impractical to provide actual typographical point values on android.\r\n\r\n160dp is meant to equal sort-of-an-inch and should probably be the basis for what is provided in the size event on android (caveat emptor). This can be used to establish the PixelsPerPt in size.Event and the WidthPt and HeightPt can be filled appropriately.\r\n\r\nThe solution is not aggreable with being exact, but it doesn't appear exact is possible across all android devices unless positive evidence can be turned up regarding DisplayMetrics.xdpi and ydpi.\r\n\r\nIf this solution sounds ok, I can put something together.\r\n\r\n/cc @nigeltao ",
+	"user": {
+		"login": "dskinner",
+		"id": 92266,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-29T04:42:54Z",
+	"updated_at": "2016-01-29T17:14:40Z"
+}

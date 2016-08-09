@@ -1,0 +1,27 @@
+{
+	"id": 51283025,
+	"number": 5039,
+	"state": "closed",
+	"title": "cmd/pprof: system addr2line isn't compatible",
+	"body": "\u003cpre\u003e\u0026quot;go tool pprof\u0026quot; seems to have regressed somehow.\n\nbradfitz@bradfitzlap:~/go/test/bench/go1$ go test -c\n....\nbradfitz@bradfitzlap:~/go/test/bench/go1$ go tool pprof go1.test cpu.prof \nusage: addr2line binary\nreads addresses from standard input and writes two lines for each:\n\tfunction name\n\tfile:line\nWelcome to pprof!  For help, type 'help'.\n(pprof) top\nTotal: 187 samples\n       9   4.8%   4.8%        9   4.8% 000000000052ce95\n       6   3.2%   8.0%        6   3.2% 00000000004219eb\n       5   2.7%  10.7%        5   2.7% 0000000000410b31\n       3   1.6%  12.3%        3   1.6% 00000000004118a8\n       2   1.1%  13.4%        2   1.1% 0000000000410211\n       2   1.1%  14.4%        2   1.1% 00000000004119b9\n       2   1.1%  15.5%        2   1.1% 000000000041e697\n       2   1.1%  16.6%        2   1.1% 00000000004219e0\n       2   1.1%  17.6%        2   1.1% 00000000004219e5\n       2   1.1%  18.7%        2   1.1% 0000000000421c49\n(pprof) \n\n\n$ which addr2line\n/usr/bin/addr2line\n\n$ addr2line --version\nGNU addr2line (GNU Binutils for Ubuntu) 2.22\n\n$ go tool addr2line \nusage: addr2line binary\nreads addresses from standard input and writes two lines for each:\n\tfunction name\n\tfile:line\n\nIf I modify misc/pprof:\n\ndiff -r f3ca7d5b1b0b misc/pprof\n--- a/misc/pprof        Tue Mar 12 17:12:56 2013 -0700\n+++ b/misc/pprof        Tue Mar 12 18:11:24 2013 -0700\n@@ -4417,11 +4417,11 @@\n     $cmd = \u0026quot;$addr2line --demangle -f -C -e $image\u0026quot;;\n   }\n \n-  if (system(\u0026quot;$addr2line --help \u0026gt;/dev/null 2\u0026gt;\u0026amp;1\u0026quot;) != 0) {\n+  #if (system(\u0026quot;$addr2line --help \u0026gt;/dev/null 2\u0026gt;\u0026amp;1\u0026quot;) != 0) {\n     # addr2line must not exist.  Fall back to go tool addr2line.\n     $addr2line = \u0026quot;go tool addr2line\u0026quot;;\n     $cmd = \u0026quot;$addr2line $image\u0026quot;;\n-  }\n+ # }\n \n   # If \u0026quot;addr2line\u0026quot; isn't installed on the system at all, just use\n   # nm to get what info we can (function names, but not line numbers).\n\n... then it works.\n\nIt seems we can't use the system addr2line anymore?\n\nI don't know what the right fix is here but happy to send a CL if I'm told.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:26:54Z",
+	"created_at": "2013-03-13T01:12:06Z",
+	"updated_at": "2016-06-24T22:35:32Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

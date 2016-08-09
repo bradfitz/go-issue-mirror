@@ -1,0 +1,27 @@
+{
+	"id": 62767165,
+	"number": 10192,
+	"state": "closed",
+	"title": "cmd/yacc: default action is { $$ = $[last] } instead of { $$ = $1 }",
+	"body": "According to Johnson \u0026 Sethi's \"Yacc: A Parser Generator\" paper, \"by default, the parser sets $$, the attribute of the left side, to $1, the attribute of the first symbol on the right side\".  Ostensibly, Go yacc follows this rule because it produces a \"default action causes potential type clash\" error when the LHS's type does not match the first RHS symbol's type (e.g., as in changing \"bad: ONE TWO\" to \"bad: TWO ONE\" below).\r\n\r\nHowever, Go yacc actually by default sets $$ to the attribute of the *last* symbol on the right side, even if it's declared as a different type:\r\n\r\n    $ go tool yacc bug.y\r\n    $ go build y.go\r\n    $ ./y\r\n    ok BAD\r\n\r\nHere's bug.y:\r\n\r\n    %{\r\n    package main\r\n    \r\n    import \"fmt\"\r\n    %}\r\n    \r\n    %union {\r\n    \tone string\r\n    \ttwo string\r\n    }\r\n    \r\n    %type \u003cone\u003e good bad\r\n    \r\n    %token \u003cone\u003e ONE\r\n    %token \u003ctwo\u003e TWO\r\n    \r\n    %%\r\n    \r\n    top:\r\n    \tgood bad\r\n    \t{ fmt.Println($1, $2) }\r\n    \r\n    good:\r\n    \tONE TWO\r\n    \t{ $$ = $1 }\r\n    \r\n    bad:\r\n    \tONE TWO\r\n    \r\n    %%\r\n    \r\n    func main() {\r\n    \tyyParse(\u0026yyLex{})\r\n    }\r\n    \r\n    type yyLex struct {\r\n    \tn int\r\n    }\r\n    \r\n    func (x *yyLex) Lex(yylval *yySymType) int {\r\n    \tx.n++\r\n    \tswitch x.n {\r\n    \tcase 1, 3:\r\n    \t\tyylval.one = \"ok\"\r\n    \t\tyylval.two = \"BAD\"\r\n    \t\treturn ONE\r\n    \tcase 2, 4:\r\n    \t\tyylval.one = \"BAD\"\r\n    \t\tyylval.two = \"ok\"\r\n    \t\treturn TWO\r\n    \tdefault:\r\n    \t\treturn 0\r\n    \t}\r\n    }\r\n    \r\n    func (x *yyLex) Error(s string) {\r\n    \tpanic(s)\r\n    }",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-04-04T00:12:12Z",
+	"created_at": "2015-03-18T18:30:22Z",
+	"updated_at": "2016-06-25T02:03:31Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

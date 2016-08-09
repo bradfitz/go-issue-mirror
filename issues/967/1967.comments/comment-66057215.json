@@ -1,0 +1,12 @@
+{
+	"id": 66057215,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eIndeed.\n\nA dozen Readers deep and we get to src/pkg/http/transfer.go's body.Close, which contains:\n\n        if _, err := io.Copy(ioutil.Discard, b); err != nil {\n\nDown this deep, it could't close the TCP connection if it wanted to, as it only contains\na io.Reader, which may be any of a half dozen types of readers.  (hard to find the TCP\nconnection buried deep inside).\n\nTwo possible solutions:\n\na) push down the actual TCP connection so response.Body.Close can close it (if that's\nviewed as the right thing to do.  I actually think it should only be closed if the\nresponse body can't be fully consumed in some wall time/bandwidth threshold, optimizing\nfor keeping the TCP connection alive)\n\nb) add a new method to http.Transport, similar to Transport.CloseIdleConnections, but\ncalled Transport.CloseOpenConnections.  So if you need such an ability, you create your\nown Client with its own Transport, and you force kill the whole Transport if you want to.\n\n\nRuss, preference?\u003c/pre\u003e\n\n_Labels changed: added **pkg-http**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-06-20T23:36:19Z",
+	"updated_at": "2014-12-08T10:10:46Z"
+}

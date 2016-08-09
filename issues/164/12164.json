@@ -1,0 +1,27 @@
+{
+	"id": 101335951,
+	"number": 12164,
+	"state": "open",
+	"title": "go/printer: \"Line of stars\" detection false positive for commented out block of code with each line dereferencing a pointer.",
+	"body": "#### What version of Go are you using (go version)?\r\n\r\n```\r\ngo version go1.4.2 darwin/amd64\r\n```\r\n\r\n#### What operating system and processor architecture are you using?\r\n\r\nOS X 10.10.5, amd64.\r\n\r\n#### What did you do?\r\n\r\nConsider the following program:\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tvar i [3]int\r\n\tp0 := \u0026i[0]\r\n\tp1 := \u0026i[1]\r\n\tp2 := \u0026i[2]\r\n\r\n\t*p0 = 5\r\n\t*p1 = 6\r\n\t*p2 = 7\r\n\r\n\tfmt.Println(\"Hello, playground:\", *p0, *p1, *p2)\r\n}\r\n```\r\n\r\nIf you comment out the first block of code and run `gofmt` on it, you get:\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\t/*\r\n\t\tvar i [3]int\r\n\t\tp0 := \u0026i[0]\r\n\t\tp1 := \u0026i[1]\r\n\t\tp2 := \u0026i[2]\r\n\t*/\r\n\r\n\t*p0 = 5\r\n\t*p1 = 6\r\n\t*p2 = 7\r\n\r\n\tfmt.Println(\"Hello, playground:\", *p0, *p1, *p2)\r\n}\r\n```\r\n\r\nHowever, if you comment out the second block of code like this:\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tvar i [3]int\r\n\tp0 := \u0026i[0]\r\n\tp1 := \u0026i[1]\r\n\tp2 := \u0026i[2]\r\n\r\n\t/*\r\n\t*p0 = 5\r\n\t*p1 = 6\r\n\t*p2 = 7\r\n\t*/\r\n\r\n\tfmt.Println(\"Hello, playground:\", *p0, *p1, *p2)\r\n}\r\n```\r\n\r\n#### What did you expect to see?\r\n\r\nAfter formatting the [above code](http://play.golang.org/p/XYoKp-oEhk) with `gofmt`, I would expect it to be formatted similarly to when any other piece of code is commented out, so it should be:\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tvar i [3]int\r\n\tp0 := \u0026i[0]\r\n\tp1 := \u0026i[1]\r\n\tp2 := \u0026i[2]\r\n\r\n\t/*\r\n\t\t*p0 = 5\r\n\t\t*p1 = 6\r\n\t\t*p2 = 7\r\n\t*/\r\n\r\n\tfmt.Println(\"Hello, playground:\", *p0, *p1, *p2)\r\n}\r\n```\r\n\r\n#### What did you see instead?\r\n\r\n```Go\r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tvar i [3]int\r\n\tp0 := \u0026i[0]\r\n\tp1 := \u0026i[1]\r\n\tp2 := \u0026i[2]\r\n\r\n\t/*\r\n\t*p0 = 5\r\n\t*p1 = 6\r\n\t*p2 = 7\r\n\t */\r\n\r\n\tfmt.Println(\"Hello, playground:\", *p0, *p1, *p2)\r\n}\r\n```\r\n\r\nWhich is not consistent with anything.\r\n\r\nI'm pretty sure I know why it happens. It has to do with go/printer detecting a so called \"line of stars\" style of comments, which normally look like this:\r\n\r\n```Go\r\n/*\r\n * Line\r\n * of\r\n * stars.\r\n */\r\n```\r\n\r\nSee relevant code at https://github.com/golang/go/blob/467a2cb73ca867ccdb1dd22be220fa51b6d52491/src/go/printer/printer.go#L529-L539.\r\n\r\nHowever, in this case, it's not a comment block because there is no space after the * as in normally formatted comments, it's just commented out code that happens to falsely trigger the line of stars comment block handling.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-08-17T04:12:49Z",
+	"updated_at": "2015-08-21T06:40:12Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

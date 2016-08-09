@@ -1,0 +1,30 @@
+{
+	"id": 130013532,
+	"number": 14163,
+	"state": "closed",
+	"title": "proposal: runtime: add RunWithMainThreadOnly",
+	"body": "There are a number of system calls which change the state of the calling thread. Examples include setpriority(2), setns(2), set*uid(2) and unshare(2). In the C world, it's easy to make such changes prior to starting any threads, and thus all threads inherit the state of the initial (main) thread. In this way, one can change the state of the entire process, which is usually what is desired.\r\n\r\nIn Go, this is not possible, since by the time the main() function is called, the runtime has created multiple OS threads. Thus, these calls change the state of the OS thread that happened to be running the main goroutine at the time. At any time the main goroutine can hop between OS threads, with the result that the process state appears to switch back and forth randomly.\r\n\r\nMy current work-around for this is the double-exec trick: I call runtime.LockOSThread(), make my state-changing system calls and then re-exec with syscall.Exec(), passing an extra command-line flag to disable the state-change+exec, and then rip out that flag to clean up (in case I do a re-exec due to catching SIGHUP). This is a bit horrible. I get away with it because my application only needs to make these changes at startup. If I needed to effect a process-wide state change later on - say based on a decision that happens sometime later - I'd basically be stuck, because I can't afford to throw away all the internal state that's been built up.\r\n\r\nI propose a new function: runtime.RunWithMainThreadOnly(). This would allow you to run code with only the main (initial) OS thread: all the other OS threads would be destroyed. Once this code section completes, the runtime would be able to create OS threads again, which would now inherit any state changes. All other goroutines running on OS threads would be suspended and then resumed on new OS threads.\r\n\r\nIf there are OS threads blocked in system calls, they would be marked for deletion after returning from the system calls.\r\n\r\nThis function could either be called with a function to call, and when that function returns, things go back to normal. Alternatively, one would pass a bool to enable/disable the main-thread-only mode. Personally, I prefer the former interface, as it seems cleaner and less prone to people forgetting to switch back to normal mode. Also, for simple state change code, one could use a closure, which would be nice.\r\n\r\nOnce this new function is implemented, the various state-changing functions in the syscall package could have complimentary functions in the os package, which utilise this new function to effect process-wide changes.\r\n\r\nIf this function is considered too dirty to be exposed, it could be restricted to the os package. However, it's worth noting that not all system calls are exposed by the syscall package (setns(2) comes to mind) and it's reasonable to assume the os package will have gaps too. Thus, making this public would allow people to work around as-yet unimplemented wrappers in the os package. There is a trade-off between maintaining purity and boxing people in. Perhaps put it in runtime/dirty.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-03-09T16:33:44Z",
+	"created_at": "2016-01-30T17:12:55Z",
+	"updated_at": "2016-03-09T16:33:44Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

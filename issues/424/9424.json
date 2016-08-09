@@ -1,0 +1,26 @@
+{
+	"id": 52696459,
+	"number": 9424,
+	"state": "open",
+	"title": "net/http: Errors from *Client methods are poorly documented.",
+	"body": "I've been doing some experimenting with Go HTTP clients and servers under load.\r\nOne of the curious things I've discovered is that calls to (*http.Client).Get occasionally return unusual errors.\r\n\r\nThe documentation at http://golang.org/pkg/net/http/#Client says:\r\n\"An error is returned if the Client's CheckRedirect function fails or if there was an HTTP protocol error.\"\r\n\r\nI've been leaving CheckRedirect nil and testing against a local server that never serves redirects.  From the comment, that would imply that I should only receive HTTP protocol errors - which would correspond to the type *http.ProtocolError.\r\n\r\nFor typical socket errors, the clients in fact return a *url.Error - but the only place in the net/http documentation where url.Error is even mentioned is for the client.CheckRedirect field, which is completely unrelated to the errors I'm testing.\r\n\r\n\r\nBut that's not all!\r\n\r\nThe *url.Error usually wraps a net.OpError, which seems reasonable enough.  In fact, net.Error is what I would have expected in the first place, since I didn't know about url.Error at all before I started these experiments.\r\n\r\nBut instead, the *url.Error occasionally wraps io.EOF.  I'm guessing that happens when the socket happens to close at exactly the wrong moment, and because of the poor documentation it's not at all clear to me whether that's the intended behavior of the Client methods or an outright bug in the library.\r\n\r\n\r\nBut that's not all either!\r\n\r\nThe error wrapped by the OpError, one would expect, is a net.Error describing the underlying network error for the op.  But that's not the case either - it's often a syscall.Errno instead, and syscall.Errno does not implement net.Error.  So for temporary conditions, such as EPIPE or ECONNRESET, the net package's preferred mechanism for indicating that the condition *is* temporary does not work as expected.\r\n\r\nSo I end up needing a big pile of user code to sort through the whole stack of errors, find the root error, and check for particular syscall.Errno values, and that whole big pile of code is now relying on undocumented error spaces that could theoretically change completely with the next Go release.\r\n\r\n\r\nTo summarize: error handling in the http package is a mess.  Someone familiar with the intended behavior of the package should clarify the documentation at least to the point where it's sensible to say whether the more subtle behaviors (e.g. io.EOF in a url.Error) are bugs or not.",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		}
+	],
+	"comments": 27,
+	"created_at": "2014-12-22T22:42:31Z",
+	"updated_at": "2015-06-25T22:29:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

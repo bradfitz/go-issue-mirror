@@ -1,0 +1,12 @@
+{
+	"id": 117909671,
+	"body": "\u003e ... If you effectively revert https://go-review.googlesource.com/#/c/8165 , that is use\r\n\u003e _AddVectoredContinueHandler on XP amd64 then this test works again.\r\n\r\nDo you mean this change\r\n```\r\ndiff --git a/src/runtime/signal_windows.go b/src/runtime/signal_windows.go\r\nindex b2fce53..b1ebd77 100644\r\n--- a/src/runtime/signal_windows.go\r\n+++ b/src/runtime/signal_windows.go\r\n@@ -28,7 +28,7 @@ func lastcontinuetramp()\r\n func initExceptionHandler() {\r\n \tmajor, _ := getVersion()\r\n \tstdcall2(_AddVectoredExceptionHandler, 1, funcPC(exceptiontramp))\r\n-\tif _AddVectoredContinueHandler == nil || unsafe.Sizeof(\u0026_AddVectoredContinueHandler) == 4 || major \u003c 6 {\r\n+\tif _AddVectoredContinueHandler == nil || unsafe.Sizeof(\u0026_AddVectoredContinueHandler) == 4 {\r\n \t\t// use SetUnhandledExceptionFilter for windows-386 or\r\n \t\t// if VectoredContinueHandler is unavailable or\r\n \t\t// if running windows-amd64 v5. V5 appears to fail to\r\n```\r\nmakes src/all.bat pass on your computer?\r\n\r\n\u003e If I modify syscall_getprocaddress I can get it to pass again. Still not a root cause.\r\n\u003e However if \"c\" is of type libcall and not *libcall in syscall_getprocaddress then it passes.\r\n\r\nI cannot explain that, but I really don't know what the problem is. When data corruption, anything is possible.\r\n\r\n\u003e ... if I put \"print(\"\")\" anywhere in syscall_getprocaddress it will work correctly.\r\n\r\nSame. Small changes here or there can change result a lot. We need to understand what the problem is.\r\n\r\n\u003e ... I think the next step would be for me to try to understand how the compiler is assembling the function and see the difference.\r\n\r\nI have no plan. My first idea is to poke at the executable of the program above with gdb. Maybe I can see something odd. The problem with using gdb here is that the way exception handlers work changes when gdb in play - so it is hit and miss. I am still looking for a computer with windows xp 64bit on it. I have some plan about that. Hopefully I will have some soon.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-02T05:23:53Z",
+	"updated_at": "2015-07-02T05:23:53Z"
+}

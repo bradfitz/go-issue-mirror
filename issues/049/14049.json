@@ -1,0 +1,22 @@
+{
+	"id": 127841177,
+	"number": 14049,
+	"state": "closed",
+	"title": "proposal: release branch",
+	"body": "Once upon a time, when we used Mercurial, users who built from source could check out the `release` tag to get the latest stable version of Go. When a new version of Go was released, users could just `hg pull \u0026\u0026 hg update release` to update.\r\n\r\nGit tags don't work like that. They can't practically be moved. So our docs need to be updated with each new release to instruct users to check out a specific tag (eg, `git checkout go1.5.3`).\r\n\r\nOn a [recent CL](https://go-review.googlesource.com/#/c/18750/) @minux suggested that we could maintain a `release` *branch* and merge the latest stable release into that branch whenever there is a new release. Users could check out the `release` branch and use a simple `git pull` to stay up to date.\r\n\r\nTo create a release branch, we could start with `release-branch.go1.5` (all this happens inside a go repo with git-codereview set up):\r\n```\r\n$ git change release-branch.go1.5\r\n$ git checkout -b release --no-track   # don't track the release-branch.go1.5 upstream\r\n```\r\nThen, when Go 1.6 is released, we can merge that branch into the release branch. This involves a somewhat bit of a dance to make sure we have a clean merge commit with identical contents to the new release branch.\r\n```bash\r\n# Start with the release branch.\r\n$ git checkout release\r\n\r\n# Create a merge commit that merges release-branch.go1.6 into release,\r\n# but actually keeps the content of release as-is (-s ours).\r\n# The only desired result here is a conflict-free merge commit that has two parents,\r\n# the previous release HEAD and the release-branch.go1.6.\r\n$ git merge -s ours release-branch.go1.6\r\n\r\n# Create a branch at that merge commit.\r\n$ git branch temp\r\n\r\n# Hard reset the release branch HEAD to go1.6.\r\n# At this point the content of the release branch is identical to that of release-branch.go1.6.\r\n$ git reset --hard release-branch.go1.6\r\n\r\n# Soft reset the release branch HEAD to the release/release-branch.go1.6 merge commit,\r\n# leaving the contents of release-branch.go1.6 as staged changes.\r\n$ git reset --soft temp\r\n\r\n# Amend the commit to replace the contents of the merge commit\r\n# with the content at release-branch.go1.6.\r\n$ git commit --amend\r\n\r\n# Delete the temporary branch.\r\n$ git branch -D temp\r\n\r\n# Check that the release branch is now indistinguishable from release-branch.go1.6.\r\n$ git diff release release-branch.go1.6\r\n```\r\n\r\nOn the user end, this is how they would check out a Go release:\r\n```\r\n$ git clone -b release https://go.googlesource.com/go\r\n```\r\nand here's how they would upgrade when a new release is issued:\r\n```\r\n$ git pull\r\n```\r\nI'd like to hear feedback on this approach. I'm no Git expert, so maybe I'm doing things the hard way. But it does seem like a usability win.\r\n",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 21,
+	"closed_at": "2016-01-22T04:41:27Z",
+	"created_at": "2016-01-21T04:11:38Z",
+	"updated_at": "2016-01-22T04:41:27Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

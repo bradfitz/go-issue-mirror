@@ -1,0 +1,12 @@
+{
+	"id": 235812959,
+	"body": "I use the standard nginx docker container and run it as follows:\r\n\r\ndocker run -v [FOLDER_WITH_WEB_ROOT]:/usr/share/nginx/html -v default.conf:/etc/nginx/conf.d/default.conf -p 80:80 nginx\r\n\r\nWith default.conf being the following:\r\n\r\n```\r\nerror_log /dev/stderr debug;\r\nserver {\r\n   listen       80 http2;\r\n   server_name  localhost;\r\n   http2_max_concurrent_streams 512;\r\n\r\n   add_header Accept-Ranges bytes;\r\n\r\n   location / {\r\n      root   /usr/share/nginx/html;\r\n      index  index.html index.htm;\r\n   }\r\n```\r\n\r\nThen I have 20 goroutines each firing a request via the same HTTPClient (see method above). Immediately after sending the Do, I cancel some of them in another goroutine (before Do has returned). Note that in order to have this work, the RTT to the server should be sufficiently long (so that Do hasn't returned yet). If you want, I can provide an AWS hosted Nginx instance for you to experiment with.\r\n\r\n\u003e But I also just noticed you set \"AllowHTTP: true\" and your DialTLS isn't dialing TLS, so it seems you're doing something non-standard and less supported. You're at least doing something which doesn't affect the standard library, which doesn't use either of those things.\r\n\r\nI'm not sure I understand. I use AllowHTTP and DialTLS as indicated in the docs at https://godoc.org/golang.org/x/net/http2. The reason I configured them as they are is to disable TLS and use TCP. Are you saying this shouldn't work?\r\n\r\nI did some more debugging myself and ended up in 'func (t *Transport) RoundTripOpt(req *http.Request, opt RoundTripOpt) (*http.Response, error)' in transport.go, specifically line 314-316. Given that cc.RoundTrip(req) returns errRequestCanceled because of the request being cancelled, this is interpreted as a Roundtrip failure and seems to stop the TCP connection. Note that if the request is cancelled _after_ Do has returned, this is not the case and everything works fine. ",
+	"user": {
+		"login": "rayvbr",
+		"id": 1939375,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-28T06:46:20Z",
+	"updated_at": "2016-07-28T08:13:12Z"
+}

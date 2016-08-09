@@ -1,0 +1,30 @@
+{
+	"id": 51281513,
+	"number": 4014,
+	"state": "closed",
+	"title": "cmd/gc: elide self-assignment",
+	"body": "\u003cpre\u003etsan flags this as a read/write race on a, because the return statement is an assignment\nof a (to itself), concurrent with the read of a in the goroutine:\n\nfunc foo() (a, b int) {\n\ta = 42\n\tgo func() {\n\t\t_ = a\t// just read a\n\t}()\n\treturn a, 10\n}\n\nRob, Robert, and Ian think that the self-assignment could be elided.\n\nThe current code generated is:\n\n$ go tool 6g -S self.go\n\n--- prog list \u0026quot;foo\u0026quot; ---\n0000 (self.go:3) TEXT    foo+0(SB),$24-8\n0001 (self.go:3) MOVQ    $type.int+0(SB),(SP)\n0002 (self.go:3) CALL    ,runtime.new+0(SB)\n0003 (self.go:3) MOVQ    8(SP),AX\n0004 (self.go:3) MOVL    $0,DX\n0005 (self.go:4) MOVL    $42,(AX)\n0006 (self.go:7) MOVQ    AX,BX\n0007 (self.go:7) MOVQ    AX,\u0026amp;a+-8(SP)\n0008 (self.go:7) MOVQ    AX,(SP)\n0009 (self.go:7) PUSHQ   $func·001+0(SB),\n0010 (self.go:7) PUSHQ   $8,\n0011 (self.go:7) CALL    ,runtime.newproc+0(SB)\n0012 (self.go:7) MOVQ    \u0026amp;a+-8(SP),AX\n0013 (self.go:7) POPQ    ,CX\n0014 (self.go:7) POPQ    ,CX\n0015 (self.go:8) MOVL    (AX),R8\n0016 (self.go:8) MOVL    R8,(AX)\n0017 (self.go:8) MOVL    $10,b+4(FP)\n0018 (self.go:9) MOVL    (AX),BP\n0019 (self.go:9) MOVL    BP,a+0(FP)\n0020 (self.go:9) RET     ,\n\n--- prog list \u0026quot;main\u0026quot; ---\n0021 (self.go:11) TEXT    main+0(SB),$16-0\n0022 (self.go:12) CALL    ,foo+0(SB)\n0023 (self.go:12) MOVL    (SP),AX\n0024 (self.go:12) MOVL    4(SP),BX\n0025 (self.go:12) MOVL    BX,b+-4(SP)\n0026 (self.go:13) MOVLQSX AX,BX\n0027 (self.go:13) MOVQ    BX,(SP)\n0028 (self.go:13) CALL    ,runtime.printint+0(SB)\n0029 (self.go:13) CALL    ,runtime.printsp+0(SB)\n0030 (self.go:13) MOVLQSX b+-4(SP),BX\n0031 (self.go:13) MOVQ    BX,(SP)\n0032 (self.go:13) CALL    ,runtime.printint+0(SB)\n0033 (self.go:13) CALL    ,runtime.printnl+0(SB)\n0034 (self.go:14) RET     ,\n\n--- prog list \u0026quot;func·001\u0026quot; ---\n0035 (self.go:5) TEXT    func·001+0(SB),$0-8\n0036 (self.go:5) RET     ,\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:21:18Z",
+	"created_at": "2012-08-28T19:51:13Z",
+	"updated_at": "2016-06-24T22:23:50Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

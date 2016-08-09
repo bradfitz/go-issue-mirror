@@ -1,0 +1,12 @@
+{
+	"id": 66092597,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003e*** Submitted as \u003ca href=\"https://code.google.com/p/go/source/detail?r=07e31caba5b6\"\u003ehttps://code.google.com/p/go/source/detail?r=07e31caba5b6\u003c/a\u003e ***\n\nnet/http: don't reuse Transport connection unless Request.Write finished\n\nIn a typical HTTP request, the client writes the request, and\nthen the server replies. Go's HTTP client code (Transport) has\ntwo goroutines per connection: one writing, and one reading. A\nthird goroutine (the one initiating the HTTP request)\ncoordinates with those two.\n\nBecause most HTTP requests are done when the server replies,\nthe Go code has always handled connection reuse purely in the\nreadLoop goroutine.\n\nBut if a client is writing a large request and the server\nreplies before it's consumed the entire request (e.g. it\nreplied with a 403 Forbidden and had no use for the body), it\nwas possible for Go to re-select that connection for a\nsubsequent request before we were done writing the first. That\nwasn't actually a data race; the second HTTP request would\njust get enqueued to write its request on the writeLoop. But\nbecause the previous writeLoop didn't finish writing (and\nmight not ever), that connection is in a weird state. We\nreally just don't want to get into a state where we're\nre-using a connection when the server spoke out of turn.\n\nThis CL changes the readLoop goroutine to verify that the\nwriteLoop finished before returning the connection.\n\nIn the process, it also fixes a potential goroutine leak where\na connection could close but the recycling logic could be\nblocked forever waiting for the client to read to EOF or\nerror. Now it also selects on the persistConn's close channel,\nand the closer of that is no longer the readLoop (which was\ndead locking in some cases before). It's now closed at the\nsame place the underlying net.Conn is closed. This likely fixes\nor helps \u003ca href=\"https://golang.org/issue/7620\"\u003eissue #7620\u003c/a\u003e.\n\nAlso addressed some small cosmetic things in the process.\n\nUpdate \u003ca href=\"https://golang.org/issue/7620\"\u003eissue #7620\u003c/a\u003e\nFixes \u003ca href=\"https://golang.org/issue/7569\"\u003eissue #7569\u003c/a\u003e\u003c/pre\u003e\n\n\n\n_Status changed to **Fixed**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-10T05:06:37Z",
+	"updated_at": "2014-12-08T10:42:04Z"
+}

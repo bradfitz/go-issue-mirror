@@ -1,0 +1,12 @@
+{
+	"id": 154285625,
+	"body": "This is difficult to determine the correct winapi to call here. There are typically three winapi calls suggested: \r\n * MoveFileEx\r\n  - https://msdn.microsoft.com/en-us/library/windows/desktop/aa365240(v=vs.85).aspx\r\n * ReplaceFile\r\n  - https://msdn.microsoft.com/en-us/library/windows/desktop/aa365512(v=vs.85).aspx\r\n * MoveFileTransacted\r\n  - https://msdn.microsoft.com/en-us/library/windows/desktop/aa365241(v=vs.85).aspx\r\n\r\nMoveFileEx is what go currently has in go1.5 and tip. When this bug was written go used \"MoveFile\".\r\n\r\nMoveFileTransacted has two strikes against it: 1) It is only supported on Vista+ and 2) MS says it may remove all the transacted APIs, including this one.\r\n\r\nIs ReplaceFile atomic? ReplaceFile has error code ERROR_UNABLE_TO_MOVE_REPLACEMENT which states:\r\n\u003e The replacement file could not be renamed. If lpBackupFileName was specified, the replaced and replacement files retain their original file names. Otherwise, the replaced file no longer exists and the replacement file exists under its original name.\r\n\r\n It also only works on files. However a research paper from MS claims that ReplaceFile *is* atomic: http://research.microsoft.com/pubs/64525/tr-2006-45.pdf . I suspect that this is a mistake.\r\n\r\nMoveFileEx has many flags. Of interest here are two in particular:\r\n`MOVEFILE_REPLACE_EXISTING` and `MOVEFILE_COPY_ALLOWED`. Currently in go we only use `MOVEFILE_REPLACE_EXISTING` and thus Rename will move if attempted between different volumes. However only the `MOVEFILE_COPY_ALLOWED` flag suggests multiple operations are used.\r\n\r\nI think what we currently do is the correct thing to do on Windows.\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-06T04:55:18Z",
+	"updated_at": "2015-11-06T04:55:18Z"
+}

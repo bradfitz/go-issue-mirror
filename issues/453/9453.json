@@ -1,0 +1,27 @@
+{
+	"id": 52946963,
+	"number": 9453,
+	"state": "closed",
+	"title": "database/sql: dynamic reduce the connection pool size",
+	"body": "DB.SetMaxOpenConns could reduce the connection pool size, but the unnecssary connections won't  close until DB's free connection size \u003e= DB's idle connections size.\r\n\r\nThat is to say, when the pool is busy (lots of requests), the unnecessary connections won't be  closed.\r\n\r\ndetailed discussion on [golang-nuts](https://groups.google.com/forum/#!topic/golang-nuts/4dTeCj5J9mk)\r\n\r\n------\r\n\r\nmy patch to src/database/sql/sql.go\r\n```\r\n*************** func (db *DB) putConn(dc *driverConn, er\r\n*** 797,802 ****\r\n--- 797,806 ----\r\n  // If a connRequest was fulfilled or the *driverConn was placed in the\r\n  // freeConn list, then true is returned, otherwise false is returned.\r\n  func (db *DB) putConnDBLocked(dc *driverConn, err error) bool {\r\n+ \tif db.numOpen \u003e db.maxOpen {\r\n+ \t\treturn false\r\n+ \t}\r\n+ \r\n  \tif c := len(db.connRequests); c \u003e 0 {\r\n  \t\treq := db.connRequests[0]\r\n  \t\t// This copy is O(n) but in practice faster than a linked list.\r\n```",
+	"user": {
+		"login": "lodevil",
+		"id": 980321,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-04-07T09:30:20Z",
+	"created_at": "2014-12-27T03:29:15Z",
+	"updated_at": "2016-06-25T01:57:22Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

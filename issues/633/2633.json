@@ -1,0 +1,22 @@
+{
+	"id": 51279492,
+	"number": 2633,
+	"state": "closed",
+	"title": "runtime.usleep() bug on linux/arm.",
+	"body": "\u003cpre\u003eI'm working on a port of go to darwin/arm so I'm reading the linux/arm port code.\n\nI noticed a bug in pkg/runtime/sys_linux_arm.s at line 312 in tip(rev 7ec969250bfc):\n    TEXT runtime·usleep(SB),7,$12\n       MOVW usec+0(FP), R0\n    *  MOVW R0, R1\n       MOVW $1000000, R2\n    *  DIV R1, R0\n    *  MOD R2, R0\n       MOVW R1, 4(SP)\n       MOVW R2, 8(SP)\n       MOVW $0, R0\n       MOVW $0, R1\n       MOVW $0, R2\n       MOVW $0, R3\n       MOVW $4(SP), R4\n       MOVW $SYS_select, R7\n       SWI $0\n       RET\n\nThese two lines:\n      DIV R1, R0\n      MOD R2, R0\nare wrong, because they mean that R0 = R0 / R1 and R0 = R0 % R2. \nThis is meaningless (note that R0 == R1) because they don't change R1 and R2.\n\nWhat's more, after fixing that, calling runtime.usleep(1000000) still doesn't pause the \nprogram. So I straced the program, and it turns out that, it is using the wrong select\nsyscall:\n  oldselect([...][...])                   = -1 ENOSYS \n\nAfter consulting /usr/include/asm/unistd.h, I found that __NR__newselect is\n(__NR_SYSCALL_BASE+142).\n(my kernel version is 2.6.32.28), but the newselect appears in as early as linux-2.6.12.\n\nMy purposed patch:\n--- a/src/pkg/runtime/sys_linux_arm.s   Mon Dec 26 23:49:24 2011 -0800\n+++ b/src/pkg/runtime/sys_linux_arm.s   Thu Dec 29 15:49:09 2011 +0000\n@@ -34,7 +34,7 @@\n #define SYS_gettid (SYS_BASE + 224)\n #define SYS_tkill (SYS_BASE + 238)\n #define SYS_sched_yield (SYS_BASE + 158)\n-#define SYS_select (SYS_BASE + 82)\n+#define SYS_select (SYS_BASE + 142) // newselect\n \n #define ARM_BASE (SYS_BASE + 0x0f0000)\n #define SYS_ARM_cacheflush (ARM_BASE + 2)\n@@ -313,10 +313,10 @@\n        MOVW    usec+0(FP), R0\n        MOVW    R0, R1\n        MOVW    $1000000, R2\n-       DIV     R1, R0\n-       MOD     R2, R0\n-       MOVW    R1, 4(SP)\n-       MOVW    R2, 8(SP)\n+       DIV     R2, R0\n+       MOD     R2, R1\n+       MOVW    R0, 4(SP)\n+       MOVW    R1, 8(SP)\n        MOVW    $0, R0\n        MOVW    $0, R1\n        MOVW    $0, R2\n\nMy test program and patch is also attached.\n\nPS: In my country, for some reasons, I couldn't access the code review server, so\nI include the patch in this report. Thanks.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2633/0/test.c\"\u003etest.c\u003c/a\u003e (119 bytes)\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2633/0/linux-usleep.patch\"\u003elinux-usleep.patch\u003c/a\u003e (735 bytes)",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:14:01Z",
+	"created_at": "2011-12-29T15:53:05Z",
+	"updated_at": "2016-06-24T21:22:37Z"
+}

@@ -1,0 +1,30 @@
+{
+	"id": 89847838,
+	"number": 11313,
+	"state": "closed",
+	"title": "runtime: time.Now clock resolution unexpectedly low on Windows XP.",
+	"body": "### What version of Go are you using (go version)?\r\n\r\n`go version go1.4.2 windows/386`\r\n\r\n### What operating system and processor architecture are you using?\r\n\r\n(I don't use this operating system normally, it was done on a one off instance for testing and that's when I made this discovery.)\r\n\r\n```\r\nOS Name:    Microsoft Windows XP Professional\r\nOS Version: 5.1.2600 Service Pack 3 Build 2600\r\n```\r\n\r\nThe Go website lists Windows XP or higher under the [system requirements](https://golang.org/doc/install#requirements), so as I understand this platform is supported despite being outdated.\r\n\r\n### What did you do?\r\n\r\n```Go\r\n// Play with finding minimal time difference via subsequent calls to time.Now().\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc timediff() time.Duration {\r\n\tt0 := time.Now()\r\n\tfor {\r\n\t\tt := time.Now()\r\n\t\tif t != t0 {\r\n\t\t\treturn t.Sub(t0)\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tvar ds []time.Duration\r\n\tfor i := 0; i \u003c 10; i++ {\r\n\t\tds = append(ds, timediff())\r\n\t}\r\n\tfmt.Printf(\"%v\\n\", ds)\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nA one millisecond clock resolution.\r\n\r\n```\r\n[1.000ms 1.000ms 1.000ms 1.000ms 1.000ms 1.000ms 1.000ms 1.000ms 1.000ms 1.000ms]\r\n```\r\n\r\n### What did you see instead?\r\n\r\nA resolution as low as 15.6 milliseconds.\r\n\r\n```\r\n[15.625ms 15.625ms 15.625ms 15.625ms 15.625ms 15.625ms 15.625ms 15.625ms 15.625ms 15.625ms]\r\n```\r\n\r\n---\r\n\r\nI very unsure if this is a bug or working as expected (I tried asking [here](https://groups.google.com/d/msg/golang-nuts/D11F4zMs-E0/0MmzKNFKwYsJ)). Please close if this is working as expected.\r\n\r\nI do suspect it might be a bug, because of the following reason. It is related to findings in #8687.\r\n\r\nSpecifically, I notice that the Go runtime sets `timeBeginPeriod(1)` at startup, and I can confirm via `ClockRes.exe` that it works:\r\n\r\n```\r\nMaximum timer interval: 15.600 ms\r\nMinimum timer interval: 1.000 ms\r\nCurrent timer interval: 1.000 ms\r\n```\r\n\r\n(When the Go program isn't running, current timer interval is 15.600 ms.)\r\n\r\nDespite the timer interval being set to 1.000 ms when Go programs run, it seems the `time.Now()` clock resolution on Windows XP (but not newer versions of Windows from what I know, I could not verify this) is still as low as 15.6 ms instead of 1.0 ms. Is that an unintended bug, or is it normal expected behavior on this platform?",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2015-06-21T07:30:29Z",
+	"created_at": "2015-06-21T01:52:35Z",
+	"updated_at": "2016-06-25T02:11:37Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

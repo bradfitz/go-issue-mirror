@@ -1,0 +1,30 @@
+{
+	"id": 51287918,
+	"number": 8253,
+	"state": "closed",
+	"title": "runtime: Strange behavior on Darwin with Goroutines and channels using GLFW",
+	"body": "\u003cpre\u003eWhat does 'go version' print?\n\nThis bug was tested and confirmed on 1.2, 1.2.2, and 1.3. I've only encountered it on OS\nX Mavericks; Windows does fine with the same code, but I haven't tried it on Linux.\n\nWhat steps reproduce the problem?\n\nThis cannot be run on the playground, and unfortunately involves cgo dependencies in\nOpenGL and GLFW 3. A gist with a minimal demonstration of the problem can can be found\nhere:\n\n\u003ca href=\"https://gist.github.com/Jragonmiris/76e571593c6db62e5889\"\u003ehttps://gist.github.com/Jragonmiris/76e571593c6db62e5889\u003c/a\u003e\n\nThe specific problem is line 20 `\u0026lt;-r`, if that line is missing, it works fine. I\nmanaged to generalize the problem after some more trial and error. It seems that it\nrelies on the following conditions being met:\n\n1. GLFW is initialized in a Goroutine launched from init (potentially only on a GOOS of\nDarwin).\n2. An outgoing channel sync of some sort is performed from this Goroutine AND is read\nfrom outside said Goroutine. That second part is important. If I'm given some channel\nand I say close(channel) or channel\u0026lt;-someValue it's fine, but the second code is\npresent from outside the Goroutine that relies on a sync from that close or send, the\nproblem appears. It doesn't appear to matter if this channel read occurs in init or\nmain, but it doesn't appear to matter if it ever even executes, merely being present\ntickles it.\n\nIt's entirely possible that 2 is a matter of compiler optimization rather than program\nsemantics, it may simply be that if the channel sync is optimized out that's what causes\nthe problem to disappear. Limited testing hints that other atomic/sync operations such\nas using a sync.Waitgroup may also cause the problem, but I had less clear results with\nthose. I certainly managed to make the bug appear with a Waitgroup, but the exact\ncause/effect was less immediately obvious than the more easily reproducible \u0026quot;a\nchannel attempts to sync from outside the Goroutine\u0026quot;. It seemed that even\nWaitgroup.Add was enough to trigger it.\n\nWhat happened?\n\nThis is a bit hard to describe, but the window is basically treated by the OS as\nunresponsive. It seems like, for whatever reason, GLFW will never entirely properly\ncreate the window. The window will be missing the top bar (meaning the border on the\nwindow with the yellow, green, and red buttons). Mousing over the window causes a\nspinning beach ball and the only way to end the program is a ctrl+c from terminal.\n\nIt should be noted that code STILL RUNS. Peppering print statements throughout the\nGoroutine proves that it's definitely not hanging on any given function (e.g.\nglfw.CreateWindow), all code is being executed as normal, just something is preventing\nthe window initialization from \u0026quot;taking\u0026quot; and causing the OS to recognize it as\nan unresponsive process. Likewise, adding actual rendering code proves that it can\nrender things properly, but it does NOT respond to any input.\n\nWhat should have happened instead?\n\nA normal window open. Note that performing no \u0026quot;acknowledged\u0026quot; channel sync, or\ndoing the same set of instructions from outside init works fine. Likewise, it works fine\nif you \u0026quot;invert\u0026quot; the problem and put the GLFW code in init, but sync the\nchannel with some exterior Goroutine launched from init. Meaning:\n\n    go func() {\n        \u0026lt;-r\n    }()\n    render(r)\n\nworks, but\n\n    go render(r)\n    \u0026lt;-r\n\nwill not.\n\nPlease provide any additional information below.\n\nI understand that Go cannot maintain compatibility with every possible C package, and\nonce I understood the issue I was able to write a workaround fairly easily. However,\nthis does point to potentially bad behavior as it pertains to Goroutines in the init\nphase. I care less about the specific GLFW issue and more about whatever underlying\nproperty of init is causing it to occur in this instance. \n\nMy guess is that it's a threading issue of some sort. Certainly if I've run into it,\nother programs including thread-sensitive C libraries may run into it (if it is indeed a\nthreading issue). Normally using runtime.LockOSThread is sufficient for thread issues\nlike this, but in this case something prevented that from being enough.\u003c/pre\u003e",
+	"user": {
+		"login": "Jragonmiris",
+		"id": 3078382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:45:49Z",
+	"created_at": "2014-06-20T11:14:16Z",
+	"updated_at": "2016-06-25T01:36:55Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

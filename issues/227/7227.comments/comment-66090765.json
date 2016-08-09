@@ -1,0 +1,12 @@
+{
+	"id": 66090765,
+	"body": "\u003ca id=\"c30\"\u003e\u003c/a\u003eComment 30:\n\n\u003cpre\u003eIf somebody can propose how to fix this, that would be great.\n\nBut there are three signals that the Go runtime must catch itself in order to correctly\nimplement the Go language spec: SIGSEGV, SIGBUS, SIGFPE.  Those signals are delivered\nsynchronously to the thread that triggered them, and Go relies on that so that it knows\nwhere the problem arose.  We can't use kqueue for those signals, because we would not be\nable to deliver them to the correct goroutine.  Go code normally runs on a very small\nstack, too small for the signal handler.  Therefore, Go uses sigaltstack to install an\nalternate signal stack so that there is enough stack space to handle the signal.  So\nwhen Go code calls C code that disables the alternate stack, and one of those signals\narises, the program is going to fail.\n\nAs an aside, why would a C library disable the signal alternate stack?  What kind of\nsense does that make?  If the library is expected to be called by other programs, it\nsure seems like a bug in the library.\n\nAnyhow, if anybody can propose a fix that meets the constraints, please do so.  But it's\nnot enough to simply suggest kqueue.  That is not the solution to this problem.\u003c/pre\u003e\n\n_Labels changed: added **repo-main**._",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-03T22:40:18Z",
+	"updated_at": "2014-12-08T10:40:09Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 52832165,
+	"number": 9439,
+	"state": "open",
+	"title": "cmd/vet: \"could not import\" warning message not visible without -v.",
+	"body": "Using Go 1.4 and latest tools subrepo:\r\n\r\n```\r\n~ $ go version\r\ngo version go1.4 darwin/amd64\r\n~ $ gostatus -v ...cmd/vet\r\n     golang.org/x/tools/...\r\n```\r\n\r\nBy default, `vet` is supposed to detect \"Suspicious calls to functions in the Printf family.\" I've noticed that it sometimes did not do that reliably (it would detect some cases but not others). I wrote the following .go file that reproduces the issue for me:\r\n\r\n```Go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"net/url\"\r\n\r\n\t\"golang.org/x/oauth2\"\r\n)\r\n\r\nfunc main() {\r\n\tthirdParty := oauth2.Config{\r\n\t\tClientID: \"some-string\", // A string.\r\n\t}\r\n\tstdLib := url.URL{\r\n\t\tPath: \"some-string\", // A string.\r\n\t}\r\n\r\n\tlog.Printf(\"Hello, %d.\\n\", thirdParty.ClientID) // go vet does _not_ catch this.\r\n\tlog.Printf(\"Hello, %d.\\n\", stdLib.Path)         // But it catches this.\r\n}\r\n```\r\n\r\n#### What did you expect to see?\r\n\r\nBoth printf verb usage issues should be reported, not just one.\r\n\r\n```\r\nmain.go:18: arg thirdParty.ClientID for printf verb %d of wrong type: string\r\nmain.go:19: arg stdLib.Path for printf verb %d of wrong type: string\r\n```\r\n\r\n#### What did you see instead?\r\n\r\nHere is my output of `vet` on that file/package:\r\n\r\n```\r\nmain.go:19: arg stdLib.Path for printf verb %d of wrong type: string\r\n```\r\n\r\nIt detects the bad printf verb usage for a string type from standard library, but not external library.\r\n\r\nIt would be great if `vet` were more reliable, so I could _depend on it_ to catch all printf verb misuse when possible (and it's certainly possible here).",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2014-12-24T18:42:52Z",
+	"updated_at": "2016-07-20T15:05:30Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51276837,
+	"number": 711,
+	"state": "closed",
+	"title": "throw: bad g-\u003estatus in ready",
+	"body": "by **scott+ctt@pakin.org**:\n\n\u003cpre\u003e\u0026gt; Before filing a bug, please check whether it has been fixed since\n\u0026gt; the latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\n\u0026gt; reproduce the problem.  Thanks.\n\u0026gt;\n\u0026gt; What steps will reproduce the problem?\n\nUnfortunately, I haven't yet managed to create a minimal reproducer.\nMy code is heavy on closures, in case that makes a difference.  When I\nrun with GOMAXPROCS \u0026gt; 1, the Go run-time system often throws a \u0026quot;bad\ng-\u0026gt;status in ready\u0026quot; error.  The more goroutines are in use, the higher\nthe likelihood that an error will be thrown.\n \n\u0026gt; What is the expected output? What do you see instead?\n\nI expected the program to run to completion.  I instead saw the\nfollowing stack trace (slightly different each time):\n\n    throw: bad g-\u0026gt;status in ready\n\n    panic PC=0x7f37348730a8\n    throw+0x3e /home/pakin/goroot/src/pkg/runtime/runtime.c:83\n\t    throw(0xffffffff, 0x469c00)\n    readylocked+0x69 /home/pakin/goroot/src/pkg/runtime/proc.c:252\n\t    readylocked(0x469c00, 0x339)\n    ready+0x2a /home/pakin/goroot/src/pkg/runtime/proc.c:233\n\t    ready(0x7f3735725ea0, 0x4066eb)\n    semwakeup+0x70 /home/pakin/goroot/src/pkg/runtime/sema.c:58\n\t    semwakeup(0x7f3735725ea0, 0x61d41)\n    semrelease+0x3a /home/pakin/goroot/src/pkg/runtime/sema.c:139\n\t    semrelease(0x42da78, 0x100000000)\n    gc+0x1b8 /home/pakin/goroot/src/pkg/runtime/mgc0.c:319\n\t    gc(0x42da78, 0x20)\n    mallocgc+0x1ca /home/pakin/goroot/src/pkg/runtime/malloc.c:95\n\t    mallocgc(0x7f3700000000, 0x0, 0x0, 0x0, 0x7f37348731d8, ...)\n    mal+0x3f /home/pakin/goroot/src/pkg/runtime/malloc.c:236\n\t    mal(0x10, 0x100000000)\n    makechan+0xd4 /home/pakin/goroot/src/pkg/runtime/chan.c:116\n\t    makechan(0x9, 0x42bf5a, 0x7f3700000000, 0x7f37348eca10)\n    runtime.makechan+0x24 /home/pakin/goroot/src/pkg/runtime/chan.c:157\n\t    runtime.makechan(0x46d558, 0x7f3700000001, 0x100000000, \n0x40c6c6, 0x46d558, ...)\n    cilk.*WorkQueueÂ·Spawn+0x63 /home/pakin/go-cilk/cilk.go:304\n\t    cilk.*WorkQueueÂ·Spawn(0x46d558, 0x7f3700000001, \n0x7f37357c5030, 0x7f3734873328)\n\n(The full trace is attached.)\n\nLine 304 of cilk.go is a fairly innocuous\n\n    done := make(chan bool, 1)\n\n\u0026gt; What is your $GOOS?  $GOARCH?\n\nGOARCH=amd64\nGOOS=linux\n\n\u0026gt; Which revision are you using?  (hg identify)\n\nThe problem occurs on each of the following:\n\n57380d620ee6+ tip\n9d2b70ed1852+ tip\n57380d620ee6+ release.2010-03-30/release\n\n\u0026gt; Please provide any additional information below.\n\nFailure goes away with GOGC=off.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/711/0/stacktrace.out\"\u003estacktrace.out\u003c/a\u003e (22864 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2014-12-08T10:05:35Z",
+	"created_at": "2010-04-05T17:35:34Z",
+	"updated_at": "2016-06-24T19:15:06Z"
+}

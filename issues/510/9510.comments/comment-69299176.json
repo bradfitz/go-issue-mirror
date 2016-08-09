@@ -1,0 +1,12 @@
+{
+	"id": 69299176,
+	"body": "yes, that sounds like a plan. we don't even need to parse libgcc.a.\n\nfirst link _all.o without -lgcc, and then  just write a dummy C file that\npulls in all the undefined symbols from _all.o,\ngcc -o _gcc.o -Wl,-r dummy.c -lgcc\nshould give us what we want.\n\nWe don't even need to create a C file to pull in the symbols, we\ncan create a empty ELF object .o (for example, by `as -o empty.o\n/dev/null`),\nand then use\nld -r -o dummy.o empty.o -u NEEDED_SYMBOL -u NEEDED_SYMBOL2 ...\nThen\nld -r -o _gcc.o dummy.o `gcc -print-libgcc-file-name`\n\nIn this way, we don't waste any memory while still pulling in every\nneeded symbols from libgcc.\n\nNOTE: Although all three commands work on Darwin, the final output file\n_gcc.o contains no symbols, so for darwin, we still need to create a C file\nto pull in all the symbols.",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-09T06:40:07Z",
+	"updated_at": "2015-01-09T06:40:07Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 156503014,
+	"body": "You are right. I was confused by the following. I added in the beginning of `signal_amd64x.go` code\r\n`print(\"\\n sigcode = \", c.sigcode(), \"\\n\")`.\r\nThere is a program:\r\n```go\r\npackage main\r\n\r\n/*\r\n#include \u003csignal.h\u003e\r\n#include \u003cstdio.h\u003e\r\n#include \u003cstring.h\u003e\r\n#include \u003cunistd.h\u003e\r\n\r\nvoid trap() {\r\n\tasm (\"int $3\");\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"os/signal\"\r\n\t\"syscall\"\r\n)\r\n\r\nfunc trap() {\r\n\tC.trap()\r\n}\r\n\r\nfunc main() {\r\n\tconst fromUser = false\r\n\tvar raise func()\r\n\tif fromUser {\r\n\t\traise = func() {\r\n\t\t\tsyscall.Kill(os.Getpid(), syscall.SIGTRAP)\r\n\t\t}\r\n\t} else {\r\n\t\traise = trap\r\n\t}\r\n\tc := make(chan os.Signal, 1)\r\n\tsignal.Notify(c, syscall.SIGTRAP)\r\n\traise()\r\n\t\u003c-c\r\n\tprintln(\"sigtrap notified\")\r\n}\r\n\r\n```\r\n\r\nIf I run it on linux/amd64, the output is 0 for `user` path and 128 for another path.\r\nBut if I run it on darwin/amd64, I get 1 for both cases. Moreover, I get 1 if I send this signal via kill(). That is why the test in cl fails.\r\n",
+	"user": {
+		"login": "avdva",
+		"id": 12461031,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-13T18:04:14Z",
+	"updated_at": "2015-11-13T18:04:14Z"
+}

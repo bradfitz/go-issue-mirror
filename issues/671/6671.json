@@ -1,0 +1,31 @@
+{
+	"id": 51285539,
+	"number": 6671,
+	"state": "closed",
+	"title": "cmd/gc: \u0026\u0026 and || should produce untyped bool for constant untyped operands",
+	"body": "\u003cpre\u003eThis is a revisit of \u003ca href=\"https://golang.org/issue/3924\"\u003eissue #3924\u003c/a\u003e: After fixing that issue\n\nvar _ mybool = x \u0026lt; y \u0026amp;\u0026amp; x \u0026lt; y\n\nhas become invalid. However, the pre-conditions leading to the conclusions at that time\nhave changed. When 3924 was fixed, the arguments were based on:\n\n1) \u0026quot;The result of a comparison can be assigned to any boolean type. If the context\ndoes not demand a specific boolean type, the result has type bool.\u0026quot; (see issue\n3924).\n\nThis is not true anymore: We later changed comparison operators to always produce an\nuntyped bool (constant or not).\n\nThus we have created an inconsistency: By the current spec, the above statement is\nperfectly legal: x \u0026lt; y produces an untyped bool, the result of \u0026amp;\u0026amp; is an\nuntyped bool, and thus it can be assigned to a mybool.\n\nIn fact, gc is now oddly inconsistent with respect to \u0026amp;\u0026amp; and ||:\n\npackage p\n\ntype mybool bool\n\nfunc _(x, y int) {\n\ttype mybool bool\n\tvar b mybool\n\tb = bool(true)             // not permitted as expected\n\tb = true                   // permitted as expected\n\tb = true \u0026amp;\u0026amp; true           // permitted =\u0026gt; \u0026amp;\u0026amp; returns an untyped bool\n\tb = x \u0026lt; y                  // permitted =\u0026gt; x \u0026lt; y returns an untyped bool\n\tb = true \u0026amp;\u0026amp; x \u0026lt; y          // not permitted, result of \u0026amp;\u0026amp; is not untyped bool =\u0026gt; inconsistent\n\tvar c bool = true \u0026amp;\u0026amp; x \u0026lt; y // permitted =\u0026gt; result of \u0026amp;\u0026amp; is bool\n}\n\nIt should be safe to fix the compiler (as opposed to documenting this odd behavior in\nthe spec) because we change the result of the last assignment from bool to untyped bool\nwhich will simply enable code that currently is disabled. If a \u0026amp;\u0026amp; is used to\ndeclare and initialize a variable, or if the value is assigned to an untyped interface,\nthe untyped bool will become bool which is ok as well.\n\nThus such a change should be backward-compatible and not invalidate existing code.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "paranoiacblack",
+		"id": 1035296,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-29T23:39:09Z",
+	"created_at": "2013-10-25T22:17:03Z",
+	"updated_at": "2016-06-25T01:21:29Z"
+}

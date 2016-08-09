@@ -1,0 +1,12 @@
+{
+	"id": 66083545,
+	"body": "\u003ca id=\"c6\"\u003e\u003c/a\u003eComment 6:\n\n\u003cpre\u003e(Sorry, didn't notice this till today.)\n\nTo detect this situation in general, we need to find all assignments\nto non-address-taken local variables (except named return parameters)\non which there is no control flow path leading to a reference to that\nvar.\n\nObviously that means we'd need to build a syntax-level control-flow graph.\n\nUpdates of named return parameters are exempt because their effect may\nbe observed via return or a defer/panic/recover.\n\nAddress-taken vars are exempted because we cannot tell with only local\nanalysis whether the update might be observed through a pointer.  \n\nThe following expressions e are considered address-taken:\nBase cases:\n- \u0026e, obviously.\n- var e T; _ = func() { ...e... }\n  Free variables of a function literal are considered address-taken\n  since the closure holds the address, and we cannot know in general\n  when the func is called.\n- e.Method, where e has type T and the method receiver is *T.\nInduction rules:\n- from (e) to e\n- from e[:] to e  (iff e has array type)\n- from e[i] to e  (iff e has array type)\n- from e.f to e\n\nThis information is easily obtained during SSA construction.\n(Although the SSA builder would optimize the dead stores away, this\ncan be suppressed by skipping the conversion to full SSA, i.e. ssadump\n-build=N.)  But vet probably doesn't want to depend on go/ssa...\n\nThe lower-hanging fruit might be assignments to non-AT local vars\nwhose declaration is in the same or an outer lexical block, with no\nintervening for-loop blocks (and ignore loops created with goto), with\nno references in subsequent statements.  This doesn't need a CFG, and\nI can probably factor out a useful little AT pass that would make this\ntrivial.\u003c/pre\u003e\n\n\n_Owner changed to @adonovan._",
+	"user": {
+		"login": "adonovan",
+		"id": 5658175,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-11-10T22:24:44Z",
+	"updated_at": "2014-12-08T10:33:23Z"
+}

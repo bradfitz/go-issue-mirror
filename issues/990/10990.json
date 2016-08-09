@@ -1,0 +1,27 @@
+{
+	"id": 82612396,
+	"number": 10990,
+	"state": "closed",
+	"title": "text/template: AddParseTree can't replace empty templates, whereas Parse can",
+	"body": "Given that I have an empty \"test\" template:\r\n\r\n```go\r\ntpl, err := template.New(\"main\").Parse(`\r\n    {{template \"test\" .}}\r\n    {{define \"test\"}}{{end}}\r\n`)\r\n```\r\n\r\nthis works:\r\n```go\r\ntpl, err = tpl.New(\"test\").Parse(`This is a test`)\r\n// no error\r\n```\r\n\r\nand this fails:\r\n```go\r\ntest, err := template.New(\"test\").Parse(`This is a test`)\r\ntpl, err = tpl.AddParseTree(\"test\", test.Tree)\r\n// error\r\n```\r\n\r\nI think the AddParseTree [conditional](https://github.com/golang/go/blob/master/src/text/template/template.go#L113-115) should be changed to:\r\n```go\r\n    if t.common != nil\r\n        if old := t.tmpl[name]; old != nil \u0026\u0026 !parse.IsEmptyTree(old.Root) {\r\n            return nil, fmt.Errorf(\"template: redefinition of template %q\", name)\r\n        }\r\n    }\r\n```\r\n\r\nThis would make the behavior of AddParseTree consistent with Parse.",
+	"user": {
+		"login": "chowey",
+		"id": 991221,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-08-06T17:19:38Z",
+	"created_at": "2015-05-29T22:31:29Z",
+	"updated_at": "2016-08-05T16:09:41Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

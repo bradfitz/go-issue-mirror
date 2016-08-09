@@ -1,0 +1,12 @@
+{
+	"id": 225006179,
+	"body": "@aclements great questions.  Was thinking we aught to recap all the variables at this point anyways.\r\n\r\nTrying to narrow things down as much as possible.  So, this is with `go build` using master (as of 7af2ce3), with this diff applied:\r\n\r\n```\r\ndiff --git a/src/os/exec.go b/src/os/exec.go\r\nindex 239fd92..6a8eed5 100644\r\n--- a/src/os/exec.go\r\n+++ b/src/os/exec.go\r\n@@ -5,7 +5,6 @@\r\n package os\r\n \r\n import (\r\n-       \"runtime\"\r\n        \"sync/atomic\"\r\n        \"syscall\"\r\n )\r\n@@ -19,7 +18,6 @@ type Process struct {\r\n \r\n func newProcess(pid int, handle uintptr) *Process {\r\n        p := \u0026Process{Pid: pid, handle: handle}\r\n-       runtime.SetFinalizer(p, (*Process).Release)\r\n        return p\r\n }\r\n \r\ndiff --git a/src/os/file_unix.go b/src/os/file_unix.go\r\nindex 9b64f21..a997e9e 100644\r\n--- a/src/os/file_unix.go\r\n+++ b/src/os/file_unix.go\r\n@@ -54,7 +54,6 @@ func NewFile(fd uintptr, name string) *File {\r\n                return nil\r\n        }\r\n        f := \u0026File{\u0026file{fd: fdi, name: name}}\r\n-       runtime.SetFinalizer(f.file, (*file).close)\r\n        return f\r\n }\r\n```\r\nwith source:\r\n\r\n```go\r\npackage main\r\n\r\n/* stdlib includes */\r\nimport (\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n)\r\n\r\nfunc run(done chan struct{}) {\r\n\tcmd := exec.Command(\"/doesnotexist\")\r\n\tcmd.Start()\r\n\tcmd.Wait()\r\n\r\n\tdone \u003c- struct{}{}\r\n\treturn\r\n}\r\n\r\nfunc main() {\r\n\tfmt.Println(\"Starting a bunch of goroutines...\")\r\n\r\n\t// 8 \u0026 16 are arbitrary\r\n\tdone := make(chan struct{}, 16)\r\n\r\n\tfor i := 0; i \u003c 8; i++ {\r\n\t\tgo run(done)\r\n\t}\r\n\r\n\tfor {\r\n\t\tselect {\r\n\t\tcase \u003c-done:\r\n\t\t\tgo run(done)\r\n\t\t}\r\n\t}\r\n}\r\n",
+	"user": {
+		"login": "derekmarcotte",
+		"id": 12298521,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-09T19:49:40Z",
+	"updated_at": "2016-06-09T19:49:40Z"
+}

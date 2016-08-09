@@ -1,0 +1,27 @@
+{
+	"id": 158190038,
+	"number": 15943,
+	"state": "open",
+	"title": "runtime: main_init_done can be implemented more efficiently",
+	"body": "A C thread in a -buildmode={c-archive,c-shared} may call back into Go code before Go initialization is complete, in which case it must wait.  It currently waits using a channel called `main_init_done`.  In the review of https://golang.org/cl/23610 Dmitry points out that this can be done more efficiently.  The callback will necessarily go through `runtime·needm`.  We can arrange for `needm` to wait for initialization to be complete.  It already waits for a new `M` to be created.\r\n\r\nIn fact, `needm` already has a race condition.  It crashes if `cgoHasExtraM` is not true.  That global variable is set to true early in Go initialization, but that initialization will be running in a separate thread.  If a C thread is fast enough in calling Go, the program will crash because Go initialization has not yet reached the required point.  We should avoid crashing if `islibrary || isarchive`; we should simply wait.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-06-02T16:57:05Z",
+	"updated_at": "2016-06-02T16:57:05Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

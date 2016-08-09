@@ -1,0 +1,12 @@
+{
+	"id": 121319072,
+	"body": "I'll try with GODEBUG=gccheckmark=1 today.\r\n\r\nFor what it's worth, my current test is that I added this function:\r\n\r\n    var sanitycheckfailed = false\r\n    func sanitycheck(when string) {\r\n        if sanitycheckfailed { return }\r\n        check := func(s *LSym, where string) {\r\n            for i := range s.R {\r\n                if s.R[i].Siz == 173 || s.R[i].Done \u003e 1 {\r\n                    fmt.Println(\"sanity check failed\", when, where)\r\n                    fmt.Println(s, s.R, i)\r\n                    debug.PrintStack()\r\n                    sanitycheckfailed = true\r\n                }\r\n            }\r\n        }\r\n        for s := Ctxt.Allsym; s != nil; s = s.Allsym {\r\n            check(s, \"allsym\")\r\n        }\r\n        runtime.GC()\r\n        for s := Ctxt.Allsym; s != nil; s = s.Allsym {\r\n            check(s, \"allsym after GC\")\r\n        }\r\n    }\r\n\r\nand then I instrumented Ldmain like:\r\n\r\n    loadlib()\r\n    sanitycheck(\"after loadlib\")\r\n    [...]\r\n    checkgo()\r\n    sanitycheck(\"after checkgo\")\r\n    checkstrdata()\r\n    sanitycheck(\"after checkstrdata\")\r\n\r\nand so on.\r\n\r\nI got maybe a dozen crashes running this overnight on openbsd/386.  One was \"sanity check failed after loadlib allsym\", but the rest were all \"sanity check failed after loadlib allsym after GC\".  (Before I added the runtime.GC() call and second pass, the failures were more sporadically distributed.)\r\n\r\nI also ran a similar test overnight on linux/amd64 (tweaking the sanity check heuristics accordingly), but didn't get any failures.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-14T17:41:36Z",
+	"updated_at": "2015-07-14T17:41:36Z"
+}

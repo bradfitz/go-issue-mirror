@@ -1,0 +1,12 @@
+{
+	"id": 237600567,
+	"body": "The map is built in typelinksinit and not written to again, so I believe a data race is out. With the patch:\r\n\r\n```\r\ndiff --git a/src/runtime/type.go b/src/runtime/type.go\r\nindex 5ef11a4..0696efa 100644\r\n--- a/src/runtime/type.go\r\n+++ b/src/runtime/type.go\r\n@@ -224,8 +224,13 @@ func (t *_type) typeOff(off typeOff) *_type {\r\n                }\r\n                return (*_type)(res)\r\n        }\r\n-       if t := md.typemap[off]; t != nil {\r\n-               return t\r\n+       for moff, mres := range md.typemap {\r\n+               if moff == off {\r\n+                       if t, ok := md.typemap[off]; t == nil {\r\n+                               println(\"md.typemap[\", off, \"] in map, but t=\", t, \", ok=\", ok)\r\n+                       }\r\n+                       return mres\r\n+               }\r\n        }\r\n        res := md.types + uintptr(off)\r\n        if res \u003e md.etypes {\r\n```\r\n\r\nthen Keith's test program above prints\r\n\r\n```\r\nmd.typemap[ 1400352 ] in map, but t= 0x0 , ok= false\r\nmd.typemap[ 1400352 ] in map, but t= 0x0 , ok= false\r\nmd.typemap[ 1400352 ] in map, but t= 0x0 , ok= false\r\nfoo\r\n```",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-04T16:05:12Z",
+	"updated_at": "2016-08-04T16:05:12Z"
+}

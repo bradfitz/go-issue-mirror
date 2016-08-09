@@ -1,0 +1,22 @@
+{
+	"id": 133467483,
+	"number": 14322,
+	"state": "closed",
+	"title": "net: LookupPort does not perform lookup if service starts with number",
+	"body": "Calling net.LookupPort with a service-name starting with a number, regardless of whether or not it is in /etc/services, incorrectly returns the numeric prefix of the service-name as port. In my case, I was trying to perform a lookup on \"9pfs\".\r\n\r\nLookupPort (net/lookup.go) calls dtoi (net/parse.go). lookupPort is only called if dtoi returns that it was not successful, but dtoi is successful as long as the string starts with a digit, which makes it incapable of detecting if a string is a service or a port.\r\n\r\n**Test code**\r\n```go\r\npackage main\r\n\r\nimport \"fmt\"\r\nimport \"net\"\r\n\r\nfunc main() {\r\n\tx, err := net.LookupPort(\"tcp\", \"9pfs\")\r\n\tfmt.Printf(\"Port: %d, err: %v\\n\", x, err)\r\n\tx, err = net.LookupPort(\"tcp\", \"1234port\")\r\n\tfmt.Printf(\"Port: %d, err: %v\\n\", x, err)\r\n\tx, err = net.LookupPort(\"tcp\", \"port1234\")\r\n\tfmt.Printf(\"Port: %d, err: %v\\n\", x, err)\r\n\tx, err = net.LookupPort(\"tcp\", \"http\")\r\n\tfmt.Printf(\"Port: %d, err: %v\\n\", x, err)\r\n}\r\n```\r\n\r\n**Expected result**\r\n```\r\nPort: 564, err: \u003cnil\u003e\r\nPort: 0, err: lookup tcp/1234port: nodename nor servname provided, or not known\r\nPort: 0, err: lookup tcp/port1234: nodename nor servname provided, or not known\r\nPort: 80, err: \u003cnil\u003e\r\n```\r\n\r\n**Actual result**\r\n```\r\nPort: 9, err: \u003cnil\u003e\r\nPort: 1234, err: \u003cnil\u003e\r\nPort: 0, err: lookup tcp/port1234: nodename nor servname provided, or not known\r\nPort: 80, err: \u003cnil\u003e\r\n```",
+	"user": {
+		"login": "joushou",
+		"id": 176245,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-04-15T23:12:27Z",
+	"created_at": "2016-02-13T19:56:24Z",
+	"updated_at": "2016-04-15T23:12:27Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

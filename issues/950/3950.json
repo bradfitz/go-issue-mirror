@@ -1,0 +1,22 @@
+{
+	"id": 51281413,
+	"number": 3950,
+	"state": "closed",
+	"title": "database/sql: defer db.putConn(ci, err) pattern, err is always nil",
+	"body": "by **pcrosby**:\n\n\u003cpre\u003eIn database/sql/sql.go, all the calls to db.putConn that use a defer will always pass\nnil for the error.\n\nFor example, assuming the following exec function gets to the \u0026quot;defer db.putConn(ci,\nerr)\u0026quot; line, err will always be nil, no matter what happens to err after the\n\u0026quot;defer...\u0026quot; line (since the arguments to the deferred function are evaluated\nwhen the defer executes, not when the call executes).\n\nI know putConn only cares if err is a driver.ErrBadConn, but it seems to me like that is\na possible error in many of the functions in sql.go that use this defer db.putConn(ci,\nerr) pattern.\n\nfunc (db *DB) exec(query string, sargs []driver.Value) (res Result, err error) {\n\tci, err := db.conn()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer db.putConn(ci, err)\n\n\tif execer, ok := ci.(driver.Execer); ok {\n\t\tresi, err := execer.Exec(query, sargs)\n\t\tif err != driver.ErrSkip {\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\treturn result{resi}, nil\n\t\t}\n\t}\n\n\tsti, err := ci.Prepare(query)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer sti.Close()\n\n\tresi, err := sti.Exec(sargs)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn result{resi}, nil\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:20:56Z",
+	"created_at": "2012-08-14T21:53:31Z",
+	"updated_at": "2016-06-24T22:23:03Z"
+}

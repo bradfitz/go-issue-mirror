@@ -1,0 +1,12 @@
+{
+	"id": 150303857,
+	"body": "If anyone needs a generic solution to collecting an array of attributes, this is what I use currently:\r\n\r\n```\r\ntype Node struct {\r\n\tXMLName    xml.Name\r\n\tAttributes []xml.Attr\r\n\tData       string\r\n\tNodes      []*Node\r\n}\r\n\r\nfunc (e *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {\r\n\tvar nodes []*Node\r\n\tvar done bool\r\n\tfor !done {\r\n\t\tt, err := d.Token()\r\n\t\tif err != nil {\r\n\t\t\treturn err\r\n\t\t}\r\n\t\tswitch t := t.(type) {\r\n\t\tcase xml.CharData:\r\n\t\t\te.Data = strings.TrimSpace(string(t))\r\n\t\tcase xml.StartElement:\r\n\t\t\te := \u0026Node{}\r\n\t\t\te.UnmarshalXML(d, t)\r\n\t\t\tnodes = append(nodes, e)\r\n\t\tcase xml.EndElement:\r\n\t\t\tdone = true\r\n\t\t}\r\n\t}\r\n\te.XMLName = start.Name\r\n\te.Attributes = start.Attr\r\n\te.Nodes = nodes\r\n\treturn nil\r\n}\r\n\r\nfunc (e *Node) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {\r\n\tstart.Name = e.XMLName\r\n\tstart.Attr = e.Attributes\r\n\treturn enc.EncodeElement(struct {\r\n\t\tData  string `xml:\",chardata\"`\r\n\t\tNodes []*Node\r\n\t}{\r\n\t\tData:  e.Data,\r\n\t\tNodes: e.Nodes,\r\n\t}, start)\r\n}\r\n```\r\nIt would be nice to have this support built in.\r\n\r\nhttps://play.golang.org/p/o60LVVmpgq",
+	"user": {
+		"login": "ghost",
+		"id": 10137,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-22T17:47:33Z",
+	"updated_at": "2015-10-22T17:47:33Z"
+}

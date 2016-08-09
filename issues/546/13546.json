@@ -1,0 +1,17 @@
+{
+	"id": 121229258,
+	"number": 13546,
+	"state": "closed",
+	"title": "runtime: goroutine starvation due to Gosched",
+	"body": "The following program hangs:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"runtime\"\r\n\t\"sync/atomic\"\r\n)\r\n\r\nfunc main() {\r\n\tconst P = 4\r\n\truntime.GOMAXPROCS(P)\r\n\tx := uint32(0)\r\n\tfor p := 0; p \u003c P; p++ {\r\n\t\tgo func() {\r\n\t\t\tatomic.AddUint32(\u0026x, 1)\r\n\t\t\tfor atomic.LoadUint32(\u0026x) != P {\r\n\t\t\t}\r\n\t\t}()\r\n\t}\r\n\tfor atomic.LoadUint32(\u0026x) != P {\r\n\t\truntime.Gosched()\r\n\t}\r\n}\r\n```\r\n\r\n```\r\nSIGABRT: abort\r\nPC=0x44dae0 m=0\r\n\r\ngoroutine 21 [running]:\r\nsync/atomic.LoadUint32(0xc8200b6000)\r\n\tsrc/sync/atomic/asm_amd64.s:92 fp=0xc820060798 sp=0xc820060790\r\nmain.main.func1(0xc8200b6000)\r\n\t/tmp/gosched.go:15 +0x37 fp=0xc8200607b8 sp=0xc820060798\r\nruntime.goexit()\r\n\tsrc/runtime/asm_amd64.s:1998 +0x1 fp=0xc8200607c0 sp=0xc8200607b8\r\ncreated by main.main\r\n\t/tmp/gosched.go:17 +0x78\r\n\r\ngoroutine 1 [runnable]:\r\nruntime.Gosched()\r\n\tsrc/runtime/proc.go:235 +0x14\r\nmain.main()\r\n\t/tmp/gosched.go:20 +0xa7\r\n\r\ngoroutine 18 [runnable]:\r\nmain.main.func1(0xc8200b6000)\r\n\t/tmp/gosched.go:13\r\ncreated by main.main\r\n\t/tmp/gosched.go:17 +0x78\r\n\r\ngoroutine 19 [running]:\r\n\tgoroutine running on other thread; stack unavailable\r\ncreated by main.main\r\n\t/tmp/gosched.go:17 +0x78\r\n\r\ngoroutine 20 [running]:\r\n\tgoroutine running on other thread; stack unavailable\r\ncreated by main.main\r\n\t/tmp/gosched.go:17 +0x78\r\n```\r\n\r\nOne goroutine constantly calls ```runtime.Gosched``` but another runnable goroutine is starved.\r\nThe root cause is: Gosched puts the current goroutine onto global run queue, then the thread check local run queue (empty), then it checks global run queue and picks up the old goroutine again. But at the same time there is another runnable goroutine in remote per-P queue.\r\n\r\nThis is probably not super critical, as it can happen only if there are goroutines in tight non-preemptable loops. But still we could check local queues ahead of global queue once in a while in findrunnable. We do the opposite hack in schedule -- check global queue ahead of local queue once in a while. On the other hand this will destroy locality, which is bad for performance...\r\n",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2015-12-10T21:26:10Z",
+	"created_at": "2015-12-09T12:45:32Z",
+	"updated_at": "2015-12-10T21:26:10Z"
+}

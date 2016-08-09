@@ -1,0 +1,27 @@
+{
+	"id": 51278867,
+	"number": 2193,
+	"state": "closed",
+	"title": "windows: garbage collect callbacks",
+	"body": "by **webmaster@webmaster.ms**:\n\n\u003cpre\u003eIn continue of the post-closed discussion in ticket\n\u003ca href=\"https://golang.org/issue/1912\"\u003ehttps://golang.org/issue/1912\u003c/a\u003e\n\nJP\u0026gt; I think, syscall.FreeCallback(cb uintptr) should be implemented as well. 2000 is\nquite big limit but it only postpones the panic in a long running program.\n\nAB\u0026gt; syscall.FreeCallback is too complicated. In fact, you don't need\nsyscall.FreeCallback, just remove code that keeps all windows callbacks in a list, and\ngarbage collector will pick them up.\n\nTestcase:\n\npackage main\n\nimport (\n  \u0026quot;syscall\u0026quot;\n  \u0026quot;log\u0026quot;\n)\n\nfunc main() {\n  h, e := syscall.LoadLibrary(\u0026quot;user32.dll\u0026quot;)\n  if e != 0 {\n    log.Fatalf(\u0026quot;LoadLibrary(USER32)\u0026quot;)\n  }\n  pEnumWindows, e := syscall.GetProcAddress(h, \u0026quot;EnumWindows\u0026quot;)\n  if e != 0 {\n    log.Fatalf(\u0026quot;GetProcAddress(USER32.EnumWindows)\u0026quot;)\n  }\n  // there is a limit of 2000 callback thunks\n  // 2001th syscall.NewCallback() will panic\n  for i := 0; i \u0026lt; 2001; i++ {\n    counter := 0\n    cb := syscall.NewCallback(\n      func(hwnd syscall.Handle, lparam uintptr) uintptr {\n        counter++\n        return 1 // continue enumeration\n      })\n    syscall.Syscall(uintptr(pEnumWindows), 2, cb, 888, 0)\n    // \u0026lt;\u0026lt;\u0026lt;\u0026lt;\u0026lt;\u0026lt; cb to be garbage collected here \u0026gt;\u0026gt;\u0026gt;\u0026gt;\u0026gt;\u0026gt;\u0026gt;\n  }\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:11:47Z",
+	"created_at": "2011-08-27T14:53:25Z",
+	"updated_at": "2016-06-24T19:33:55Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66096116,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eSo the regexp package is only for non-trivial regexps, even if it means a regexp is the\nmost comfortable way to describe the solution?\n\nI changed the regexp to be less trivial:\n\nfunc BenchmarkMachineCache(b *testing.B) {\n        re := MustCompile(\"foo (ba+r)? baz\")\n        line := \"this is a long line that contains foo bar baz\"\n        for i := 0; i \u0026lt; b.N; i++ {\n                re.MatchString(line)\n        }\n}\n\nfunc BenchmarkMachineCacheParallel(b *testing.B) {\n        re := MustCompile(\"foo (ba+r)? baz\")\n        line := \"this is a long line that contains foo bar baz\"\n        b.RunParallel(func(pb *testing.PB) {\n                for pb.Next() {\n                        re.MatchString(line)\n                }\n        })\n}\n\nThe sync.Pool doesn't seem to hurt the single-threaded case, even on this non-trivial\nregexp:\n\n$ benchcmp before after\nbenchmark                           old ns/op     new ns/op     delta\nBenchmarkMachineCache               1608          1560          -2.99%\nBenchmarkMachineCache-2             1595          1546          -3.07%\nBenchmarkMachineCache-4             1571          1543          -1.78%\nBenchmarkMachineCache-8             1594          1549          -2.82%\nBenchmarkMachineCacheParallel       1593          1554          -2.45%\nBenchmarkMachineCacheParallel-2     929           928           -0.11%\nBenchmarkMachineCacheParallel-4     649           447           -31.12%\nBenchmarkMachineCacheParallel-8     586           381           -34.98%\n\nI'm also not sure I buy the extra memory argument from Dmitry, since it's marginal\ncompared to the weight of a compiled program, which are generally few and global.\n\nIf you don't like sync.Pool here, what do you propose? Writing the code by hand and\navoiding the regexp package seems like a cop-out.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-18T20:20:39Z",
+	"updated_at": "2014-12-22T06:35:42Z"
+}

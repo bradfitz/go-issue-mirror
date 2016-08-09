@@ -1,0 +1,28 @@
+{
+	"id": 120216384,
+	"number": 13466,
+	"state": "closed",
+	"title": "runtime: _ExternalCode when profiling cgo ",
+	"body": "[I'm using go-1.5.1 on Mac OS X]\r\n\r\nIn profiling an app which uses cgo I see a lot of time locked up in the stack trace `_ExternalCode -\u003e _System`. And stack traces which I expect to see leading up to the cgo calls are not present. Looking at the code in `runtime.sigprof` I can see that the `_ExternalCode` marker is used when the profiling signal handler cannot safely call `gentraceback` (i.e. `setsSP(pc)` returns true). But it looks like this code path is overaggressively applied when we're in a cgo call as it should be safe to call `gentraceback(mp.curg.syscallpc, mp.curg.syscallsp, ...)`. In fact, the current code is executing `gentraceback` for cgo calls, but if `traceback` has been set to false the generated trace is tossed out and replaced with `_ExternalCode`.\r\n\r\nTo make this more concrete, this diff seems to fix the issue I'm seeing:\r\n\r\n```\r\ndiff --git a/src/runtime/proc1.go b/src/runtime/proc1.go\r\nindex 09cb775..3dbda19 100644\r\n--- a/src/runtime/proc1.go\r\n+++ b/src/runtime/proc1.go\r\n@@ -2581,6 +2581,7 @@ func sigprof(pc, sp, lr uintptr, gp *g, mp *m) {\r\n                // so instead collect Go stack that leads to the cgo call.\r\n                // This is especially important on windows, since all syscalls are cgo calls.\r\n                n = gentraceback(mp.curg.syscallpc, mp.curg.syscallsp, 0, mp.curg, 0, \u0026stk[0], len(stk), nil, nil, 0)\r\n+               traceback = true\r\n        } else if traceback {\r\n                n = gentraceback(pc, sp, lr, gp, 0, \u0026stk[0], len(stk), nil, nil, _TraceTrap|_TraceJumpStack)\r\n        }\r\n```",
+	"user": {
+		"login": "petermattis",
+		"id": 6201335,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-01-07T19:40:49Z",
+	"created_at": "2015-12-03T16:37:38Z",
+	"updated_at": "2016-01-07T19:40:49Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

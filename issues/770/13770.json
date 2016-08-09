@@ -1,0 +1,32 @@
+{
+	"id": 124230225,
+	"number": 13770,
+	"state": "open",
+	"title": "syscall: errors cannot be nested in Plan 9",
+	"body": "To be more precise: as happens in \"go doc\", if two consecutive syscalls produce error messages, the second instance overwrites the string space used by the first and the result can be extremely confusing.\r\n\r\nThis is the result of some corrective action applied to resolve issue #4994, where a memory allocation following a syscall entry caused a failure,\r\n\r\nFixing this correctly is not trivial, so I was thinking of increasing the allocation to the single buffer reserved for Plan 9 syscall errors and instead of returning a pointer to its start, I would use a pointer that followed the most recently returned error message, wrapping around when the end of buffer was reached.\r\n\r\nThis is a hack, but if we allow for a handful of moderately sized error messages, we are unlikely to exceed the available space. If we do, we are no worse off, technically, than we are now, although debugging this situation would be somewhat more complicated.\r\n\r\nIf no one has a better idea, I propose to continue on this path, but I need some help. I can't figure out in the fourteen lines of runtime·errstr (runtime/sys_plan9_386.s, at the end of the file) how to adjust m_errstr. I'm sure it is not overly complicated, if you understand the assembler properly.\r\n\r\nAlso, there is the complication that we need to increment the buffer pointer ahead of fetching the error message because otherwise the message may be split between the end of the buffer and the beginning and we don't know until the message is returned how long it will be. That is serious, but not insurmountable.",
+	"user": {
+		"login": "lootch",
+		"id": 16452421,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-12-29T15:58:07Z",
+	"updated_at": "2016-02-19T22:04:48Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

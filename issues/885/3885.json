@@ -1,0 +1,27 @@
+{
+	"id": 51281300,
+	"number": 3885,
+	"state": "closed",
+	"title": "runtime: profile and tune map code",
+	"body": "by **yury.shulaev**:\n\n\u003cpre\u003eI did a trivial map benchmark using Go (gc), JavaScript (V8) and Python (Python3, PyPy)\nand here are the results:\n\n$ export GOMAXPROCS=\u0026quot;\u0026quot;; go build map.go; time ./map\n\nreal    0m0.656s\nuser    0m0.652s\nsys     0m0.000s\n\n$ time node map.js\n\nreal    0m0.055s\nuser    0m0.040s\nsys     0m0.012s\n\n$ time python3 map.py\n\nreal    0m0.613s\nuser    0m0.592s\nsys     0m0.016s\n\n$ time pypy map.py\n\nreal    0m0.143s\nuser    0m0.124s\nsys     0m0.016s\n\nLooks like Go's map is 12 times slower than V8's and 4.5 times slower than PyPy's.\nWell, JavaScript objects can only use strings as keys, but Python's dict does not\nhave this limitation and it is still being able to run in 0.143s.\n\nIs it possible to adapt V8's map implementation to Go? By the way, it looks simpler:\n\u003ca href=\"https://github.com/v8/v8/blob/master/src/hashmap.h\"\u003ehttps://github.com/v8/v8/blob/master/src/hashmap.h\u003c/a\u003e\nvs\n\u003ca href=\"http://code.google.com/p/go/source/browse/src/pkg/runtime/hashmap.c\"\u003ehttp://code.google.com/p/go/source/browse/src/pkg/runtime/hashmap.c\u003c/a\u003e\n\n\nCode used in the benchmark:\n\nmap.go:\n\npackage main\n\nfunc main() {\n\ta := make(map[int]int)\n\n\tfor i := 0; i \u0026lt; 10000000; i++ {\n\t\ta[123] = 456\n\t}\n}\n\n\nmap.js:\n\nfunction main() {\n\tvar a = {};\n\n\tfor (var i = 0; i \u0026lt; 10000000; i++) {\n\t\ta[123] = 456;\n\t}\n}\n\nmain();\n\n\nmap.py:\n\n#!/usr/bin/env python3\n\ndef main():\n\ta = {}\n\n\tfor i in range(10000000):\n\t\ta[123] = 456\n\nif __name__ == '__main__':\n\tmain()\n\n\nProfiler output for 10 times more iterations:\n\nTotal: 772 samples\n     385  49.9%  49.9%      504  65.3% hash_lookup\n     106  13.7%  63.6%      106  13.7% runtime.memhash\n      86  11.1%  74.7%       86  11.1% runtime.rnd\n      60   7.8%  82.5%      618  80.1% runtime.mapaccess\n      37   4.8%  87.3%       37   4.8% runtime.memcopy32\n      33   4.3%  91.6%      765  99.1% main.main\n      32   4.1%  95.7%      732  94.8% runtime.mapaccess1\n      20   2.6%  98.3%       20   2.6% hash_indirect\n      13   1.7% 100.0%       13   1.7% runtime.memequal32\n       0   0.0% 100.0%      765  99.1% runtime.main\n\n\nOS and hardware:\n\nLinux 3.2.0-27-generic #43-Ubuntu SMP Fri Jul 6 14:25:57 UTC 2012 x86_64 x86_64 x86_64\nGNU/Linux\n\ngo version go1 (which is 'apt-get install golang')\n\nIntel Core i5, 4 GB RAM\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2014-12-08T10:20:32Z",
+	"created_at": "2012-07-29T17:25:28Z",
+	"updated_at": "2016-06-24T22:22:18Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

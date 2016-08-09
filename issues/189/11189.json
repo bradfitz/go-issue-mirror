@@ -1,0 +1,27 @@
+{
+	"id": 87812374,
+	"number": 11189,
+	"state": "open",
+	"title": "cmd/compile/ssa: duplicate block elim",
+	"body": "```go\r\npackage p\r\n\r\nfunc g_ssa(a, b int) int {\r\n\tif a \u003c 5 {\r\n\t\treturn 1\r\n\t}\r\n\tif b \u003c 5 {\r\n\t\treturn 1\r\n\t}\r\n\treturn 0\r\n}\r\n```\r\n\r\nAt the end of the layout pass (chosen for readability--this remains true at the end of compilation), the SSA looks like:\r\n\r\n```\r\ng_ssa \u003cnil\u003e\r\n  b1:\r\n    v1 = Arg \u003cmem\u003e [.mem]\r\n    v2 = FP \u003cuint64\u003e\r\n    v18 = MOVQconst \u003cint\u003e [1]\r\n    v22 = MOVQconst \u003cint\u003e [0]\r\n    v28 = MOVQload \u003cint\u003e [0] v2 v1\r\n    v32 = MOVQload \u003cint\u003e [8] v2 v1\r\n    v24 = CMPQconst \u003cflags\u003e [5] v28\r\n    v7 = MOVQstore \u003cmem\u003e [16] v2 v22 v1\r\n    LT v24 -\u003e b3 b4\r\n  b3:\r\n    v14 = MOVQstore \u003cmem\u003e [16] v2 v18 v7\r\n    Plain -\u003e b2\r\n  b2:\r\n    v29 = Phi \u003cmem\u003e v14 v21 v25\r\n    Exit v29\r\n  b4:\r\n    v20 = CMPQconst \u003cflags\u003e [5] v32\r\n    LT v20 -\u003e b5 b6\r\n  b5:\r\n    v21 = MOVQstore \u003cmem\u003e [16] v2 v18 v7\r\n    Plain -\u003e b2\r\n  b6:\r\n    v25 = MOVQstore \u003cmem\u003e [16] v2 v22 v7\r\n    Plain -\u003e b2\r\n```\r\n\r\nNote that blocks `b3` and `b5` are effectively identical. One of them could be eliminated.\r\n\r\nThis happens fairly often in practice. For example, our generated equality code looks like:\r\n\r\n```go\r\nfunc eq(a, b T) {\r\n\tif a.X != b.X {\r\n\t\treturn false\r\n\t}\r\n\tif a.Y != b.Y {\r\n\t\treturn false\r\n\t}\r\n\treturn true\r\n}\r\n```\r\n\r\nThis ought to produce code that is just as efficient as:\r\n\r\n```go\r\nfunc eq(a, b T) {\r\n\treturn a.X == b.X \u0026\u0026 a.Y == b.Y\r\n}\r\n```\r\n\r\nRight now it doesn't, but we can do better. There's also a lot of code in the compiler that looks like this. Also complex Less methods for sort.Interface.\r\n\r\nIs this worth doing? Ought this to occur as part of an existing pass, or as a new one?\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2015-06-12T18:28:10Z",
+	"updated_at": "2015-06-13T04:16:28Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

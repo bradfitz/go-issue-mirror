@@ -1,0 +1,22 @@
+{
+	"id": 51283049,
+	"number": 5052,
+	"state": "closed",
+	"title": "net: Conn.File uses dup",
+	"body": "\u003cpre\u003enet.TCPConn embeds net.conn, which has this:\n\n// File sets the underlying os.File to blocking mode and returns a copy.\n// It is the caller's responsibility to close f when finished.\n// Closing c does not affect f, and closing f does not affect c.\n//\n// The returned os.File's file descriptor is different from the connection's.\n// Attempting to change properties of the original using this duplicate\n// may or may not have the desired effect.\nfunc (c *conn) File() (f *os.File, err error) { return c.fd.dup() }\n\nAnd elsewhere:\n\nfunc (fd *netFD) dup() (f *os.File, err error) {\n\tsyscall.ForkLock.RLock()\n\tns, err := syscall.Dup(fd.sysfd)\n\tif err != nil {\n\t\tsyscall.ForkLock.RUnlock()\n\t\treturn nil, \u0026amp;OpError{\u0026quot;dup\u0026quot;, fd.net, fd.laddr, err}\n\t}\n\tsyscall.CloseOnExec(ns)\n\tsyscall.ForkLock.RUnlock()\n\n\t// We want blocking mode for the new fd, hence the double negative.\n\t// This also puts the old fd into blocking mode, meaning that\n\t// I/O will block the thread instead of letting us use the epoll server.\n\t// Everything will still work, just with more threads.\n\tif err = syscall.SetNonblock(ns, false); err != nil {\n\t\treturn nil, \u0026amp;OpError{\u0026quot;setnonblock\u0026quot;, fd.net, fd.laddr, err}\n\t}\n\n\treturn os.NewFile(uintptr(ns), fd.name()), nil\n}\n\n\nHowever, O_NONBLOCK is a property of the open file, not the fd.\nIt is shared between all fds referring to the same file, *even\nacross processes*.\n\n\u003ca href=\"http://cr.yp.to/unix/nonblock.html\"\u003ehttp://cr.yp.to/unix/nonblock.html\u003c/a\u003e\n\nHence, this protection does not actually work. To add insult to injury, calling .File()\n*actively* screws up the epoll by disabling O_NONBLOCK.\n\nHere's a demonstration that setting O_NONBLOCK on a dup'd socket\naffects the duplicates, also at \u003ca href=\"http://play.golang.org/p/w9Fwqofegp\"\u003ehttp://play.golang.org/p/w9Fwqofegp\u003c/a\u003e though not runnable\nin the playground:\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\n// copy-paste from src/pkg/syscall/zsyscall_linux_amd64.go\nfunc fcntl(fd int, cmd int, arg int) (val int, err error) {\n\tr0, _, e1 := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), uintptr(cmd), uintptr(arg))\n\tval = int(r0)\n\tif e1 != 0 {\n\t\terr = e1\n\t}\n\treturn\n}\n\nfunc isBlocking(fd int) bool {\n\tval, err := fcntl(fd, syscall.F_GETFL, 0)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\treturn val\u0026amp;syscall.O_NONBLOCK == 0\n}\n\nfunc main() {\n\tdupped, err := syscall.Dup(0)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Printf(\u0026quot;before: stdin is blocking: %v\\n\u0026quot;, isBlocking(0))\n\tfmt.Printf(\u0026quot;before: dupped is blocking: %v\\n\u0026quot;, isBlocking(dupped))\n\terr = syscall.SetNonblock(0, true)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Printf(\u0026quot;after: stdin is blocking: %v\\n\u0026quot;, isBlocking(0))\n\tfmt.Printf(\u0026quot;after: dupped is blocking: %v\\n\u0026quot;, isBlocking(dupped))\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:27:00Z",
+	"created_at": "2013-03-15T01:10:20Z",
+	"updated_at": "2016-06-24T22:35:38Z"
+}

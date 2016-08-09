@@ -1,0 +1,28 @@
+{
+	"id": 128088102,
+	"number": 14068,
+	"state": "closed",
+	"title": "cmd/asm: confusing names, encodings for VEX instructions",
+	"body": "I have constructed a fairly exhaustive test suite for the x86 assembler and identified some problems. The ones in this issue were added during the Go 1.6 cycle and should be corrected before the release. I intend to do this and also check in the tests.\n\nAdded in 9dd81d6, https://golang.org/cl/14127, Oct 5 2015:\n\n\tMOVHDA X2, X11: have encoding \"c57d6fda\", want \"c5796fda\"\n\t   0:\tc5 7d 6f da          \tvmovdqa %ymm2,%ymm11\n\t   0:\tc5 79 6f da          \tvmovdqa %xmm2,%xmm11\n\n\tMOVHDU X2, X11: have encoding \"c57e6fda\", want \"c57a6fda\"\n\t   0:\tc5 7e 6f da          \tvmovdqu %ymm2,%ymm11\n\t   0:\tc5 7a 6f da          \tvmovdqu %xmm2,%xmm11\n\nIt took me a while to figure out that VMOVDQU, VMOVDQA, and VMOVNTDQ have been renamed to MOVHDU, MOVHDA, and MOVNTHD. That's very strange. We don't use HD in place of DQ anywhere else, nor do we drop the leading V. We do use \"O\" in place of \"DQ\" in a number of places, and that would have been an OK convention to follow, but we also install aliases for the Intel names because this is all so confusing, and that wasn't done here, making the spellings chosen in this CL basically impossible to find. I only found them because I was looking for CLs related to the others below that caused test failures in instructions with more predictable names. These should be renamed, and I will do that.\n\nOnce renamed, there is still the issue, not mentioned anywhere in the CL description nor the code that the X registers (128-bit) are being reused here as identifiers for Y registers (256-bit that hold the 128-bit forms in their bottom halves). The motivation for changing VMOVDQ to MOVHD may have been to emphasize this fact, which I appreciate, but it would have been nice to discuss the overloading explicitly. I am not sure it's a great idea, since it leads to very confusing assembly. At the very least that fact needs clear documentation. It was just slipped in as far as I can tell.\n\nThe overloading of X and Y registers is handled here by changing the name but then all the followup instructions just silently used Y registers without name changes. In many cases it's hard to tell the difference, assuming you're okay with asking for an X instruction and getting one that does what you asked but also sets the high Y bits (the VEX instructions operating on X registers are documented to zero the high Y bits, not use them). But in at least one case it matters greatly: VPTEST on X registers is defined to only consider the low 128 bits in the comparison. If it silently compares the whole 256-bit Y register instead, that's sure to surprise someone (along with the fact that the top half has not been zeroed by all the earlier V instructions).\n\nThis is going to take a while to figure out, clean up, and document. Good thing there are a few days left before the release candidate.\n\nAdded in 0e23ca41, https://golang.org/cl/16434, Nov 2 2015:\n\n\tVPCMPEQB X2, X9, X11: have encoding \"c53574da\", want \"c4613174da\"\n\t   0:\tc5 35 74 da          \tvpcmpeqb %ymm2,%ymm9,%ymm11\n\t   0:\tc4 61 31 74 da       \tvpcmpeqb %xmm2,%xmm9,%xmm11\n\n\tVPMOVMSKB X2, R11: have encoding \"c57dd7da\", want \"c46179d7da\"\n\t   0:\tc5 7d d7 da          \tvpmovmskb %ymm2,%r11d\n\t   0:\tc4 61 79 d7 da       \tvpmovmskb %xmm2,%r11d\n\nAdded in 967564be, https://golang.org/cl/16481, Nov 5 2015:\n\n\tVPAND X2, X9, X11: have encoding \"c535dbda\", want \"c531dbda\"\n\t   0:\tc5 35 db da          \tvpand  %ymm2,%ymm9,%ymm11\n\t   0:\tc5 31 db da          \tvpand  %xmm2,%xmm9,%xmm11\n\nAdded in 321a4072, https://golang.org/cl/16484, Nov 6 2015:\n\n\tVPBROADCASTB X2, X11: have encoding \"c4627d78da\", want \"c4627978da\"\n\t   0:\tc4 62 7d 78 da       \tvpbroadcastb %xmm2,%ymm11\n\t   0:\tc4 62 79 78 da       \tvpbroadcastb %xmm2,%xmm11\n\n\tVPTEST X2, X11: have encoding \"c4627d17da\", want \"c4627917da\"\n\t   0:\tc4 62 7d 17 da       \tvptest %ymm2,%ymm11\n\t   0:\tc4 62 79 17 da       \tvptest %xmm2,%xmm11\n\nAdded in b597e1ed, https://golang.org/cl/16773, Nov 24 2015:\n\t\n\tVPXOR X2, X9, X11: have encoding \"c535efda\", want \"c531efda\"\n\t   0:\tc5 35 ef da          \tvpxor  %ymm2,%ymm9,%ymm11\n\t   0:\tc5 31 ef da          \tvpxor  %xmm2,%xmm9,%xmm11\n\t\nAdded in 1d1f2fb4, https://golang.org/cl/18593, Jan 13 2016:\n\n\tPEXTRQ\t$7, X11, (BX): have encoding \"6644480f3a161b07\", want \"664c0f3a161b07\"\n\t   0:\t66 44                \tdata16 rex.R\n\t   2:\t48 0f 3a 16          \trex.W (bad) \n\t   6:\t1b 07                \tsbb    (%rdi),%eax\n\t   0:\t66 4c 0f 3a 16 1b 07 \tpextrq $0x7,%xmm11,(%rbx)\n\n\t   XDIS 0: SSE       SSE4       6644480F3A161B07         pextrq qword ptr [rbx], xmm3, 0x7\n\t   XDIS 0: SSE       SSE4       664C0F3A161B07           pextrq qword ptr [rbx], xmm11, 0x7\n\nThe problem here, confusing both objdump and xed, is that there are _two_ REX bytes! The 44 48 should be 4C. I'm amazed this executes. Maybe it doesn't.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-01-24T13:55:42Z",
+	"created_at": "2016-01-22T05:32:01Z",
+	"updated_at": "2016-01-24T13:55:42Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

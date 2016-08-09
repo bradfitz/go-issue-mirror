@@ -1,0 +1,22 @@
+{
+	"id": 115363373,
+	"number": 13166,
+	"state": "closed",
+	"title": "archive/zip: ignore malformed Extra field",
+	"body": "I have problem with golang zip reader. We have apk builder which build apk and then encrypted this apk with dex protector.\r\n\r\nWhen i try to open apk file, go return err \"zip: not a valid zip file\". But when i try to open with unzip or zipinfo, worked fine.\r\n(Also I noticed something interesting: in php 5.5 apk file opened with ZipArchive fine, but in 5.6 return error like golang)\r\n\r\nI try open to debug golang archive/zip pckage and found that error returned in this line https://github.com/golang/go/blob/master/src/archive/zip/reader.go#L269.\r\n\r\nThen i try to debug this line like this:\r\n\r\n``` go\r\nfmt.Printf(\"%+v\", f)\r\nfmt.Println(\r\n    \"len(f.Extra):\", len(f.Extra),\r\n    \"len(b):\", len(b),\r\n    \"tag:\", tag,\r\n    \"size:\", size,\r\n)\r\n```\r\nAnd have this results:\r\n\r\n```\r\n\u0026{FileHeader:{\r\nName:META-INF/MANIFEST.MF CreatorVersion:20 ReaderVersion:20 Flags:2056 Method:8 \r\nModifiedTime:23093 ModifiedDate:18230 CRC32:2569174240 \r\nCompressedSize:359 UncompressedSize:570 CompressedSize64:359 UncompressedSize64:570 \r\nExtra:[] ExternalAttrs:0 Comment:\r\n} zipr:0xc208038038 zipsize:276893 headerOffset:0}\r\n\r\n\u0026{FileHeader:{\r\nName:res/drawable/ic_launcher.png CreatorVersion:10 ReaderVersion:10 Flags:2048 Method:0 \r\nModifiedTime:22030 ModifiedDate:18230 CRC32:2310989215 \r\nCompressedSize:20418 UncompressedSize:20418 CompressedSize64:20418 UncompressedSize64:20418\r\nExtra:[] ExternalAttrs:0 Comment:\r\n} zipr:0xc208038038 zipsize:276893 headerOffset:2066}\r\n\r\n...\r\n\r\n----------------\u003ePROBLEM HERE:-------------------=\u003e\r\n\u0026{FileHeader:{\r\nName:AndroidManifest.xml CreatorVersion:10 ReaderVersion:10 Flags:2048 Method:0 \r\nModifiedTime:22030 ModifiedDate:18230 CRC32:1929033187 \r\nCompressedSize:7268 UncompressedSize:7268 CompressedSize64:7268 UncompressedSize64:7268 \r\nExtra:[204 94 136 27 148 14 49 95 154 4 231 53 127 242 4 199 243 207 229 161 103 90 116 69 45 31 54 220 113 43 172 4 159 109 211 57 217 2 161 17 196 16 168 19 174 138 107 15 36 181 223 22 15 21 106 153] \r\nExternalAttrs:0 Comment:\r\n} zipr:0xc208038038 zipsize:276893 headerOffset:22954}\r\n\r\nlen(f.Extra): 56\r\nlen(b): 52\r\ntag: 24268 \r\nsize: 7048 \r\n```\r\n\r\nProblem in extra headers (i think this extra headers add dex protector when encrypt apk). Size more then length of extra bytes. But unzip util and ZipArchive in php5.5 woked perfect with this extras. How to fix this ?\r\n\r\nI want to rewrite this piece in go archive/zip package, so that the extras do not interfere golang zip reader.\r\n\r\nIt's very important for me, because i rewrite build apk from php to golang and I came across a problem that can not decide :(. Please help me.\r\n",
+	"user": {
+		"login": "sintanial",
+		"id": 3396709,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-01-07T00:44:23Z",
+	"created_at": "2015-11-05T20:07:22Z",
+	"updated_at": "2016-01-07T00:44:23Z",
+	"milestone": {
+		"id": 1425772,
+		"number": 34,
+		"title": "Go1.6Maybe"
+	}
+}

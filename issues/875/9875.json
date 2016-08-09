@@ -1,0 +1,27 @@
+{
+	"id": 57696087,
+	"number": 9875,
+	"state": "closed",
+	"title": "runtime: corrupt gp.syscallsp after cgo call",
+	"body": "Hello,\r\n\r\n\r\nI’m experiencing a panic when calling a C function. It happens only occasionally, and, unfortunately, I don’t have a sensibly small piece of code that could reproduce it. I’ve been trying to trace what happens and have even switched to master (from 1.4.1).\r\n\r\nLet me please explain it the way I see it.\r\n\r\n1. cgo [inserts][1] a call to [`cgocall_errno`][2] after each invocation of a C function.\r\n2. `cgocall_errno` finishes by [calling][3] [`exitsyscall`][4].\r\n3. `exitsyscall` [throws][5] an exception “syscall frame is no longer valid.”\r\n\r\nHowever, I don’t see that message when the program panics. I discovered those calls in the stack trace. What actually happens next is as follows.\r\n\r\n4. `throw` tries to [print][6] the error message.\r\n5. Somehow [`morestack`][7] gets in the way and calls [`newstack`][8].\r\n6. `newstack` [throws][9] “stack split at bad time.” \r\n\r\nAnd this is the error message that is printed in the terminal.\r\n\r\nI would be grateful for any feedback. Thank you.\r\n\r\n\r\nRegards,\r\nIvan\r\n\r\n```\r\ngo version devel +b7bfb54 Sat Feb 14 04:22:56 2015 +0000 linux/amd64\r\n```\r\n\r\n[1]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/cmd/cgo/out.go#L437\r\n[2]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/cgocall.go#L91\r\n[3]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/cgocall.go#L132\r\n[4]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/proc1.go#L1834\r\n[5]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/proc1.go#L1839\r\n[6]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/panic.go#L505\r\n[7]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/asm_amd64.s#L278\r\n[8]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/stack1.go#L627\r\n[9]: https://github.com/golang/go/blob/3c0fee10dbe82771dcaa956a95bdfabdced5fff7/src/runtime/stack1.go#L650",
+	"user": {
+		"login": "IvanUkhov",
+		"id": 57440,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2015-07-21T00:32:34Z",
+	"created_at": "2015-02-14T15:20:02Z",
+	"updated_at": "2016-07-20T14:27:16Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

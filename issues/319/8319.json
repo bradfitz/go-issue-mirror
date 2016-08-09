@@ -1,0 +1,26 @@
+{
+	"id": 51288023,
+	"number": 8319,
+	"state": "open",
+	"title": "net: Checking errors for EPIPE and ECONNRESET requires syscall",
+	"body": "\u003cpre\u003eReading and writing can cause EPIPE and ECONNRESET to be returned in addition to io.EOF.\n\n_, err := conn.Write(data)\nif oe, ok := err.(*net.OpError); ok \u0026amp;\u0026amp; (oe.Err == syscall.EPIPE || oe.Err ==\nsyscall.ECONNRESET) {\n    return fmt.Errorf(\u0026quot;Connection closed\u0026quot;)\n}\n\n_, err := conn.Read(data)\noe, ok := err.(*net.OpError)\nif err == io.EOF || ok \u0026amp;\u0026amp; oe.Err == syscall.ECONNRESET {\n    return fmt.Errorf(\u0026quot;Connection closed\u0026quot;)\n}\n\nThis isn't the neatest solution, and if we're going to freeze and possibly internalize\nsyscall, this is going to have to go.\n\nPerhaps something similar to os.IsExist? I'm thinking net.IsReset or net.IsClosed.\n\nOr we could simply return io.EOF for both. I don't know.\n\nAnd what about other operating systems? Do they have similar problems?\u003c/pre\u003e",
+	"user": {
+		"login": "PieterD",
+		"id": 821733,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Thinking"
+		}
+	],
+	"comments": 3,
+	"created_at": "2014-07-02T19:56:43Z",
+	"updated_at": "2015-07-15T02:49:02Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

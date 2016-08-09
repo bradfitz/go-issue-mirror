@@ -1,0 +1,12 @@
+{
+	"id": 198816417,
+	"body": "The regression was caused because in b2b5e77, I didn't correctly preserve the Eqtype semantics needed in addmethod.  In particular, Eqtype for functions ignores the parameter names, but because I added the check to compare the entire receiver parameter tuple as a struct, that means suddenly the receiver parameter name did matter.\r\n\r\nMore over, GO_GCFLAGS=-newexport only influences how the standard library is built.  The failing sync_test test is actually being built without the -newexport flag.  Specifically, the installed copy of package testing has binary export data for `sync.Mutex`.  But then because sync/export_test.go adds code to package sync, it's being recompiled with the non-binary export data.\r\n\r\nThe problem then arises because the binary export data format is exporting short hand parameter names (e.g., just `m`), but the text format uses the long hand names (e.g., `sync.m·1`).  These are separate identifiers, so they cause the receiver parameter list struct comparison to fail.\r\n\r\nI have a fix for the regression at least.  Not sure how/if to handle the second part.  It'll be a non-issue once we switch to the new export format,  so maybe not worth worrying about.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-20T00:49:36Z",
+	"updated_at": "2016-03-20T00:49:36Z"
+}

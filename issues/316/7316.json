@@ -1,0 +1,32 @@
+{
+	"id": 51286521,
+	"number": 7316,
+	"state": "open",
+	"title": "cmd/compile: spurious nil check in len(slice)",
+	"body": "\u003cpre\u003epackage main\n\nfunc f() int {\nbuf := make([]byte, 1024)\nreturn len(buf)\n}\n\ngo tool 6g -S x.go\n\n\t000000 00000 (x.go:3)\tTEXT\t\u0026quot;\u0026quot;.f+0(SB),$1056-8\n\t000000 00000 (x.go:3)\tMOVQ\t2208(GS),CX\n\t0x0009 00009 (x.go:3)\tLEAQ\t-928(SP),AX\n\t0x0011 00017 (x.go:3)\tCMPQ\tAX,(CX)\n\t0x0014 00020 (x.go:3)\tJHI\t,29\n\t0x0016 00022 (x.go:3)\tCALL\t,runtime.morestack8(SB)\n\t0x001b 00027 (x.go:3)\tJMP\t,0\n\t0x001d 00029 (x.go:3)\tSUBQ\t$1056,SP\n\t0x0024 00036 (x.go:3)\tFUNCDATA\t$2,\u0026quot;\u0026quot;.gcargs·0+0(SB)\n\t0x0024 00036 (x.go:3)\tFUNCDATA\t$3,\u0026quot;\u0026quot;.gclocals·1+0(SB)\n\t0x0024 00036 (x.go:4)\tLEAQ\t\u0026quot;\u0026quot;.autotmp_0000+0(SP),DI\n\t0x0028 00040 (x.go:4)\tMOVQ\t$0,AX\n\t0x002b 00043 (x.go:4)\tMOVQ\t$128,CX\n\t0x0032 00050 (x.go:4)\tREP\t,\n\t0x0033 00051 (x.go:4)\tSTOSQ\t,\n\t0x0035 00053 (x.go:4)\tLEAQ\t\u0026quot;\u0026quot;.autotmp_0000+0(SP),BX\n\t0x0039 00057 (x.go:4)\tMOVQ\tBX,\u0026quot;\u0026quot;.autotmp_0001+1024(SP)\n\t0x0041 00065 (x.go:4)\tMOVQ\t$1024,\u0026quot;\u0026quot;.buf+1040(SP)\n\t0x004d 00077 (x.go:4)\tMOVQ\t$1024,\u0026quot;\u0026quot;.buf+1048(SP)\n\t0x0059 00089 (x.go:4)\tMOVQ\t\u0026quot;\u0026quot;.autotmp_0001+1024(SP),BX\n\t0x0061 00097 (x.go:4)\tMOVQ\tBX,\u0026quot;\u0026quot;.buf+1032(SP)\n\t0x0069 00105 (x.go:4)\tCMPQ\t\u0026quot;\u0026quot;.buf+1032(SP),$0\n\t0x0072 00114 (x.go:4)\tJEQ\t$1,140\n\t0x0074 00116 (x.go:5)\tMOVQ\t\u0026quot;\u0026quot;.buf+1040(SP),BX\n\t0x007c 00124 (x.go:5)\tMOVQ\tBX,\u0026quot;\u0026quot;.~anon0+1064(FP)\n\t0x0084 00132 (x.go:5)\tADDQ\t$1056,SP\n\t0x008b 00139 (x.go:5)\tRET\t,\n\t0x008c 00140 (x.go:4)\tMOVL\tAX,(NONE)\n\t0x0093 00147 (x.go:5)\tJMP\t,116\n\nthe CMPQ at 0x0069 is a nil check during len(buf), which is bogus.\n\nalso, why is the initialization of the header not registerizing better and then being\noptimized away?\ni would expect this code to be something like\n\nSUBQ $1056, SP\nLEAQ autotmp+0(SP), DI\nMOVQ $0, AX\nMOVQ $128, CX\nREP\nSTOSQ\nMOVQ $1024, result+1064(FP)\nRET\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Started"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2014-02-12T19:46:46Z",
+	"updated_at": "2015-06-08T06:23:57Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

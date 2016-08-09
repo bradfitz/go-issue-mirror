@@ -1,0 +1,12 @@
+{
+	"id": 66072494,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eYup, explicitly causing the port to be reused (as *BSD must do more often by default)\ncauses the net/http tests to be unhappy:\n\n\ndiff -r cda840e2befc src/pkg/net/http/httptest/server.go\n--- a/src/pkg/net/http/httptest/server.go       Sun Nov 25 09:04:13 2012 -0800\n+++ b/src/pkg/net/http/httptest/server.go       Sun Nov 25 11:38:01 2012 -0800\n@@ -50,6 +50,8 @@\n        return\n }\n \n+var lastAddr = make(chan string, 1)\n+\n func newLocalListener() net.Listener {\n        if *serve != \"\" {\n                l, err := net.Listen(\"tcp\", *serve)\n@@ -58,6 +60,19 @@\n                }\n                return l\n        }\n+\n+       // Try to reuse the most-recently-closed address first, just to make\n+       // port-reuse bugs stand out easier.\n+       select {\n+       case addr := \u0026lt;-lastAddr:\n+               l, err := net.Listen(\"tcp\", addr)\n+               if err == nil {\n+                       println(\"reused\", addr)\n+                       return l\n+               }\n+       default:\n+       }\n+\n        l, err := net.Listen(\"tcp\", \"127.0.0.1:0\")\n        if err != nil {\n                if l, err = net.Listen(\"tcp6\", \"[::1]:0\"); err != nil {\n@@ -153,7 +168,13 @@\n // Close shuts down the server and blocks until all outstanding\n // requests on this server have completed.\n func (s *Server) Close() {\n+       addr := s.Listener.Addr().String()\n        s.Listener.Close()\n+       select {\n+       case lastAddr \u0026lt;- addr:\n+       default:\n+       }\n        s.wg.Wait()\n }\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-25T19:42:30Z",
+	"updated_at": "2014-12-22T06:20:59Z"
+}

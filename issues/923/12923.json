@@ -1,0 +1,17 @@
+{
+	"id": 111292533,
+	"number": 12923,
+	"state": "closed",
+	"title": "x/net/http2: server appears to send DATA_FRAME before END_HEADERS for a stream",
+	"body": "```\r\nfunc TestServer_Response_LargeWrite_Concurrent(t *testing.T) {\r\n\tconst size = 1 \u003c\u003c 20\r\n\tconst maxFrameSize = 16 \u003c\u003c 10\r\n\ttestServerResponse(t, func(w http.ResponseWriter, r *http.Request) error {\r\n\t\tn, err := w.Write(bytes.Repeat([]byte(\"a\"), size))\r\n\t\tif err != nil {\r\n\t\t\treturn fmt.Errorf(\"Write error: %v\", err)\r\n\t\t}\r\n\t\tif n != size {\r\n\t\t\treturn fmt.Errorf(\"wrong size %d from Write\", n)\r\n\t\t}\r\n\t\treturn nil\r\n\t}, func(st *serverTester) {\r\n\t\tif err := st.fr.WriteSettings(\r\n\t\t\tSetting{SettingInitialWindowSize, 0},\r\n\t\t\tSetting{SettingMaxFrameSize, maxFrameSize},\r\n\t\t); err != nil {\r\n\t\t\tt.Fatal(err)\r\n\t\t}\r\n\t\tst.wantSettingsAck()\r\n\r\n\t\tnreqs := 1000\r\n\t\tstreamID := uint32(1) // clients send odd ids\r\n\t\tfor i := 0; i \u003c nreqs; i++ {\r\n\t\t\tprintln(\"sending:\", streamID)\r\n\t\t\tst.bodylessReq(streamID) // GET /\r\n\t\t\t// Give the handler quota to write:\r\n\t\t\tif err := st.fr.WriteWindowUpdate(streamID, size); err != nil {\r\n\t\t\t\tt.Fatal(err)\r\n\t\t\t}\r\n\t\t\t// Give the handler quota to write to connection-level\r\n\t\t\t// window as well\r\n\t\t\tif err := st.fr.WriteWindowUpdate(0, size); err != nil {\r\n\t\t\t\tt.Fatal(err)\r\n\t\t\t}\r\n\t\t\tstreamID += 2\r\n\t\t}\r\n\r\n\t\tfor {\r\n\t\t\tprintln(\"ReadFrame\")\r\n\t\t\tf, err := st.fr.ReadFrame()\r\n\t\t\tif err != nil {\r\n\t\t\t\tpanic(err)\r\n\t\t\t}\r\n\t\t\tprintln(\"nreqs:\", nreqs)\r\n\t\t\tif es, ok := f.(streamEnder); ok \u0026\u0026 es.StreamEnded() {\r\n\t\t\t\tnreqs--\r\n\t\t\t\tif nreqs == 0 {\r\n\t\t\t\t\treturn\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}\r\n\t})\r\n}\r\n```\r\n\r\nRunning `go test -run=TestServer_Response_LargeWrite_Concurrent -v` hangs.",
+	"user": {
+		"login": "bmizerany",
+		"id": 46,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-10-14T03:29:17Z",
+	"created_at": "2015-10-13T23:30:24Z",
+	"updated_at": "2015-10-21T03:17:44Z"
+}

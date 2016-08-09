@@ -1,0 +1,32 @@
+{
+	"id": 146563626,
+	"number": 15171,
+	"state": "open",
+	"title": "spec: clarify assignability for non-constant untyped boolean values",
+	"body": "Consider the initialization of `c` in the following example:\r\n\r\nhttp://play.golang.org/p/iwCeX6lwkg\r\n```Go\r\npackage main\r\nvar (\r\n\ta, b int\r\n\tc    bool = a \u003e b\r\n)\r\nfunc main() {}\r\n```\r\nWe have an untyped boolean value result of the comparison operator (\"Comparison\r\noperators compare two operands and yield an untyped boolean value.\")\r\n\r\nRegarding the declaration of `c` in the example, the specification says\r\n(https://golang.org/ref/spec#Variable_declarations):\r\n\r\n\u003e (1) If a list of expressions is given, the variables are initialized with the\r\n\u003e expressions following the rule for assignments.\r\n\u003e (2) Otherwise, each variable is initialized to its zero value.\r\n\r\n\u003e (3) If a type is present, each variable is given that type.\r\n\u003e (4) Otherwise, each variable is given the type of the corresponding\r\n\u003e initialization value in the assignment.  If that value is an untyped constant,\r\n\u003e it is first converted to its default type; if it is an untyped boolean value,\r\n\u003e it is first converted to type bool.\r\n\r\nThe example falls in the clauses (1) and (3). Clause (2) is not applicable,\r\nbecause an initializer expression is given and (4) is not applicable, because a\r\ntype is present; in particular, the implicit conversion to `bool` in specified\r\nby (4) does not take place.\r\n\r\nThen, following (1) we consult the \"rules for assignments\"\r\n(https://golang.org/ref/spec#Assignments)\r\n\r\n\u003e In assignments, each value must be assignable to the type of the operand to\r\n\u003e which it is assigned, with the following special cases:\r\n\u003e (1) Any typed value may be assigned to the blank identifier.\r\n\u003e (2) If an untyped constant is assigned to a variable of interface type or the\r\n\u003e blank identifier, the constant is first converted to its default type.\r\n\u003e (3) If an untyped boolean value is assigned to a variable of interface type or\r\n\u003e the blank identifier, it is first converted to type bool.\r\n\r\nThe special case (1) is not applicable, because neither the assignments is to\r\nthe blank identifier, nor the assigned value is untyped.\r\n\r\nThe special case (2) is not applicable, because neither the assigned value is an\r\nuntyped constant (it's not a constant), nor it is assigned to a variable of an\r\ninterface type (the type is `bool`), nor to the blank identifier\r\n\r\nThe special case (3) is not applicable, because the untyped boolean value is not\r\nassigned to a variable of an interface type, or the blank identifier.\r\n\r\nTherefore, the initialization of `c` must be checked according to the\r\nassignability criteria (https://golang.org/ref/spec#Assignability) :\r\n\r\n\u003e A value x is assignable to a variable of type T (\"x is assignable to T\") in\r\n\u003e any of these cases:\r\n\u003e (1) x's type is identical to T.\r\n\u003e (2) x's type V and T have identical underlying types and at least one of V or T is\r\n\u003e not a named type.\r\n\u003e (3) T is an interface type and x implements T.\r\n\u003e (4) x is a bidirectional channel value, T is a channel type, x's type V and T have\r\n\u003e identical element types, and at least one of V or T is not a named type.\r\n\u003e (5) x is the predeclared identifier nil and T is a pointer, function, slice, map,\r\n\u003e channel, or interface type.\r\n\u003e (6) x is an untyped constant representable by a value of type T.\r\n\r\nClause (1) is not applicable because `T` is `bool` and the value is untyped\r\nboolean.\r\n\r\nClause (2) is not applicable, because there is no way to derive an \"underlying\r\ntype\" (https://golang.org/ref/spec#Types) untyped boolean values.\r\n\r\nClause (3) is not applicable because `bool` is not an interface type.\r\n\r\nClause (4) is not applicable, because neither the expression's type, nor `T` is\r\na channel type.\r\n\r\nClause (5) it not applicable, because neither the expression if the `nil`, nor\r\n`T` is one of the enumerated in the clause types.\r\n\r\nClause (6) is not applicable, because the expression is not an untyped constant.\r\n\r\nIn conclusion, I couldn't find a text the specification, which renders the above\r\nexample program as correct.  Similar issues arise with initializations and\r\nassignments involving the additional untyped boolean values, yielded by type\r\nassertions, receive operators, or map index operators.\r\n\r\nThe compilers (`go`, `gccgo` and `gotypes`) all accept the example program.\r\n\r\nIt seems there's an omission in the specification. One possible way to fix it is\r\nto add to the assignability criteria a clause, which specifies that an untyped\r\nboolean value is assignable to `T` if the underlying type of `T` is `bool`.\r\n",
+	"user": {
+		"login": "momchil-velikov",
+		"id": 5541560,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-04-07T09:41:36Z",
+	"updated_at": "2016-04-12T18:06:43Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

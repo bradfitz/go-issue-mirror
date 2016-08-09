@@ -1,0 +1,22 @@
+{
+	"id": 121748828,
+	"number": 13582,
+	"state": "closed",
+	"title": "path/filepath: EvalSymlinks no longer does",
+	"body": "Here's a program that creates /tmp/c -\u003e /tmp/b -\u003e /tmp/a and calls filepath.EvalSymlinks.\nAlso, on my Mac, /tmp -\u003e /private/tmp.\n\n\tpackage main\n\t\n\timport (\n\t\t\"fmt\"\n\t\t\"os\"\n\t\t\"path/filepath\"\n\t)\n\t\n\tfunc main() {\n\t\tos.Remove(\"/tmp/a\")\n\t\tos.Remove(\"/tmp/b\")\n\t\tos.Remove(\"/tmp/c\")\n\t\tos.Create(\"/tmp/a\")\n\t\tos.Symlink(\"/tmp/a\", \"/tmp/b\")\n\t\tos.Symlink(\"/tmp/b\", \"/tmp/c\")\n\t\tfmt.Println(filepath.EvalSymlinks(\"/tmp/c\"))\n\t}\n\nThis no longer finds /private/tmp/a, like it has in the past:\n\n\t$ go1.2 run /tmp/x.go\n\t/private/tmp/a \u003cnil\u003e\n\t$ go1.3 run /tmp/x.go\n\t/private/tmp/a \u003cnil\u003e\n\t$ go1.4 run /tmp/x.go\n\t/private/tmp/a \u003cnil\u003e\n\t$ go1.5 run /tmp/x.go\n\t/private/tmp/a \u003cnil\u003e\n\t$ go run /tmp/x.go\n\t/tmp/b \u003cnil\u003e\n\t$ \n\nI suspect CL 16192.\n\nThis broke a real test inside Google as well.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-12-14T17:21:42Z",
+	"created_at": "2015-12-11T16:51:52Z",
+	"updated_at": "2015-12-14T17:21:42Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

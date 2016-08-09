@@ -1,0 +1,26 @@
+{
+	"id": 118809052,
+	"number": 13395,
+	"state": "closed",
+	"title": "net/rpc: Server.ServeHTTP assumes default http mux",
+	"body": "`rpc.Server.ServeHTTP()` calls `http.Handle(rpcPath, server)` and registers with `http.DefaultServeMux`. The second call to ServeHTTP() with the default names normally results in `panic: http: multiple registrations for /_goRPC_`. This means that if I want to start two different RPC endpoints on different ports I have to work around this library.\r\n\r\n### Solution with workaround\r\n[Playground link](https://play.golang.org/p/lLIMUdpQC4)\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n\t\"net/rpc\"\r\n)\r\n\r\nfunc main() {\r\n\tServe(\"one\", \":2001\")\r\n\tServe(\"two\", \":2002\")\r\n\tCall(\":2001\")\r\n\tCall(\":2002\")\r\n}\r\n\r\nfunc Call(port string) {\r\n\tclient, err := rpc.DialHTTP(\"tcp\", port)\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t}\r\n\tvar name string\r\n\terr = client.Call(\"Server.Name\", struct{}{}, \u0026name)\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t}\r\n\tfmt.Println(\"Server name on port\", port, \"is\", name)\r\n}\r\n\r\nfunc Serve(name, port string) {\r\n\tserv := rpc.NewServer()\r\n\ts := Server{name}\r\n\tserv.Register(\u0026s)\r\n\r\n\t// ===== workaround ==========\r\n\toldMux := http.DefaultServeMux\r\n\tmux := http.NewServeMux()\r\n\thttp.DefaultServeMux = mux\r\n\t// ===========================\r\n\r\n\tserv.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)\r\n\r\n\t// ===== workaround ==========\r\n\thttp.DefaultServeMux = oldMux\r\n    // ===========================\r\n\r\n\tl, err := net.Listen(\"tcp\", port)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tgo http.Serve(l, mux)\r\n}\r\n\r\n// RPC Server\r\ntype Server struct {\r\n\tname string\r\n}\r\n\r\nfunc (s *Server) Name(arg struct{}, ret *string) error {\r\n\t*ret = s.name\r\n\treturn nil\r\n}\r\n```\r\n\r\nMaybe the API could be improved for a future version to support that use case without a workaround.\r\nLike a `ServeHTTPMux()` that additionally takes a `http.ServeMux`\r\n\r\nGo is `go version go1.5.1 darwin/amd64`",
+	"user": {
+		"login": "mbertschler",
+		"id": 3779568,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-05-05T17:17:06Z",
+	"created_at": "2015-11-25T10:49:21Z",
+	"updated_at": "2016-05-05T18:01:21Z",
+	"milestone": {
+		"id": 1414136,
+		"number": 32,
+		"title": "Go1.7Early"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

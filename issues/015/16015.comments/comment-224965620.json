@@ -1,0 +1,12 @@
+{
+	"id": 224965620,
+	"body": "Added the depth check when refactoring reflect value printing https://go-review.googlesource.com/#/c/20923/.\r\n\r\nAs far as i recall currently:\r\nIt preserves behavior and performance of 1.6 in 1.7 and is an optimization to call handlemethods in printArg at depth 0 instead of in printValue always.\r\n\r\nIf only the depth check is removed handleMethods is called twice for the default branch of printArg.\r\nIf the handleMethods call in printArg is removed to prevent the above there is a hit\r\nin performance for e.g. simple Stringer printing (did a quick benchmark to reconfirm my old testing):\r\n\r\n```\r\nname               old time/op  new time/op  delta\r\nSprintfStringer-4   281ns ±10%   311ns ±20%  +10.98%  (p=0.000 n=18+19)\r\n```\r\n\r\nSo the depth check addresses the CL comment about \"slows down a very common operation\" and to not slow down printValue for depth 0 either.\r\n\r\nI will take a look for go 1.8 how we can ideally keep the performance for Stringer and still call handleMethods consistently once for reflect values.",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-09T17:22:18Z",
+	"updated_at": "2016-06-09T17:45:52Z"
+}

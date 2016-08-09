@@ -1,0 +1,12 @@
+{
+	"id": 66058866,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eNevermind, this is just a race/bug in your code.\n\nA Read on the pipe is only valid between Start and Wait.\n\nThis is documented:\n\n   \u003ca href=\"http://golang.org/pkg/exec/#Cmd.StdoutPipe\"\u003ehttp://golang.org/pkg/exec/#Cmd.StdoutPipe\u003c/a\u003e\n   \"StdoutPipe returns a pipe that will be connected to the command's\n    standard output when the command starts. The pipe will be closed \n    automatically after Wait sees the command exit.\"\n\nPlay with this code in exec_test.go to see the difference:\n\nfunc TestStress(t *testing.T) {\n\tif testing.Short() {\n                return\n        }\n\tfor i := 0; i \u0026lt; 1000; i++ {\n                cmd := helperCommand(\"echo\", \"foo\")\n                p, err := cmd.StdoutPipe()\n                if err != nil {\n                        t.Errorf(\"%d. StdoutPipe: %v\", i, err)\n\t                continue\n                }\n                type strErr struct {\n\t                s   string\n                        err os.Error\n                }\n                c := make(chan strErr)\n                go func() {\n        \t        b, err := ioutil.ReadAll(p)\n                        c \u0026lt;- strErr{string(b), err}\n                }()\n                if err := cmd.Start(); err != nil {\n                        t.Errorf(\"%d. Start: %v\", i, err)\n                        continue\n                }\n                se := \u0026lt;-c\n                if err := cmd.Wait(); err != nil {\n                        t.Errorf(\"%d. Wait: %v\", i, err)\n                        continue\n                }\n                if se.err != nil {\n                        t.Errorf(\"%d. echo: %v\", i, se.err)\n                }\n                if se.s != \"foo\\n\" {\n\t\t        t.Errorf(\"%d. echo: want %q, got %q\", i, \"foo\\n\", se.s)\n                }\n\t}\n}\n\n\n... if you move the se := \u0026lt;-c line after Wait, then you get errors.  If it's before,\nit's fine.\u003c/pre\u003e\n\n\n\n_Status changed to **Invalid**._",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-09-19T18:05:00Z",
+	"updated_at": "2014-12-22T06:03:31Z"
+}

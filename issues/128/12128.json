@@ -1,0 +1,22 @@
+{
+	"id": 100728391,
+	"number": 12128,
+	"state": "closed",
+	"title": "proposal: pack small values into interface again.",
+	"body": "Reason: improve generic json/msgpack/etc marshalling performance\r\n\r\nGo \u003c1.4 packed small values (upto sizeof(uintptr_t)) into interface itself.\r\nGo \u003e=1.4 allocates this values separately to simplify GC.\r\n\r\nI propose scheme which does not complicate GC much and allows to pack non-pointer small values (integers, doubles, small structs) into interface:\r\n\r\nAs I understand, currently type of memory location is described with 1bit mark:\r\n  0 - non-pointer\r\n  1 - pointer\r\n\r\nI propose describing with 2bit mark:\r\n  00 - non-pointer definitely\r\n  01 - pointer definitely\r\n  10 - interface `type` field\r\n  11 - interface `value` field (perhaps, could be omitted)\r\nSo that, marker may distinguish interface `value` field kind (pointer/non-pointer) by analysing  interface type field.\r\n\r\nTo make this analysis fast, I propose to play with interface descriptor allocation:\r\n  - interface descriptor of pointer type should be allocated as usual (with at least 16byte alignment)\r\n    (the same for struct which contains one pointer)\r\n  - interface descriptor for non-pointer type is allocated with 8byte offset from 16byte alignment.\r\n\r\nSo, GC marker may just analyse pointer stored in the interface `type` field: if it is 16bit aligned, then `value` field is a pointer, otherwise `value` is not a pointer.\r\n\r\nExcuse me for disturbing if it were already discussed.",
+	"user": {
+		"login": "funny-falcon",
+		"id": 249427,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-08-13T13:23:15Z",
+	"created_at": "2015-08-13T09:57:30Z",
+	"updated_at": "2015-08-13T23:34:40Z"
+}

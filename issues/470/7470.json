@@ -1,0 +1,27 @@
+{
+	"id": 51286755,
+	"number": 7470,
+	"state": "closed",
+	"title": "runtime: windows/386 SEH corruption",
+	"body": "\u003cpre\u003eThe windows/386 builder crashes frequently with \n\n# runtime -cpu=1,2,4\nexit status -1073741819\nFAIL\truntime\t74.823s\n\nthat's 0xc0000005, the windows \u0026quot;memory access violation\u0026quot;. The test is causing\nthat intentionally, but it is supposed to turn into a panic, not crash the program. \n\nIt is possible to use 'gdb -p' to attach to the broken process when this happens and\npoke around.\n\nThe TestCallbackPanic tests have Go call C call Go, with the inner Go panicking and\nbeing recovered by a defer in the outer Go. The call from C to Go pushes a new SEH, but\nthe panic+recovery does not pop it. This leaves the SEH pointing at memory farther down\nthe m stack, memory that it takes a little work to overwrite, but once it has been\noverwritten, the SEH handler chain is lost, and a future hw fault will not end up in\nruntime.sigtramp and Go will not handle it, and we get exit 0xc0000005.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:41:32Z",
+	"created_at": "2014-03-05T03:49:56Z",
+	"updated_at": "2016-06-25T01:29:04Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

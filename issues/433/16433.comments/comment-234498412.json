@@ -1,0 +1,12 @@
+{
+	"id": 234498412,
+	"body": "Offset into strings for JSON is good debug or recovery information potentially.\r\n\r\n`\r\n{\r\n    \"keyA\": \"blah\",\r\n    \"keyB\": \"blah\",\r\n    (\u003c- repeated many times)\r\n    keyABCDEFGH\": \"blah\",\r\n    \"keyABCEFGI\": \"blah\",\r\n    \u003c- so on\r\n}\r\n`\r\n\r\nA bug: you get this instance of JSON once every two weeks with that missing quote. This would be a nightmare to track down with bad or no logging assuming a large dataset - getting the exact malformed JSON point makes knowing \"hey a client sent this bad huge data set, they have a bug\" provable.\r\n\r\nThe proposal is a superset of this though, an arbitrary matching of string character index to JSON data symbols for processing beyond just signaling error handling.\r\n\r\n\"If you look at the original JSON string, each map and slice in the unmarshaled struct and each of their elements and their values point to each of these character indexes\" I think is what is being asked for.\r\n\r\nA solution could be a method that holds onto the work by returning an independent map:\r\n\r\n`\r\ntype JSONSymbol string\r\n`\r\n`\r\ntype StringOffset int64\r\n`\r\n`\r\nfunc UnmarshalWithOffset(data []byte, v interface{}) (map[JSONSymbol]StringOffset, error)\r\n`\r\n\r\nThen you iterate through the map or directly lookup the JSON symbols you care about. The documentation would have to define the JSONSymbol encoding. Ordering could be part of the JSONSymbol encoding.\r\n\r\nThis is a specialized use of JSON. I think it would not be too difficult to write a third party implementation to do the work a second time (which leaves the standard library as is):\r\n\r\n`\r\nfunc OffsetsForUnmarshal(jsondata string, valid YourUnmarshalType) ([]string, map[string]int64)\r\n`\r\n\r\nDetermining last character for an object is looking up next object first character, minus one.",
+	"user": {
+		"login": "pciet",
+		"id": 7949131,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-22T09:29:05Z",
+	"updated_at": "2016-07-22T09:29:05Z"
+}

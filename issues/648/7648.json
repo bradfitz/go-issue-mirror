@@ -1,0 +1,27 @@
+{
+	"id": 51287016,
+	"number": 7648,
+	"state": "closed",
+	"title": "cmd/gc: spurious \"bad negated constant\" error in complex()",
+	"body": "\u003cpre\u003eUsing a valid negated constant in the second argument to complex() causes the error\n\u0026quot;bad negated constant\u0026quot; -- but only when the constant is exported, and the\nerror only gets triggered when the package gets imported.\n\nconst A = complex(someConst,-someConst) // spurious error!\nconst A = complex(-someConst,someConst) // no error\n\nCan be reproduced by creating two files like so:\n\na.go\nb/b.go\n\nWhen building package a, no errors are reported.  When building package b, the error is\nreported as \u0026quot;.\\b.go:6: bad negated constant\u0026quot; -- which unfortunately reports\nthe line of the import statement in b.go, not the line in a.go where the complex()\nhappens.\n\nIf the const A is changed to lowercase (unexported) then no problems ever happen, so it\nseems to be something in the importing constants process (even if the constant isn't\nused).\n\nThe attached repro uses local import \u0026quot;..\u0026quot; for simplicity but the original bug\nwas not in a local-import situation so it's not related to the local import mechanism.\n\nThe origin of the text \u0026quot;bad negated constant\u0026quot; is\n\u003ca href=\"http://golang.org/src/cmd/gc/go.y?h=negated#L2131\"\u003ehttp://golang.org/src/cmd/gc/go.y?h=negated#L2131\u003c/a\u003e\n\nThanks,\nJohn C.\ngo version go1.2.1 windows/amd64\n\n-------Contents of a.go----------------\npackage a\n\nconst (\n\tsinPi4 = 0.70710678118654752440084436210484903928483593768847\n\n\tA = complex(sinPi4, -sinPi4) // compiling this line causes \u0026quot;bad negated constant\u0026quot; when this package gets imported\n\t// A = complex(-sinPi4, sinPi4) // compiling this line does NOT cause \u0026quot;bad negated constant\u0026quot; when this package gets imported\n)\n\n-------Contents of b.go----------------\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\n\ta \u0026quot;..\u0026quot; // package \u0026quot;a\u0026quot;\n)\n\nfunc main() {\n\tfmt.Println(a.A)\n}\n---------------------------------\u003c/pre\u003e",
+	"user": {
+		"login": "jscrockett01",
+		"id": 9746353,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:42:30Z",
+	"created_at": "2014-03-26T18:09:18Z",
+	"updated_at": "2016-06-25T01:30:53Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

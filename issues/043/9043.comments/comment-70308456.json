@@ -1,0 +1,12 @@
+{
+	"id": 70308456,
+	"body": "bytes.Buffer escapes due to 2 things:\r\n\r\n1. Assignment of the form b.buf = b.buf[n:m] as in:\r\n\r\nfunc (b *Buffer) Truncate(n int) {\r\n\t...\r\n\tb.buf = b.buf[0 : b.off+n]\r\n}\r\n\r\n2. Assignments of the form b.buf = b.bootstrap[0:]\r\nBut it is worse than that, because it is:\r\n\r\nbuf := b.bootstrap[0:]\r\n...\r\nb.buf = buf\r\n\r\nas in:\r\n\r\nfunc (b *Buffer) grow(n int) int {\r\n\tvar buf []byte\r\n\t...\r\n\tb.buf = b.bootstrap[0:]\r\n\t...\r\n\tb.buf = buf\r\n}\r\n\r\nI see how to fix 1. b.buf = b.buf[n:m] can be simply ignored by escape analysis, as it does not introduce any new flows.\r\n\r\nb.buf = b.bootstrap[0:] can't be ignored, because it does introduce new flows.\r\nCurrently Bytes method:\r\nfunc (b *Buffer) Bytes() []byte { return b.buf[b.off:] }\r\ndoes not lead to b leakage.\r\nIf we ignore b.buf = b.bootstrap[0:] *and* Bytes does not lead to b leakage; then caller of Bytes will get dangling reference to b.bootstrap.\r\n\r\nMoreover, the following code:\r\n\r\nbuf := b.bootstrap[0:]\r\n...\r\nb.buf = buf\r\n\r\nrequires substantially more complex flow analysis than we have now, and SSA analysis as we need to know that b refers to the same object in both statements.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-16T19:31:31Z",
+	"updated_at": "2015-01-16T19:31:31Z"
+}

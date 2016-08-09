@@ -1,0 +1,22 @@
+{
+	"id": 51281130,
+	"number": 3773,
+	"state": "closed",
+	"title": "encoding/xml: report write error",
+	"body": "\u003cpre\u003eJust wandering what's the philosophy on handling I/O errors here, because there is a lot\nof bufio.Writer method calls inside without errors being checked. As an example\nEncoder.Encode method:\n\nfunc (enc *Encoder) Encode(v interface{}) error {\n        err := enc.marshalValue(reflect.ValueOf(v), nil)\n        enc.Flush()\n        return err\n}\n\nFor a small amount of data if you write to a file on a disk with no free space on it -\nit will return nil, even though enc.Flush() returned an error. In fact, let me make a\ntest case:\n\n------------------------------------------------------------------------------\npackage main\n\nimport \u0026quot;encoding/xml\u0026quot;\nimport \u0026quot;errors\u0026quot;\n\n// very bad, always returns an error                                                    \n                            \ntype BadWriter int\nfunc (BadWriter) Write(data []byte) (int, error) {\n        return 0, errors.New(\u0026quot;oh, no, please stop it\u0026quot;)\n}\n\ntype Dummy struct {\n        Field int\n}\n\nfunc main() {\n        enc := xml.NewEncoder(BadWriter(0))\n        err := enc.Encode(Dummy{1})\n        if err != nil {\n                panic(err)\n        }\n        println(\u0026quot;seems fine\u0026quot;)\n}\n------------------------------------------------------------------------------\n\nSeems \u0026quot;fine\u0026quot;, eh?\u003c/pre\u003e",
+	"user": {
+		"login": "nsf",
+		"id": 12567,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:19:55Z",
+	"created_at": "2012-06-23T22:54:07Z",
+	"updated_at": "2016-06-24T22:20:52Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 198564464,
+	"body": "I don't think having Close do a 4-byte read is a valid solution. The zlib format does not encode the uncompressed size, so there is no way for Close to know that the next 4 bytes is the checksum. This happens to work for you since you know that information, but the Reader implementation does not know that. It only knows to read the checksum when it receives an EOF from the underlying flate.Reader. However, the current implementation of [flate.Read](https://github.com/golang/go/blob/53984e5be200c40c4cf2ded9a1d002a5906c9e1f/src/compress/flate/inflate.go#L345-L349) always returns `(n, nil)` if n is positive. Thus, zlib.Reader cannot get an EOF unless an attempt to read past the length of the stream is made.\r\n\r\nThus, I agree with @bradfitz that the best solution is to just document this situation.\r\n\r\nOn a side note, the documentation about \"The implementation buffers input and may read more data than necessary from r.\" should probably be updated since it is not always true. If the reader passed in satisfies the io.ByteReader interface, it will *not* read more data than necessary.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-18T22:20:39Z",
+	"updated_at": "2016-03-18T22:34:03Z"
+}

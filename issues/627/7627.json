@@ -1,0 +1,27 @@
+{
+	"id": 51286988,
+	"number": 7627,
+	"state": "closed",
+	"title": "cmd/go: go test -compiler gccgo produces duplicate symbol errors",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nSee attached zip file for reproduction\n\nWhat is the expected output? What do you see instead?\n\nThis sample passes with -compiler gc\n\n % go test -compiler gc -v  issue/...\n=== RUN TestData\n--- PASS: TestData (0.00 seconds)\n        a_test.go:6: 0 false \n=== RUN TestXData\n--- PASS: TestXData (0.00 seconds)\n        x_test.go:7: foo \u0026amp;{0 false }\nPASS\nok      issue/a 0.005s\n?       issue/b [no test files]\n\nBut blows up due to duplicate symbols during linking of a/a.test\n\nucky(~/src) % go test -compiler gccgo -v  issue/...\n# testmain\n/tmp/go-build896181789/issue/a/_test/issue/liba.a(a.o):(.rodata.__go_tdn_issue_a..issue_a.t+0x0):\nmultiple definition of `__go_tdn_issue_a..issue_a.t'\n/tmp/go-build896181789/issue/liba.a(a.o):(.rodata.__go_tdn_issue_a..issue_a.t+0x0):\nfirst defined here\n/tmp/go-build896181789/issue/a/_test/issue/liba.a(a.o): In function `issue_a.TestData':\n/home/dfc/src/issue/a/a_test.go:5: multiple definition of `issue_a.Data'\n/tmp/go-build896181789/issue/liba.a(a.o):(.bss+0x0): first defined here\n/tmp/go-build896181789/issue/a/_test/issue/liba.a(a.o): In function `issue_a..import':\n/home/dfc/src/issue/a/a.go:1: multiple definition of `issue_a..import'\n/tmp/go-build896181789/issue/liba.a(a.o):/home/dfc/src/issue/a/a.go:1: first defined here\ncollect2: error: ld returned 1 exit status\nFAIL    issue/a [build failed]\n?       issue/b [no test files]\n\nPlease use labels and text to provide additional information.\n\nLooking at the -x output for go test issue/a\n\ngccgo -o $WORK/issue/a/_test/a.test $WORK/issue/a/_test/main.o -Wl,-( -m64\n$WORK/issue/a/_test/issue/liba_test.a $WORK/issue/libb.a $WORK/issue/liba.a\n$WORK/issue/a/_test/issue/liba.a -Wl,-)\n\nliba.a is present twice, once in it's normal form, and once in it's extended (due to the\nexport_test.go) form. \n\nI am guessing that the first liba.a leaks in due to the transitive import via issue/b.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/7627/0/issue.tar.gz\"\u003eissue.tar.gz\u003c/a\u003e (487 bytes)",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:42:23Z",
+	"created_at": "2014-03-25T02:50:22Z",
+	"updated_at": "2016-06-25T01:30:42Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

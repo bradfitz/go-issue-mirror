@@ -1,0 +1,12 @@
+{
+	"id": 85145722,
+	"body": "My current working theory is that the new thread is getting a signal after the signal handler is installed but before it calls crosscall_arm1(ts.fn, ...). I believe this race exists on several platforms, but is much more likely on darwin/arm because darwin_arm_init_thread_exception_port happens in between.\r\n\r\nhttps://github.com/golang/go/blob/master/src/runtime/cgo/gcc_darwin_arm.c#L70\r\n\r\nA cheap workaround just for darwin/arm would be to have the new thread set a condition that the creating thread can wait on, and only unblock signals after that. That would reduce the race to what it is on other platforms.\r\n\r\nIf I'm right about this, a real fix would require the signals staying blocked until the new thread can successfully inform it that it is back in Go. Or have the signal handler know about this intermediate state. Not sure how to go about either option.\r\n\r\n@ianlancetaylor does this theory make any sense?",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-23T18:59:21Z",
+	"updated_at": "2015-03-23T19:02:15Z"
+}

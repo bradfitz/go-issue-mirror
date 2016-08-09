@@ -1,0 +1,12 @@
+{
+	"id": 150923270,
+	"body": "I can't reproduce this on `1.5.1` or `tip`.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"math/rand\"\r\n\t\"testing\"\r\n\t\"time\"\r\n)\r\n\r\nfunc TestFoo(te *testing.T) {\r\n\tstart := time.Now()\r\n\tvar t *time.Timer\r\n\tt = time.AfterFunc(randomDuration(), func() {\r\n\t\tfmt.Println(time.Now().Sub(start))\r\n\t\tt.Reset(randomDuration())\r\n\t})\r\n\ttime.Sleep(5 * time.Second)\r\n}\r\n\r\nfunc randomDuration() time.Duration {\r\n\treturn time.Duration(rand.Int63n(1e9))\r\n}\r\n```\r\n\r\nNow running\r\n\r\n```\r\n$ go test -race racy_test.go\r\n948.011474ms\r\n==================\r\nWARNING: DATA RACE\r\nRead by goroutine 8:\r\n  command-line-arguments.TestFoo.func1()\r\n      /home/alberto/Desktop/racy_test.go:15 +0x1b4\r\n\r\nPrevious write by goroutine 6:\r\n  command-line-arguments.TestFoo()\r\n      /home/alberto/Desktop/racy_test.go:16 +0x14d\r\n  testing.tRunner()\r\n      /tmp/workdir/go/src/testing/testing.go:456 +0xdc\r\n\r\nGoroutine 8 (running) created at:\r\n  time.goFunc()\r\n      /tmp/workdir/go/src/time/sleep.go:129 +0x6d\r\n\r\nGoroutine 6 (running) created at:\r\n  testing.RunTests()\r\n      /tmp/workdir/go/src/testing/testing.go:561 +0xaa3\r\n  testing.(*M).Run()\r\n      /tmp/workdir/go/src/testing/testing.go:494 +0xe4\r\n  main.main()\r\n      command-line-arguments/_test/_testmain.go:54 +0x20f\r\n==================\r\n1.030587504s\r\n1.697008686s\r\n1.932285314s\r\n2.219673927s\r\n2.769221406s\r\n3.402550751s\r\n3.734587528s\r\n3.917955035s\r\n4.398534118s\r\nPASS\r\n5.159202123s\r\n5.42332977s\r\nFound 1 data race(s)\r\nFAIL\tcommand-line-arguments\t6.006s\r\n```\r\n\r\nand the exit value is `1`\r\n\r\n```\r\necho $?\r\n1\r\n```",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-25T13:27:25Z",
+	"updated_at": "2015-10-25T13:27:25Z"
+}

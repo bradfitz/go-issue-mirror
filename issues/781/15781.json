@@ -1,0 +1,17 @@
+{
+	"id": 156073486,
+	"number": 15781,
+	"state": "closed",
+	"title": "Time.After doesn't release memory",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version: 1.6\r\n\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\namd64, Debian 8 (stretch/sid)\r\n\r\n3. What did you do?\r\nSomething equivalent to this:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"errors\"\r\n\t\"time\"\r\n)\r\n\r\nvar q chan []byte\r\n\r\nfunc push(data []byte) error {\r\n\tselect {\r\n\tcase q \u003c- data:\r\n\t\treturn nil\r\n\tcase \u003c-time.After(time.Millisecond * 4):\r\n\t\treturn errors.New(\"push timed out\")\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tq = make(chan []byte)\r\n\r\n\tfor true {\r\n\t\tgo func() {\r\n\t\t\tdata := []byte(\"we are bytes\")\r\n\t\t\tpush(data)\r\n\t\t}()\r\n\t}\r\n}\r\n```\r\n\r\nIt would take up a lot of memory and go oom within seconds on the machine in question.\r\n\r\n```\r\n[  208.259383] Out of memory: Kill process 1032 (timermem) score 883 or sacrifice child\r\n[  208.259412] Killed process 1032 (timermem) total-vm:1229512kB, anon-rss:412480kB, file-rss:0kB\r\n```\r\n\r\nIf I ran the debugger and stopped it early, I saw something like this:\r\n\u003cimg width=\"422\" alt=\"screen shot 2016-05-20 at 5 57 19 pm\" src=\"https://cloud.githubusercontent.com/assets/111300/15444970/d999f3d8-1eb4-11e6-8af4-afd604c2610a.png\"\u003e\r\n\r\n----------------\r\n\r\nI've used this on a MBP with 16GB of ram. The sample program got hit by the OOM killer after about 5 minutes.",
+	"user": {
+		"login": "dhiltonp",
+		"id": 111300,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-05-21T00:31:57Z",
+	"created_at": "2016-05-21T00:27:35Z",
+	"updated_at": "2016-05-21T00:59:59Z"
+}

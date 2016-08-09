@@ -1,0 +1,12 @@
+{
+	"id": 150745430,
+	"body": "I've been thinking about this for a few days. If we were going to do something, I think it would be along the lines of:\n\n\tfunc (k Kind) Unsized() Kind {\n\t\tswitch k {\n\t\tcase Int8, Int16, Int32, Int64:\n\t\t\treturn Int\n\t\tcase Uint8, Uint16, Uint32, Uint64, Uintptr:\n\t\t\treturn Uint\n\t\t}\n\t\treturn k\n\t}\n\nRob's original example would have actually been a switch on `v.Type().Kind()`, and to incorporate my objection about not working well with switch statements, let's add a few non-int cases:\n\n\tswitch v.Type().Kind() {\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\txxx\t\n\tcase reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:\n\t\txxx\n\tcase reflect.String:\n\t\txxx\n\tcase reflect.Map:\n\t\txxx\n\t}\n\nWith Unsized it would shorten to:\n\n\tswitch v.Type().Kind().Unsized() {\n\tcase reflect.Int:\n\t\txxx\n\tcase reflect.Uint:\n\t\txxx\n\tcase reflect.String:\n\t\txxx\n\tcase reflect.Map:\n\t\txxx\n\t}\n\nOn the other hand, code like:\n\n\tswitch v.Type().Kind() {\n\tdefault:\n\t\txxx\n\tcase reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\txxx\t\n\tcase reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:\n\t\txxx\n\tcase reflect.String:\n\t\txxx\n\tcase reflect.Map:\n\t\txxx\n\t}\n\nwould have to turn into:\n\n\t// WARNING: DO NOT USE Kind().Unsized() here:\n\t// we do not want to allow Int and Uintptr.\n\tswitch v.Type().Kind() {\n\tdefault:\n\t\txxx\n\tcase reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\txxx\t\n\tcase reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:\n\t\txxx\n\tcase reflect.String:\n\t\txxx\n\tcase reflect.Map:\n\t\txxx\n\t}\n\nI expect we'd need a number of such warnings in the main tree to ward off future well-meaning but semantics-changing cleanups. I am still not sure it's worth it.\n\n(See https://lkml.org/lkml/2015/9/9/602 for a less polite take on the equivalent problem in Linux.)",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-24T02:51:37Z",
+	"updated_at": "2015-10-24T02:51:37Z"
+}

@@ -1,0 +1,32 @@
+{
+	"id": 51277898,
+	"number": 1508,
+	"state": "open",
+	"title": "all: tests fail on user-mode qemu-arm",
+	"body": "by **m@capitanio.org**:\n\n\u003cpre\u003eI noticed a significant improvements in the arm tool chain :-)\nI think it makes now a sense to take a closer look at bugs\nin different environments.\n\nThe first shot is a qemu in user mode:\nqemu-arm version 0.12.5\nThe host is (ubuntu 10.10)\nGOARCH=arm\nGORUN=qemu-arm\nhg identify ba58b167f1fc+ tip\n\nI tried with disabled peep or with GOARM=5, the bugs are similar.\n\nSome syscalls are not covered, (I would propose\na QUEMU_UM to disable tests that use them):\n\n(epoll_create)\n        netchan\\\n        rpc\\\n        websocket\\\n\nSome packages show a non-deterministic behaviour,\na few do always break. I have no clue if qemu, go or\nboth are buggy:\n\n        go/printer\\\n        compress/flate\\\n        compress/gzip\\\n        compress/zlib\\\n        os\\\n        big\\\n        rpc/jsonrpc\\\n        sync\\ #(+ run.bash)\n        bytes\\\n\nAfter disabling them, the test-suite *passed* all remaining tests.\n\n----\n\nScript bugs:\n        run.bash: cmd/ebnflint ???\n        run.bash: doc/progs [ \u0026quot;$GOHOSTOS\u0026quot; == windows ] ???\n        run.bash: doc/codelab/wiki\n\nThe test/run script fails with:\n./run -v\nsed: can't read ./tmp.go: No such file or directory\nfail: chan/powser2.go\nfail: chan/select3.go\n109a110,119\n\u0026gt; =========== chan/powser2.go\n\u0026gt; throw: malloc/free - deadlock\n\u0026gt; \n\u0026gt; [signal 0xb code=0x1 addr=0x0 pc=0x15720]\n\u0026gt; \n\u0026gt; \n\u0026gt; =========== chan/select3.go\n\u0026gt; qemu-arm: /build/buildd/qemu-kvm-0.12.5+noroms/cpu-exec.c:784: handle_cpu_signal:\nAssertion `__ret == (abi_ulong)__ret' failed.\n\u0026gt; $RUNFILE: line 1: PID Aborted                 $E ./$A.out\n\u0026gt; \n158a169,174\n\u0026gt; \n\u0026gt; =========== fixedbugs/bug243.go\n\u0026gt; Unsupported setsockopt level=41 optname=26 \n\u0026gt; qemu: Unsupported syscall: 250\n\u0026gt; Start pollServer: epoll_create: function not implemented\n\u0026gt; Unsupported setsockopt level=41 optname=26 \n1 known bugs; 0 unexpected bugs; test output differs\n\n\nThe captured outputs are attached.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1508/0/qemu-um-bugs.txt\"\u003eqemu-um-bugs.txt\u003c/a\u003e (26808 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"created_at": "2011-02-13T14:42:41Z",
+	"updated_at": "2015-07-30T02:06:38Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

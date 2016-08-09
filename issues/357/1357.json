@@ -1,0 +1,28 @@
+{
+	"id": 51277696,
+	"number": 1357,
+	"state": "closed",
+	"title": "template.go: .section {@} won't output integers",
+	"body": "by **sam.irvine**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nimport template \u0026quot;template\u0026quot;\nimport bytes \u0026quot;bytes\u0026quot;\n\ntype astruct struct {\n\tintval []int\n\tintval2 int\n}\n\nvar testTemplate string =\n`\n{.repeated section intval}{@}{.alternates with},{.or}EMPTY!{.end}\n{.section intval2}{@},{.or}EMPTY!{.end}\n\u0026quot;{.section intval2}{@}{.end}\u0026quot;\u0026lt;- Quote should not be empty \n`\n\nfunc TestEmpty(t *testing.T) {\n\ttempl,err := template.Parse(testTemplate,nil)\n\tif err != nil {\n\t\tt.Errorf(\u0026quot;Template parse error\u0026quot;)\n\t\treturn\n\t}\n\tapply := astruct{intval: []int{10,20,30,40}, intval2: 10}\t\n\twriteBuffer := bytes.NewBuffer(new([512]byte)[0:512])\n\t_ = templ.Execute(apply,writeBuffer)\n\n\tfmt.Printf(\u0026quot;Template apply results: %s\\n\u0026quot;, writeBuffer.String())\n}\n\nWhat is the expected output?\nTemplate apply results: \n10,20,30,40\n10\n\u0026quot;10\u0026quot;\u0026lt;- Quote should not be empty \n\n\nWhat do you see instead?\nTemplate apply results: \n10,20,30,40\nEMPTY!\n\u0026quot;\u0026quot;\u0026lt;- Quote should not be empty \n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\n\nWhich operating system are you using?\nLinux 2.6.35.9-64.fc14.x86_64\n\n\nWhich revision are you using?  (hg identify)\n23006c94f1aa\n\nPlease provide any additional information below.\n\nreflect.IntValue (and probably others) are missing from the type switch in \n\ntemplate/template.go: func empty(v reflect.Value) bool \n\nThis result defaults to true.  This causes int types to be considered empty in some\ncases and thus skipped in .section template evaluation.  It does not happen all the time\nbut I didn't dig around long enough to figure out why.  Adding a type switch case to\nhandle reflect.IntValue: return false resolved the issue for me.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:07:57Z",
+	"created_at": "2010-12-19T08:50:48Z",
+	"updated_at": "2016-06-24T19:23:20Z"
+}

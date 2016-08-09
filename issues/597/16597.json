@@ -1,0 +1,21 @@
+{
+	"id": 169287867,
+	"number": 16597,
+	"state": "open",
+	"title": "x/crypto/ssh: Signal method doesn't work.",
+	"body": "Starting a process over SSH using the /x/crypto/ssh library and then trying to send a signal to it, seems to have no effect. I've found a few musings on the internet about users with the same problem.\r\n\r\nI've attached a full reproducer, including the crappy workaround.\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"bytes\"\r\n\t\"fmt\"\r\n\t\"golang.org/x/crypto/ssh\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\r\n\t// An SSH client is represented with a ClientConn.\r\n\t//\r\n\t// To authenticate with the remote server you must pass at least one\r\n\t// implementation of AuthMethod via the Auth field in ClientConfig.\r\n\tconfig := \u0026ssh.ClientConfig{\r\n\t\tUser: \"someuser\", // XXX\r\n\t\tAuth: []ssh.AuthMethod{\r\n\t\t\tssh.Password(\"somepass\"), // XXX\r\n\t\t},\r\n\t}\r\n\tclient, err := ssh.Dial(\"tcp\", \"localhost:22\", config)\r\n\tif err != nil {\r\n\t\tpanic(\"Failed to dial: \" + err.Error())\r\n\t}\r\n\r\n\t// Each ClientConn can support multiple interactive sessions,\r\n\t// represented by a Session.\r\n\tsession, err := client.NewSession()\r\n\tif err != nil {\r\n\t\tpanic(\"Failed to create session: \" + err.Error())\r\n\t}\r\n\tdefer session.Close()\r\n\r\n\t// Once a Session is created, you can execute a single command on\r\n\t// the remote side using the Run method.\r\n\tvar b bytes.Buffer\r\n\tsession.Stdout = \u0026b\r\n\r\n\tgo func() {\r\n\t\ttime.Sleep(2 * time.Second)\r\n\t\t// XXX none of these signals work! :(\r\n\t\t//\t\tfmt.Println(\"Running signal!\")\r\n\t\t//\t\tsession.Signal(ssh.SIGINT)\r\n\t\t//\t\tsession.Signal(ssh.SIGKILL)\r\n\t\t//\t\tsession.Signal(ssh.SIGQUIT)\r\n\t\t//\t\tsession.Signal(ssh.SIGHUP)\r\n\t\t//\t\tsession.Signal(ssh.SIGPIPE)\r\n\t\t//\t\tfmt.Println(\"Done running signal!\")\r\n\r\n\t\ts2, err := client.NewSession()\r\n\t\tif err != nil {\r\n\t\t\tpanic(\"Failed to create session: \" + err.Error())\r\n\t\t}\r\n\t\tdefer s2.Close()\r\n\t\tvar c bytes.Buffer\r\n\t\ts2.Stdout = \u0026c\r\n\t\tif err := s2.Run(\"echo start \u0026\u0026 pidof sleep \u0026\u0026 killall sleep\"); err != nil {\r\n\t\t\tfmt.Println(\"s2 error!\")\r\n\t\t}\r\n\t\tfmt.Println(\"Sig run done!\")\r\n\t\tfmt.Println(c.String())\r\n\r\n\t}()\r\n\r\n\tif err := session.Run(\"echo $0 \u0026\u0026 /usr/bin/sleep 10s\"); err != nil {\r\n\r\n\t\tif e, ok := err.(*ssh.ExitError); ok {\r\n\t\t\tfmt.Printf(\"Remote: Exit msg: %s\", e.Waitmsg.Msg()) // XXX (does this ever return anything useful?)\r\n\t\t\tfmt.Printf(\"Remote: Exit signal: %s\", e.Waitmsg.Signal())\r\n\t\t\tfmt.Printf(\"Remote: Error: Output...\\n%s\", b.String())\r\n\t\t\tfmt.Printf(\"Exited (%d) with: %s\", e.Waitmsg.ExitStatus(), e.Error())\r\n\r\n\t\t} else if e, ok := err.(*ssh.ExitMissingError); ok {\r\n\t\t\tfmt.Printf(\"Exit code missing: %s\", e.Error())\r\n\t\t}\r\n\r\n\t\tpanic(\"Failed to run: \" + err.Error())\r\n\t}\r\n\tfmt.Println(\"Done!\")\r\n\tfmt.Println(b.String())\r\n}\r\n```\r\nUncomment the signal you want, and you'll see that they all do nothing to kill the running `sleep` command.\r\n\r\nTested with go version: 1.5.4 (but I have no reason to expect this is fixed with newer versions!) on Fedora GNU/Linux 24 as the SSH server, running OpenSSH.\r\n\r\nThanks!",
+	"user": {
+		"login": "purpleidea",
+		"id": 135091,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-08-04T04:18:39Z",
+	"updated_at": "2016-08-08T13:42:32Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

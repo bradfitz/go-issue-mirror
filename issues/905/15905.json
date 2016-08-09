@@ -1,0 +1,17 @@
+{
+	"id": 157732475,
+	"number": 15905,
+	"state": "closed",
+	"title": "nil dereference error that shows up using gcc-go but not using regular go",
+	"body": "The following example code ([playground link](https://play.golang.org/p/AKK9_LdyHs)) exits cleanly when compiled with the standard Go tool, but fails will a nil pointer dereference when compiled with gcc-go (6.1.1, Arch Linux, x64):\r\n\r\n```go\r\npackage main\r\n\r\ntype Inner struct {\r\n\ti int\r\n}\r\n\r\ntype Outer struct {\r\n\tinner *Inner\r\n}\r\n\r\nfunc (o *Outer) prepareInnerAndReturnValue() (ret int, err error) {\r\n\to.inner = \u0026Inner{}\r\n\treturn 99, nil\r\n}\r\n\r\nfunc main() {\r\n\to := Outer{}\r\n\t// This line is a nil pointer panic, but only in gcc-go. However, note that\r\n\t// if we change prepareInnerAndReturnValue() to return just the value with\r\n\t// no error, the panic goes away.\r\n\to.inner.i, _ = o.prepareInnerAndReturnValue()\r\n}\r\n```\r\n\r\nHere's the output I see:\r\n\r\n```\r\n$ go run test.go\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0]\r\n\r\ngoroutine 16 [running]:\r\nruntime_dopanic\r\n        /build/gcc/src/gcc/libgo/runtime/panic.c:131\r\n__go_panic\r\n        /build/gcc/src/gcc/libgo/runtime/go-panic.c:111\r\nruntime_panicstring\r\n        /build/gcc/src/gcc/libgo/runtime/panic.c:216\r\nsig_panic_info_handler\r\n        /build/gcc/src/gcc/libgo/runtime/go-signal.c:291\r\n\r\n        :0\r\nmain.main\r\n        /tmp/tmp.fxn93xGLCy/test.go:21\r\nruntime_main\r\n        /build/gcc/src/gcc/libgo/runtime/proc.c:626\r\n\r\ngoroutine 17 [syscall]:\r\n        goroutine in C code; stack unavailable\r\ncreated by runtime_main\r\n        /build/gcc/src/gcc/libgo/runtime/proc.c:598\r\n\r\ngoroutine 18 [GC sweep wait]:\r\nruntime_mcall\r\n        /build/gcc/src/gcc/libgo/runtime/proc.c:295\r\nbgsweep\r\n        /build/gcc/src/gcc/libgo/runtime/mgc0.c:1844\r\nkickoff\r\n        /build/gcc/src/gcc/libgo/runtime/proc.c:235\r\ncreated by mgc\r\n        /build/gcc/src/gcc/libgo/runtime/mgc0.c:2215\r\nexit status 2\r\n```\r\n\r\nAs noted in the comment in that example code, this error goes away if I change `prepareInnerAndReturnValue` to return just an int, instead of an int and an error.\r\n\r\nOutput of `go env`:\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/jacko/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr\"\r\nGOTOOLDIR=\"/usr/lib/gcc/x86_64-pc-linux-gnu/6.1.1\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"/usr/bin/gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"/usr/bin/g++\"\r\nCGO_ENABLED=\"1\"\r\n```",
+	"user": {
+		"login": "oconnor663",
+		"id": 860932,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-05-31T18:30:09Z",
+	"created_at": "2016-05-31T17:57:46Z",
+	"updated_at": "2016-05-31T21:11:16Z"
+}

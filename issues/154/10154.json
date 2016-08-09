@@ -1,0 +1,27 @@
+{
+	"id": 60967293,
+	"number": 10154,
+	"state": "closed",
+	"title": "image/jpeg: panic: runtime error: index out of range",
+	"body": "Image:\r\nhttp://s3-us-west-2.amazonaws.com/qiniu-bs/panicImage\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"image\"\r\n        \"os\"\r\n    \r\n        _ \"image/jpeg\"\r\n)\r\n\r\nfunc main(){\r\n        f , _ := os.Open(\"panicImage\")\r\n        defer f.Close()\r\n        m, _, err := image.Decode(f)\r\n        if err != nil {\r\n                fmt.Println(\"abnormal jpeg\")\r\n        }else{\r\n                fmt.Println(m.ColorModel)\r\n        }   \r\n}\r\n```\r\n\r\n```\r\nkane:qbox mac$ go run getPanic.go\r\nResult:\r\ngoroutine 1 [running]:\r\nimage/jpeg.(*decoder).processSOS(0x102b6000, 0xa, 0x0, 0x0)\r\n\t/usr/local/go/src/image/jpeg/scan.go:143 +0x1e85\r\nimage/jpeg.(*decoder).decode(0x102b6000, 0x3027bad8, 0x102ac0c0, 0x102ac000, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/go/src/image/jpeg/reader.go:474 +0x53c\r\nimage/jpeg.Decode(0x3027bad8, 0x102ac0c0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/go/src/image/jpeg/reader.go:498 +0x63\r\nimage.Decode(0x3027ba80, 0x102721b8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/usr/local/go/src/image/format.go:84 +0x106\r\nmain.main()\r\n\t/Users/mac/qbox/getPanic.go:14 +0x78\r\n```\r\n\r\nIn my opinion:\r\nNo matter the image is normal or not ,panic  was unexpected.\r\nIf the image is normal ,golang need give a normal result.\r\n If the image is abnormal,golang should throw error not panic.\r\nI modified the golang source code   image/jpeg/scan.go\r\n```\r\nfor i := 0; i \u003c nComp; i++ {\r\n \t\t\t\tcompIndex := scan[i].compIndex\r\n+\t\t\t\tif d.comp[compIndex].tq \u003e maxTq {\r\n+\t\t\t\t\treturn FormatError(\"index is greater than maxTq\")\r\n+\t\t\t\t}\r\n \t\t\t\tqt := \u0026d.quant[d.comp[compIndex].tq]\r\n \t\t\t\tfor j := 0; j \u003c d.comp[compIndex].h*d.comp[compIndex].v; j++ {\r\n```\r\nI use golang contribute ,but i don't know if it works success or not.\r\njpeg panic\r\n```\r\nChange-Id: I45d8c88b84c47ac21adc814c25a426fa4aa1d209\r\n\r\n# Please enter the commit message for your changes. Lines starting\r\n# with '#' will be ignored, and an empty message aborts the commit.\r\n# On branch needkane\r\n# Your branch is ahead of 'origin/master' by 1 commit.\r\n#   (use \"git push\" to publish your local commits)\r\n#\r\n# Changes to be committed:\r\n#       modified:   src/image/jpeg/scan.go\r\n#\r\n```",
+	"user": {
+		"login": "needkane",
+		"id": 7877420,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-03-13T05:24:14Z",
+	"created_at": "2015-03-13T02:48:53Z",
+	"updated_at": "2016-06-25T02:03:12Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

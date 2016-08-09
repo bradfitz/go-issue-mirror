@@ -1,0 +1,21 @@
+{
+	"id": 99750112,
+	"number": 12073,
+	"state": "open",
+	"title": "text/tabwriter: add cell width function",
+	"body": "### What version of Go are you using (go version)?\r\n\r\n1.4.2\r\n\r\n### What operating system and processor architecture are you using?\r\n\r\nLinux / AMD64\r\n\r\n### What did you do?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"os\"\r\n        \"text/tabwriter\"\r\n)\r\n\r\nfunc main() {\r\n        t := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\\t', 0)\r\n        fmt.Fprintf(t, \"\\x1b[31mfoo\\x1b[0m\\tbar\\n\")\r\n        fmt.Fprintf(t, \"foo\\tbar\\n\")\r\n        t.Flush()\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\n\r\n```\r\nfoo     bar\r\nfoo     bar\r\n```\r\n\r\nWhere the first foo is red.\r\n\r\n### What did you see instead?\r\n```\r\nfoo     bar\r\nfoo             bar\r\n```\r\n\r\nWhere the first foo is red due to non-printable ANSI escape sequences being included in cell width calculations.\r\n\r\n### Proposal:\r\n\r\nI realize that printing to the terminal may not be `text/tabwriter`s intended purpose, but I think it would be nice to be able to configure how the width of a cell is calculated as I can imagine further cases (similar to the special casing of HTML tags and entities currently) that would also benefit from this.\r\n\r\nSuggestion: Exposing an additional field on the `tabwriter.Writer` struct so as to maintain the function signature of `Init` and `NewWriter`:\r\n```go\r\ntype Writer struct {\r\n    CellWidth func([]byte) int\r\n}\r\n```\r\n\r\nIf this function was `nil`, the existing width calculation could be used, but otherwise this function could be called with the contents of the cell.\r\n\r\nI can take a stab at the implementation of this, but I first wanted to see if such a change would be welcome.",
+	"user": {
+		"login": "jszwedko",
+		"id": 316880,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 11,
+	"created_at": "2015-08-07T23:59:08Z",
+	"updated_at": "2016-01-23T10:00:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

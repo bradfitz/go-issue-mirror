@@ -1,0 +1,26 @@
+{
+	"id": 148409002,
+	"number": 15303,
+	"state": "open",
+	"title": "cmd/compile: silly amounts of code generated for simple struct equality tests",
+	"body": "[partial move from #15164]\r\n\r\n```go\r\npackage x\r\n\r\ntype T struct {\r\n\ta, b int8\r\n}\r\n\r\nfunc g(a T) bool {\r\n\treturn a == T{1, 2}\r\n}\r\n```\r\n\r\nWith ssa, this generates the following code:\r\n\r\n```\r\n\"\".g t=1 size=80 args=0x10 locals=0x8\r\n\t0x0000 00000 (swtopt.go:23)\tTEXT\t\"\".g(SB), $8-16\r\n\t0x0000 00000 (swtopt.go:23)\tSUBQ\t$8, SP\r\n\t0x0004 00004 (swtopt.go:23)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0004 00004 (swtopt.go:23)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0004 00004 (swtopt.go:24)\tMOVBLZX\t\"\".a+16(FP), AX\r\n\t0x0009 00009 (swtopt.go:24)\tMOVB\tAL, \"\".autotmp_16+6(SP)\r\n\t0x000d 00013 (swtopt.go:24)\tMOVBLZX\t\"\".a+17(FP), AX\r\n\t0x0012 00018 (swtopt.go:24)\tMOVB\tAL, \"\".autotmp_16+7(SP)\r\n\t0x0016 00022 (swtopt.go:24)\tMOVB\t$0, \"\".autotmp_17+4(SP)\r\n\t0x001b 00027 (swtopt.go:24)\tMOVB\t$1, \"\".autotmp_17+4(SP)\r\n\t0x0020 00032 (swtopt.go:24)\tMOVB\t$2, \"\".autotmp_17+5(SP)\r\n\t0x0025 00037 (swtopt.go:24)\tMOVBLZX\t\"\".autotmp_16+6(SP), AX\r\n\t0x002a 00042 (swtopt.go:24)\tMOVBLZX\t\"\".autotmp_17+4(SP), CX\r\n\t0x002f 00047 (swtopt.go:24)\tCMPB\tAL, CL\r\n\t0x0031 00049 (swtopt.go:24)\tJNE\t70\r\n\t0x0033 00051 (swtopt.go:24)\tMOVBLZX\t\"\".autotmp_16+7(SP), AX\r\n\t0x0038 00056 (swtopt.go:24)\tCMPB\tAL, $2\r\n\t0x003a 00058 (swtopt.go:24)\tSETEQ\tAL\r\n\t0x003d 00061 (swtopt.go:24)\tMOVB\tAL, \"\".~r1+24(FP)\r\n\t0x0041 00065 (swtopt.go:24)\tADDQ\t$8, SP\r\n\t0x0045 00069 (swtopt.go:24)\tRET\r\n\t0x0046 00070 (swtopt.go:24)\tMOVB\t$0, AL\r\n\t0x0048 00072 (swtopt.go:24)\tJMP\t61\r\n```\r\n\r\nThis is better than the old backend, but still way too much. Some of the fat is due to #15300, but there's still an unnecessary zero at 0x0016 and unnecessary spills.\r\n\r\nThe unnecessary zero is introduced during the decompose user phase.\r\n\r\nThe unnecessary spills are probably due to how the front end does small struct equality, but I haven't double-checked.\r\n\r\ncc @mdempsky @brtzsnr @randall77 \r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"created_at": "2016-04-14T16:04:49Z",
+	"updated_at": "2016-04-22T14:08:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

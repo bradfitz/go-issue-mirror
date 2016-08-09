@@ -1,0 +1,22 @@
+{
+	"id": 51288062,
+	"number": 8348,
+	"state": "closed",
+	"title": "cmd/cgo: gcc_arm.S miscompiled under clang 3.4",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n\nThe linux-arm-arm5 builder runs debian unstable which recently transition to clang 3.4 \n\nThis broke the cgo portions of the build\n\n# ../misc/cgo/test\n# _/export/builder/workspace/linux-arm-arm5-27eb9d18b77c/go/misc/cgo/test\n/tmp/--815d94.s: Assembler messages:\n/tmp/--815d94.s:47: Error: selected processor does not support ARM mode `blx r0'\nclang: error: assembler command failed with exit code 1 (use -v to see invocation)\nFAIL\t_/export/builder/workspace/linux-arm-arm5-27eb9d18b77c/go/misc/cgo/test [build\nfailed]\n\nMy diagnosis is clang's internal assembler does not honour the .arch armv5t pragma.\nPrevious versions of clang did not assemble internally and forked /usr/bin/as to handle\nthe assembly, and so would honor the arch pragma.\n\nBecause .arch is being ignored, clang is assembling using the built in armv4t model\n(this is a guess, but gcc on this system also reports armv4t, and this is a common\nbaseline for pre hardfloat distributions, so I think a safe one).\n\nUnless there is an alternative assembly pragma that clang does honour, we may have to\nrevert to passing an -march directive on the command line.\n\nPlease use labels and text to provide additional information.\n\ndiff -r fdd2d7a9dd4c src/cmd/go/build.go\n--- a/src/cmd/go/build.go       Wed Jul 09 18:50:38 2014 +1000\n+++ b/src/cmd/go/build.go       Wed Jul 09 22:07:39 2014 +1000\n@@ -2055,7 +2055,7 @@\n        case \u0026quot;6\u0026quot;:\n                return []string{\u0026quot;-m64\u0026quot;}\n        case \u0026quot;5\u0026quot;:\n-               return []string{\u0026quot;-marm\u0026quot;} // not thumb\n+               return []string{\u0026quot;-marm\u0026quot;, \u0026quot;-march=armv5t\u0026quot;} // not\nthumb\n        }\n        return nil\n }\n\nThis small patch (not suitable for submission) fixes the problem.\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:46:23Z",
+	"created_at": "2014-07-09T12:02:31Z",
+	"updated_at": "2016-06-25T01:37:48Z"
+}

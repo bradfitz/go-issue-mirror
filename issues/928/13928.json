@@ -1,0 +1,28 @@
+{
+	"id": 126300386,
+	"number": 13928,
+	"state": "closed",
+	"title": "cmd/cgo: bad pointer detected in private zlib wrapper",
+	"body": "I'm running tip on darwin/386 and I'm seeing an occasional panic.\r\n\r\nI've got a wrapper for zlib that's quite a bit faster than the zlib reader in the standard library.  Under specific conditions in my application I get a `panic: runtime error: cgo argument has invalid Go pointer`.\r\n\r\nMy code is similar to the following:\r\n\r\n```go\r\n// #cgo LDFLAGS: -lz\r\n// #include \u003czlib.h\u003e\r\n// #include \u003cstdlib.h\u003e\r\n//\r\n// // inflateInit is a macro so we need to do this\r\n// int InflateInit(z_streamp s) {\r\n//     return inflateInit(s);\r\n// }\r\n//\r\n// // We do the zstream allocation in C, so that the Go\r\n// // GC doesn't inspect the pointers inside that are\r\n// // allocated by zlib and panic.\r\n// z_streamp new_zstream() {\r\n//     return (z_streamp) calloc(sizeof(z_stream), 1);\r\n// }\r\nimport \"C\"\r\n\r\nimport (\r\n\t\"errors\"\r\n\t\"io\"\r\n)\r\n\r\ntype reader struct {\r\n\tr  io.Reader\r\n\tin []byte\r\n\ts  C.z_streamp\r\n}\r\n\r\n// NewReader creates a new ReadCloser. Reads from the returned ReadCloser\r\n// read and decompress data from r. The implementation buffers input and\r\n// may read more data than necessary from r. It is the caller's\r\n// responsibility to call Close on the ReadCloser when done.\r\nfunc NewReader(r io.Reader) (io.ReadCloser, error) {\r\n\trd := \u0026reader{\r\n\t\tr:  r,\r\n\t\ts:  C.new_zstream(),\r\n\t\tin: bufPool.Get().([]byte),\r\n\t}\r\n\r\n\terr := C.InflateInit(rd.s) // \u003c-- panic here (sometimes)\r\n\tif err != C.Z_OK {\r\n\t\treturn nil, errors.New(\"Could not init inflate.\")\r\n\t}\r\n\r\n\treturn rd, nil\r\n}\r\n```\r\n\r\nSometimes (not every time) when `NewReader` is called a panic is triggered on the call to `C.InflateInit`.   From what I understand this panic is only ever triggered by `cgoCheckUnknownPointer` if the pointer exists on the Go heap.  The pointer is returned by a C call to `calloc`, so should not exist on the Go heap, it should be C controlled memory.\r\n\r\nIs this a bug or am I doing something wrong?",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"closed_at": "2016-01-13T19:06:51Z",
+	"created_at": "2016-01-12T23:11:44Z",
+	"updated_at": "2016-01-13T19:06:51Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

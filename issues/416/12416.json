@@ -1,0 +1,36 @@
+{
+	"id": 104096275,
+	"number": 12416,
+	"state": "closed",
+	"title": "cmd/cgo: specify rules for passing pointers between Go and C",
+	"body": "Issues #12116 and #8310 discuss the problem of when it is OK to pass pointers between Go and C code when using cgo.  This proposal is a specific set of rules for when it is OK, plus some modifications to cgo to partially enforce the rules.\r\n\r\nDefinitions: a Go pointer is a pointer to memory allocated by the Go runtime.  A C pointer is a pointer to memory not allocated by the Go runtime, such as by C.malloc.\r\n\r\nThe proposed rules are:\r\n\r\n* Go code may pass a Go pointer to C provided that the Go memory to which it points does not contain any Go pointers.  That rule must be preserved during C execution, in that the program must not store any Go pointers into that memory.\r\n\r\n* C code may otherwise use the Go pointer and the Go memory to which it points freely during the call.  However, C code may not keep a copy of the Go pointer after the call returns.\r\n\r\n* If Go code passes a Go pointer to a C function, the C function must return.  While there are no documented time limits, a C function that simply blocks holding a Go pointer while other goroutines are running may eventually cause the program to run out of memory and fail.\r\n\r\n* A Go function called by C code may not return a Go pointer.  A Go function called by C code may take C pointers as arguments, and it may store non-pointer or C pointer data through those pointers, but it may not store a Go pointer into memory pointed to by a C pointer.  A Go function called by C code may take a Go pointer as an argument, but it must preserve the property that the Go memory to which it points does not contain any Go pointers.\r\n\r\nThe proposal is that we declare that all Go programs that adhere to those rules are, and will remain, valid, under the Go 1 compatibility guarantee.  Go programs that do not adhere to these rules may break today or in future releases.\r\n\r\nWe further propose some modifications to cgo that will help enforce these rules.  The cgo changes are not the rules; the rules are as above.  The cgo changes are intended to make it easier to detect, at build time, programs that violate the rules.\r\n\r\n* We modify cgo to prohibit any type conversion from a Go pointer type to a C pointer type, except as a direct argument to a C function call.  Any such type conversion is an error in cgo.  Even within a direct function call, we prohibit type conversions if the Go pointer type points to a type that itself contains pointers.\r\n\r\n* A function labelled //export, which may be called from C code, must not return any Go pointer type and must not have any parameters that are Go pointer types.\r\n\r\nThese cgo rules are more strict than the rules about passing pointers.  They will prohibit cases that are permitted.  It is also possible to work around them, even without using unsafe, and write code that is not blocked by cgo but that violates the above rules.  I will provide examples in a separate design doc.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Approved"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 72,
+	"closed_at": "2015-12-17T03:20:04Z",
+	"created_at": "2015-08-31T17:30:44Z",
+	"updated_at": "2016-05-11T02:41:17Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

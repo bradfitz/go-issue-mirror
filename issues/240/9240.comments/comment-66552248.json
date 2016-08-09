@@ -1,0 +1,12 @@
+{
+	"id": 66552248,
+	"body": "Sorry about previous mistake comment.\r\nI figure out pattern to reproduce. Below should work. Having `import \"C\"` seems initialize C runtime?\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"C\"\r\n    \"fmt\"\r\n    \"syscall\"\r\n)\r\n\r\nfunc ThreadProc(p uintptr) uintptr {\r\n    fmt.Println(\"FOO\")\r\n    return 0\r\n}\r\n\r\nfunc main() {\r\n    modkernel32 := syscall.MustLoadDLL(\"kernel32.dll\")\r\n    procCreateThread := modkernel32.MustFindProc(\"CreateThread\")\r\n    r1, _, _ := procCreateThread.Call(0, 0, syscall.NewCallback(ThreadProc), 0, 0, 0)\r\n    h := syscall.Handle(r1)\r\n    syscall.WaitForSingleObject(h, syscall.INFINITE)\r\n    syscall.CloseHandle(h)\r\n}\r\n```\r\n",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-11T00:49:10Z",
+	"updated_at": "2014-12-11T00:49:10Z"
+}

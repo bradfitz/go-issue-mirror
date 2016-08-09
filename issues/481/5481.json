@@ -1,0 +1,22 @@
+{
+	"id": 51283698,
+	"number": 5481,
+	"state": "closed",
+	"title": "io: Cannot io.Copy from os.Stdin on Windows 7",
+	"body": "\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since the\nlatest release. Search the issue tracker and check that you're running the\nlatest version of Go:\n\nRun \u0026quot;go version\u0026quot; and compare against\n\u003ca href=\"http://golang.org/doc/devel/release.html\"\u003ehttp://golang.org/doc/devel/release.html\u003c/a\u003e  If a newer version of Go exists,\ninstall it and retry what you did to reproduce the problem.\n\nThanks.\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. Compile the program from \u003ca href=\"http://play.golang.org/p/bcmX4--v_j\"\u003ehttp://play.golang.org/p/bcmX4--v_j\u003c/a\u003e on Windows 7\n2. Run the resulting program on Windows 7\n3. Press a key, then hit enter\n\nWhat is the expected output?\nIt should copy the input from stdin to stdout\n\nWhat do you see instead?\n0 read /dev/stdin: Not enough storage is available to process this command.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nWindows 7\n\nWhich version are you using?  (run 'go version')\ngo version devel +8f1fb6b6f141 Mon May 13 13:04:08 2013 -0700 linux/amd64 (cross\ncompiled, natively compiling has the same effect)\n\nPlease provide any additional information below.\nThe problem here is that io.Copy uses a buffer that is 32KB big. Since we're copying\nfrom stdin on Windows, the Read operation runs through (*File).readConsole\n(os/file_windows.go), which uses the ReadConsole syscall. Due to wchars, readConsole\nuses a buffer twice the size of the original one, so 64KB in this case. ReadConsole is\ndocumented[1] to accept at most a 64K buffer, possibly less. For some reason, it fails\non exactly 64KB, which might be an error in the documentation, caused by already used\nheap, or a bug (the comments below the documentation would suggest so).\n\nI also assembled a longer Go program[2] that demonstrates that the issue boils down to\nthe buffer size, where it works for 2^15-1 bytes but not for 2^15.\n\nI'm filing this as an issue on io.Copy because I'm not sure that the issue (a limited\nWindows API) can be fixed in a broader scope.\n\n[1] \u003ca href=\"http://msdn.microsoft.com/en-us/library/windows/desktop/ms684958(v=vs.85)\"\u003ehttp://msdn.microsoft.com/en-us/library/windows/desktop/ms684958(v=vs.85)\u003c/a\u003e\n[2] \u003ca href=\"http://play.golang.org/p/tWnZuyZLPV\"\u003ehttp://play.golang.org/p/tWnZuyZLPV\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "dominikh",
+		"id": 39825,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:29:45Z",
+	"created_at": "2013-05-15T17:29:51Z",
+	"updated_at": "2016-06-24T22:40:13Z"
+}

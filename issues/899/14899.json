@@ -1,0 +1,27 @@
+{
+	"id": 142454981,
+	"number": 14899,
+	"state": "closed",
+	"title": "runtime: unix: c-shared libraries segfault handler overrides the default handler",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n`go version go1.6 darwin/amd64` or `go version go1.6 darwin/386`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```GOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/joe/go:/Users/joe/src/repo004/GOPATH\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.6/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.6/libexec/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\n1) Compile a library using `buildmode=c-shared`\r\n2) Link against a C program\r\n3) Cause the C program to segfault in any way (ex. dereference a NULL pointer)\r\n\r\n4. What did you expect to see?\r\n\r\nThe program should crash and the default segfault handler should be called (since the crash was not caused by Go).\r\n\r\nI'd expect to see a crash like this:\r\n\r\n```\r\nThread 0 Crashed:: Dispatch queue: com.apple.main-thread\r\n0   crash                         \t0x00000001023cdf91 main + 17\r\n1   libdyld.dylib                 \t0x00007fff89f915c9 start + 1\r\n```\r\n\r\n5. What did you see instead?\r\n\r\nGo's signal handler takes precedence, obscuring the stack trace, and making it default to debug crashes in applications that link against Go c-shared libraries.\r\n\r\n```\r\nThread 0 Crashed:: Dispatch queue: com.apple.main-thread\r\n0   libmygolib.dylib                   0x02ef6955 runtime.raiseproc + 37 (sys_darwin_386.s:75)\r\n\r\nThread 1:\r\n0   libmygolib.dylib                   0x02ef6d7a runtime.mach_semaphore_wait + 10 (sys_darwin_386.s:454)\r\n\r\nThread 2:\r\n0   libmygolib.dylib                   0x02ef6c3e runtime.usleep + 78 (sys_darwin_386.s:330)\r\n\r\nThread 3:\r\n0   libmygolib.dylib                   0x02ef6d7a runtime.mach_semaphore_wait + 10 (sys_darwin_386.s:454)\r\n\r\nThread 4:\r\n0   libmygolib.dylib                   0x02ef6d7a runtime.mach_semaphore_wait + 10 (sys_darwin_386.s:454)\r\n\r\nThread 5:\r\n0   libmygolib.dylib                   0x02ef6d7a runtime.mach_semaphore_wait + 10 (sys_darwin_386.s:454)\r\n```\r\n\r\nI believe this has to do with the following code:\r\n\r\n```go\r\nTEXT runtime·raise(SB),NOSPLIT,$0\r\n\t// Ideally we'd send the signal to the current thread,\r\n\t// not the whole process, but that's too hard on OS X.\r\n\tJMP\truntime·raiseproc(SB)\r\n\r\nTEXT runtime·raiseproc(SB),NOSPLIT,$24\r\n\tMOVL\t$(0x2000000+20), AX // getpid\r\n\tSYSCALL\r\n\tMOVQ\tAX, DI\t// arg 1 - pid\r\n\tMOVL\tsig+0(FP), SI\t// arg 2 - signal\r\n\tMOVL\t$1, DX\t// arg 3 - posix\r\n\tMOVL\t$(0x2000000+37), AX // kill\r\n\tSYSCALL\r\n\tRET\r\n```\r\n",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 18,
+	"closed_at": "2016-03-24T19:34:42Z",
+	"created_at": "2016-03-21T20:04:43Z",
+	"updated_at": "2016-03-25T19:01:04Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

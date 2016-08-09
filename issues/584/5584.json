@@ -1,0 +1,27 @@
+{
+	"id": 51283865,
+	"number": 5584,
+	"state": "closed",
+	"title": "runtime: implement SysUnused on Windows",
+	"body": "by **raheelgup**:\n\n\u003cpre\u003eAfter discussions on golang-nuts I am opening the issue :\n\u003ca href=\"https://groups.google.com/forum/?fromgroups=#\"\u003ehttps://groups.google.com/forum/?fromgroups=#\u003c/a\u003e!topic/golang-nuts/7V_zICSxngo\n\nAs per my observations if a Go Program touches \u0026quot;X\u0026quot; MB or GB in Ram usage and\neven frees it by either the function exiting or you making the length of a slice to 0\nagain, the heap usage within the go program goes down after the GC. But the Ram it took\nfrom the OS is never ever returned. If the go program touches 1 GB in use, it will never\nreturn to the OS even though the MemStats report that the Alloc memory might be in 1-2\nMBs. The remaining memory is held up by Go till the program quits. \n\nTo top it off, lets say if a program asks for 150 MB by making a byte slice of 150 MB,\nGo will ask nearly 2-3 times from the OS and hold it. Then lets say you remake the slice\nto a size of 0. When the size is made to 0, the memory usag reported by the\nMemstats.Alloc might be somewhere in KBs and the MemStats.Sys is nearly 300-450MB. When\nyou remake the slice to a size of 150 MB, Go might (sometimes) still ask for more memory\nfrom the OS even though the it has 300-450 MB of unused memory. Eventually the\napplication crashes saying it couldnt allocate more memory.  \n\nI have posted the codes here and anyone can test it. I found this behaviour on x86 and\nx86_64 versions of CentOS 6 and Windows 7.\n\nWhat steps will reproduce the problem?\nPlease run the code attached here and visit the URL : \u003ca href=\"http://127.0.0.1:8080\"\u003ehttp://127.0.0.1:8080\u003c/a\u003e\n\nWhat is the expected output?\nRam should have been freed and returned to the OS and also only the required amount of\nmemory should have been used by the Go program instead of 2-3 times the amount of Ram. \n\nWhat do you see instead?\nIn the command prompt (windows) or shell (linux) you will see the OS will keep\nallocating more ram with each request and after 10-20 requests the application will\ncrash.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\nCGO\n\nWhich operating system are you using?\nWindows and Linux 32 and 64 bit.\n\nWhich version are you using?  (run 'go version')\n1.1\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/5584/0/test1.zip\"\u003etest1.zip\u003c/a\u003e (5129 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 21,
+	"closed_at": "2014-12-08T10:30:23Z",
+	"created_at": "2013-05-29T08:22:02Z",
+	"updated_at": "2016-06-24T22:41:22Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

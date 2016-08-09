@@ -1,0 +1,38 @@
+{
+	"id": 51288596,
+	"number": 8715,
+	"state": "open",
+	"title": "spec: do not specify initialization order of package-level variables w/o dependencies",
+	"body": "\u003cpre\u003eGordon Klaus (gordon.klaus@gmail.com) made a (in my mind) intriguing suggestion: He\nproposes that initialization order should not be further specified beyond the existing\ndependencies (and thus not depend on declaration order).\n\nI would add to this that init() functions, too, should be invoked in unspecified order.\n\nI very much like this idea for several reasons:\n\n1) At the package-level, excluding variable initialization, declaration order is\nirrelevant for the meaning of a program (note that iota is an explicit constant).\n\n2) Across files of a package, the initialization order of independent variables depends\non the order in which the files are presented to the compiler. In practice, a programmer\ndoesn't have control over that order when using go build. It may be in filename order,\nbut it could be random (the files might be stored in a set). Thus, this is a situation\nwhere the semantics of a package is not expressed in the source per se, but in how the\nsource code is handled by tools. This seems a bad idea.\n\n3) The two compilers (currently, 9/12/2014) disagree in some cases about the correct\ninitialization order.\n\n4) It would simplify the spec.\n\n5) Where initialization order matters, a specific initialization function is the\npreferred way of expressing that dependency.\n\n6) Reordering code may subtly brake implicit ordering dependencies.\n\nIn order for such an approach to work well (and expose errors), an implementation should\nenforce a different initialization order (while respecting dependencies) for each run,\nlike we have enforced different map iteration orders for each map iteration.\n\nHere's a possible implementation:\n\n1) Package-level variables that have no initialization expression, or have an\ninitialization expression that is independent on any other variable and has no\nobservable side-effects (incl. panics), are initialized in whatever order is easiest and\nmost efficient to generate code for, if code is even necessary.\n\n2) For each of the remaining (usually small number of) variables x, allocate a\nzero-initialized boolean flag bx and generate an accessor function fx as follows:\n\nfunc fx() typeof(x) {\n\tif !bx {\n\t\tx = // init expression of x\n\t\tbx = true\n\t}\n\treturn x\n}\n\n3) In all init expressions, replace any reference to variables with calls to the\ncorresponding accessor functions, if any.\n\n4) Add all the functions fx together with all init functions to a map.\n\n5) Iterate through the map (in random order) and invoke each function.\n\nThat is, we solve the dependency problem at run-time for each package, and each time it\nis as if the variables were declared in a different order.\n\nThe extra code would be fairly small given the small number of variables that are\ninitialized with dependencies or side-effects. The necessary program transformations are\nstraight-forward in a compiler.\u003c/pre\u003e",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		},
+		{
+			"name": "LanguageChange"
+		},
+		{
+			"name": "LongTerm"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2014-09-12T20:47:12Z",
+	"updated_at": "2015-06-02T04:37:51Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

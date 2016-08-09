@@ -1,0 +1,27 @@
+{
+	"id": 51282702,
+	"number": 4833,
+	"state": "closed",
+	"title": "runtime/cgo: deadlock involving signals",
+	"body": "\u003cpre\u003edarwin/amd64, the following program deadlocks:\n\npackage main\n\nimport \u0026quot;C\u0026quot;\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;runtime\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\nfunc main() {\n\truntime.GOMAXPROCS(100)\n\tping := make(chan bool)\n\tgo func() {\n\t\tfor i := 0; ; i++ {\n\t\t\tselect {\n\t\t\tcase done := \u0026lt;-ping:\n\t\t\t\tif done {\n\t\t\t\t\tfmt.Printf(\u0026quot;\\n\u0026quot;)\n\t\t\t\t\tping \u0026lt;- true\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tfmt.Printf(\u0026quot;.\u0026quot;)\n\t\t\t\tping \u0026lt;- true\n\t\t\tdefault:\n\t\t\t}\n\t\t\tfunc() {\n\t\t\t\tdefer func() {\n\t\t\t\t\trecover()\n\t\t\t\t}()\n\t\t\t\tvar s *string\n\t\t\t\t*s = \u0026quot;\u0026quot;\n\t\t\t}()\n\t\t}\n\t}()\n\ttime.Sleep(time.Millisecond)\n\tfor i := 0; i \u0026lt; 64; i++ {\n\t\tgo func() {\n\t\t\truntime.LockOSThread()\n\t\t\tselect {}\n\t\t}()\n\t\tgo func() {\n\t\t\truntime.LockOSThread()\n\t\t\tselect {}\n\t\t}()\n\t\ttime.Sleep(time.Millisecond)\n\t\tping \u0026lt;- false\n\t\tselect {\n\t\tcase \u0026lt;-ping:\n\t\tcase \u0026lt;-time.After(time.Second):\n\t\t\tfmt.Printf(\u0026quot;HANG\\n\u0026quot;)\n\t\t\treturn\n\t\t}\n\t}\n\tping \u0026lt;- true\n\tselect {\n\tcase \u0026lt;-ping:\n\tcase \u0026lt;-time.After(time.Second):\n\t\tfmt.Printf(\u0026quot;HANG\\n\u0026quot;)\n\t\treturn\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2014-12-08T10:25:41Z",
+	"created_at": "2013-02-17T16:37:51Z",
+	"updated_at": "2016-06-24T22:33:11Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

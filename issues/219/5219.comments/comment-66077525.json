@@ -1,0 +1,12 @@
+{
+	"id": 66077525,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eThe problem would be unnecessary memory consumption because\nruntime.pollcache keeps consuming memory for runtime.PollDesc\nwhen it requires. We should feed descriptors to the pollcache either\nclean ones from the kernel or the spent ones by calling pollClose.\n\nsrc/pkg/runtime/netpoll.goc:\nstatic PollDesc*\nallocPollDesc(void)\n{\n        PollDesc *pd;\n        uint32 i, n;\n\n        runtime·lock(\u0026pollcache);\n        if(pollcache.first == nil) {\n                n = PageSize/sizeof(*pd);\n                if(n == 0)\n                        n = 1;\n                // Must be in non-GC memory because can be referenced\n                // only from epoll/kqueue internals.\n                pd = runtime·SysAlloc(n*sizeof(*pd));\n                for(i = 0; i \u0026lt; n; i++) {\n                        pd[i].link = pollcache.first;\n                        pollcache.first = \u0026pd[i];\n                }\n        }\n        pd = pollcache.first;\n        pollcache.first = pd-\u0026gt;link;\n        runtime·unlock(\u0026pollcache);\n        return pd;\n}\u003c/pre\u003e",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-04-06T10:40:44Z",
+	"updated_at": "2014-12-22T06:24:07Z"
+}

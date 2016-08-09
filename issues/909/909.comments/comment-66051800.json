@@ -1,0 +1,12 @@
+{
+	"id": 66051800,
+	"body": "\u003ca id=\"c29\"\u003e\u003c/a\u003eComment 29 by **zhigangc**:\n\n\u003cpre\u003eI spent some time digging into this issue and have found the following:\n\n1. GC is Ineffectual because some memory blocks in the GO's heap can be mistakenly\nmarked as referenced, but in fact they are not.\n\n2. The \"fake\" references are from the static variables defined in various go packages.\nThese variables are not pointers. However, as GC scans the data section for potential\nreferences to the heap, they are treated as \"pointers\" and therefore the entire heap\nblocks which these \"pointers\" happen to \"reference\" can never be reclaimed even when\nthey should be.\n\n3. The attached test programs, mem.go can easily illustrate how these fake pointers\nprevent GC from freeing used memory on both the tip (12661:426b1101b166) and r60.3 on\n32-bit linux.\n\n  To run the test programs, please unzip the attachment.\n  To run it on Go 1, go to \"go0\" and run \"go run mem.go\". Make sure you are tip hash is 12661:426b1101b166, the most recent as of now.\n  To run it on Go release, go to \"go0\" and run \"make\" and \"./mem\"\n\n  In the unicode package, there are many static variables which end up being put in the DATA section.  As GC scans the data section at runtime/mgc0.c:648, it treats the variables are pointers and some happen to \"point\" to the memory blocks in the heap.\n  If we comment out the unicode package, GC works and the program runs fine.\n\n4. The issue are more likely to crash applications which allocate memory in large chunks\nbecause one \"fake\" pointer can hold a large piece of memory and it does not take a lot\nof fake pointers to make the app run out of RAM. If allocated in small chunks, the\nproblem still persist, though much less severe, and often gets away unnoticed.\n\n5. I am suspecting, the issue potentially exists in 64 bit as well.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/909/29/issue_909.zip\"\u003eissue_909.zip\u003c/a\u003e (1645 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-12T23:20:31Z",
+	"updated_at": "2014-12-08T10:06:19Z"
+}

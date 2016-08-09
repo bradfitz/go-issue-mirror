@@ -1,0 +1,12 @@
+{
+	"id": 68629151,
+	"body": "I had to remove the local route to make it work.\r\n\r\nApparently, they expect us to pass through 10.240.0.1 to\r\nsend a packet to a machine located in the same subnet.\r\n\r\n```\r\n0.0.0.0         /96  10.240.0.1      4    none   -\r\n10.0.0.0        /104 10.0.0.0        4i   ifc    -\r\n10.0.0.0        /128 10.0.0.0        4b   ifc    -\r\n10.240.209.72   /128 10.240.209.72   4u   ifc    0\r\n10.255.255.255  /128 10.255.255.255  4b   ifc    -\r\n127.0.0.0       /104 127.0.0.0       4i   ifc    -\r\n127.0.0.0       /128 127.0.0.0       4b   ifc    -\r\n127.0.0.1       /128 127.0.0.1       4u   ifc    -\r\n127.255.255.255 /128 127.255.255.255 4b   ifc    -\r\n255.255.255.255 /128 255.255.255.255 4b   ifc    -\r\n```\r\n\r\n```\r\nterm% echo route 10.240.221.98 \u003e/net/iproute\r\n10.240.221.98: 10.240.0.0      /112 10.240.0.0      4    none   0\r\nterm% ip/ping -n 3 10.240.221.98\r\nsending 3 64 byte messages 1000 ms apart to icmp!10.240.221.98!1\r\n```\r\n\r\n```\r\nterm% echo remove 10.0.0.0 /104 10.0.0.0 \u003e/net/iproute\r\nterm% echo route 10.240.221.98 \u003e/net/iproute\r\n10.240.221.98: 0.0.0.0         /96  10.240.0.1      4    none   0\r\nterm% ip/ping -n 3 10.240.221.98\r\nsending 3 64 byte messages 1000 ms apart to icmp!10.240.221.98!1\r\n0: rtt 778 µs, avg rtt 778 µs, ttl = 64\r\n1: rtt 591 µs, avg rtt 684 µs, ttl = 64\r\n2: rtt 469 µs, avg rtt 612 µs, ttl = 64\r\n```\r\n\r\nThey use the same configuration on the Linux instances (no local route):\r\n\r\n```\r\n$ ip r\r\ndefault via 10.240.0.1 dev eth0  proto static  metric 1024 \r\n10.240.0.1 dev eth0  proto static  scope link  metric 1 \r\n```\r\n\r\nBrad, I've updated the make script in CL 2251, so it should be fine now.",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-04T11:08:59Z",
+	"updated_at": "2015-01-04T11:08:59Z"
+}

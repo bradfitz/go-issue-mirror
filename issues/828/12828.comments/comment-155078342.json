@@ -1,0 +1,12 @@
+{
+	"id": 155078342,
+	"body": "On X11, closing the window triggers `onStop()` which sends a lifecycle event then a `stopPumping{}` event. \r\n\r\nIn the `app.pump()` loop, the lifecycle event gets in the event buffer, then on the next iteration `stopPumping{}` is received, discarding the input event channel, but the lifecycle event has not been sent out yet and remains in the buffer. What happens next is that the application's main loop sits in `a.Send(paine.Event{})`, trying to send to the input event channel, which the `pump()` loop does not read anymore. As for `pump()`, it blocks forever waiting to send out that last lifecycle event.\r\n\r\nA possible fix could be to actually close `eventsIn` upon receiving `stopPumping{}`, and perform all internal event sending via `app.Send()` with modifications to discard events should the channel be closed.\r\n\r\nEdit: possibly related, if the example's main loop does not send paint events itself (suppose a GUI app that does no animations), no other events are received, dead lock. Haven't investigated this yet, but this is to keep in mind when fixing.",
+	"user": {
+		"login": "db47h",
+		"id": 879556,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-09T14:27:55Z",
+	"updated_at": "2015-11-10T11:53:46Z"
+}

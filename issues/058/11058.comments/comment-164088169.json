@@ -1,0 +1,12 @@
+{
+	"id": 164088169,
+	"body": "\u003e In other words, I see the code here:\r\n\u003e https://github.com/golang/go/blob/master/src/cmd/link/internal/ld/data.go#L1333\r\n\u003e This gets called on Windows and Linux, but I don't understand how that\r\n\u003e actually gets picked up by the ELF writer. It certainly doesn't get picked\r\n\u003e up by the PE writer.\r\n\r\nIt is confusing.\r\n\r\nThere is naming confusion first. PE file has \"sections\" (search for pecoff.doc if you want details), while Go linker refers to \"segments\" that contains \"sections\". PE \"section\" corresponds to Go linker \"segment\". In terms of segments Go linker produces \"text\", \"data\" and list of \"dwarf...\" segments. These contains minimum code + data + debug_info that every platform need. All extras bits are written by platform specific code.\r\n\r\nFor example, by the time Asmbpe starts \"text\", \"data\" and \"dwarf...\" segments are already on the disk. All PE writing code do is makes a note (addpesection) about positions of those, so they can be written to \"pe section table\" as PE file is built. Asmbpe also writes whatever other PE sections this file requires - this time not just by calling addpesection but also by actually writing file contents. For example in addimports it writes a special PE section that is used by Windows program loader to find all system DLLs that Go program will use when it runs.\r\n\r\nI suspect what happened here, is someone created new \"segment\" in Go linker without telling PE writer about it. So what you need to do either just add appropriate addpesection somewhere in Asmbpe. Or copy the writing code into pe.go, if you think it is more correct or clearer or whatever. When calling addpesection, you can name it \".ctors\" or anything you want. I am not familiar with \".ctors\", so I wouldn't know if it is required or if it will help you any.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-12T00:23:08Z",
+	"updated_at": "2015-12-12T00:23:08Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51278581,
+	"number": 1989,
+	"state": "closed",
+	"title": "encoding/xml: nested decode fails",
+	"body": "by **jdnurmi@qwe.cc**:\n\n\u003cpre\u003eBefore filing a bug, please check whether it has been fixed since\nthe latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\nreproduce the problem.  Thanks.\n\nWhat steps will reproduce the problem?\n1.  Grab a very large (deep) XML document with complex types.\n2.  Attempt to use  'tag' path specifications after the 3rd level or so.\n3.  Tag directives are ignored, leading to un-parsed variables or potentially misplaced\nvalues.\n\nBelow is a small sample I've contrived that demonstrates the issue.\n\n\nWhat is the expected output?\n    xml correctly decoded our bad idea!\n\nWhat do you see instead?\n     xml Decoded into the 'Name' not the 'attr'!\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nlinux\n\nWhich revision are you using?  (hg identify)\n\n\nPlease provide any additional information below.\n\n\n\npackage main\n\nimport (\n  \u0026quot;bytes\u0026quot;\n  \u0026quot;fmt\u0026quot;\n  \u0026quot;xml\u0026quot;\n)\n\ntype T1 struct {\n  Children []T2 \u0026quot;children\u0026gt;kid\u0026quot;\n}\n\ntype T2 struct {\n  Children []T3 \u0026quot;children\u0026gt;kid\u0026quot;\n}\n\n// Notice the swap of variables here!\ntype T3 struct {\n  X string \u0026quot;y\u0026quot;\n  Y string \u0026quot;x\u0026quot;\n}\n\nfunc main(){\n  v := T1{}\n  err := xml.Unmarshal(bytes.NewBufferString(\u0026quot;\u0026lt;root\u0026gt;\u0026lt;children\u0026gt;\u0026lt;kid\u0026gt;\u0026lt;children\u0026gt;\u0026lt;kid\u0026gt;\u0026lt;X\u0026gt;RealX\u0026lt;/X\u0026gt;\u0026lt;Y\u0026gt;RealY\u0026lt;/Y\u0026gt;\u0026lt;/kid\u0026gt;\u0026lt;/children\u0026gt;\u0026lt;/kid\u0026gt;\u0026lt;/children\u0026gt;\u0026lt;/root\u0026gt;\u0026quot;), \u0026amp;v)\n  if err == nil {\n    if v.Children[0].Children[0].X != \u0026quot;RealY\u0026quot; {\n      fmt.Printf(\u0026quot;xml Decoded into the 'Name' not the 'attr'!\\n\u0026quot;)\n    } else {\n      fmt.Printf(\u0026quot;xml correctly decoded our bad idea!\\n\u0026quot;)\n    }\n    fmt.Printf(\u0026quot;(Val == %+v)\\n\u0026quot;, v)\n  } else {\n    fmt.Printf(\u0026quot;Err == %+v\\n\u0026quot;, err)\n  }\n}\n\n\n\n\nI'm not sure whether this is actually an xml issue or simply a limitation of go's\nreflection since I'm not using pointer types, but knowing which will allow me to figure\nout the correct approach.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:10:50Z",
+	"created_at": "2011-06-21T20:27:51Z",
+	"updated_at": "2016-06-24T19:31:16Z",
+	"milestone": {
+		"id": 1061233,
+		"number": 7,
+		"title": "Go1"
+	}
+}

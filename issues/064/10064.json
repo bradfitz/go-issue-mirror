@@ -1,0 +1,21 @@
+{
+	"id": 59605273,
+	"number": 10064,
+	"state": "open",
+	"title": "runtime: GC behavior in non-steady mode",
+	"body": "Currently GC allows heap to grow to 2x of live memory during the previous GC. This can play badly with spiky memory usage. Consider that in steady state program has live set X. GC will allow heap to grow to 2X and then collect it back to X, and so on. Now consider that there is a 1.5X spike in memory usage. If GC happens _after_ the spike (when live set is again X), then GC will collect X memory (garbage generated during the spike) and set heap limit to 2X as before. Now if GC happens to happen _during_ the spike (when live set is 1.5X), then GC will collect only 0.5X and set heap limit to 3X.\r\n\r\nBasically bad timing can increase maximum heap (RSS) by up to 2x.\r\n\r\nMemory-constrained environments, like browsers, pay a great deal of attention to this problem. The idea is to set smarter GC threshold when heap grows/shrinks.\r\n\r\nI did not work out a solution. But what I have in mind is: if heap grows, and especially if the next threshold (next_gc) will be larger than the current RSS (heap_sys - heap_released), then set next_gc to, say, heap_inuse * (1 + GOGC/100) * 0.75.\r\nSince heap cannot grow all the time, this throttling is only temporal.\r\n\r\n@rsc @RLH @aclements @randall77 ",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2015-03-03T07:28:58Z",
+	"updated_at": "2015-04-10T05:31:32Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

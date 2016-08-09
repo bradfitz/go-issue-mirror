@@ -1,0 +1,12 @@
+{
+	"id": 104429080,
+	"body": "I meant from the first ParseAddress call.\r\n\r\nI was going to say let's make the mail.ParseAddress func act identically as it did in Go 1.4 for unknown charsets, but it just returned an error then too, so it's already identical.\r\n\r\nI also considered just saying that we return the unable-to-decode part as the Name in e.g. `\u0026mail.Address{Name: \"=?ISO-8859-15?Q?Keld_J=F8rn_Simonsen?=\", Address: \"\u003ckeld@dkuug.dk\u003e\"}` and document on mail.Address.Name that if it contains \"=?\" then the word-encoded part(s) couldn't be decoded, but that's ambiguous: the encoding might decode successfully to something containing =?.\r\n\r\nYeah, maybe we just add a new func like `mail.ParseAddressWithDecoder' and take a *mime.WordDecoder.  But I feel that that will both be too word and too limiting.\r\n\r\nHow about this:\r\n\r\n```go\r\npackage mail  // in net/mail\r\n\r\ntype AddressParser struct {\r\n    // WordDecoder optionally specifies a decoder for RFC 2047 encoded-words.\r\n    WordDecoder *mime.WordDecoder\r\n\r\n   // any future options here (inevitable) like sloppiness modes\r\n}\r\n\r\nfunc (p *AddressParser) Parse(address string)  (*Address, error)\r\nfunc (p *AddressParser) ParseList(list string)  ([]*Address, error)\r\n```\r\n\r\nI know we already have a private `type addrParser []byte` in that package, which might be confusing. I'm not proposing to export that. Maybe we rename it, though. It would have to be changed to a different representation in any case, to have a pointer to the *AddressParser, or at least the WordDecoder.\r\n\r\nAnd the addrParser (lowercase) would still be made per-call (and consumed).  I don't now why it's backed by a `[]byte` instead of the input `string`.  That seems like a mistake.\r\n\r\n\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-05-21T21:41:56Z",
+	"updated_at": "2015-05-21T21:41:56Z"
+}

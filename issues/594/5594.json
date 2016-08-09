@@ -1,0 +1,30 @@
+{
+	"id": 51283880,
+	"number": 5594,
+	"state": "closed",
+	"title": "runtime: fatal error: malloc/free - deadlock",
+	"body": "\u003cpre\u003eOn my freebsd/arm builder I see regular malloc/free deadlocks. \u003ca href=\"https://golang.org/issue/5554\"\u003eissue #5554\u003c/a\u003e improved the\nstability a lot, but there is probably another issue going on here.\n\nfatal error: malloc/free - deadlock\n[signal 0xb code=0x0 addr=0x0 pc=0x3ef30]\n\ngoroutine 1 [running]:\n[fp=0x4060a15c] runtime.throw(0x3b7738)\n        /u/go/src/pkg/runtime/panic.c:473 +0x50\n[fp=0x4060a190] runtime.mallocgc(0x8, 0x0, 0x1, 0x1)\n        /u/go/src/pkg/runtime/zmalloc_freebsd_arm.c:34 +0x54\n[fp=0x4060a1a4] runtime.mal(0x8)\n        /u/go/src/pkg/runtime/zmalloc_freebsd_arm.c:639 +0x3c\n[fp=0x4060a1c0] copyin(0x236498, 0x4060a1e4, 0x4060a1f0)\n        /u/go/src/pkg/runtime/iface.c:152 +0x64\n[fp=0x4060a1dc] runtime.convT2E()\n        /u/go/src/pkg/runtime/iface.c:220 +0x44\n[fp=0x4060a1f4] runtime.newErrorString(0x3b6b03, 0x31, 0x4060a20c)\n        /u/go/src/pkg/runtime/error.go:74 +0x38\n[fp=0x4060a214] runtime.panicstring(0x3b6b03)\n        /u/go/src/pkg/runtime/panic.c:486 +0x78\n[fp=0x4060a220] runtime.sigpanic()\n        /u/go/src/pkg/runtime/os_freebsd.c:188 +0x10c\n[fp=0x4060a258] runtime.mallocgc(0x40, 0x0, 0x1, 0x1)\n        /u/go/src/pkg/runtime/zmalloc_freebsd_arm.c:58 +0x114\n[fp=0x4060a26c] runtime.mal(0x3c)\n        /u/go/src/pkg/runtime/zmalloc_freebsd_arm.c:639 +0x3c\n[fp=0x4060a2b4] runtime.makechan_c(0x1ffb50, 0x1, 0x0)\n        /u/go/src/pkg/runtime/chan.c:114 +0x188\n[fp=0x4060a2c4] runtime.makechan(0x1ffb50, 0x1, 0x0, 0x512d5b00)\n        /u/go/src/pkg/runtime/chan.c:141 +0x38\n[fp=0x4060a354] net/http.(*persistConn).roundTrip(0x513860f0, 0x51300dd0, 0x513860f0,\n0x0, 0x0, ...)\n        /u/go/src/pkg/net/http/transport.go:853 +0x25c\n[fp=0x4060a3b0] net/http.(*Transport).RoundTrip(0x5128f0c0, 0x51393af0, 0x10ed48, 0x0,\n0x0, ...)\n        /u/go/src/pkg/net/http/transport.go:186 +0x2f4\n[fp=0x4060a400] net/http.send(0x51393af0, 0x51274a40, 0x5128f0c0, 0x0, 0x0, ...)\n        /u/go/src/pkg/net/http/client.go:177 +0x3cc\n[fp=0x4060a45c] net/http.(*Client).send(0x3ba088, 0x51393af0, 0x9f, 0x17, 0x422ac, ...)\n        /u/go/src/pkg/net/http/client.go:100 +0x10c\n[fp=0x4060a58c] net/http.(*Client).doFollowingRedirects(0x3ba088, 0x51393af0, 0x29e7cc,\n0x0, 0x0, ...)\n        /u/go/src/pkg/net/http/client.go:293 +0x5c8\n[fp=0x4060a5b4] net/http.(*Client).Get(0x3ba088, 0x5128d960, 0x9f, 0x4060a5e8, 0x0, ...)\n        /u/go/src/pkg/net/http/client.go:247 +0xac\n[fp=0x4060a5d0] net/http.Get(0x5128d960, 0x9f, 0x258cd8, 0x0, 0x0, ...)\n        /u/go/src/pkg/net/http/client.go:224 +0x4c\n[fp=0x4060a794] main.dash(0x258cd8, 0x3, 0x5128d960, 0x9f, 0x512bee60, ...)\n        /u/go/misc/dashboard/builder/http.go:41 +0x42c\n[fp=0x4060a834] main.(*Builder).todo(0x512723f0, 0x26cbc0, 0xd, 0x513bcaa0, 0x18, ...)\n        /u/go/misc/dashboard/builder/http.go:103 +0x2f8\n[fp=0x4060a928] main.(*Builder).buildSubrepos(0x512723f0, 0x51345c60, 0x26, 0x51396180,\n0x23, ...)\n        /u/go/misc/dashboard/builder/main.go:335 +0xe4\n[fp=0x4060ac50] main.(*Builder).buildHash(0x512723f0, 0x51345fc0, 0x28, 0x0, 0x0, ...)\n        /u/go/misc/dashboard/builder/main.go:309 +0xed0\n[fp=0x4060acb8] main.(*Builder).build(0x512723f0, 0xe)\n        /u/go/misc/dashboard/builder/main.go:237 +0x14c\n[fp=0x4060afb8] main.main()\n        /u/go/misc/dashboard/builder/main.go:114 +0xf1c\n[fp=0x4060afd0] runtime.main()\n        /u/go/src/pkg/runtime/proc.c:181 +0x78\n[fp=0x4060afd4] runtime.goexit()\n        /u/go/src/pkg/runtime/proc.c:1227\n\ngoroutine 6 [syscall]:\nsyscall.Syscall6()\n        /u/go/src/pkg/syscall/asm_freebsd_arm.s:36 +0x8\nsyscall.kevent(0x6, 0x0, 0x0, 0x512b6004, 0xa, ...)\n        /u/go/src/pkg/syscall/zsyscall_freebsd_arm.go:199 +0x68\nsyscall.Kevent(0x6, 0x0, 0x0, 0x0, 0x512b6004, ...)\n        /u/go/src/pkg/syscall/syscall_bsd.go:577 +0xb0\nnet.(*pollster).WaitFD(0x512b6000, 0x512985e0, 0x0, 0x0, 0x0, ...)\n        /u/go/src/pkg/net/fd_bsd.go:98 +0x1ec\nnet.(*pollServer).Run(0x512985e0)\n        /u/go/src/pkg/net/fd_poll_unix.go:222 +0x1b8\ncreated by net.newPollServer\n        /u/go/src/pkg/net/fd_poll_unix.go:70 +0x2d4\n\ngoroutine 5 [syscall]:\n\ngoroutine 314 [runnable]:\nnet/http.(*persistConn).writeLoop(0x513860f0)\n        /u/go/src/pkg/net/http/transport.go:774 +0x228\ncreated by net/http.(*Transport).dialConn\n        /u/go/src/pkg/net/http/transport.go:512 +0x590\n\ngoroutine 313 [runnable]:\nnet/http.(*persistConn).readLoop(0x513860f0)\n        /u/go/src/pkg/net/http/transport.go:761 +0x638\ncreated by net/http.(*Transport).dialConn\n        /u/go/src/pkg/net/http/transport.go:511 +0x568\n\ngoroutine 13 [finalizer wait]:\n\nraspberry-pi(~) % hg id /u/go\n81ccdb178fd7+ tip\u003c/pre\u003e",
+	"user": {
+		"login": "davecheney",
+		"id": 7171,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:30:27Z",
+	"created_at": "2013-05-30T08:25:58Z",
+	"updated_at": "2016-06-24T22:41:28Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

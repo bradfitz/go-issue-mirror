@@ -1,0 +1,22 @@
+{
+	"id": 51278359,
+	"number": 1833,
+	"state": "closed",
+	"title": "Bug in compress/zlib",
+	"body": "by **john.arbash.meinel**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Run \u0026quot;gotest\u0026quot; on the attached zlib_test.go\n2. Alternatively, compress a string using zlib.NewWriter, and find that the compressed\ncontent cannot be decompressed by zlib.NewReader, nor by python zlib.decompress()\n\n3. Boiling down my test case is as follows:\n\ncontent := []byte(\u0026quot;test a reasonable sized string that can be compressed\u0026quot;)\nbuf := new(bytes.Buffer)\nw, _ := zlib.NewWriter(buf)\nw.Write(content)\nw.Close()\n\nz_content := buf.String()\n// The content for me is\n// \u0026quot;x\\x9c\\x04@\\xd1\\t\\xc5 \\x10[%\\xabE\\r\\xafB{\\x96K\\xbe\u0026quot;\n// + \u0026quot;:\\xfd#r@\\xb4\\xe8S\\x1c\\xb7\\xe0\\xfdi\\xc1\\xe9]?\u0026quot;\n// + \u0026quot;\\xe4b0Y\\x18\\xc2\u0026lt;\\xcf\\u06f2\\xb5\\xfe\\x01\\x00\\x00\u0026quot;\n// + \u0026quot;\\xff\\xff\\x15\\x7f\\x13\\xd3\u0026quot;\n\nr, _ := zlib.NewReader(buf)\ntmp := [100]byte{}\nbytes_read, err := r.Read(tmp[:])\n\n// err now includes a 'flate' error about byte 21.\n\nWhat is the expected output?\ntmp would contain the same content as \u0026quot;content\u0026quot;\n\nPython's zlib.compress() also returns different z_content, however I presume that is\nperfectly ok, as long as the compressed content conforms to the zlib spec and\ndecompressors can handle it.\n\nWhat do you see instead?\nError returned from r.Read()\nnote that Python's zlib.decompress() on the z_content string also complains about bad\ndata.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\n\nWhich operating system are you using?\nUbuntu Maverick\n\n\nWhich revision are you using?  (hg identify)\n$ 6g -V\n6g version weekly.2011-04-27 8257+\n\nPlease provide any additional information below.\nIf I use a smaller string, eg content := []byte(\u0026quot;test a simple string\u0026quot;)\neverything works. I can compress and decompress the string.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1833/0/zlib_test.go\"\u003ezlib_test.go\u003c/a\u003e (2126 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 17,
+	"closed_at": "2014-12-08T10:10:06Z",
+	"created_at": "2011-05-16T08:11:52Z",
+	"updated_at": "2016-06-24T19:29:19Z"
+}

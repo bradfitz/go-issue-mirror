@@ -1,0 +1,33 @@
+{
+	"id": 125772897,
+	"number": 13892,
+	"state": "closed",
+	"title": "net: broken sendfile on SmartOS/Solaris? large files garbled when sent over network",
+	"body": "**What version of Go are you using (go version)?** go version go1.5.1 solaris/amd64\r\n**What operating system and processor architecture are you using?** SunOS 5.11 joyent_20141030T081701Z i86pc i386 i86pc Solaris, SunOS 5.11 joyent_20151002T091442Z i86pc i386 i86pc Solaris\r\n**What did you do?** Retrieved a \u003e250K file over http from a golang server \r\n**What did you expect to see?** The correct contents of the file\r\n**What did you see instead?** A file with the correct size, but the first ~25% of the file repeated to fill the file.\r\n\r\nIf I access the file through localhost, the file is served correctly.  If I send it over any network interface, the bug appears.  Different lengths of the file are repeated to fill the space in each case.  All smaller files come through without error.\r\n\r\nI attempted to step through using **godebug** but ran into mailgun/godebug#12, since the issue is clearly somewhere in the standard library.  So I have setup a temporary fileserver to demonstrate the issue.  `text.text.2` contains the beginning of Sherlock Holmes from Project Gutenberg (thanks Norvig).\r\n\r\nControl: `python -m SimpleHTTPServer`\r\nhttp://165.225.174.156:8000/\r\nhttp://165.225.174.156:8000/test.txt.2\r\nServes correct contents of file.\r\n\r\nBug: `gohttp` ([itang/gohttp](//github.com/itang/gohttp))\r\nhttp://165.225.174.156:8080/\r\nhttp://165.225.174.156:8080/test.txt.2\r\nServes garbled file, every time.\r\n\r\nLocalhost: `gohttp` with a barebones nginx proxy from localhost\r\nhttp://165.225.174.156/\r\nhttp://165.225.174.156/test.txt.2\r\nServes correct contents of file.\r\n\r\nI discovered this bug because we just recently have hashicorp/consul building on SmartOS (hashicorp/consul#159), and the Consul UI contains a ~750K minified JS file.  Consul [uses **gorilla/mux** and `http.FileServer`](https://github.com/hashicorp/consul/blob/a2eddcab388f4475be6a0adb98aa7644fab15e21/command/agent/http.go#L280), but I am able to reproduce with the much simpler case of **gohttp**.\r\n\r\nThe test suite for the http response methods doesn't have tests from a remote machine, or use large files, so this bug can slip through in most cases unnoticed.  Please let me know if I can provide more details.  We really need a way to step through and debug the standard libs!",
+	"user": {
+		"login": "doublerebel",
+		"id": 212827,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Solaris"
+		}
+	],
+	"assignee": {
+		"login": "4ad",
+		"id": 1331747,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 17,
+	"closed_at": "2016-04-12T19:01:09Z",
+	"created_at": "2016-01-09T18:15:54Z",
+	"updated_at": "2016-04-12T19:01:09Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

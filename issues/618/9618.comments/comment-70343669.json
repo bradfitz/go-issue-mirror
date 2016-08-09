@@ -1,0 +1,12 @@
+{
+	"id": 70343669,
+	"body": "@randall77 I do not quite understand the workaround. I think it only solves a one of the two problems this issue reveals. \r\n\r\nI think a bigger problem is that only if there is no reference to the whole slice, the reference in the slice will be deallocated. \r\n\r\nIf we continue reference only one element in the previous large slice, the memory will not be deallocated. \r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"runtime\"\r\n\t\"time\"\r\n)\r\n\r\nfunc bigBytes() []byte {\r\n\t// 0.1 MB\r\n\treturn make([]byte, 100*1000)\r\n}\r\n\r\nfunc main() {\r\n\tvar mem runtime.MemStats\r\n\truntime.ReadMemStats(\u0026mem)\r\n\tlog.Println(mem.Alloc)\r\n\tlog.Println(mem.TotalAlloc)\r\n\tlog.Println(mem.HeapAlloc)\r\n\tlog.Println(mem.HeapSys)\r\n\r\n\t// alloc 100M\r\n\tss := make([][]byte, 0)\r\n\tfor i := 0; i \u003c 1000; i++ {\r\n\t\tss = append(ss, bigBytes())\r\n\t}\r\n        \r\n\t// we do expect a deallocation after this point.\r\n\tss = ss[:1]\r\n\r\n\tfor {\r\n\t\t// keep a reference, but should not affect the deallocation\r\n\t\tss[0] = nil\r\n\t\truntime.GC()\r\n\t\ttime.Sleep(time.Second)\r\n\t\tlog.Println(\"after 1s\")\r\n\t\truntime.ReadMemStats(\u0026mem)\r\n\t\tlog.Println(mem.Alloc/1000/1000, \"MB\")\r\n\t\tlog.Println(mem.TotalAlloc/1000/1000, \"MB\")\r\n\t\tlog.Println(mem.HeapAlloc/1000/1000, \"MB\")\r\n\t\tlog.Println(mem.HeapSys/1000/1000, \"MB\")\r\n\t}\r\n}\r\n```\r\n\r\noutput from play.golang.org\r\n\r\n```\r\n2009/11/10 23:00:00 1182544\r\n2009/11/10 23:00:00 2065248\r\n2009/11/10 23:00:00 1182544\r\n2009/11/10 23:00:00 2097152\r\n2009/11/10 23:00:01 after 1s\r\n2009/11/10 23:00:01 107 MB\r\n2009/11/10 23:00:01 108 MB\r\n2009/11/10 23:00:01 107 MB\r\n2009/11/10 23:00:01 108 MB\r\n2009/11/10 23:00:02 after 1s\r\n2009/11/10 23:00:02 107 MB\r\n2009/11/10 23:00:02 108 MB\r\n2009/11/10 23:00:02 107 MB\r\n2009/11/10 23:00:02 108 MB\r\n2009/11/10 23:00:03 after 1s\r\n```",
+	"user": {
+		"login": "xiang90",
+		"id": 4479947,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-17T00:18:16Z",
+	"updated_at": "2015-01-17T00:19:21Z"
+}

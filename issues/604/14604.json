@@ -1,0 +1,17 @@
+{
+	"id": 137997094,
+	"number": 14604,
+	"state": "closed",
+	"title": "proposal: cmd/link: align symbols to an architecture specific minimum value",
+	"body": "In the upcoming z (s390x) port all data symbols (i.e. global variables and constants) need to be 2-byte aligned to facilitate relative addressing. To implement this I propose:\r\n\r\n* adding a `Minalign` field to complement the `Maxalign` field in `ld.Arch`\r\n* enforcing `Minalign` in the `symalign` function in cmd/link/internal/ld/data.go\r\n\r\nFor all preexisting architectures the value of `Minalign` would be 1.\r\n\r\nOther architectures could also use this property to enable some optimizations.  For example on platforms where single byte loads are more expensive than n byte loads `Minalign` could be set to n to ensure that all global `bool` variables are aligned to n bytes enabling the use of n byte loads/stores.\r\n\r\n_Note_: this would only apply to global variables (or constants), __not__ struct fields or array elements. So in the following example `a`, `b` and `c` would all consume, and be aligned to, 2 bytes in the data section. Currently `a` would only consume 1 byte and all of them would be aligned to 1 byte:\r\n\r\n```go\r\npackage main\r\nvar a bool\r\nvar b struct { x, y bool }\r\nvar c [2]byte\r\n...\r\n```\r\n\r\nCL to follow shortly. Currently setting Minalign to a value \u003e 8 breaks the code that reads `firstmoduledata`.",
+	"user": {
+		"login": "mundaym",
+		"id": 15000766,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-03-03T04:29:29Z",
+	"created_at": "2016-03-02T21:24:17Z",
+	"updated_at": "2016-03-04T16:00:31Z"
+}

@@ -1,0 +1,22 @@
+{
+	"id": 98416119,
+	"number": 11967,
+	"state": "closed",
+	"title": "runtime: perform GC assist before allocating [easy]",
+	"body": "Currently when the mutator allocates, the runtime first allocates the memory and then, if that G has done \"enough\" allocation, the runtime checks whether the G has assist debt to pay off and, if so, pays it off. This approach permits various ways of under-assisting:\r\n\r\n1. Large allocations can push the system arbitrarily over the heap goal because they're satisfied before the assist pushes back. A single G can only push the heap size over the goal by its largest single allocation, but if there are many Gs doing large allocations, we can go over the heap goal by the total of these allocations. (There's no way to 100% solve this problem since a G can always do a single allocation that's more than the heap goal, but this is a very specific case.)\r\n\r\n2. If a G has racked up debt and then exits, that debt disappears. This isn't likely to cause problems if it's just one G, but, as above, if a large number of Gs do this, the system can fall arbitrarily far behind on assisting.\r\n\r\nWe should flip this around and do the assist first to ensure that a mutator always has sufficient credit to allocate memory when it does so. We can continue to amortize the cost of assists by requiring that they over-assist when triggered to build up credit for many allocations. Note that we can't completely eliminate the possibility of debt because there are situations in which we can't assist (e.g., allocations in non-preemptible contexts), but these are at least under the runtime's control.\r\n\r\nThis requires a little restructuring of mallocgc, but should be fairly easy.\r\n\r\nThis was suggested by @dvyukov in https://github.com/golang/go/issues/11677#issuecomment-123732739.\r\n\r\n@RLH @rsc ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-10-09T19:39:17Z",
+	"created_at": "2015-07-31T15:43:18Z",
+	"updated_at": "2015-10-09T19:39:17Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

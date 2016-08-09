@@ -1,0 +1,12 @@
+{
+	"id": 67111194,
+	"body": "I looked into this more as I was fixing #9205. The problem is that we use a bufio.Reader around the *os.File reading from /dev/urandom, and it's for the bufio.Reader that the mutex is important.\r\n\r\nIf we were to fix the mutex contention issue for random, we'd probably want to do a per-processor buffer of /dev/urandom data that we tried to read from first, only falling back to re-filling the per-processor buffer from a shared (without locking) *os.File that we then do ~large reads occasionally.  Then we wouldn't need bufio.Reader at all.  We could use sync.Pool for the per-P buffer, but using that is contentious.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-16T04:30:27Z",
+	"updated_at": "2014-12-16T04:30:27Z"
+}

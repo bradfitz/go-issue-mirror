@@ -1,0 +1,12 @@
+{
+	"id": 66048740,
+	"body": "\u003ca id=\"c12\"\u003e\u003c/a\u003eComment 12 by **clbanning**:\n\n\u003cpre\u003eHad a similar problem with websocket.Dial().  The server(s) are on a network with\nDHCP-assigned addresses.  So I fixed it by looping over a range of addresses while\ncalling GetWebsocConn(), below.\n\n\ntype websoc struct {\n   c *websocket.Conn\n   err os.Error\n}\n\nfunc GetWebsoc(wsString, destString string, timeOut int) (*websocket.Conn, os.Error) {\n   var ws websoc\n   var ok bool\n\n   ch := make(chan websoc,1)\n   go dialWebsocConn(wsString, destString, ch)\n\n   tic := time.Seconds()\n   for {\n      ws, ok = \u0026lt;-ch\n      if ok == true {\n         break\n      }\n      toc := time.Seconds()\n      if to := toc-tic; int(to) \u0026gt; timeOut {\n         close(ch)\n         ws.err = os.ECONNREFUSED\n         break\n      }\n   }\n   return ws.c, ws.err\n}\n\nfunc dialWebsocConn(wsString, destString string, ch chan websoc) {\n   var ws websoc\n\n   c, ok := websocket.Dial(wsString,\"\",destString)\n   ws.c = c\n   ws.err = ok\n   ch \u0026lt;- ws\n}\n\nSure there is some processing overhead from orphaned 'go dialWebsocConn()' procs; but it\npretty insignificant compared to being able to something useful done. (Of course, once\nI've found the server of interest, I move that address to the 'head' of the address\nrange list; so I usually get a hit on the first address tried.)\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-10-02T19:23:42Z",
+	"updated_at": "2014-12-22T05:44:43Z"
+}

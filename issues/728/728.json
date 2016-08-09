@@ -1,0 +1,28 @@
+{
+	"id": 51276861,
+	"number": 728,
+	"state": "closed",
+	"title": "cgo crashes with simple argument passing",
+	"body": "by **scott+ctt@pakin.org**:\n\n\u003cpre\u003e\u0026gt; Before filing a bug, please check whether it has been fixed since\n\u0026gt; the latest release: run \u0026quot;hg pull -u\u0026quot; and retry what you did to\n\u0026gt; reproduce the problem.  Thanks.\n\u0026gt; \n\u0026gt; What steps will reproduce the problem?\n\nWith the attached code, \u0026quot;make testffi\u0026quot; and \u0026quot;./testffi\u0026quot;.  For quick \nreference, here's the critical file:\n\n    package badffi\n\n    /*\n    #include \u0026lt;stdio.h\u0026gt;\n\n    int somevalue = 100;\n    void do_something(int x)\n    {\n      printf(\u0026quot;Hello, %d!\\n\u0026quot;, x);\n    }\n    */\n    import \u0026quot;C\u0026quot;\n\n    func DoSomething() {\n\t    C.do_something(C.somevalue)\n    }\n\n\u0026gt; What is the expected output? What do you see instead?\n\nThe program should output \u0026quot;Hello, 100!\u0026quot;.  Instead it crashes with a bad \npointer deference:\n\n    panic: runtime error: invalid memory address or nil pointer dereference\n\n    panic PC=0x7f35d9945ff8\n    runtime.panic+0x7c /home/pakin/goroot/src/pkg/runtime/proc.c:1011\n\t    runtime.panic(0x7f3500000000, 0x404d59)\n    panicstring+0x60 /home/pakin/goroot/src/pkg/runtime/runtime.c:83\n\t    panicstring(0x40d7d8, 0x7f35d993d1f0)\n    sigpanic+0x84 /home/pakin/goroot/src/pkg/runtime/linux/thread.c:285\n\t    sigpanic()\n    badffi.DoSomething+0x16 /home/pakin/badffi/badffi.cgo1.go:17\n\t    badffi.DoSomething()\n    main.main+0xf /home/pakin/badffi/testffi.go:6\n\t    main.main()\n    mainstart+0xf /home/pakin/goroot/src/pkg/runtime/amd64/asm.s:60\n\t    mainstart()\n    goexit /home/pakin/goroot/src/pkg/runtime/proc.c:145\n\t    goexit()\n\n\u0026gt; What is your $GOOS?  $GOARCH?\n\nGOOS=linux\nGOARCH=amd64\n\n\u0026gt; Which revision are you using?  (hg identify)\n\nI tried both\n\n    f98f784927ab+ release.2010-04-13/release\n\nand\n\n    9b6baa9163d6+ tip\n\n\u0026gt; Please provide any additional information below.\n\nSticking a\n\n    fmt.Printf(\u0026quot;\u0026gt;\u0026gt;\u0026gt; %v \u0026lt;\u0026lt;\u0026lt;\\n\u0026quot;, _C_somevalue)\n\ninto badffi.cgo1.go outputs \u0026quot;\u0026gt;\u0026gt;\u0026gt; \u0026lt;nil\u0026gt; \u0026lt;\u0026lt;\u0026lt;\u0026quot;.  It seems\nthat _C_somevalue \nis not properly getting initialized to \u0026amp;somevalue.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/728/0/badffi.tar.gz\"\u003ebadffi.tar.gz\u003c/a\u003e (449 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:05:39Z",
+	"created_at": "2010-04-14T21:24:37Z",
+	"updated_at": "2016-06-24T19:15:19Z"
+}

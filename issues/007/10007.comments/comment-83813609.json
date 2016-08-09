@@ -1,0 +1,12 @@
+{
+	"id": 83813609,
+	"body": "Here's a first pass at an arm version for `cmpstring`. The same code works for `bytes.Compare`, so we just need a bit of glue. It doesn't do 32 bits at a time, but it's still a 3x improvement. I'm putting it up here because I'm not sure when I'll finish it, and maybe someone else will run with it in the meantime.\r\n\r\n```\r\n#include \"textflag.h\"\r\n\r\nTEXT runtime·cmpstring(SB),NOSPLIT,$-4-20\r\n    MOVW\ts1_base+0(FP), R2\r\n    MOVW\ts1_len+4(FP), R0\r\n    MOVW\ts2_base+8(FP), R3\r\n    MOVW\ts2_len+12(FP), R1\r\n    CMP\tR0, R1\r\n    MOVW.LT\tR0, R1 // R1 is min length\r\n\r\n    ADD\tR2, R1, R6 // R2 is current byte in s1, R6 is last byte in s1 to compare\r\nloop:\r\n    CMP\tR2, R6\r\n    BEQ samebytes // all compared bytes were the same; compare lengths\r\n    MOVBU.P\t1(R2), R4\r\n    MOVBU.P\t1(R3), R5\r\n    CMP\tR4, R5\r\n    BEQ\tloop\r\n    // bytes differed\r\n    MOVW.LT\t$1, R8\r\n    MOVW.GT\t$-1, R8\r\n    MOVW\tR8, ret+16(FP)\r\n    RET\r\nsamebytes:\r\n    CMP R0, R1\r\n    MOVW.LT\t$1, R8\r\n    MOVW.GT\t$-1, R8\r\n    MOVW.EQ $0, R8\r\n    MOVW\tR8, ret+16(FP)\r\n    RET\r\n```\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-19T23:58:54Z",
+	"updated_at": "2015-03-19T23:58:54Z"
+}

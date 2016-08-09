@@ -1,0 +1,27 @@
+{
+	"id": 51286781,
+	"number": 7491,
+	"state": "closed",
+	"title": "runtime: incorrect unwind in panicwrap",
+	"body": "\u003cpre\u003ethe panicwrap code does not clean up properly on panic (ironically).\n\n\u003ca href=\"http://play.golang.org/p/7bR-7ZA1VU\"\u003ehttp://play.golang.org/p/7bR-7ZA1VU\u003c/a\u003e\n\npackage main\n\nimport \u0026quot;runtime\u0026quot;\n\nfunc main() {\n\ttest11()\n}\n\ntype Tiny struct{}\n\nfunc (Tiny) M() {\n\tpanic(\u0026quot;asdf\u0026quot;)\n}\n\n// calling i.M increments panicwrap, but then i.M panics, and panicwrap\n// is never restored. because panicwrap is now wrong, the recover\n// in T3 after the call to badstate does not see the panic that it should.\nfunc badstate() {\n\tdefer func() {\n\t\tprintln(recover())\n\t}()\n\tvar i I = Tiny{}\n\ti.M()\n}\n\n// -- code below this line copied from test/recover.go except marked line--\n\n// tiny receiver, so basic wrapper in i.M()\ntype T3 struct{}\n\nfunc (T3) M() {\n\tbadstate() // THIS IS NEW!\n\tmustRecoverBody(doubleRecover(), recover(), recover(), 11)\n}\n\nfunc test11() {\n\tvar i I = T3{}\n\tdefer i.M()\n\tpanic(11)\n}\n\ntype I interface {\n\tM()\n}\n\nfunc mustRecoverBody(v1, v2, v3, x interface{}) {\n\tv := v1\n\tif v != nil {\n\t\tprintln(\u0026quot;spurious recover\u0026quot;, v)\n\t\tdie()\n\t}\n\tv = v2\n\tif v == nil {\n\t\tprintln(\u0026quot;missing recover\u0026quot;)\n\t\tdie() // panic is useless here\n\t}\n\tif v != x {\n\t\tprintln(\u0026quot;wrong value\u0026quot;, v, x)\n\t\tdie()\n\t}\n\n\t// the value should be gone now regardless\n\tv = v3\n\tif v != nil {\n\t\tprintln(\u0026quot;recover didn't recover\u0026quot;)\n\t\tdie()\n\t}\n}\n\nfunc doubleRecover() interface{} {\n\treturn recover()\n}\n\nfunc mustRecover(x interface{}) {\n\tmustRecoverBody(doubleRecover(), recover(), recover(), x)\n}\n\nfunc die() {\n\truntime.Breakpoint() // can't depend on panic\n}\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:41:37Z",
+	"created_at": "2014-03-07T14:59:20Z",
+	"updated_at": "2016-06-25T01:29:16Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

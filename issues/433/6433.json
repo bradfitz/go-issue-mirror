@@ -1,0 +1,27 @@
+{
+	"id": 51285178,
+	"number": 6433,
+	"state": "closed",
+	"title": "net: Interface.Addrs doesn't return any configured \u0026 connected IPv6 addresses on point-to-point link for Linux",
+	"body": "by **justin@fathomdb.com**:\n\n\u003cpre\u003eI noticed that some interfaces did not return any IP addresses from Addrs(), but e.g. ip\naddr show would show the IP addresses.\n\nBy hacking up the code, I believe the issue is here:\n\n\u003ca href=\"http://golang.org/src/pkg/net/interface_linux.go?#L152\"\u003ehttp://golang.org/src/pkg/net/interface_linux.go?#L152\u003c/a\u003e\n\nif ifi.Flags\u0026amp;FlagPointToPoint != 0 \u0026amp;\u0026amp; a.Attr.Type == syscall.IFA_LOCAL ||\n   ifi.Flags\u0026amp;FlagPointToPoint == 0 \u0026amp;\u0026amp; a.Attr.Type == syscall.IFA_ADDRESS {\n\nI have an IP address that is up|pointtopoint|multicast, but the address type is\nIFA_LOCAL.  This is an IPv6 address on a SSH-created tunnel device.  I added the IP\naddress myself using ip addr add, so I may well have done it wrong.\n\nBut, ip addr show does show the IP, whereas Go skips over it.\n\nI'm not quite sure of the logic behind the skipping.\n\nHere's how to reproduce...\n\nsudo ssh -f -N -i ~username/.ssh/id_rsa -w99:99 root@SERVER_IP\nsudo ip addr add 172.16.1.1/24 dev tun99\nsudo ip addr add fd00::f00d/96 dev tun99\nsudo ip link set tun99 up\n\n\nA quick test program...\n\npackage main\n\nimport (\n\t\u0026quot;log\u0026quot;\n\t\u0026quot;net\u0026quot;\n)\n\nfunc main() {\n\tintfs, err := net.Interfaces()\n\tif err != nil {\n\t\tlog.Panic(err)\n\t}\n\n\tfor _, intf := range intfs {\n\t\tintf, err := InterfaceByName(intf.Name)\n\t\tif err != nil {\n\t\t\tlog.Panic(err)\n\t\t}\n\n\t\taddrs, err := intf.Addrs()\n\t\tif err != nil {\n\t\t\tlog.Panic(err)\n\t\t}\n\n\t\tlog.Printf(\u0026quot;%v\u0026quot;, intf.Name)\n\t\tfor _, addr := range addrs {\n\t\t\tlog.Printf(\u0026quot;\\t%s\u0026quot;, addr)\n\t\t}\n\t}\n\n\tlog.Printf(\u0026quot;DONE\u0026quot;)\n}\n\nThis prints (the relevant bit for tun99):\n\n2013/09/20 11:42:31 tun99\n2013/09/20 11:42:31 \t172.16.1.1/24\n\n\nThe IPv6 address is missing.  \u0026quot;ip addr show\u0026quot; includes it:\n\nip addr show dev tun99\n\n63: tun99: \u0026lt;POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP\u0026gt; mtu 1500 qdisc pfifo_fast\nstate UP qlen 500\n    link/none \n    inet 172.16.1.1/24 scope global tun99\n    inet6 fd00::f00d/128 scope global \n       valid_lft forever preferred_lft forever\n\n\n\nBy hacking up newAddr to insert a println when the loop condition is not hit:\n\n\tlog.Printf(\u0026quot;Skipped: %v %v\u0026quot;, ifi, a.Attr.Type)\n\n2013/09/20 11:44:44 Skipped: \u0026amp;{63 1500 tun99  up|pointtopoint|multicast} 1\n2013/09/20 11:44:44 Skipped: \u0026amp;{63 1500 tun99  up|pointtopoint|multicast} 1\n2013/09/20 11:44:44 Skipped: \u0026amp;{63 1500 tun99  up|pointtopoint|multicast} 6\n\n\n\nSo I think the problem is that - for the Ipv6 address on the pointtopoint tun device,\nwe're only getting an IFA_ADDRESS record, and no IFA_LOCAL record.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:35:30Z",
+	"created_at": "2013-09-20T18:52:05Z",
+	"updated_at": "2016-06-25T01:19:09Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

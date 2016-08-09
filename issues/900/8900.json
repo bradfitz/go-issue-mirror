@@ -1,0 +1,26 @@
+{
+	"id": 51288845,
+	"number": 8900,
+	"state": "open",
+	"title": "runtime: throttle goroutines on async chans ",
+	"body": "\u003cpre\u003eThere is a common trick for reduction of contention on sync primitives. Unfortunately it\ndoes not have a common name, but see mutexWaiterShift handling in sync/mutex.go for an\nexample. We can use it for async channels to reduce contention as well. Namely:\n\n- add a waiterAwake flag to Hchan\n- when a goroutine sends to async chan and there is a parked receiver, if\nwaiterAwake=false unpark it and set waiterAwake, otherwise do nothing\n- if the woken receiver discovers empty queue, it resets waiterAwake before parking again\n- if the woken receiver successfully dequeues from the queue, it does:\n    if queue empty || no parked receivers {\n      waiterAwake = false\n    } else {\n      unpark one parked receiver\n      // responsibility to manage waiterAwake and subsequent parked receivers\n      // transfers to that next recevier\n    }\n\nThis algorithm ensures that there is at most 1 excessive receiver loafs about producing\nunnecessary contention. When this receivers goes away, it wakes up another receiver. And\nso on.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 1,
+	"created_at": "2014-10-07T14:18:26Z",
+	"updated_at": "2015-07-06T20:05:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,28 @@
+{
+	"id": 138013391,
+	"number": 14607,
+	"state": "closed",
+	"title": "x/net/http2: transport.CloseIdleConnections() does not have any effect",
+	"body": "I'm writing a service that delivers notifications to Apple's APNS service via their HTTP/2 API. For some reason APNS stops caring about an HTTP/2 connection after a certain amount of time of idling. The problem is that HTTP/2 connections are retained in the client pool, and they eventually become unusable because they are 100% guaranteed to time out once APNS stops caring about them. Despite this, they're not removed from the HTTP/2 client pool which means my service is rendered unusable.\r\n\r\nInitially I was thinking of keeping the connection alive by pinging, but I'm unable to find a way to send PING frames with the Go HTTP library, so what I tried to do instead is to kill idle connections and reestablish them later (since this should be a fairly rare occurrence anyway). However, it appears that calling `CloseIdleConnections()` on the `Transport` instance does nothing. See example below with relevant code + log entries.\r\n\r\n(Note that using an invalid device token in this example is intentional.)\r\n\r\n```\r\n// Set up an HTTP/2 client:\r\ncert, err := tls.LoadX509KeyPair(\"secrets/cert.pem\", \"secrets/cert.key\")\r\nif err != nil {\r\n\tlog.Fatalln(err)\r\n}\r\nconfig := \u0026tls.Config{\r\n\tCertificates: []tls.Certificate{cert},\r\n}\r\nconfig.BuildNameToCertificate()\r\ntransport := \u0026http.Transport{\r\n\tTLSClientConfig: config,\r\n}\r\n// Explicitly enable HTTP/2 as TLS-configured clients don't auto-upgrade.\r\n// See: https://github.com/golang/go/issues/14275\r\nif err := http2.ConfigureTransport(transport); err != nil {\r\n\tlog.Fatalln(err)\r\n}\r\nclient := \u0026http.Client{\r\n\tTimeout:   3 * time.Second,\r\n\tTransport: transport,\r\n}\r\n// Perform a POST request to APNS:\r\nclient.Do(req)\r\n…\r\n2016/03/02 17:14:23 http2: Transport failed to get client conn for api.push.apple.com:443: http2: no cached connection was available\r\n2016/03/02 17:14:23 http2: Transport creating client conn to 17.143.164.140:443\r\n2016/03/02 17:14:23 Unhandled Setting: [HEADER_TABLE_SIZE = 4096]\r\n2016/03/02 17:14:23 Unhandled Setting: [MAX_HEADER_LIST_SIZE = 8000]\r\n2016/03/02 17:14:23 http2: Transport encoding header \":authority\" = \"api.push.apple.com\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \":method\" = \"POST\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \":path\" = \"/3/device/abc\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \":scheme\" = \"https\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \"content-type\" = \"application/json\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \"accept-encoding\" = \"gzip\"\r\n2016/03/02 17:14:23 http2: Transport encoding header \"user-agent\" = \"Go-http-client/2.0\"\r\n2016/03/02 17:14:23 http2: Transport received SETTINGS flags=ACK len=0\r\n2016/03/02 17:14:23 http2: Transport received HEADERS flags=END_HEADERS stream=1 len=1\r\n2016/03/02 17:14:23 http2: Transport decoded header field \":status\" = \"400\"\r\n2016/03/02 17:14:23 http2: Transport received DATA flags=END_STREAM stream=1 len=27 data=\"{\\\"reason\\\":\\\"BadDeviceToken\\\"}\"\r\n…\r\n// 30 seconds pass by, then this is called:\r\ntransport.CloseIdleConnections()\r\n// Another 30 seconds pass by, note below that a connection is being reused.\r\n…\r\n2016/03/02 17:15:33 http2: Transport encoding header \":authority\" = \"api.push.apple.com\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \":method\" = \"POST\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \":path\" = \"/3/device/abc\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \":scheme\" = \"https\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \"content-type\" = \"application/json\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \"accept-encoding\" = \"gzip\"\r\n2016/03/02 17:15:33 http2: Transport encoding header \"user-agent\" = \"Go-http-client/2.0\"\r\n2016/03/02 17:15:33 http2: Transport received HEADERS flags=END_HEADERS stream=7 len=1\r\n2016/03/02 17:15:33 http2: Transport decoded header field \":status\" = \"400\"\r\n2016/03/02 17:15:33 http2: Transport received DATA flags=END_STREAM stream=7 len=27 data=\"{\\\"reason\\\":\\\"BadDeviceToken\\\"}\"\r\n```\r\n\r\n(I'm using `go version go1.6 darwin/amd64`)",
+	"user": {
+		"login": "blixt",
+		"id": 158591,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-05-20T05:53:33Z",
+	"created_at": "2016-03-02T22:34:11Z",
+	"updated_at": "2016-05-20T05:53:33Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

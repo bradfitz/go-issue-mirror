@@ -1,0 +1,23 @@
+{
+	"id": 121171479,
+	"number": 13543,
+	"state": "closed",
+	"title": "net/http: discrepancy in contentLength given invalid \"Content-Encoding\":\"foo\" between http1 and http2",
+	"body": "Setting an invalid \"Content-Encoding\" as \"foo\" then querying for resp.ContentLength in http1 returns -1 while in http2 it returns the entire length of the content served.\r\nThe test's CL that found this is at https://go-review.googlesource.com/#/c/17598/2\r\n```diff\r\ndiff --git a/src/net/http/fs_test.go b/src/net/http/fs_test.go\r\nindex 7550c55..1d52678 100644\r\n--- a/src/net/http/fs_test.go\r\n+++ b/src/net/http/fs_test.go\r\n@@ -477,14 +477,22 @@ func TestServeFileFromCWD(t *testing.T) {\r\n \t}\r\n }\r\n \r\n-func TestServeFileWithContentEncoding(t *testing.T) {\r\n+func TestServeFileWithContentEncoding_h1(t *testing.T) {\r\n+\ttestServeFileWithContentEncoding(t, false)\r\n+}\r\n+\r\n+func TestServeFileWithContentEncoding_h2(t *testing.T) {\r\n+\ttestServeFileWithContentEncoding(t, true)\r\n+}\r\n+\r\n+func testServeFileWithContentEncoding(t *testing.T, h2 bool) {\r\n \tdefer afterTest(t)\r\n-\tts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\r\n+\tcst := newClientServerTest(t, h2, HandlerFunc(func(w ResponseWriter, r *Request) {\r\n \t\tw.Header().Set(\"Content-Encoding\", \"foo\")\r\n \t\tServeFile(w, r, \"testdata/file\")\r\n \t}))\r\n-\tdefer ts.Close()\r\n-\tresp, err := Get(ts.URL)\r\n+\tdefer cst.close()\r\n+\tresp, err := cst.c.Get(cst.ts.URL)\r\n \tif err != nil {\r\n \t\tt.Fatal(err)\r\n \t}\r\n```\r\n\r\nGiving\r\n\r\n```shell\r\n$ go test -cover\r\n--- FAIL: TestServeFileWithContentEncoding_h2 (0.00s)\r\n\tfs_test.go:501: Content-Length mismatch: got 11, want -1\r\nFAIL\r\ncoverage: 78.2% of statements\r\nexit status 1\r\nFAIL\tnet/http\t22.996s\r\n```",
+	"user": {
+		"login": "odeke-em",
+		"id": 4898263,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-12-10T04:43:44Z",
+	"created_at": "2015-12-09T06:33:15Z",
+	"updated_at": "2015-12-10T04:43:44Z"
+}

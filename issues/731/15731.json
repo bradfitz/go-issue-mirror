@@ -1,0 +1,26 @@
+{
+	"id": 155562868,
+	"number": 15731,
+	"state": "open",
+	"title": "log/syslog: variables and documentation for facility misleading",
+	"body": "[`syslog.Dial`](https://github.com/golang/go/blob/master/src/log/syslog/syslog.go#L115) and `syslog.New` take a `syslog.Priority` as an argument and stores it in a field named `priority`. This field is used exactly twice:\r\n - as a syslog _facility_  in [`writeAndRetry`](https://github.com/golang/go/blob/master/src/log/syslog/syslog.go#L245)\r\n - as the syslog priority in [`Writer.Write`](https://golang.org/src/log/syslog/syslog.go#L171)\r\n\r\nFor examples of someone confused by this in the wild, check out  [`logrus_syslog`](https://github.com/Sirupsen/logrus/blob/master/hooks/syslog/syslog.go#L22) or [`golang-samples`](https://github.com/golang-samples/log/blob/master/syslog/main.go#L9), which thinks that creating a syslog writer with a severity instead of a facility will do something meaningful:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"log/syslog\"\r\n)\r\n\r\nfunc test(p syslog.Priority, msg string) {\r\n\tw, e := syslog.New(p, msg)\r\n\tif e != nil {\r\n\t\tfmt.Println(\"Error opening syslog\", e)\r\n\t} else {\r\n\t\tw.Debug(\"hello, world\")\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\ttest(syslog.LOG_ERR, \"ALEX\")\r\n\ttest(syslog.LOG_INFO, \"BEN\")\r\n\ttest(syslog.LOG_DAEMON, \"CAROLE\")\r\n\ttest(syslog.LOG_USER, \"DOUG\")\r\n}\r\n```\r\n\r\n```\r\n\u003c7\u003e1 2016-05-18T10:50:43.326575-07:00 ubuntu-16 ALEX 2517 - -  hello, world\r\n\u003c7\u003e1 2016-05-18T10:50:43.327090-07:00 ubuntu-16 BEN 2517 - -  hello, world\r\n\u003c31\u003e1 2016-05-18T10:50:43.327409-07:00 ubuntu-16 CAROLE 2517 - -  hello, world\r\n\u003c15\u003e1 2016-05-18T10:50:43.327707-07:00 ubuntu-16 DOUG 2517 - -  hello, world\r\n```\r\n\r\nIt would be great if facility was a different type from priority, but barring that it would be wonderful to update the documentation here. In particular, I would love to see `syslog.New` and `syslog.Dial` take a variable named _facility_ and explain the difference, with an example usage.\r\n\r\nI'm happy to do it if such a change could be merged. I see that the package is \"frozen\" -- will it still accept doc fixes? ",
+	"user": {
+		"login": "awreece",
+		"id": 464471,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-05-18T17:51:44Z",
+	"updated_at": "2016-05-18T18:50:35Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

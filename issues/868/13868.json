@@ -1,0 +1,17 @@
+{
+	"id": 125531332,
+	"number": 13868,
+	"state": "closed",
+	"title": "sync/atomic 386: 64-bit atomic operations panic when not 8-byte aligned",
+	"body": "**What version of Go are you using (go version)?**\r\n`go version go1.6beta1 linux/386`\r\n\r\n**What operating system and processor architecture are you using?**\r\n`Linux ubuntu32 4.2.0-23-generic #28-Ubuntu SMP Sun Dec 27 17:48:35 UTC 2015 i686 i686 i686 GNU/Linux`\r\n\r\n**What did you do?**\r\n```go\r\npackage main\r\n\r\nimport \"sync/atomic\"\r\n\r\nfunc main() {\r\n\tvar a struct {\r\n\t\t_ uint32\r\n\t\tb uint64\r\n\t}\r\n\tatomic.AddUint64(\u0026a.b, 1)\r\n}\r\n```\r\n\r\n**What did you expect to see?**\r\nNo panic\r\n\r\n**What did you see instead?**\r\n```\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x808c77c]\r\n\r\ngoroutine 1 [running]:\r\nsync/atomic.AddUint64(0x1830e0f4, 0x1, 0x0, 0x18318180, 0x183000d0)\r\n\t/home/joe/Downloads/go/src/sync/atomic/asm_386.s:112 +0xc\r\nmain.main()\r\n\t/home/joe/Desktop/test2.go:10 +0x41\r\nexit status 2\r\n```\r\n\r\n**More Details**\r\nIn `sync/atomic/asm_386.s` we see that the 64 bit operations have the following preamble:\r\n```go\r\nMOVL\taddr+0(FP), BP\r\nTESTL\t$7, BP\r\nJZ\t\t2(PC)\r\nMOVL\t0, AX // crash with nil ptr deref\r\n```\r\nWe get an intentional panic if the pointer is not 8-byte aligned.\r\n\r\nIf this is unavoidable (which it may be due to the architecture) it should at least be documented, as it's not obvious.\r\n\r\nDocumentation aside, what guarantee do we have that any allocation will be 8-byte aligned on a 32-bit system?  I am able to fix the panic in my program by reordering the members of the struct, but I am just assuming that the allocation will always be allocated on 8-byte boundaries.  On 32-bit systems, it may only be reasonable to assume that it will be on a 4-byte boundary.",
+	"user": {
+		"login": "jtsylve",
+		"id": 594165,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-08T02:56:42Z",
+	"created_at": "2016-01-08T02:51:18Z",
+	"updated_at": "2016-01-08T02:56:42Z"
+}

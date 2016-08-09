@@ -1,0 +1,12 @@
+{
+	"id": 144844953,
+	"body": "FWIW, a similar problem (in more severe form) exists now in math/big where we mimic the strconv API. We have already Int.Append, Float.Append (matching strconv.AppendInt, strconv.AppendFloat) working on []byte buffers, and int.Text, Float.Text (matching strconv.FormatInt, strconv.FormatFloat) producing string results (exactly for performance reasons).\r\n\r\nThere's also big.ParseFloat and Float.Parse (matching strconv.ParseFloat) working on strings. big.ParseInt, etc. is planned for completeness, and so are matching functions for big.Rats.\r\n\r\nThe numbers/strings tend to be longer for math/big which may make this even more important.\r\n\r\nIf we extend the strconv API, the matching math/big API would probably extend by\r\n\r\nFactory functions:\r\n- ParseIntBytes\r\n- ParseRatBytes\r\n- ParseFloatBytes\r\n\r\nMethods:\r\n- Int.ParseBytes\r\n- Rat.ParseBytes\r\n- Float.ParseBytes\r\n\r\nApropos smart compilation: The compiler can know in some cases that an incoming []byte argument is never modified (this information can be available in the binary interface and export data). If the argument is a string s, the compiler could be clever about not allocating memory for []byte(s) when passing []byte(s) as the respective parameter. (Compiler people: do we do this already?) But this would require our API to work on []byte slices rather than strings as is the case now.\r\n\r\nThe other way round is more tricky: If we have a []byte b, we cannot avoid making a copy when passing string(b) because (in general) it's much harder to prove that b is not changed underfoot, e.g. by another goroutine.\r\n\r\n/cc @randall77 \r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-01T20:53:47Z",
+	"updated_at": "2015-10-01T20:53:47Z"
+}

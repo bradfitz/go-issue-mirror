@@ -1,0 +1,12 @@
+{
+	"id": 66092789,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eIt looks okay to me now. I get:\n\nx.go:5: live at entry to g: p\nx.go:10: live at call to GC: x\nx.go:12: live at call to g: x\nx.go:10: main: x (type *int) is ambiguously live\n\nI don't know if the ambiguously live print was included in the ... in your output or\nnot. If not, that was a bug. But it's there now.\n\nIn this program, x is not a temporary. Real temporaries are killed aggressively and do\nnot exhibit this behavior (anymore). In particular, the automatic ... arguments in a\nlog.Printf call are killed at the end of the log.Printf statement, before the loop goes\naround again.\n\nI agree that it would be nice to do a little better here. It might be possible with the\ncurrent analysis: the fact that x is marked EscNone (in particular, not EscHeap) means\nthat it does not escape ouside the loop iteration, so we could emit a varkill for it at\nthe end of the loop body in which it is declared. The order.c pass could push declared\nvariables onto a different stack and then pop+clean them whenever the loopdepth went\ndown.\n\nIn practice, this seems not to come up very often. There are only 18 ambiguously live\nnon-temps when compiling godoc; it looks like a couple would be addressed by this. A few\nmore are the if statement equivalent, but we don't have a 'scopedepth' analogous to\nloopdepth so that would be even more work.\n\nFor such few variables, I think we can punt this to a future release.\u003c/pre\u003e\n\n_Labels changed: added **release-go1.4**, removed **release-go1.3**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-04-03T04:25:23Z",
+	"updated_at": "2014-12-08T10:42:16Z"
+}

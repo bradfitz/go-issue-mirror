@@ -1,0 +1,22 @@
+{
+	"id": 124656508,
+	"number": 13805,
+	"state": "closed",
+	"title": "runtime: scalability problem with allocation",
+	"body": "I’m working on multi-core systems with golang. I find that there exist a scalability problem when interface type transformation involved.\r\n\r\nThe test program consists of several go routines accessing its own private data (i.e. one golang map), which means each go routine would never exchange any data with others. The number of go routines is the same as the number of cores used. Ideally, this should be fully scalable, that is, with more cores added, the throughput of each go routine would not change.\r\n\r\nThis program tests two cases of read and write data in golang maps. Each case is tested with and without interface type transformation.\r\n\r\nI have made experiments on one machine with 4 NUMA nodes. Each NUMA node comprises 8 physical cores and 24MB shared L3 cache. Each physical core has 32KB L1 cache and 256KB L2 cache. My experiments only include 100 keys for each map to avoid the shared L3 cache problem. I report the operations executed of each core per second. One operation could be reading or writing data in the private golang map. I test my program with 1 and 32 cores. Here are the results:\r\n\r\n               | 1 core | 32 cores\r\n------------ | ------------- | -------------\r\ninterface-read\t | 555285 | 105001\r\ninterface-write | 526274 | 99069\r\nno-interface-read | 983947 | 1004945\r\nno-interface-write | 977462 | 1006021\r\n\r\nIt is found that the pre-core throughput with interface transformation is much slower under 32 cores (i.e. less than 20% of 1 core test). However, the pre-core throughput without interface transformation has the similar performance under both 1 core and 32 cores tests.\r\n\r\nThe source code of my test program is as follows:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"flag\"\r\n\t\"fmt\"\r\n\t\"math/rand\"\r\n\t\"runtime\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nvar nsecs = flag.Int(\"nsecs\", 5, \"number of seconds to run\")\r\nvar ncores = flag.Int(\"ncores\", 1, \"number of cores to scale\")\r\nvar nkeys = flag.Int(\"nkeys\", 100, \"number of keys per worker\")\r\nvar read = flag.Bool(\"read\", true, \"true for read; otherwise, write\")\r\nvar iface = flag.Bool(\"i\", true, \"use interface or not\")\r\n\r\ntype Value interface{}\r\n\r\ntype Record struct {\r\n\tintVal int\r\n}\r\n\r\nfunc (r *Record) UpdateValue(val Value) {\r\n\tr.intVal = val.(int)\r\n}\r\n\r\nfunc (r *Record) GetValue() Value {\r\n\treturn r.intVal\r\n}\r\n\r\nfunc (r *Record) UpdateInt(intVal int) {\r\n\tr.intVal = intVal\r\n}\r\n\r\nfunc (r *Record) GetInt() int {\r\n\treturn r.intVal\r\n}\r\n\r\nfunc main() {\r\n\tflag.Parse()\r\n\r\n\t// set max cores used\r\n\truntime.GOMAXPROCS(*ncores)\r\n\tworkers := *ncores\r\n\r\n\tvar wg sync.WaitGroup\r\n\tfor i := 0; i \u003c workers; i++ {\r\n\t\twg.Add(1)\r\n\t\tgo func(n int) {\r\n\t\t\tstore := make(map[int]*Record)\r\n\t\t\tfor i := 0; i \u003c *nkeys; i++ {\r\n\t\t\t\tstore[i] = \u0026Record{\r\n\t\t\t\t\tintVal: i,\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tvar txn int\r\n\t\t\tvar val Value = nil\r\n\t\t\tvar intVal int\r\n\t\t\trnd := rand.New(rand.NewSource(1))\r\n\t\t\tend_time := time.Now().Add(time.Duration(*nsecs) * time.Second)\r\n\t\t\tfor {\r\n\t\t\t\ttm := time.Now()\r\n\t\t\t\tif !end_time.After(tm) {\r\n\t\t\t\t\tbreak\r\n\t\t\t\t}\r\n\t\t\t\tfor j := 0; j \u003c 10; j++ {\r\n\t\t\t\t\tk := rnd.Intn(*nkeys)\r\n\t\t\t\t\tr := store[k]\r\n\t\t\t\t\tif *iface {\r\n\t\t\t\t\t\tif *read {\r\n\t\t\t\t\t\t\tval = r.GetValue()\r\n\t\t\t\t\t\t} else {\r\n\t\t\t\t\t\t\tr.UpdateValue(0)\r\n\t\t\t\t\t\t}\r\n\t\t\t\t\t} else {\r\n\t\t\t\t\t\tif *read {\r\n\t\t\t\t\t\t\tintVal = r.GetInt()\r\n\t\t\t\t\t\t} else {\r\n\t\t\t\t\t\t\tr.UpdateInt(0)\r\n\t\t\t\t\t\t}\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\n\t\t\t\ttxn++\r\n\t\t\t}\r\n\t\t\tif val != nil {\r\n\t\t\t\tintVal = val.(int)\r\n\t\t\t}\r\n\t\t\tintVal++\r\n\t\t\tfmt.Printf(\"Worker %d issues %v transactions\\n\", n, txn)\r\n\t\t\twg.Done()\r\n\t\t}(i)\r\n\t}\r\n\twg.Wait()\r\n}\r\n```",
+	"user": {
+		"login": "totemtang",
+		"id": 4866453,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"closed_at": "2016-02-19T16:10:38Z",
+	"created_at": "2016-01-03T16:13:16Z",
+	"updated_at": "2016-02-19T16:10:38Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

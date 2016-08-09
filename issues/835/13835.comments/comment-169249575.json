@@ -1,0 +1,12 @@
+{
+	"id": 169249575,
+	"body": "The security aspect I'm most aware of is homograph attacks: https://en.wikipedia.org/wiki/IDN_homograph_attack\r\n\r\nThose are why presumably why browsers render http://кто.рф/eng/ as http://xn--j1ail.xn--p1ai/eng/ in the URL bar.\r\n\r\nBut should this work?\r\n\r\n```go\r\n     c, err := net.Dial(\"кто.рф:80\")\r\n```\r\n\r\nOr:\r\n\r\n```go\r\n    res, err := http.Get(\"http://кто.рф/\")\r\n```\r\n\r\nI can type http://кто.рф/ into my URL bar and it loads. Requiring all users working with such URLs to do this seems onerous:\r\n\r\n```go\r\n    u, err := url.Parse(\"http://кто.рф/\")\r\n    if err != nil { \r\n        ... \r\n    }\r\n    u.Host, err = idna.ToASCII(u.Host)\r\n    if err != nil { \r\n        ... \r\n    }\r\n    res, err := http.Get(u.String())\r\n```\r\n\r\nThe other security aspect is substring searching.\r\n\r\nBut it's already the case that `strings.Contains(req.URL.Host, \"рф\")` in an `http.Handler` won't work, as browsers already send Punycode.\r\n\r\nI think for security the best thing to do is be consistent which fields contain which form at all times, and document it.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-06T06:42:53Z",
+	"updated_at": "2016-01-06T06:42:53Z"
+}

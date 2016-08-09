@@ -1,0 +1,12 @@
+{
+	"id": 95384102,
+	"body": "I just did some more investigation and it is indeed the fdmu in netFD. The OS socket is not closed until netFD.destroy is called. The sequence of events is\r\n\r\n* goroutine1: creates new listen socket\r\n* goroutine1: spawns goroutine2 to call netFD.accept. netFD.accept takes a readlock on netFD.fdmu and blocks\r\n* goroutine1: calls netFD.Close. Close sets the state to closed and increments and decrements the ref count, but decref doesn't call netFD.destroy because goroutine2 has a readlock.\r\n* goroutine2: is unblocked due to the state being set to closed, calls netFD.readUnlock which notices the state is closed and calls netFD.destroy.\r\n\r\nThis all appears to be working as intended, but leads to the confusing behavior exhibited by my test case. I would think it would be far more intuitive to have Close remove the filedescriptor from the network poller and close it immediately, and have the other methods return an \"already closed\" error whenever they are scheduled next.",
+	"user": {
+		"login": "ggriffiniii",
+		"id": 7447,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-23T01:36:46Z",
+	"updated_at": "2015-04-23T01:36:46Z"
+}

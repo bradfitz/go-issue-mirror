@@ -1,0 +1,12 @@
+{
+	"id": 173805788,
+	"body": "Here is a functional \u0026 much more minimal version of what you supplied above:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"crypto/rand\"\r\n        \"crypto/rsa\"\r\n        \"crypto/x509\"\r\n        \"crypto/x509/pkix\"\r\n        \"encoding/asn1\"\r\n        \"fmt\"\r\n        \"log\"\r\n)\r\n\r\nfunc main() {\r\n        type basicConstraints struct {\r\n                IsCA       bool `asn1:\"optional\"`\r\n                MaxPathLen int  `asn1:\"optional,default:-1\"`\r\n        }\r\n        basicCon := basicConstraints{IsCA: true, MaxPathLen: -1}\r\n        bitstr, err := asn1.Marshal(basicCon)\r\n        if err != nil {\r\n                log.Fatalf(\"Marshal: %v\", err)\r\n        }\r\n\r\n        var oidExtensionBasicConstraints = []int{2, 5, 29, 19} // from x509 package\r\n        bcExt := pkix.Extension{Id: oidExtensionBasicConstraints, Critical: true, Value: bitstr}\r\n        fmt.Printf(\"Writing extension: %#v\\n\", bcExt)\r\n\r\n        csrTmpl := \u0026x509.CertificateRequest{\r\n                SignatureAlgorithm: x509.SHA1WithRSA,\r\n                ExtraExtensions:    []pkix.Extension{bcExt},\r\n        }\r\n        priv, err := rsa.GenerateKey(rand.Reader, 2048)\r\n        if err != nil {\r\n                log.Fatalf(\"GenerateKey: %v\", err)\r\n        }\r\n        csr, err := x509.CreateCertificateRequest(rand.Reader, csrTmpl, priv)\r\n        if err != nil {\r\n                log.Fatalf(\"CreateCertificateRequest: %v\", err)\r\n        }\r\n\r\n        back, err := x509.ParseCertificateRequest(csr)\r\n        if err != nil {\r\n                log.Fatalf(\"ParseCertificateRequest: %v\", err)\r\n        }\r\n        fmt.Printf(\" Parsed extension: %#v\\n\", back.Extensions[0])\r\n}\r\n```\r\n\r\nIt outputs:\r\n\r\n```\r\n$ go run csr.go\r\nWriting extension: pkix.Extension{Id:asn1.ObjectIdentifier{2, 5, 29, 19}, Critical:true, Value:[]uint8{0x30, 0x3, 0x1, 0x1, 0xff}}\r\n Parsed extension: pkix.Extension{Id:asn1.ObjectIdentifier{2, 5, 29, 19}, Critical:false, Value:[]uint8{0x30, 0x3, 0x1, 0x1, 0xff}}\r\n```\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-22T04:46:44Z",
+	"updated_at": "2016-01-22T04:46:44Z"
+}

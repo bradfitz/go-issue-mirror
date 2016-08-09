@@ -1,0 +1,22 @@
+{
+	"id": 94517499,
+	"number": 11678,
+	"state": "closed",
+	"title": "html/template: slow performance on big structures",
+	"body": "go version is 1.5 beta 1, the same was on \"stock\" 1.3.3 from Debian repos\r\nOS: Debian 8.1 x64\r\n\r\nI'm stress testing (with loader.io) this type of code in Go to create an array of 100 items along with some other basic variables and parse them all in the template:\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"html/template\"\r\n    \"net/http\"\r\n)\r\n\r\nvar templates map[string]*template.Template\r\n\r\n// Load templates on program initialisation\r\nfunc init() {\r\n    if templates == nil {\r\n        templates = make(map[string]*template.Template)\r\n    }\r\n\r\n    templates[\"index.html\"] = template.Must(template.ParseFiles(\"index.html\"))\r\n}\r\n\r\nfunc handler(w http.ResponseWriter, r *http.Request) {\r\n    type Post struct {\r\n        Id int\r\n        Title, Content string\r\n    }\r\n\r\n    var Posts [100]Post\r\n\r\n    // Fill posts\r\n    for i := 0; i \u003c 100; i++ {\r\n        Posts[i] = Post{i, \"Sample Title\", \"Lorem Ipsum Dolor Sit Amet\"}\r\n    }\r\n\r\n    type Page struct {\r\n        Title, Subtitle string\r\n        Posts [100]Post\r\n    }\r\n\r\n    var p Page\r\n\r\n    p.Title = \"Index Page of My Super Blog\"\r\n    p.Subtitle = \"A blog about everything\"\r\n    p.Posts = Posts\r\n\r\n    tmpl := templates[\"index.html\"]\r\n\r\n    tmpl.ExecuteTemplate(w, \"index.html\", p)\r\n}\r\n\r\nfunc main() {\r\n    http.HandleFunc(\"/\", handler)\r\n    http.ListenAndServe(\":8888\", nil)\r\n}\r\n```\r\n\r\nMy test with Loader is using 5k concurrent connections/s through 1 minute. The problem is, just after a few seconds after starting the test, I get a high average latency (almost 10s) and as a result 5k successful responses and the test stops because it reaches the Error Rate of 50% (timeouts).\r\n\r\nOn the same machine, PHP gives 50k+.\r\n\r\nI understand that it's not Go performance issue, but probably something related to html/template. Go can easily manage hard enough calculations a lot faster than anything like PHP of course, but when it comes to parsing the data to the template, why is it so awful?\r\n\r\nAny workarounds, or probably I'm just doing it wrong (I'm new to Go)?\r\n\r\nP.S. Actually even with 1 item it's exactly the same... 5-6k and stopping after huge amount of timeouts. But that's probably because the array with posts is staying of the same length.",
+	"user": {
+		"login": "vadimyer",
+		"id": 10176730,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-07-12T03:01:45Z",
+	"created_at": "2015-07-11T23:47:14Z",
+	"updated_at": "2016-07-11T22:38:41Z"
+}

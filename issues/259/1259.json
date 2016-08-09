@@ -1,0 +1,28 @@
+{
+	"id": 51277560,
+	"number": 1259,
+	"state": "closed",
+	"title": "encoding/xml: Parser accepts invalid prolog, parser.text may accept disallowed characters",
+	"body": "by **nigel.kerr**:\n\n\u003cpre\u003eversus revision 6725 and as early as the 2010-11-02 release.\n\nWhat steps will reproduce the problem?\n1. create an xml.Parser on a document that has disallowed characters between start of\ndocument and root element, or between start of document and XML declaration, or between\nstart of document and DOCTYPE declaration\n2. exhaust the parser with _, err parser.Token() until err == os.EOF\n\nWhat is the expected output?\n\nExpected is to return the first call to Token() with an error of some sort, about the\ndisallowed characters, and not parse further.\n\nWhat do you see instead?\n\nxml.Parser will return tokens all the way to EOF.  The disallowed characters are the\nfirst token, and are of xml.CharData, followed by the rest of the document.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\n\nWhich operating system are you using?\n\ndarwin\n( uname -a\nDarwin host-elided.local 10.4.0 Darwin Kernel Version 10.4.0: Fri Apr 23 18:28:53 PDT\n2010; root:xnu-1504.7.4~1/RELEASE_I386 i386)\n\n\nWhich revision are you using?  (hg identify)\n\n68aae563fd33+ tip\n\n\nPlease provide any additional information below.\n\nI am attaching as small a go program as I can think of with examples inside it.\n\nThis from a conversation with Russ Cox on golang-nuts (\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/ddabf01fdbe57c9f#\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/ddabf01fdbe57c9f#\u003c/a\u003e )\nabout xml.Parser and results of using it with the XML Conformance Suite.\n\nI believe that there are two specific difficulties: \n\nFirst, the initial call to RawToken() does not know that we are at the beginning of the\ndocument, before the prolog.  At line 430, we check the first read byte for not being\n'\u0026lt;', at which point we call p.text and create a CharData with the results.  This if\nblock would need to handle the before-prolog case with some state (that\nno-longer-before-prolog-detection would need to change...).  There are some character\nsequences that are permissible at this location, provided there isn't an XML declaration\n(DOCTYPE and root element can have whitespace and comments and processing instructions\nbefore them, it seems).\n\nSecond, parser.text() accepts at least some byte sequences that we don't think it should\n(my attached example with have a single byte 0x12 at the beginning of the document,\nwhich isn't in the XML Character Range).  This I don't haven't analyzed at all beyond\nthis.\n\nRespectfully submitted,\nNigel Kerr\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1259/0/badprolog.go\"\u003ebadprolog.go\u003c/a\u003e (471 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:07:32Z",
+	"created_at": "2010-11-06T02:31:42Z",
+	"updated_at": "2016-06-24T19:22:06Z"
+}

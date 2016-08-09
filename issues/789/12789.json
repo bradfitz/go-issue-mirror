@@ -1,0 +1,17 @@
+{
+	"id": 108955149,
+	"number": 12789,
+	"state": "closed",
+	"title": "net/http/httptest: (*Server).Close races with Serve",
+	"body": "See https://go-review.googlesource.com/#/c/15047/, which works around this race in one particular instance - you can reproduce this error prior to that change by running context/ctxhttp/ctxhttp_test under the race detector.\r\n\r\nClose makes this sequence of calls:\r\n\r\n    // Close shuts down the server and blocks until all outstanding\r\n    // requests on this server have completed.\r\n    func (s *Server) Close() {\r\n      s.Listener.Close()\r\n      s.wg.Wait()\r\n\r\nThe call to `s.Listener.Close` prevents new connections from being established, but it does not do anything to stop existing connections.\r\n\r\nCalling Start on the server calls `(*Server).wrapHandler`, which injects a `waitGroupHandler`.  Its `ServeHTTP` method calls `s.wg.Add`:\r\n\r\n    func (h *waitGroupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n      h.s.wg.Add(1)\r\n      defer h.s.wg.Done()\r\n      h.h.ServeHTTP(w, r)\r\n    }\r\n\r\nServeHTTP is called after the listener's `Accept` has already returned, so `Close` may already have been called in the meantime and the call to `h.s.wg.Add` races with the `s.wg.Wait` there.\r\n\r\nI believe that the simplest fix (which is unfortunately not all that simple) is to wrap the `net.Listener`, not just the `http.Handler` - that is, `waitGroupHandler` should actually be a {`net.Listener`, `http.Handler`} pair.  The presence of any outstanding `Accept` call should block `Close` from returning until the `wg.Add` call has completed (e.g. by locking a `sync.Mutex` before calling `Accept` on the wrapped listener and locking that same mutex before returning from `Close`).  It will take some care to avoid introducing deadlocks or further races.\r\n\r\n`(*waitGroupHandler).ServeHTTP` can't do the synchronization itself: `httptest` guarantees that \"Close shuts down the server and blocks until all outstanding requests on this server have completed\", and allowing a ServeHTTP call to proceed after `Close` (even to write an arbitrary \"already closed\" error) would violate that guarantee.",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2015-10-20T00:07:36Z",
+	"created_at": "2015-09-29T20:39:16Z",
+	"updated_at": "2015-10-20T00:07:36Z"
+}

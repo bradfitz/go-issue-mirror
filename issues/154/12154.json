@@ -1,0 +1,22 @@
+{
+	"id": 101175876,
+	"number": 12154,
+	"state": "closed",
+	"title": "cmd/yacc: Empty grammar fails to compile on Go 1.5",
+	"body": "I'm testing go1.5rc1 on linux/amd64, and I've come across an issue that prevents the compilation of an empty yacc grammar.\r\n\r\n## Steps to reproduce\r\n\r\nCreate a file named `main.y` with the following contents:\r\n\r\n```go\r\n%{\r\npackage main\r\n\r\ntype yyLex struct{}\r\nfunc (x *yyLex) Lex(yylval *yySymType) int { return 0 }\r\nfunc (x *yyLex) Error(str string) {}\r\n\r\nfunc main() {}\r\n%}\r\n\r\n%union {\r\n}\r\n\r\n%%\r\n\r\ntop: /* empty grammar */\r\n\r\n%%\r\n```\r\n\r\nRun the following commands:\r\n\r\n```\r\n$ go tool yacc -o main.go main.y\r\n$ go build main.go\r\n```\r\n\r\n## Expected results\r\n\r\nThe code should compile without errors.\r\n\r\n## Actual results\r\n\r\nCompilation fails with the error message: \r\n\r\n```\r\nyaccpar:161[main.go:253]: yyDollar declared and not used\r\n```\r\n\r\n## Additional information\r\n\r\nThe compilation error occurs in the `Parse(yylex yyLexer) int` method on the `*yyParserImpl` type. Line 253 of the generated `main.go` file defines a variable `var yyDollar []yySymType`, which is never referenced by the rest of the auto-generated method.\r\n\r\nI've followed the same steps on Go 1.4, and checked that they produce the expected result. In fact, I believe the issue originated with commit 2e78447bafc2dfdfa8b75e01ca3e681741706bbc, which first introduced the `yyDollar` variable.",
+	"user": {
+		"login": "leocassarani",
+		"id": 362164,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-08-18T13:50:57Z",
+	"created_at": "2015-08-15T13:24:08Z",
+	"updated_at": "2015-08-18T16:16:27Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

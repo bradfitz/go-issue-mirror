@@ -1,0 +1,12 @@
+{
+	"id": 66054770,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5 by **wwaites**:\n\n\u003cpre\u003eRegarding this being a synthetic, pathological case, certainly the examples are\nsynthetic -- they are intended to isolate the problem. However I found this while trying\nto do something a bit more reasonable. See the benchmark here:\n\u003ca href=\"https://bitbucket.org/ww/gograph/src/0e63a61480f4/graph_bench_test.go#cl-49\"\u003ehttps://bitbucket.org/ww/gograph/src/0e63a61480f4/graph_bench_test.go#cl-49\u003c/a\u003e\n\nThat is trying to measure the performance of deleting edges in a graph. Implementation\ndetails of the DiGraph are such that it uses a map to hold edges. In the timing loop as\nI only want to perform one delete operation, I have to iterate over elements in two\nnested maps, and break out of both loops after finding the first edge. As you can see\nbelow, this exhibits the problematic behaviour:\n\n2011/02/22 09:45:57 BenchmarkDiGraphDelEdge heap: 283005832\n2011/02/22 09:46:00 BenchmarkDiGraphDelEdge heap: 539740672\n2011/02/22 09:46:03 BenchmarkDiGraphDelEdge heap: 547824128\n2011/02/22 09:46:28 BenchmarkDiGraphDelEdge heap: 808953864\ngograph.BenchmarkDiGraphDelEdge\t  100000\t    222153 ns/op\n\nYou can run this by cloning the repository and doing gotest -benchmarks=\"DiGraph.*\"\n\nWithout a doubt there may be better implementations of a graph possible, and it is\npossible to work around this problem by wrapping the inner loop/break construct in a\nfunction, but the benchmark code that led to the discovery doesn't seem to be quite so\nsynthetic.\n\nIn fact wrapping the inner loop in a function reliably takes the measurements from\n~250us/op to ~160us/op and considering the very simple implementation of the method\nbeing measured, \u003ca href=\"https://bitbucket.org/ww/gograph/src/0e63a61480f4/graph.go#cl-80\"\u003ehttps://bitbucket.org/ww/gograph/src/0e63a61480f4/graph.go#cl-80\u003c/a\u003e either\ndeleting entries from maps is surprisingly expensive or most of that time is spent in\nthe wrapper building up and tearing down the data structures for the range statements.\nConsidering the only way to find out what elements are in a map is to iterate over it\nwith range maybe the answer is to not use large maps if you need to support that type of\noperation.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-02-22T10:10:03Z",
+	"updated_at": "2014-12-08T10:08:48Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66075620,
+	"body": "\u003ca id=\"c11\"\u003e\u003c/a\u003eComment 11:\n\n\u003cpre\u003eIt is okay to call the NtXxx functions because they are very thin wrappers\naround the actual kernel system calls. There is a list of the system calls\nat \u003ca href=\"http://j00ru.vexillium.org/ntapi/\"\u003ehttp://j00ru.vexillium.org/ntapi/\u003c/a\u003e. The exact numbers vary from version\nto version, which is why we need to call via ntdll.dll instead of making\nthe calls ourselves. This will be more efficient as long as we can get the\neffects we need, and it will use a small enough amount of stack not to need\na stack switch.\n\nWhich tests get slower during the 'go test runtime -short -v'? The most\nlikely reason they'd get slower is that osyield is not actually yielding\nthe CPU, so that locks take much longer when contended. The old\nimplementation did a Sleep(0), and the new implementation is using the\nNtYieldExecution system call, but perhaps NtYieldExecution is not strong\nenough. A simple test to do would be to put\n\n#define runtime�osyield() runtime�usleep(0)\n\nat the bottom of runtime.h, so that all the osyields become Sleep(0) again,\nand see if that makes the test execution fast again.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-03-05T19:31:59Z",
+	"updated_at": "2014-12-08T10:26:24Z"
+}

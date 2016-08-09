@@ -1,0 +1,12 @@
+{
+	"id": 181145745,
+	"body": "I've looked into why it happens. At first I thought it might be some race condition, but I've learned it's not.\r\n\r\nInstead, the problem is here:\r\n\r\nhttps://github.com/golang/tools/blob/fe74a4186116b8d7dd38a723993e0d84f8834b34/godoc/dirtrees.go#L107-L127\r\n\r\nBecause all GOROOT and GOPATH workspaces are walked in parallel (likely with some concurrency limits), it may run into \"too many files open\" limits and erroring out. The linked code segment ignores all situations where parsing the .go files results in errors (there's no `if err != nil { ... }` section).\r\n\r\nI've added a simple `else if err != nil { log.Println(err) }` section there and I saw many \"too many files open\" errors occur both on .go files in GOROOT as well as in GOPATH during my test.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-08T00:19:16Z",
+	"updated_at": "2016-02-08T00:23:34Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 171765330,
+	"body": "Oh, right, I remember the issue here.\r\n\r\nThe fundamental problem is that at the time the http.Transport gets a RoundTrip call, it doesn't know which protocol the peer supports.\r\n\r\nIf two goroutines ask a URL at the same time, there are two possible best answers, depending on which protocol the peer supports (which we don't know)\r\n\r\nIf the peer only supports HTTP/1, the best strategy is to start two TCP connects immediately, so both requests can be sent once both TCP setups are complete.\r\n\r\nIf the peer supports HTTP/2, the best strategy (at least to minimize resources), is to only have 1 TCP connect in flight, wait for it to finish, and then send both requests on the same connection.\r\n\r\nUnfortunately, we don't know. And we don't have a place to keep state to learn over time, either (not that we'd necessarily want to).\r\n\r\nVarious solutions:\r\n\r\n1. hard-code popular site hostnames known to support http2. Kinda gross, wastes space, maintenance burden, doesn't scale.\r\n2. always bound max connects at 1. penalizes HTTP/1, but is best for http2.\r\n3. always bound max connects at N. perhaps 2 or 3. Good compromise?\r\n4. do 3 + also learn over time, at least storing the state only in memory? But once you're connected, you tend to stay connected. and you have to bound memory usage somehow. which hosts do you remember support http2? this is too big \r\n\r\nWe should at least shut down those idle http2 connections once they're connected, though. Right now we just sit on them and they stay idle, running and replying to pings, etc. That's a waste.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-14T20:07:34Z",
+	"updated_at": "2016-01-14T20:07:34Z"
+}

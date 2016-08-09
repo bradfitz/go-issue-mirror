@@ -1,0 +1,27 @@
+{
+	"id": 51280788,
+	"number": 3552,
+	"state": "closed",
+	"title": "cmd/gc: problem with inlining + unexported field names",
+	"body": "by **mt4swm**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n  go get hg.wmipf.de/issue.hg\n\nthen\n  go build hg.wmipf.de/issue.hg/cmd\n\nThis will fail with the message:\n\n [...]issue.hg/cmd/main.go:4: issue.t.string undefined (cannot refer to unexported field or method issue.string)\n\nIn contrast, compiling the cmd package without inlining:\n  go clean -i hg.wmipf.de/issue.hg\n  go install -gcflags -l hg.wmipf.de/issue.hg\n  go build -gcflags -l hg.wmipf.de/issue.hg/cmd\nproceeds.\n\nWhat is the expected output?\n\nPackage issue (\u003ca href=\"http://hg.wmipf.de/issue/file/tip/pkg.go)\"\u003ehttp://hg.wmipf.de/issue/file/tip/pkg.go)\u003c/a\u003e\ndefines a struct type Token that also contains an anonymous\nfield of a base type, in this case: string. And it\ndefines a Method Token.String, that returns this anonymous\nfield.\n\nCommand package issue/cmd (\u003ca href=\"http://hg.wmipf.de/issue/file/tip/cmd/main.go)\"\u003ehttp://hg.wmipf.de/issue/file/tip/cmd/main.go)\u003c/a\u003e\ndefines a\n\t`type t *issue.Token`\n\nI would expect that \u0026quot;go build\u0026quot; in the cmd\ndirectory succeeds, because, although Token contains\nan unexported field \u0026quot;string\u0026quot;, it isn't referenced from\noutside the package.\n\nWhat do you see instead?\n\nDepending on whether inlining is active (default)\nor inactive (-gcflags -l) compiling fails, or succeeds.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n8g\n\nWhich operating system are you using?\n\nDebian Linux\n\nWhich version are you using?  (run 'go version')\n\nweekly.2012-03-27 +362b760ecfc7\n\nThe behaviour can be observed since revision f7d0e6a40f06,\n\u0026quot;gc: enable inlining by default\u0026quot;.\n\nPlease provide any additional information below.\n\nIt seems that when package \u0026quot;issue\u0026quot; is imported, and\ninlining is active, method Token.String is\nsomehow prepared for inlining; but the information,\nthat its access to the anonymous field \u0026quot;string\u0026quot; is valid,\nbecause it occures in the same source package, gets\nlost.\n\nThe problem seems to exist only with embedded base types.\nIf the anonymous field \u0026quot;string\u0026quot; is replaced with a differently\nnamed type, witch has an underlying type \u0026quot;string\u0026quot;, there\nis no problem:\n\n  type s  string\n\n  type Token struct {\n\tname string\n\ts\n  }\n\n  func (t *Token) String() string {\n\treturn string(t.s)\n  }\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 12,
+	"closed_at": "2014-12-08T10:18:41Z",
+	"created_at": "2012-04-19T22:59:08Z",
+	"updated_at": "2016-06-24T22:18:09Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

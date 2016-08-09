@@ -1,0 +1,12 @@
+{
+	"id": 66089099,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eSo what happens is this:\n\n1. gccgo first tries to mmap its heap at 0xc000000000\n\n2. This fails, because that part of the address space is not available on aarch64 (see\n\u003ca href=\"https://github.com/torvalds/linux/blob/master/Documentation/arm64/memory.txt)\"\u003ehttps://github.com/torvalds/linux/blob/master/Documentation/arm64/memory.txt)\u003c/a\u003e\n\n3. gccgo then tries to mmap its heap at 0x700000\n\n4. Depending on aslr sometimes it gets 0x700000 back, sometimes it gets something way up\naround 0x7f47df8000\n\n5. Later it tries to mmap 0x8000000 bytes into the heap\n\n6. When the heap is at a low address it gets the address it wants back, but when the\nheap is at a high address, it doesn't\n\n7. Then addrspace_free returns false (obviously, because that bit of ram is already\nmapped) so it doesn't retry with MAP_FIXED, it just aborts\n\nIt's a bit strange that mmap within an existing mapping does not return the hint address.\n\n(The difference between static and dynamic linking seems to be that with dynamic linking\ngccgo tries to map its heap at 0x500000 rather than 0x700000 and this always succeeds)\u003c/pre\u003e",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-12-10T23:59:06Z",
+	"updated_at": "2014-12-08T10:38:33Z"
+}

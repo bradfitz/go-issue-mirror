@@ -1,0 +1,21 @@
+{
+	"id": 170024411,
+	"number": 16641,
+	"state": "open",
+	"title": "runtime: closeonexec return value ignored",
+	"body": "Quoting runtime/sys_openbsd_arm.s:\r\n\r\n```\r\n// int32 runtime·closeonexec(int32 fd);\r\nTEXT runtime·closeonexec(SB),NOSPLIT,$0\r\n\tMOVW\tfd+0(FP), R0\t\t// arg 1 - fd\r\n\tMOVW\t$2, R1\t\t\t// arg 2 - cmd (F_SETFD)\r\n\tMOVW\t$1, R2\t\t\t// arg 3 - arg (FD_CLOEXEC)\r\n\tMOVW\t$92, R12\t\t// sys_fcntl\r\n\tSWI\t$0\r\n\tRSB.CS\t$0, R0\r\n\tMOVW\tR0, ret+4(FP)\r\n\tRET\r\n```\r\n\r\nThe comment at the top indicates an int32 return value, and the second to last line confirms that. However, the Go function prototype (runtime/netpoll_{epoll,kqueue}.go) has no return value:\r\n\r\n```go\r\nfunc closeonexec(fd int32)\r\n```\r\n\r\nAnd openbsd/arm appears to be the only platform in which we attempt to return a value.\r\n\r\nDiscovered while working on the interminable (but valuable?) #11041.\r\n\r\nInput requested. Should we:\r\n\r\n* eliminate the bad ret value write in openbsd/arm\r\n* accept a return value from closeonexec, update all the other platforms to provide it, and then use it\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-08-08T21:00:32Z",
+	"updated_at": "2016-08-08T23:02:07Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

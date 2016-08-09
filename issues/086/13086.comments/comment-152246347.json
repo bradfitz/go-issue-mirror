@@ -1,0 +1,12 @@
+{
+	"id": 152246347,
+	"body": "In multiple goroutines, the effect is still there, just not as severe as 2 goroutines illustrated in the test. I think the fundamental cause is probably that the scheduler is always favor to keep the runnable goroutine keep running, instead of even looking at the goroutines in the waiting queue that some might also just ready to run...\r\n\r\nI think in Linux there is third queue (if my memory still correct) that used to describe threads that can actually be run (don't block on anything) but just not yet to be scheduled to run. On a scheduling point, all of them are just relatively fair picked. (don't know exactly algorithm but I'd imagine just a randomly pick would provide some basic fairness). I am wondering if this could be somewhat useful in Go, as it seems a very common case where a bunch of goroutines would block on waiting some lock and there is one that's doing something and holding the lock. Upon the time when the holder releases the lock, all of these parked goroutines that are waiting on the same lock should be just in the runnable queue and be fair pick along with the runnable. I think the Gosched() is pretty much just doing this artificially. \r\n\r\nAlthough dvyukov@ also has the point of cache destroy... but hmm I am wondering if generally seconds of block of preventing from continuing doing work would actually be much worse than ctx swtiches in microseconds (and we aren't even talking about constant context switches, in practice, you don't lock and unlock right after that...).",
+	"user": {
+		"login": "i3d",
+		"id": 105068,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-29T16:51:17Z",
+	"updated_at": "2015-10-29T16:51:17Z"
+}

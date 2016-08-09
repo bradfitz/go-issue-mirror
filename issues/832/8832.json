@@ -1,0 +1,28 @@
+{
+	"id": 51288757,
+	"number": 8832,
+	"state": "closed",
+	"title": "runtime: GC freeing goroutines memory but then taking it again",
+	"body": "\u003cpre\u003eI'm seen this in tip version:\ngo version devel +9472d0e26c23 Sun Sep 28 08:27:05 2014 -0700 linux/amd64\n\nUsing this simple program:\n\u003ca href=\"http://play.golang.org/p/ircvbhPy3u\"\u003ehttp://play.golang.org/p/ircvbhPy3u\u003c/a\u003e\n\nThere is a related issue here:\n\u003ca href=\"https://golang.org/issue/8287\"\u003ehttps://golang.org/issue/8287\u003c/a\u003e\n\nIt will immediately use 250 MB of RES memory. After about 10 minutes, the scavenger will\nfree 205 MB, showing about 45MB of RES. Ignoring that there are still 45 MB used, the\nreal problem is that after that point, the RES memory will increase slowly until it uses\n250MB of RES again!\n\nThis is what \u0026quot;ps u\u0026quot; shows every 10 seconds:\n\nUSER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nuser     22626  2.5  3.1 261336 258096 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  1.6  3.1 261336 258164 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  1.0  3.1 261336 258164 pts/4   Sl+  08:34   0:00 ./tmp\n[...] 9 minutes later... \nuser     22626  0.0  3.2 261336 258792 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  3.2 261336 258792 pts/4   Sl+  08:34   0:00 ./tmp\n[Here the scavenger frees the memory]\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.6 261336 48776 pts/4    Sl+  08:34   0:00 ./tmp\n[from here, the memory is increased little by little]\nuser     22626  0.0  0.6 261336 50384 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.8 261336 64736 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  0.9 261336 79096 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  1.1 261336 93472 pts/4    Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  1.3 261336 107840 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  1.5 261336 122216 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  1.6 261336 136600 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  1.8 261336 151000 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.0 261336 165336 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.2 261336 179744 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.4 261336 194080 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.5 261336 208512 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.7 261336 222848 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  2.9 261336 237184 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  3.0 261336 249728 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  3.1 261336 255520 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  3.1 261336 255520 pts/4   Sl+  08:34   0:00 ./tmp\nuser     22626  0.0  3.1 261336 255520 pts/4   Sl+  08:34   0:00 ./tmp\n[remains here, it is not freed again and not detected by the GC]\u003c/pre\u003e",
+	"user": {
+		"login": "siritinga",
+		"id": 3969105,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 24,
+	"closed_at": "2015-02-25T21:18:13Z",
+	"created_at": "2014-09-29T07:08:16Z",
+	"updated_at": "2015-11-16T23:00:46Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

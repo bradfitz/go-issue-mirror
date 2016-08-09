@@ -1,0 +1,28 @@
+{
+	"id": 51278663,
+	"number": 2051,
+	"state": "closed",
+	"title": "runtime/pprof: deadlock during signal handler",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\n1. Get the source file (attached)\n2. 6g lala.go \u0026amp;\u0026amp; 6l lala.6 \u0026amp;\u0026amp; ./lala\n3. With high probability, you'll get a hang.\n\nIf I connect to the program from gdb, I see the following stacktrace:\n\n(gdb) bt\n#0  runtime.futex () at /home/krasin/go/src/pkg/runtime/linux/amd64/sys.s:164\n#1  0x0000000000412dd9 in futexsleep (addr=void, val=void) at\n/home/krasin/go/src/pkg/runtime/linux/thread.c:52\n#2  0x0000000000412f1d in futexlock (l=void) at\n/home/krasin/go/src/pkg/runtime/linux/thread.c:120\n#3  0x0000000000413045 in runtime.lock (l=void) at\n/home/krasin/go/src/pkg/runtime/linux/thread.c:159\n#4  0x0000000000412a23 in runtime.findfunc (addr=void) at\n/home/krasin/go/src/pkg/runtime/symtab.c:423\n#5  0x0000000000413689 in runtime.gentraceback (pc0=void, sp=void, g=void, skip=void,\npcbuf=void, max=void) at /home/krasin/go/src/pkg/runtime/amd64/traceback.c:79\n#6  0x000000000040f120 in runtime.sigprof (pc=void, sp=void, lr=void, gp=void) at\n/home/krasin/go/src/pkg/runtime/proc.c:1313\n#7  0x0000000000410a0b in runtime.sighandler (sig=void, info=void, context=void,\ngp=void) at /home/krasin/go/src/pkg/runtime/linux/amd64/signal.c:65\n#8  0x0000000000412c32 in runtime.sigtramp () at\n/home/krasin/go/src/pkg/runtime/linux/amd64/sys.s:105\n#9  0x0000000000412c46 in runtime.sigignore () at\n/home/krasin/go/src/pkg/runtime/linux/amd64/sys.s:114\n#10 0x0000000000000001 in ?? ()\n#11 0x0000000000000000 in ?? ()\n\nIt seems like a deadlock between append slice and profiler.\nIf you removed profiler or will do some I/O during the calculations, you'll unlikely get\na problem.\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nUbuntu 11.04 64 bit\n\nWhich revision are you using?  (hg identify)\n\nkrasin@krasin7:~/go/src$ hg identify\n989b9018b05c tip\n\n\nPlease provide any additional information below.\n\nThe processor is\nIntel(R) Core(TM) i7-2600 CPU @ 3.40GHz\n\nI will also test this bug on other hardware.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/2051/0/lala.go\"\u003elala.go\u003c/a\u003e (336 bytes)",
+	"user": {
+		"login": "krasin",
+		"id": 21159,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:11:07Z",
+	"created_at": "2011-07-08T05:17:34Z",
+	"updated_at": "2016-06-24T19:32:04Z"
+}

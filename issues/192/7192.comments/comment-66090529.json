@@ -1,0 +1,12 @@
+{
+	"id": 66090529,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eSomewhat relatedly, the Go 1.3 release notes warn \"Programs that use package unsafe to\nstore pointers in integer-typed values are also illegal but more difficult to diagnose\nduring execution.\"  Strictly interpreting this wording seems to imply even the\naforementioned \"unsafe.Pointer(uintptr(p) + offset)\" is illegal as the pointer value p\nwill be converted (\"stored\") to an integer-typed value during its evaluation.\n\nArguably saying \"integer-typed variables\" would be more appropriate (though see also\n\u003ca href=\"https://golang.org/issue/8496\"\u003eissue #8496\u003c/a\u003e for issues with the term \"variable\").\n\nIncidentally/alternatively, it might be nice if it was possible to allow some pointer\narithmetic directly on unsafe.Pointer values rather than always requiring them to be\nconverted to uintptr and back.  E.g., given \"var p *int\" and trying to get a pointer to\nthe byte that follows, it's quite tedious to need to write:\n\n    q := (*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p)))\n\nWhereas it would be a bit easier to read (IMO) as:\n\n    q := (*byte)(unsafe.Pointer(p) + unsafe.Sizeof(*p))\n\nand the GC safety implications would be clearer too I think.\n\n\nAs for syscall.Syscall(), one option might be to change \"func Syscall(trap, a1, a2, a3\nuintptr)\" to \"func Syscall(trap uintptr, a1, a2, a3 interface{})\" and make callers\nresponsible for passing pointers instead of integers when they point to memory that\nneeds to be kept alive.\n\nUnfortunately, that's not 100% Go1 compatible because (assuming 32-bit) the untyped\nconstant 1\u0026lt;\u0026lt;31 is assignable to uintptr but not interface{} (because the Go spec\nsays it should be converted to int first), so it might be necessary to instead provide a\nnew set of SyscallX() functions that can accept pointer values via interface{}\nparameters and require users to switch.\u003c/pre\u003e",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-08-09T05:05:12Z",
+	"updated_at": "2014-12-22T06:31:49Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 214929428,
+	"body": "Here's at least my current understanding of the issue.  Still investigating a fix.\r\n\r\nWhen we inline a function call, we clone the function body and reassign all of the line numbers for the cloned Nodes to the function call site.  This is implemented by `(*inlsubst).node` and `setlno` in `inl.go`, respectively.\r\n\r\nThe problem is `setlno` renumbers some nodes that weren't cloned by `(*inlsubst).node`.\r\n\r\nFor example, in the `go/internal/gcimporter` case @griesemer pointed out above, there are a few call sites for this inlineable `go/types` function:\r\n\r\n    func NewVar(pos token.Pos, pkg *Package, name string, typ Type) *Var {\r\n        return \u0026Var{object: object{nil, pos, pkg, name, typ, 0, token.NoPos}}\r\n    }\r\n\r\n`(*inlsubst).node` decides to reuse the `OLITERAL` nodes that represent 0 and token.NoPos, but then `setlno` still renumbers them.  This causes all of the inlined calls then to end up using the last call site's line number for these nodes.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-27T00:34:47Z",
+	"updated_at": "2016-04-27T00:34:47Z"
+}

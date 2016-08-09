@@ -1,0 +1,12 @@
+{
+	"id": 66052904,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003ethis issue has been dealt with before (see this thread:\n\u003ca href=\"http://groups.google.com/group/golang-nuts/browse_thread/thread/a87b2c54c8448538/2f783ad5725c0d7a)\"\u003ehttp://groups.google.com/group/golang-nuts/browse_thread/thread/a87b2c54c8448538/2f783ad5725c0d7a)\u003c/a\u003e\n\nthe problem is that the range loop is equivalent to this:\n\n  for {\n    x := \u0026lt;-c\n    if closed(c) {\n        break\n    }\n    body of loop\n}\n\nclosed() returns true when one value has been read from the channel\nafter close() has been called. when there are several readers,\nthis means that the following sequence can happen:\n\nreader1: read value from c\nwriter: close(c)\nreader2: read final value from c\nreader1: closed(c) -\u0026gt; true\n\nthus causing reader1 to discard a legitimately sent value.\n\nfor now, a quick workaround is to avoid using range\nloops when using multiple readers, and instead use the\nzero value to signify eof.\n\na proper solution would involve a way to both read\na value from the channel and find out whether it has\nbeen closed simultaneously (for instance by changing\nthe semantics of the multiple-result receive operator,\nas discussed in that mailing list thread)\u003c/pre\u003e",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2010-10-09T10:22:57Z",
+	"updated_at": "2014-12-22T05:53:02Z"
+}

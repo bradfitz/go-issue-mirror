@@ -1,0 +1,28 @@
+{
+	"id": 117766017,
+	"number": 13325,
+	"state": "closed",
+	"title": "x/net/context/ctxhttp: Request not cancelled once .Do() returns",
+	"body": "If a HTTP request is cancelled via a context once .Do() has returned, the cancellation request is ignored.\r\n\r\n[Consider this test in x/net/context/ctxhttp](https://github.com/golang/net/blob/1d9fd3b8333e891c0e7353e1adcfe8a612573033/context/ctxhttp/ctxhttp_test.go#L47-L60):\r\n\r\n```go\r\nfunc TestCancelAfterRequest(t *testing.T) {\r\n\tctx, cancel := context.WithCancel(context.Background())\r\n\r\n\tresp, err := doRequest(ctx)\r\n\r\n\t// Cancel before reading the body.\r\n\t// Request.Body should still be readable after the context is canceled.\r\n\tcancel()\r\n\r\n\tb, err := ioutil.ReadAll(resp.Body)\r\n\tif err != nil || string(b) != requestBody {\r\n\t\tt.Fatalf(\"could not read body: %q %v\", b, err)\r\n\t}\r\n}\r\n```\r\n\r\nUnfortunately, I think the test could be problematic for many useful cases for cancelling http requests.\r\n\r\nThe immediate use case I have is to [attach to the stdout of a docker container over docker's http endpoint](http://docs.docker.com/engine/reference/api/docker_remote_api_v1.20/#attach-to-a-container), and disconnect when a client's interest in the output goes away. Otherwise resources are leaked, since the stdout might not otherwise go away. See https://github.com/fsouza/go-dockerclient/issues/161. Secondly, cancelling a build once it is in progress, where the build output is being streamed to you: https://github.com/fsouza/go-dockerclient/issues/182.\r\n\r\nHere's an alternative \"test\" which simulates what I described above, exercising cancellation once Do() has returned. Currently, it hangs forever:\r\n\r\n```go\r\nfunc TestCancelAfterRequest(t *testing.T) {\r\n\tvar okHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tw.WriteHeader(http.StatusOK)\r\n\t\t\u003c-w.(http.CloseNotifier).CloseNotify()\r\n\t})\r\n\r\n\tserv := httptest.NewServer(okHandler)\r\n\tdefer serv.Close()\r\n\r\n\tctx, cancel := context.WithCancel(context.Background())\r\n\tresp, err := Get(ctx, nil, serv.URL)\r\n\r\n\tcancel()\r\n\r\n\tvar bs [1]byte\r\n\tn, err := resp.Body.Read(bs[:])\r\n\tlog.Printf(\"n, err := %v, %v\", n, err)\r\n}\r\n```\r\n\r\nIt's fairly obvious from [reading the implementation](https://github.com/golang/net/blob/1d9fd3b8333e891c0e7353e1adcfe8a612573033/context/ctxhttp/ctxhttp.go#L41) that the canceler has no effect called once `.Do()` returns, however it is not obvious from the documentation.\r\n\r\nSee also #13293, and [golang-dev discussion](https://groups.google.com/d/topic/golang-dev/vRUomu3aSPQ/discussion).",
+	"user": {
+		"login": "pwaller",
+		"id": 438648,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "okdave",
+		"id": 1091335,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-26T15:32:11Z",
+	"created_at": "2015-11-19T08:35:33Z",
+	"updated_at": "2016-01-26T15:32:11Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

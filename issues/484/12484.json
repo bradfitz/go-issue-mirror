@@ -1,0 +1,17 @@
+{
+	"id": 104784930,
+	"number": 12484,
+	"state": "closed",
+	"title": "os/signal: Notify for SIGUSR2 from the same proc inside a goroutine doesn't work",
+	"body": "A process can't use os/signal.Notify inside a goroutine to signal itself with SIGUSR2.\r\n\r\nWorks as expected (outside the goroutine):\r\n\r\n    func main() {\r\n    \tvar c = make(chan os.Signal, 1)\r\n    \tsignal.Notify(c) // outside the goroutine\r\n    \r\n    \tvar done = make(chan struct{})\r\n    \tgo func() {\r\n    \t\tfmt.Println(\u003c-c)\r\n    \t\tdone \u003c- struct{}{}\r\n    \t}()\r\n    \tif err := syscall.Kill(os.Getpid(), syscall.SIGUSR2); err != nil {\r\n    \t\tpanic(err)\r\n    \t}\r\n    \t\u003c-done\r\n    }\r\n\r\nDoesn't work as expected (inside the goroutine):\r\n\r\n    func main() {\r\n    \tvar done = make(chan struct{})\r\n    \tgo func() {\r\n    \t\tvar c = make(chan os.Signal, 1)\r\n    \t\tsignal.Notify(c) // inside the goroutine\r\n    \t\t\r\n    \t\tfmt.Println(\u003c-c)\r\n    \t\tdone \u003c- struct{}{}\r\n    \t}()\r\n    \tif err := syscall.Kill(os.Getpid(), syscall.SIGUSR2); err != nil {\r\n    \t\tpanic(err)\r\n    \t}\r\n    \t\u003c-done\r\n    }\r\n\r\nExpected: Doesn't hang\r\nActual: Hangs\r\n\r\nThe Notify documentation doesn't say it has to be called in the main goroutine.",
+	"user": {
+		"login": "willfaught",
+		"id": 63830,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-09-03T22:58:24Z",
+	"created_at": "2015-09-03T21:24:24Z",
+	"updated_at": "2015-09-03T22:58:24Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66096522,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eI disagree; this behavior is causing bugs in existing code due to it being unexpected,\nand even if documented, would still be unexpected and would cause bugs to be written.\n\nBoth notable websocket libraries do not handle this case and thus have bugs in them:\n- \u003ca href=\"https://github.com/gorilla/websocket/blob/master/server.go#L100\"\u003ehttps://github.com/gorilla/websocket/blob/master/server.go#L100\u003c/a\u003e\n- \u003ca href=\"https://code.google.com/p/go/source/browse/websocket/server.go?repo=net#14\"\u003ehttps://code.google.com/p/go/source/browse/websocket/server.go?repo=net#14\u003c/a\u003e\n\nIt's hard to search for other uses of the API; GitHub doesn't list any results for\n\"hijacker\" in Go files.\n\nI checked the release history:\n- Go 1.0 has my bug. It also appears to have another fairly obvious bug related to\ntimeouts; it sets deadlines on Accept, and never sets them again.\n- Go 1.1 has my bug. It also *changes this behavior* from Go 1.0 and sets deadlines on\nAccept *and* on the start of a new request; this fixes a bug with long-lived http\nconnections and affects hijackers.\n- Go 1.2 has my bug. Nothing changed with regard to deadlines.\n- Go 1.3 has my bug. Nothing changed with regard to deadlines.\n\nThere's already precedent for changing this behavior to less buggy and more expected\nbehavior (go1.1 changed it.) Why not this time as well?\n\nIs the implementation more important than the documentation? This is undocumented at the\nmoment (in both ways, it neither defines the bug to exist or not to exist.) Changing the\ndocs to match the implementation is an acceptable way to do things (see Perl5), but\npersonally I'd rather see Go accumulate as little API cruft as possible. People will\nstill likely write bugs expecting it to be more sane if this remains, even if documented.\n\nThat said, I don't know of a way to \"go fix\" this in user code, so it would need a line\nof errata in the release notes.\u003c/pre\u003e",
+	"user": {
+		"login": "encryptio",
+		"id": 67937,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-06-28T15:31:01Z",
+	"updated_at": "2014-12-08T10:46:05Z"
+}

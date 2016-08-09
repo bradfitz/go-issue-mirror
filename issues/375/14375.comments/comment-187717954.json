@@ -1,0 +1,12 @@
+{
+	"id": 187717954,
+	"body": "That's too hard to read. I only want to see the new goroutines.\r\n\r\nSee the leak check stuff I added in grpc: https://github.com/grpc/grpc-go/blob/master/test/end2end_test.go\r\n\r\n```go\r\n// interestingGoroutines returns all goroutines we care about for the purpose\r\n// of leak checking. It excludes testing or runtime ones.\r\nfunc interestingGoroutines() (gs []string) {\r\n\tbuf := make([]byte, 2\u003c\u003c20)\r\n\tbuf = buf[:runtime.Stack(buf, true)]\r\n\tfor _, g := range strings.Split(string(buf), \"\\n\\n\") {\r\n\t\tsl := strings.SplitN(g, \"\\n\", 2)\r\n\t\tif len(sl) != 2 {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tstack := strings.TrimSpace(sl[1])\r\n\t\tif strings.HasPrefix(stack, \"testing.RunTests\") {\r\n\t\t\tcontinue\r\n\t\t}\r\n\r\n\t\tif stack == \"\" ||\r\n\t\t\tstrings.Contains(stack, \"testing.Main(\") ||\r\n\t\t\tstrings.Contains(stack, \"runtime.goexit\") ||\r\n\t\t\tstrings.Contains(stack, \"created by runtime.gc\") ||\r\n\t\t\tstrings.Contains(stack, \"interestingGoroutines\") ||\r\n\t\t\tstrings.Contains(stack, \"runtime.MHeap_Scavenger\") {\r\n\t\t\tcontinue\r\n\t\t}\r\n\t\tgs = append(gs, g)\r\n\t}\r\n\tsort.Strings(gs)\r\n\treturn\r\n}\r\n\r\n// leakCheck snapshots the currently-running goroutines and returns a\r\n// function to be run at the end of tests to see whether any\r\n// goroutines leaked.\r\nfunc leakCheck(t testing.TB) func() {\r\n\torig := map[string]bool{}\r\n\tfor _, g := range interestingGoroutines() {\r\n\t\torig[g] = true\r\n\t}\r\n\treturn func() {\r\n\t\t// Loop, waiting for goroutines to shut down.\r\n\t\t// Wait up to 5 seconds, but finish as quickly as possible.\r\n\t\tdeadline := time.Now().Add(5 * time.Second)\r\n\t\tfor {\r\n\t\t\tvar leaked []string\r\n\t\t\tfor _, g := range interestingGoroutines() {\r\n\t\t\t\tif !orig[g] {\r\n\t\t\t\t\tleaked = append(leaked, g)\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tif len(leaked) == 0 {\r\n\t\t\t\treturn\r\n\t\t\t}\r\n\t\t\tif time.Now().Before(deadline) {\r\n\t\t\t\ttime.Sleep(50 * time.Millisecond)\r\n\t\t\t\tcontinue\r\n\t\t\t}\r\n\t\t\tfor _, g := range leaked {\r\n\t\t\t\tt.Errorf(\"Leaked goroutine: %v\", g)\r\n\t\t\t}\r\n\t\t\treturn\r\n\t\t}\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-23T14:24:05Z",
+	"updated_at": "2016-02-23T14:24:05Z"
+}

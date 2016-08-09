@@ -1,0 +1,33 @@
+{
+	"id": 99111142,
+	"number": 12026,
+	"state": "closed",
+	"title": "runtime: sysmon doesn't force GC after two minutes",
+	"body": "At latest tip, runtime.sysmon doesn't successfully force a GC every two minutes. It prints a \"GC forced\" line to the log (when running with GODEBUG=gctrace=1), but it does not cause a GC to occur.\r\n\r\nI expected several GCs near 0 seconds, a single \"GC forced\" line followed by a GC near 120 seconds, and then more GCs near 125 seconds.\r\n\r\n@aclements \r\n\r\n```\r\n$ go version\r\ngo version devel +e019767 Wed Aug 5 00:52:00 2015 +0000 darwin/amd64\r\n```\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"log\"\r\n\t\"time\"\r\n)\r\n\r\nvar global []byte\r\n\r\nfunc main() {\r\n\tlog.SetFlags(0)\r\n\tlog.Printf(\"begin\")\r\n\r\n\tfor i := 0; i \u003c 20; i++ {\r\n\t\tglobal = make([]byte, 1\u003c\u003c20)\r\n\t}\r\n\r\n\ttime.Sleep(2*time.Minute + 5*time.Second)\r\n\r\n\tfor i := 0; i \u003c 20; i++ {\r\n\t\tglobal = make([]byte, 1\u003c\u003c20)\r\n\t}\r\n\r\n\tlog.Printf(\"end\")\r\n}\r\n```\r\n\r\n```\r\n$ GODEBUG=gctrace=1 ./sleep\r\nbegin\r\ngc 1 @0.007s 2%: 0.18+0.11+0+0.33+0.25 ms clock, 0.55+0.11+0+0.007/0.033/0.027+0.77 ms cpu, 6-\u003e9-\u003e4 MB, 4 MB goal, 8 P\r\ngc 2 @0.008s 3%: 0.036+0.43+0.031+0.040+0.063 ms clock, 0.21+0.43+0+0.042/0/0.002+0.38 ms cpu, 5-\u003e6-\u003e2 MB, 4 MB goal, 8 P\r\ngc 3 @0.010s 3%: 0.006+0.40+0.39+0.39+0.092 ms clock, 0.053+0.40+0+0/0.019/0.050+0.73 ms cpu, 4-\u003e7-\u003e4 MB, 6 MB goal, 8 P\r\ngc 4 @0.012s 4%: 0.017+0.096+0.028+0.058+0.093 ms clock, 0.13+0.096+0+0.019/0/0.030+0.75 ms cpu, 5-\u003e6-\u003e3 MB, 2 MB goal, 8 P\r\ngc 5 @0.012s 5%: 0.017+0.095+0.12+0.049+0.083 ms clock, 0.13+0.095+0+0/0/0.046+0.66 ms cpu, 4-\u003e5-\u003e3 MB, 4 MB goal, 8 P\r\nGC forced\r\nGC forced\r\nGC forced\r\nGC forced\r\nGC forced\r\nGC forced\r\ngc 6 @125.014s 0%: 0.93+0.37+0.002+0.051+0.11 ms clock, 7.4+0.37+0+0.16/0.002/0.001+0.94 ms cpu, 4-\u003e4-\u003e2 MB, 4 MB goal, 8 P\r\ngc 7 @125.017s 0%: 0.014+0.85+0.001+0.059+0.11 ms clock, 0.11+0.85+0+0.005/0.016/0.078+0.88 ms cpu, 4-\u003e5-\u003e2 MB, 4 MB goal, 8 P\r\ngc 8 @125.019s 0%: 0.009+0.13+0.005+0.041+0.086 ms clock, 0.072+0.13+0+0.005/0/0.053+0.68 ms cpu, 4-\u003e5-\u003e2 MB, 4 MB goal, 8 P\r\ngc 9 @125.020s 0%: 0.007+0.13+0.001+0.043+0.12 ms clock, 0.059+0.13+0+0/0.002/0.074+0.98 ms cpu, 4-\u003e5-\u003e3 MB, 4 MB goal, 8 P\r\ngc 10 @125.021s 0%: 0.017+0.11+0.005+0.044+0.079 ms clock, 0.13+0.11+0+0/0.001/0.058+0.63 ms cpu, 4-\u003e5-\u003e3 MB, 4 MB goal, 8 P\r\ngc 11 @125.021s 0%: 0.008+0.098+0.005+0.043+0.11 ms clock, 0.064+0.098+0+0/0.001/0.076+0.94 ms cpu, 4-\u003e5-\u003e3 MB, 4 MB goal, 8 P\r\ngc 12 @125.022s 0%: 0.006+0.096+0.006+0.041+0.070 ms clock, 0.053+0.096+0+0/0/0.044+0.56 ms cpu, 4-\u003e5-\u003e3 MB, 4 MB goal, 8 P\r\ngc 13 @125.022s 0%: 0.006+0.080+0.016+0.037+0.071 ms clock, 0.054+0.080+0+0.019/0/0.029+0.57 ms cpu, 4-\u003e5-\u003e2 MB, 4 MB goal, 8 P\r\nend\r\n```",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2015-08-05T17:29:45Z",
+	"created_at": "2015-08-05T03:44:02Z",
+	"updated_at": "2016-08-05T16:12:15Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

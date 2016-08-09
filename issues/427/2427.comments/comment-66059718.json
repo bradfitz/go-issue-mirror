@@ -1,0 +1,12 @@
+{
+	"id": 66059718,
+	"body": "\u003ca id=\"c3\"\u003e\u003c/a\u003eComment 3:\n\n\u003cpre\u003eI think this is working fine at tip.\nI added some prints to ServeCodec\n\ndiff -r 6b38b2ad3d41 src/pkg/net/rpc/server.go\n--- a/src/pkg/net/rpc/server.go\tWed Nov 09 16:01:55 2011 -0500\n+++ b/src/pkg/net/rpc/server.go\tWed Nov 09 16:07:19 2011 -0500\n@@ -391,10 +391,13 @@\n // ServeCodec is like ServeConn but uses the specified codec to\n // decode requests and encode responses.\n func (server *Server) ServeCodec(codec ServerCodec) {\n+println(\"serving\", codec)\n \tsending := new(sync.Mutex)\n \tfor {\n+println(\"read...\", codec)\n \t\tservice, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)\n \t\tif err != nil {\n+println(\"read request\", codec, err.Error())\n \t\t\tif err != io.EOF {\n \t\t\t\tlog.Println(\"rpc:\", err)\n \t\t\t}\n@@ -410,6 +413,7 @@\n \t\t}\n \t\tgo service.call(server, sending, mtype, req, argv, replyv, codec)\n \t}\n+println(\"close\", codec)\n \tcodec.Close()\n }\n \nWhen I run your program and jsonrpc.py against it, it prints:\n\n$ python2.6 jsonrpc.py\n{\"params\": [{\"First\": 99}], \"method\": \"RpcOps.AddOne\", \"id\": \"1\"}\nserving (0xf84001efc0,0xf840051000)\nread... (0xf84001efc0,0xf840051000)\nread... (0xf84001efc0,0xf840051000)\nread request (0xf84001efc0,0xf840051000) EOF\nclose (0xf84001efc0,0xf840051000)\n$ \n\nYou say that you are using release.r57, and it is definitely\nnot fixed there.  You also say that you checked tip. \nWhat does checked mean?  Did you run the code or just look\nfor your fix?  Your fix is strange - it turns any non-EOF\nerror into ErrUnexpectedEOF, losing information - and we \nsolved the problem by adding the additional keepReading bool\nreturn value instead.\n\nCan you please try running your program at tip?\n\nI also tried running your jsonrpc.py with the sendall\nargument changed to 'This is not JSON!'.  It prints a\nsingle error about not being able to decode and then\ncloses the connection gracefully.\n\nRuss\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-11-09T21:13:52Z",
+	"updated_at": "2014-12-08T10:12:57Z"
+}

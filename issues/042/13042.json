@@ -1,0 +1,22 @@
+{
+	"id": 113165528,
+	"number": 13042,
+	"state": "closed",
+	"title": "runtime: signal handling: c-shared libraries intercepts SIGCHLD and crashes",
+	"body": "Rather than leave this as a comment on https://github.com/golang/go/issues/13034, I'm opening a separate ticket.  Conceptually this seems to be or may be distinct concern. The fix for 13034 may fix this as well. Feel free to consolidate depending on determination of the root cause and fix.\r\n\r\nThe problem details:  go1.5.1, on linux amd64/fedora22.\r\n\r\nI have a host C program that loads a c-shared Go library. By default, the go runtime embedded in the c-shared library takes over signal handling for most signals, here the issue was with SIGCHLD.  At random trials (e.g. 1 out of 10 trials), during a shutdown of the host process, a SIGCHLD would be received by the Go runtime instead and it would then crash the program instead of getting a clean shutdown.\r\n\r\nstack trace read from the core dump:\r\n\r\n~~~\r\n(gdb) bt\r\n#0  runtime.sigaltstack () at /home/jaten/pkg/go1.5.1/src/runtime/sys_linux_amd64.s:355\r\n#1  0x00007ffff14dfc00 in runtime.signalstack (s=0xc820000300)\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/os1_linux.go:337\r\n#2  0x00007ffff14df5d5 in runtime.minit () at /home/jaten/pkg/go1.5.1/src/runtime/os1_linux.go:216\r\n#3  0x00007ffff14e7768 in runtime.needm (x=0 '\\000')\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/proc1.go:968\r\n#4  0x00007ffff1513696 in runtime.cgocallback_gofunc ()\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/asm_amd64.s:742\r\n#5  0x00007ffff15135ca in runtime.cgocallback () at /home/jaten/pkg/go1.5.1/src/runtime/asm_amd64.s:714\r\n#6  0x00007ffff14f719b in runtime.badsignal (sig=17)\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/sigqueue.go:169\r\n#7  0x00007ffff14f6212 in runtime.sigtrampgo (sig=17, info=0x672f70, ctx=0x672e40)\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/signal_linux.go:90\r\n#8  0x00007ffff151537b in runtime.sigtramp ()\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/sys_linux_amd64.s:234\r\n#9  0x00007ffff1515380 in runtime.sigtramp ()\r\n    at /home/jaten/pkg/go1.5.1/src/runtime/sys_linux_amd64.s:235\r\n#10 0x0000000000000001 in ?? ()\r\n#11 0x0000000000000000 in ?? ()\r\n(gdb)\r\n~~~\r\n\r\nI worked around this by elaborately noting all signal handlers, waiting for the go runtime to initialize, and then restoring all original handlers so that the go runtime never gets any signals when it is inside a c-shared library.\r\n\r\nAbove and beyond fixing the crash, a note on a nice to have: It would be nice to have a simple means of telling the Go runtime -- when embedded in a library -- to not bother to do any signal handling during startup. I have to image this will be a common need when embedding go in libraries.\r\n",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-05T00:26:12Z",
+	"created_at": "2015-10-24T14:50:19Z",
+	"updated_at": "2016-01-05T00:26:12Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

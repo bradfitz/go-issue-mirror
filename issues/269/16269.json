@@ -1,0 +1,17 @@
+{
+	"id": 163891343,
+	"number": 16269,
+	"state": "closed",
+	"title": "Reading large files into memory consume more memory than expected",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo1.6.2 darwin/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nOS X Version 10.11.1 (15B42)\r\n\r\n3. What did you do?\r\n\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nI have a binary file that I read into a byte array. Binary file is 2Gb. When it's loaded into mem, the process mem usage is over 6GB. After about 5 minutes, the mem usage drops down. Wrote a simple app to reproduce and can do so each time.\r\n```\r\npackage main\r\n\r\nimport (\r\n    \"flag\"\r\n    \"fmt\"\r\n    \"io/ioutil\"\r\n    \"os\"\r\n    \"os/signal\"\r\n    \"runtime\"\r\n)\r\n\r\nvar fileToRead = flag.String(\"filetoread\", \"\", \"file to load into mem\")\r\n\r\nfunc main() {\r\n    flag.Parse()\r\n\r\n    arr, err := func() ([]byte, error) {\r\n        file, err := os.Open(*fileToRead)\r\n        if err != nil {\r\n            panic(err)\r\n        }\r\n        defer file.Close()\r\n\r\n        return ioutil.ReadAll(file)\r\n    }()\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n\r\n    fmt.Printf(\"Read %d bytes\", len(arr))\r\n\r\n    exitChan := make(chan os.Signal)\r\n    signal.Notify(exitChan, os.Interrupt)\r\n    \u003c-exitChan\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\nI would expect the mem usage to be similar to the size of the byte array allocated\r\n\r\n5. What did you see instead?\r\nWhen loading a 3GB file, I saw 6.5GB of memory use that stayed that way for 5-10 minutes. Added runtime.GC() after the printf statement with no affect. If I call debug.FreeOSMemory(), the memory is released after a few seconds.\r\n\r\n",
+	"user": {
+		"login": "carlfn",
+		"id": 6538260,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-07-06T20:21:05Z",
+	"created_at": "2016-07-05T16:25:10Z",
+	"updated_at": "2016-07-06T20:21:05Z"
+}

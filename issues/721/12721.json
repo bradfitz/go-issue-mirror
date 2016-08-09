@@ -1,0 +1,21 @@
+{
+	"id": 107805973,
+	"number": 12721,
+	"state": "open",
+	"title": "time: make an uninitialized Timer usable",
+	"body": "Alternatively, add a new function to package time:\r\n\r\n```\r\n// NewStoppedTimer returns a new Timer that never fires unless it is Reset.\r\nfunc NewStoppedTimer() *Timer\r\n```\r\n\r\n---\r\n\r\nIt is common to reuse a timer via Reset several times (usually in a loop); often in these scenarios there's no initial value needed for the timer. It would be nice to be able to do this:\r\n\r\n``` go\r\nvar t time.Timer\r\nfor {\r\n    // ...\r\n    t.Reset(x)\r\n    // ...\r\n}\r\n```\r\n\r\nbut today any use of a timer that isn't created using `NewTimer` (or `AfterFunc`) panics.\r\n\r\nGiven #11513, almost any \"obvious\" way of accomplishing this is incorrect:\r\n\r\n``` go\r\nt := time.NewTimer(0)\r\nfor {\r\n    t.Reset(5 * time.Minute)\r\n    \u003c-t.C // might fire immediately, or after 5 minutes\r\n}\r\n```\r\n\r\n``` go\r\nt := time.NewTimer(0)\r\nt.Stop()\r\nfor {\r\n    t.Reset(5 * time.Minute)\r\n    \u003c-t.C // might fire immediately, or after 5 minutes\r\n}\r\n```\r\n\r\nYou need to do something like this instead:\r\n\r\n``` go\r\nt := time.NewTimer(0)\r\n\u003c-t.C\r\nfor {\r\n  t.Reset(5 * time.Minute)\r\n  \u003c-t.C // will not fire immediately\r\n}\r\n```\r\n\r\nbut it's unlikely that most people will know that something like this is required, because the bugs in the above versions can be hard to notice.\r\n\r\nCompared with `t := time.NewTimer(0); \u003c-t.C`, either `var t time.Timer` or `time.NewStoppedTimer()` are clearer, and the former doesn't even require expanding the time API.\r\n\r\n(**Note:** edited to remove overly-complex workaround.)",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2015-09-22T21:24:06Z",
+	"updated_at": "2015-11-17T02:09:53Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

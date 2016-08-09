@@ -1,0 +1,12 @@
+{
+	"id": 157068858,
+	"body": "The clang++ ld command line is:\r\n\r\n```\r\nclang++ -m64 -gdwarf-2 -Wl,-no_pie,-headerpad,1144 -Wl,-pagezero_size,4000000 \r\n  -o a.out -Qunused-arguments \r\n  tmp/000000.o tmp/000001.o tmp/000002.o tmp/000003.o tmp/000004.o tmp/000005.o tmp/000006.o \r\n  tmp/000007.o tmp/000008.o tmp/000009.o tmp/000010.o tmp/go.o \r\n  -g -O2 -Wl,-undefined -Wl,dynamic_lookup -g -O2 -framework CoreFoundation -framework Security \r\n  -g -O2 -g -O2 -g -O2 -g -O2 -lpthread -g -O2 -Wl,-undefined -Wl,dynamic_lookup \r\n  -g -O2 -Wl,-undefined -Wl,dynamic_lookup -Wl,-undefined -Wl,dynamic_lookup \r\n  -g -O2 -g -O2 -Wl,-undefined -Wl,dynamic_lookup -g -O2\r\n```\r\n\r\nThe `tmp/go.o` input contains the Go symbols, including `go.buildid`. The other `tmp/*.o` files contain cgo compiled libraries. The order of these `.o` files to the linker seems to be important. If I place `tmp/go.o` first (by reordering the lines [here](https://github.com/golang/go/blob/master/src/cmd/link/internal/ld/lib.go#L1108-L1109)), then the location of the `go.buildid` moves much closer to the front of the file:\r\n\r\n```\r\n~/Development/go/bin nm ~./cockroach  | grep buildid\r\n0000000004004d40 t go.buildid\r\n```\r\n\r\nI also noticed that the `4000000` portion of the symbol exactly matches the `-pagezero_size` flag passed to the linker. That offset doesn't affect where the symbol is on disk. Hacking together a little program to search the file binary for the buildid I can see it is now lying at offset `19776` (`0x4d40`). This isn't within the first 16KB of the binary (as required by `ReadBuildIDFromBinary`), but it's a lot closer than it was before.\r\n\r\nThe above is poking around in stuff I really don't understand.",
+	"user": {
+		"login": "petermattis",
+		"id": 6201335,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-11-16T15:32:14Z",
+	"updated_at": "2015-11-16T15:32:14Z"
+}

@@ -1,0 +1,30 @@
+{
+	"id": 51282656,
+	"number": 4799,
+	"state": "closed",
+	"title": "net/http: add example for ServeMux to make \"/.*\" behavior clear",
+	"body": "\u003cpre\u003eAs discussed on golang-nuts:\n\nI expected this code to serve pages at \u003ca href=\"http://localhost:8080/\"\u003ehttp://localhost:8080/\u003c/a\u003e and\n\u003ca href=\"http://localhost:8080/foo\"\u003ehttp://localhost:8080/foo\u003c/a\u003e, with 404s for any other path.\n\n        http.HandleFunc(\u0026quot;/\u0026quot;, indexHandler)\n        http.HandleFunc(\u0026quot;/foo\u0026quot;, fooHandler)\n        log.Fatal(http.ListenAndServe(\u0026quot;:8080\u0026quot;, nil))\n\nSurprisingly, /bar is also valid.  It gets indexHandler, because as \u0026quot;/subdir/\u0026quot;\nincludes an entire subtree, \u0026quot;/\u0026quot; includes the entire tree. This means that\nindexHandler must test req.URL.Path == \u0026quot;/\u0026quot; and explicitly 404 any other paths.\n\nBeing able to serve all endpoints easily is useful, but I think in many cases people are\ndoing it unintentionally, i.e., writing bugs.\n\nThis is only surprising for \u0026quot;/\u0026quot;, since the documentation is clear about how\n\u0026quot;/foo/\u0026quot; works.\n\nPossible resolutions:\n\n\n1. I suggested allowing \u0026quot;\u0026quot; to match the root path only.  \u0026quot;\u0026quot; is\ncurrently an invalid pattern, so this is a backwards-compatible change.\n\n\n2. adg suggested a wrapper:\n\n        func ExactPath(path string, http.Handler) http.Handler\n\nUsing this involves some stutter:\n\n        mux.Handle(\u0026quot;/\u0026quot;, http.ExactPath(\u0026quot;/\u0026quot;, h))\n\nThis seems more general in that you could also use it for non-index paths such as\n\u0026quot;/a/b/\u0026quot;, but there would still be a questionable redirect from\n\u0026quot;/a/b\u0026quot;.\n\n\n\n3. Remove the stutter and generality:\n\n        mux.Handle(\u0026quot;/\u0026quot;, http.IndexOnly(indexHandler))\n\n\n4. Exact registration, which would work for non-index paths:\n\n        mux.HandleExact(\u0026quot;/\u0026quot;, indexHandler)\n\n\n5. We could just warn people to check req.URL.Path in their index handlers.\u003c/pre\u003e",
+	"user": {
+		"login": "shields",
+		"id": 134482,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		},
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2014-12-08T10:25:28Z",
+	"created_at": "2013-02-13T02:55:02Z",
+	"updated_at": "2016-06-24T22:32:51Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

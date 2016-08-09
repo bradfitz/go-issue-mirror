@@ -1,0 +1,28 @@
+{
+	"id": 51278901,
+	"number": 2217,
+	"state": "closed",
+	"title": "template lexer panics on long pipelines",
+	"body": "\u003cpre\u003efrom the list, by kevin ballard:\n\nI just watched the wonderful Lexical Scanning in Go talk[1], and I noticed something a\nbit curious. When converting the lexer from the concurrent model to non-concurrent, it\nuses a channel of size 2 for buffering purposes. It was stated that no state function\ncan emit more than 2 tokens in a given execution, but that's not correct. The\nlexInsideAction function can emit an indeterminate number of itemPipes. I wrote a sample\nprogram, and it verified my belief. Including {{|||}} in your template will cause the\ngoroutine to deadlock.\n\nGiven that the only sequence which can cause this deadlock ends up being an invalid\nsequences anyway, I imagine this could be fixed by changing the emit function to look\nsomething like\n\nfunc (l *lexer) emit(t itemType) {\n    select {\n    case l.items \u0026lt;- item{t, l.input[l.start:l.pos]}: // success\n    default:\n        // there is no room left on the channel. This only happens with an invalid token sequence\n        panic(outOfRoom)\n    }\n}\n\noutOfRoom can be some value of a new type, and then this panic can be caught inside the\nrun() function.\n\n-Kevin Ballard\u003c/pre\u003e",
+	"user": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2014-12-08T10:11:56Z",
+	"created_at": "2011-09-02T00:41:48Z",
+	"updated_at": "2016-06-24T19:34:13Z"
+}

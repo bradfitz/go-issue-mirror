@@ -1,0 +1,12 @@
+{
+	"id": 66098090,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4 by **toddw@google.com**:\n\n\u003cpre\u003eFYI I don't encounter this alot, but definitely enough times to annoy me.  It's an easy\nbug to miss when reviewing code.  Here's an example where I've seen it occur.  We start\nwith this:\n\nfor cond {\n  if tag == foo {\n    ...\n    break // breaks out of for loop\n  } else if tag == bar {\n    ...\n  }\n}\n\nNow we re-write it as this:\n\nfor cond {\n  switch tag {\n  case foo:\n    ...\n    break // doesn't break out of for loop\n  case bar:\n    ...\n  }\n}\n\nHere's another example; \"break\" applies to the innermost \"for\", \"switch\" or \"select\",\nwhile \"continue\" only applies to the innermost \"for\".  I'm not proposing any changes to\nthat; it just highlights my example.  E.g.\n\nfor cond {\n  switch tag {\n  case foo:\n    ...\n    break // runs moreLogic and runs next loop iteration\n  case bar:\n    ...\n    continue // skips moreLogic and runs next loop iteration\n  }\n  moreLogic()\n}\n\nThis is pretty weird, since my intuition for \"break\" and \"continue\" is reversed.  I.e.\nin a simple for loop, \"break\" runs fewer or equal lines of code in the loop than\n\"continue\", while it's reversed when you nest a switch or select statement.  Sadly I've\nreviewed actual code written like this, and had bugs all over.\n\nNote that the definition of \"ambiguity\" is kind of complex.  The for loop is the only\nvalid target for the continue statement, and to me it doesn't seem confusing without the\n\"break\" case.  But once you add the \"break\" case I find both the \"break\" and \"continue\"\ncases confusing.  Maybe I'm weird.\n\nFWIW my vote is for go vet warnings, only when there could be more than one valid target\nfor a break or continue statement.  I also wouldn't mind if the language enforced this,\nbut don't feel strongly.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-11-08T21:11:51Z",
+	"updated_at": "2014-12-08T10:47:43Z"
+}

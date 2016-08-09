@@ -1,0 +1,12 @@
+{
+	"id": 66061972,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eIt is okay for something processing an io.Reader to call Read again after getting an\nerror.  The timeoutReader you've shown does not handle this scenario: it will end up\nwith two different Read calls going on in two different goroutines.  I think you want\nsomething like this instead.\n\nduring init, t.canRead = make(chan bool, 1); t.canRead \u0026lt;- true\n\nfunc (t *TimeoutReader) Read(buf []byte) (int, error) {\n        // Wait for permission to start a new Read.\n        select {\n        case \u0026lt;-t.canRead:\n            // ok\n        case \u0026lt;-t.Timeout:\n            return 0, ErrReadTimeout\n        }\n\n        // Start a new Read.\n        ch := make(chan timeoutReadDone)\n        go func() {\n                n, err := t.Reader.Read(buf)\n                ch \u0026lt;- timeoutReadDone{n, err}\n                t.canRead \u0026lt;- true\n        }()\n\n        // Wait for Read.\n        select {\n        case done := \u0026lt;-ch:\n                return done.n, done.err\n        case \u0026lt;-t.Timeout:\n\t\tbreak\n        }\n        return 0, ErrReadTimeout\n}\n\nIf you serialize the Read calls that way, do you still see the problem?\u003c/pre\u003e\n\n_Labels changed: added **priority-go1**, removed **priority-triage**._\n\n\n_Status changed to **WaitingForReply**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-01-25T18:16:13Z",
+	"updated_at": "2014-12-22T06:08:25Z"
+}

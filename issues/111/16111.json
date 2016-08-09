@@ -1,0 +1,31 @@
+{
+	"id": 161046699,
+	"number": 16111,
+	"state": "closed",
+	"title": "path/filepath: behavior of Clean is not explicitly mentioned in its doc, which is surprising and easy to miss",
+	"body": "_(Usually an issue is when a function does something which is not documented, or different than documented. This is not the case here, but I still believe there is an issue that can and should be resolved, i.e., improvement is possible.)_\r\n\r\nOne of my favorite properties of Go is that many things are explicit and there's little magic. When you want to learn what a func in standard library does, often just reading its doc string will tell you everything you need to know, without having to look at the implementation details. This is very nice and follows Principle of Least Surprise.\r\n\r\nI was trying to confirm the behavior of `filepath.Join`, so I began by reading its doc:\r\n\r\n```\r\n// Join joins any number of path elements into a single path, adding\r\n// a Separator if necessary. The result is Cleaned, in particular\r\n// all empty strings are ignored.\r\n// On Windows, the result is a UNC path if and only if the first path\r\n// element is a UNC path.\r\nfunc Join(elem ...string) string\r\n```\r\n\r\nIt says that the result is Cleaned, so I read the doc for `Clean`:\r\n\r\n```\r\n// Clean returns the shortest path name equivalent to path\r\n// by purely lexical processing.  It applies the following rules\r\n// iteratively until no further processing can be done:\r\n//\r\n//\t1. Replace multiple Separator elements with a single one.\r\n//\t2. Eliminate each . path name element (the current directory).\r\n//\t3. Eliminate each inner .. path name element (the parent directory)\r\n//\t   along with the non-.. element that precedes it.\r\n//\t4. Eliminate .. elements that begin a rooted path:\r\n//\t   that is, replace \"/..\" by \"/\" at the beginning of a path,\r\n//\t   assuming Separator is '/'.\r\n//\r\n// The returned path ends in a slash only if it represents a root directory,\r\n// such as \"/\" on Unix or `C:\\` on Windows.\r\n//\r\n// If the result of this process is an empty string, Clean\r\n// returns the string \".\".\r\n//\r\n// See also Rob Pike, ``Lexical File Names in Plan 9 or\r\n// Getting Dot-Dot Right,''\r\n// http://plan9.bell-labs.com/sys/doc/lexnames.html\r\nfunc Clean(path string) string\r\n```\r\n\r\nWith that, I am confident that I understand the behavior of `filepath.Join` because I've read its documentation.\r\n\r\nHowever, as I have learned today (by chance), my understanding of `filepath.Join`, `filepath.Clean` was incorrect because I overlooked a **very important, behavior altering** paragraph in the package documentation (which is used to describe this package). Read the second paragraph:\r\n\r\n```\r\n// Package filepath implements utility routines for manipulating filename paths\r\n// in a way compatible with the target operating system-defined file paths.\r\n//\r\n// Functions in this package replace any occurrences of the slash ('/') character\r\n// with os.PathSeparator when returning paths unless otherwise specified.\r\npackage filepath\r\n```\r\n\r\nIt turns out that `Clean` replaces any occurrences of the slash ('/') character with `os.PathSeparator` when returning path. So does `Join` since it calls `Clean`.\r\n\r\nI believe this is the first time I have ever encountered a standard library package where a part of the behavior (which is not the expected behavior for this package) is specified/overridden by package docs.\r\n\r\nIf I'm not mistaken, I believe it'd be better to change documentation to document `Clean`s behavior explicitly, and change the package documentation to summarize behavior rather than be the only place that specifies it.\r\n\r\n### Exaggerated, contrived example\r\n\r\nIf I may provide an exaggerated, contrived example of how this current situation makes me feel, it would be like seeing a function in std lib like this:\r\n\r\n```Go\r\n// Add returns sum of two numbers.\r\nfunc Add(a, b int) int\r\n```\r\n\r\nThen I run `Add(1, 2)` and get -3 instead of 3. Instead of a bug, imagine it turns out that:\r\n\r\n```Go\r\n// Package math has some utilities for dealing with numbers.\r\n//\r\n// Functions in this package return the negation of the expected result, unless\r\n// otherwise specified.\r\npackage math\r\n```\r\n\r\nThis issue is the same as https://github.com/golang/go/issues/10122. However, that issue was resolved a year ago, and I hadn't noticed that it was resolved because I primarily read the function documentation when determining behavior of a function. I read the package documentation when I want to get a better overview of the purpose of package, but it's not where I expect to find unexpected behaviors specified.\r\n\r\n### Proposed improvement\r\n\r\nI propose improving `path/filepath` by changing `Clean` documentation to be explicit about its behavior, and changing the package summary to be more descriptive of the package, rather than being the canonical place where behavior of individual functions is altered or specified.\r\n\r\nE.g., something like this:\r\n\r\n![image](https://cloud.githubusercontent.com/assets/1924134/16174123/88bc2c02-356a-11e6-83f4-369710843395.png)\r\n\r\n/cc @hyangah since you originally ran into this issue as well (#10122), and worked on the original fix to the doc.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 14,
+	"closed_at": "2016-07-06T23:23:32Z",
+	"created_at": "2016-06-18T22:39:31Z",
+	"updated_at": "2016-07-26T18:00:35Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 214596213,
+	"body": "I think in this case, my original assessment at https://github.com/mholt/caddy/issues/782#issuecomment-213675765 may have been right.\r\n\r\nI'm pretty sure its  data race, as I'm having a really hard to time writing a script that will set the conditions just right (even though it always occurs in Chrome). Using https://github.com/golang/net/tree/master/http2 @ b797637b7aeeed133049c7281bfa31dcc9ca42d6\r\n\r\n1. Chrome makes a POST request\r\n2. net/http2 calls our `Handler`\r\n3. Our Handler closes `req.Body`\r\n4. The write at [server.go#L1307](https://github.com/golang/net/blob/master/http2/server.go#L1307) fails with `write on closed buffer`.\r\n5. Instead of finishing the request, `net/http2` sends a `CLOSE_STREAM`\r\n\r\nKinda sort have a diagram:\r\n```\r\n Chrome         net/http2           Handler\r\n    |              |                    |\r\n POST req --------\u003e|                    |\r\n    |              |                    |\r\n    | \u003c-----------ACK                   |\r\n    |              | ---------------\u003e Handler(w http.ResponseWriter, r *http.Request)\r\n  DATA -------\u003e Body.write(data)        |\r\n  DATA -------\u003e Body.write(data)        |\r\n    |              |                 Body.Close()\r\n  DATA -------\u003e Body.write(data)        |\r\n    |       err = writeOnClosedBuff     |\r\n    | \u003c--------  CLOSE_STREAM           |\r\n```\r\n\r\nIt looks like the issue here is the `Handler` shouldn't be allowed to Close the request body until `net/http2` is sure it has finished writing to it.",
+	"user": {
+		"login": "nemothekid",
+		"id": 940094,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-26T03:27:34Z",
+	"updated_at": "2016-04-26T03:28:20Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66100339,
+	"body": "\u003ca id=\"c10\"\u003e\u003c/a\u003eComment 10:\n\n\u003cpre\u003eIs it really easy to do?\n\nI see at least 3 problems:\n\n1. If you do obj.subobj.mu.Lock/obj.subobj.mu.Unlock, compiler must prove that it's the\nsame mutex in both cases, that is, that obj.subobj pointer has not changed. Since these\nobjects are shared (they contain a mutex), it may be not that simple.\n\n2. If compiler sees:\n\nmu.Lock()\n...\nmu.Unlock()\n\nand proves mu refers to the same object, it can be the case that the situation is\nactually:\n\nmu.Lock()\n...\n// pass responsibility to unlock to a different goroutine\n...\n// receive responsibility to unlock from yet another goroutine\n...\nmu.Unlock()\n\n3. Non-trivial control flow like:\n\nfunc foo() *T {\n  t := ...\n  ...\n  if ... {\n    t.mu.Lock()\n  }\n  ...\n  return t\n}\n\nt := foo()\n...\nif ... {\n  t.mu.Unlock()\n}\n...\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-04T17:17:15Z",
+	"updated_at": "2014-12-08T10:50:13Z"
+}

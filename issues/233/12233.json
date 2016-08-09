@@ -1,0 +1,22 @@
+{
+	"id": 102148361,
+	"number": 12233,
+	"state": "closed",
+	"title": "runtime: huge page fragmentation on Linux leads to out of memory",
+	"body": "I recently upgraded to Go 1.5 from 1.4.2 for a moderately large production service, serving thousands of requests per second. This particular program has been run on every Go version from 1.1 through (now) 1.5, and has been stable in production for about 2+ years. Switching to Go 1.5 saw dramatic improvements in GC pause time, as expected, but the processes are intermittently exiting (somewhere between 1-6h of uptime) with the below panic.\r\n\r\nOn each version, this has been running on Ubuntu 12.04.\r\n\r\n```\r\nfatal error: runtime: cannot allocate memory\r\n\r\nruntime stack:\r\nruntime.throw(0x8c8f20, 0x1f)\r\n        /usr/local/go/src/runtime/panic.go:527 +0x90\r\nruntime.persistentalloc1(0x4000, 0x8, 0xaa8a78, 0xa8d3a8)\r\n        /usr/local/go/src/runtime/malloc.go:878 +0x2e3\r\nruntime.persistentalloc.func1()\r\n        /usr/local/go/src/runtime/malloc.go:831 +0x3b\r\nruntime.systemstack(0x7ff1377fdc78)\r\n        /usr/local/go/src/runtime/asm_amd64.s:278 +0xab\r\nruntime.persistentalloc(0x4000, 0x0, 0xaa8a78, 0x5)\r\n        /usr/local/go/src/runtime/malloc.go:832 +0x58\r\nruntime.fixAlloc_Alloc(0xa95eb8, 0xa8d3a8)\r\n        /usr/local/go/src/runtime/mfixalloc.go:67 +0xee\r\nruntime.mHeap_AllocSpanLocked(0xa89ba0, 0x5, 0x412c1b)\r\n        /usr/local/go/src/runtime/mheap.go:561 +0x1a7\r\nruntime.mHeap_Alloc_m(0xa89ba0, 0x5, 0x100000000, 0xc8200205bc)\r\n        /usr/local/go/src/runtime/mheap.go:425 +0x1ac\r\nruntime.mHeap_Alloc.func1()\r\n        /usr/local/go/src/runtime/mheap.go:484 +0x41\r\nruntime.systemstack(0x7ff1377fddb8)\r\n        /usr/local/go/src/runtime/asm_amd64.s:278 +0xab\r\nruntime.mHeap_Alloc(0xa89ba0, 0x5, 0x10100000000, 0x923300)\r\n        /usr/local/go/src/runtime/mheap.go:485 +0x63\r\nruntime.largeAlloc(0x9c40, 0x0, 0x4d4f07)\r\n        /usr/local/go/src/runtime/malloc.go:745 +0xb3\r\nruntime.mallocgc.func3()\r\n        /usr/local/go/src/runtime/malloc.go:634 +0x33\r\nruntime.systemstack(0xc820020000)\r\n        /usr/local/go/src/runtime/asm_amd64.s:262 +0x79\r\nruntime.mstart()\r\n        /usr/local/go/src/runtime/proc1.go:674\r\n\r\ngoroutine 1145040165 [running]:\r\nruntime.systemstack_switch()\r\n        /usr/local/go/src/runtime/asm_amd64.s:216 fp=0xc8226375f0 sp=0xc8226375e8\r\nruntime.mallocgc(0x9c40, 0x731f60, 0x0, 0x60)\r\n        /usr/local/go/src/runtime/malloc.go:635 +0x9c4 fp=0xc8226376c0 sp=0xc8226375f0\r\nruntime.newarray(0x731f60, 0x1388, 0x3)\r\n        /usr/local/go/src/runtime/malloc.go:777 +0xc9 fp=0xc822637700 sp=0xc8226376c0\r\nruntime.makechan(0x7320e0, 0x1388, 0xc93f800000)\r\n        /usr/local/go/src/runtime/chan.go:72 +0x135 fp=0xc822637750 sp=0xc822637700\r\ngithub.com/crashlytics/gusset/caching-proxy.(*CachingProxy).Request(0xc820110550, 0x7ff13c6c01b0, 0xc964463810, 0xc9644b30a4, 0x0, 0x0)\r\n        /srv/go/src/github.com/crashlytics/gusset/caching-proxy/caching-proxy.go:445 +0x6d0 fp=0xc822637908 sp=0xc822637750\r\nmain.cachedRequestHandler(0x7ff13c6c0178, 0xc9644e2580, 0xc9642b6380)\r\n        /srv/go/src/github.com/crashlytics/gusset/gusset.go:69 +0x437 fp=0xc822637b68 sp=0xc822637908\r\nnet/http.HandlerFunc.ServeHTTP(0x922e98, 0x7ff13c6c0178, 0xc9644e2580, 0xc9642b6380)\r\n        /usr/local/go/src/net/http/server.go:1422 +0x3a fp=0xc822637b88 sp=0xc822637b68\r\nnet/http.(*ServeMux).ServeHTTP(0xc82010d530, 0x7ff13c6c0178, 0xc9644e2580, 0xc9642b6380)\r\n        /usr/local/go/src/net/http/server.go:1699 +0x17d fp=0xc822637be0 sp=0xc822637b88\r\nnet/http.serverHandler.ServeHTTP(0xc82011c540, 0x7ff13c6c0178, 0xc9644e2580, 0xc9642b6380)\r\n        /usr/local/go/src/net/http/server.go:1862 +0x19e fp=0xc822637c40 sp=0xc822637be0\r\nnet/http.(*conn).serve(0xc8aef18160)\r\n        /usr/local/go/src/net/http/server.go:1361 +0xbee fp=0xc822637f98 sp=0xc822637c40\r\nruntime.goexit()\r\n        /usr/local/go/src/runtime/asm_amd64.s:1696 +0x1 fp=0xc822637fa0 sp=0xc822637f98\r\ncreated by net/http.(*Server).Serve\r\n        /usr/local/go/src/net/http/server.go:1910 +0x3f6\r\n```",
+	"user": {
+		"login": "bmhatfield",
+		"id": 1119967,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 71,
+	"closed_at": "2015-10-02T20:21:05Z",
+	"created_at": "2015-08-20T14:10:32Z",
+	"updated_at": "2015-11-16T23:00:50Z",
+	"milestone": {
+		"id": 1295987,
+		"number": 27,
+		"title": "Go1.5.2"
+	}
+}

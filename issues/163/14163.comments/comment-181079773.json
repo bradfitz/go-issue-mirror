@@ -1,0 +1,12 @@
+{
+	"id": 181079773,
+	"body": "Although there are already robust, widely available solutions for daemonization, this proposal would allow standard Go programs to self-daemonize. Also fork, clone, and anything else that operates on the \"current thread\" would be generally safe to use directly (albeit costly).\r\n\r\nI feel the proposal should define how `runtime.RunWithMainThreadOnly` interacts with `runtime.LockOSThread`. For example, could a LockOSThread call in the passed callback allow an arbitrary goroutine can acquire main thread ownership? If so, what would happen if two goroutines tried to do this? Is the callback run in the same goroutine as the function that calls `RunWith...`?\r\n\r\nWhat happens if the callback spawns its own goroutines (and how might _that_ interact with LockOSThread)? -- presumably in cases with lock-step inter-goroutine interaction, the spirit of LockOSThread could still be upheld while multiplexing. Would we need a fully-preemptive scheduler for this to occur, or would the `RunWith...` call block (possibly forever) for all goroutines to reach a scheduling point per current runtime semantics?\r\n\r\nA generalization on this proposal could allow interesting and powerful security/scheduling models to be constructed without much effort: many operating systems have syscalls/functionality for privilege dropping, quota management, etc, which are often thread-granular. If a runtime function were provided to make the current and descendent goroutines run in a new goroutine sub-group, both soft control (non-preemptive scheduling limits) and hard control (privilege dropping, rlimit, kernel io/sched priority) could be applied. In the case of hard limits, an opt-in mechanism would need to be employed to ensure that the new sub-group would only be allowed to multiplex on top of a new thread(s) created to run that sub-group.\r\n\r\nUsing such a mechanism would be mutually exclusive with RunWithMainThreadOnly -- and thus a program would need to perform sub-grouping after RunWithMainThreadOnly. `RunWith...` could return an error or bool indicating whether the attempt was possible (or not -- due to thread-pinned subgrouping).",
+	"user": {
+		"login": "extemporalgenome",
+		"id": 536740,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-07T18:51:52Z",
+	"updated_at": "2016-02-07T18:51:52Z"
+}

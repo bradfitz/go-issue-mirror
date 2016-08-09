@@ -1,0 +1,21 @@
+{
+	"id": 92683589,
+	"number": 11520,
+	"state": "open",
+	"title": "cmd/go: trace easily generate traces that are too big for trace viewer",
+	"body": "Here's an example.\r\n\r\nx_test.go:\r\n\r\n```go\r\npackage p\r\n\r\nimport (\r\n\t\"sync\"\r\n\t\"testing\"\r\n)\r\n\r\nfunc BenchmarkBlocking(b *testing.B) {\r\n\tvar mu sync.Mutex\r\n\tb.RunParallel(func(pb *testing.PB) {\r\n\t\tvar x int\r\n\t\tfor pb.Next() {\r\n\t\t\tfor i := 0; i \u003c 10000; i++ {\r\n\t\t\t\tx *= 2\r\n\t\t\t\tx /= 2\r\n\t\t\t}\r\n\t\t\tmu.Lock()\r\n\t\t\tfor i := 0; i \u003c 1000; i++ {\r\n\t\t\t\tx *= 2\r\n\t\t\t\tx /= 2\r\n\t\t\t}\r\n\t\t\tmu.Unlock()\r\n\t\t}\r\n\t})\r\n}\r\n```\r\n\r\nDo this:\r\n\r\n```bash\r\n$ go test -bench=. -trace=trace.out\r\nBenchmarkBlocking-8\t  500000\t      3401 ns/op\r\n$ go tool trace p.test trace.out\r\n```\r\n\r\nThen click on View trace.\r\n\r\nResult: Browser tab crashes.\r\n\r\n@egonelbre did an initial analysis on a related trace that came from real code (thanks, Egon!):\r\n\r\n\u003e Preliminary analysis seems to indicate that the trace-viewer is blowing some sort of internal memory limit in Chrome. i.e. the trace json file is 133MB and chrome dies after allocating 800MB of RAM.\r\n\u003e Found somewhat related issue https://github.com/google/trace-viewer/issues/298\r\n\r\n\u003e I did some experimenting and was able to load 1.07 million events, but not 1.08M. It seems that trace-viewer can load around ~1M events. The whole dataset is ~1.5M events.\r\n\u003e From DOM/JavaScript perspective it is quite impressive that it can handle that much and the tool stays quite responsive.\r\n\u003e I think it might be better to do this at the go trace tool level, enforce the limit that you cannot look over 1M events. And then from the selection part you can select the range you wish to see.\r\n\r\n\u003e Note that there is also a possibility of removing some particular counters from the trace.json they make up over half of the events.\r\n\u003e Alternatively we can reduce counters using some similarity: https://play.golang.org/p/GnJIyzmsA5\r\n\r\nGiven how easy it is to create giant (and thus unusable) traces, I think we should handle them gracefully, since the trace-viewer can't.\r\n\r\nOne option (perhaps not great): 'go tool trace' could allow you to specify a time window to display, and refuse to send windows that are too large to the trace viewer.\r\n\r\n/cc @dvyukov @egonelbre \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 15,
+	"created_at": "2015-07-02T16:51:31Z",
+	"updated_at": "2015-07-22T20:00:31Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

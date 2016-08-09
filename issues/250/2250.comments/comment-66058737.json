@@ -1,0 +1,12 @@
+{
+	"id": 66058737,
+	"body": "\u003ca id=\"c4\"\u003e\u003c/a\u003eComment 4:\n\n\u003cpre\u003eI read up on \"handle inheritance\", but, since I use none of that myself, I could be\ntalking rubbish.\n\nLooking at:\n\n\u003ca href=\"http://msdn.microsoft.com/en-us/library/ms683463%28v=vs.85%29.aspx\"\u003ehttp://msdn.microsoft.com/en-us/library/ms683463%28v=vs.85%29.aspx\u003c/a\u003e\n\nIf we want to pass \"ANY\" handles to our child process, we must set \"bInheritHandles\nparameter to TRUE\" when we call syscall.CreateProcess. Which we do. If we set\nbInheritHandles=Fasle, \"NONE\" of our handles will be passed to child, so that is not an\noption - we do want to pass \"SOME\" handles.\n\nWe want to pass \"SOME\" handles to child. We pass them to CreateProcess in\nlpStartupInfo.hStdInput, lpStartupInfo.hStdOutpu and lpStartupInfo.hStdError. They must\nbe set \"inheritable\", and they are - they are created with syscall.DuplcateHandle with\nInheritHandle=True. And we must set STARTF_USESTDHANDLES to let syscall.CreateProcess\nknow to use these. And we do.\n\nNow that we set syscall.CreateProcess bInheritHandles parameter to True, we have no\nchoice and all our handles (that are marked as \"inheritable\") will be passed to child\nprocess (see doco ref). So we have to watch out and not make handles \"inheritable\".\n\nI look at our code. I can see 2 places where we make handles \"inheritable\". We set pipe\nhandles \"inheritable\" for evey syscall.Pipe (see syscall.makeInheritSa). And we set file\nhandles \"inheritable\", if opened with O_CLOEXEC cleared (see syscall.makeInheritSa\nagain). Perhaps, there are others that I don't see at the moment. I do not remember why\nwe set those and not others.\n\nBut it is possible that code other then \"go\" creates \"inheritable\" handles too. Nothing\nstops any DLL we call to create an \"inheritable\" handle.\n\nIn fact, it appears, all syscall.Std* handles are \"inheritable\". I used a trick\nmentioned in the doco (DuplicateHandle(oldH, \u0026newH,\ndo-not-inherit)+CloseHandle(oldH)+use-newH-from-now-on), and your problem seems to gone\naway.\n\nSo, I could try and make it permanent for syscall.Std*. Not sure what else. Any\nsuggestions.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-09-13T01:33:57Z",
+	"updated_at": "2014-12-08T10:12:06Z"
+}

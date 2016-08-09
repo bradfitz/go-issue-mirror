@@ -1,0 +1,21 @@
+{
+	"id": 107341558,
+	"number": 12693,
+	"state": "open",
+	"title": "database/sql: number of scan-destinations won't work with alter table.",
+	"body": "See https://github.com/mattn/go-sqlite3/issues/240\r\n```go\r\n// +build ignore\r\npackage main\r\n\r\nimport (\r\n    \"database/sql\"\r\n    \"fmt\"\r\n\r\n    _ \"github.com/mattn/go-sqlite3\"\r\n)\r\n\r\nfunc main() {\r\n    db, err := sql.Open(\"sqlite3\", \"file:dummy.db?mode=memory\u0026cache=shared\")\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n    defer db.Close()\r\n\r\n    _, err = db.Exec(`CREATE TABLE test (id INTEGER PRIMARY KEY NOT NULL, name TEXT);\r\n                        INSERT INTO test (name) VALUES ('Bart'), ('Lisa');`)\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n\r\n    // A prepared statement that have a long lifetime...\r\n        stmt, err := db.Prepare(\"SELECT * FROM test\")\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n    defer stmt.Close()\r\n\r\n    rows, err := stmt.Query()\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n    defer rows.Close()\r\n\r\n    // An Alter, may be done by another connection/process (if the db is not in memory)...\r\n    _, err = db.Exec(\"ALTER TABLE test ADD COLUMN data DEFAULT 'missing'\")\r\n    if err != nil {\r\n        panic(err)\r\n    }\r\n\r\n    var id int\r\n    var name string\r\n    var data string\r\n    // The native sqlite3_stmt is recompiled when the first sqlite3_step is called:\r\n    // http://sqlite.org/c3ref/prepare.html\r\n    // but not the Go wrappers...\r\n    for rows.Next() {\r\n        err = rows.Scan(\u0026id, \u0026name, \u0026data)\r\n        if err != nil {\r\n            panic(err)\r\n        }\r\n        fmt.Println(id, name, data)\r\n    }\r\n}\r\n```\r\nWhen modifying columns after calling Query like above, go doesn't handle number of columns modified. Because database/sql looks number of columns with count of last-fetched columns..\r\n\r\nhttps://github.com/golang/go/blob/master/src/database/sql/sql.go#L1689",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2015-09-19T16:02:24Z",
+	"updated_at": "2015-09-19T16:49:59Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

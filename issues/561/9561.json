@@ -1,0 +1,28 @@
+{
+	"id": 53977664,
+	"number": 9561,
+	"state": "closed",
+	"title": "net/http: cannot register ServeMux handler for all CONNECT requests regardless of host or path",
+	"body": "Go version 1.4 and head (4e03bbb1ada77fd9e8ba95d82dec6bfb3862db0d), all platforms.\r\n\r\nIt doesn't appear to be possible to register a ServeMux handler that works for all CONNECT requests, regardless of hostname or path.\r\n\r\n##### Steps to reproduce\r\n\r\n1. Register a ServeMux handler for `\"/\"`. http://play.golang.org/p/iIU0eJ3Idn\r\n\r\n2. Send a proxy request:\r\n\r\n   ```\r\nCONNECT example.com:443 HTTP/1.1\r\n```\r\n\r\n##### Expected behavior\r\n\r\nThe program prints something like\r\n\r\n```\r\nhandle CONNECT \"example.com:443\" \"\"\r\n```\r\n\r\nand returns a 200 response.\r\n\r\n##### Observed behavior\r\n\r\nThe program prints nothing and returns 404.\r\n\r\n##### Notes\r\n\r\nAs http.ServeMux.handler notes, its path parameter is in canonical form, except for CONNECT requests. In this case the path is the empty string, so it never matches against a ServeMux entry that has a non-empty path.\r\n\r\nIt is possible to register a ServeMux handler for a particular host, as in\r\n\r\n```\r\nhttp.Handle(\"example.com:443\", foo)\r\n```\r\n\r\nand this receives CONNECT requests as expected. But it doesn't appear to be possible to register a handler as a generic fallback for CONNECT requests, as one might hope to do with `\"/\"`. (And ServeMux explicitly rejects the empty string as an invalid pattern.)\r\n\r\nA possible workaround is \"don't use ServeMux for this\", but perhaps there is a fix.\r\n\r\nServeMux.Handler might fix this by explicitly using \"/\" as the path argument to ServeMux.handler for a CONNECT request with an empty path. E.g.:\r\n\r\n```\r\nfunc (mux *ServeMux) Handler(r *Request) (h Handler, pattern string) {\r\n\tpath := r.URL.Path\r\n\tif r.Method != \"CONNECT\" {\r\n\t\tif p := cleanPath(r.URL.Path); p != r.URL.Path {\r\n\t\t\t_, pattern = mux.handler(r.Host, p)\r\n\t\t\turl := *r.URL\r\n\t\t\turl.Path = p\r\n\t\t\treturn RedirectHandler(url.String(), StatusMovedPermanently), pattern\r\n\t\t}\r\n\t} else if path == \"\" {\r\n\t\tpath = \"/\"\r\n\t}\r\n\r\n\treturn mux.handler(r.Host, path)\r\n}\r\n```\r\n\r\nI'm not sure if that's a reasonable approach.",
+	"user": {
+		"login": "kr",
+		"id": 4178,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-12-01T23:51:29Z",
+	"created_at": "2015-01-11T01:06:03Z",
+	"updated_at": "2016-06-13T04:08:46Z",
+	"milestone": {
+		"id": 1182837,
+		"number": 25,
+		"title": "Go1.6Early"
+	}
+}

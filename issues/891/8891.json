@@ -1,0 +1,26 @@
+{
+	"id": 51288834,
+	"number": 8891,
+	"state": "open",
+	"title": "net: skip excessive read calls",
+	"body": "\u003cpre\u003eCurrently we always call syscall.Read before blocking on epoll in net.Conn.Read. This is\nnot necessary for connection-oriented sockets. According to man 7 epoll:\n\n\u0026quot;For stream-oriented files (e.g., pipe, FIFO, stream socket), the condition that\nthe read/write I/O space is exhausted can also be detected by checking the amount of\ndata read from / written to the target file descriptor. For example, if you call read(2)\nby asking to read a certain amount of data and read(2) returns a lower number of bytes,\nyou can be sure of having exhausted the read I/O space for the file descriptor. The same\nis true when writing using write(2). (Avoid this latter technique if you cannot\nguarantee that the monitored file descriptor always refers to a stream-oriented\nfile.)\u0026quot;\n\nSo if a previous Read has exhausted IO space, the chances are it's still exhausted, and\nwe can skip syscall.Read and wait on epoll. If new data has arrived since last Read,\nwaitRead will just instantly return, so we don't lose anything.\n\nThe change is actually quite trivial:\n\u003ca href=\"https://golang.org/cl/154040043/diff/40001/src/net/fd_unix.go\"\u003ehttps://golang.org/cl/154040043/diff/40001/src/net/fd_unix.go\u003c/a\u003e\nBut the last time I tested it, Reads were hanging episodically with this change.\nIt can be due to a bug in the CL.\nOr due to: \u003ca href=\"https://golang.org/issue/6336\"\u003ehttps://golang.org/issue/6336\u003c/a\u003e\nOr due to a kernel bug.\nThe change needs to be retested.\nMost likely we also need to disable the optimization on level-triggered solaris. Afact,\nkqueue should be fine, but that needs to be tested as well.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 0,
+	"created_at": "2014-10-07T11:45:56Z",
+	"updated_at": "2015-04-14T19:45:25Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

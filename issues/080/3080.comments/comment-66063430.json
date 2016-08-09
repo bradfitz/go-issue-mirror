@@ -1,0 +1,12 @@
+{
+	"id": 66063430,
+	"body": "\u003ca id=\"c13\"\u003e\u003c/a\u003eComment 13:\n\n\u003cpre\u003eI think I've figured out at least one cause of this: transparent hugepages.\n\nOur build server go into a state today where each time I built our tree, the entire\nsystem would grind to a halt.\n\nAfter moving everything off real disks and into a tmpfs (and setting TMPDIR\naccordingly), I was still seeing problems.\n\ntop showed huge sys usage. perf top showed the following functions taking over the\nmachine:\n\n67.91% [kernel] [k] _raw_spin_lock_irqsave                                              \n                                                                                        \n                                   \n8.19% [kernel] [k] _raw_spin_lock_irq                                                   \n                                                                                        \n                                  \n5.96% [kernel] [k] compaction_alloc\n\nWe have a lot of commands and GOMAXPROCS was \u003e\u003e1, so lots of 6l's were running in\nparallel.\n\necho never \u003e /sys/kernel/mm/transparent_hugepage/enabled\necho never \u003e /sys/kernel/mm/transparent_hugepage/defrag\n\nfixed the problem.\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-09-24T14:03:49Z",
+	"updated_at": "2014-12-08T10:16:04Z"
+}

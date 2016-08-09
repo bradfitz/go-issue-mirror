@@ -1,0 +1,28 @@
+{
+	"id": 135889659,
+	"number": 14483,
+	"state": "closed",
+	"title": "runtime: runtime error: cgo argument has Go pointer to Go pointer",
+	"body": "I had a crash alexbrainman/odbc#65 after compiling my program with latest version of Go.\r\n\r\nI simplified my crash down to this:\r\n\r\n```\r\n# go version\r\ngo version devel +e7524d5 Tue Feb 23 03:42:38 2016 +0000 linux/386\r\n# cat -n main.go\r\n     1  package main\r\n     2\r\n     3  import (\r\n     4          \"unsafe\"\r\n     5  )\r\n     6\r\n     7  /*\r\n     8  typedef void* VOIDPTR;\r\n     9\r\n    10  void cfunc(VOIDPTR p) {\r\n    11  }\r\n    12  */\r\n    13  import \"C\"\r\n    14\r\n    15  type stru struct {\r\n    16          a   []byte\r\n    17          buf [8]byte\r\n    18  }\r\n    19\r\n    20  func main() {\r\n    21          var s stru\r\n    22          s.a = s.buf[:]\r\n    23          C.cfunc(C.VOIDPTR(unsafe.Pointer(\u0026s.buf[0])))\r\n    24  }\r\n# go run main.go\r\npanic: runtime error: cgo argument has Go pointer to Go pointer\r\n\r\ngoroutine 1 [running]:\r\npanic(0x809e300, 0x1830a040)\r\n        /root/go/src/runtime/panic.go:483 +0x331\r\nmain.main()\r\n        /root/src/t/main.go:23 +0x8c\r\nexit status 2\r\n#\r\n```\r\n\r\nI don't undestand what this program doing wrong that CGO function parmeter checker crashed it. Can someone explain it to me, please? Also, if I remove line 22, the program runs with no problem. Why?\r\n\r\nThank you.\r\n\r\nI suspect @ianlancetaylor will be interested.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-02-27T22:52:16Z",
+	"created_at": "2016-02-23T22:44:59Z",
+	"updated_at": "2016-04-19T23:13:51Z",
+	"milestone": {
+		"id": 1688612,
+		"number": 37,
+		"title": "Go1.6.2"
+	}
+}

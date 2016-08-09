@@ -1,0 +1,22 @@
+{
+	"id": 51279116,
+	"number": 2368,
+	"state": "closed",
+	"title": "GC does not collect cycles with finalizers",
+	"body": "\u003cpre\u003e\u0026gt; What steps will reproduce the problem?\n\npackage main\n\nimport \u0026quot;runtime\u0026quot;\n\nfunc main() {\n\tc := make(chan bool)\n\tfunc() {\n\t\ttype X struct {\n\t\t\tnext *X\n\t\t}\n\t\tfin := func(_ *X) {\n\t\t\tc \u0026lt;- true\n\t\t}\n\n\t\tx := new(X)\n\t\tx.next = x\n\t\truntime.SetFinalizer(x, fin)\n\n\t\tx1 := new(X)\n\t\tx2 := new(X)\n\t\tx1.next = x2\n\t\tx2.next = x1\n\t\truntime.SetFinalizer(x1, fin)\n\t\truntime.SetFinalizer(x2, fin)\n\t}()\n\n\tgo func() {\n\t\tfor {\n\t\t\truntime.GC()\n\t\t\truntime.Gosched()\n\t\t}\n\t}()\n\n\t\u0026lt;-c\n\t\u0026lt;-c\n\t\u0026lt;-c\n}\n\n\u0026gt; What is the expected output? What do you see instead?\n\nThe program must terminate. The program hangs.\n\n\u0026gt; Please use labels and text to provide additional information.\n\ngc/linux/amd64\n10044:c587bcb93290 tip\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:12:42Z",
+	"created_at": "2011-10-14T15:54:17Z",
+	"updated_at": "2016-06-24T21:19:28Z"
+}

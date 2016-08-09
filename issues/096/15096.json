@@ -1,0 +1,22 @@
+{
+	"id": 145633830,
+	"number": 15096,
+	"state": "closed",
+	"title": "runtime/pprof: TestBlockProfile is timing dependent",
+	"body": "The plan9_arm builder is frequently failing TestBlockProfile in runtime/pprof, for example [here](http://build.golang.org/log/277f6881a9283340e9bdbaaee084197f2a7c3f80).  The failing case is always the blockSelectRecvAsync function:\r\n```\r\nfunc blockSelectRecvAsync() {\r\n\tc := make(chan bool, 1)\r\n\tc2 := make(chan bool, 1)\r\n\tgo func() {\r\n\t\ttime.Sleep(blockDelay)\r\n\t\tc \u003c- true\r\n\t}()\r\n\tselect {\r\n\tcase \u003c-c:\r\n\tcase \u003c-c2:\r\n\t}\r\n}\r\n```\r\nThe test requires the parent goroutine to block in the select statement while the child is sleeping.  The problem is that success is dependent on the speed of the test platform.  On the plan9_arm builder (a Raspberry Pi with 4 cores but only 1GB of RAM, running multiple tests in parallel), the blockDelay time (10ms) is not always enough to guarantee that the parent goroutine will be dispatched before the child wakes.\r\n\r\nSimply increasing the sleep time to 2*blockDelay is a possible fix.  Empirically this seems to be enough; but it doesn't actually guarantee correctness.  If the OS process running the parent goroutine is preempted just after forking a new process for the child, we can't really put a bound on how long it might be delayed.\r\n\r\nWe could insert an extra synchronisation to give the parent a \"head start\":\r\n```\r\nfunc blockSelectRecvAsync() {\r\n\tc := make(chan bool, 1)\r\n\tc2 := make(chan bool, 1)\r\n\tready := make(chan bool, 1)\r\n\tgo func() {\r\n\t\t\u003c-ready\r\n\t\ttime.Sleep(blockDelay)\r\n\t\tc \u003c- true\r\n\t}()\r\n\tready \u003c- true\r\n\tselect {\r\n\tcase \u003c-c:\r\n\tcase \u003c-c2:\r\n\t}\r\n}\r\n```\r\nThis also seems to work empirically.  In theory the OS process running the parent goroutine could still be preempted between reading the ready channel and blocking in the select statement; but I think this is much less likely than being descheduled after creating the child.\r\n",
+	"user": {
+		"login": "millerresearch",
+		"id": 17780869,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-04-07T09:57:34Z",
+	"created_at": "2016-04-04T09:45:06Z",
+	"updated_at": "2016-04-07T09:57:34Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

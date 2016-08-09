@@ -1,0 +1,33 @@
+{
+	"id": 88494733,
+	"number": 11220,
+	"state": "closed",
+	"title": "syscall: src/syscall/exec_linux_test.go assumes your UID is also your GID and fails on git tip",
+	"body": "On two 64-bit Fedora 21 machines running current kernels and configured without SELinux, current git tip fails self tests with:\r\n\r\n    --- FAIL: TestCloneNEWUSERAndRemapNoRootDisableSetgroups-4 (0.01s)\r\n            exec_linux_test.go:45: Cmd failed with err fork/exec /usr/bin/whoami: operation not permitted, output: \r\n    FAIL\r\n    FAIL    syscall 0.063s\r\n\r\nLooking at strace output, the specific failure is an EPERM error writing to `/proc/\u003cnew pid\u003e/gid_map`, although the open() succeeds; specifically it is trying to write '0 19 1\\n' to the file. 19 is my UID, but it is not any of my GIDs. What's happening is that the test code implicitly assumes you are in a group that has the same numeric ID as your UID, which is not a safe assumption. When you are not, the kernel rejects the attempt to remap GID 0 to a group that you are not a member of.\r\n\r\nI believe that the correct fix is to change things to pass whoamiCmd() the target GID explicitly. For the root versions this is 0, for the non-root versions it is os.Getgid(). A trial run of such a change passes all tests.",
+	"user": {
+		"login": "siebenmann",
+		"id": 865382,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2015-06-15T19:55:35Z",
+	"created_at": "2015-06-15T17:50:29Z",
+	"updated_at": "2016-06-25T02:11:11Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

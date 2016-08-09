@@ -1,0 +1,17 @@
+{
+	"id": 111952672,
+	"number": 12970,
+	"state": "closed",
+	"title": "possible non-387 instructions in a GO386=387 build",
+	"body": "hi,\r\n\r\nI tried to cross-compile this simple program:\r\n\r\n```go\r\npackage main\r\nfunc main() { println(\"hello\") }\r\n```\r\n\r\nfrom a linux-64b host to a PC/104 target.\r\nI had rebuilt the `go-1.5.1` from sources, exporting `GO386=387`.\r\n\r\nrunning on the host:\r\n```sh\r\n$ go build -o hello-1.5 ./hello.go\r\n```\r\nand then copying on the target, running under gdb, I get:\r\n\r\n```sh\r\n$ gdb ./hello-1.5\r\n(gdb) r\r\nStarting program: /root/hello-1.5\r\n\r\nProgram received signal SIGILL, Illegal instruction.\r\nruntime.prefetcht0 () at /root/dev/go/src/runtime/asm_386.s:1669\r\nwarning: Source file is more recent than executable.\r\n1669 PREFETCHT0 (AX)\r\n(gdb) bt\r\n#0  runtime.prefetcht0 () at /root/dev/go/src/runtime/asm_386.s:1669\r\n#1  0x0807370e in runtime.testAtomic64 () at /root/dev/go/src/runtime/runtime1.go:98\r\n#2  0x08073ef5 in runtime.check () at /root/dev/go/src/runtime/runtime1.go:290\r\n#3  0x08088fba in runtime.rt0_go () at /root/dev/go/src/runtime/asm_386.s:105\r\n#4  0x00000000 in ?? ()\r\n(gdb) lis\r\n1664 // traceback from goexit1 must hit code range of goexit\r\n1665 BYTE $0x90 // NOP\r\n1666\r\n1667 TEXT runtime·prefetcht0(SB),NOSPLIT,$0-4\r\n1668 MOVL addr+0(FP), AX\r\n1669 PREFETCHT0 (AX)\r\n1670 RET\r\n1671\r\n1672 TEXT runtime·prefetcht1(SB),NOSPLIT,$0-4\r\n1673 MOVL addr+0(FP), AX\r\n```\r\n\r\ndoing the same dance with `go-1.4.3`, I get instead:\r\n\r\n```sh\r\n$ gdb ./hello-1.4\r\n(gdb) r\r\nStarting program: /root/hello-1.4\r\n\r\nProgram received signal SIGILL, Illegal instruction.\r\nruntime.atomicload64 () at /root/go1.4/src/runtime/asm_386.s:575\r\n575 BYTE $0x0f; BYTE $0x6f; BYTE $0x00\r\n(gdb) bt\r\n#0  runtime.atomicload64 () at /root/go1.4/src/runtime/asm_386.s:575\r\n#1  0x080cd15c in TestAtomic64 () at /root/go1.4/src/runtime/runtime.c:158\r\n#2  0x080cd5d7 in runtime.check () at /root/go1.4/src/runtime/runtime.c:263\r\n#3  0x080badbb in runtime.rt0_go () at /root/go1.4/src/runtime/asm_386.s:91\r\n#4  0x00000000 in ?? ()\r\n(gdb) lis\r\n570 // uint64 atomicload64(uint64 volatile* addr);\r\n571 TEXT runtime·atomicload64(SB), NOSPLIT, $0-12\r\n572 MOVL ptr+0(FP), AX\r\n573 LEAL ret_lo+4(FP), BX\r\n574 // MOVQ (%EAX), %MM0\r\n575 BYTE $0x0f; BYTE $0x6f; BYTE $0x00\r\n576 // MOVQ %MM0, 0(%EBX)\r\n577 BYTE $0x0f; BYTE $0x7f; BYTE $0x03\r\n578 // EMMS\r\n579 BYTE $0x0F; BYTE $0x77\r\n```\r\n\r\nTaru Karttunen on golang-nuts says:\r\n```\r\nThe issue is the 64bit atomics using MMX. If they are 64-bit aligned\r\nthen using FISTP/FILD instead when GO386=387 should probably fix this.\r\n```\r\n\r\nadditional informations:\r\n\r\nthe linux 64b host is running the latest archlinux.\r\nthe pc/104 target is running a debian-8.2 (jessie):\r\n\r\n```sh\r\n$ uname -a\r\nLinux pc104box 3.16.0-4-586 #1 Debian 3.16.7-ckt11-1+deb8u5\r\n(2015-10-09) i586 GNU/Linux\r\n\r\n$ cat /proc/cpuinfo | grep flags\r\nflags : fpu tsc cx8\r\n```\r\nhere are the complete specs for my pc/104 box:\r\nhttp://pc104.org/hardware-specifications/pc104/",
+	"user": {
+		"login": "sbinet",
+		"id": 1070920,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2015-10-17T21:27:28Z",
+	"created_at": "2015-10-17T09:23:34Z",
+	"updated_at": "2015-10-19T09:49:57Z"
+}

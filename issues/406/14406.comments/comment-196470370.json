@@ -1,0 +1,12 @@
+{
+	"id": 196470370,
+	"body": "\u003e Stack shrinking is turned off for both of the test outputs I shared in this bug. I haven't dug into why the pauses are still 130ms when stack shrinking and NUMA migration are both disabled. How fast do you expect the pauses to be for the program I've included when running with 1e6 goroutines with 1kB stacks? How big does a program have to be in any dimension before the 10ms goal no longer applies?\r\n\r\nI haven't fixed the NUMA thing yet, but could you try https://go-review.googlesource.com/20700 with the MPOL_BIND trick?\r\n\r\nHow fast I would expect this to be depends on both how many Gs there are and how many Gs have run during concurrent mark. The series at CL 20700 completely eliminates the cost of *idle* Gs, which is currently something like 30--40ns per idle goroutine plus a small C*log(stack size). The other major known cost is rescanning of Gs that have run during concurrent mark, which is harder to quantify, but is a minimum of something like 250ns per goroutine and goes up from there depending on how much of the stack has been dirtied and its complexity (number of frames and pointers). This is actually the last significant O(something the user controls) STW bottleneck we know of and we have some thoughts on how to address it, but it's not easy.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-14T18:55:34Z",
+	"updated_at": "2016-03-14T18:55:34Z"
+}

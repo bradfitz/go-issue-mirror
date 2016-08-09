@@ -1,0 +1,27 @@
+{
+	"id": 66189759,
+	"number": 10335,
+	"state": "closed",
+	"title": "encoding/json: unnecessary allocation in (*scanner).error",
+	"body": "I've got a long running process where `pprof --alloc_objects` reported this:\r\n```\r\n11288877697 of 18066163372 total (62.49%)\r\nDropped 1073 nodes (cum \u003c= 90330816)\r\nShowing top 40 nodes out of 301 (cum \u003e= 135464561)\r\n      flat  flat%   sum%        cum   cum%\r\n 861225002  4.77%  4.77% 1518495517  8.41%  encoding/json.(*scanner).error\r\n 561339051  3.11%  7.87%  561339051  3.11%  reflect.Value.MapIndex\r\n 554128561  3.07% 10.94%  554128561  3.07%  reflect.New\r\n 479534186  2.65% 13.60%  479534186  2.65%  strconv.quoteWith\r\n```\r\n\r\nThe `encoding/json.(*scanner).error` surprised me and I went digging thinking the process was handling lots of invalid JSON. What I think is going on is the scanner allocates several temporary objects for every JSON value even when the JSON is valid just in case the input stream ends on the next step.\r\n\r\n`stateEndTop ` is calling `(*scanner).error` which does:\r\n\r\n```\r\ns.err = \u0026SyntaxError{\"invalid character \" + quoteChar(c) + \" \" + context, s.bytes}\r\n```\r\n\r\nand `quoteChar` does:\r\n\r\n```\r\ns := strconv.Quote(string(c))\r\nreturn \"'\" + s[1:len(s)-1] + \"'\"\r\n```\r\n\r\nI made a really nasty hack to get rid of the allocations in the common case. I present it in shame:\r\n\r\n```\r\n+var commaErr = \u0026SyntaxError{\"invalid character ',' after top-level value\", 0}\r\n+var braceErr = \u0026SyntaxError{\"invalid character '}' after top-level value\", 0}\r\n+var brackErr = \u0026SyntaxError{\"invalid character ']' after top-level value\", 0}\r\n+\r\n // error records an error and switches to the error state.\r\n func (s *scanner) error(c int, context string) int {\r\n    s.step = stateError\r\n+   if context == \"after top-level value\" \u0026\u0026 s.bytes == 0 {\r\n+       switch c {\r\n+       // special cases - common avoid allocation\r\n+       case ',':\r\n+           s.err = commaErr\r\n+           return scanError\r\n+       case '}':\r\n+           s.err = braceErr\r\n+           return scanError\r\n+       case ']':\r\n+           s.err = brackErr\r\n+           return scanError\r\n+       }\r\n+   }\r\n    s.err = \u0026SyntaxError{\"invalid character \" + quoteChar(c) + \" \" + context, s.bytes}\r\n    return scanError\r\n }\r\n```",
+	"user": {
+		"login": "toffaletti",
+		"id": 145012,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2015-06-18T18:00:17Z",
+	"created_at": "2015-04-03T17:11:51Z",
+	"updated_at": "2016-06-25T02:04:40Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

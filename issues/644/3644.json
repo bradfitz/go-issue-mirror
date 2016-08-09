@@ -1,0 +1,28 @@
+{
+	"id": 51280927,
+	"number": 3644,
+	"state": "closed",
+	"title": "net/http: http Client regression",
+	"body": "\u003cpre\u003eChange 820ffde8c396 for \u003ca href=\"https://golang.org/issue/1967\"\u003eissue #1967\u003c/a\u003e broke the http client:\n\nfunc TestIssueNNNN(t *testing.T) {\n        ts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\n                w.Header().Set(\u0026quot;Connection\u0026quot;, \u0026quot;close\u0026quot;)\n                for i := 0; i \u0026lt; 1024; i++ {\n                        w.Write([]byte(\u0026quot;foo \u0026quot;))\n                }\n        }))\n        defer ts.Close()\n        tr := \u0026amp;Transport{}\n        c := \u0026amp;Client{Transport: tr}\n        res, err := c.Get(ts.URL)\n        if err != nil {\n                t.Fatal(err)\n        }\n        defer res.Body.Close()\n        bs, err := ioutil.ReadAll(res.Body)\n        if err != nil {\n                t.Fatal(err)    // \u0026lt;--- Fails, \u0026quot;use of closed network connection\u0026quot;\n        }\n        if len(bs) != 1024 * len(\u0026quot;foo \u0026quot;) {\n                t.Errorf(\u0026quot;unexpected response length\u0026quot;)\n        }\n}\n\n(report from cookieo9@gmail.com)\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2014-12-08T10:19:14Z",
+	"created_at": "2012-05-19T13:12:48Z",
+	"updated_at": "2016-06-24T22:19:17Z"
+}

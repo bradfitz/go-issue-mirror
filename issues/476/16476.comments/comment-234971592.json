@@ -1,0 +1,12 @@
+{
+	"id": 234971592,
+	"body": "```\r\nGOMAXPROCS = 80\r\n------------------------------------------------------------\r\n                        Baseline  1) Only   2) Only    Both\r\n------------------------------------------------------------\r\nThroughput, TPS          1045       1015      1026     1026\r\n```\r\n\r\nIsn't it 2.9/1.8% TPS decrease?\r\n\r\n```\r\nI'm glad you mentioned the \"don't spin\" heuristic above. I'm puzzled at how this reduces CPU time, since threads branching to stop here enter a kind of limbo in which they are both forbidden to search for work to steal, yet also forbidden to park until there is no more work to steal.\r\n```\r\nGood question.\r\nThe intention was that if there are so many threads spinning already, then there should be no work available. The second check of runqueue (after stop label) is there only to prevent CPU underutilization (prevent situation that we have both runnable goroutines and idle Ps).\r\n\r\nAs you noted, it's can be suboptimal when we have lots of Ps and lots of churn in findrunnable. Maybe we could try to pop a G and obtain a P in the second check, if both succeeds, we can proceed directly to running the G (return from findrunnable).\r\n\r\nOr maybe we should let each P check all queues once, then all except 1 P proceed to blocks and 1 is left spinning for longer.\r\n\r\nThis requires careful thought, experimentation and extensive benchmarking.\r\n\r\nI would suggest to also test this on http benchmark from golang.org/x/benchmarks. It is not super realistic, but at least easy to setup and run and reports latency.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-25T14:36:15Z",
+	"updated_at": "2016-07-25T14:36:15Z"
+}

@@ -1,0 +1,42 @@
+{
+	"id": 158545375,
+	"number": 15960,
+	"state": "closed",
+	"title": "net/http: Server sends duplicate `Transfer-Encoding: chunked` when set explicitly",
+	"body": "When setting the `Transfer-Encoding` header to `chunked` explicitly within a handler for a net/http Server (to trigger chunked encoding), the header field is sent to the client twice.\r\n\r\nWhile this does not break most clients (e.g. Chrome, wget) it is confusing and in discord with [RFC 2616](https://tools.ietf.org/html/rfc2616#section-3.6):\r\n\r\n\u003e The \"chunked\" transfer-coding MUST NOT be applied more than once to a message-body.\r\n\r\nThe transfer-coding is of course only applied once, just the header is sent twice.\r\n\r\n[server.go:1148](https://github.com/golang/go/blob/master/src/net/http/server.go#L1148) sets the `chunked` flag when a `Transfer-Encoding` is manually set and `!= \"identity\"`.\r\nBut `Transfer-Encoding` is not removed from the header map.\r\nAs I understand, this is the generally sought after behaviour, (developers should be able to use custom transfer-codings without interference), with the exception of when `Transfer-Encoding` is set to `chunked`.\r\n\r\nLater on the `Transfer-Encoding` header is sent when writing the header map and then again by [server.go:1176](https://github.com/golang/go/blob/master/src/net/http/server.go#L1176).\r\n\r\nIf `Transfer-Encoding` is simply not meant to be set to `chunked` to signal the server to chunk the response this should perhaps be pointed out in the documentation.\r\nIt does however provide a nice way to enable sending chunked content without use of the Flusher interface (and is very readable), even though so far it is essentially a side effect. Just dropping the explicit header in this case should be fine as HTTP does not allow multiple `chunked` codings.\r\n\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n3. What did you do?\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"net/http\"\r\n)\r\n\r\nfunc myHandler(w http.ResponseWriter, r *http.Request) {\r\n\tw.Header().Set(\"Transfer-Encoding\", \"chunked\")\r\n\tw.Write([]byte(\"Some content...\"))\r\n}\r\n\r\nfunc main() {\r\n\thttp.ListenAndServe(\":8080\", http.HandlerFunc(myHandler))\r\n}\r\n```\r\n",
+	"user": {
+		"login": "seoester",
+		"id": 1159259,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-06T21:15:19Z",
+	"created_at": "2016-06-05T09:06:55Z",
+	"updated_at": "2016-06-06T21:15:19Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"assignees": [
+		{
+			"login": "bradfitz",
+			"id": 2621,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "adg",
+			"id": 8446613,
+			"type": "User",
+			"site_admin": false
+		}
+	]
+}

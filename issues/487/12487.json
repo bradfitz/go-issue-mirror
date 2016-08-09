@@ -1,0 +1,17 @@
+{
+	"id": 104792018,
+	"number": 12487,
+	"state": "closed",
+	"title": "hash/crc32: should document that tables returned by MakeTable should not be modified",
+	"body": "Was playing around manually modifying the Table in one package and was surprised to find out that it causes CRC32 errors in another package.\r\n\r\nThe name ```MakeTable``` seems to indicate that a unique table will be created and returned. But for the IEEE and Castagnoli polynomials specifically, it returns a reference to tables held globally. This has the following consequences:\r\n * Modifying a table returned by MakeTable(IEEE), may or may not cause all CRCs that use the IEEE polynomial to be incorrect. [This is because there are special cases where it uses a special iEEETable8 if the input table is a pointer match to IEEETable](https://github.com/golang/go/blob/1e0760354c8a929d9d84575106ae264fa6395132/src/hash/crc32/crc32.go#L155).\r\n\r\n* Modifying a table returned by MakeTable(Castagnoli) may or may not cause other Castagnoli polynomials to be wrong. [This is because if the input table is a pointer match to castagnoliTable and the hardware support CRC instructions, it will use the built in instructions or table.](https://github.com/golang/go/blob/1e0760354c8a929d9d84575106ae264fa6395132/src/hash/crc32/crc32.go#L151) Either way, the behavior is very confusing.\r\n\r\n* Modifying a table returned by MakeTable for any other polynomial works as expected.\r\n\r\nSee https://play.golang.org/p/IWehs0lQAc",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-09-04T17:55:51Z",
+	"created_at": "2015-09-03T22:16:12Z",
+	"updated_at": "2015-09-04T17:55:51Z"
+}

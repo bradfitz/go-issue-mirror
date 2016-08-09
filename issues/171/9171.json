@@ -1,0 +1,22 @@
+{
+	"id": 51289188,
+	"number": 9171,
+	"state": "closed",
+	"title": "cmd/vet: reporting \"composite literal uses unkeyed fields\" for slice types",
+	"body": "\u003cpre\u003eI have a typed defined from a slice (type TemplateDataList []TemplateData), and when I\ncreate instances of this type\n\n% go version\ngo version devel +ffe33f1f1f17 Tue Nov 25 15:41:33 2014 +1100 darwin/amd64\n% cd $GOPATH/src/golang.org/x/tools\n% hg tip\nchangeset:   1264:e105dadc3014\ntag:         tip\nuser:        Andrew Gerrand \u0026lt;adg@golang.org\u0026gt;\ndate:        Wed Nov 26 15:31:30 2014 +1100\nsummary:     x/tools/cmd/godoc: add golang.org/x/oauth2 import path\n% cd -\n% cat code_bad.go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;github.com/tsuru/tsuru/iaas\u0026quot;\n)\n\ntype Template struct {\n\tName string\n\tData iaas.TemplateDataList\n}\n\nfunc main() {\n\ttemplate := Template{\n\t\tName: \u0026quot;My Template\u0026quot;,\n\t\tData: iaas.TemplateDataList{\n\t\t\t{Name: \u0026quot;color\u0026quot;, Value: \u0026quot;red\u0026quot;},\n\t\t\t{Name: \u0026quot;size\u0026quot;, Value: \u0026quot;100\u0026quot;},\n\t\t},\n\t}\n\tfmt.Println(template)\n}\n% go vet code_bad.go\ncode_bad.go:16: iaas.TemplateDataList composite literal uses unkeyed fields\nexit status 1\n\nHere's where TemplateDataList is defined:\n\u003ca href=\"https://github.com/tsuru/tsuru/blob/0ac00f9d08f67efa39b679b643f74ff6ebba8530/iaas/template.go#L21\"\u003ehttps://github.com/tsuru/tsuru/blob/0ac00f9d08f67efa39b679b643f74ff6ebba8530/iaas/template.go#L21\u003c/a\u003e\n\nNow, if I copy the TemplateDataList definition to the same file, the error disappears:\n\n% cat code_good.go\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;github.com/tsuru/tsuru/iaas\u0026quot;\n)\n\ntype TemplateDataList []iaas.TemplateData\n\ntype Template struct {\n\tName string\n\tData TemplateDataList\n}\n\nfunc main() {\n\ttemplate := Template{\n\t\tName: \u0026quot;My Template\u0026quot;,\n\t\tData: TemplateDataList{\n\t\t\t{Name: \u0026quot;color\u0026quot;, Value: \u0026quot;red\u0026quot;},\n\t\t\t{Name: \u0026quot;size\u0026quot;, Value: \u0026quot;100\u0026quot;},\n\t\t},\n\t}\n\tfmt.Println(template)\n}\n% go vet code_good.go\n# no failures\u003c/pre\u003e",
+	"user": {
+		"login": "fsouza",
+		"id": 108725,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Unfortunate"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:50:06Z",
+	"created_at": "2014-11-26T13:28:27Z",
+	"updated_at": "2016-04-23T21:00:25Z"
+}

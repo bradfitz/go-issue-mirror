@@ -1,0 +1,12 @@
+{
+	"id": 172710348,
+	"body": "@bradfitz\r\n\r\nhttps://github.com/golang/go/blob/master/src/net/http/fs.go#L353\r\n\r\nThe redirect flag here seems to be useless. A directory index flag will be better, I think. \r\n\r\nDirectory index is sometimes annoying. To avoid it, I have to write about 20 extra lines:\r\n\r\n```go\r\nfunc Static(next http.Handler, staticPath string) http.Handler {\r\n    fn := func(w http.ResponseWriter, r *http.Request) {\r\n        const indexPage = \"/index.html\"\r\n        path := staticPath + r.URL.Path[1:]\r\n        f, err := os.Stat(path)\r\n        if err == nil {\r\n            if f.IsDir() {\r\n                _, err := os.Stat(pathFix(path) + indexPage)\r\n                if err == nil {\r\n                    http.ServeFile(w, r, path)\r\n                } else {\r\n                    if next != nil {\r\n                        next.ServeHTTP(w, r)\r\n                    }\r\n                }\r\n            } else {\r\n                http.ServeFile(w, r, path)\r\n            }\r\n        } else {\r\n            if next != nil {\r\n                next.ServeHTTP(w, r)\r\n            }\r\n        }\r\n    }\r\n    return http.HandlerFunc(fn)\r\n}\r\n```",
+	"user": {
+		"login": "cirfi",
+		"id": 6276193,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-19T02:14:39Z",
+	"updated_at": "2016-01-19T02:15:25Z"
+}

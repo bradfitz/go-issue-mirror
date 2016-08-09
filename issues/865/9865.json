@@ -1,0 +1,27 @@
+{
+	"id": 57591607,
+	"number": 9865,
+	"state": "closed",
+	"title": "cmd/compile: enable PAUTO captured variables on arch != 6",
+	"body": "The following changelist:\r\ncmd/gc: transform closure calls to function calls\r\nhttps://go-review.googlesource.com/#/c/4050/\r\n\r\nadds an optimization to transform captured variables (PPARAMREF) to plain PAUTO variables:\r\n\r\ncmd/gc/closure.c:transformclosure:\r\n```c\r\n\t\t\tif(v-\u003ebyval \u0026\u0026 v-\u003etype-\u003ewidth \u003c= 2*widthptr \u0026\u0026 arch.thechar == '6') {\r\n\t\t\t\t// If it is a small variable captured by value,\r\n\t\t\t\t// downgrade it to PAUTO.\r\n\t\t\t\tv-\u003eclass = PAUTO;\r\n\t\t\t\tv-\u003eullman = 1;\r\n\t\t\t\txfunc-\u003edcl = list(xfunc-\u003edcl, v);\r\n\t\t\t\tbody = list(body, nod(OAS, v, cv));\r\n\t\t\t} else {\r\n```\r\n\r\nHowever, it is enabled only for amd64 because of issues with codegen on at least 386 (have not tested arm,power,etc). The problem is that local vars created during copyout smash context.\r\n\r\nThe following code in cmd/internal/objfile/disass.go:\r\n\r\n```go\r\nfunc (d *Disasm) lookup(addr uint64) (name string, base uint64) {\r\n\ti := sort.Search(len(d.syms), func(i int) bool { \treturn addr \u003c d.syms[i].Addr })\r\n```\r\nGenerates the following code on 386 with the optimization enabled:\r\n\r\n```\r\nDump of assembler code for function cmd/internal/objfile.func·001:\r\n   0x080cdbb0 \u003c+0\u003e:\tmov    %gs:0x0,%ecx\r\n   0x080cdbb7 \u003c+7\u003e:\tmov    -0x8(%ecx),%ecx\r\n   0x080cdbbd \u003c+13\u003e:\tcmp    0x8(%ecx),%esp\r\n   0x080cdbc0 \u003c+16\u003e:\tja     0x80cdbc9 \u003ccmd/internal/objfile.func·001+25\u003e\r\n   0x080cdbc2 \u003c+18\u003e:\tcall   0x80876b0 \u003cruntime.morestack\u003e\r\n   0x080cdbc7 \u003c+23\u003e:\tjmp    0x80cdbb0 \u003ccmd/internal/objfile.func·001\u003e\r\n   0x080cdbc9 \u003c+25\u003e:\tsub    $0x14,%esp\r\n   0x080cdbcc \u003c+28\u003e:\tlea    0x4(%edx),%ebx\r\n   0x080cdbcf \u003c+31\u003e:\tmov    (%ebx),%eax\r\n   0x080cdbd1 \u003c+33\u003e:\tmov    0x4(%ebx),%edx  // HERE: copy out of 'i' smashes context\r\n   0x080cdbd4 \u003c+36\u003e:\tmov    %eax,0x8(%esp)\r\n   0x080cdbd8 \u003c+40\u003e:\tmov    %edx,0xc(%esp)\r\n   0x080cdbdc \u003c+44\u003e:\tmov    0xc(%edx),%ebx // HERE: try to copy out d from context which is now 0\r\n```\r\n\r\nWe need to fix codegen on 386 and test other archs.\r\n\r\n@rsc @minux @DanielMorsing @aclements @josharian",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-06-29T19:49:55Z",
+	"created_at": "2015-02-13T12:08:05Z",
+	"updated_at": "2016-06-28T21:53:28Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 170730659,
+	"body": "Complete repro case:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"go/ast\"\r\n\t\"go/importer\"\r\n\t\"go/parser\"\r\n\t\"go/token\"\r\n\t\"go/types\"\r\n)\r\n\r\nvar src1 = `\r\npackage main\r\n\r\nimport (\r\n    \"go/importer\"\r\n    \"go/types\"\r\n)\r\n\r\nfunc main() {\r\n    var info types.Info\r\n    for _, obj := range info.Uses {\r\n        _ = obj.Pkg()\r\n    }\r\n}\r\n`\r\n\r\nvar src2 = `\r\npackage main\r\n\r\nimport (\r\n    \"go/types\"\r\n    \"go/importer\"\r\n)\r\n\r\nfunc main() {\r\n    var info types.Info\r\n    for _, obj := range info.Uses {\r\n        _ = obj.Pkg()\r\n    }\r\n}\r\n`\r\n\r\nfunc f(src string) {\r\n\tfset := token.NewFileSet()\r\n\tf, _ := parser.ParseFile(fset, \"\", src, 0)\r\n\tcfg := types.Config{Importer: importer.Default()}\r\n\tinfo := types.Info{Uses: make(map[*ast.Ident]types.Object)}\r\n\tcfg.Check(\"main\", fset, []*ast.File{f}, \u0026info)\r\n\tfor id, obj := range info.Uses {\r\n\t\tif id.Name == \"Pkg\" {\r\n\t\t\tfmt.Println(obj.Pkg())\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\tf(src1)\r\n\tf(src2)\r\n}\r\n```\r\nThe output is:\r\n```\r\npackage importer (\"go/importer\")\r\npackage types (\"go/types\")\r\n```\r\nBut it should be:\r\n```\r\npackage types (\"go/types\")\r\npackage types (\"go/types\")\r\n```\r\n\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-11T23:25:07Z",
+	"updated_at": "2016-01-11T23:25:07Z"
+}

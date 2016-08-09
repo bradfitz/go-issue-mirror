@@ -1,0 +1,12 @@
+{
+	"id": 185977844,
+	"body": "This bit of code:\r\n\r\n```\r\ntr := time.NewTimer(0)\r\ntr.Stop()\r\n// There may or may not be a value in the channel now. But definitely\r\n// one should not be added after we receive it.\r\nselect {\r\n        case \u003c-tr.C:\r\n        default:\r\n}\r\n```\r\n\r\ndoes not guarantee that there isn't an in-flight value on `tr.C`, because Stop may not have stopped the timer before it fired, yet that doesn't mean that the channel was ready to receive when the select ran. So it's a race.\r\n\r\nSee extensive previous discussion on #11513 and https://groups.google.com/forum/#!topic/golang-dev/c9UUfASVPoU.\r\n\r\nIn the latter thread, @rsc suggests doing\r\n\r\n```\r\nif !timer.Stop() {\r\n  \u003c-timer.C\r\n}\r\n```\r\n\r\nI also previously filed #12721 to ask for an easier way to create a new, stopped timer.",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-18T23:22:40Z",
+	"updated_at": "2016-02-18T23:22:40Z"
+}

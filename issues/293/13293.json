@@ -1,0 +1,28 @@
+{
+	"id": 117377978,
+	"number": 13293,
+	"state": "closed",
+	"title": "x/net/context/ctxhttp: remove racy go1.4 support",
+	"body": "x/net/context/ctxhttp has code specifically to handle go1.4, and I believe this code is racy.\r\n\r\nDetails of this style of race: https://github.com/golang/go/issues/11013\r\n\r\n[No synchronization here](https://github.com/golang/net/blob/1d9fd3b8333e891c0e7353e1adcfe8a612573033/context/ctxhttp/cancelreq_go14.go#L21)...\r\n...[Against the request going in flight](https://github.com/golang/net/blob/1d9fd3b8333e891c0e7353e1adcfe8a612573033/context/ctxhttp/ctxhttp.go#L35-L41).\r\n\r\n[Example of the sort of thing I understand that needs to be done with the 1.4 cancellation interface](https://github.com/golang/go/blob/0cd2999c3b7a853f48af1146db427365a09f8b38/src/net/http/httputil/reverseproxy.go#L137\r\n) (I wrote this with Bradfitz' input, which is when I became aware of the issue).\r\n\r\nThe problem is the definition of the canceller API in Go1.4 - cancelling the request is only a valid thing to do once the request is in flight, otherwise the cancellation is ignored. Hence the need for the req.Body acrobatics in reverseproxy, and hence the improved API in 1.5.\r\n\r\n[golang-dev discussion](https://groups.google.com/d/topic/golang-dev/vRUomu3aSPQ/discussion).",
+	"user": {
+		"login": "pwaller",
+		"id": 438648,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "Sajmani",
+		"id": 9734877,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-04-27T17:45:13Z",
+	"created_at": "2015-11-17T15:25:16Z",
+	"updated_at": "2016-04-27T17:45:14Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

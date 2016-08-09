@@ -1,0 +1,21 @@
+{
+	"id": 165425657,
+	"number": 16363,
+	"state": "open",
+	"title": "crypto/tls: add VerifyPeerCertificate to tls.Config",
+	"body": "It would be useful to have a callback in tls.Config called after the TLS handshake to allow the callee to perform additional or alternate certificate verification on the peer.  This would enable custom cert checking and/or explicit certificate pinning/whitelisting (e.g. by cert hash).\r\n\r\nI propose calling VerifyPeerCertificate (if !nil) during the respective client and server handshakes (doFullHandshake and processPeerCertsFromClient) after the peer certificates have been received.\r\n\r\nThe func is introduced to tls.Config\r\n```\r\n\t// VerifyPeerCertificate returns an error if the peer should not be\r\n\t// trusted. It will be called after the initial handshake and before\r\n\t// any other verification checks on the cert or chain are performed.\r\n\t// This provides the callee an opportunity to augment the certificate\r\n\t// verification.\r\n\t//\r\n\t// If VerifyPeerCertificate is not nil and returns an error,\r\n\t// then the handshake will fail.\r\n\tVerifyPeerCertificate func(peer []*x509.Certificate) error\r\n```\r\n\r\nThis works with both http and http2. It appears that tls.Config is cloned from the initial transport for TLSNextProto -- is this intentional or an artifact of the current impl?\r\n```\r\n\tc := \u0026http.Client{\r\n\t\tTransport: \u0026http.Transport{\r\n\t\t\tProxy: http.ProxyFromEnvironment,\r\n\t\t\tDial: (\u0026net.Dialer{\r\n\t\t\t\tTimeout:   60 * time.Second,\r\n\t\t\t\tKeepAlive: 60 * time.Second,\r\n\t\t\t}).Dial,\r\n\t\t\tTLSHandshakeTimeout:   10 * time.Second,\r\n\t\t\tExpectContinueTimeout: 1 * time.Second,\r\n\t\t\tTLSClientConfig: \u0026tls.Config{\r\n\t\t\t\t// inject our callback to check the peer here\r\n\t\t\t\tNextProtos:            []string{\"h2\"},\r\n\t\t\t\tVerifyPeerCertificate: verifyPeerCertificate,\r\n\t\t\t},\r\n\t\t\tTLSNextProto: map[string]func(authority string, c *tls.Conn) http.RoundTripper{\r\n\t\t\t\t\"h2\": func(authority string, c *tls.Conn) http.RoundTripper {\r\n\t\t\t\t\treturn http.DefaultTransport\r\n\t\t\t\t},\r\n\t\t\t},\r\n\t\t},\r\n\t}\r\n```\r\n\r\nI have a changset ready if this is a reasonable approach.\r\n\r\nFixes #9126\r\nFixes #9451",
+	"user": {
+		"login": "jboelter",
+		"id": 3619564,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-13T21:27:34Z",
+	"updated_at": "2016-07-20T17:36:19Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

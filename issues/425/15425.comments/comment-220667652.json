@@ -1,0 +1,12 @@
+{
+	"id": 220667652,
+	"body": "1. Brad, that is the proper response, the request fails because of \"stream error: stream ID 1; STREAM_CLOSED\". If it helps, you can think of the servers handler as function that sees the request is way to large and returns `413 Payload Too Large` \r\n2. In your rewritten example, the response from the server doesn't need to be infinite (I believe only large enough that it isn't entirely served by a single Write call.\r\n3. The LimitReader I crafted for the post request just breaks up the `Read` call into 2kb chunks. The client only ends up sending 2kb only because the http2 server will send `RST_STREAM` when it tries to deliver the response (when `r.Body.Close()` is called). If I didn't do this, `net/http2` would read enough data to fill it's window. While its window is filled, when `RST_STREAM` (when `r.Body.Close()` is called) is sent, we don't get the racy condition of trying to fill the window some more (and eventually trying to read on a closed stream).\r\n\r\nTo expand on point 3, I think the issue is (and referring back to my diagram) is that while the window can still be filled, `net/http2` will try to write to that window. Simultaneously we can call `Close()` on that stream, and the next time we try to write to that window, we get an error.\r\n",
+	"user": {
+		"login": "nemothekid",
+		"id": 940094,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-20T17:26:01Z",
+	"updated_at": "2016-05-20T17:26:01Z"
+}

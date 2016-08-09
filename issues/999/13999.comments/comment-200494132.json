@@ -1,0 +1,12 @@
+{
+	"id": 200494132,
+	"body": "Here's some additional ideas. Some time ago I was playing around with trying to implement S/MIME, failed, but I did get an idea how to implement complex codec specs. Here's the [unfinished and unpolished implementation](https://github.com/egonelbre/exp/blob/master/ber/marshaling.go). The basic idea is to separate the target structure from marshaling by using \"spec trees\" that have pointers into the \"target structure\". The condensed idea http://play.golang.org/p/MdL7k8-5ER. \r\n\r\nSo `PKIBody` parsing in principle could be written as (does not exactly correspond to what I implemented in the experiment):\r\n\r\n```\r\ntype PKIBody struct {\r\n\tInitRequest  int64\r\n\tInitResponse []byte\r\n\tCertRequest  int64\r\n\tCertResponse *CertRepMessage\r\n}\r\n\r\nfunc (body *PKIBody) DERSpec() der.Spec {\r\n\treturn der.Choice{\r\n\t\tder.Check{der.Context, 0, der.Int64{\u0026body.InitRequest}},\r\n\t\tder.Check{der.Context, 1, der.OctetString{\u0026body.InitResponse}},\r\n\t\tder.Check{der.Context, 2, der.Auto{\u0026body.CertRequest}},\r\n\t\t// if type implements the der.Spec or der.Unmarshaler/der.Marshaler\r\n\t\tder.Check{der.Context, 3, \u0026body.CertResponse}, \r\n\t\t// ..\r\n\t}\r\n}\r\n// these could be optional when DERSpec is implemented\r\n// alternatively this would allow custom marshaling per type, if the spec is very complicated,\r\n// or you don't want to expose the spec\r\nfunc (body *PKIBody) DERUnmarshal(tree *der.Tree) error { return body.DERSpec().Unmarshal(tree) }\r\nfunc (body *PKIBody) DERMarshal() (*der.Tree, error) { return body.DERSpec().Marshal(tree) }\r\n```\r\n\r\nObviously, made significant simplifications in the `PKIBody` example, but the approach generalizes well and can deal with complex situations better than `encoding/asn1`.\r\n\r\nI assume that this approach can be significantly cleaned and made more nicer, but I didn't have time to polish it. Not sure about how well it could be integrated into `encoding/asn1` though.",
+	"user": {
+		"login": "egonelbre",
+		"id": 192964,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-23T18:54:55Z",
+	"updated_at": "2016-03-23T18:54:55Z"
+}

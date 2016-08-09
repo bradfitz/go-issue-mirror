@@ -1,0 +1,28 @@
+{
+	"id": 120546981,
+	"number": 13499,
+	"state": "closed",
+	"title": "cmd/asm: Token pasting in assembler macros no longer works from go 1.5 onwards",
+	"body": "Pre go 1.5 it was possible to use K\u0026R style token pasting in assembler macros with `/**/`.\r\n\r\nHere is an example from the [iprime](http://github.com/ncw/iprime) project.  In order to avoid passing lots of labels to the `MOD_REDUCE` macro, token pasting is used to synthesize the labels for the inner macros.\r\n\r\n\r\n```\r\n// Compute x = x - y mod p\r\n// Preserves y, p\r\n#define MOD_SUB(x, y, p, LABEL) \\\r\n        SUBQ    y, x; \\\r\n        JCC     LABEL; \\\r\n        ADDQ    p, x; \\\r\nLABEL:  \\\r\n\r\n// Compute x = x + y mod p, using t\r\n// Preserves y, p\r\n#define MOD_ADD(x, y, t, p, LABEL) \\\r\n        MOVQ    p, t; \\\r\n        SUBQ    y, t; \\\r\n        MOD_SUB(x, t, p, LABEL); \\\r\n\r\n// Reduce 128 bits mod p (b, a) -\u003e a\r\n// Using t0, t1\r\n// This is much faster (2 or 3 times) than DIVQ\r\n#define MOD_REDUCE(b, a, t0, t1, p, label) \\\r\n        MOVL    b, t0;  /* Also sets upper 32 bits to 0 */ \\\r\n        SHRQ    $32,b ; \\\r\n ; \\\r\n        CMPQ    a,p ; \\\r\n        JCS     label/**/1 ; \\\r\n        SUBQ    p,a ; \\\r\nlabel/**/1: ; \\\r\n ; \\\r\n        MOVLQZX t0,t1 ; \\\r\n        MOD_SUB(a, t1, p, label/**/2) ; \\\r\n ; \\\r\n        MOVLQZX b,t1 ; \\\r\n        MOD_SUB(a, t1, p, label/**/3) ; \\\r\n ; \\\r\n        SHLQ    $32,t0 ; \\\r\n        MOD_ADD(a, t0, t1, p, label/**/4) ; \\\r\n```\r\n\r\n(Token pasting is also very useful in ARM assembler when you can make a whole instruction sequence conditional.)\r\n\r\nPre go 1.5 the above worked just fine, but post go 1.5 it doesn't because (I conjecture) the comments `/**/` are being replaced with ' ' rather than ''.\r\n",
+	"user": {
+		"login": "ncw",
+		"id": 536803,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2015-12-18T18:10:58Z",
+	"created_at": "2015-12-05T10:54:29Z",
+	"updated_at": "2015-12-18T18:39:45Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

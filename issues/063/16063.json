@@ -1,0 +1,42 @@
+{
+	"id": 160226373,
+	"number": 16063,
+	"state": "closed",
+	"title": "net/http: Server removes all explicitly set `Transfer-Encoding` headers",
+	"body": "The net/http server removes all explicitly set `Transfer-Encoding` headers (when operating in HTTP/1.1 mode).\r\n\r\nThis bug was introduced by the fix of #15960 (f9b4556), sorry for any ambiguous wording on my end.\r\n\r\nExample:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"compress/gzip\"\r\n\t\"net/http\"\r\n\t\"strings\"\r\n)\r\n\r\nconst Level int = -1\r\n\r\nfunc myHandler(w http.ResponseWriter, r *http.Request) {\r\n\tif strings.Contains(r.Header.Get(\"TE\"), \"gzip\") {\r\n\t\twriter, err := gzip.NewWriterLevel(w, Level)\r\n\t\tif err != nil {\r\n\t\t\tpanic(err)\r\n\t\t}\r\n\t\tw.Header().Set(\"Transfer-Encoding\", \"gzip\")\r\n\t\twriter.Write([]byte(\"Some content...\"))\r\n\t} else {\r\n\t\tw.Write([]byte(\"Couldn't gzip (not accepted)\"))\r\n\t}\r\n}\r\n\r\nfunc main() {\r\n\thttp.ListenAndServe(\":8080\", http.HandlerFunc(myHandler))\r\n}\r\n```\r\n\r\nFor clients accepting a `gzip` transfer-coding, net/http removes the explicitly set `gzip` from the `Transfer-Encoding` header and only sends `chunked`.\r\n\r\n\r\nTo fix both issues there must be a check for the header field's value (`== \"chunked\"`).\r\nE.g. (the line introduced by #15960 also has to be removed):\r\n```go\r\n        ...\r\n        if hasTE \u0026\u0026 te == \"identity\" {\r\n            cw.chunking = false\r\n            w.closeAfterReply = true\r\n        } else if hasTE \u0026\u0026 te == \"chunked\" {\r\n            cw.chunking = true\r\n            setHeader.transferEncoding = \"chunked\"\r\n            delHeader(\"Transfer-Encoding\")\r\n        } else {\r\n            // HTTP/1.1 or greater: use chunked transfer encoding\r\n            ...\r\n```\r\n\r\nTo reiterate:\r\n\r\n- An explicitly set transfer-coding of `chunked` should not result in a duplicate `Transfer-Encoding: chunked` header\r\n- Whenever another transfer-coding is set, `chunked` must be applied also, but the explicitly set transfer-encoding should be kept in the header\r\n\r\nDetails can be found in [RFC 2616 Section 3.6](https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6).",
+	"user": {
+		"login": "seoester",
+		"id": 1159259,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-06-15T03:13:20Z",
+	"created_at": "2016-06-14T16:30:24Z",
+	"updated_at": "2016-06-15T03:13:20Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	},
+	"assignees": [
+		{
+			"login": "bradfitz",
+			"id": 2621,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "adg",
+			"id": 8446613,
+			"type": "User",
+			"site_admin": false
+		}
+	]
+}

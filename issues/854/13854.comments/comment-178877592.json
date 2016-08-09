@@ -1,0 +1,12 @@
+{
+	"id": 178877592,
+	"body": "@4ad, I modeled a sequential consistency test (the same standard test TestStoreLoadSeqCst64 uses) using our current ARM64 StoreUint64/LoadUint64 implementation in the [ARMMEM tool](https://www.cl.cam.ac.uk/~pes20/ppcmem/index.html#ARM) and it confirms my concern that our current implementation is *not* sequentially consistent. (I was't able to get TestStoreLoadSeqCst64 to fail on the one physical ARM64 I have access to, but that doesn't mean it's not broken.)\r\n\r\n```\r\nARM SC\r\n\"PodWW Rfe PodRR Fre\"\r\nCycle=Rfe PodRR Fre PodWW\r\n{\r\n%x0=x; %y0=y;\r\n%y1=y; %x1=x;\r\n}\r\n P0            | P1            ;\r\n MOV R0, #1    | MOV R0, #1    ;\r\n STLR R0, [%x0]| STLR R0, [%y0];\r\n LDAR R0, [%y1]| LDAR R0, [%x1];\r\n~exists\r\n(0:R0=0 /\\ 1:R0=0)\r\n```\r\n\r\n(Unfortunately non-interactive mode fails with a stack overflow, but if you go in to interactive mode and complete either \"Commit\" action, then hit \"Auto\" it will work and prove that this snippet is not sequentially consistent.)\r\n\r\nIf I put DMBs between the two pairs of STLR and LDAR, then it passes the test.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-02-02T23:08:02Z",
+	"updated_at": "2016-02-02T23:08:02Z"
+}

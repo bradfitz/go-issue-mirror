@@ -1,0 +1,28 @@
+{
+	"id": 51276082,
+	"number": 126,
+	"state": "closed",
+	"title": "cgo aborts translation for unknown type pointers",
+	"body": "by **eden.li**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\n$ cat \u0026gt; empty.go \u0026lt;\u0026lt;EOF\npackage main\n\n/*\nstruct st_dne;\ntypedef struct st_dne dne;\ntypedef struct {\n\tdne *a;\n} empty;\n*/\nimport \u0026quot;C\u0026quot;\n\nvar a C.empty\nEOF\n$ cgo empty.go; echo $?\ndwarf.Type dne reports unknown size.\n2\n\nWhat is the expected output? What do you see instead?\n\nSome libraries (e.g. libmysql) define empty structs similar to the one\nabove.  cgo should translate these into void pointers instead of aborting.\n\nWhat is your $GOOS?  $GOARCH?\n\ndarwin, 386\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n\n4018:bbc290c53f85 (Thu Nov 12 16:12:28 2009 -0800)\n\nPlease provide any additional information below.\n\nThis patch appears to fix the problem.\n\ndiff -r bbc290c53f85 src/cmd/cgo/gcc.go\n--- a/src/cmd/cgo/gcc.go\tThu Nov 12 16:12:28 2009 -0800\n+++ b/src/cmd/cgo/gcc.go\tThu Nov 12 17:13:47 2009 -0800\n@@ -420,6 +420,13 @@\n \t\t\tbreak;\n \t\t}\n \n+\t\t// Translate unknown type pointers as unsafe.Pointer\n+\t\tif dt.Type.Size() \u0026lt; 0 {\n+\t\t\tt.Go = c.unsafePointer;\n+\t\t\tt.C = \u0026quot;void*\u0026quot;;\n+\t\t\tbreak;\n+\t\t}\n+\n \t\tgt := \u0026amp;ast.StarExpr{};\n \t\tt.Go = gt;\t// publish before recursive call\n \t\tsub := c.Type(dt.Type);\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:03:22Z",
+	"created_at": "2009-11-13T01:18:11Z",
+	"updated_at": "2016-06-24T18:51:21Z"
+}

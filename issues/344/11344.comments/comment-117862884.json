@@ -1,0 +1,12 @@
+{
+	"id": 117862884,
+	"body": "Closing the channel is a send-like communication from the senders to the receivers that there will be no more sends. If a sender later tries to send on the channel, then the goroutine who did the close is clearly confused. That merits a panic, whether it is part of a select or an ordinary operation.\r\n\r\nThe fact that close is (like ordinary sends) a communication from sender to receiver is fundamental to its operation. It comes up repeatedly that people want to use close as a reverse signal from receivers to senders to say \"stop sending to me\". That is _not_ what it means. It would break the unidirectionality of channels. And at least nine times out of ten the people who want to do this have not completely thought through the implications of this kind of cancellation mechanism. There almost always need to be two steps in a cancellation: a request for the cancellation and an acknowledgement that work has in fact stopped. Close can serve as the latter; it cannot serve as both, and we make it as hard as possible for people to do that accidentally.\r\n\r\nThis insistence that close is a sender -\u003e receiver communication and not the reverse is also the reason why you cannot close a receive-only channel.\r\n\r\nThe issue report seems to suggest making an exception to the panic only for select, not for ordinary sends. In the run up to Go 1, we actively worked to make select { case X: } as close to plain 'X' as possible, for all communication operations X. I would not break that lightly. (The only exception involves order of evaluation in case Y = \u003c-Z; in select, the evaluation of Z happens first. See http://play.golang.org/p/HppmwsO0QO)\r\n\r\nAnyway, those are the reasons for why Go is what it is today. What are the reasons for changing it? They are conspicuously missing from the initial issue report.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-02T00:46:22Z",
+	"updated_at": "2015-07-02T00:55:38Z"
+}

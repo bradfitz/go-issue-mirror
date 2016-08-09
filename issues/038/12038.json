@@ -1,0 +1,28 @@
+{
+	"id": 99246370,
+	"number": 12038,
+	"state": "closed",
+	"title": "x/tools/refactor/rename: panic when renaming type embedded in another package ",
+	"body": "This is similar to #8924\r\n\r\nFollowing is the regression test:\r\n\r\n```diff\r\ndiff --git a/refactor/rename/rename_test.go b/refactor/rename/rename_test.go\r\nindex 1d282a1..dedb399 100644\r\n--- a/refactor/rename/rename_test.go\r\n+++ b/refactor/rename/rename_test.go\r\n@@ -721,6 +721,31 @@ type _ struct{ *foo.U }\r\n                        },\r\n                },\r\n\r\n+               {\r\n+                       ctxt: fakeContext(map[string][]string{\r\n+                               \"foo\": {`package foo; type T int`},\r\n+                               \"main\": {`package main\r\n+\r\n+import \"foo\"\r\n+\r\n+type V struct{ *foo.T }\r\n+`},\r\n+                       }),\r\n+                       from: \"(main.V).T\", to: \"U\", // the \"T\" in *foo.T\r\n+                       want: map[string]string{\r\n+                               \"/go/src/foo/0.go\": `package foo\r\n+\r\n+type U int\r\n+`,\r\n+                               \"/go/src/main/0.go\": `package main\r\n+\r\n+import \"foo\"\r\n+\r\n+type V struct{ *foo.U }\r\n+`,\r\n+                       },\r\n+               },\r\n+\r\n```\r\n\r\n## Stacktrace:\r\n\r\n```\r\n--- FAIL: TestRewrites-2 (0.01s)\r\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\r\n        panic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x0 pc=0x62c78]\r\n\r\ngoroutine 248 [running]:\r\ntesting.func·006()\r\n        /usr/local/Cellar/go/1.4.2/libexec/src/testing/testing.go:441 +0x181\r\ngolang.org/x/tools/refactor/rename.(*renamer).checkInPackageBlock(0x2085e0720, 0x2208594da0, 0x2085e8880)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/check.go:104 +0xe78\r\ngolang.org/x/tools/refactor/rename.(*renamer).check(0x2085e0720, 0x2208594da0, 0x2085e8880)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/check.go:39 +0x1cc\r\ngolang.org/x/tools/refactor/rename.(*renamer).checkStructField(0x2085e0720, 0x208610190)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/check.go:353 +0x871\r\ngolang.org/x/tools/refactor/rename.(*renamer).check(0x2085e0720, 0x2208595628, 0x208610190)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/check.go:41 +0x21a\r\ngolang.org/x/tools/refactor/rename.Main(0x20867f040, 0x0, 0x0, 0x378830, 0xa, 0x36f1f0, 0x1, 0x0, 0x0)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/rename.go:326 +0x122c\r\ngolang.org/x/tools/refactor/rename.TestRewrites(0x2085fa090)\r\n        /Users/isaiah/codes/go/src/golang.org/x/tools/refactor/rename/rename_test.go:1014 +0x21fe\r\ntesting.tRunner(0x2085fa090, 0x50b8a8)\r\n        /usr/local/Cellar/go/1.4.2/libexec/src/testing/testing.go:447 +0xbf\r\ncreated by testing.RunTests\r\n        /usr/local/Cellar/go/1.4.2/libexec/src/testing/testing.go:555 +0xa8b\r\n```\r\n\r\nIt works if from is specified as `offset`, in which case rename can figure out which packages are affected, but if it's specified as `main.V.T` form, it failed to figure out the original package of the embedded field is also affected.",
+	"user": {
+		"login": "isaiah",
+		"id": 18042,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-01-05T17:28:42Z",
+	"created_at": "2015-08-05T16:36:42Z",
+	"updated_at": "2016-01-05T17:28:42Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

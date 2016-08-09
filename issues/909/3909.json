@@ -1,0 +1,25 @@
+{
+	"id": 51281340,
+	"number": 3909,
+	"state": "closed",
+	"title": "cmd/6g: range loops are slower than handmade loops",
+	"body": "\u003cpre\u003e1. What is a short input program that triggers the error?\n\npackage p\n\nimport (\n\t\u0026quot;testing\u0026quot;\n)\n\nvar slice = make([]byte, 256)\n\nfunc loop() (t byte) {\n\tfor i := 0; i \u0026lt; len(slice); i++ {\n\t\tt ^= slice[i]\n\t}\n\treturn\n}\n\nfunc rangeloop() (t byte) {\n\tfor _, b := range slice {\n\t\tt ^= b\n\t}\n\treturn\n}\n\nfunc BenchmarkLoop(b *testing.B) {\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\tloop()\n\t}\n}\n\nfunc BenchmarkRange(b *testing.B) {\n\tfor i := 0; i \u0026lt; b.N; i++ {\n\t\trangeloop()\n\t}\n}\n\n\n2. What is the full compiler output?\n\nGOARCH=386:\nBenchmarkLoop\t 1000000\t      1239 ns/op\nBenchmarkRange\t 5000000\t       695 ns/op\n\nThe generated range code is nearly optimal:\n\n--- prog list \u0026quot;rangeloop\u0026quot; ---\n[...]\n0032 (loop_test.go:17) LEAL    autotmp_0005+-12(SP),BX\n0033 (loop_test.go:17) MOVL    (BX),CX\n0034 (loop_test.go:17) JMP     ,36\n0035 (loop_test.go:17) INCL    ,AX\n0036 (loop_test.go:17) CMPL    AX,SI\n0037 (loop_test.go:17) JGE     $0,42\n0038 (loop_test.go:17) MOVBLZX (CX),BP\n0039 (loop_test.go:17) INCL    ,CX\n0040 (loop_test.go:18) XORB    BP,t+0(FP)\n0041 (loop_test.go:17) JMP     ,35\n0042 (loop_test.go:20) RET     ,\n\nGOARCH=amd64:\nBenchmarkLoop\t 5000000\t       341 ns/op\nBenchmarkRange\t 5000000\t       533 ns/op\n\nThe generate code for the loop body is quite shocking:\n\n--- prog list \u0026quot;rangeloop\u0026quot; ---\n[...]\n0031 (loop_test.go:17) LEAQ    autotmp_0000+-16(SP),BX\n0032 (loop_test.go:17) MOVQ    (BX),CX\n0033 (loop_test.go:17) JMP     ,35\n0034 (loop_test.go:17) INCL    ,AX\n0035 (loop_test.go:17) MOVL    DI,BP\n0036 (loop_test.go:17) CMPL    AX,DI\n0037 (loop_test.go:17) JGE     ,49\n0038 (loop_test.go:17) MOVQ    CX,BX\n0039 (loop_test.go:17) MOVB    (CX),BP\n0040 (loop_test.go:17) MOVB    BP,SI\n0041 (loop_test.go:17) MOVB    SI,BX\n0042 (loop_test.go:17) MOVB    BX,DX // 4 mov to do MOVB (CX), DX ?\n0043 (loop_test.go:17) INCQ    ,CX\n0044 (loop_test.go:17) MOVQ    CX,BX // BX is clobbered below\n0045 (loop_test.go:18) MOVB    DX,BX\n0046 (loop_test.go:18) XORB    BX,R8\n0047 (loop_test.go:18) MOVB    R8,t+0(FP)\n0048 (loop_test.go:17) JMP     ,34\n0049 (loop_test.go:20) RET     ,\n\n\n3. What version of the compiler are you using?  (Run it with the -V flag.)\n\n$ /usr/bin/go tool 6g -V\n6g version go1.0.2\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:20:42Z",
+	"created_at": "2012-08-05T07:39:53Z",
+	"updated_at": "2016-06-24T22:22:35Z"
+}

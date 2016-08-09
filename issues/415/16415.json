@@ -1,0 +1,21 @@
+{
+	"id": 166195377,
+	"number": 16415,
+	"state": "open",
+	"title": "cmd/vet: warn about `break` at end of case/comm clause",
+	"body": "Consider this code from [golang.org/cl/24975](https://go-review.googlesource.com/#/c/24975/1/cmd/gorefactor/func2meth.go@49):\r\n\r\n\t\t// Check selection is in a FuncDecl, but not in its body.\r\n\t\tvar decl *ast.FuncDecl\r\n\t\tfor _, n := range path {\r\n\t\t\tswitch n := n.(type) {\r\n\t\t\tcase *ast.BlockStmt:\r\n\t\t\t\treturn fmt.Errorf(\"selection is inside function body\")\r\n\t\t\tcase *ast.FuncDecl:\r\n\t\t\t\tdecl = n\r\n\t\t\t\tbreak\r\n\t\t\t}\r\n\t\t}\r\n\t\tif decl == nil {\r\n\t\t\treturn fmt.Errorf(\"selection is not a function declaration\")\r\n\t\t}\r\n\r\nThe intention was for the `break` statement to terminate the enclosing `for` loop, but it actually uselessly terminates the `switch` statement instead.  A `break` at the end of a `switch` or `select` statement is always useless, and when the outer context is also `break`able, it might be a mistake.\r\n\r\nI suspect this isn't actually common enough to warrant a cmd/vet check, but thought it at least deserves an issue for discussion.\r\n\r\n/cc @alandonovan @robpike",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"created_at": "2016-07-18T21:15:17Z",
+	"updated_at": "2016-07-21T18:43:51Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

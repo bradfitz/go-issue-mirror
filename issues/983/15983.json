@@ -1,0 +1,22 @@
+{
+	"id": 158809415,
+	"number": 15983,
+	"state": "closed",
+	"title": "misc/cgo/testsanitizers: tsan6.go flaky on ubuntu 16.10",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version devel +3ba3155 Mon Jun 6 21:15:40 2016 +0000 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nUbuntu 16.10, amd64\r\n\r\ntestsanitizers failed for me. Digging shows that it's the recently added tsan6.go reporting a race:\r\n\r\n```\r\n==================\r\nWARNING: ThreadSanitizer: data race (pid=23760)\r\n  Write of size 1 at 0x00c420300000 by main thread:\r\n    #0 f \u003cnull\u003e (tsan6+0x00000044f90c)\r\n    #1 _cgo_e3fc48de400e_Cfunc_f \u003cnull\u003e (tsan6+0x00000044f996)\r\n\r\n  Previous write of size 8 at 0x00c420300000 by thread T3:\r\n    #0 mmap \u003cnull\u003e (libtsan.so.0+0x000000027b86)\r\n    #1 x_cgo_mmap \u003cnull\u003e (tsan6+0x00000045028c)\r\n    #2 runtime.callCgoMmap /home/ubuntu/go/src/runtime/sys_linux_amd64.s:329 (tsan6+0x00000044dfed)\r\n    #3 \u003cnull\u003e \u003cnull\u003e (libtsan.so.0+0x0000000244c9)\r\n\r\n  Thread T3 (tid=23764, running) created by main thread at:\r\n    #0 pthread_create \u003cnull\u003e (libtsan.so.0+0x000000028410)\r\n    #1 _cgo_sys_thread_start \u003cnull\u003e (tsan6+0x0000004500f2)\r\n    #2 x_cgo_thread_start \u003cnull\u003e (tsan6+0x0000004504f6)\r\n    #3 runtime.asmcgocall /home/ubuntu/go/src/runtime/asm_amd64.s:620 (tsan6+0x00000044c35c)\r\n\r\nSUMMARY: ThreadSanitizer: data race (/home/ubuntu/go/misc/cgo/testsanitizers/tsan6+0x44f90c) in f\r\n==================\r\n```\r\n\r\nIt doesn't fail all the time, but it's most of the time, maybe 75%.\r\n\r\nThe full test doesn't fail for me on 16.04, but if I run CGO_CFLAGS=-fsanitize=thread CGO_LDFLAGS=-fsanitize=thread  go build  \"-installsuffix=tsan\" tsan6.go, the resulting tsan6 binary reports a race most of the time. Which is odd.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-06-08T05:08:51Z",
+	"created_at": "2016-06-07T01:16:47Z",
+	"updated_at": "2016-06-08T05:08:51Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

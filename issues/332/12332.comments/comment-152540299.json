@@ -1,0 +1,12 @@
+{
+	"id": 152540299,
+	"body": "Re API:\n\nAfter reading the various speleotrove documents, I think it probably makes sense to keep the rounding mode an explicit argument to the computations instead of stuffing it into the data type as was done with package big. In big.Float the footprint of a single number is large, so the extra word to hold rounding mode is not a significant overhead. If there is a Decimal64 or Decimal128 type, an extra word for rounding mode is a 25-100% overhead depending on the storage of the floating-point bits themselves. Also in big.Float the rounding mode is much less important: round to even is fine for the vast majority of users. In decimal it seems to be much more common to need to specify different rounding modes (for example half up vs half to even).\n\nI think I would suggest starting with:\n\n\tpackage decimal\n\t\n\ttype Mode struct { ... unexported ... }\n\n\ttype D128 struct { ... unexported ... } // size==16 bytes\n\tfunc (d D128) Add(m Mode, x D128) D128\n\tfunc (d D128) Sub(m Mode, x D128) D128\n\t...\n\nwith the intention of adding D64 or D256 if needed later. The package could also be extended with type Big (but that's issue #12127).\n\nThe methods allow writing expressions that mimic infix notation, like `x.Add(m, y.Mul(m, z))` instead of `decimal.Add(m, x, decimal.Mul(m, y, z))` or m.Add(x, m.Mul(y, z))` (that last example assumes a different mode type for each size of number: Mode128, Mode64, and so on). Since Go is not Lisp, I think an infix API is clearer to Go programmers than a prefix API. And shorter.\n\nI think it's probably a mistake to store a status word in the D128 itself; that would imply the same significant overhead as for storing the rounding mode there. I also think it's probably a mistake to make the mode (aka context) a mutable argument to the operations. That implies the need for a different Mode value for each goroutine doing computation. Many Go programmers will use a single Mode, either because they don't understand or they don't care about checking the bits, and the race detector will report problems.\n\nIf it is very important to detect, say, underflow during a computation, the mode can have a bit that says \"panic on underflow\".",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-10-30T14:26:42Z",
+	"updated_at": "2015-10-30T14:26:42Z"
+}

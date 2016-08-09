@@ -1,0 +1,12 @@
+{
+	"id": 94118093,
+	"body": "It looks like 5451fff introduced a race condition (@josharian @bradfitz), but I'm not sure why it's only flaking on OpenBSD.\r\n\r\nThe problem is we're (simplified) concurrently running \"go build go1.go; ./go1; rm go1\" and \"go build slices.go; ./slices; rm slices\".\r\n\r\nWithin go1, there's a call to filepath.Walk(\".\", walkFn).  filepath.Walk reads the list of files in the directory, then proceeds to lstat each of them, and call walkFn.  What's happening is \"slices\" exists when go1 is reading the list of files in the directory, but the other test has removed it before go1 gets around to lstat'ing it.  Then walkFn fails, which causes go1 to call log.Fatal, which causes doc/progs/run.go to fail.\r\n\r\nPreviously this was not a problem because:\r\n  1. The tests were synchronous.\r\n  2. All of the test programs were built first, then some of them were run, then they were all deleted.\r\n\r\nTwo options I see:\r\n  1. Build the test programs in a separate temporary directory and run them from there, like how \"go run\" works.\r\n  2. Build the programs in parallel, *then* test them in parallel, *then* delete them all.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-18T02:29:48Z",
+	"updated_at": "2015-04-18T02:29:48Z"
+}

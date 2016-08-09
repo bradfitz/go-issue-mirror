@@ -1,0 +1,22 @@
+{
+	"id": 56446065,
+	"number": 9766,
+	"state": "closed",
+	"title": "liblink: ppc64 %P prints \"LEA\"-type instruction as memory access",
+	"body": "Compiling this small file with -S (and -l and -B to make things clearer):\r\n\r\n```go\r\npackage mheap\r\n\r\ntype mspan struct {\r\n\tfield uintptr\r\n\tarray [10]uintptr\r\n}\r\n\r\nfunc mHeap_Init(h *mspan, j int32) {\r\n\tmSpanList_Init(\u0026h.array[j])\r\n}\r\n\r\nfunc mSpanList_Init(s *uintptr) {\r\n\t*s = 0\r\n}\r\n```\r\n\r\nResults in this output:\r\n\r\n```\r\n\"\".mHeap_Init t=1 size=112 value=0 args=0x10 locals=0x10\r\n\t0x0000 00000 (mheap.go:8)\tTEXT\t\"\".mHeap_Init(SB),$16-16\r\n\t0x0000 00000 (mheap.go:8)\tMOVD\t16(R30),R3\r\n\t0x0004 00004 (mheap.go:8)\tCMPU\tR3,R1\r\n\t0x0008 00008 (mheap.go:8)\tBLT\t,00018(BRANCH)\r\n\t0x000c 00012 (mheap.go:8)\tMOVD\tLR,R5\r\n\t0x0010 00016 (mheap.go:8)\tCALL\t,runtime.morestack_noctxt+0(APC)\r\n\t0x0014 00020 (mheap.go:8)\tJMP\t,00000(BRANCH)\r\n\t0x0018 00024 (mheap.go:8)\tNOP\t,\r\n\t0x0018 00024 (mheap.go:8)\tMOVD\tLR,R31\r\n\t0x001c 00028 (mheap.go:8)\tMOVDU\tR31,-24(R1) # spadj=24\r\n\t0x0020 00032 (mheap.go:8)\tFUNCDATA\t$0,gclocals·0141610d36e31eb1aeb0cbc5332f37e1(SB)\r\n\t0x0020 00032 (mheap.go:8)\tFUNCDATA\t$1,gclocals·9a0759cf3ae1022079458918c982571a(SB)\r\n\t0x0020 00032 (mheap.go:9)\tMOVD\t\"\".h+0(FP),R7\r\n\t0x0024 00036 (mheap.go:9)\tCMP\tR7,R0\r\n\t0x0028 00040 (mheap.go:9)\tBNE\t,00030(BRANCH)\r\n\t0x002c 00044 (mheap.go:9)\tMOVD\tR0,0(R0)\r\n\t0x0030 00048 (mheap.go:9)\tMOVD\t$8(R7),R8\r\n\t0x0034 00052 (mheap.go:9)\tMOVD\tR8,R8\r\n\t0x0038 00056 (mheap.go:9)\tMOVW\t\"\".j+8(FP),R7\r\n\t0x003c 00060 (mheap.go:9)\tMOVW\tR7,R9\r\n\t0x0040 00064 (mheap.go:9)\tMOVD\tR9,\"\".autotmp_0000-8(SP)\r\n\t0x0044 00068 (mheap.go:9)\tMOVD\t\"\".autotmp_0000-8(SP),R7\r\n\t0x0048 00072 (mheap.go:9)\tMOVD\tR7,R7\r\n\t0x004c 00076 (mheap.go:9)\tMOVD\t$8,R9\r\n\t0x0050 00080 (mheap.go:9)\tMULLD\tR9,R7\r\n\t0x0054 00084 (mheap.go:9)\tADD \tR7,R8\r\n\t0x0058 00088 (mheap.go:9)\tMOVD\tR8,8(R1)\r\n\t0x005c 00092 (mheap.go:9)\tPCDATA\t$0,$0\r\n\t0x005c 00092 (mheap.go:9)\tCALL\t,\"\".mSpanList_Init+0(APC)\r\n\t0x0060 00096 (mheap.go:10)\tMOVD\t0(R1),R31\r\n\t0x0064 00100 (mheap.go:10)\tMOVD\tR31,LR\r\n\t0x0068 00104 (mheap.go:10)\tADD \t$24,R1 # spadj=-24\r\n\t0x006c 00108 (mheap.go:10)\tJMP\t,LR # spadj=24\r\n\t0x0000 e8 7e 00 10 7c 23 08 40 41 80 00 10 7c a8 02 a6  .~..|#.@A...|...\r\n\t0x0010 48 00 00 01 4b ff ff ec 7f e8 02 a6 fb e1 ff e9  H...K...........\r\n\t0x0020 e8 e1 00 20 7c 27 00 00 40 82 00 08 f8 00 00 00  ... |'..@.......\r\n\t0x0030 39 07 00 08 7d 08 43 78 e8 e1 00 2a 7c e9 07 b4  9...}.Cx...*|...\r\n\t0x0040 f9 21 00 10 e8 e1 00 10 7c e7 3b 78 39 20 00 08  .!......|.;x9 ..\r\n\t0x0050 7c e7 49 d2 7d 08 3a 14 f9 01 00 08 48 00 00 01  |.I.}.:.....H...\r\n\t0x0060 eb e1 00 00 7f e8 03 a6 38 21 00 18 4e 80 00 20  ........8!..N.. \r\n\trel 16+4 t=7 runtime.morestack_noctxt+0\r\n\trel 92+4 t=7 \"\".mSpanList_Init+0\r\n```\r\n\r\nThe instruction I'm complaining about is at offset 0x30:\r\n\r\n```\r\n\t0x0030 00048 (mheap.go:9)\tMOVD\t$8(R7),R8\r\n```\r\n\r\nR7 contains the h pointer at this point, why would we be dereferencing it to compute the address of an element of h.array?  Well of course, the answer is we're not, if you look at the machine code it's actually addi:\r\n\r\n```\r\n08000739\taddi r8,r7,8\r\n```\r\n\r\nIt's pretty confusing though.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-02-04T01:12:05Z",
+	"created_at": "2015-02-03T22:14:03Z",
+	"updated_at": "2016-06-25T01:59:57Z"
+}

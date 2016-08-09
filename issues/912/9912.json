@@ -1,0 +1,27 @@
+{
+	"id": 57993731,
+	"number": 9912,
+	"state": "closed",
+	"title": "debug/gosym: tests fail when externally linked",
+	"body": "This once again falls into the \"maybe we don't really care\" category, but:\r\n\r\n```shellsession\r\nmwhudson@narsil:src$ go.master test -ldflags '-linkmode external' debug/gosym -short\r\n--- FAIL: TestLineFromAline (0.17s)\r\npanic: runtime error: invalid memory address or nil pointer dereference [recovered]\r\n\tpanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal 0xb code=0x1 addr=0x58 pc=0x4f89e2]\r\n\r\ngoroutine 4 [running]:\r\ntesting.func·006(0xc208064000)\r\n\t/opt/opensource/go.master/src/testing/testing.go:442 +0x179\r\ndebug/elf.(*Section).Data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0)\r\n\t/opt/opensource/go.master/src/debug/elf/file.go:77 +0x42\r\ndebug/gosym.parse(0x7fffceb44e7f, 0x33, 0xc2080601e0, 0xc208064000, 0x0, 0x0)\r\n\t/opt/opensource/go.master/src/debug/gosym/pclntab_test.go:87 +0x5b\r\ndebug/gosym.crack(0x7fffceb44e7f, 0x33, 0xc208064000, 0x47d88f, 0xc208030d10)\r\n\t/opt/opensource/go.master/src/debug/gosym/pclntab_test.go:83 +0x148\r\ndebug/gosym.getTable(0xc208064000, 0x641a10)\r\n\t/opt/opensource/go.master/src/debug/gosym/pclntab_test.go:72 +0x4c\r\ndebug/gosym.TestLineFromAline(0xc208064000)\r\n\t/opt/opensource/go.master/src/debug/gosym/pclntab_test.go:116 +0x78\r\ntesting.tRunner(0xc208064000, 0x8d0840)\r\n\t/opt/opensource/go.master/src/testing/testing.go:448 +0xad\r\ncreated by testing.RunTests\r\n\t/opt/opensource/go.master/src/testing/testing.go:556 +0xa4c\r\n\r\ngoroutine 1 [chan receive]:\r\ntesting.RunTests(0x641a98, 0x8d0840, 0x3, 0x3, 0x1)\r\n\t/opt/opensource/go.master/src/testing/testing.go:557 +0xa8c\r\ntesting.(*M).Run(0xc20805a0a0, 0x903c40)\r\n\t/opt/opensource/go.master/src/testing/testing.go:486 +0x79\r\nmain.main()\r\n\tdebug/gosym/_test/_testmain.go:56 +0x1d5\r\nFAIL\tdebug/gosym\t0.173s\r\n```\r\n\r\nThe immediate failure is that f.Section(\".gosymtab\") is returning nil (because there is indeed no section with this name in an externally linked binary) and this is not being checked before .Data() is called on the return value.  I don't know if debug/gosym is expected to work in the external linking case but the failure mode seems unfortunate.",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-04-11T12:19:22Z",
+	"created_at": "2015-02-17T22:38:03Z",
+	"updated_at": "2016-06-25T02:01:08Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

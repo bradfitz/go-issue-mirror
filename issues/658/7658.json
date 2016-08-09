@@ -1,0 +1,27 @@
+{
+	"id": 51287030,
+	"number": 7658,
+	"state": "closed",
+	"title": "os: Inconsistent error codes from Process.Signal",
+	"body": "by **glyn.normington**:\n\n\u003cpre\u003eI noticed this problem while reading the source code of Process.Signal. A discussion on\ngo-nuts ([1]) concluded that a feature request would be beneficial.\n\nThe problem is that one of two errors can be returned if the process terminates before\nthe signal is sent. If the caller wants to treat this situation as a soft error and\nignore it, she must check for both errors. Not only is this inconvenient, but it exposes\nthe implementation of Signal to the caller.\n\nSignal starts by checking p.done() and, if this shows the process has terminated, Signal\nreturns errors.New(\u0026quot;os: process already finished\u0026quot;). But if the process\nterminates after p.done() has returned false but before Signal calls syscall.Kill, then\n(apparently, see [1], but I can't find any documentation of this behaviour) syscall.Kill\nwill return syscall.ESRCH which will then be returned by Signal.\n\nSo the caller who wishes to ignore this error needs to test the Error() string of the\nmessage and, if that compares false, also check to see if the error is syscall.ESRCH.\nNot only is this inconvenient and potentially fragile, but it exposes the implementation\nof Signal.\n\nThe solution is to return a consistent error which needs to be chosen carefully.\nsyscall.ESRCH seems a little risky to me because it relies on the implementation of\nSignal and of syscall.Kill. It seems better for Signal to return a (possibly new)\nos.XXXX error.\n\nAfter choosing the appropriate error code to return, there are two solutions. One is to\nfix up the current code so that the same error is returned regardless of whether\np.done() or syscall.Kill detects that the process has terminated.\n\nHowever a much better solution, in my opinion, is to delete the p.done() check and lean\non the check performed by syscall.Kill. This solution removes a small race and ensures\nthat a consistent error code is returned. I would still recommend converting\nsyscall.ESRCH to an os.XXXX error to hide the implementation of Signal from the caller.\nThe other benefit of this solution is that it reduces the amount of code, which makes\nthe code easier to read and maintain.\n\nIan Lance Taylor disagreed with this solution (in discussion [1]) and thinks it would be\nbetter to continue to issue p.done() but ensure that the error code is consistent. Ian's\nobjection to removing the p.done() check is that he is concerned about its effect on a\nquite different race where the process in question terminates *and* its PID is reused.\nThis race is a known problem in *IX and not something that Go can or should address.\nHowever, Ian was of the opinion that removing the p.done() check makes this race\n(significantly) worse - a conclusion with which I disagree.\n\nLet's analyse this second race. If the PID has already been reused before Signal is\ncalled, the proposed change will make no difference and Signal will operate on the wrong\nprocess (and the caller is out of luck). If the PID is reused after Signal has returned,\nthen the proposed change will again make no difference: Signal will fail and return a\nnon-nil error code.\n\nThe situation of concern to Ian is where the PID is reused in the window between Signal\nbeing called and it returning. Deleting the p.done() check decreases the size of the\nwindow and makes the situation of concern less likely. But also let's consider the\neffect of decreasing the size of the window on the race. The effect is to increase the\nprobability that Signal will return before the PID is reused, which is a beneficial\neffect: Signal will operate on the wrong PID a little less often.\n\n[1]\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!searchin/golang-nuts/Process.signal/golang-nuts/2Zmut0tcnPE/wIsFGWmWz1MJ\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:42:32Z",
+	"created_at": "2014-03-28T11:33:17Z",
+	"updated_at": "2016-06-25T01:30:59Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

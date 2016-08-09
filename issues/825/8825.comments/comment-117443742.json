@@ -1,0 +1,12 @@
+{
+	"id": 117443742,
+	"body": "I still don't know what the problem is.\r\n\r\nMaybe it is something to do with the fact that stdin handling whole lines only. My test starts typing the line before child starts and ends after child is started. Inserting pipe between parent and child's stdin fixes the problem:\r\n```\r\ndiff --git a/src/os/exec/exec_test.go b/src/os/exec/exec_test.go\r\nindex 3773963..fed35c2 100644\r\n--- a/src/os/exec/exec_test.go\r\n+++ b/src/os/exec/exec_test.go\r\n@@ -760,8 +760,54 @@ func TestHelperProcess(*testing.T) {\r\n \t\t}\r\n \t\tfmt.Print(p)\r\n \t\tos.Exit(0)\r\n+\tcase \"alex\":\r\n+\t\talex()\r\n \tdefault:\r\n \t\tfmt.Fprintf(os.Stderr, \"Unknown command %q\\n\", cmd)\r\n \t\tos.Exit(2)\r\n \t}\r\n }\r\n+\r\n+func alex() {\r\n+\tdefer os.Exit(0)\r\n+\r\n+\tfmt.Println(\"now press Enter key ...\")\r\n+\tx := make([]byte, 10)\r\n+\tn, err := os.Stdin.Read(x)\r\n+\tx = x[:n]\r\n+\tfmt.Printf(\"n=%d err=%v\\n\", n, err)\r\n+\tfmt.Printf(\"x=%v\\n\", x)\r\n+\tfmt.Printf(\"x=[\")\r\n+\tfor _, c := range x {\r\n+\t\tfmt.Printf(\"%c \", c)\r\n+\t}\r\n+\tfmt.Println(\"]\")\r\n+}\r\n+\r\n+func TestAlex(t *testing.T) {\r\n+\tfmt.Println(`type \"abc\" quickly (you have 5 seconds) ...`)\r\n+\r\n+\ttime.Sleep(5 * time.Second)\r\n+\r\n+\tp := helperCommand(t, \"alex\")\r\n+\r\n+\t// p.Stdin = os.Stdin\r\n+\tchildStdin, err := p.StdinPipe()\r\n+\tif err != nil {\r\n+\t\tt.Fatal(err)\r\n+\t}\r\n+\tdefer childStdin.Close()\r\n+\tgo func() {\r\n+\t\t_, err := io.Copy(childStdin, os.Stdin)\r\n+\t\tif err != nil {\r\n+\t\t\tt.Fatal(err)\r\n+\t\t}\r\n+\t}()\r\n+\r\n+\tp.Stdout = os.Stdout\r\n+\tp.Stderr = os.Stderr\r\n+\terr = p.Run()\r\n+\tif err != nil {\r\n+\t\tt.Fatal(err)\r\n+\t}\r\n+}\r\n```\r\n\r\nBut that approach will not work in cmd/go - I think we want \"go run ...\" child reading from console, not from pipe.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-01T05:57:08Z",
+	"updated_at": "2015-07-01T05:57:08Z"
+}

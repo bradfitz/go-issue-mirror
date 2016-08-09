@@ -1,0 +1,12 @@
+{
+	"id": 120999215,
+	"body": "I have a need for this functionality too. My goal is to be able to make changes to a running Go game engine without needing to completely reload the game.\r\n\r\nThe implementation idea is to have 2 layers, the platform layer and the game layer.\r\n\r\nThe **platform layer** is GOOS/GOARCH-specific and is written in C. It is responsible for the game loop wherein it gathers controller input and manages image and sound buffers that it provides to the game layer for writing. It uses OS-provided functionality to output graphics and sound.\r\n\r\nThe **game layer** is platform agnostic, contains game logic only, and is written in Go. It is called by the platform layer once per iteration of the game loop. The game layer takes the controller input and buffers provided by the platform layer, updates the game state, and writes to the buffers.\r\n\r\nThe game layer is a shared library, built using `-buildmode=c-shared`, that can be edited and recompiled at any time. When the platform layer detects that the shared library was modified, it unloads the previous version of the library (`dlclose`) then loads the new version of the library (`dlopen`).\r\n\r\nSee https://gist.github.com/gcatlin/e09359f6e53f37e74a82\r\n\r\nI'm trying this on darwin/amd64 and getting the following error when calling `dlopen` on the shared library for the second time (i.e. after detecting that the shared library has changed):\r\n```\r\nruntime/cgo: could not obtain pthread_keys\r\n\ttried 0x101 0x102 0x103 0x104 0x105 0x106 0x107 0x108 0x109 0x10a 0x10b 0x10c 0x10d 0x10e 0x10f 0x110 0x111 0x112 0x113 0x115 0x116 0x117 0x118 0x119 0x11a 0x11b 0x11c 0x11d 0x11e 0x11f 0x120 0x121 0x122 0x123 0x124 0x125 0x126 0x127 0x128 0x129 0x12a 0x12b 0x12c 0x12d 0x12e 0x12f 0x130 0x131 0x132 0x133 0x134 0x135 0x136 0x137 0x138 0x139 0x13a 0x13b 0x13c 0x13d 0x13e 0x13f 0x140 0x141 0x142 0x143 0x144 0x145 0x146 0x147 0x148 0x149 0x14a 0x14b 0x14c 0x14d 0x14e 0x14f 0x150 0x151 0x152 0x153 0x154 0x155 0x156 0x157 0x158 0x159 0x15a 0x15b 0x15c 0x15d 0x15e 0x15f 0x160 0x161 0x162 0x163 0x164 0x165 0x166 0x167 0x168 0x169 0x16a 0x16b 0x16c 0x16d 0x16e 0x16f 0x170 0x171 0x172 0x173 0x174 0x175 0x176 0x177 0x178 0x179 0x17a 0x17b 0x17c 0x17d 0x17e 0x17f 0x180 0x181\r\nfatal error: cgo callback before cgo call\r\n```\r\n\r\nIs there a different way to achieve this with Go?",
+	"user": {
+		"login": "gcatlin",
+		"id": 211427,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-13T17:27:09Z",
+	"updated_at": "2015-07-13T17:27:09Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 220493591,
+	"body": "Put differently:\r\n\r\n  1. The default behavior for SIGINT is for the program to exit.\r\n  2. Calling signal.Notify(c, syscall.SIGINT) changes the program behavior to send a value to c instead of exiting when it receives SIGINT.\r\n  3. Calling signal.Stop(c) causes the behavior to change back to exiting when it receives SIGINT.\r\n\r\n(Assuming there are no other relevant signal-impacting calls.)\r\n\r\nThe problem is the \"change back to exiting\" is not atomic.  In particular, we're logically deregistering c from receiving SIGINT events before we notify the kernel to stop sending them to us, which @Tassadar's test program demonstrates via the \"missed signal\" messages.\r\n\r\nTheir test program concurrently sends itself SIGINT while calling signal.Stop(c).  If SIGINT arrived first, we expect to see \"got signal\".  If SIGINT arrived after, we expect the process to exit (due to SIGINT's default behavior).  But occasionally their test program sees neither of these happen (i.e., \"missing signal\").",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-20T01:13:39Z",
+	"updated_at": "2016-05-20T01:13:39Z"
+}

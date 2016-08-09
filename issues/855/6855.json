@@ -1,0 +1,21 @@
+{
+	"id": 51285827,
+	"number": 6855,
+	"state": "open",
+	"title": "os: wrong os.File.Write return values at device end",
+	"body": "by **thomas.e.zander**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nOn FreeBSD (see below)\n1. Have a small block device ready, e.g. using mdconfig -a -t swap -s 12m\n2. Do the following in a go program:\n\nf, f_err := os.OpenFile(\u0026quot;/dev/mdX\u0026quot;, os.O_WRONLY|os.O_CREATE,0600) // mdX is\nthe device from step 1. Assuming f_err reports nil, f is valid, then do:\nv := make ([]byte, 10*1024*1024)\nn, err := f.Write(v) // Referring to as (i) in subsequent steps\nn, err = f.Write(v) // Referring to as (ii) in subsequent steps\nn, err = f.Write(v) // Referring to as (iii) in subsequent steps\n\n\nWhat is the expected output?\n\nAccording to the std lib doc for func (f *File) Write(b []byte) (n int, err error),\n\u0026quot;Write returns a non-nil error when n != len(b).\u0026quot;\n\n\nWhat do you see instead?\n\nAfter line (i), n is 10MiB, err is nil. Correct.\nAfter line (ii) n is smaller 10 MiB, err is still nil. INCORRECT: err should be non-nil\nAfter line (iii), n is zero, err is still nil. INCORRECT: err should be non-nil\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\n\nWhich operating system are you using?\n\nFreeBSD 9.2 STABLE amd64\n\n\nWhich version are you using?  (run 'go version')\n\ngo version go1.1.2 freebsd/amd64\n\n\nPlease provide any additional information below.\n\nThe behaviour of provided code is in accordance with the documentation if we write into\na regular file on a file system and that file system gets full.\nIt only happens on a short write at the end of a device.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2013-12-01T09:12:54Z",
+	"updated_at": "2015-04-14T19:45:21Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

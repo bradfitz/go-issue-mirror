@@ -1,0 +1,12 @@
+{
+	"id": 229999055,
+	"body": "We ran into the same issue.  In function ConvertValue (sql/driver/types.go) could we not implement the same check for nil pointers that is used on standard types (line 238) on types that implement the Valuer interface?\r\n\r\nSomething like:\r\n\r\n```\r\nif svi, ok := v.(Valuer); ok {\r\n\r\n\t\trv := reflect.ValueOf(svi)\r\n\t\tif rv.Kind() == reflect.Ptr \u0026\u0026 rv.IsNil() {\r\n    \t\t\treturn nil, nil\r\n\t\t}\r\n\r\n   \t\tsv, err := svi.Value()\r\n   \t\tif err != nil {\r\n   \t\t\treturn nil, err\r\n   \t\t}\r\n   \t\tif !IsValue(sv) {\r\n   \t\t\treturn nil, fmt.Errorf(\"non-Value type %T returned from Value\", sv)\r\n   \t\t}\r\n   \t\treturn sv, nil\r\n   \t}\r\n```\r\n\r\nTo be clear, this would always insert NULL for a nil pointer, regardless of how the underlying type's Value method handles nil pointers, in cases where the Value method is defined on a pointer.  We could check if the method is implemented on a pointer and then call it, however, I can't imagine any situation where you would not want to insert a dbase NULL for a nil pointer.",
+	"user": {
+		"login": "220kts",
+		"id": 11798252,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-01T17:07:24Z",
+	"updated_at": "2016-07-01T17:51:37Z"
+}

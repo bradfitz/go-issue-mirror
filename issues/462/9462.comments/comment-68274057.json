@@ -1,0 +1,12 @@
+{
+	"id": 68274057,
+	"body": "The ultimate explanation for the problem is that the interpreter uses a completely different (intrinsic) implementation of the \"reflect\" package, and that implementation is currently incomplete.  (You're welcome to fill in the gaps---it's not hard---but it's not a priority for me.)  The failure is unrelated to recent changes in Go tip.\r\n\r\nUnfortunately the error message in this case was poor: instead of telling you that the SliceOf function is among those not yet implemented, the interpreter tried to execute the Go source implementation, which is appropriate for gc but not for go/ssa/interp.\r\n\r\nI have a pending CL which does two things:\r\nhttps://go-review.googlesource.com/#/c/2145/\r\n\r\n1.  Deletes the bodies of all standalone functions in the \"reflect\" package that require intrinsic treatment.  (Methods may need a similar treatment.)  We already do this for the \"runtime\" package, which must also be treated completely intrinsically.  This will make the failures more obvious, e.g.:\r\n    panic: no code for function: reflect.ChanOf\r\n\r\n2. Implements reflect.SliceOf, so that your specific test case works.  But I haven't implemented ChanOf, etc.\r\n\r\n(BTW: the tests run about 3x slower recently; I believe this is due to recent major performance regressions in the runtime.) ",
+	"user": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-29T16:48:37Z",
+	"updated_at": "2014-12-29T16:48:37Z"
+}

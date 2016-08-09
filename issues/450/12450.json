@@ -1,0 +1,17 @@
+{
+	"id": 104437158,
+	"number": 12450,
+	"state": "closed",
+	"title": "io: consider reusing buffers for io.Copy to reduce GC pressure",
+	"body": "I wonder whether the possibility of pooling (reusing) buffers was considered for io package. io.Copy is used in standard library internals (i.e. net/http), and some workloads can benefit from buffer reusage inside io package, which reduces GC pressure.\r\n\r\nConsider the following patch:\r\n\r\n```diff\r\ndiff --git i/src/io/io.go w/src/io/io.go\r\nindex 8851eaf..accbb7f 100644\r\n--- i/src/io/io.go\r\n+++ w/src/io/io.go\r\n@@ -14,6 +14,7 @@ package io\r\n \r\n import (\r\n \t\"errors\"\r\n+\t\"sync\"\r\n )\r\n \r\n // ErrShortWrite means that a write accepted fewer bytes than requested\r\n@@ -375,7 +376,8 @@ func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {\r\n \t\treturn rt.ReadFrom(src)\r\n \t}\r\n \tif buf == nil {\r\n-\t\tbuf = make([]byte, 32*1024)\r\n+\t\tbuf = bufPool.Get().([]byte)\r\n+\t\tdefer bufPool.Put(buf)\r\n \t}\r\n \tfor {\r\n \t\tnr, er := src.Read(buf)\r\n@@ -519,3 +521,7 @@ func (t *teeReader) Read(p []byte) (n int, err error) {\r\n \t}\r\n \treturn\r\n }\r\n+\r\n+var bufPool = sync.Pool{\r\n+\tNew: func() interface{} { return make([]byte, 32*1024) },\r\n+}\r\n```\r\n\r\nI have an app using net/http which receives requests at a high rate. Before applying this patch the GC triggered every ~17 seconds reporting 6% cpu usage:\r\n\r\n```\r\ngc 2203 @36423.458s 6%: 0.98+607+0.002+780+150 ms clock, 0.98+607+0+420/187/0+150 ms cpu, 673-\u003e684-\u003e426 MB, 686 MB goal, 1 P\r\ngc 2204 @36440.582s 6%: 0.84+1388+0.003+2324+250 ms clock, 0.84+1388+0+1208/560/0+250 ms cpu, 672-\u003e689-\u003e420 MB, 686 MB goal, 1 \r\n```\r\n\r\nafter applying the patch above, the same app running under the same workload sees significantly less frequent GC runs: \u003e90 seconds intervals and cpu usage reported at about 1-2%:\r\n\r\n```\r\ngc 35 @2085.673s 1%: 1.1+601+0.002+1716+129 ms clock, 1.1+601+0+144/440/339+129 ms cpu, 593-\u003e599-\u003e382 MB, 605 MB goal, 1 P\r\ngc 36 @2182.304s 1%: 1.1+576+0.004+951+89 ms clock, 1.1+576+0+501/244/0+89 ms cpu, 609-\u003e615-\u003e374 MB, 621 MB goal, 1 P\r\n```",
+	"user": {
+		"login": "artyom",
+		"id": 68182,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-09-02T15:32:10Z",
+	"created_at": "2015-09-02T09:24:42Z",
+	"updated_at": "2015-09-02T15:32:10Z"
+}

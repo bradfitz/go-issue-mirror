@@ -1,0 +1,12 @@
+{
+	"id": 66054025,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **james@abneptis.com**:\n\n\u003cpre\u003e(Sorry for the lag, this patch has been surprisingly non disruptive to my work so far,\nand I didn't want to break flow to run upstream tests;  The below should be accurate).\n\nInterestingly, not what I would've expected.  With this patch, the attached produces\nconstant results in both the linear \u0026 goroutined, in both the standard and PID=1\nscenario.  (And PID(1)s getppid is aparrently 0, which  makes reasonable sense).  I\ndon't know if is.Getppid caches somehow, but I might investigate this as a possible\nexplaination soon.\n\nThe attached /should/ generate a panic in the same situation, but it does make some\nassumptions on timing of the underlying system (with patch, it runs cleanly on my\nsystem, without it fails, both consistant).\n\nPanic/issue does NOT occur with slow timers (probably due to no goroutines needing\nclone()).\n\nPanic/issue DOES arrise with short timers /when setting GOMAXPROCS/, leading to an\ninability to actually call getppid (unpatched) under the triggering circumstances.\n\nI will happily attach the initrd+kernel+kvm-command-line I'm using if you're interested\nin testing the actual flow if interested, but my next two paths of investigation are:\n\n - Does Go cache (and share with clones) all process information used by future Go calls? (e.g., does os.Getpid/Getppid pull from some process cache?)\n - What does the Kernel actually do with CLONE_PARENT that would cause it to fail with Init?\n\n-----\n\nNB For future Init testers\u0026searchers:\n  - You can test the above patch by simply applying it to 'src/pkg/runtime', running 'gomake install' (with appropriate GOARCH's), and rebuild all final binaries;  Because it's a constant adjustment, the final .a (shouldn't) change any linked locations.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/1406/2/kix.go\"\u003ekix.go\u003c/a\u003e (545 bytes)",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-01-13T04:09:06Z",
+	"updated_at": "2014-12-08T10:08:11Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 141762261,
+	"number": 14854,
+	"state": "open",
+	"title": "x/sys/unix: Getrlimit should support RLIMIT_NPROC (number of process limits)",
+	"body": "Under Linux a process can be restricted to the number of threads and processes it can launch at any one time. When hitting the process limit, `pthread_create` will start failing with EAGAIN which causes the go runtime to abort (see bugs https://github.com/golang/go/issues/4056 and https://github.com/golang/go/issues/14835).\r\n\r\nIn https://github.com/golang/go/issues/4056 it is mentioned that a user should be managing the number of threads (see Comment 33 https://github.com/golang/go/issues/4056#issuecomment-66070031 from @dvyukov)\r\n\u003e Users must limit number of threads in sys/cgo calls.\r\n\r\nHowever, different systems can vary widely in the number of threads that you are allowed to create. It is very common on server systems to have a thread limit of 10k, while on desktop and embedded systems it could be as little as 512. Thus the user need to know about the number of threads/processes that an operating system will allow.\r\n\r\nLinux provides the ability to read this information using the getrlimit syscall, calling with RLIMIT_NPROC (see http://man7.org/linux/man-pages/man2/getrlimit.2.html). The go runtime already provides access to `getrlimit` in the syscall.Getrlimit (see https://golang.org/pkg/syscall/#Getrlimit) but this module doesn't currently have the RLIMIT_NPROC resource constant (maybe because it isn't POSIX?).\r\n\r\nFrom the getrlimit man page;\r\n\u003e RLIMIT_MEMLOCK  and  RLIMIT_NPROC  derive  from  BSD and are not specified in POSIX.1-2001; they are present on the BSDs and Linux, but on few other implementations.\r\n\r\nI believe this can probably be very easily fixed by changing the regex in mkerrors.sh like shown in this patch here -\u003e https://go-review.googlesource.com/#/c/20751/1/src/syscall/mkerrors.sh\r\n",
+	"user": {
+		"login": "mithro",
+		"id": 21212,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-03-18T03:13:32Z",
+	"updated_at": "2016-03-18T03:51:57Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

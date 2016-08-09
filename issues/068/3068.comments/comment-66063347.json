@@ -1,0 +1,12 @@
+{
+	"id": 66063347,
+	"body": "\u003ca id=\"c5\"\u003e\u003c/a\u003eComment 5:\n\n\u003cpre\u003eI cannot reproduce the GTK failure.  It may have been fixed by recent changes\nsurrounding the main goroutine vs main thread.\n\nI can reproduce the SDL failure at tip, with some changes to make the bindings compile. \nIt is caused by the fact that SDL_OpenAudio calls its callback on a new thread, one that\nSDL created, and that thread is not set up to call Go code.  A limitation of the current\nexport mechanism is that the exported functions can only be called on threads that were\ncreated by Go (meaning they called into C using cgo, and that C is invoking the\ncallback).\n\nI believe there is a trick where you write your callback in C and use pthreads shared\nmemory to communicate with other C code actually called from a Go thread, and have that\nGo thread run the actual Go code you want.  I don't know quite how it works, and I admit\nit is not ideal, but we're not going to be able to make major changes to fix this before\nGo 1.\n\nI will make the program print a nice message before crashing.\u003c/pre\u003e\n\n_Labels changed: added **priority-later**, removed **priority-go1**._\n\n\n_Status changed to **LongTerm**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-03-08T05:02:55Z",
+	"updated_at": "2014-12-08T10:15:59Z"
+}

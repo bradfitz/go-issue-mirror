@@ -1,0 +1,28 @@
+{
+	"id": 51276080,
+	"number": 125,
+	"state": "closed",
+	"title": "http.URLEscape doesn't escape enough characters",
+	"body": "by **a.lindsay**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nfmt.Println(http.URLEscape(\u0026quot;aBc_.-/[]()ç\u0026quot;));\n...doesn't escape anything. By my calculations, only the first six characters should be\nescaped.\n\nWhat is the expected output? What do you see instead?\nexpected:\n aBc_.-%2f%5b%5d%28%29%c3%a7\n\nseen:\n aBc_.-/[]()ç\n\nMy expectations are greatly colored by python's urllib.quote_plus. YMMV. Not all web\nservers are \nlimited to ascii alphanumeric plus '-._'.\n\nWhat is your $GOOS?  $GOARCH?\ndarwin/amd64\n\nWhich revision are you sync'ed to?  (hg log -l 1)\n4017:b55da7e4a1a5\n\nPlease provide any additional information below.\n\nI don't have the time right now to see a patch through the system (sorry! this is\nalready stealing \ntime from my PhD!), but the following functions are offered freely offered under the\nstandard go \ncontributor agreement. \n\nI revised two functions aping the go coding style the best I could. I needed another to\ncalculate \nthe byte length of a unicode character, and did the simplest possible thing that could\nwork. \nEnjoy.\n\nfunc shouldEscape(c int) bool {\n\tswitch {\n\tcase c == 95, c \u0026gt; 44 \u0026amp;\u0026amp; c \u0026lt; 47, c \u0026gt; 47 \u0026amp;\u0026amp; c \u0026lt; 58, c \u0026gt; 64 \u0026amp;\u0026amp; c \u0026lt; 91, c \u0026gt; 96 \u0026amp;\u0026amp; c \u0026lt; 123:\n\t\treturn false\n\t}\n\treturn true;\n}\n\nfunc unicodeLen(c int) int {\n\tswitch {\n\tcase c \u0026lt; 128:\n\t\treturn 1\n\tcase c \u0026lt; 2048:\n\t\treturn 2\n\tcase c \u0026lt; 65536:\n\t\treturn 3\n\tdefault:\t// c \u0026lt; 1114112,\n\t\treturn 4\n\t}\n\treturn 4;\n}\n\nfunc URLEscape(s string) string {\n\tspaceFlag := false;\n\thexCount, multibyteCount := 0, 0;\n\tfor _, c := range s {\n\t\tswitch shouldEscape(c) {\n\t\tcase c == ' ':\n\t\t\tspaceFlag = true\n\t\tdefault:\n\t\t\thexCount += unicodeLen(c);\t\t// extra hex pairs\n\t\t\tmultibyteCount += (unicodeLen(c) - 1);\t// extra percent signs\n\t\t}\n\t}\n\n\tif !spaceFlag \u0026amp;\u0026amp; hexCount == 0 {\n\t\treturn s\n\t}\n\n\tt := make([]byte, len(s)+2*hexCount+multibyteCount);\n\tj := 0;\n\tfor _, c := range s {\n\t\tswitch {\n\t\tcase c == ' ':\n\t\t\tt[j] = '+';\n\t\t\tj++;\n\t\tcase shouldEscape(c) \u0026amp;\u0026amp; c \u0026lt; 128:\n\t\t\tt[j] = '%';\n\t\t\tt[j+1] = \u0026quot;0123456789abcdef\u0026quot;[c\u0026gt;\u0026gt;4];\n\t\t\tt[j+2] = \u0026quot;0123456789abcdef\u0026quot;[c\u0026amp;15];\n\t\t\tj += 3;\n\t\tcase c \u0026lt; 128:\n\t\t\tt[j] = uint8(c);\n\t\t\tj++;\n\t\tdefault:\n\t\t\tr := strings.Bytes(string(c));\n\t\t\tfor _, b := range r {\n\t\t\t\tt[j] = '%';\n\t\t\t\tt[j+1] = \u0026quot;0123456789abcdef\u0026quot;[b\u0026gt;\u0026gt;4];\n\t\t\t\tt[j+2] = \u0026quot;0123456789abcdef\u0026quot;[b\u0026amp;15];\n\t\t\t\tj += 3;\n\t\t\t}\n\t\t}\n\t}\n\treturn string(t);\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:03:22Z",
+	"created_at": "2009-11-13T00:22:44Z",
+	"updated_at": "2016-06-24T18:51:22Z"
+}

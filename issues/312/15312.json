@@ -1,0 +1,33 @@
+{
+	"id": 148526069,
+	"number": 15312,
+	"state": "closed",
+	"title": "net/http: document explicitly that http2 doesn't support Hijacker",
+	"body": "When I upgraded to go1.6 (Linux amd64) our applications, which rely heavily on Server-sent events, stopped working because *http2responseWriter does not implement http.Hijacker (https://github.com/golang/go/issues/14797) (tried Firefox only).\r\n\r\nI'm not using any SSE package, see code below (slightly edited), and it worked fine for 4 years until go1.6.\r\n\r\nAs I said in the referenced issue, I think there is a problem with the documentation because I relied on a feature that stopped working without warning.\r\nI propose to document that *http2responseWriter is not an Hijacker and any other possible case, so that people can evaluate if and when to rely on the hijacking feature and how to set up the server so that it may fail only for external causes.\r\nIt may seems that there are no sensible uses for hijacking besides websockets, but you never know, in fact I was using it for SSE.\r\n\r\nEDIT: I realize I can't expect my code to work across http versions if I hardcode the version myself, but even if the version was correct it doesn't reach past the type assertion. How should I go about rewriting this without hijacking?\r\n\r\n```\r\nvar sseHeader = \"HTTP/1.1 200 OK\\nContent-Type: text/event-stream\\n\\n\"\r\n\r\nfunc handleSse(w http.ResponseWriter, r *http.Request) {\r\n    conn, bufrw, err := w.(http.Hijacker).Hijack()\r\n    if err != nil {\r\n        http.Error(w, \"hijack failed\", http.StatusInternalServerError)\r\n        return\r\n    }\r\n    if _, err := bufrw.WriteString(sseHeader); err != nil {\r\n        conn.Close()\r\n        return\r\n    }\r\n    if err := bufrw.Flush(); err != nil {\r\n        conn.Close()\r\n        return\r\n    }\r\n    newSse(func(msg []byte) (ok bool) {\r\n        for _, line := range bytes.Split(msg, []byte(\"\\n\")) {\r\n            if _, err := bufrw.WriteString(\"data: \"); err != nil {\r\n                conn.Close()\r\n                return\r\n            }\r\n            if _, err := bufrw.Write(line); err != nil {\r\n                conn.Close()\r\n                return\r\n            }\r\n            if err := bufrw.WriteByte('\\n'); err != nil {\r\n                conn.Close()\r\n                return\r\n            }\r\n        }\r\n        if err := bufrw.WriteByte('\\n'); err != nil {\r\n            conn.Close()\r\n            return\r\n        }\r\n        if err := bufrw.Flush(); err != nil {\r\n            conn.Close()\r\n            return\r\n        }\r\n        return true\r\n    })\r\n}\r\n```",
+	"user": {
+		"login": "clementino",
+		"id": 4610628,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-04-18T16:11:40Z",
+	"created_at": "2016-04-15T01:09:23Z",
+	"updated_at": "2016-04-18T16:11:40Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

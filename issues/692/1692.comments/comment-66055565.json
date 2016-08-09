@@ -1,0 +1,12 @@
+{
+	"id": 66055565,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2 by **jimenezrick**:\n\n\u003cpre\u003eI have used `strace' with both cases, when SO_REUSEADDR is enable by\ndefault and when SO_REUSEADDR is disabled later by me inside my\nprogram. Both traces are attached to this message. Next I describe\nwhat could be an explanation of the problem.\n\nBelow there is a fragment of the output of `strace' when I *disable*\nSO_REUSEADDR manually:\n\n...\nsocket(PF_INET6, SOCK_DGRAM, IPPROTO_IP) = 3   -- (*1)\nfcntl(3, F_SETFD, FD_CLOEXEC)     = 0\nsetsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0\nsetsockopt(3, SOL_SOCKET, SO_BROADCAST, [1], 4) = 0\nsetsockopt(3, SOL_IPV6, IPV6_V6ONLY, [0], 4) = 0\nbind(3, {sa_family=AF_INET6, sin6_port=htons(10000), ...) = 0\n...\nfcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0   -- (*2)\ndup(3)                            = 7            -- (*3)\nfcntl(7, F_GETFL)                 = 0x802 (flags O_RDWR|O_NONBLOCK)\nfcntl(7, F_SETFL, O_RDWR)         = 0     -- (*4)\nsetsockopt(7, SOL_SOCKET, SO_REUSEADDR, [0], 4) = 0   -- (*5)\ngettimeofday({1304448918, 597094}, NULL) = 0\nrecvfrom(3,  \u0026lt;unfinished ...\u0026gt;    (*1)      -- (*6)\n...\n\n(*1) Ok, this is my socket and SO_REUSEADDR is set on it atomatically.\n(*2) As I have seen O_NONBLOCK mode is used to handle the timeouts.\n(*3) IMPORTANT: when SO_REUSEADDR is NOT disabled (manually), the\n`dup()' call *does not* happend neither the next fcntl() call.\n(*4) From the dup'ed file descriptor set the file descriptor status to\nO_RDWR as before BUT WITHOUT O_NONBLOCK.\n(*5) Here is when is disable SO_REUSEADDR manually with:\nsyscall.SetsockoptInt().\n(*6) Here the recvfrom() stalls because O_NONBLOCK no longer is used.\nThen I hit Control-C to interrupt de program.\n\n\nSo, that is what I have seen in case it is useful to analyze the\nissue. In this occasion I used 8g (x86), as it presents the same\nissue.\n\n\nOn Tue, May 3, 2011 at 12:38 PM,  \u0026lt;go@googlecode.com\u0026gt; wrote:\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2011-05-03T19:43:19Z",
+	"updated_at": "2014-12-22T05:54:51Z"
+}

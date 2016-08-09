@@ -1,0 +1,12 @@
+{
+	"id": 66084036,
+	"body": "\u003ca id=\"c17\"\u003e\u003c/a\u003eComment 17:\n\n\u003cpre\u003eThank you for attaching that file full of intermediate objects.\nHere is the C Test function:\n\nvoid Test(int p0, double p1, double p2)\n{\n\tstruct {\n\t\tint p0;\n\t\tdouble p1;\n\t\tdouble p2;\n\t} __attribute__((packed)) a;\n\ta.p0 = p0;\n\ta.p1 = p1;\n\ta.p2 = p2;\n\tcrosscall2(_cgoexp_aff9d600cead_Test, \u0026a, 20);\n}\n\nand here is its disassembly:\n\n0x00002060 \u0026lt;Test+0\u0026gt;:\tsub    $0x3c,%esp\n0x00002063 \u0026lt;Test+3\u0026gt;:\tmov    0x40(%esp),%eax\n0x00002067 \u0026lt;Test+7\u0026gt;:\tmov    %eax,0x18(%esp)\n0x0000206b \u0026lt;Test+11\u0026gt;:\tfldl   0x44(%esp)\n0x0000206f \u0026lt;Test+15\u0026gt;:\tfstpl  0x20(%esp)\n0x00002073 \u0026lt;Test+19\u0026gt;:\tfldl   0x4c(%esp)\n0x00002077 \u0026lt;Test+23\u0026gt;:\tfstpl  0x28(%esp)\n0x0000207b \u0026lt;Test+27\u0026gt;:\tmovl   $0x14,0x8(%esp)\n0x00002083 \u0026lt;Test+35\u0026gt;:\tlea    0x18(%esp),%eax\n0x00002087 \u0026lt;Test+39\u0026gt;:\tmov    %eax,0x4(%esp)\n0x0000208b \u0026lt;Test+43\u0026gt;:\tmovl   $0x0,(%esp)\n0x00002092 \u0026lt;Test+50\u0026gt;:\tcall   0x2097 \u0026lt;Test+55\u0026gt;\n0x00002097 \u0026lt;Test+55\u0026gt;:\tadd    $0x3c,%esp\n0x0000209a \u0026lt;Test+58\u0026gt;:\tret    \n0x0000209b \u0026lt;Test+59\u0026gt;:\tret    \n\nThe \"__attribute__((packed))\" is supposed to mean there is no padding\nbetween struct field elements, no matter what, and yet the code is\nstoring the 4-byte int at 0x18(%esp) but the first double at 0x20(%esp).\nThe 4-byte gap at 0x1c(%esp) is not supposed to be there, yet it is.\nThis is why Go cannot read the arguments correctly.\n\nThe best solution would be to get a better, less buggy copy of gcc.\nBut that might be difficult, since we don't know which versions have\nthe problem or even if it is an admitted problem.\n\nAnother solution might be to change cgo to stop using packed structs.\nIt could instead declare a struct with the arguments as scratch space\nand a buffer of the right size and then memmove from the scratch space\ninto the buffer.\n\nStill Go1.2Maybe, but not sure it will happen.\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-09-10T20:56:27Z",
+	"updated_at": "2014-12-22T06:28:05Z"
+}

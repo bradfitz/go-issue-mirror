@@ -1,0 +1,22 @@
+{
+	"id": 104994041,
+	"number": 12510,
+	"state": "closed",
+	"title": "net: Listen(\"tcp\", \":port\") fails in an AF_INET6-only environment",
+	"body": "Given a hacked-up IPv6-only Linux kernel:\r\n* socket(AF_INET6) ok\r\n* setsockopt(IPV6_V6ONLY, 0) fails\r\n* socket(AF_INET) fails\r\n\r\nThe following program:\r\n\r\n    package main\r\n    \r\n    import (\r\n            \"net\"\r\n            \"fmt\"\r\n            \"flag\"\r\n    )\r\n    \r\n    var port = flag.Int(\"port\", 8080, \"XXX\")\r\n    \r\n    func main() {\r\n            flag.Parse()\r\n            ln, err := net.Listen(\"tcp\", fmt.Sprintf(\":%d\", *port))\r\n            if err != nil {\r\n                    fmt.Printf(\"FAIL: %v\\n\", err)\r\n                    return\r\n            }\r\n            fmt.Printf(\"Listening on %v; sleeping.\\n\", ln.Addr())\r\n            select{}\r\n    }\r\n\r\nDoes not work:\r\n\r\n    $ ./listen \r\n    FAIL: listen tcp :8080: socket: address family not supported by protocol\r\n\r\nThe problem is, `favoriteAddrFamily` sees that it can't use dual-stack sockets, and falls back to AF_INET without first checking `supportsIPv4`.\r\n\r\nYou can use `\"[::]:port\"` as a workaround, but `\":port\"` ought to work.  I'm preparing a patch for this.",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-09-05T02:31:36Z",
+	"created_at": "2015-09-05T01:08:53Z",
+	"updated_at": "2015-09-26T05:37:25Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

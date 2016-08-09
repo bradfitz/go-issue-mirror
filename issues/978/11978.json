@@ -1,0 +1,27 @@
+{
+	"id": 98547420,
+	"number": 11978,
+	"state": "closed",
+	"title": "database/sql: retry logic is unsafe",
+	"body": "### What version of Go are you using (go version)?\r\n \r\n    jack@edi:~$ go version\r\n    go version go1.5beta3 linux/amd64\r\n\r\n### What operating system and processor architecture are you using?\r\n\r\n    jack@edi:~$ uname -a\r\n    Linux edi 3.13.0-61-generic #100-Ubuntu SMP Wed Jul 29 11:21:34 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux\r\n\r\n### What did you do?\r\n\r\nExecute a query with database/sql over an unreliable connection. For example:\r\n\r\n    update t set n=n+1;\r\n\r\n### What did you expect to see?\r\n\r\nAn error message that means the query failed and n is unchanged, or no error meaning the query executed exactly one time and n has been incremented by 1.\r\n\r\n### What did you see instead?\r\n\r\nThe query may have actually executed multiple times and thereby n may have been incremented multiple times.\r\n\r\n### Reproducing the error\r\n\r\nIt was necessary to build some infrastructure to reproduce this error. I wrote [cavein](https://github.com/jackc/cavein), a TCP tunnel server that purposely breaks connections to aid in reproduction. That, combined with [go_database_sql_retry_bug](https://github.com/jackc/go_database_sql_retry_bug), a test application that executes many updates over the unreliable connections provided by [cavein](https://github.com/jackc/cavein) can reliably reproduce queries being executed extra times.\r\n\r\n### Suggested solution\r\n\r\nAutomatic retry should be removed from Exec and Query. It is impossible at the library layer to know if it is safe to retry a query.",
+	"user": {
+		"login": "jackc",
+		"id": 94130,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2015-08-07T07:45:53Z",
+	"created_at": "2015-08-01T16:08:58Z",
+	"updated_at": "2016-08-08T21:04:06Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

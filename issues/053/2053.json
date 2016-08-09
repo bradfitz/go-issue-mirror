@@ -1,0 +1,28 @@
+{
+	"id": 51278665,
+	"number": 2053,
+	"state": "closed",
+	"title": "max compile-time constant precision not quite enough for extreme floating point values",
+	"body": "\u003cpre\u003eThe compiler's multi-precision library (\u0026quot;infinite precision\u0026quot; so to speak in\nthe spec) has a maximum integer size of 464 bits. This generous value is large enough\nfor nearly every reasonable constant computation and hugely superior to the typical\n32-bot or 64-bit limit. However, when computing constants for the largest and smallest\nexpressible double precision floating point values, or when determining the elsilon\nvalues at these extremes, sizes of 1024 bits and 1074 bits are required, respectively.\nSince this is not that much more than the already provided 464, this feature request\nasks to extend the size accordingly.\n\nWhat steps will reproduce the problem?\n\nCompile a constant like x := float64(1\u0026lt;\u0026lt;996) and notice that the compiler dies.\n\nWhat is the expected output?\n\nX should be initialized with 6.69692879491417e+299\n\nWhat do you see instead?\n\n\u0026quot;error:stupid shift: 996\u0026quot;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g, but applies to all\n\nWhich operating system are you using?\n\nOS X, but applies to all\n\nWhich revision are you using?  (hg identify)\n\nd847323c0fbf+ tip, but applies to all\n\nPlease provide any additional information below.\n\nLines 90 and 91 of the file src/cmd/gc/go.h are:\nMpscale = 29,           // safely smaller than bits in a long\nMpprec  = 16,           // Mpscale*Mpprec is max number of bits\n\nIndeed, 29*16 = 464. Two mutually exclusive changes are simple and effective to add this\nfeature:\n\nSolution: more words, but longer inner loops.\nchange Mpprec from 16 to 36 (to enable 1\u0026lt;\u0026lt;1024) or 38 (for the ultimate\n1\u0026lt;\u0026lt;1074) which is enough to compute SmallestNonzeroFloat64 as 1 / 2**(1023 - 1 +\n52)\nThis is the new code:\n\nMpprec = 38,\u003c/pre\u003e",
+	"user": {
+		"login": "MichaelTJones",
+		"id": 7877285,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2014-12-08T10:11:07Z",
+	"created_at": "2011-07-08T14:44:33Z",
+	"updated_at": "2016-06-24T19:32:05Z"
+}

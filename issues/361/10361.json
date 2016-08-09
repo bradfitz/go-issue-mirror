@@ -1,0 +1,22 @@
+{
+	"id": 66857311,
+	"number": 10361,
+	"state": "closed",
+	"title": "runtime: Memory management problem of using `interface {}`",
+	"body": "I use golang for processing large JSON files(currently about 30GB), golang is useful for development, but it seems to be much slower and use much more memory than I expected.\r\nSo I tested performance of `interface {}` with about 200MB text file. It contains 10M entries having one key value pair separated with `\"\\t\"`.\r\nSo I simply try to use `bytes.Split` and `strings.Split`, but my framework processing arbitrary object requires data whose type is `encoding/json`'s one. So every time I should copy `[]string` to `[]interface {}` as noted in many golang-related documents as the following:\r\n\r\n```go\r\n// Please forgive me dirty error processing...\r\nb, err := ioutil.ReadFile(\"../10M.txt\")\r\nif err != nil {\r\n\tpanic(err)\r\n}\r\nlines := bytes.Split(b, []byte(\"\\n\"))\r\nobjs := make([]interface {}, len(lines))\r\nfor i, line := range lines {\r\n\tobjs[i] = string(line)\r\n}\r\nlines = nil\r\nfor i, obj := range objs {\r\n\tparts := strings.Split(obj.(string), \"\")\r\n\tiparts := make([]interface {}, len(parts))\r\n\tfor i, part := range parts {\r\n\t\tiparts[i] = part\r\n\t}\r\n\tobjs[i] = iparts\r\n}\r\n```\r\n\r\nOn my Windows 8.1 (64bit) laptop, this takes \u003e=2GB memory and \u003e=1min (In the same environment, I can count value with easy Unix commands in 22s.)\r\n\r\nAt first, I can't believe this result, because even if I should copy array to convert types (I can agree with this process to process arbitrary type, because it happens only at first time loading and parsing), this program takes about `2*(64/8)*10`MB for `[]interface {}`.\r\n\r\nI read some code about runtime in `src/runtime/iface.go` and `src/runtime/runtime2.go` and some disassembled code with `go tool objdump`, I observed mysterious memory copy at assigning `part` to `iparts` and returning this `iparts`.\r\n\r\nWhat I expected are,\r\n\r\n- `interface {}` is like C struct having pointers of type and data. So when I allocate `[]interface {}` with appropriate size, we can set interface entry __without calling runtime functions__.\r\n- returning `interface {}` can be done with using 2 registers or stack, so we can __avoid memory allocation for it__.\r\n- `string` are immutable and `[]byte` are mutable, so converting between them requires memory copy but I want to avoid this as shown in this example [http://qiita.com/mattn/items/176459728ff4f854b165](http://qiita.com/mattn/items/176459728ff4f854b165) (Sorry, this is Japanese document). And I use this technique in unmarshaling JSON `[]byte` from file.\r\n\r\nOf course, this is based on my poor golang experience, so if someone knows about this behavior, please tell me about this! I think golang is best for developing rapidly safe and fast programs as used in some CoreOS-related projects. So if someone knows how to process arbitrary object without using `interface {}`, please tell me about this too!",
+	"user": {
+		"login": "ghost",
+		"id": 10137,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-04-07T11:24:05Z",
+	"created_at": "2015-04-07T11:20:35Z",
+	"updated_at": "2016-06-25T02:04:51Z"
+}

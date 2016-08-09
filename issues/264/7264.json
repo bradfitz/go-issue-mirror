@@ -1,0 +1,39 @@
+{
+	"id": 51286442,
+	"number": 7264,
+	"state": "closed",
+	"title": "net/http: data race in TestTransportResponseHeaderTimeout",
+	"body": "\u003cpre\u003eparent: 19010:d067c6de4ec3 tip, linux/amd64\n$ go test -v -race -cpu=16,16,16,16 -run=TestTransportResponseHeaderTimeout net/http\n\nWARNING: DATA RACE\nWrite by goroutine 51:\n  sync.raceWrite()\n      src/pkg/sync/race.go:41 +0x35\n  sync.(*WaitGroup).Wait()\n      src/pkg/sync/waitgroup.go:120 +0x16d\n  net/http/httptest.(*Server).Close()\n      src/pkg/net/http/httptest/server.go:168 +0x6a\n  net/http_test.TestTransportResponseHeaderTimeout()\n      src/pkg/net/http/transport_test.go:1254 +0x6de\n  testing.tRunner()\n      src/pkg/testing/testing.go:398 +0x10f\n\nPrevious read by goroutine 366:\n  sync.raceRead()\n      src/pkg/sync/race.go:37 +0x35\n  sync.(*WaitGroup).Add()\n      src/pkg/sync/waitgroup.go:60 +0xc1\n  net/http/httptest.(*waitGroupHandler).ServeHTTP()\n      src/pkg/net/http/httptest/server.go:198 +0x5e\n  net/http.serverHandler.ServeHTTP()\n      src/pkg/net/http/server.go:1599 +0x1cc\n  net/http.(*conn).serve()\n      src/pkg/net/http/server.go:1162 +0xc36\n\nGoroutine 51 (running) created at:\n  testing.RunTests()\n      src/pkg/testing/testing.go:479 +0xbb5\n  testing.Main()\n      src/pkg/testing/testing.go:411 +0xad\n  main.main()\n      /tmp/go-build864201384/net/http/_test/_testmain.go:443 +0xdc\n\nGoroutine 366 (running) created at:\n  net/http.(*Server).Serve()\n      src/pkg/net/http/server.go:1646 +0x2d1\n\n\nThe test sends request to /slow:\n\tmux.HandleFunc(\u0026quot;/slow\u0026quot;, func(w ResponseWriter, r *Request) { time.Sleep(2 * time.Second) })\ngets timeout error after 500ms and then closes the server with:\n\tdefer ts.Close()\n\nClose waits for all outstanding handlers to finish:\nfunc (s *Server) Close() {\n\ts.Listener.Close()\n\ts.wg.Wait()\n\t...\n}\n\nThe wg is +1'ed in the handler:\nfunc (h *waitGroupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\n\th.s.wg.Add(1)\n\tdefer h.s.wg.Done() // a defer, in case ServeHTTP below panics\n\th.h.ServeHTTP(w, r)\n}\n\nSo essentially when the test closes the server and waits for all outstanding handlers to\nfinish, ServeHTTP may not yet have +1'ed wg, so wg.Wait will return early w/o waiting\nfor the handler.\n\n\nhttptest.NewServer API assumes that tests wait at least for handlers to start executing.\nThen Close will wait for handlers to finish.\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		},
+		{
+			"name": "Testing"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 23,
+	"closed_at": "2014-12-08T10:40:22Z",
+	"created_at": "2014-02-05T14:41:11Z",
+	"updated_at": "2016-06-25T01:26:54Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

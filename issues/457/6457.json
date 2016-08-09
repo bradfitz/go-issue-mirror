@@ -1,0 +1,22 @@
+{
+	"id": 51285215,
+	"number": 6457,
+	"state": "closed",
+	"title": "Non- termination of go routines",
+	"body": "by **kerridgejon**:\n\n\u003cpre\u003e1.The code is located at \u003ca href=\"https://bitbucket.org/jkerridge/gows/src\"\u003ehttps://bitbucket.org/jkerridge/gows/src\u003c/a\u003e\n2.issue the command go test pnp\n3.\n\nWhat is the expected output?\nthe test should pass\n\nWhat do you see instead?\nThe test fails\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n?\n\nWhich operating system are you using?\nWindows 7 and goclipse\n\nWhich version are you using?  (run 'go version')\ngo1.1.2\n\nPlease provide any additional information below.\nThe key elements are :\nfunc RecvValue (valuePtr *int,\n\tin chan int) {\n\t*valuePtr = \u0026lt;-in\n}\t\n\nand \n\nfunc PlusP (in1 chan int,\n\tin2 chan int,\n\tout chan int ) {\n\tvar v1, v2 int = 0, 0\n\tfor {\n\t\tgo RecvValue (\u0026amp;v1, in1)\n\t\tgo RecvValue (\u0026amp;v2, in2)\n\t\tout \u0026lt;- v1 + v2\n\t}\n}\n\nIf I use Plus as formulated as PlusP the test fails\n\nIf I use the following formulation of Plus\n\nfunc Plus (in1 chan int,\n\tin2 chan int,\n\tout chan int ) {\n\tvar v1, v2 int = 0, 0\n\tfor {\n\t\t//read in1 and in2 in parallel\n\t\tselect {\n\t\t\tcase v1 = \u0026lt;-in1:\n\t\t\t\tv2 = \u0026lt;-in2\n\t\t\tcase v2 = \u0026lt;-in2:\n\t\t\t\tv1 = \u0026lt;- in1\n\t\t}\n\t\tout \u0026lt;- v1 + v2\n\t}\n}\nthe test passes.\n\nThe problem seems to be that the runtime system does not wait for the termination of go\nroutines when there is an input.\n\nIn the code in brick.go you will see the following functions\nfunc SendValue(value int,\n\tout chan int) {\n\tout \u0026lt;- value\n}\nand\nfunc Copy2(in chan int,\n\tout1 chan int,\n\tout2 chan int) {\n\tfor {\n\t\tv := \u0026lt;-in\n\t\tgo SendValue(v, out1)\n\t\tgo SendValue(v, out2)\n\t}\n}\nwhich do work as expected.\n\nThere seems to be a lack of symmetry in the operation of the runtime system.\n\nI come from an Occam and JCSP background and thus I am used to this style of programming\nand thus would like to see GO work in the same way.\n\n\nIn thread terms its as if you have implemented fork but not join.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:35:38Z",
+	"created_at": "2013-09-23T10:01:29Z",
+	"updated_at": "2016-06-25T01:19:26Z"
+}

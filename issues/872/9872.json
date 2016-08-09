@@ -1,0 +1,33 @@
+{
+	"id": 57681833,
+	"number": 9872,
+	"state": "closed",
+	"title": "runtime: garbage collector found invalid heap pointer iterating over map",
+	"body": "This issue appears similar to #9384, but does not require a struct and is still reproducible on some systems running 1.4.1 .\r\n\r\nThe following program panics on OS X 10.9.5 and 10.7.5 with go1.4.1 darwin/386:\r\n\r\n```\r\npackage main\r\n\r\nimport ()\r\n\r\nfunc main() {\r\n\tvar m = make(map[int]int)\r\n\tfor i := 0; i \u003c 50000000; i++ {\r\n\t\tm[i] = 1\r\n\t}\r\n}\r\n```\r\n\r\nHere is the output:\r\n\r\n```\r\nruntime: garbage collector found invalid heap pointer *(0x54c60+0x10)=0x301c0000 s=nil\r\nfatal error: invalid heap pointer\r\n\r\nruntime stack:\r\nruntime.throw(0x53823)\r\n\t/usr/local/go/src/runtime/panic.go:491 +0x83 fp=0xbffffa68 sp=0xbffffa50\r\nscanblock(0x54c60, 0x5980, 0x3017c070)\r\n\t/usr/local/go/src/runtime/mgc0.c:378 +0x487 fp=0xbffffb08 sp=0xbffffa68\r\nmarkroot(0x1017e000, 0x1)\r\n\t/usr/local/go/src/runtime/mgc0.c:496 +0x133 fp=0xbffffb40 sp=0xbffffb08\r\nruntime.parfordo(0x1017e000)\r\n\t/usr/local/go/src/runtime/parfor.c:76 +0x93 fp=0xbffffb9c sp=0xbffffb40\r\ngc(0xbffffcd8)\r\n\t/usr/local/go/src/runtime/mgc0.c:1439 +0x1ef fp=0xbffffcc8 sp=0xbffffb9c\r\nruntime.gc_m()\r\n\t/usr/local/go/src/runtime/mgc0.c:1368 +0xb4 fp=0xbffffce8 sp=0xbffffcc8\r\nruntime.onM(0x54ef8)\r\n\t/usr/local/go/src/runtime/asm_386.s:266 +0x4b fp=0xbffffcec sp=0xbffffce8\r\nruntime.mstart()\r\n\t/usr/local/go/src/runtime/proc.c:818 fp=0xbffffcf0 sp=0xbffffcec\r\n\r\ngoroutine 1 [garbage collection]:\r\nruntime.switchtoM()\r\n\t/usr/local/go/src/runtime/asm_386.s:208 fp=0x10189694 sp=0x10189690\r\nruntime.gogc(0x0)\r\n\t/usr/local/go/src/runtime/malloc.go:469 +0x1a4 fp=0x101896b4 sp=0x10189694\r\nruntime.mallocgc(0x13000000, 0x2ed60, 0x0, 0x55100)\r\n\t/usr/local/go/src/runtime/malloc.go:341 +0x2be fp=0x1018970c sp=0x101896b4\r\nruntime.newarray(0x2ed60, 0x400000, 0x5c21)\r\n\t/usr/local/go/src/runtime/malloc.go:365 +0xaf fp=0x1018972c sp=0x1018970c\r\nruntime.hashGrow(0x2d3e0, 0x101a4020)\r\n\t/usr/local/go/src/runtime/hashmap.go:744 +0x69 fp=0x10189744 sp=0x1018972c\r\nruntime.mapassign1(0x2d3e0, 0x101a4020, 0x101897bc, 0x101897b8)\r\n\t/usr/local/go/src/runtime/hashmap.go:456 +0x425 fp=0x101897a0 sp=0x10189744\r\nmain.main()\r\n\t/Users/brian/gocode/src/github.com/bdeterling/memtest/main/main.go:10 +0x88 fp=0x101897cc sp=0x101897a0\r\nruntime.main()\r\n\t/usr/local/go/src/runtime/proc.go:63 +0xc6 fp=0x101897f0 sp=0x101897cc\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_386.s:2287 +0x1 fp=0x101897f4 sp=0x101897f0\r\n\r\ngoroutine 2 [force gc (idle)]:\r\nruntime.gopark(0x20630, 0x54d20, 0x37488, 0xf)\r\n\t/usr/local/go/src/runtime/proc.go:130 +0xd8 fp=0x101867cc sp=0x101867b4\r\nruntime.goparkunlock(0x54d20, 0x37488, 0xf)\r\n\t/usr/local/go/src/runtime/proc.go:136 +0x3c fp=0x101867e0 sp=0x101867cc\r\nruntime.forcegchelper()\r\n\t/usr/local/go/src/runtime/proc.go:99 +0x9d fp=0x101867f0 sp=0x101867e0\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_386.s:2287 +0x1 fp=0x101867f4 sp=0x101867f0\r\ncreated by runtime.init·4\r\n\t/usr/local/go/src/runtime/proc.go:87 +0x1f\r\n\r\ngoroutine 3 [GC sweep wait]:\r\nruntime.gopark(0x20630, 0x5a640, 0x37148, 0xd)\r\n\t/usr/local/go/src/runtime/proc.go:130 +0xd8 fp=0x10189fcc sp=0x10189fb4\r\nruntime.goparkunlock(0x5a640, 0x37148, 0xd)\r\n\t/usr/local/go/src/runtime/proc.go:136 +0x3c fp=0x10189fe0 sp=0x10189fcc\r\nruntime.bgsweep()\r\n\t/usr/local/go/src/runtime/mgc0.go:98 +0x91 fp=0x10189ff0 sp=0x10189fe0\r\nruntime.goexit()\r\n\t/usr/local/go/src/runtime/asm_386.s:2287 +0x1 fp=0x10189ff4 sp=0x10189ff0\r\ncreated by gc\r\n\t/usr/local/go/src/runtime/mgc0.c:1383\r\n```\r\n\r\nThe panic occurs consistently on iteration 13631487 (CFFFFF). It does not matter what value is assigned to the map. Defining the map with smaller types of values (bool, int8) causes it to fail after precisely double the iterations; larger (complex128) fail after half as many. Cannot reproduce on OS X 10.10 or Redhat 6.3.",
+	"user": {
+		"login": "bdeterling",
+		"id": 17190,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2015-02-25T21:09:14Z",
+	"created_at": "2015-02-14T05:16:49Z",
+	"updated_at": "2016-06-25T02:00:50Z",
+	"milestone": {
+		"id": 982268,
+		"number": 5,
+		"title": "Go1.4.3"
+	}
+}

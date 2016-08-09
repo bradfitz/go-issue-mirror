@@ -1,0 +1,12 @@
+{
+	"id": 82197609,
+	"body": "A convenient IO model is:\r\n\r\nwhile (Read(buf) == nil) {\r\n\t// process buf\r\n}\r\n\r\nFor example, bufio.Scanner.\r\n\r\nEOF is not signaled until after all data has been read.\r\n\r\nFor example, I have a read/write file or buffer that contains 10 bytes and I read 10 bytes, I don't have EOF. I'll append some more data before the next read. Don't read ahead to determine EOF.\r\n\r\nGo has a complicated io.Reader model which has two allowable EOF behaviours.\r\n\r\n\"When Read encounters an error or end-of-file condition after successfully reading n \u003e 0 bytes, it returns the number of bytes read. It may return the (non-nil) error from the same call or return the error (and n == 0) from a subsequent call. An instance of this general case is that a Reader returning a non-zero number of bytes at the end of the input stream may return either err == EOF or err == nil. The next Read should return 0, EOF regardless.\"\r\n\r\nPackages strings, bytes.Buffer, and bufio Readers don't return EOF until after there are no more bytes left to read. To see this behaviour, see DanK's earlier example, not the abbreviated one he posted here:\r\n\r\nhttp://play.golang.org/p/JwhBtBPbcM\r\n\r\nconst text = \"Hello, playground\" // len(text) == 17\r\nr := strings.NewReader(text)\r\nfmt.Println(r.Read(make([]byte, len(text))))\r\nfmt.Println(r.Read([]byte{}))\r\nfmt.Println(r.Read([]byte{0}))\r\n\r\nOutput:\r\n\r\n17 \u003cnil\u003e\r\n0 \u003cnil\u003e\r\n0 EOF\r\n\r\nWhich works as documented (http://golang.org/pkg/io/#Reader).",
+	"user": {
+		"login": "peterGo",
+		"id": 4561296,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-03-17T08:24:40Z",
+	"updated_at": "2015-03-17T08:24:40Z"
+}

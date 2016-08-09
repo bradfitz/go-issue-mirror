@@ -1,0 +1,21 @@
+{
+	"id": 132742159,
+	"number": 14286,
+	"state": "open",
+	"title": "net/http/pprof: Index has hard-coded prefix path",
+	"body": "Right now, https://golang.org/src/net/http/pprof/pprof.go?s=6283:6333#L197 has a\r\n\r\n```go\r\nfunc Index(w http.ResponseWriter, r *http.Request)\r\n```\r\n\r\nwhich only works if the path on which it is serving is exactly ``/debug/pprof/``.\r\n\r\nThis is weakly documented, and also a little inconvenient, as handling other paths may be desirable. In particular, its behaviour if you *do* assume that it can be hosted on other paths is that every profile you try to get returns the index page.\r\n\r\nIt would be nice to fix this so that it supports arbitrary path prefixes. The ways that occur to me to implement this are:\r\n\r\n1) Rather than extracting the expected path suffix up-front and looking it up in the profiles map, iterating over the available profiles and checking whether they are a suffix of the requested path (possibly the longest suffix). This is a little less efficient (O(1) profile lookup becomes O(|available profiles|), but the number of profiles should be small and this handler shouldn't be hit too often or on many critical paths.\r\n\r\n2) Introduce a function which takes the path prefix and returns a handler suitable for that prefix. It preserves the current performance characteristics, but leaves the old slightly-broken method there for backwards compatibility, at the cost of requiring duplication of the prefix specification (both in the Handle call and in the Index-creator-func), and generally feeling slightly ugly.\r\n\r\nI'm inclined towards implementing the first; does anyone have any strong opinions?",
+	"user": {
+		"login": "illicitonion",
+		"id": 1131704,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-02-10T16:07:09Z",
+	"updated_at": "2016-02-12T19:23:38Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

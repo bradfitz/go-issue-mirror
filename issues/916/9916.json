@@ -1,0 +1,22 @@
+{
+	"id": 58023617,
+	"number": 9916,
+	"state": "closed",
+	"title": "cmd/cgo: link failure when referencing standard COM GUID (non-function external symbol in a DLL)",
+	"body": "```go\r\npackage main\r\nimport \"fmt\"\r\n// #define CINTERFACE\r\n// #include \u003cwindows.h\u003e\r\n// #cgo LDFLAGS: -luuid\r\nimport \"C\"\r\nfunc main() {\r\n\tfmt.Printf(\"IID_IUnknown is at %p\", \u0026C.IID_IUnknown)\r\n}\r\n```\r\n\r\n`IID_IUnknown` is a GUID that COM uses to refer to the `IUnknown` interface (`IUnknown` is to COM as `interface{}` is to Go). These GUIDs are defined in uuid.dll, a system DLL that you link against programs that want to use COM. This confuses Go's linker:\r\n\r\n```\r\n$ CGO_ENABLED=1 GOOS=windows GOARCH=386 go build -x\r\nWORK=/tmp/go-build692260167\r\nmkdir -p $WORK/_/tmp/comtest/_obj/\r\ncd /tmp/comtest\r\nCGO_LDFLAGS=\"-g\" \"-O2\" \"-luuid\" /home/pietro/go/pkg/tool/linux_amd64/cgo -objdir $WORK/_/tmp/comtest/_obj/ -- -I $WORK/_/tmp/comtest/_obj/ test.go\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -print-libgcc-file-name\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -I $WORK/_/tmp/comtest/_obj/ -g -O2 -o $WORK/_/tmp/comtest/_obj/_cgo_main.o -c $WORK/_/tmp/comtest/_obj/_cgo_main.c\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -I $WORK/_/tmp/comtest/_obj/ -g -O2 -o $WORK/_/tmp/comtest/_obj/_cgo_export.o -c $WORK/_/tmp/comtest/_obj/_cgo_export.c\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -I $WORK/_/tmp/comtest/_obj/ -g -O2 -o $WORK/_/tmp/comtest/_obj/test.cgo2.o -c $WORK/_/tmp/comtest/_obj/test.cgo2.c\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -o $WORK/_/tmp/comtest/_obj/_cgo_.o $WORK/_/tmp/comtest/_obj/_cgo_main.o $WORK/_/tmp/comtest/_obj/_cgo_export.o $WORK/_/tmp/comtest/_obj/test.cgo2.o -g -O2 -luuid\r\n/home/pietro/go/pkg/tool/linux_amd64/cgo -objdir $WORK/_/tmp/comtest/_obj/ -dynpackage main -dynimport $WORK/_/tmp/comtest/_obj/_cgo_.o -dynout $WORK/_/tmp/comtest/_obj/_cgo_import.go\r\ni686-w64-mingw32-gcc -I . -m32 -mthreads -fmessage-length=0 -o $WORK/_/tmp/comtest/_obj/_all.o $WORK/_/tmp/comtest/_obj/_cgo_export.o $WORK/_/tmp/comtest/_obj/test.cgo2.o -g -O2 -Wl,-r -nostdlib -Wl,--start-group -lmingwex -lmingw32 -Wl,--end-group /usr/lib/gcc/i686-w64-mingw32/4.9-win32/libgcc.a\r\n/home/pietro/go/pkg/tool/linux_amd64/8g -o $WORK/_/tmp/comtest.a -trimpath $WORK -p _/tmp/comtest -D _/tmp/comtest -I $WORK -pack $WORK/_/tmp/comtest/_obj/_cgo_gotypes.go $WORK/_/tmp/comtest/_obj/test.cgo1.go $WORK/_/tmp/comtest/_obj/_cgo_import.go\r\npack r $WORK/_/tmp/comtest.a $WORK/_/tmp/comtest/_obj/_all.o # internal\r\ncd .\r\n/home/pietro/go/pkg/tool/linux_amd64/8l -o comtest.exe -L $WORK -extld=i686-w64-mingw32-gcc $WORK/_/tmp/comtest.a\r\n# _/tmp/comtest\r\nmain.init: IID_IUnknown: not defined\r\nmain.init: undefined: IID_IUnknown\r\n```\r\n\r\nI'm not sure if this specifically happens for these UUIDs or for any symbol in a DLL (or other shared object) hat isn't a function.\r\n\r\n```\r\n$ go version\r\ngo version devel +3ad906b Wed Feb 18 03:29:47 2015 +0000 linux/amd64\r\n$ i686-w64-mingw32-gcc --version\r\ni686-w64-mingw32-gcc (GCC) 4.9.1\r\nCopyright (C) 2014 Free Software Foundation, Inc.\r\nThis is free software; see the source for copying conditions.  There is NO\r\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\r\n\r\n$ # MinGW-w64 3.1.0\r\n```",
+	"user": {
+		"login": "andlabs",
+		"id": 718242,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 17,
+	"closed_at": "2015-03-24T03:34:46Z",
+	"created_at": "2015-02-18T04:12:18Z",
+	"updated_at": "2016-06-25T02:01:10Z"
+}

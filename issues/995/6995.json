@@ -1,0 +1,30 @@
+{
+	"id": 51286040,
+	"number": 6995,
+	"state": "closed",
+	"title": "net/http: Data races when using Transport.CancelRequest in an HTTP reverse proxy",
+	"body": "\u003cpre\u003ePlease refer to this gist: \u003ca href=\"https://gist.github.com/cespare/f4352a11bac5cced9458\"\u003ehttps://gist.github.com/cespare/f4352a11bac5cced9458\u003c/a\u003e\n(I have also attached these files in a tarball to this issue.)\n\nIn particular, note the proxy handler:\n\u003ca href=\"https://gist.github.com/cespare/f4352a11bac5cced9458#file-proxy-go-L34-L67\"\u003ehttps://gist.github.com/cespare/f4352a11bac5cced9458#file-proxy-go-L34-L67\u003c/a\u003e\n\nI have an HTTP reverse proxy similar to httputil.ReverseProxy. At high loads, I noticed\na few protocol errors like this:\n\n\u0026quot;2013/12/20 11:55:21 Unsolicited response received on idle HTTP channel starting\nwith \u0026quot;H\u0026quot;; err=\u0026lt;nil\u0026gt;\u0026quot;\n\nWhen I enabled the race detector, it found a race (pasted at the bottom of the bug\nreport.) The race is between http client code (one of Transport's goroutines) and a\nserver goroutine.\n\nRepro steps:\n\n1. Run the server: go build -o server server.go \u0026amp;\u0026amp; ./server\n2. Run the proxy with the race detector: go build -race -o proxy proxy.go \u0026amp;\u0026amp;\n./proxy\n3. Run the client to make a bunch of requests to the proxy: go build -o client client.go\n\u0026amp;\u0026amp; ./client\n\nWhat is the expected output?\n\nNo races\n\nWhat do you see instead?\n\nI immediately get data race warnings.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nlinux/amd64\n\nWhich version are you using?  (run 'go version')\n1.2\n\nAlso tested and confirmed in:\n1.1, 1.1.1, 1.1.2, and devel +a768c0592b88\n\nNotes and questions:\n\n- This is a much-reduced version of my real application\n- The error repros reliably only with higher numbers of concurrent connections\n- I can only get the race warning to trigger by using GOMAXPROCS \u0026gt; 1\n- The triggering condition seems to be that I'm canceling requests myself, after some\ntimeout, by calling Transport.CancelRequest (in this minimal version I could just rely\non ResponseHeaderTimeout, but in my real application I need per-request timeouts)\n- Removing transport.CancelRequest gets rid of the race warnings. Similarly, I cannot\nrepro by using httputil.ReverseProxy.\n- Is my usage of RoundTrip in conjunction with CancelRequest ok? I am assuming that\nafter RoundTrip returns, you need to handle it the usual way (close the body if err ==\nnil) even if you had called CancelRequest previously.\n\nHere's the race:\n\n2013/12/20 13:24:22 Now listening on localhost:7575\n==================\nWARNING: DATA RACE\nRead by goroutine 43:\n  net/http.(*body).Read()\n      /home/caleb/apps/go/src/pkg/net/http/transfer.go:531 +0x51\n  io.(*LimitedReader).Read()\n      /home/caleb/apps/go/src/pkg/io/io.go:398 +0x13e\n  io/ioutil.devNull.ReadFrom()\n      /home/caleb/apps/go/src/pkg/io/ioutil/ioutil.go:144 +0xbd\n  io.Copy()\n      /home/caleb/apps/go/src/pkg/io/io.go:348 +0x139\n  io.CopyN()\n      /home/caleb/apps/go/src/pkg/io/io.go:317 +0xf1\n  net/http.(*chunkWriter).writeHeader()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:787 +0x1b08\n  net/http.(*chunkWriter).Write()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:246 +0xb2\n  bufio.(*Writer).flush()\n      /home/caleb/apps/go/src/pkg/bufio/bufio.go:494 +0x15a\n  bufio.(*Writer).Flush()\n      /home/caleb/apps/go/src/pkg/bufio/bufio.go:483 +0x34\n  net/http.(*response).finishRequest()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:999 +0x9d\n  net/http.(*conn).serve()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:1171 +0xc31\n\nPrevious write by goroutine 235:\n  net/http.(*body).Close()\n      /home/caleb/apps/go/src/pkg/net/http/transfer.go:634 +0xc1\n  net/http.(*transferWriter).WriteBody()\n      /home/caleb/apps/go/src/pkg/net/http/transfer.go:207 +0x2e0\n  net/http.(*Request).write()\n      /home/caleb/apps/go/src/pkg/net/http/request.go:400 +0xa38\n  net/http.(*persistConn).writeLoop()\n      /home/caleb/apps/go/src/pkg/net/http/transport.go:797 +0x210\n\nGoroutine 43 (running) created at:\n  net/http.(*Server).Serve()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:1644 +0x2c1\n  net/http.(*Server).ListenAndServe()\n      /home/caleb/apps/go/src/pkg/net/http/server.go:1612 +0xc0\n  main.main()\n      /home/caleb/test/race-repro/proxy.go:77 +0x206\n\nGoroutine 235 (finished) created at:\n  net/http.(*Transport).dialConn()\n      /home/caleb/apps/go/src/pkg/net/http/transport.go:529 +0x8d5\n  net/http.func·014()\n      /home/caleb/apps/go/src/pkg/net/http/transport.go:419 +0x76\n==================\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/6995/0/cespare-race-repro.tgz\"\u003ecespare-race-repro.tgz\u003c/a\u003e (3200 bytes)",
+	"user": {
+		"login": "cespare",
+		"id": 318501,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceReport"
+		}
+	],
+	"comments": 22,
+	"closed_at": "2014-12-08T10:38:58Z",
+	"created_at": "2013-12-20T22:42:07Z",
+	"updated_at": "2016-06-25T01:24:19Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

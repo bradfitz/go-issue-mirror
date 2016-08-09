@@ -1,0 +1,12 @@
+{
+	"id": 139800788,
+	"body": "To date exact floating point constants have not had a negative zero, and I don't see how we can change that now without breaking the Go 1 compatibility guarantee.  The behaviour of programs like test/fixedbugs/bug434.go should not change.\r\n\r\nMore philosophically, the concept of a negative zero is meaningless in the world of exact floating point constants.  There is no negative zero in mathematics.  There is only zero.  You can talk about zero as the limit of a function that produces negative numbers, and you can refer to that as negative zero, but there is no notion of that value as distinct from positive zero.\r\n\r\nFor better or for worse, Go's exact constants do not follow the rules of computer arithmetic.  You can't write `const c = int32(0x80000000)`.  There's no necessary reason for them to support negative zero.\r\n\r\nThere are two ways to interpret Robert's second question.  One is what should happen when handling an exact floating point constant that is too small to represent.  The spec says fairly clearly that it should be converted to the nearest representable constant, which would be zero (neither negative zero nor positive zero, just plain zero).\r\n\r\nThe other interpretation is what should happen when converting an exact floating point constant to float32/float64 when the value is too small to represent and is negative.  I don't think the spec says anything about that.  As it happens, the gc and gccgo compilers behave differently, which also suggests that the spec doesn't cover the case.\r\n\r\nThis program\r\n\r\n    package main\r\n    \r\n    import (\r\n    \t\"fmt\"\r\n    \t\"math\"\r\n    )\r\n    \r\n    var v float32 = -1e-46\r\n    \r\n    func main() {\r\n    \tfmt.Println(v)\r\n    \tfmt.Println(math.Float32bits(v))\r\n    }\r\n\r\nprints `0 0` with gc and `-0 2147483648` with gccgo.\r\n\r\nMy current inclination is to say that gc is correct and gccgo is wrong: we should convert a negative floating point number that is too small to represent to IEEE positive zero.  But I think we could decide the other way here.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-12T18:00:16Z",
+	"updated_at": "2015-09-12T18:00:16Z"
+}

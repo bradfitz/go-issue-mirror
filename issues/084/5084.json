@@ -1,0 +1,22 @@
+{
+	"id": 51283094,
+	"number": 5084,
+	"state": "closed",
+	"title": "cmd/gc: array-element rotate not recognized as a rotate",
+	"body": "\u003cpre\u003e6g already optimizes \u0026quot;x\u0026lt;\u0026lt;31 ^ x\u0026gt;\u0026gt;1\u0026quot; as a rotate if x is an uint32,\nbut it does not recognize \u0026quot;ax[0]\u0026lt;\u0026lt;31 ^ ax[0]\u0026gt;\u0026gt;1\u0026quot; as a rotate if ax\nis an array of uint32.\n\nSample program:\n\n--------\npackage main\n\nvar ax, ay [8]uint32\nvar x, y uint32\n\nfunc f() {\n    y = x\u0026lt;\u0026lt;31 ^ x\u0026gt;\u0026gt;1\n}\n\nfunc g() {\n    ay[0] = ax[0]\u0026lt;\u0026lt;31 ^ ax[0]\u0026gt;\u0026gt;1\n}\n--------\n\n\u0026quot;go tool 6g -S\u0026quot; output:\n\n--- prog list \u0026quot;f\u0026quot; ---\n0000 (main.go:6) TEXT    f+0(SB),$0-0\n0001 (main.go:6) LOCALS  ,$0\n0002 (main.go:7) MOVL    x+0(SB),BX\n0003 (main.go:7) ROLL    $31,BX\n0004 (main.go:7) MOVL    BX,y+0(SB)\n0005 (main.go:8) RET     ,\n\n--- prog list \u0026quot;g\u0026quot; ---\n0006 (main.go:10) TEXT    g+0(SB),$0-0\n0007 (main.go:10) MOVL    ax+0(SB),BP\n0008 (main.go:10) LOCALS  ,$0\n0009 (main.go:11) MOVL    BP,BX\n0010 (main.go:11) SHLL    $31,BX\n0011 (main.go:11) SHRL    $1,BP\n0012 (main.go:11) XORL    BP,BX\n0013 (main.go:11) MOVL    BX,ay+0(SB)\n0014 (main.go:12) RET     ,\n\nIt looks like fixing this would involve the TODO in samecheap in cmd/gc/walk.c.\n\nThis came up in a SHA3 implementation at\n\u003ca href=\"https://golang.org/cl/7760044/diff/7001/sha3/sha3internal.go\"\u003ehttps://golang.org/cl/7760044/diff/7001/sha3/sha3internal.go\u003c/a\u003e\u003c/pre\u003e",
+	"user": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:27:11Z",
+	"created_at": "2013-03-20T02:11:09Z",
+	"updated_at": "2016-06-24T22:35:57Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 126424581,
+	"number": 13934,
+	"state": "closed",
+	"title": "cmd/cgo: false 'cgo argument has Go pointer to Go pointer when using Go 1.6' report",
+	"body": "It seems that the Go runtime reports an error, stating:\r\n```\r\ncgo argument has Go pointer to Go pointer\r\n```\r\n\r\nThe offending code is\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n    zmq \"github.com/pebbe/zmq4\"\r\n    msgpack \"gopkg.in/vmihailenco/msgpack.v2\"\r\n\r\n    \"fmt\"\r\n    \"log\"\r\n)\r\n\r\nfunc main() {\r\n\r\n    pub, err := zmq.NewSocket(zmq.PUB)\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    err = pub.Bind(\"tcp://127.0.0.1:9997\")\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n\r\n    data, err := msgpack.Marshal(map[string]string{\"hello\": \"world\"})\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    // uncommenting the next line makes the panic disappear\r\n    //data = []byte(\"\\x81\\xa5hello\\xa5world\")\r\n\r\n    parts := [][]byte{[]byte(\"aRoute\"), data}\r\n\r\n    n, err := pub.SendMessage(parts)\r\n    if err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    fmt.Println(n)\r\n}\r\n```\r\nAs seen from a bug report for [zmq4](https://github.com/pebbe/zmq4/issues/68), the author didn't get the runtime panic when running the same code using Go 1.6\r\n\r\nGo version: 1.6 beta1\r\nOS/Platform: Ubuntu 15.10 linux/amd64\r\n",
+	"user": {
+		"login": "napsy",
+		"id": 56799,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 16,
+	"closed_at": "2016-01-13T18:36:34Z",
+	"created_at": "2016-01-13T14:05:36Z",
+	"updated_at": "2016-01-13T18:36:34Z",
+	"milestone": {
+		"id": 1096159,
+		"number": 24,
+		"title": "Go1.6"
+	}
+}

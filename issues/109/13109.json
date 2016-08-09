@@ -1,0 +1,22 @@
+{
+	"id": 114309508,
+	"number": 13109,
+	"state": "closed",
+	"title": "proposal: x/mobile/cmd/gomobile: re-implement marshal/unmarshal for android binary resources",
+	"body": "Currently, there exists an implementation of encoding the binary xml format for android which has the following issues:\r\n\r\n* Tests are inadequate, targeting a single android manifest sample (see #13036 for corner-case missed) and an untargeted version of the android build-tools. This can not be rectified as-is due to the implementation.\r\n* Due to the current testing situation, expanding support for resource identifiers is problematic. Though this was partially addressed in CL16150, testing is still inadequate as listed above.\r\n* Type safety of written resources identifiers is provided by hard-coding values in cmd gomobile's source, which provides incomplete support for the minimum target api-9. See #13016 \r\n\r\n### New Implementation\r\n\r\nBinary resource structs will support unmarshalling the binary output of aapt against a targeted version of the sdk build-tools for compatibility. Implementations of marshalling for each struct must produce the exact input sent to unmarshalling. This allows tests to validate each struct representation of the binary format as follows:\r\n\r\n* unmarshal the output of aapt\r\n* marshal the struct representation\r\n* perform byte-to-byte comparison with aapt output per chunk header and body\r\n\r\nThis process should strive to make structs idiomatic to make parsing xml text into structs trivial.\r\n\r\nOnce the struct representation is validated, tests for parsing xml text into structs can become self-referential as the following holds true:\r\n\r\n* the unmarshalled input of aapt output is the only valid target\r\n* the unmarshalled input of xml text may be compared to the unmarshalled input of aapt output to identify errors, e.g. text-trims, wrong flags, sorting, etc\r\n\r\nThis provides validation, byte-for-byte, for producing binary xml resources against the targetted build-tools and allows pin-pointing implementation issues down to the chunk header of the binary format.\r\n\r\nWhile the new implementation would support both marshal and unmarshal of all android binary resource types, the scope of this functionality would be as follows:\r\n\r\n* cmd gomobile supports marshalling of binary xml resources\r\n* a new go:generate command would support unmarshalling of binary resources for code generation of type safety information for use by cmd gomobile in the marshalling of binary xml resources\r\n* tests would make use of unmarshal and marshal for validating the implementation\r\n\r\nTests would be accompanied by a `testdata/` directory containing manifests to identify corner cases of the implementation and the binary versions of each manifest, generated with the targeted build-tools version.\r\n\r\nRegarding a new go:generate command to produce type safety information by cmd gomobile, this would use the new structs to decode the resource table from the android.jar of the targeted minimum api of gomobile, providing the necessary information for use by cmd gomobile.\r\n\r\nIt should be noted that this proposal was put together by piecemeal development to determine viability and much of the details of this proposal are already proven to be working by tests though no CL has yet to be sent as the work is incomplete.",
+	"user": {
+		"login": "dskinner",
+		"id": 92266,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 13,
+	"closed_at": "2016-03-05T06:30:20Z",
+	"created_at": "2015-10-30T16:47:44Z",
+	"updated_at": "2016-03-05T06:30:20Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

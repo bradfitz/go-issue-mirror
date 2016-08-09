@@ -1,0 +1,12 @@
+{
+	"id": 226301643,
+	"body": "Can we clarify for ignorant like myself what the risks are here if on an unusual code path a call blocks that is marked `#cgo nonblocking`? As far as I understand it it's non-optimal, but not going to cause deadlocks. What would cause deadlocks is if the code did something that blocks on another goroutine which won't run now that we're blocking the scheduler. That's still a problem but a lot more specific than just it needs to be a function that never blocks. It needs to be a function that usually doesn't block, and that if it does it never blocks on another thread in the process - e.g. with a mutex, or something. That's a lot easier to guarantee. I can call functions from the C standard library not sure that they would block or not, but I can be sure if they will or won't block on another goroutine in my program - especially since any goroutine blocked in the scheduler cannot be in the middle of another C non blocking call. Like the mutex(s) in malloc aren't a problem because a goroutine can't get unscheduled in the middle of a malloc. Any mutexes only used inside C also won't be a problem because it's not possible to put a goroutine to sleep while it's in the middle of a C call. Of course my understanding may well be flawed, but if it's not, then it seems like this is not an unreasonable burden to place on the programmer for use of an opt-in, advanced feature. \r\n\r\nRemember that the alternatives when cgo performance is not enough, are more dangerous. They carry these exact same risks, plus are fragile to the Go implementation changing, plus involve assembly and access to go runtime internals. Worse yet, if one avoids doing it right by digging into the go runtime to change stacks, and just do the call on the goroutine stack - now you're making assumptions about how much stack space your C program needs - and that's an extremely unsafe assumption that can't be easily made. Who knows which standard library functions allocate a big buffer on the stack or use recursion.",
+	"user": {
+		"login": "eloff",
+		"id": 27574,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-15T19:56:47Z",
+	"updated_at": "2016-06-15T19:56:47Z"
+}

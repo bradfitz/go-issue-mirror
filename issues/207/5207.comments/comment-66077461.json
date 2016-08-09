@@ -1,0 +1,12 @@
+{
+	"id": 66077461,
+	"body": "\u003ca id=\"c7\"\u003e\u003c/a\u003eComment 7:\n\n\u003cpre\u003eI did some more testing. \n\nWithin each put (which is already protected by a mutex), I wrote out the value of a\nfield.\n\nvar safestoreSeq uint64 = 0\nfunc NewSafeStore(useLock bool) *SafeStore {\n\toldSafestoreSeq := safestoreSeq\n\ta := SafeStore{\n\t\tid: atomic.AddUint64(\u0026safestoreSeq, 1),\n\t\tContainer: make(map[interface{}]interface{}),\n\t}\n\tfmt.Printf(\"\u0026gt;\u0026gt;\u0026gt;\u0026gt; New SafeStore: last seq: %v, New Safestore Id: %v\\n\", oldSafestoreSeq, a.id)\n\u0026lt;\u0026lt;snip\u0026gt;\u0026gt;\n\nfunc (rq *SafeStore) put(key interface{}, val interface{}, ttlNs int64) {\n\tfmt.Printf(\"\u0026gt;\u0026gt;\u0026gt;\u0026gt; Putting SafeStore: %v, key: %#v, val: %#v\\n\", rq.id, key, val)\n\n\nugorji@ugorji-n53sv:~/depot/golang/src/ugorji.net/ndb$ cat\n~/depot/dist/blackannex/out.txt | grep '\u0026gt;\u0026gt; New Safe'\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; New SafeStore: last seq: 0, New Safestore Id: 1\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; New SafeStore: last seq: 1, New Safestore Id: 2\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; New SafeStore: last seq: 2, New Safestore Id: 3\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; New SafeStore: last seq: 3, New Safestore Id: 4\n\nDoing same for Putting Safestore got: \n\u0026gt;\u0026gt;\u0026gt;\u0026gt; Putting SafeStore: 139755915567960, key: \"2339338531442364162\", val:\n\u0026lt;nil\u0026gt;\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; Putting SafeStore: 3, key: \"2339338531442364162\", val: \u0026lt;nil\u0026gt;\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; Putting SafeStore: 139755915567960, key: \"2316257583352081154\", val:\n\u0026lt;nil\u0026gt;\n\u0026gt;\u0026gt;\u0026gt;\u0026gt; Putting SafeStore: 3, key: \"2316257583352081154\", val: \u0026lt;nil\u0026gt;\n\nSee how every other time, the value of the safestore id is changed to like\n139755915567960,\nwhere it should be 1, 2, 3 or 4.\n\nSeems there's some data corruption somewhere.\n\nBTW, All access to the map here is protected by mutex Lock/defer Unlock. \nThe Put/Get manages lock and then calls put/get respectively. I also ran \nrace detector successfully.\u003c/pre\u003e",
+	"user": {
+		"login": "ugorji",
+		"id": 1222082,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-04-04T19:41:49Z",
+	"updated_at": "2014-12-22T06:24:03Z"
+}

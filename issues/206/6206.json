@@ -1,0 +1,26 @@
+{
+	"id": 51284831,
+	"number": 6206,
+	"state": "open",
+	"title": "cmd/compile: poor performance when accessing slices for numerical work (multiplying vectors)",
+	"body": "by **dean.w.schulze**:\n\n\u003cpre\u003eRunning the enclosed code the best runtime is 6.45 seconds.  The same code in Java (JDK\n1.7) runs in 4.8 seconds, a serious performance hit.\n\nFor simple slice (go) / array (Java) access I would expect similar runtime performance.\n\nGo and Java code is below.\n\n\nWhich operating system are you using?\ngo version go1.1.2 linux/amd64\nThis is a VM running on OSX host.  Similar results on Windows 7 64-bit\n\n============================================================\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;time\u0026quot;\n)\n\n\nfunc main() {\n\t\n\tsz := 100000\n\tsl1 := make([]int32, sz)\n\n\tfor j := range sl1 {\n\n\t\tsl1[j] = int32(j)\n\t}\n\n\tsl2 := make([]int32, sz)\n\n\tfor j := range sl2 {\n\n\t\tsl2[j] = int32(j*2)\n\t}\n\n\tmultiplySlices(sl1, sl2)\n\tmultiplySlices_(sl1, sl2)\n\tmultiplySlices__(sl1, sl2)\n}\n\n\n\nfunc multiplySlices(sl1 []int32, sl2 []int32) {\n\n    start := time.Now()\n\tvar num int64 = 0\n\tfor _, n1 := range sl1 {\n\n\t\tvar n int64 = 0\n\t\tfor _, n2 := range sl2 {\n\n\t\t\tn +=  int64(n1 * n2)\n\t\t}\n\n\t\tnum += n\n\t}\n\n    et := time.Since(start)\n    fmt.Println(\u0026quot;\u0026quot;)\n    fmt.Println(\u0026quot;multiplySlices\u0026quot;)\n    fmt.Println(et)\n\tfmt.Println(num)\n}\n\n\nfunc multiplySlices_(sl1 []int32, sl2 []int32) {\n\n    start := time.Now()\n\tvar num int64 = 0\n\tfor _, n1 := range sl1 {\n\n\t\tfor _, n2 := range sl2 {\n\n\t\t\tnum +=  int64(n1 * n2)\n\t\t}\n\t}\n\n    et := time.Since(start)\n    fmt.Println(\u0026quot;\u0026quot;)\n    fmt.Println(\u0026quot;multiplySlices_\u0026quot;)\n    fmt.Println(et)\n\tfmt.Println(num)\n}\n\n\nfunc multiplySlices__(sl1 []int32, sl2 []int32) {\n\n    start := time.Now()\n\tvar num int64 = 0\n\tfor i := range sl1 {\n\n\t\tn := sl1[i]\n\t\tfor j := range sl2 {\n\n\t\t\tnum +=  int64(n * sl2[j])\n\t\t}\n\t}\n\n    et := time.Since(start)\n    fmt.Println(\u0026quot;\u0026quot;)\n    fmt.Println(\u0026quot;multiplySlices__\u0026quot;)\n    fmt.Println(et)\n\tfmt.Println(num)\n}\n\n\n=======================================================================\n\n\npackage arraytest;\n\nimport java.util.Date;\n\npublic class Driver {\n\tpublic static void main(String[] args) {\n\t\tint sz = 100000;\n\t\tint[] arr1 = new int[sz];\n\t\tint[] arr2 = new int[sz];\n\t\tfor (int i = 0; i \u0026lt; sz; i++) {\n\t\t\tarr1[i] = i;\n\t\t\tarr2[i] = i * 2;\n\t\t}\n\t\t\n\t\tmutiplyArrays(arr1, arr2);\n\t\tmutiplyArrays_(arr1, arr2);\n\t\t\n\t}\n\n\tprivate static void mutiplyArrays(int[] arr1, int[] arr2) {\n\t\t\n\t\tint sz = arr1.length;\n\t\tDate start = new Date();\n\t\tlong num = 0;\n\t\tfor (int i = 0; i \u0026lt; sz; i++) {\n\t\t\tint n = arr1[i];\n\t\t\tlong acc = 0;\n\t\t\tfor (int j = 0; j \u0026lt; sz; j++) {\n\t\t\t\tacc += n * arr2[j];\n\t\t\t}\n\t\t\t\n\t\t\tnum += acc;\n\t\t}\n\t\tDate end = new Date();\n\t\tlong l = end.getTime() - start.getTime();\n\t\tSystem.out.println(l + \u0026quot; ms.\u0026quot;);\n\t\tSystem.out.println(num);\n\t}\n\t\n\n\tprivate static void mutiplyArrays_(int[] arr1, int[] arr2) {\n\t\t\n\t\tint sz = arr1.length;\n\t\tDate start = new Date();\n\t\tlong num = 0;\n\t\tfor (int i = 0; i \u0026lt; sz; i++) {\n\t\t\tint n = arr1[i];\n\t\t\tfor (int j = 0; j \u0026lt; sz; j++) {\n\t\t\t\tnum += n * arr2[j];\n\t\t\t}\n\t\t}\n\t\tDate end = new Date();\n\t\tlong l = end.getTime() - start.getTime();\n\t\tSystem.out.println(l + \u0026quot; ms.\u0026quot;);\n\t\tSystem.out.println(num);\n\t}\n\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 8,
+	"created_at": "2013-08-21T15:31:06Z",
+	"updated_at": "2015-06-08T06:37:47Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

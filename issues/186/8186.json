@@ -1,0 +1,33 @@
+{
+	"id": 51287812,
+	"number": 8186,
+	"state": "closed",
+	"title": "archive/zip: can't handle certain Java-generated zip (apk) files",
+	"body": "\u003cpre\u003eWe received a bug report from an internal user that archive/zip can't open certain\nAndroid apk (zip) files.\n\nThe problem is the zip's Extra field appears to be short.\n\nThe extra field is \u0026quot;\\xfe\\xca\\x00\\x00\\x00\\x00\u0026quot;.\n\nAn Extra field is supposed to be a repetition of (2 byte tag, 2 byte size, size-bytes of\ndata).\n\nSo that's tag 51966 (\u0026quot;CAFE\u0026quot;, apparently: a Java thing?\n\u003ca href=\"https://issues.apache.org/bugzilla/show_bug.cgi?id=32649)\"\u003ehttps://issues.apache.org/bugzilla/show_bug.cgi?id=32649)\u003c/a\u003e, size 0, and then we have\n\u0026quot;\\x00\\x00\u0026quot; left over, but those two bytes aren't long enough (we always expect\nat least 4 bytes: 2 for tag, 2 for size).\n\nBut the \u0026quot;zip\u0026quot; tool handles it fine, so perhaps we should just skip over extra\nfields when they're short.\n\nThe zipdetails program is also confused with it a bit (despite exiting with status 0),\nwith an\u0026quot;Unexpecded\u0026quot; (sic) status:\n\n$ zipdetails Contacts.apk\n\n000000 LOCAL HEADER #1       04034B50\n000004 Extract Zip Spec      0A '1.0'\n000005 Extract OS            00 'MS-DOS'\n000006 General Purpose Flag  0800\n       [Bit 11]              1 'Language Encoding'\n000008 Compression Method    0000 'Stored'\n00000A Last Mod Time         3F339D41 'Mon Sep 19 19:42:02 2011'\n00000E CRC                   1E85E138\n000012 Compressed Length     00000086\n000016 Uncompressed Length   00000086\n00001A Filename Length       0030\n00001C Extra Length          0006\n00001E Filename              '...(redacted)....'\n00004E Extra ID #0001        CAFE 'Java Executable'\n000050   Length              0000\n000052 PAYLOAD               ...PNG........IHDR....................4n\n                             (redacted)\n\nUnexpecded END at offset 000000D8, value 4B508260\nDone\n\n\n\n\n.... Perhaps we need to special case that extra field type, and say that at least a\n\u0026quot;\\x00\\x00\u0026quot; extra tag without a size is an acceptable EOF, either always, or\nonly following a CAFE tag.\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 14,
+	"closed_at": "2014-12-08T10:45:23Z",
+	"created_at": "2014-06-11T17:28:12Z",
+	"updated_at": "2016-06-25T01:36:16Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

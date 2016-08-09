@@ -1,0 +1,12 @@
+{
+	"id": 88955342,
+	"body": "A bit more detail to go with that CL:\r\n\r\nIn the program I posted above the bug comes long before paint2. The wrong value of rgp.varno is being fed in, showing R0 as unused when in fact it is needed after the region being optimized for the CMP.\r\n\r\nA look at the debugging output for pass1 shows:\r\n\r\n```0:00043 (/Users/crawshaw/junk.go:12)    CMP     R1, R0   u1:.R1(1)```\r\n\r\nThe problem is R0 should be on the use1 list, but it's not. This use of the second (I saw it somewhere referred to as \"middle\" register) is caught on other architectures by this logic in mkvar:\r\n\r\n```\r\n// Compute used register for reg\r\nif p.Info.Flags\u0026RegRead != 0 {\r\n        r.use1.b[0] |= Thearch.RtoB(int(p.Reg))\r\n}\r\n```\r\n\r\nSo I propose setting the RegRead flag for CMP.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-02T15:53:24Z",
+	"updated_at": "2015-04-02T15:53:43Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66090025,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eOut of 27 parallel benchmarks in std lib, 16 fit well into simple:\nb.RunParallel(func() {\n  ...\n})\nbut 11 use local per-goroutine state, so they do not fit as is into this simple pattern.\n\nI see 2 options for per-goroutine state:\n1.\nb.RunParallel(func(x *interface{}) {\n  ...\n})\nthen the function can cache anything it wants in x. The overhead is merely interface\ncast.\n\n2. benchmarks can use sync.Pool to cache local state.\nPool.Get/Put overhead is 20-50 ns depending on processor.\nand this variant most likely will create more resources than there are goroutines.\n\n---\n\nSeparate question is whether we want to support goroutine excess, i.e. create\nK*GOMAXPROCS goroutines.\nThe interface can be:\nb.RunParallel(4, func() {\n  ...\n})\nthis will create 4*GOMAXPROCS goroutines.\nThis may be useful to benchmark something that includes IO operations, or has contention\n(so that some goroutines are temporary non-runnable).\nBut I am concerned that users may mis-interpret this parameter.\n\nBrad?\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-01-26T12:09:38Z",
+	"updated_at": "2014-12-08T10:39:27Z"
+}

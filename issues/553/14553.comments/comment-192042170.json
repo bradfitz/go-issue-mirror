@@ -1,0 +1,12 @@
+{
+	"id": 192042170,
+	"body": "@tarm Apologies for the delay and thank you for your investigation and for providing test cases. That has been a good starting point for my own investigation. As an aside, independent of the git commit history, big.Float should handle denormals correctly, so this is clearly an issue that needs to be addressed.\r\n\r\nYour analysis is not quite accurate: The whole point of rounding is to round to a given precision - there is no such thing as \"rounding to a bit representation with more precision\" in this context. Specifically, rounding is correct in this code.\r\n\r\nWhat does happen though in these special denormal cases is that the exponent changes. This is what you call \"bit representation with more precision\", except that the precision doesn't change, but the exponent gets increased by one due to rounding.\r\n\r\nThe bug is that this exponent change is dropped on the floor in these case: if rounding \"rounded up\", the exponent increased but it is not considered anymore later. The correct fix is to recompute the precision available for the final denormal by looking at the new exponent again, rather than using r.prec when computing the mantissa.\r\n\r\nConsequently, the actual fix is much simpler than suggested. I'll send out a CL in a little bit. See also my feedback on your CL (forthcoming).",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-04T00:57:27Z",
+	"updated_at": "2016-03-04T00:57:27Z"
+}

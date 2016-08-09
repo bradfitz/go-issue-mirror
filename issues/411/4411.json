@@ -1,0 +1,33 @@
+{
+	"id": 51282103,
+	"number": 4411,
+	"state": "closed",
+	"title": "mime: we don't decode quoted-printable",
+	"body": "\u003cpre\u003eApp Engine has a current production bug where long text values (non-file parts) of blob\nuploads are sent from Google's MIME encoder to the user's HTTP handler, with the MIME\nbodies re-encoded as quoted-printable.\n\nGo's mime/multipart package does not decode quoted-printable.\n\nDemo: \u003ca href=\"http://bradgaetest.appspot.com/\"\u003ehttp://bradgaetest.appspot.com/\u003c/a\u003e\n\nThe bytes sent to the handler are:\n\n\u0026quot;--0016e68ee29c5d515f04cedf6733\\r\\nContent-Type: text/plain;\ncharset=ISO-8859-1\\r\\nContent-Disposition: form-data;\nname=text\\r\\nContent-Transfer-Encoding: quoted-printable\\r\\n\\r\\nwords words words words\nwords words words words words words words words wor=\\r\\nds words words words words words\nwords words words words words words words =\\r\\nwords words words words words words words\nwords words words words words wor=\\r\\nds words words words words words words words words\nwords words words words =\\r\\nwords words words words words words words words\nwords\\r\\n--0016e68ee29c5d515f04cedf6733\\r\\nContent-Type: text/plain;\ncharset=ISO-8859-1\\r\\nContent-Disposition: form-data;\nname=submit\\r\\n\\r\\nSubmit\\r\\n--0016e68ee29c5d515f04cedf6733--\u0026quot;\n\nThat was captured with:\n\n        var buf bytes.Buffer\n        r.Body = ioutil.NopCloser(io.TeeReader(r.Body, \u0026amp;buf))\n\t_, other, err := blobstore.ParseUpload(r)\n\nI propose adding a non-exported quotedPrintableReader to the multipart package for now,\nso this could be cherry-picked into production, but perhaps later we should move the\nreader type to the mime (not multipart) package, and then just use that reader from the\nmultipart package (it already depends on the mime package, so it wouldn't be a new\ndependency).\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2014-12-08T10:23:29Z",
+	"created_at": "2012-11-19T21:29:46Z",
+	"updated_at": "2016-06-24T22:28:25Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

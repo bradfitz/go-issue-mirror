@@ -1,0 +1,26 @@
+{
+	"id": 167124410,
+	"number": 16474,
+	"state": "open",
+	"title": "io: CopyBuffer should not perform ReaderFrom and WriterTo optimization",
+	"body": "Currently, io.CopyBuffer uses WriteTo if the src supports it and ReadFrom if the dst supports it, presumably to avoid an allocation.\r\n\r\nThe problem is that there exist certain io.ReaderFrom that are not efficient 100% of the time. For example, consider the following implementation of ReadFrom:\r\n```go\r\nfunc (mw *myWriter) ReadFrom(src io.Reader) (int64, error) {\r\n\tif r, ok := ww.w.(io.ReaderFrom); ok {\r\n\t\treturn r.ReadFrom(src)\r\n\t}\r\n\treturn io.Copy(struct{ io.Writer }{mw}, src)\r\n}\r\n```\r\nThis is unfortunate as myWriter satisfies the io.ReaderFrom interface, but it's implementation is no better than io.Copy (always incurring an allocation) in some circumstances.\r\n\r\nIn the case of io.CopyBuffer, I would argue that the user's expectation is that the buffer passed in is *always* used. It has the detriment of an extra copy, but I believe the cost of that is much lower than the allocation that is already saved by the user providing the buffer. It main benefit is that it avoids any shenanigans that occur because of inefficient implementations of io.ReaderFrom and io.WriterTo.\r\n\r\nAlternative is to do anonymous struct value hack:\r\n```go\r\nio.CopyBuffer(struct{ io.Writer }{dst}, struct{ io.Reader }{src}, buf)\r\n```\r\nBut, this hack is not intuitive to most people.\r\n\r\nFiled on behalf of @jkji",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Go2"
+		}
+	],
+	"comments": 13,
+	"created_at": "2016-07-22T20:21:51Z",
+	"updated_at": "2016-08-02T20:28:02Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"id": 129611983,
+	"number": 14142,
+	"state": "closed",
+	"title": "encoding/json: Field name tag not respected when encoding if there is a space after \":\"",
+	"body": "I've found that, when encoding a struct into JSON, if there is a space after the colon character in the tag for the field in the struct in question, then the field will not be renamed.  Below is some very simple code demonstrating what I mean.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/json\"\r\n\t\"fmt\"\r\n)\r\n\r\ntype Person struct {\r\n\tName string `json: \"name\"`\r\n\tAge  int    `json: \"age\"`\r\n}\r\n\r\nfunc main() {\r\n\tp := Person{\"Alice\", 29}\r\n\tbytes, _ := json.Marshal(p)\r\n\tfmt.Println(string(bytes))\r\n}\r\n```\r\n\r\nAs you can see, in the above code I've made the apparent \"mistake\" of adding a space in my JSON tags.\r\nIf I run this code, the output I get the following output.\r\n\r\n```js\r\n{\"Name\":\"Alice\",\"Age\":29}\r\n```\r\n\r\nNow if I change the `struct` definition to the following\r\n\r\n```go\r\ntype Person struct {\r\n\tName string `json:\"name\"`\r\n\tAge  int    `json:\"age\"`\r\n}\r\n```\r\n\r\nand then recompile and run the code, I get the expected output\r\n\r\n```js\r\n{\"name\":\"Alice\",\"age\":29}\r\n```\r\n\r\n--------------------------\r\n\r\nWhat's interesting is that this isn't a problem when *decoding* JSON.  Reintroducing spaces after the colon character, and switching to decoding from bytes, you'll see that the struct is populated properly even though I have switched the order of the fields in the JSON. I take this to mean that the decoder understands the JSON tags even with the space when decoding.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/json\"\r\n\t\"fmt\"\r\n)\r\n\r\ntype Person struct {\r\n\tName string `json: \"name\"`\r\n\tAge  int    `json: \"age\"`\r\n}\r\n\r\nfunc main() {\r\n\tdata := []byte(`{\"age\": 29, \"name\": \"Alice\"}`)\r\n\tp := Person{}\r\n\tjson.Unmarshal(data, \u0026p)\r\n\tfmt.Println(p)\r\n}\r\n```\r\n\r\nThe output I get is, as expected,\r\n\r\n```\r\n{Alice 29}\r\n```\r\n\r\n----------------------------------\r\n\r\nI should note that I've also experimented with using a Decoder and Encoder instead of Unmarshal and Marshal.  They suffer from the same problem (and I assume share a similar implementation to their respective counterparts).\r\n\r\nI tested this running Go 1.5.3 on the latest OS X.  The output of `go version` is\r\n\r\n```\r\ngo version go1.5.3 darwin/amd64\r\n```\r\n\r\n-----------------------------------\r\n\r\nIt seems to me that the encoding/json's decoding and encoding functionality should behave the same with regards to how struct tags are treated. I should be able to have spaces after \":\" in the tag and still have struct fields encoded such that the right keys are used, especially since decoding isn't affected by this.",
+	"user": {
+		"login": "zsck",
+		"id": 682761,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-01-28T23:40:43Z",
+	"created_at": "2016-01-28T23:01:17Z",
+	"updated_at": "2016-01-29T01:15:27Z"
+}

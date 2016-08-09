@@ -1,0 +1,27 @@
+{
+	"id": 51286902,
+	"number": 7570,
+	"state": "closed",
+	"title": "os/exec: look in current directory for executable on all platforms?",
+	"body": "\u003cpre\u003eThis test\n\n# cat main_test.go\npackage main_test\n\nimport (\n        \u0026quot;io/ioutil\u0026quot;\n        \u0026quot;os\u0026quot;\n        \u0026quot;os/exec\u0026quot;\n        \u0026quot;path/filepath\u0026quot;\n        \u0026quot;testing\u0026quot;\n)\n\nfunc testALEX(t *testing.T, exe string) {\n        tmp, err := ioutil.TempDir(\u0026quot;\u0026quot;, \u0026quot;TestALEX\u0026quot;)\n        if err != nil {\n                t.Fatal(err)\n        }\n        defer os.RemoveAll(tmp)\n\n        newdir := filepath.Join(tmp, \u0026quot;d\u0026quot;)\n        err = os.Mkdir(newdir, 0777)\n        if err != nil {\n                t.Fatal(err)\n        }\n        err = os.Symlink(\u0026quot;/bin/echo\u0026quot;, filepath.Join(newdir, \u0026quot;c\u0026quot;))\n        if err != nil {\n                t.Fatal(err)\n        }\n\n        cmd := exec.Command(exe, \u0026quot;-n\u0026quot;, \u0026quot;foo\u0026quot;)\n        cmd.Dir = newdir\n        out, err := cmd.CombinedOutput()\n        if err != nil {\n                t.Error(err)\n                return\n        }\n        want := \u0026quot;foo\u0026quot;\n        if got := string(out); got != want {\n                t.Errorf(\u0026quot;exec: want %q, got %q\u0026quot;, want, got)\n        }\n}\n\nfunc TestALEX(t *testing.T) {\n        testALEX(t, \u0026quot;./c\u0026quot;)\n        testALEX(t, \u0026quot;c\u0026quot;)\n}\n#\n\nshould succeed, but fails:\n\n# PATH=.:$PATH go test -v\n=== RUN TestALEX\n--- FAIL: TestALEX (0.00 seconds)\n        main_test.go:32: exec: \u0026quot;c\u0026quot;: executable file not found in $PATH\nFAIL\nexit status 1\nFAIL    t       0.003s\n# hg -R $GOROOT id\n17d15bc23bce+ tip\n#\n\nI am not fussed, if we decide either way. But I would like to know how to handle this\nscenario, because that is what windows does (windows always look in the . before\nsearching the PATH). This is just another side of \u003ca href=\"https://golang.org/issue/7377\"\u003eissue #7377\u003c/a\u003e.\n\nAlex\u003c/pre\u003e",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 15,
+	"closed_at": "2014-12-08T10:42:04Z",
+	"created_at": "2014-03-18T00:21:27Z",
+	"updated_at": "2016-06-25T01:30:06Z",
+	"milestone": {
+		"id": 1067211,
+		"number": 17,
+		"title": "Go1.3"
+	}
+}

@@ -1,0 +1,25 @@
+{
+	"id": 51284348,
+	"number": 5890,
+	"state": "closed",
+	"title": "cmd/gc: bogus code with race detector enabled",
+	"body": "\u003cpre\u003e1. What is a short input program that triggers the error?\n\n\u003ca href=\"http://play.golang.org/p/2_TajqCSl5\"\u003ehttp://play.golang.org/p/2_TajqCSl5\u003c/a\u003e\n\npackage main\n\ntype M1 map[string]interface{}\ntype M2 map[string]map[string]interface{}\n\nvar m = M2{\n\t\u0026quot;ROOT\u0026quot;: M1{\n\t\t\u0026quot;ATTR\u0026quot;: \u0026quot;VALUE\u0026quot;,\n\t},\n}\n\nfunc main() {\n\tresult := Result{\n\t\tM:    m,\n\t\tRoot: \u0026quot;ROOT\u0026quot;,\n\t}\n\tF(\u0026amp;result)\n\tif result.Values[0].Item.Value != \u0026quot;VALUE\u0026quot; {\n\t\tprintln(result.Values[0].Item.Value)\n\t\tpanic(`result.Values[0].Item.Value != \u0026quot;VALUE\u0026quot;`)\n\t}\n}\n\ntype Result struct {\n\tM      M2\n\tRoot   string\n\tKind   string\n\tValues []Value\n}\n\nfunc F(result *Result) {\n\tm, node := result.M, result.Root\n\t_, _ = m, node // fmt.Printf(\u0026quot;%+v\\n\u0026quot;, m[node])\n\tG(node, \u0026quot;ATTR\u0026quot;, result)\n\n}\n\nfunc G(node, attr string, result *Result) {\n\tm := result.M\n\tswitch value := m[node][attr].(type) {\n\tcase string:\n\t\tval := Value{Name: node, Attr: attr}\n\t\tval.Item = \u0026amp;Val{\n\t\t\tValue: value,\n\t\t}\n\t\tval.Update = true\n\t\tresult.Values = append(result.Values, val)\n\tcase []string:\n\n\t\tfor _, v := range value {\n\t\t\tval := Value{Name: node, Attr: attr}\n\t\t\tval.Item = \u0026amp;Val{\n\t\t\t\tValue: v,\n\t\t\t}\n\t\t\tval.Update = true\n\t\t\tresult.Values = append(result.Values, val)\n\t\t}\n\t}\n}\n\ntype Val struct {\n\tValue string\n}\n\ntype Value struct {\n\tName, Attr string\n\tItem       *Val\n\tUpdate     bool\n}\n\n\n2. What is the full compiler output?\n\nRun the program with \u0026quot;go run -race\u0026quot;\n\nExpected: no output\n\nGot: \nunexpected fault address 0x0\nfatal error: fault\n[signal 0xb code=0x80 addr=0x0 pc=0x404fd3]\n\ngoroutine 1 [running]:\nruntime.throw(0x4a2457)\n\t/opt/remy/go/src/pkg/runtime/panic.c:466 +0x69 fp=0x7fb7376b5ce8\nruntime.sigpanic()\n\t/opt/remy/go/src/pkg/runtime/os_linux.c:240 +0xe9 fp=0x7fb7376b5d00\nruntime.mapaccess1_faststr(0x433e20, 0x398b4850244c8b48, 0x439ec0, 0x4, 0x41f1f0, ...)\n\t/opt/remy/go/src/pkg/runtime/hashmap.c:397 +0x13 fp=0x7fb7376b5d58\nmain.G(0x43a1a0, 0x4, 0x439ec0, 0x4, 0xc210021080)\n\t/tmp/z.go:40 +0x99 fp=0x7fb7376b5eb0\nmain.F(0xc210021080)\n\t/tmp/z.go:34 +0xa4 fp=0x7fb7376b5f00\nmain.main()\n\t/tmp/z.go:17 +0xb0 fp=0x7fb7376b5f78\nruntime.main()\n\t/opt/remy/go/src/pkg/runtime/proc.c:182 +0x94 fp=0x7fb7376b5fa0\nruntime.goexit()\n\t/opt/remy/go/src/pkg/runtime/proc.c:1289 fp=0x7fb7376b5fa8\n\ngoroutine 2 [runnable]:\nruntime.MHeap_Scavenger()\n\t/opt/remy/go/src/pkg/runtime/mheap.c:438\nruntime.goexit()\n\t/opt/remy/go/src/pkg/runtime/proc.c:1289\ncreated by runtime.main\n\t/opt/remy/go/src/pkg/runtime/proc.c:165\nexit status 2\n\n3. What version of the compiler are you using?  (Run it with the -V flag.)\n\n6g version devel +e8b145221231 Sun Jul 14 12:56:11 2013 +1000\n\nThe issue does not happen with go1.1.1\u003c/pre\u003e",
+	"user": {
+		"login": "remyoudompheng",
+		"id": 175246,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"comments": 5,
+	"closed_at": "2014-12-08T10:32:24Z",
+	"created_at": "2013-07-15T20:11:19Z",
+	"updated_at": "2016-06-24T22:51:55Z"
+}

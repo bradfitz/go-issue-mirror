@@ -1,0 +1,33 @@
+{
+	"id": 65516952,
+	"number": 10301,
+	"state": "closed",
+	"title": "cmd/internal/gc: introduce OAS2FUNC and OAS2RECV temporaries during ordering",
+	"body": "order.go contains this TODO:\r\n\r\n```go\r\n// TODO(rsc): The temporary introduction during multiple assignments\r\n// should be moved into this file, so that the temporaries can be cleaned\r\n// and so that conversions implicit in the OAS2FUNC and OAS2RECV\r\n// nodes can be made explicit and then have their temporaries cleaned.\r\n```\r\n\r\nA consequence of this undone TODO is that the init for a conv expression can run before it should. This is ok right now, because it doesn't happen to matter.\r\n\r\nCL 8311 illustrates this. CL 8311 attempts to use one of the elements of a convT2E expression in its init. It fails on:\r\n\r\n```go\r\npackage p\r\n\r\ntype T [2]*int\r\n\r\nfunc f() (T, interface{}) {\r\n\t// prevent inlining\r\n\tswitch {\r\n\t}\r\n\treturn T{}, nil\r\n}\r\n\r\nfunc bad() {\r\n\tvar a interface{}\r\n\ta, _ = f()\r\n\t_ = a\r\n}\r\n```\r\n\r\nwith \r\n\r\n```\r\nx.go:12: internal error: bad autotmp_0001 (type T) recorded as live on entry\r\n```\r\n\r\nI will try my hand at this in a week or three, unless someone who knows this code well claims it first (which would be lovely).\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-04-15T03:41:33Z",
+	"created_at": "2015-03-31T18:33:02Z",
+	"updated_at": "2016-06-25T02:04:24Z",
+	"milestone": {
+		"id": 905114,
+		"number": 2,
+		"title": "Go1.5Maybe"
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51281197,
+	"number": 3813,
+	"state": "closed",
+	"title": "encoding/xml: Decoder doesn't recognize valid characters in entity names",
+	"body": "by **dmitri.m**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\nAccording to the XML spec, the rules for valid entity names are more complex than what\n(*xml.Decoder) Decode() uses. For example, the following are all legal: \u0026amp;a-b;\n\u0026amp;C.D; \u0026amp;e·321;.\n\u003ca href=\"http://www.w3.org/TR/REC-xml/#sec-entity-decl\"\u003ehttp://www.w3.org/TR/REC-xml/#sec-entity-decl\u003c/a\u003e\nBut the following program fails with parsing errors:\n\u003ca href=\"http://play.golang.org/p/Y2-dIsoAXE\"\u003ehttp://play.golang.org/p/Y2-dIsoAXE\u003c/a\u003e\n\nWhat is the expected output?\nValid entity names should be properly parsed without errors.\n\nWhat do you see instead?\nIn Go 1.0.2 parsing fails with an \u0026quot;XML syntax error on line 7: invalid character\nentity \u0026amp;a;\u0026quot; error.\nIn tip (695f65745351) parsing fails with an \u0026quot;XML syntax error on line 7: invalid\ncharacter entity \u0026amp;a (no semicolon)\u0026quot; error.\nNote that the part of the entity name starting with the first unrecognized character is\nignored and in case the user-provided entity map includes another entity that matches\nthe initial characters, then that entity will be used instead. For example, if\nxml.Decoder.Entity is set to map[string]string{\u0026quot;a\u0026quot;: \u0026quot;first\u0026quot;,\n\u0026quot;a-ignored\u0026quot;: \u0026quot;second\u0026quot;} then \u0026amp;a-ignored; will be parsed as if it\nwere \u0026amp;a;.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g\n\nWhich operating system are you using?\nOS X 10.7\n\nWhich version are you using?  (run 'go version')\ngo1.0.2 and tip:\nparent: 13709:695f65745351 tip\nbranch: default\n\nPlease provide any additional information below.\nThe straightforward fix would be to update the character range conditions in\npkg/encoding/xml/xml.go:870 to include additional valid characters. But the XML spec\nspecifies different constraints for the initial character of the name and the rest of\nthe name (see \u003ca href=\"http://www.w3.org/TR/REC-xml/#NT-Name)\"\u003ehttp://www.w3.org/TR/REC-xml/#NT-Name)\u003c/a\u003e so more invasive changes will be\nrequired for full compliance.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:20:09Z",
+	"created_at": "2012-07-10T21:07:36Z",
+	"updated_at": "2016-06-24T22:21:24Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"id": 70176200,
+	"number": 10538,
+	"state": "open",
+	"title": "encoding/xml: embedded struct with XMLName field not being ignored",
+	"body": "(See https://groups.google.com/forum/#!topic/golang-nuts/5aFvL5dZHvk )\r\n\r\nThe embedded struct with field name XMLName of type xml.Name (with no tag) is being ignored.\r\n\r\nissue #7614 fixed a similar problem when the embedded struct had a tag.\r\n\r\nHere's the test:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"encoding/xml\"\r\n\t\"fmt\"\r\n)\r\n\r\ntype element struct {\r\n\tXMLName  xml.Name\r\n\tChildren []interface{}\r\n}\r\n\r\ntype svgstr struct {\r\n\telement\r\n\tHeight string `xml:\"height,attr,omitempty\"`\r\n\tWidth  string `xml:\"width,attr,omitempty\"`\r\n}\r\n\r\ntype svgstr2 struct {\r\n\tXMLName  xml.Name\r\n\tChildren []interface{}\r\n\tHeight   string `xml:\"height,attr,omitempty\"`\r\n\tWidth    string `xml:\"width,attr,omitempty\"`\r\n}\r\n\r\nfunc main() {\r\n\ts := svgstr{\r\n\t\telement: element{XMLName: xml.Name{Local: \"svg\", Space: \"www.etc\"}},\r\n\t\tWidth:   \"400\",\r\n\t\tHeight:  \"200\",\r\n\t}\r\n\r\n\tb, _ := xml.MarshalIndent(s, \"\", \" \")\r\n\tfmt.Println(string(b))\r\n\r\n\t//normal behaviour below for comparison . no issues here\r\n\ts2 := svgstr2{\r\n\t\tXMLName: xml.Name{Local: \"svg\", Space: \"www.etc\"},\r\n\t\tWidth:   \"400\",\r\n\t\tHeight:  \"200\",\r\n\t}\r\n\r\n\tb, _ = xml.MarshalIndent(s2, \"\", \" \")\r\n\tfmt.Println(string(b)) //works fine when not embedded\r\n}\r\n```\r\n\r\nThe output I get is:\r\n```\r\n\u003csvgstr height=\"200\" width=\"400\"\u003e\u003c/svgstr\u003e\r\n\u003csvg xmlns=\"www.etc\" height=\"200\" width=\"400\"\u003e\u003c/svg\u003e\r\n```\r\n\r\nBoth should give the same result, as the second line, with name as \"svg\" and a xmlns attribute also supplied.",
+	"user": {
+		"login": "xiofen",
+		"id": 11979606,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2015-04-22T16:38:52Z",
+	"updated_at": "2016-05-18T00:30:32Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

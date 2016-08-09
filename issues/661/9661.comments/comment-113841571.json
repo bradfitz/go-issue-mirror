@@ -1,0 +1,12 @@
+{
+	"id": 113841571,
+	"body": "A random thought. There's a way to set platform, feature-specific socket options before booking like the following:\r\n```\r\ns, err := syscall.Socket(...)\r\nif err != nil {\r\n        // error handling\r\n}\r\nif err := syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_REUSEPORT, 1); err != nil {\r\n        syscall.Close(s)\r\n        // error handling\r\n}\r\nif err := syscall.Bind(s, ...); err != nil {\r\n        syscall.Close(s)\r\n        // error handling\r\n}\r\nif err := syscall.Listen(s, ...); err != nil { // or syscall.Connect\r\n        syscall.Close(s)\r\n        // error handling\r\n}\r\nf := os.File(s, ...)\r\nln, err := net.FileLitsener(f) // or net.FileConn, net.FilePacketConn\r\nf.Close()\r\nif err != nil {\r\n        // error handling\r\n}\r\ndefer ln.Close() // or net.Conn.Close, net.PacketConn.Close\r\nfor {\r\n        c, err := ln.Accept() // or net.Conn.Read/Write, net.PacketConn.ReadFrom/WriteTo\r\n        if err != nil {\r\n                // error handling\r\n        }\r\n}\r\n```\r\nand having a clean, platform and feature-agnostic way sounds pretty nice, though the reality is a bit bitter. For example, SO_REUSEPORT option makes a bit different behavior on IP control block inside the kernel between DragonFly BSD, Linux, and BSD variants, Windows. Perhaps it might annoy package net users to when they read and write data during in-service software update, networking facility on-line insertion and removal.",
+	"user": {
+		"login": "mikioh",
+		"id": 92117,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-20T23:32:41Z",
+	"updated_at": "2015-06-22T00:30:53Z"
+}

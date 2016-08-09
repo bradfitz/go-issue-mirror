@@ -1,0 +1,22 @@
+{
+	"id": 73887738,
+	"number": 10742,
+	"state": "closed",
+	"title": "net: ListenMulticastUDP doesn't set {IP,IPV6}_MULTICAST_LOOP",
+	"body": "The following program creates a unicast UDP4 socket for sending, a multicast UDP4 socket for receiving, and sends one packet of data from the former to the latter. It should succeed (and does on Linux), but on Windows (Windows 7, 64-bit, go v1.4.2), it hangs on the ReadFrom() call.\r\n\r\n*Note*: If you go to udpsock_posix.go in the std library, and in listenIPv4MulticastUDP(), change:\r\nif err := setIPv4MulticastLoopback(c.fd, false); ...\r\nto:\r\nif err := setIPv4MulticastLoopback(c.fd, true); ...\r\nthe program works as expected, so it seems like the loopback flag should be set on Windows (maybe in setDefaultMulticastSockopts), or at least the loopback flag should be exposed through the API.\r\n\r\n    package main\r\n    import \"net\"\r\n    func main() {\r\n        src, err := net.Dial(\"udp4\", \"238.98.76.54:4378\")\r\n        if err != nil {\r\n            panic(\"test failed\")\r\n        }\r\n        defer src.Close()\r\n        addr := net.ParseIP(\"238.98.76.54\")\r\n        dest, err := net.ListenMulticastUDP(\"udp4\", nil, \u0026net.UDPAddr{IP: addr, Port: 4378})\r\n        if err != nil {\r\n            panic(\"test failed\")\r\n        }\r\n        defer dest.Close()\r\n        if _, err := src.Write(make([]byte, 100)); err != nil {\r\n            panic(\"test failed\")\r\n        }\r\n        b := make([]byte, 1024)\r\n        n, _, err := dest.ReadFrom(b)\r\n        if err != nil || n != 100 {\r\n            panic(\"test failed\")\r\n        }\r\n    }\r\n",
+	"user": {
+		"login": "rosscanning",
+		"id": 9896524,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-05-07T09:43:12Z",
+	"created_at": "2015-05-07T08:02:32Z",
+	"updated_at": "2016-06-25T02:07:51Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 51289191,
+	"number": 9174,
+	"state": "closed",
+	"title": "runtime: persistentalloc must run on system stack",
+	"body": "\u003cpre\u003eWe have 3 mutexes: mheap_.lock, stackpoolmu and persistent.lock.\nmheap_.lock is locked under stackpoolmu when we allocate new stack segments.\npersistent.lock is locked under mheap_.lock when we allocate new mspans.\nstackpoolmu is locked under persistent.lock when persistentalloc grows stack.\nThe exact stacks are provided below.\nThis is a deadly cycle.\n\nThat last edge (stackpoolmu under persistent.lock) is not possible on linux as far as I\nsee. But it seem to be possible today on plan9, where sysAlloc has deeper stack than\nlock. Also it can fire on any OS if/when we change code of persistentalloc or sysAlloc,\nor do more aggressive stack shrinking.\n\nMheap has to run on system stack and mheap uses persistentalloc. So the solution is to\nrun persistentalloc on system stack.\n\n=======\n\nruntime: stackpoolmu must not be locked while holding persistent.lock\nfatal error: runtime deadlock\n\nruntime stack:\nruntime.gothrow(0x488970, 0x10)\n\tsrc/runtime/panic.go:507 +0x8e\nruntime.ddLock(0x666c48)\n\tsrc/runtime/dd.go:361 +0x28e\nruntime.lock(0x666c48)\n\tsrc/runtime/lock_sema.go:42 +0x87\nruntime.newstack()\n\tsrc/runtime/stack1.go:661 +0x4a7\nruntime.morestack()\n\tsrc/runtime/asm_amd64.s:311 +0x7e\n\ngoroutine 43 [running]:\nruntime.unlock(0x6527a0)\n\tsrc/runtime/lock_sema.go:97 +0x14 fp=0xc208095120 sp=0xc208095118\nruntime.persistentalloc(0x28, 0x8, 0x66a680, 0x1977ee)\n\tsrc/runtime/malloc.go:809 +0x201 fp=0xc208095148 sp=0xc208095120\nruntime.getitab(0x3a6460, 0x3ea260, 0x0, 0x3f7620)\n\tsrc/runtime/iface.go:79 +0x68c fp=0xc2080951c8 sp=0xc208095148\nruntime.convI2I(0x3a6460, 0x7253c0, 0x652160, 0x0, 0x0)\n\tsrc/runtime/iface.go:310 +0xdc fp=0xc208095200 sp=0xc2080951c8\n\n==============\n\nruntime: mheap_.lock must not be locked while holding stackpoolmu\nfatal error: runtime deadlock\n\nruntime stack:\nruntime.gothrow(0x488970, 0x10)\n\tsrc/runtime/panic.go:507 +0x8e\nruntime.ddLock(0x65a960)\n\tsrc/runtime/dd.go:361 +0x28e\nruntime.lock(0x65a960)\n\tsrc/runtime/lock_sema.go:42 +0x87\nruntime.mHeap_AllocStack(0x65a960, 0x4, 0x1)\n\tsrc/runtime/mheap.go:248 +0x66\nruntime.stackpoolalloc(0x666c00, 0x0)\n\tsrc/runtime/stack1.go:66 +0x61\nruntime.stackcacherefill(0x710000, 0x0)\n\tsrc/runtime/stack1.go:130 +0x5b\nruntime.stackalloc(0x800, 0x0, 0x0)\n\tsrc/runtime/stack1.go:230 +0x1bd\nruntime.func·036()\n\tsrc/runtime/proc1.go:1875 +0x31\nruntime.systemstack(0x7fff5fbff8a0)\n\tsrc/runtime/asm_amd64.s:260 +0xa3\nruntime.malg(0xc200000800, 0x0)\n\tsrc/runtime/proc1.go:1876 +0x72\nruntime.newproc1(0x5149b0, 0x7fff5fbff9b0, 0x0, 0x47f35, 0x0)\n\tsrc/runtime/proc1.go:1928 +0xe9\n\n==============\n\nruntime: persistent.lock must not be locked while holding mheap_.lock\nfatal error: runtime deadlock\n\nruntime stack:\nruntime.gothrow(0x488970, 0x10)\n\tsrc/runtime/panic.go:507 +0x8e\nruntime.ddLock(0x6527a0)\n\tsrc/runtime/dd.go:361 +0x28e\nruntime.lock(0x6527a0)\n\tsrc/runtime/lock_sema.go:42 +0x87\nruntime.persistentalloc(0x4000, 0x8, 0x66a658, 0x1d7cb)\n\tsrc/runtime/malloc.go:797 +0xbe\nruntime.fixAlloc_Alloc(0x665df8, 0x1)\n\tsrc/runtime/mfixalloc.go:39 +0xeb\nruntime.mHeap_AllocSpanLocked(0x65a960, 0x1, 0xc208013201)\n\tsrc/runtime/mheap.go:306 +0x187\nruntime.mHeap_Alloc_m(0x65a960, 0x1, 0x13, 0x652f00)\n\tsrc/runtime/mheap.go:194 +0x12c\nruntime.func·019()\n\tsrc/runtime/mheap.go:231 +0x56\nruntime.systemstack(0x7fff5fbff868)\n\tsrc/runtime/asm_amd64.s:260 +0xa3\nruntime.mHeap_Alloc(0x65a960, 0x1, 0x10000000013, 0x107a2)\n\tsrc/runtime/mheap.go:232 +0x68\nruntime.mCentral_Grow(0x6627f8, 0x1a5ec)\n\tsrc/runtime/mcentral.go:181 +0x96\nruntime.mCentral_CacheSpan(0x6627f8, 0x428)\n\tsrc/runtime/mcentral.go:77 +0x358\nruntime.mCache_Refill(0x710000, 0x13, 0x428)\n\tsrc/runtime/mcache.go:65 +0xd6\nruntime.func·007()\n\tsrc/runtime/malloc.go:175 +0x35\nruntime.systemstack(0x652f30)\n\tsrc/runtime/asm_amd64.s:244 +0x71\nruntime.mstart()\n\tsrc/runtime/proc1.go:693\u003c/pre\u003e",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2015-06-17T14:23:58Z",
+	"created_at": "2014-11-27T07:47:25Z",
+	"updated_at": "2016-06-25T01:45:01Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

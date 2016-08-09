@@ -1,0 +1,22 @@
+{
+	"id": 51278625,
+	"number": 2022,
+	"state": "closed",
+	"title": "ld: Overlapped sections found in dynamic ELF binaries",
+	"body": "by **qyzhai**:\n\n\u003cpre\u003e8g check.go \u0026amp;\u0026amp; 8l -o check check.go\nobjdump -h ~/go/bin/goinstall  | awk '/[ ]+[0-9]+/{print \n$1,$2,\u0026quot;0x\u0026quot;$3,\u0026quot;0x\u0026quot;$4}' | ./check \n\n.rodata 813d000-81fe3af  overlaps .dynsym 813d2cc-813d3eb\n.rodata 813d000-81fe3af  overlaps .dynstr 813d3ec-813d517\n.rodata 813d000-81fe3af  overlaps .gnu.version 813d008-813d02b\n.rodata 813d000-81fe3af  overlaps .gnu.version_r 813d02c-813d08b\n.rodata 813d000-81fe3af  overlaps .rel.plt 813d0f4-813d15b\n.rodata 813d000-81fe3af  overlaps .plt 813d1ec-813d2cb\n.rodata 813d000-81fe3af  overlaps .hash 813d08c-813d0f3\n.rodata 813d000-81fe3af  overlaps .dynamic 813d15c-813d1eb\n.data 82bb000-82bd847  overlaps .got.plt 82bb260-82bb29f\n\n\ncat check.go\n//------------check.go-----------\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;os\u0026quot;\n)\n\ntype Sectinfo struct {\n\tid     int\n\tname   string\n\tlength int\n\tbase   int\n}\ntype Sects []Sectinfo\n\nfunc check(base, length, b2, l2 int) bool {\n\tif length\u0026amp;l2 == 0 {\n\t\treturn false\n\t}\n\tb1, l1 := base, length\n\tif b1 \u0026gt; b2 {\n\t\tb1, l1, b2, l2 = b2, l2, b1, l1\n\t}\n\tif b1+l1 \u0026gt; b2 {\n\t\treturn true\n\t}\n\treturn false\n}\nfunc main() {\n\tvar sects Sects\n\tfor {\n\t\tvar s Sectinfo\n\t\tstate, err := fmt.Scan(\u0026amp;s.id, \u0026amp;s.name, \u0026amp;s.length, \u0026amp;s.base)\n\t\tif err == os.EOF {\n\t\t\tbreak\n\t\t}\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\tsects = append(sects, s)\n\t\t_ = state\n\t}\n\tfor i := 1; i \u0026lt; len(sects); i++ {\n\t\tif sects[i].base \u0026gt; 0 {\n\t\t\tfor j := 0; j \u0026lt; i; j++ {\n\t\t\t\tif check(sects[i].base, sects[i].length,\n\t\t\t\t\tsects[j].base, sects[j].length) {\n\t\t\t\t\tfmt.Printf(\u0026quot;%s %x-%x  overlaps %s %x-%x\\n\u0026quot;,\n\t\t\t\t\t\tsects[i].name, sects[i].base, sects[i].base+sects[i].length-1,\n\t\t\t\t\t\tsects[j].name, sects[j].base, sects[j].base+sects[j].length-1)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:10:59Z",
+	"created_at": "2011-06-29T08:56:55Z",
+	"updated_at": "2016-06-24T19:31:42Z"
+}

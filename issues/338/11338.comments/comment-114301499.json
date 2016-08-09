@@ -1,0 +1,12 @@
+{
+	"id": 114301499,
+	"body": "Relevant piece of code: http://golang.org/src/net/interface_linux.go#L175\r\nIn this case IFA_LOCAL is 10.240.98.86 and IFA_ADDRESS is 10.240.0.1. FlagPointToPoint is not set.\r\n\r\nAs far as I can tell this function should always use IFA_LOCAL whenever it's available regardless of PointToPoint flag.\r\nHere's relevant piece of code from iproute2 (i.e. \"ip\" command implementation):\r\n```\r\n        if (!rta_tb[IFA_LOCAL])\r\n                rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];\r\n        if (!rta_tb[IFA_ADDRESS])\r\n                rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];\r\n\r\n...\r\n\r\n        if (rta_tb[IFA_LOCAL]) {\r\n                fprintf(fp, \"%s\", format_host(ifa-\u003eifa_family,\r\n                                              RTA_PAYLOAD(rta_tb[IFA_LOCAL]),\r\n                                              RTA_DATA(rta_tb[IFA_LOCAL]),\r\n                                              abuf, sizeof(abuf)));\r\n\r\n                if (rta_tb[IFA_ADDRESS] == NULL ||\r\n                    memcmp(RTA_DATA(rta_tb[IFA_ADDRESS]), RTA_DATA(rta_tb[IFA_LOCAL]),\r\n                           ifa-\u003eifa_family == AF_INET ? 4 : 16) == 0) {\r\n                        fprintf(fp, \"/%d \", ifa-\u003eifa_prefixlen);\r\n                } else {\r\n                        fprintf(fp, \" peer %s/%d \",\r\n                                format_host(ifa-\u003eifa_family,\r\n                                            RTA_PAYLOAD(rta_tb[IFA_ADDRESS]),\r\n                                            RTA_DATA(rta_tb[IFA_ADDRESS]),\r\n                                            abuf, sizeof(abuf)),\r\n                                ifa-\u003eifa_prefixlen);\r\n                }\r\n        }\r\n```",
+	"user": {
+		"login": "aulanov",
+		"id": 1300171,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-22T23:27:24Z",
+	"updated_at": "2015-06-22T23:27:24Z"
+}

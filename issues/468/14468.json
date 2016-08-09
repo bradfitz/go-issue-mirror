@@ -1,0 +1,21 @@
+{
+	"id": 135486498,
+	"number": 14468,
+	"state": "open",
+	"title": "database/sql: common interface for query functions in sql.DB and sql.Tx",
+	"body": "Hi,\r\n\r\nI'm proposing a interface that implements all functions in `sql.DB` and `sql.Tx` that takes a `query string` as one of its arguments. This could be useful when implementing \"dumb\" functions that retrieves information but in itself dose not need to be prepared however might be used to verify whether to commit or rollback.\r\n\r\nThe interface I'm proposing is: (The name can of course be changed)\r\n\r\n``` go\r\ntype QueryAble interface {\r\n\tExec(query string, args ...interface{}) (sql.Result, error)\r\n\tPrepare(query string) (*sql.Stmt, error)\r\n\tQuery(query string, args ...interface{}) (*sql.Rows, error)\r\n\tQueryRow(query string, args ...interface{}) *sql.Row\r\n}\r\n```\r\n\r\nThis is an example function `Get` that can be used with or without transactions.\r\n\r\n```go\r\nfunc Get (q Queryable)(int){\r\n\tvar test int\r\n\tres , _ := q.Query(\"SELECT COUNT(*) FROM table;\")\r\n\tres.Next()\r\n\tres.Scan(\u0026test)\r\n\tres.Close()\r\n\treturn test\r\n}\r\n\r\nfunc GetExample(db *sql.DB){\r\n\r\n\t//When you just want to retrieve the information, no need for a transaction\r\n\tfmt.Printf(\"Current len of Table %d\\n\", Get(db))\r\n\r\n\t//Make a change\r\n\ttx, _ :=db.Begin()\r\n\t// Add data to table\r\n\tif  Get(tx) \u003e 2 {\r\n\t\tfmt.Printf(\"Table to large: %d robacking to: %d \\n\", Get(tx) , Get(db))\r\n\t\ttx.Rollback()\r\n\t} else {\r\n\t\tfmt.Printf(\"Table update new len %d\\n\", Get(tx))\r\n\t\ttx.Commit()\r\n\t}\r\n}\r\n```\r\n",
+	"user": {
+		"login": "KilledKenny",
+		"id": 1319915,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-02-22T17:35:55Z",
+	"updated_at": "2016-02-22T23:51:15Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

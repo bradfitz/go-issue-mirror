@@ -1,0 +1,28 @@
+{
+	"id": 150679331,
+	"number": 15430,
+	"state": "closed",
+	"title": "cmd/compile: global variable references have weird line numbers",
+	"body": "```\r\npackage main\r\n\r\nimport \"os\"\r\n\r\nfunc main() {\r\n\tx := os.Stdout\r\n\tx.WriteString(\"foo\\n\")\r\n}\r\n```\r\n\r\nWhen I compile this with SSA, I get:\r\n```\r\n\t0x0013 00019 (tmp.go:3)\tMOVQ\tos.Stdout(SB), AX\r\n```\r\nNote the line number.  It's the line number of the `import` statement, not the line number where `os.Stdout` is mentioned.\r\n\r\nThis bug comes from earlier in the pipeline than the SSA backend.  On input to SSA, we have:\r\n```\r\n.   AS u(2) l(6) colas(true) tc(1)\r\n.   .   NAME-main.x u(1) a(true) g(1) l(6) x(0+0) class(PAUTO) f(1) tc(1) used(true) PTR64-*os.File\r\n.   .   NAME-os.Stdout u(1) a(true) l(3) x(0+0) class(PEXTERN) tc(1) used(true) PTR64-*os.File\r\n```\r\nNote the `l(3)` on the os.Stdout reference.\r\n\r\nI suspect the old compiler ends up using the line number of the AS, so it is ok, whereas the SSA compiler uses the line number for the NAME.\r\n\r\nProbably a dup of #14742\r\n\r\nSee issue #15427 \r\n\r\n@davecheney ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-04-27T15:04:05Z",
+	"created_at": "2016-04-24T16:43:03Z",
+	"updated_at": "2016-04-27T15:04:05Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

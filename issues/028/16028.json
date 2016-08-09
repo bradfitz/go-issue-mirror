@@ -1,0 +1,22 @@
+{
+	"id": 159550730,
+	"number": 16028,
+	"state": "closed",
+	"title": "os/exec: race between Wait and ctx.Done",
+	"body": "There is an unlikely race condition when using `os/exec.CommandContext`.  In `Cmd.Wait`, one goroutine sleeps in a select on `ctx.Done` and `waitDone`, while another goroutine sleeps in `c.Process.Wait`.  If the process terminates at the same time as the context, then it is possible for the first goroutine to wake up and receive from `ctx.Done` and call `c.Process.Kill` just as the code in `os.Process.Wait` returns from `syscall.Wait4`.  At that point the process ID is available for reuse, and a new process may be started with the same process ID.  The call to `c.Process.Kill` will call `c.Process.Signal`.  Because `Process.wait` has not yet had a chance to call `Process.setDone`, `c.Process.Signal` will call `syscall.Kill` with the old process ID.  This could potentially kill an unrelated process.\r\n\r\nThis is similar to the problem described in #13987; the race described there has now been brought into the standard library.\r\n\r\nMarking as 1.8 because I don't see a simple way to fix this.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-06-10T18:12:54Z",
+	"created_at": "2016-06-10T03:07:10Z",
+	"updated_at": "2016-06-13T09:32:04Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

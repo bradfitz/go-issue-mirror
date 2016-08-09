@@ -1,0 +1,12 @@
+{
+	"id": 211616617,
+	"body": "I think @alandonovan's sample\r\n\r\n    const (\r\n        x = y\r\n        y = x\r\n    )\r\n\r\nis obviously invalid and should be disallowed, because it's a cycle in constant declarations.\r\n\r\nHowever, I think @momchil-velikov's original sample is still interesting, because it reveals that current Go type checkers are unnecessarily integrating type propagation/inference with constant evaluations.  If those two steps are split into separate phases, the cycle goes away.\r\n\r\nOriginal:\r\n\r\n    const C = len(u)\r\n    func f() ([1]int, [C]float64) { ... }\r\n    var u, v = f()\r\n\r\nApply type propagation/inference:\r\n\r\n    const C int = len(u)\r\n    func f() ([1]int, [C]float64) { ... }\r\n    var (u [1]int, v [C]float64) = f()\r\n\r\nApply constant evaluation (including evaluating array bounds, which I expect in practice would even include evaluating the constant literal `1` in `[1]int`):\r\n\r\n    const C int = 1\r\n    func () ([1]int, [1]float64) { ... }\r\n    var (u [1]int, v [1]float64) = f()\r\n\r\nAm I overlooking any counter examples where separating these steps would fail?  I.e., programs where assigning types to names/expressions requires constant evaluation?",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-04-18T22:45:53Z",
+	"updated_at": "2016-04-18T22:45:53Z"
+}

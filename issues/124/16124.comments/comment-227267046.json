@@ -1,0 +1,17 @@
+{
+	"id": 227267046,
+	"body": "@randall77 I would like to have deterministic sequence with known distribution but in the same time luxury of dealing with `io.Reader` which allows me to take buffer size out of the equation and combine/nest/wrap it without worrying about buffer size.\r\n\r\nSay `io.CopyN` one instance to `hash.Hash` implementation, then send stream produced with other instance (made with the same seed) over the network and write it to the same `hash.Hash` implementation on the other end. Buffer size will differ for both cases, but I would expect to get the same hash sum.\r\n\r\nThis is the natural way of thinking for me:\r\n * PRNG generates a sequence of random values that is determined by a seed\r\n * `io.Reader` is a way to read/receive a sequence of bytes, a buffer is just the way to get the data\r\n * `io.Reader` implemented by `rand.Rand` is a way to generate sequence of bytes determined by a seed\r\n\r\n@josharian The reasonable expectation I believe is that, for instance, `io.LimitReader(rand.New(rand.NewSource(seed), length)` is the way to produce pseudo-random byte stream of given length and that's content is determined by the seed only.\r\n\r\nSo that one could send that stream over the network, store on disk, etc. Then afterwards read it back (i.e. get `io.Reader` with the same stream but now coming from the network, disk, etc), create the second stream using `io.LimitReader`/`rand.Reader` with the same seed/length and validate data (read both streams in turn and compare bytes).\r\n\r\nIt is convenient because one can use arbitrary-sized streams that could exceed RAM size, have many of them and just keep seed and length in order to be able to validate content. It is sound way to do some kinds of testing of network device, storage service, etc. And doing such testing one can't always fix buffer size because it could be determined by say network buffers (or say RPC mechanism and validator implementation could have different buffers).\r\n\r\nOne of the real-world examples is TFTP library unit-tests, see https://github.com/pin/tftp/blob/master/tftp_test.go#L126 for instance. There is roll-your-own `io.Reader` wrapper around `rand.Source` exactly because of the this issue: when I implement validator I don't want to take TFTP library buffer size into the equation.\r\n\r\nIn general, I would expect that provided the same seed and calling no other methods on `Rand` except `Read` (and wrapping it into something like `io.LimitReader` actually enforces that) I would get the same stream of bytes no matter how `io.Reader` is read.",
+	"user": {
+		"login": "pin",
+		"id": 150904,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 1,
+		"heart": 1
+	},
+	"created_at": "2016-06-20T20:56:57Z",
+	"updated_at": "2016-06-20T20:56:57Z"
+}

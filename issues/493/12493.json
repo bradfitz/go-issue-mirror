@@ -1,0 +1,27 @@
+{
+	"id": 104816124,
+	"number": 12493,
+	"state": "closed",
+	"title": "x/sys/windows/registry: Remove arbitrary string limit from setStringValue",
+	"body": "`setStringValue` in https://github.com/golang/sys/blob/master/windows/registry/value.go enforces a max string size of 1\u003c\u003c10 which is arbitrary (on some Windows versions there is no limit enforced, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724872(v=vs.85).aspx). If the string is longer than that, the current function triggers `slice bounds out of range`.\r\n\r\nCurrent implementation:\r\n```go\r\nfunc (k Key) setStringValue(name string, valtype uint32, value string) error {\r\n\tv, err := syscall.UTF16FromString(value)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tbuf := (*[1 \u003c\u003c 10]byte)(unsafe.Pointer(\u0026v[0]))[:len(v)*2]\r\n\treturn k.setValue(name, valtype, buf)\r\n}\r\n```\r\n\r\nI propose using a byte buffer to do the `[]uint16` to `[]byte`  conversion, removing the string limit.\r\n\r\n```go\r\nfunc (k Key) setStringValue(name string, valtype uint32, value string) error {\r\n\tv, err := syscall.UTF16FromString(value)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tbuf := new(bytes.Buffer)\r\n\tbuf.Grow(len(v)*2)\r\n\tbinary.Write(buf, binary.LittleEndian, v)\r\n\treturn k.setValue(name, valtype, buf.Bytes())\r\n}\r\n```",
+	"user": {
+		"login": "folbricht",
+		"id": 3505107,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2015-09-09T02:30:00Z",
+	"created_at": "2015-09-04T02:11:23Z",
+	"updated_at": "2015-09-09T02:30:00Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

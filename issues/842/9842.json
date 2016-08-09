@@ -1,0 +1,33 @@
+{
+	"id": 57373341,
+	"number": 9842,
+	"state": "closed",
+	"title": "net/http: ServeFile should recognise unix epoch as \"zero time\" ?",
+	"body": "The check for timestamp validity in `http.ServeFile()` is not sufficient to detect invalid timestamps on unix systems. On App Engine, all files have the modified date set to 1 Jan 1970 (the unix epoch). In this environment, `http.ServeFile()` serves files with the header\r\n\r\n```\r\n  Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT\r\n```\r\n\r\nregardless of the actual last modified date of the file. This is a problem because it means files may be cached on client browsers forever. This happens because the client may request the file with\r\n\r\n```\r\n GET /file.html HTTP/1.1\r\n If-Modified-Since: Thu, 01 Jan 1970 00:00:00 GMT\r\n ```\r\n\r\nThen App Engine will replies with\r\n\r\n```\r\n  304 Not Modified.\r\n```\r\n\r\nIn the file `src/net/http/fs.go`, there is an attempt to check if the modified timestamp is valid by calling `Time.IsZero()` but this checks if the date is Jan 1, 1 AD, which is always false for all unix timestamps. It probably makes sense to add an explicit check for unix `timestamp == 0` to serve `ServeFile` and convert this to `Time.Zero`.",
+	"user": {
+		"login": "adob",
+		"id": 607358,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-03-23T02:18:12Z",
+	"created_at": "2015-02-11T20:35:10Z",
+	"updated_at": "2016-06-25T02:00:38Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

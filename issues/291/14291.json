@@ -1,0 +1,28 @@
+{
+	"id": 132795438,
+	"number": 14291,
+	"state": "closed",
+	"title": "net/http/httptest: investigate removing the net.Conn.Close goroutine for Go 1.7",
+	"body": "From an updated comment I'm writing in net/http/httptest/server.go:\r\n\r\n```go\r\nfunc (s *Server) closeConn(c net.Conn) {\r\n        if runtime.GOOS == \"plan9\" {\r\n                // Go's Plan 9 net package isn't great at unblocking reads when\r\n                // their underlying TCP connections are closed.  Don't trust\r\n                // that that the ConnState state machine will get to\r\n                // StateClosed. Instead, just go there directly. Plan 9 may leak\r\n                // resources if the syscall doesn't end up returning. Oh well.\r\n                s.forgetConn(c)\r\n        }\r\n\r\n        // Somewhere in the chaos of https://golang.org/cl/15151 we found that  \r\n        // some types of conns were blocking in Close too long (or deadlocking?)\r\n        // and we had to call Close in a goroutine. I (bradfitz) forget what                                                                                                       \r\n        // that was at this point, but I suspect it was *tls.Conns, which                                                                                                          \r\n        // were later fixed in https://golang.org/cl/18572, so this goroutine                                                                                                      \r\n        // is _probably_ unnecessary now. But it's too late in Go 1.6 too remove                                                                                                   \r\n        // it with confidence.                                                                                                                                                     \r\n        // TODO(bradfitz): try to remove it for Go 1.7.                                                                                                                            \r\n        go c.Close()\r\n}\r\n```",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-03-31T10:49:14Z",
+	"created_at": "2016-02-10T19:33:40Z",
+	"updated_at": "2016-03-31T10:49:14Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

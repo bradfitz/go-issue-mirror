@@ -1,0 +1,12 @@
+{
+	"id": 109324583,
+	"body": "@randall77 Thanks for the help!\r\n\r\nI am going to investigate this today. I wrote most of the code that my\r\nsystem uses but I am making use of a C++ library for graph isomorphism\r\nthat I did not write. My initial guess is a memory management error\r\nthere.\r\n\r\nOne note, if you run the program with `--cache=/path/to/tmp/dir/` it\r\nwill use file backed maps instead of anonymous maps for the B+Trees.\r\nWhen I look at diffs of `/proc/\u003cpid\u003e/maps` using that option. I see the\r\nmemory maps for the B+Trees moving around (as I expect because a use\r\n`mremap` when necessary to expand the mapping with `MREMAP_MAYMOVE`).\r\nHowever, I see a bunch of other maps in there as well moving around. I\r\nam not allocating those maps so there are two options:\r\n\r\n1. Go is allocating them as part of its memory management scheme. I know\r\n   that by default the allocator on linux does this. Excerpt from\r\n   `man malloc`\r\n\r\n   \u003e Normally,  **`malloc()`**  allocates  memory from the heap, and\r\n   \u003e adjusts the size of the heap as required, using **`sbrk(2)`**.\r\n   \u003e When allocating blocks of memory larger than `MMAP_THRESHOLD`\r\n   \u003e bytes, the glibc **`malloc()`** implementation allocates the memory\r\n   \u003e as a private anonymous mapping using **`mmap(2)`**.\r\n   \u003e `MMAP_THRESHOLD` is 128 kB by default, but is adjustable using\r\n   \u003e **`mallopt(3)`**.  Allocations performed using **`mmap(2)`** are\r\n   \u003e unaffected by the `RLIMIT_DATA` resource limit (see\r\n   \u003e **`getrlimit(2)`**)\r\n\r\n2. `libbliss` which I use for graph isomorphism is doing a bad job\r\n   managing its memory. I think to test this I will write a C program to\r\n   create lots of graphs and run it under valgrind.\r\n\r\nThanks for the insights.",
+	"user": {
+		"login": "timtadh",
+		"id": 38620,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-06-05T15:15:46Z",
+	"updated_at": "2015-06-05T15:15:46Z"
+}

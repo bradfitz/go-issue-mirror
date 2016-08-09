@@ -1,0 +1,12 @@
+{
+	"id": 123555313,
+	"body": "@rsc, I'm wondering if we should do anything to address this.\r\n\r\nIn summary: the http.RoundTripper interface says you get either a *Response, or an error.\r\n\r\nBut in the case of a client writing a large request and the server replying prematurely (e.g. 403 Forbidden) and closing the connection without reading the request body, what does the client want? The 403 response, or the error that the body couldn't be copied?\r\n\r\nIn addressing a server DoS issue, Go 1.5 now more aggressively closes connections instead of reading forever when the Handler doesn't read to EOF.\r\n\r\nThere are multiple potential fixes, none a complete solution:\r\n\r\na) change the http.RoundTripper interface to say it can return (non-nil, non-nil). This is problematic for compatibility. Old code wouldn't know to potentially close the non-nil *Response.Body when err is already non-nil.\r\n\r\nb) make the Server delay the TCP shutdown for _N_ milliseconds after writing the response, thereby increasing the chance that the client sees our response. We do this elsewhere.\r\n\r\nc) make the Transport give an _N_ millisecond (optional, tunable on *Transport?) advantage to responses over body write errors. e.g.:\r\n\r\n```go\r\n$ git di\r\ndiff --git a/src/net/http/transport.go b/src/net/http/transport.go\r\nindex 41fc6d0..6d4b50a 100644\r\n--- a/src/net/http/transport.go\r\n+++ b/src/net/http/transport.go\r\n@@ -1165,6 +1165,10 @@ WaitResponse:\r\n                case err := \u003c-writeErrCh:\r\n                        if err != nil {\r\n                                re = responseAndError{nil, err}\r\n+                               select {\r\n+                               case re = \u003c-resc:\r\n+                               case \u003c-time.After(20 * time.Millisecond):\r\n+                               }\r\n                                pc.close()\r\n                                break WaitResponse\r\n                        }\r\n```\r\n\r\nWe could do (c) easily and probably even (b) for Go 1.5 if this is a concern. It's very late, though. And we already had this race/ambiguity in all previous Go releases, so maybe it's not a big deal. It's just changed slightly now.\r\n\r\nI'd like to think of a better story for Go 1.6 but I don't have any great answers yet.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-07-22T03:43:49Z",
+	"updated_at": "2015-07-22T03:43:49Z"
+}

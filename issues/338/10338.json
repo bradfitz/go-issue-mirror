@@ -1,0 +1,27 @@
+{
+	"id": 66212185,
+	"number": 10338,
+	"state": "closed",
+	"title": "os/exec: cmd.Wait does not return after process termination when stdin is attached",
+	"body": "The following code terminates with a deadlock error when run in isolation. If we replace the usage of `io.Pipe` with `cmd.StdinPipe()`, the program terminates normally with the expected error from `cmd.Wait()`.\r\n\r\nThis is on Darwin 14.1.0 with go 1.4.2.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"syscall\"\r\n)\r\n\r\nimport \"os/exec\"\r\n\r\nfunc main() {\r\n\tpr, pw := io.Pipe()\r\n\r\n\tcmd := exec.Command(\"/bin/bash\", \"-c\", \"cat\")\r\n\tcmd.Stdin = pr\r\n\r\n\tstarted := make(chan error)\r\n\tdone := make(chan error)\r\n\tgo func() {\r\n\t\tstarted \u003c- cmd.Start()\r\n\t\tdone \u003c- cmd.Wait()\r\n\t}()\r\n\r\n\t\u003c-started\r\n\tprintln(\"Started\")\r\n\tpw.Write([]byte(\"hello\"))\r\n\r\n\tcmd.Process.Signal(syscall.SIGTERM)\r\n\r\n\terr := \u003c-done\r\n\tprintln(\"Done\")\r\n\tif err != nil {\r\n\t\tfmt.Printf(\"wait err: %s\\n\", err.Error())\r\n\t}\r\n}\r\n```\r\n",
+	"user": {
+		"login": "sykesm",
+		"id": 4517909,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-07-15T05:11:53Z",
+	"created_at": "2015-04-03T19:21:22Z",
+	"updated_at": "2016-07-18T19:45:54Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

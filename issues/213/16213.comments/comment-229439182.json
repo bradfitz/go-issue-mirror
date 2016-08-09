@@ -1,0 +1,12 @@
+{
+	"id": 229439182,
+	"body": "Here's the obvious fastrandn for the runtime package\r\n\r\n```go\r\nfunc fastrandn(n uint32) uint32 {\r\n\t// See http://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/.\r\n\t// Note that we use \u003e\u003e 31 instead of \u003e\u003e 32 because fastrand only produces 31 bit numbers.\r\n\treturn uint32((uint64(n) * uint64(fastrand())) \u003e\u003e 31)\r\n}\r\n```\r\n\r\nUnfortunately, the additional function call (instead of an inline `%`) more than obviates the performance gains. This means implementing fastrandn in assembly and copy/pasting the core of fastrand, which is a pity.\r\n\r\nResults on amd64, with an assembly implementation:\r\n\r\nname         old time/op  new time/op  delta\r\nFastrandnNonConstant-8  5.90ns ±18%  4.62ns ±13%  -21.63%  (p=0.008 n=5+5)\r\nFastrandnConstantNonPowerOfTwo-8  5.24ns ± 8%  5.14ns ±25%   ~     (p=0.052 n=24+25)\r\nFastrandnConstantPowerOfTwo-8  3.49ns ±11%  4.65ns ± 4%  +33.47%  (p=0.000 n=22+23)\r\n\r\nWorth doing for the non-constant case. This might get delayed going in, though, since I lack hardware (ppc, mips, s390x) to test asm implementations on other platforms.\r\n\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-29T18:05:52Z",
+	"updated_at": "2016-06-29T18:05:52Z"
+}

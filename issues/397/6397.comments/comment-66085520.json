@@ -1,0 +1,12 @@
+{
+	"id": 66085520,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eThis function is the one that crashed when I ran the test:\n\nfunc (cache *Cache) GetItem(key []byte) (item *Item, err error) {\n\tcache.dg.CheckLive()\n\titem = acquireItem()\n\tvar k C.struct_ybc_key\n\tinitKey(\u0026k, key)\n\tif C.go_get_item_and_value(cache.ctx(), item.ctx(), \u0026item.value, \u0026k) == 0 {\n\t\treleaseItem(item)\n\t\terr = ErrCacheMiss\n\t\treturn\n\t}\n\titem.dg.Init()\n\treturn\n}\n\nThe declaration of var k C.struct_ybc_key is declaring C data as a Go variable; the fact\nthat \u0026k escapes means that k itself is allocated on the heap, so that \u0026k is just the\nheap-allocated pointer. The allocation happens at the line where k is declared. The\ncalls to initKey, cache.ctx(), and item.ctx() are all simple enough to be inlined, so\nthe next call after the allocation of k is C.go_get_item_and_value, which ends up in C\ncode and behaves as if none of its arguments contain pointers (because you cannot in\ngeneral pass Go pointers to C anyway). At this point it appears that a garbage\ncollection happens. There are no references to \u0026k anywhere - the only one is in the\nargument to the C function - so the garbage collector reclaims the object k and\nincidentally happens to rewrite some of it, so that it is no longer a valid\nC.struct_ybc_key. Then the C hash function inside go_get_item_and_value reads the\nno-longer-valid struct and crashes.\n\nA workaround here is to make sure \u0026k stays alive. For example you can declare \n\nvar (\n   globalb bool\n   global interface{}\n)\nand then put if globalb { global = \u0026k } after the call to C.go_get_item_and_value. It\nwill never happen but the compiler doesn't see that (today) and the possibility will\nkeep \u0026k stored on the stack somewhere that the garbage collector will see it. I did this\nand now the test passes.\n\nThat said, in the long term this kind of thing will keep breaking, especially as the\ngarbage collector gets better. You should never pass a Go-allocated value to C. If you\nneed a *struct ybc_key, the only correct way to get one is to call C.malloc and then\nC.free it when done. We've made it a little too easy to do the wrong thing here.\u003c/pre\u003e\n\n\n\n_Status changed to **Unfortunate**._",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-09-17T02:54:28Z",
+	"updated_at": "2014-12-08T10:35:13Z"
+}

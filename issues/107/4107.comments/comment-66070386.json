@@ -1,0 +1,12 @@
+{
+	"id": 66070386,
+	"body": "\u003ca id=\"c2\"\u003e\u003c/a\u003eComment 2:\n\n\u003cpre\u003eSo it turns out that this due to a well hidden bug in debug/elf - the object in question\ncontains a rela.debug_info section, which contains the offsets into the string table.\nHowever, the relocation for the given section is not processed, resulting in all strp\noffsets referring to the first entry in the string table.\n\nThe root cause is an off-by-one error caused by debug/elf discarding the first symbol in\nthe symbol table. As a result, the relocation code actually checks the following symbol\nand if it does not have a type of STT_SECTION then the relocation is skipped.\nUnfortunately, all of the objects used for the existing relocation tests have symbols of\ntype STT_SECTION that follow the symbol that requires relocation, hence they relocate\ncorrectly.\n\nThere are two obvious fixes - stop skipping over the first symbol in the symbol table or\nadjust the index when performing relocation. I suspect the first of these is more\n\"correct\" since any data that contains an index into the symbol table will potentially\nencounter the same issue. Furthermore, code that uses debug/elf or debug/dwarf should\nnot need to know that they must adjust for this.\u003c/pre\u003e\n\n\n_Owner changed to @4a6f656c._",
+	"user": {
+		"login": "4a6f656c",
+		"id": 8142769,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2012-11-13T13:47:06Z",
+	"updated_at": "2014-12-08T10:21:49Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 64764287,
+	"number": 10271,
+	"state": "closed",
+	"title": "cmd/go: -coverpkg=all is not useful",
+	"body": "```\r\n$ go test -c -coverpkg=all fmt\r\n```\r\ntries to build ALL packages that you have in GOROOT and GOPATH. I have tons of stuff there, significant portion of which does not build for various reasons. So the build either fails or takes enormous amount of time and produces tons of \"warning: no packages being tested depend on something\".\r\n\r\n-coverpkg=all should mean \"all packages used by the test\" rather than \"all packages\". Note that -coverpkg=all is useful for any kind of coverage-guided fuzzing, and in this case you want to instrument all packages used by the program.\r\n\r\nBelow is a temporal patch that I use as a workaround. Note that I also exclude \"runtime\" as it is not useful for coverage-based fuzzing -- e.g. a suddenly triggered GC increases coverage; or receive from empty/non-empty chan gives different coverage; or creation of a goroutine with empty/non-empty local goroutine header cache gives different coverage, etc.\r\nI don't know what is the right solution here: on one hand excluding runtime from all looks illogical; on the other hand if runtime is included into all, -coverpkg=all again becomes useless for coverage-guided fuzzing.\r\n\r\n```\r\ndiff --git a/src/cmd/go/test.go b/src/cmd/go/test.go\r\nindex c44a219..e310087 100644\r\n--- a/src/cmd/go/test.go\r\n+++ b/src/cmd/go/test.go\r\n@@ -409,11 +409,6 @@ func runTest(cmd *Command, args []string) {\r\n        var builds, runs, prints []*action\r\n \r\n        if testCoverPaths != nil {\r\n-               // Load packages that were asked about for coverage.\r\n-               // packagesForBuild exits if the packages cannot be loaded.\r\n-               testCoverPkgs = packagesForBuild(testCoverPaths)\r\n-\r\n-               // Warn about -coverpkg arguments that are not actually used.\r\n                used := make(map[string]bool)\r\n                for _, p := range pkgs {\r\n                        used[p.ImportPath] = true\r\n@@ -421,6 +416,22 @@ func runTest(cmd *Command, args []string) {\r\n                                used[dep] = true\r\n                        }\r\n                }\r\n+\r\n+               if len(testCoverPaths) == 1 \u0026\u0026 testCoverPaths[0] == \"all\" {\r\n+                       testCoverPaths = nil\r\n+                       for p := range used {\r\n+                               if p == \"command-line-arguments\" || p == \"unsafe\" || p == \"runtime\" {\r\n+                                       continue\r\n+                               }\r\n+                               testCoverPaths = append(testCoverPaths, p)\r\n+                       }\r\n+               }\r\n+\r\n+               // Load packages that were asked about for coverage.\r\n+               // packagesForBuild exits if the packages cannot be loaded.\r\n+               testCoverPkgs = packagesForBuild(testCoverPaths)\r\n+\r\n+               // Warn about -coverpkg arguments that are not actually used.\r\n                for _, p := range testCoverPkgs {\r\n                        if !used[p.ImportPath] {\r\n                                log.Printf(\"warning: no packages being tested depend on %s\", p.ImportPath)\r\n```",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2015-03-27T20:04:37Z",
+	"created_at": "2015-03-27T13:42:02Z",
+	"updated_at": "2016-05-23T07:23:10Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

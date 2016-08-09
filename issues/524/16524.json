@@ -1,0 +1,21 @@
+{
+	"id": 168027617,
+	"number": 16524,
+	"state": "open",
+	"title": "x/crypto/ssh/agent: Support ssh.Signer for AddedKey",
+	"body": "## 1. What version of Go are you using (`go version`)?\r\n\r\ngo1.7rc3\r\n\r\n## 3. What did you do?\r\n\r\nI want to use a `crypto.Signer` as a private key for an SSH Agent. This would allow using keys that are stored on an HSM or have other reasons that a full `*rsa.PrivateKey` is not available.  Creating an `ssh.Signer` from a `crypto.Signer` is provided by the [ssh.NewSignerFromSigner](https://godoc.org/golang.org/x/crypto/ssh#NewSignerFromSigner) function, but because of the `agent.Agent` interface, they are not possible to add to the SSH Agent.\r\n\r\nThis is likely a change needed for #16304.\r\n\r\n## 4. What did you expect to see?\r\n\r\nhttps://godoc.org/golang.org/x/crypto/ssh/agent#AddedKey\r\n\r\nThe `agent.AddedKey` struct is used in the `agent.Agent` interface, through the `Add()` method.\r\n\r\n`AddedKey` asks for a Private Key (using `interface{}`), and optionally an SSH Certificate `*ssh.Certificate`. \r\n\r\nThe `keyring` implementation of Add() then converts these into an [`ssh.Signer` interface](https://godoc.org/golang.org/x/crypto/ssh#Signer) : https://github.com/golang/crypto/blob/bc89c496413265e715159bdc8478ee9a92fdc265/ssh/agent/keyring.go#L127-L152\r\n\r\nI believe any other implementations of the `agent.Agent` interface also follow this pattern, because the other methods of the interface require `ssh.Signer` as a return value.\r\n\r\nHappy to submit a CL if there is agreement on how to best do this.\r\n",
+	"user": {
+		"login": "pquerna",
+		"id": 110123,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-07-28T07:05:20Z",
+	"updated_at": "2016-08-01T20:15:04Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

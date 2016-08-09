@@ -1,0 +1,28 @@
+{
+	"id": 131368730,
+	"number": 14227,
+	"state": "closed",
+	"title": "x/net/http2: should interpret Connection: close request header as Request.Close = true",
+	"body": "Related to #14214, it doesn't seem possible to explicitly set a protocol version when sending via an http.Transport and this breaks when sending requests with certain headers to servers supporting HTTP2. As an example, the following encounters the same 400 error from the GFE as we were previously seeing with the Proxy-Connection header:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"net/http\"\r\n\t\"net/url\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\treq := \u0026http.Request{\r\n\t\tMethod: \"GET\",\r\n\t\tURL: \u0026url.URL{\r\n\t\t\tScheme: \"https\",\r\n\t\t\tHost:   \"www.google.co.uk\",\r\n\t\t\tPath:   \"/\",\r\n\t\t},\r\n\t\tProtoMajor: 1,\r\n\t\tProtoMinor: 1,\r\n\t\tProto:      \"HTTP/1.1\",\r\n\t\tHost:       \"www.google.co.uk\",\r\n\t\tHeader: http.Header{\r\n\t\t\t\"Connection\": []string{\"close\"},\r\n\t\t},\r\n\t}\r\n\treq.Write(os.Stdout)\r\n\r\n\t// Uncomment to Nerf HTTP2 support and the request succeeds.\r\n\t// http.DefaultTransport.(*http.Transport).TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)\r\n\r\n\tres, err := http.DefaultTransport.RoundTrip(req)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tres.Write(os.Stdout)\r\n}\r\n\r\n// Example:\r\n// GET / HTTP/1.1\r\n// Host: www.google.co.uk\r\n// User-Agent: Go-http-client/1.1\r\n// Connection: close\r\n//\r\n// HTTP/2.0 400 Bad Request\r\n// Content-Length: 54\r\n// Content-Type: text/html; charset=UTF-8\r\n// Date: Thu, 04 Feb 2016 14:37:38 GMT\r\n// Server: GFE/2.0\r\n//\r\n// \u003chtml\u003e\u003ctitle\u003eError 400 (Bad Request)!!1\u003c/title\u003e\u003c/html\u003e\r\n```\r\n\r\nFor non-HTTP2 requests the Connection header is perfectly valid, but when upgraded by http.Transport to HTTP2 they become invalid and break.",
+	"user": {
+		"login": "adamtanner",
+		"id": 27502,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-02-05T02:07:24Z",
+	"created_at": "2016-02-04T14:45:41Z",
+	"updated_at": "2016-02-05T02:07:24Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

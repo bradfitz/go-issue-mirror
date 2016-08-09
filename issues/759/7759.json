@@ -1,0 +1,28 @@
+{
+	"id": 51287164,
+	"number": 7759,
+	"state": "closed",
+	"title": "net/http: no way for Server to set Trailer headers",
+	"body": "\u003cpre\u003eThere's no way for Server handlers to set Trailer headers.\n\nFrom a test I just wrote, with a work-around and TODO for Go 1.4:\n\n        ts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {\n                w.Header().Set(\u0026quot;Connection\u0026quot;, \u0026quot;close\u0026quot;)\n                w.Header().Set(\u0026quot;Trailer\u0026quot;, \u0026quot;Server-Trailer-A, Server-Trailer-B\u0026quot;)\n                w.Header().Add(\u0026quot;Trailer\u0026quot;, \u0026quot;Server-Trailer-C\u0026quot;)\n\n                var decl []string\n                for k := range r.Trailer {\n                        decl = append(decl, k)\n                }\n                sort.Strings(decl)\n\n                slurp, err := ioutil.ReadAll(r.Body)\n                if err != nil {\n                        t.Errorf(\u0026quot;Server reading request body: %v\u0026quot;, err)\n                }\n                if string(slurp) != \u0026quot;foo\u0026quot; {\n                        t.Errorf(\u0026quot;Server read request body %q; want foo\u0026quot;, slurp)\n                }\n                if r.Trailer == nil {\n                        io.WriteString(w, \u0026quot;nil Trailer\u0026quot;)\n                } else {\n                        fmt.Fprintf(w, \u0026quot;decl: %v, vals: %s, %s\u0026quot;,\n                                decl,\n                                r.Trailer.Get(\u0026quot;Client-Trailer-A\u0026quot;),\n                                r.Trailer.Get(\u0026quot;Client-Trailer-B\u0026quot;))\n                }\n\n                // TODO: There's no way yet for the server to set trailers\n                // without hijacking, so do that for now, just to test the client.\n                // Later, in Go 1.4, it should be be implicit that any mutations\n                // to w.Header() after the initial write are the trailers to be\n                // sent, if and only if they were previously declared with\n                // w.Header().Set(\u0026quot;Trailer\u0026quot;, ..keys..)\n                w.(Flusher).Flush()\n                conn, buf, _ := w.(Hijacker).Hijack()\n                t := Header{}\n                t.Set(\u0026quot;Server-Trailer-A\u0026quot;, \u0026quot;valuea\u0026quot;)\n                t.Set(\u0026quot;Server-Trailer-C\u0026quot;, \u0026quot;valuec\u0026quot;) // skipping B\n                buf.WriteString(\u0026quot;0\\r\\n\u0026quot;)            // eof\n                t.Write(buf)\n                buf.WriteString(\u0026quot;\\r\\n\u0026quot;) // end of trailers\n                buf.Flush()\n                conn.Close()\u003c/pre\u003e",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-30T04:30:09Z",
+	"created_at": "2014-04-10T20:44:54Z",
+	"updated_at": "2015-08-30T17:13:33Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

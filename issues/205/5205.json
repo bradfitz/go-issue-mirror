@@ -1,0 +1,27 @@
+{
+	"id": 51283280,
+	"number": 5205,
+	"state": "closed",
+	"title": "cmd/go: Building application fails because invoking external linker doesn't honor CGO_LDFLAGS env variable",
+	"body": "\u003cpre\u003eMy application built successfully with just go install \n\nIt depends on a package which uses cgo. Building that package works fine. However, when\nI build the main package, it fails in a cryptic way.\n\nFrom debugging, it fails because the env variable CFO_LDFLAGS is not passed to the\ninvocation of the external linker (ld). So ld cannot find the shared libraries my\ncgo-pkg depends on.\n\nI got this to work by explicitly passing \n-ldflags=-extldflags=-L${MYLIBDIR} to the go install call.\n\nNote that this works fine in Go 1.0.3. \n\nSo now I have something like this in my build script.\n\n    case `go version` in\n        go*1.0*) go install -a . ;;\n        *) go install \u0026quot;-ldflags=-extldflags=-L${MYLIBDIR}\u0026quot; -a . ;;\n    esac\n\nWithout passing the -ldflags -extldflags=-L..., error message looks like:\n\n# app/blackannexdatastore\n/usr/bin/ld: cannot find -lndb\n/usr/bin/ld: cannot find -lleveldb\ncollect2: error: ld returned 1 exit status\ncrypto/tls.extensionNextProtoNeg: /opt/go-tip/pkg/tool/linux_amd64/6l: running gcc\nfailed: unsuccessful exit status 0x100\n\nI ran passing -v flags to -ldflags to verify that the CGO_LDFLAGS env variable wasn't\npassed to host linker.\n\n    host link: gcc -m64 -gdwarf-2 -o $WORK/app/blackannexdatastore/_obj/exe/a.out -rdynamic /home/all/tmp/go-link-fwKtSe/000000.o /home/all/tmp/go-link-fwKtSe/000001.o /home/all/tmp/go-link-fwKtSe/000002.o /home/all/tmp/go-link-fwKtSe/go.o -lndb -lleveldb -lpthread \u0026lt;CGO_LDFLAGS should be passed here\u0026gt;\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n6g \n\nWhich operating system are you using?\nLinux 3.5.0-26-generic #42-Ubuntu SMP x86_64 GNU/Linux\n\nWhich version are you using?  (run 'go version')\ngo version devel +d646225cb410 Wed Apr 03 17:03:42 2013 -0700 linux/amd64\n\nPlease provide any additional information below.\u003c/pre\u003e",
+	"user": {
+		"login": "ugorji",
+		"id": 1222082,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 9,
+	"closed_at": "2014-12-08T10:27:56Z",
+	"created_at": "2013-04-04T13:47:40Z",
+	"updated_at": "2016-06-24T22:37:10Z",
+	"milestone": {
+		"id": 1067199,
+		"number": 11,
+		"title": "Go1.1"
+	}
+}

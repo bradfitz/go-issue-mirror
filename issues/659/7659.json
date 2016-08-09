@@ -1,0 +1,27 @@
+{
+	"id": 51287031,
+	"number": 7659,
+	"state": "closed",
+	"title": "cmd/ld: DWARF info data does not contain some variable names",
+	"body": "by **plnordahl**:\n\n\u003cpre\u003eRunning Mavericks 10.9.2 and using the patch from\n\u003ca href=\"https://groups.google.com/forum/#\"\u003ehttps://groups.google.com/forum/#\u003c/a\u003e!msg/golang-codereviews/it4yhth9fWM/TxcE1Yx6AUMJ (issue\n7510) on release-branch.go1.2, I'm not seeing the variable names of int, string, float,\nor map variables in a simple program. I do however see names for slices, arrays, and\nstruct/struct members in the output. Below is some code to reproduce the behavior.\n\nOne program, which will be loaded for it's DWARF data:\n\npackage main\n\nimport \u0026quot;fmt\u0026quot;\n\nfunc main() {\n\tmyInt := 42\n\tmySecondInt := 41\n        fmt.Println(myInt, mySecondInt)\n\n\tmyArray := [2]string{\u0026quot;hello\u0026quot;, \u0026quot;world\u0026quot;}\n\tfmt.Println(myArray)\n\n\tmyString := \u0026quot;foo\u0026quot;\n\tfmt.Println(myString)\n\n\tmySlice := []int{1, 2, 3}\n\tfmt.Println(mySlice)\n\n\tmyFloat := 42.424242\n\tfmt.Println(myFloat)\n\n\tmyMap := make(map[string]string)\n\tfmt.Println(myMap)\n\n\tmyStruct := myStructType{\u0026quot;bleh\u0026quot;, 999, \u0026quot;hm\u0026quot;}\n\tfmt.Println(myStruct)\n}\n\ntype myStructType struct {\n\tBleh string\n\tBlerg int\n\tFoo  string\n}\n\n\n\n...and the second, which just loads the Mach-O binary and prints each entry's offset,\ntag, children, and fields (pipe the output of this program into grep to see the behavior\nI describe).\n\npackage main\n\nimport (\n\t\u0026quot;debug/macho\u0026quot;\n\t\u0026quot;fmt\u0026quot;\n\t\u0026quot;log\u0026quot;\n)\n\nfunc main() {\n\tm, err := macho.Open(\u0026quot;\u0026lt;put the path to where your test binary is located\u0026gt;\u0026quot;)\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Couldn't open MACH-O file: %s\\n\u0026quot;, err)\n\t}\n\n\td, err := m.DWARF()\n\tif err != nil {\n\t\tlog.Fatalf(\u0026quot;Couldn't read DWARF info: %s\\n\u0026quot;, err)\n\t}\n\n\tr := d.Reader()\n\n\tfor {\n\t\tentry, err := r.Next()\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\u0026quot;Current offset is invalid or undecodable. %s\u0026quot;, err)\n\t\t}\n\t\tif entry == nil {\n\t\t\tfmt.Println(\u0026quot;Reached the end of the entry stream.\u0026quot;)\n\t\t\treturn\n\t\t}\n\n\t\tfmt.Println(\u0026quot;Entry --- offset: \u0026quot;, entry.Offset,\n\t\t \t\u0026quot; tag: \u0026quot;, entry.Tag, \u0026quot; children: \u0026quot;, entry.Children,\n\t\t \t\u0026quot; field: \u0026quot;, entry.Field)\n\t}\n\n\treturn\t\n}\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:42:32Z",
+	"created_at": "2014-03-28T14:42:53Z",
+	"updated_at": "2016-06-25T01:31:00Z",
+	"milestone": {
+		"id": 1067218,
+		"number": 21,
+		"title": "Go1.4"
+	}
+}

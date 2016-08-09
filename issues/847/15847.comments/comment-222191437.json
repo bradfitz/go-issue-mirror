@@ -1,0 +1,12 @@
+{
+	"id": 222191437,
+	"body": "The gctrace line \r\n\r\ngc 18 @126.525s 0%: 0+525+0.53 ms clock, 0+0/525/3.0+2.1 ms cpu, 283-\u003e283-\u003e283 MB, 566 MB goal, 4 P\r\n\r\nsays that the concurrent mark phase takes 525 + 0.52 ms (wall) clock and uses 0/525/3 + 2.1 ms CPU clock. Since we have 4 P (cpus) then it looks like the concurrent mark phase is using exactly 1/4 of the CPUs and the STW mark termination phase is using all of the CPUs but for only .52 (wall) ms or .52*4 (2.1) ms CPU time. This would seem to leave the expected 75% of the total CPU for the mutator during the concurrent mark phase. All this matches up with what we expect to see.\r\n\r\nHow many requests are in flight when the GC is being run and are all of them delayed? How many are in flight when the GC is not running? Are requests handled FIFO that might result in a convoy of requests? Even if a requests gets backed up behind a long mark involving a map other goroutines should make progress since there is 75% CPU availability. If other goroutines / requests are making progress then perhaps this isn't a global mutator availability problem but rather a problem with the GC conspiring with the scheduler and probability to starve one of the goroutines.",
+	"user": {
+		"login": "RLH",
+		"id": 972447,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-05-27T16:25:41Z",
+	"updated_at": "2016-05-27T16:25:41Z"
+}

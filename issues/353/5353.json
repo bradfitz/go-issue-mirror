@@ -1,0 +1,22 @@
+{
+	"id": 51283511,
+	"number": 5353,
+	"state": "closed",
+	"title": "runtime: Fault when allocating byte slice in anonymous goroutine function",
+	"body": "\u003cpre\u003eGo version:\n\nWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. go get github.com/kisielk/vigo\n2. cd $GOPATH/github.com/kisielk/vigo\n3. go build\n4. ./vigo 2\u0026gt; trace\n\nThe stack trace is here:\n\nunexpected fault address 0xc1c46c1668\nfatal error: fault\n[signal 0xb code=0x1 addr=0xc1c46c1668 pc=0x40c590]\n \ngoroutine 4 [running]:\n[fp=0xc200059ed0] runtime.throw(0x596d97)\n        /home/kamil/go/src/pkg/runtime/panic.c:473 +0x67\n[fp=0xc200059ee8] runtime.sigpanic()\n        /home/kamil/go/src/pkg/runtime/os_linux.c:239 +0xe7\n[fp=0xc20005a288] scanblock(0x7f27611d9000, 0x7f27611d9048, 0x2, 0x1)\n        /home/kamil/go/src/pkg/runtime/mgc0.c:800 +0xa00\n[fp=0xc20005a3b8] gc(0x7f27612e7e04)\n        /home/kamil/go/src/pkg/runtime/mgc0.c:2001 +0x2c5\n----- stack segment boundary -----\n[fp=0x7f27612e7e18] runtime.gc(0xc200000000)\n        /home/kamil/go/src/pkg/runtime/mgc0.c:1927 +0x11b\n[fp=0x7f27612e7e70] runtime.mallocgc(0x80, 0x100000001, 0x1)\n        /home/kamil/go/src/pkg/runtime/zmalloc_linux_amd64.c:101 +0x1e4\n[fp=0x7f27612e7ea8] makeslice1(0x4afc40, 0x80, 0x80, 0x7f27612e7ef0)\n        /home/kamil/go/src/pkg/runtime/slice.c:61 +0x89\n[fp=0x7f27612e7ed8] runtime.makeslice(0x4afc40, 0x80, 0x80, 0x0, 0x80, ...)\n        /home/kamil/go/src/pkg/runtime/slice.c:34 +0x9a\n[fp=0x7f27612e7fb8] github.com/nsf/termbox-go.func·001()\n        /home/kamil/src/github.com/nsf/termbox-go/api.go:84 +0x3e\n[fp=0x7f27612e7fc0] runtime.goexit()\n        /home/kamil/go/src/pkg/runtime/proc.c:1223\ncreated by github.com/nsf/termbox-go.Init\n        /home/kamil/src/github.com/nsf/termbox-go/api.go:101 +0x66f\n \ngoroutine 1 [chan receive]:\ngithub.com/kisielk/vigo/editor.(*editor).Loop(0xc20009f000, 0xc2000472d0, 0x0)\n        /home/kamil/src/github.com/kisielk/vigo/editor/editor.go:435 +0x61\nmain.main()\n        /home/kamil/src/github.com/kisielk/vigo/main.go:26 +0x18c\n \ngoroutine 3 [syscall]:\nos/signal.loop()\n        /home/kamil/go/src/pkg/os/signal/signal_unix.go:21 +0x1c\ncreated by os/signal.init·1\n        /home/kamil/go/src/pkg/os/signal/signal_unix.go:27 +0x2f\n \ngoroutine 5 [runnable]:\nmain.func·001()\n        /home/kamil/src/github.com/kisielk/vigo/main.go:21\ncreated by main.main\n        /home/kamil/src/github.com/kisielk/vigo/main.go:25 +0x179\n\nThe relevant part of termbox-go/api.go:\n   \n   83     go func() {\n   84         buf := make([]byte, 128)\n   85         for {\n   86             select {\n   87             case \u0026lt;-sigio:\n   88                 for {\n   89                     n, err := syscall.Read(in, buf)\n   90                     if err == syscall.EAGAIN || err == syscall.EWOULDBLOCK {\n   91                         break\n   92                     }\n   93                     input_comm \u0026lt;- input_event{buf[:n], err}\n   94                     ie := \u0026lt;-input_comm\n   95                     buf = ie.data[:128]\n   96                 }\n   97             case \u0026lt;-quit:\n   98                 return\n   99             }\n  100         }\n  101     }()\n\nThe program depends on termbox-go, for which the code is at github.com/nsf/termbox-go\nNote that it uses unsafe in a few places to make some syscalls to determine terminal\nsize.\n\nThere is no crash with GOGC=off. Also if I check out theprevious revision of the vigo\nproject, before I moved things from package main to a subpackage, there is no crash\neither. The code runs fine when compiled with go1.0.2 on the same machine.\n\nSorry I couldn't provide a smaller test case at this point, but let me know if I can do\nanything to narrow it down.\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nUbuntu 12.10 64-bit, Mac OS X 10.8\n\nWhich version are you using?  (run 'go version')\n\ngo version devel +0c16e97c7587 Thu Apr 25 13:23:24 2013 +0900 linux/amd64\u003c/pre\u003e",
+	"user": {
+		"login": "kisielk",
+		"id": 58618,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:28:56Z",
+	"created_at": "2013-04-25T07:21:50Z",
+	"updated_at": "2016-06-24T22:38:49Z"
+}

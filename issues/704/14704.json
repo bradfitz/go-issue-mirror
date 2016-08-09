@@ -1,0 +1,28 @@
+{
+	"id": 139198239,
+	"number": 14704,
+	"state": "closed",
+	"title": "cmd/cgo: unsafe.Pointer containing bytes.Buffer slice data triggers argument check panic -- workaround causes performance degredation",
+	"body": "1. What version of Go are you using (`go version`)? go1.6\r\n\r\n2. What operating system and processor architecture are you using (`go env`)? linux/amd64\r\n\r\n3. What did you do? http://play.golang.org/p/1MigDGnopS (unfortunately this cannot execute because of cgo)\r\n\r\n4. What did you expect to see? One line printed to standard output containing text \"test\" (edit: as is output by this very similar, working example http://play.golang.org/p/eX1pSIjmo4)\r\n\r\n5. What did you see instead?\r\n```\r\npanic: runtime error: cgo argument has Go pointer to Go pointer\r\n\r\ngoroutine 1 [running]:\r\npanic(0x474d20, 0xc82000a210)\r\n\t/usr/lib/go/src/runtime/panic.go:464 +0x3e6\r\nmain._cgoCheckPointer0(0x4697e0, 0xc820054094, 0x0, 0x0, 0x0, 0x0)\r\n\tgithub.com/bmatsuo/lmdb-go/tmp/_obj/_cgo_gotypes.go:42 +0x4d\r\nmain.main()\r\n\t/home/b/src/github.com/bmatsuo/lmdb-go/tmp/cgopanic.go:24 +0x153\r\n```\r\n\r\nI'm creating this issue to track a problem I brought up in https://github.com/golang/go/issues/14210#issuecomment-185814124 but for which the cause/fix was different. I took some time before filing the issue to collect more information about the problem and the fix for my own understanding. My apologies for the delay. But it didn't look like a duplicate has been filed since.\r\n\r\nI was also told to replace my code that looked like the above example with code which takes the address of a `[]byte` at the actual cgo call site to help the tool figure out which memory region I was referring to. I have done so, and it works, but I have found the result to be significantly slower that before I made this change (both benchmarks takes from a stock go1.6 build -- no flags).\r\n\r\nThe changes I made to work around the above panic in my actual project can be found here: https://github.com/bmatsuo/lmdb-go/commit/40ebaca9ecf9cd77b0b70fc5eb6a89c47a839187\r\n\r\nAnd the performance comparison against master can be seen in my pull request: https://github.com/bmatsuo/lmdb-go/pull/57#issuecomment-193624370\r\n\r\nMy benchmarks, unfortunately, have more noise than I would like but there is a definite pattern that shows this change having a real impact on call times (especially for some functions which should execute be extremely quickly). The relevant benchmarks show a 7-43% performance penalty from this change (100ns+ per affected C call).",
+	"user": {
+		"login": "bmatsuo",
+		"id": 15089,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"closed_at": "2016-05-17T21:03:41Z",
+	"created_at": "2016-03-08T07:06:53Z",
+	"updated_at": "2016-05-17T21:03:41Z",
+	"milestone": {
+		"id": 1414133,
+		"number": 31,
+		"title": "Go1.7"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 74403135,
+	"body": "I used debootstrap to create a root img for latest debian/sid.\nI can boot into the system with the hardcoded kernel, and the\nnetwork is working correctly.\n\nRoughly, I did this:\nfallocate -l 2G root.img\nfdisk root.img # create one partition\nlosetup -P /dev/loop0 root.img\nmkfs.ext4 /dev/loop0p1\nmount /dev/loop0p1 /mnt\ndebootstrap\n--include=ca-certificates,strace,gdb,gcc,libc6-dev,libc6-dev-i386,gcc-multilib,git-core,curl,net-tools,ifupdown,isc-dhcp-client,procps,lsof,psmisc\n--foreign --arch amd64 sid /mnt/ http://http.debian.net/debian/\numount /mnt\n\nqemu-system-x86_64 -machine accel=kvm -nographic -curses -nodefconfig -smp\n2 -drive if=virtio,file=root.img -net nic,model=virtio -net user -kernel\nvmlinuz-3.16-0.bpo.3-amd64 -initrd initrd.img-3.16-0.bpo.3-amd64 -append\n\"root=/dev/vda1 init=/bin/bash\"\n\n# in the guest, execute 2nd state debootstrap and configure network and\n/etc/fstab\nmount -o remount,rw /\n/debootstrap/debootstrap --second-stage\necho \"/dev/vda1 / ext4 defaults 0 0\" \u003e /etc/fstab\n(echo \"auto lo\"; echo \"iface lo inet loopback\"; echo \"auto eth0\"; echo\n\"iface eth0 inet dhcp\") \u003e  /etc/network/interfaces\npasswd # set root passwd\nmount -o remount,ro /\n\n# install grub\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-02-15T04:02:26Z",
+	"updated_at": "2015-02-15T04:02:26Z"
+}

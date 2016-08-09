@@ -1,0 +1,12 @@
+{
+	"id": 165252578,
+	"body": "A colleague helped me make additional progress. He added some logic that adjusts the existing relocation code to use the .ctors section. It now appears that we have the correct data in the correct place:\r\n\r\n```\r\n$ objdump -r -j .ctors tmpo\\go.o \r\n\r\ntmpo\\go.o:     file format pe-x86-64\r\n\r\nRELOCATION RECORDS FOR [.ctors]:\r\nOFFSET           TYPE              VALUE \r\n0000000000000000 R_X86_64_64       _rt0_amd64_windows_lib-0x000000000004f430\r\n```\r\n\r\nThis looks slightly different than what gcc outputs because the value of the relocation is \".text\". However, if I understand @ianlancetaylor  then the value is just a name, and it's not important. This is exactly the symbol we want relocated, and the address is correct (0x4f430).\r\n\r\nFor some reason if I link the object files produced by Go into an .a file, the .ctors section doesn't get picked up. However, if I use gcc to link the 3 Go files with a C driver the .ctors data does get picked up:\r\n\r\n```\r\n$ gdb --silent  \u003cdump_ctorlist.txt\r\n(gdb) Reading symbols from test.exe...done.\r\n(gdb) \r\n0x4cb5f0 \u003c___CTOR_LIST__\u003e:      0xffffffffffffffff      0x000000000089ee40\r\n0x4cb600 \u003c___CTOR_LIST__+16\u003e:   0x00000000004cb5e0      0x0000000000000000\r\n0x4cb610 \u003c___DTOR_LIST__\u003e:      0xffffffffffffffff      0x0000000000000000\r\n0x4cb620:       Cannot access memory at address 0x4cb620\r\n```\r\n\r\nThe fly in the ointment here is that the relocation happens incorrectly. The 0x000000000089ee40 is the entry that should call _rt0_amd64_windows_lib (0x00000000004cb5e0 = register_frame_ctor in section .text, part of gcc's init code).\r\n\r\nHowever the address is wrong. GDB reports:\r\n\r\n```\r\n0x44fa10 \u003c_rt0_amd64_windows_lib\u003e\r\n```\r\n\r\nSo I would expect that the entry in that list would be 0x44fa10.\r\n\r\nI'm guessing that we specified the relocation wrong. Code is here: https://github.com/nadiasvertex/go/commit/39b73bf8ee24f869ba15ec29c221b1d69dac7478\r\n\r\nAny guidance would be helpful.",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-12-16T21:23:16Z",
+	"updated_at": "2015-12-16T21:24:48Z"
+}

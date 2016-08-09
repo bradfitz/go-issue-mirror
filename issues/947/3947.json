@@ -1,0 +1,28 @@
+{
+	"id": 51281408,
+	"number": 3947,
+	"state": "closed",
+	"title": "net/rpc: excessive mutex contention",
+	"body": "\u003cpre\u003eThe attached contention profile (collected with \u003ca href=\"http://golang.org/cl/6443115\"\u003ehttp://golang.org/cl/6443115\u003c/a\u003e on\nBenchmarkEndToEndAsync) shows great amount of contention in rpc.Server.sendResponse(),\nand the test fails to scale beyond 4 cores.\nThe problem seems to be that the code does reply serizlization under the sending mutex.\nCan't the reply be serialized outside of the mutex, and then just binary data send under\nthe mutex?\nI think the similar problem is on receive side, where a single goroutine deserializes\nall the messages. Potentially the goroutine can just read-in the message and hand it off\nfor deserialization. \nIn cpu profile I see that gob.Encode() consumes 15% of time and gob.Decode() - 30%. That\nseems like too much work under the global mutex, and presumably it may explain bad\nscaling.\u003c/pre\u003e\n\n\n\n\n\nAttachments:\n\n1. \u003ca href=\"https://storage.googleapis.com/go-attachment/3947/0/rpc_contention.svg\"\u003erpc_contention.svg\u003c/a\u003e (24270 bytes)",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "robpike",
+		"id": 4324516,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2014-12-08T10:20:56Z",
+	"created_at": "2012-08-13T08:21:17Z",
+	"updated_at": "2016-06-24T22:23:01Z"
+}

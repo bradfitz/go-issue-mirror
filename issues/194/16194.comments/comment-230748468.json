@@ -1,0 +1,12 @@
+{
+	"id": 230748468,
+	"body": "I have made a CL that handles lack of exit-status more specifically, see https://go-review.googlesource.com/#/c/24727/1 \r\n\r\nHowever, this isn't the real problem (turns out we had a test for this all along.) The real problem is here:\r\n\r\n2016/06/28 19:44:50 decoding(1): 97 \u0026ssh.channelCloseMsg{PeersId:0x1} - 5 bytes\r\n2016/06/28 19:44:50 send(1): ssh.channelCloseMsg{PeersId:0x11c0b511}\r\n2016/06/28 19:44:50 decoding(1): 93 \u0026ssh.windowAdjustMsg{PeersId:0x1, AdditionalBytes:0x2800} - 9 bytes\r\n\r\nafter receiving the channel close message, we send a close message too. At this point, channel ID 0x01 is unused. However, the remote side then sends windowAdjustMsg erroneously, to a non-existent channel 0x01, which I would expect to trigger this error path\r\n\r\n https://github.com/golang/crypto/blob/master/ssh/mux.go#L243\r\n\r\nI don't understand why you see EOF though. If you could insert some debug prints and see which error path triggers it, that would be helpful.",
+	"user": {
+		"login": "hanwen",
+		"id": 31547,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-07-06T11:40:07Z",
+	"updated_at": "2016-07-06T11:40:07Z"
+}

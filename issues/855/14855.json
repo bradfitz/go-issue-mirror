@@ -1,0 +1,22 @@
+{
+	"id": 141762400,
+	"number": 14855,
+	"state": "closed",
+	"title": "cmd/compile: pointer update without write barrier in reslice operation",
+	"body": "The ssa back end does not eliminate as many write barriers as the non-ssa back end. This should be fixed. I thought there were tests of this. Were they disabled?\n\nIn particular, reslicing an addressable slice with low index 0 should not rewrite the pointer (or the cap, usually), and not rewriting the pointer will avoid the expense of a write barrier.\n\nTest program:\n\n\tpackage p\n\t\n\tfunc f(x *[]byte) []byte {\n\t\t*x = (*x)[:8]\n\t\tg()\n\t\treturn *x\n\t}\n\t\n\tfunc g()\n\n\nWithout ssa:\n\n\t0x0020 00032 (/tmp/x.go:4)\tMOVQ\t\"\".x+8(FP), BX\n\t0x0025 00037 (/tmp/x.go:4)\tNOP\n\t0x0025 00037 (/tmp/x.go:4)\tMOVQ\t16(BX), BP\n\t0x0029 00041 (/tmp/x.go:4)\tCMPQ\tBP, $8\n\t0x002d 00045 (/tmp/x.go:4)\tJCS\t$0, 102\n\t0x002f 00047 (/tmp/x.go:4)\tMOVQ\t$8, 8(BX)\n\nWith ssa:\n\n\t0x0013 00019 (/tmp/x.go:4)\tMOVQ\t\"\".x+24(FP), CX\n\t0x0018 00024 (/tmp/x.go:4)\tMOVQ\t(CX), DX\n\t0x001b 00027 (/tmp/x.go:4)\tMOVQ\t16(CX), BX\n\t0x001f 00031 (/tmp/x.go:4)\tCMPQ\tBX, $8\n\t0x0023 00035 (/tmp/x.go:4)\tJCS\t$0, 130\n\t0x0025 00037 (/tmp/x.go:4)\tCMPQ\tBX, $0\n\t0x0029 00041 (/tmp/x.go:4)\tJEQ\t$0, 43\n\t0x002b 00043 (/tmp/x.go:4)\tMOVQ\t$8, 8(CX)\n\t0x0033 00051 (/tmp/x.go:4)\tMOVQ\tBX, 16(CX) \u003c\u003c rewritine slice cap\n\t0x0037 00055 (/tmp/x.go:4)\tMOVL\truntime.writeBarrier(SB), AX\n\t0x003d 00061 (/tmp/x.go:4)\tTESTB\tAL, AL\n\t0x003f 00063 (/tmp/x.go:4)\tJNE\t$0, 109\n\t0x0041 00065 (/tmp/x.go:4)\tMOVQ\tDX, (CX) \u003c\u003c rewriting slice base ptr\n\nIf I remember correctly, the optimization in the non-ssa back end applies to any expression of the form thing = thing[:n], where thing can be arbitrarily long, provided its the same on both sides, has no idempotency problems (like function calls), and is addressable.\n\n/cc @randall77 @dr2chase",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-03-21T23:40:41Z",
+	"created_at": "2016-03-18T03:14:57Z",
+	"updated_at": "2016-03-21T23:40:41Z",
+	"milestone": {
+		"id": 1414136,
+		"number": 32,
+		"title": "Go1.7Early"
+	}
+}

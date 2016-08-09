@@ -1,0 +1,33 @@
+{
+	"id": 51285125,
+	"number": 6397,
+	"state": "closed",
+	"title": "cmd/cgo: passing Go pointer to C must pin pointer for lifetime of call",
+	"body": "by **valyala**:\n\n\u003cpre\u003eGo tip crashes when running the following simple benchmark -\n\u003ca href=\"https://github.com/valyala/ybc/blob/master/bindings/go/ybc/perf_test.go\"\u003ehttps://github.com/valyala/ybc/blob/master/bindings/go/ybc/perf_test.go\u003c/a\u003e . All stable Go\nversions (1.0 and 1.1) don't crash on it.\n\nSteps to reproduce:\n\ngit clone \u003ca href=\"http://github.com/valyala/ybc\"\u003ehttp://github.com/valyala/ybc\u003c/a\u003e\ncd ybc\nmake go-perftests-bindings\n\nHere is crash report sample:\n\n$ make go-perftests-bindings \nGOMAXPROCS=4 go test -a -tags release -test.bench=\u0026quot;.*\u0026quot; ./bindings/go/ybc\nPASS\nBenchmarkCache_GetHit_1-4\t 2000000\t       583 ns/op\nBenchmarkCache_GetHit_2-4\tSIGSEGV: segmentation violation\nPC=0x4050d3\nsignal arrived during cgo execution\n\nruntime.cgocall(0x402b20, 0x2ae1f81b9e20)\n\t/home/avalyalkin/workspace/go/src/pkg/runtime/cgocall.c:149 +0x11b fp=0x2ae1f81b9e08\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc._Cfunc_go_get_item_and_value(0xc2100ce000,\n0xc21007b120, 0xc2100b4f98, 0xc2101134c0, 0xc21007c4c0)\n\t_/home/avalyalkin/workspace/ybc/bindings/go/ybc/_test/_cgo_defun.c:69 +0x31 fp=0x2ae1f81b9e20\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.(*Cache).GetItem(0xc2100fe9e0,\n0xc210105008, 0x5, 0x5, 0xc2100b4f80, ...)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/ybc.go:563 +0x127 fp=0x2ae1f81b9e50\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.(*Cache).Get(0xc2100fe9e0, 0xc210105008,\n0x5, 0x5, 0x0, ...)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/ybc.go:468 +0xb9 fp=0x2ae1f81b9e98\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.func·003(0x2ae1e12bc6c0, 0xc2100fe9e0)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:112 +0x77 fp=0x2ae1f81b9f48\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.func·001()\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:49 +0xde fp=0x2ae1f81b9fa0\nruntime.goexit()\n\t/home/avalyalkin/workspace/go/src/pkg/runtime/proc.c:1386 fp=0x2ae1f81b9fa8\ncreated by _/home/avalyalkin/workspace/ybc/bindings/go/ybc.runBenchmark\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:57 +0x43f\n\ngoroutine 1 [chan receive]:\ntesting.(*B).run(0xc210078f00, 0x0, 0x0, 0x0, 0x0, ...)\n\t/home/avalyalkin/workspace/go/src/pkg/testing/benchmark.go:171 +0x63\ntesting.RunBenchmarks(0x58b298, 0x8a01a0, 0x1e, 0x1e)\n\t/home/avalyalkin/workspace/go/src/pkg/testing/benchmark.go:303 +0x586\ntesting.Main(0x58b298, 0x8a0c00, 0x2e, 0x2e, 0x8a01a0, ...)\n\t/home/avalyalkin/workspace/go/src/pkg/testing/testing.go:409 +0x1c7\nmain.main()\n\t_/home/avalyalkin/workspace/ybc/bindings/go/ybc/_test/_testmain.go:197 +0x9c\n\ngoroutine 3 [syscall]:\nruntime.goexit()\n\t/home/avalyalkin/workspace/go/src/pkg/runtime/proc.c:1386\n\ngoroutine 56 [semacquire]:\nsync.runtime_Semacquire(0xc210105020)\n\t/home/avalyalkin/workspace/go/src/pkg/runtime/sema.goc:199 +0x30\nsync.(*WaitGroup).Wait(0xc2100fefc0)\n\t/home/avalyalkin/workspace/go/src/pkg/sync/waitgroup.go:127 +0x166\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.runBenchmark(0x527a00, 0x2ae1e1308ed0,\n0xc2100fe6a0, 0x2, 0xc210078f00)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:59 +0x45c\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.benchmarkCache_GetHit(0xc210078f00, 0x2,\n0x8ae700)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:117 +0x20d\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.BenchmarkCache_GetHit_2(0xc210078f00)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:66 +0x35\ntesting.(*B).runN(0xc210078f00, 0x1e8480)\n\t/home/avalyalkin/workspace/go/src/pkg/testing/benchmark.go:119 +0x94\ntesting.(*B).launch(0xc210078f00)\n\t/home/avalyalkin/workspace/go/src/pkg/testing/benchmark.go:207 +0x183\ncreated by testing.(*B).run\n\t/home/avalyalkin/workspace/go/src/pkg/testing/benchmark.go:170 +0x40\n\ngoroutine 66 [runnable]:\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc._Cfunc_ybc_item_release(0xc2100d01b0)\n\t_/home/avalyalkin/workspace/ybc/bindings/go/ybc/_test/_cgo_defun.c:240 +0x31\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.(*Item).Close(0xc2100cf2c0, 0x0, 0x0)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/ybc.go:797 +0x5d\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.(*Cache).Get(0xc2100fe9e0, 0xc210105008,\n0x5, 0x5, 0xc210110f20, ...)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/ybc.go:475 +0x122\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.func·003(0x2ae1e12bc6c0, 0xc2100fe9e0)\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:112 +0x77\n_/home/avalyalkin/workspace/ybc/bindings/go/ybc.func·001()\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:49 +0xde\ncreated by _/home/avalyalkin/workspace/ybc/bindings/go/ybc.runBenchmark\n\t/home/avalyalkin/workspace/ybc/bindings/go/ybc/perf_test.go:57 +0x43f\n\nrax     0xcbf29da5a32ed089\nrbx     0x2ae1f81b9e20\nrcx     0x0\nrdx     0xc2101134c0\nrdi     0xc2100ce000\nrsi     0xc21007b120\nrbp     0xc21007b120\nrsp     0x7fff5565a0e0\nr8      0xcbf29da5a32ed089\nr9      0xdeaddeaddeaddead\nr10     0x0\nr11     0x100000001b3\nr12     0xc2100b4f98\nr13     0x17\nr14     0x4\nr15     0x10\nrip     0x4050d3\nrflags  0x10246\ncs      0x33\nfs      0x0\ngs      0x0\nexit status 2\nFAIL\t_/home/avalyalkin/workspace/ybc/bindings/go/ybc\t3.544s\nmake: *** [go-perftests-bindings] Error 1\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 29,
+	"closed_at": "2014-12-08T10:35:13Z",
+	"created_at": "2013-09-16T14:02:23Z",
+	"updated_at": "2016-06-25T01:18:49Z",
+	"milestone": {
+		"id": 1067207,
+		"number": 14,
+		"title": "Go1.2"
+	}
+}

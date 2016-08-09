@@ -1,0 +1,33 @@
+{
+	"id": 53307020,
+	"number": 9496,
+	"state": "closed",
+	"title": "net/http: CancelRequest break another irrelevant request",
+	"body": "* net/http.persistConn.readLoop: If the response has no body, putIdleConn will be called immediately so another request can reuse the persistConn, then setReqCanceler(rc.req, nil) is called. \r\n\r\n* The problem is: If persistConn is reused by another-request and CancelRequest(old-request) is called before setReqCanceler(old-request, nil), the another-request will failed.\r\n\r\n* Source code: https://github.com/golang/go/blob/release-branch.go1.4/src/net/http/transport.go#L920\r\n```\r\n\t\tif alive \u0026\u0026 !hasBody {\r\n\t\t\talive = !pc.sawEOF \u0026\u0026\r\n\t\t\t\tpc.wroteRequest() \u0026\u0026\r\n\t\t\t\tpc.t.putIdleConn(pc)     // !!!!! 'pc' can be reused after function called.\r\n\t\t}\r\n\r\n\t\trc.ch \u003c- responseAndError{resp, err}\r\n\r\n\t\t// Wait for the just-returned response body to be fully consumed\r\n\t\t// before we race and peek on the underlying bufio reader.\r\n\t\tif waitForBodyRead != nil {\r\n\t\t\tselect {\r\n\t\t\tcase alive = \u003c-waitForBodyRead:\r\n\t\t\tcase \u003c-pc.closech:\r\n\t\t\t\talive = false\r\n\t\t\t}\r\n\t\t}\r\n\r\n\t\tpc.t.setReqCanceler(rc.req, nil)  // !!!!! CancelRequest may be invoked before function called\r\n\r\n\t\tif !alive {\r\n\t\t\tpc.close()\r\n\t\t}\r\n```\r\n\r\n* Reproduce, client will print \"Get http://localhost:12345: net/http: transport closed before response was received\"\r\n\r\n```\r\ndiff --git a/src/pkg/net/http/transport.go b/src/pkg/net/http/transport.go\r\nindex b1cc632..de3d15f 100644\r\n--- a/src/pkg/net/http/transport.go\r\n+++ b/src/pkg/net/http/transport.go\r\n@@ -860,6 +860,8 @@ func (pc *persistConn) readLoop() {\r\n                                pc.t.putIdleConn(pc)\r\n                }\r\n \r\n+               time.Sleep(10e9) // to simulate an delayed schedule(for easy reproduce)\r\n+\r\n                rc.ch \u003c- responseAndError{resp, err}\r\n \r\n                // Wait for the just-returned response body to be fully consumed\r\n```\r\n```\r\n// server\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\r\n\tvar i int\r\n\thttp.HandleFunc(\"/\", func(w http.ResponseWriter, req *http.Request) {\r\n\t\ti++\r\n\t\tif i \u003e 1 {\r\n\t\t\ttime.Sleep(5e9)\r\n\t\t}\r\n\t})\r\n\terr := http.ListenAndServe(\":12345\", nil)\r\n\tfmt.Println(\"ListenAndServer\", err)\r\n}\r\n```\r\n```\r\n// client\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\r\n\ttr := \u0026http.Transport{}\r\n\tclient := \u0026http.Client{\r\n\t\tTransport: tr,\r\n\t}\r\n\tdone := make(chan error, 1)\r\n\trequestCanceled, _ := http.NewRequest(\"GET\", \"http://localhost:12345\", nil)\r\n\trequestIrrelevant, _ := http.NewRequest(\"GET\", \"http://localhost:12345\", nil)\r\n\tgo func() {\r\n\t\ttime.Sleep(2e9) // waiting for requestToBeCanceled to be responsed\r\n\t\tgo func() {\r\n\t\t\ttime.Sleep(2e9) // waiting for requestIrrelevant to reuse the tcp connection\r\n\t\t\ttr.CancelRequest(requestCanceled)\r\n\t\t}()\r\n\t\t_, err := client.Do(requestIrrelevant)\r\n\t\tdone \u003c- err\r\n\t}()\r\n\tclient.Do(requestCanceled)\r\n\r\n\terrIrrelevant := \u003c-done\r\n\tif errIrrelevant != nil {\r\n\t\tfmt.Println(errIrrelevant)\r\n\t}\r\n}\r\n```",
+	"user": {
+		"login": "carter2000",
+		"id": 1518851,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2015-04-20T20:36:14Z",
+	"created_at": "2015-01-03T15:42:25Z",
+	"updated_at": "2016-06-25T01:57:40Z",
+	"milestone": {
+		"id": 905105,
+		"number": 1,
+		"title": "Go1.5"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51285837,
+	"number": 6861,
+	"state": "closed",
+	"title": "gccgo/arm64: using channels before main begins is unreliable",
+	"body": "\u003cpre\u003eWhat steps will reproduce the problem?\nIf possible, include a link to a program on play.golang.org.\n1. $ cat ~/whut6.go\n\npackage main\n\nimport (\n\t\u0026quot;fmt\u0026quot;\n)\n\nfunc main() {\n}\n\nfunc init() {\n\tc := make(chan int)\n\tgo func() {\n\t\tfor i := 0; i \u0026lt; 1000; i++ {\n\t\t\tfmt.Println(\u0026quot;sending \u0026quot;, i)\n\t\t\tc \u0026lt;- i\n\t\t}\n\t}()\n\tvar k int\n\tfor j := 0; j \u0026lt; 1000; j++ {\n\t\tfmt.Println(\u0026quot;fetching for\u0026quot;, j, \u0026quot;th time...\u0026quot;)\n\t\tk = \u0026lt;- c\n\t\tfmt.Println(\u0026quot;got\u0026quot;, k)\n\t}\n}\n\n2. gccgo -g whut6.go -o whut6\n3. ./whut6\n\nWhat is the expected output?\n\nPages of output like:\n\ngot 500\nfetching for 501 th time...\ngot 501\nfetching for 502 th time...\nsending  502\nsending  503\ngot 502\n\n\n\nWhat do you see instead?\n\nA hang after a bit, so just:\n\nfetching for 0 th time...\nsending  0\nsending  1\ngot 0\nfetching for 1 th time...\ngot 1\n\nand then the process uses all cores and is totally uninterruptable except by SIGKILL\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\ngccgo\n\nWhich operating system are you using?\n\nUbuntu saucy, but, and this is the critical thing, the bug only exhibits on real arm64\nhardware.\n\n\nWhich version are you using?  (run 'go version')\n\n4.8 with some patches.  I think it also hangs with tip, although I can't test that right\nnow.\n\nPlease provide any additional information below.\n\nChanging to run this code after main() has started makes it work fine.\n\nAs this only happens on real arm64 hardware which is in very limited supply today (even\nI don't have access currently, owing to something breaking in our DC), I am not\nexpecting anyone else to actually fix this bug, but I would appreciate pointers to any\npotential sources of races in this area, especially for a new architecture.  It's also\npossible that this doesn't happen with 4.9 and so in that case I'd love to know of any\nhints as to when this might have been fixed...\u003c/pre\u003e",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 17,
+	"closed_at": "2014-12-08T10:38:11Z",
+	"created_at": "2013-12-01T23:32:08Z",
+	"updated_at": "2016-06-25T01:23:08Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 66086642,
+	"body": "\u003ca id=\"c1\"\u003e\u003c/a\u003eComment 1:\n\n\u003cpre\u003ebisected it. hg says:\n\nChangeset 18077:46fd4ef6c0de: bad\nDue to skipped revisions, the first bad revision could be any of:\nchangeset:   18074:7e10c412efea\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Wed Sep 11 09:56:51 2013 -0400\nsummary:     cmd/cgo: don't say \"gcc produced no output\" if we ran clang\n\nchangeset:   18075:e176e9d59540\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Wed Sep 11 09:57:05 2013 -0400\nsummary:     cmd/go: use pattern to prune file tree walk\n\nchangeset:   18076:1b195d6fe342\nuser:        Mikio Hara \u0026lt;mikioh.mikioh@gmail.com\u0026gt;\ndate:        Wed Sep 11 10:48:53 2013 -0400\nsummary:     net: implement TCP connection setup with fast failover\n\nchangeset:   18077:46fd4ef6c0de\nuser:        Russ Cox \u0026lt;rsc@golang.org\u0026gt;\ndate:        Wed Sep 11 11:30:08 2013 -0400\nsummary:     cmd/cgo: replace C.malloc with our own wrapper\n\nhad to skip revisions due to this compile error:\n\ncmd/cgo/gcc.go:386: undefined: fixGo\ncmd/cgo/gcc.go:596: undefined: fixGo\ncmd/cgo/gcc.go:607: undefined: fixGo\ncmd/cgo/gcc.go:656: undefined: fixGo\ncmd/cgo/gcc.go:660: undefined: fixGo\ncmd/cgo/gcc.go:666: undefined: fixGo\n\nI can confirm that revision 18073:7727c1ad5ba5 works. By revision 18077:46fd4ef6c0de it\nwas broken.\n\nmy bisect script for posterity:\n\n#!/bin/bash\nset -xe\nexport GOROOT=$HOME/go\nexport PATH=$GOROOT/bin:$PATH\nexport GOOS=linux\nexport GOARCH=amd64\nexport GOHOSTARCH=amd64\nexport GOOSARCH=$GOOS_$GOARCH\ncd $GOROOT\nhg revert --all\nhg purge\nhg identify\ncd $GOROOT/src\n./make.bash || exit 125\ngo version || exit 125\ncd $GOROOT/src/pkg/syscall\nset +e\ngo tool cgo -godefs types_$GOOS.go \u0026gt;ztypes_$GOOSARCH.go\nEXIT=$?\nhg revert --all\nexit $EXIT\u003c/pre\u003e",
+	"user": {
+		"login": "alberts",
+		"id": 409689,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2013-10-10T14:28:58Z",
+	"updated_at": "2014-12-22T06:29:22Z"
+}

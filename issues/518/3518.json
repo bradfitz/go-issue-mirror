@@ -1,0 +1,22 @@
+{
+	"id": 51280740,
+	"number": 3518,
+	"state": "closed",
+	"title": "gc linker does not export _end",
+	"body": "by **johnkgallagher**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n\nGNU ld exports the symbol _end to mark the address of the end of the data sections. This\ncan be used as a way to programmatically get at the start of the heap (see\n\u003ca href=\"http://stackoverflow.com/questions/3565232/how-to-programmatically-get-the-address-of-the-heap-on-linux)\"\u003ehttp://stackoverflow.com/questions/3565232/how-to-programmatically-get-the-address-of-the-heap-on-linux)\u003c/a\u003e.\nIf a shared library wrapped with cgo is expecting _end to exist, the address of _end\nappears to be relocated.\n\nAn example:\n\nFirst create libfoo.so:\nbash$ cat foo.h\nint foo(void);\n\nbash$ cat foo.c\n#include \u0026lt;stdio.h\u0026gt;\n#include \u0026lt;stdlib.h\u0026gt;\nchar *ppp1 = \u0026quot;hello world\u0026quot;;\nchar ppp0[] = \u0026quot;hello world\u0026quot;;\nextern void *_end; /* any type would do, only its address is important */\nint foo() {\n  void *p = calloc(10000,1);\n  printf( \u0026quot;end:%p heap:%p rodata:%p data:%p\\n\u0026quot;, \u0026amp;_end, p, ppp1, ppp0 );\n  return 0;\n}\n\nbash$ gcc -fPIC -shared foo.c -o libfoo.so\n\nWhat is the expected output?\n\nUsing a gcc-compiled c program, note that end is below the heap.\n\nbash$ cat tmp.c\n#include \u0026quot;foo.h\u0026quot;\nint main() {\n  return foo();\n}\nbash$ gcc tmp.c -L. -lfoo\nbash$ LD_LIBRARY_PATH=. ./a.out \nend:0x6009d8 heap:0x13ac010 rodata:0x7fe97df7c758 data:0x7fe97e17ca00\n\nWhat do you see instead?\n\nUsing cgo, end is relocated with libfoo:\n\nbash$ cat tmp.go\npackage main\n/*\n#cgo LDFLAGS: -L. -lfoo\n#include \u0026quot;foo.h\u0026quot;\n*/\nimport \u0026quot;C\u0026quot;\nfunc main() {\n\tC.foo()\n}\n\nbash$ go build tmp.go \nbash$ LD_LIBRARY_PATH=. ./tmp\nend:0x7f0b9486fa28 heap:0x2d61160 rodata:0x7f0b9466f758 data:0x7f0b9486fa00\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n\n6g\n\nWhich operating system are you using?\n\nLinux/amd64\n\nWhich version are you using?  (run 'go version')\n\ngo1\n\nPlease provide any additional information below.\n\nMy first inclination is \u0026quot;libraries shouldn't do this - it sure looks like a nasty\nhack\u0026quot;. However, I've seen at least one library (that I'm not in a position to\nmodify) that expects this to work, and I currently can't wrap it with cgo. I wonder if\n6l should be exporting all of the pseudo-magic symbols that GNU ld does, at least on\nLinux. It looks like GNU ld exports at least _end, end, _edata, and __bss_start, all of\nwhich are included as \u0026quot;ABSOLUTE\u0026quot; symbols in .dynsym and .symtab; the binaries\ncompiled with go build don't export any absolute symbols.\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2014-12-08T10:18:28Z",
+	"created_at": "2012-04-13T04:43:15Z",
+	"updated_at": "2016-06-24T22:17:44Z"
+}

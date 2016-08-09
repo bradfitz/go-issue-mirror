@@ -1,0 +1,22 @@
+{
+	"id": 112056283,
+	"number": 12982,
+	"state": "closed",
+	"title": "x/crypto/ssh: 'no common algorithms' against ubnt device",
+	"body": "I have some of these little mFi mPower things (https://www.ubnt.com/mfi/mpower/) and they run a little Linux on 32-bit MIPS with 16 MB of RAM and dropbear ssh as the way to control it.\r\n\r\nI wanted to use crypto/ssh against it, but I get \"handshake failed: ssh: no common algorithms\".\r\n\r\nI modified the crypto/ssh code to show better errors, and I get:\r\n\r\n```\r\n$ cat officeamp.go\r\npackage main\r\n  \r\nimport (\r\n        \"log\"\r\n  \r\n        \"golang.org/x/crypto/ssh\"\r\n) \r\n  \r\nfunc main() {\r\n        c, err := ssh.Dial(\"tcp\", \"10.0.0.136:22\", \u0026ssh.ClientConfig{\r\n                User: \"ubnt\",\r\n                Auth: []ssh.AuthMethod{ssh.Password(\"ubnt\")},\r\n        })\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        log.Printf(\"got a %#v\", c)\r\n}\r\nante:officeamp $ go run officeamp.go\r\n2015/10/18 18:18:41 ssh: handshake failed: ssh: no common algorithms: w.Cipher:\r\n  client=[\"aes128-ctr\" \"aes192-ctr\" \"aes256-ctr\" \"aes128-gcm@openssh.com\" \"arcfour256\" \"arcfour128\"]\r\n  server=[\"aes128-cbc\" \"3des-cbc\" \"aes256-cbc\" \"twofish256-cbc\" \"twofish-cbc\" \"twofish128-cbc\" \"blowfish-cbc\"]\r\n```\r\n\r\nLooks like it only does CBC.\r\n\r\nI see there's an old bug about adding CBC ciphers (#4274) but it was closed as WorkingAsIntended.\r\n\r\nAny possibility this can be opt-in in my ssh.ClientConfig?\r\n\r\n/cc @hanwen @agl ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2015-10-30T16:55:34Z",
+	"created_at": "2015-10-19T01:25:15Z",
+	"updated_at": "2016-05-06T14:50:33Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

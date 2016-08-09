@@ -1,0 +1,12 @@
+{
+	"id": 199645082,
+	"body": "My bad, I did not phrase that to convey my idea properly. What I meant was, slicing a slice with len 0 but cap 5 returns a slice with the requested length for both len and cap. As indicated by this sample on the side:\r\n\r\n```go\r\nb := make([]int, 0, 5) // len(b)=0, cap(b)=5\r\n\r\nb = b[:cap(b)] // len(b)=5, cap(b)=5\r\nb = b[1:]      // len(b)=4, cap(b)=4\r\n```\r\n\r\nSo the range of slicing a slice is constrained by its cap, but not its len. This is a decision I am surprised with. Because right before this, on https://tour.golang.org/moretypes/9:\r\n\r\n```go\r\n// missing high index implies len(s)       *nope, that should be cap(s)\r\nfmt.Println(\"s[4:] ==\", s[4:])\r\n```\r\n\r\n-----------------\r\n\r\nAbove was what I originally wrote, and soon after I found my mistake. Experimenting on the playground a bit:\r\n\r\n```go\r\nb := make([]int, 0, 5)\r\nprintSlice(\"b\", b)               // =\u003e b len=0 cap=5 []\r\n\r\nc := b[:2]\r\nprintSlice(\"c\", c)               // =\u003e c len=2 cap=5 [0 0]\r\n\r\nd := c[2:5]\r\nprintSlice(\"d\", d)               // =\u003e d len=3 cap=3 [0 0 0]\r\n\r\ne := c[2:]                       // it still defaults to len(e)\r\nprintSlice(\"e\", e)               // =\u003e e len=0 cap=3 []\r\n\r\nf := c[2:6]\r\nprintSlice(\"f\", f)               // =\u003e panic: runtime error: slice bounds out of range\r\n\r\ng := b[2:]\r\nprintSlice(\"g\", g)               // =\u003e panic: runtime error: slice bounds out of range\r\n```\r\n\r\nInteraction between len, cap and slicing only got apparent to me after the above experiement. The upper bound of slicing is bound by cap, but defaults to len, while the lower bound is bound by len, and defaults to 0. The len of returned slice will be the range specified, but the cap will be the lower bound toward the cap.\r\n\r\nI guess I should have inferred these from the sentence\r\n\r\n\u003e Slices can be re-sliced, creating a new slice value that points to the same array.\r\n\r\nin the previous step.",
+	"user": {
+		"login": "louy2",
+		"id": 2263580,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-03-22T05:33:54Z",
+	"updated_at": "2016-03-22T05:33:54Z"
+}

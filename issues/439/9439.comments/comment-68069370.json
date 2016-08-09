@@ -1,0 +1,12 @@
+{
+	"id": 68069370,
+	"body": "While writing this up (this is an issue I discovered long ago and added it to my TODO list to report it) just now, I investigated further and found out why it happens.\r\n\r\nYou may or may not be able to reproduce it in your setup if you follow the steps above. It may be an issue or it may be working as intended.\r\n\r\n### Cause\r\n\r\nThe reason `vet` did not catch the `thirdParty.ClientID` bad printf usage case is because I had the third party package source only, but it wasn't installed (no entry in `$GOPATH/pkg`). Running it with `-v` option displays a warning message:\r\n\r\n```\r\nvet: main.go:8:2: could not import golang.org/x/oauth2 (can't find import: golang.org/x/oauth2)\r\nChecking file main.go\r\nmain.go:21: arg stdLib.Path for printf verb %d of wrong type: string\r\n```\r\n\r\nSo, I could do `go run main.go` on that file because `go run` and `go build` will build all packages that are not installed from source on demand. (Due to unrelated complicated reasons, I tend to have very few packages installed and rely on `go build` always building everything from source.)\r\n\r\nAfter I did `go install golang.org/x/oauth2`, running `vet` produced expected results.\r\n\r\n### Possible solutions\r\n\r\nI see two possible solutions:\r\n\r\n1. Either make `vet` behave more intelligently like `go build` and `go run`, if the source is present but compiled package is missing, build it temporarily on demand or process the source instead. This way `vet` will always work reliably.\r\n\r\n2. Right now `vet` is not 100% reliable because it may or may not work depending on whether you have some packages installed. However, the **exit code is 1** regardless whether:\r\n\r\n    - `vet` ran successfully, processed all files and found some issues to report,\r\n    - `vet` did not run successfully due to packages not being installed or missing source.\r\n\r\n\tThere should be some (machine-readable) way to distinguish a failed `vet` run vs. a successful run that found issues.\r\n\r\nI think fixing point 2 is easy and should be done. Fixing point 1 may be too complicated and not worth it.\r\n\r\nIn fact, running `vet` with the entire `golang.org/x/oauth2` package missing (no source, no installed) - so that even `go build` would fail - still results in the exact same incomplete output and exit code 1.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2014-12-24T18:53:05Z",
+	"updated_at": "2014-12-24T19:04:26Z"
+}

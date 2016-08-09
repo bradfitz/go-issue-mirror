@@ -1,0 +1,21 @@
+{
+	"id": 169257420,
+	"number": 16591,
+	"state": "open",
+	"title": "cmd/cgo: synthesized _cgoCheckPointer calls weaken function calling type checking",
+	"body": "Trying to build this code:\r\n\r\n    package p\r\n    \r\n    // extern void foo(int** p) {}\r\n    import \"C\"\r\n    \r\n    type x *C.int\r\n    \r\n    func bar(**C.int) {\r\n    }\r\n\r\n    func f(p *x) {\r\n    \tC.foo(p)\r\n    \tbar(p)\r\n    }\r\n\r\nfails with:\r\n\r\n    ./foo.go:13: cannot use p (type *x) as type **C.int in argument to bar\r\n\r\nI.e., the `bar(p)` call is rejected, but the `C.foo(p)` call is not, even though they both logically have a parameter of type `**C.int`.\r\n\r\nThe `C.foo(p)` is being rewritten by cgo into:\r\n\r\n        _Cfunc_foo(_cgoCheckPointer((**_Ctype_int)(p)).(**_Ctype_int))\r\n\r\nThe Go spec says function call arguments should be assignable to their corresponding parameters.  But because of the explicit conversion introduced by cgo, this requirement is being relaxed from assignability to convertibility.\r\n\r\nProbably not an issue in practice, but I noticed it while addressing mdempsky/unconvert#16.\r\n\r\nI think we could address this by generating type-specific _cgoCheckPointer wrappers, but until we can inline calls to non-leaf functions, that might be undesirable.\r\n\r\n/cc @ianlancetaylor ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-08-03T23:24:38Z",
+	"updated_at": "2016-08-03T23:24:38Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

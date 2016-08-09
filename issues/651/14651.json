@@ -1,0 +1,23 @@
+{
+	"id": 138619386,
+	"number": 14651,
+	"state": "closed",
+	"title": "math/big: rounding to denormal float32/64 still incorrect",
+	"body": "This is a follow-up to issue #14553. In the special case of a math.Float number that is smaller than the smallest denormal, but that should be rounded up to the smallest denormal, rounding up doesn't happen for values x with `0.5 * 2**-149 (0.1000p-149) \u003c x \u003c 0.75 * 2**-149 (0.1100p-149)` for float32 (analogously for float64).\r\n\r\nSince the compiler is using this code, for these numbers we get the wrong bit patterns when converting/rounding at compile-time (constant evaluation):\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"math\"\r\n)\r\n\r\nconst p149 = 1.0 / (1 \u003c\u003c 149) // 1p-149\r\n\r\nconst (\r\n\tm0000 = 0x0 / 16.0 * p149 // = 0.0000p-149\r\n\tm1000 = 0x8 / 16.0 * p149 // = 0.1000p-149\r\n\tm1001 = 0x9 / 16.0 * p149 // = 0.1001p-149\r\n\tm1011 = 0xb / 16.0 * p149 // = 0.1011p-149\r\n\tm1100 = 0xc / 16.0 * p149 // = 0.1100p-149\r\n)\r\n\r\nfunc main() {\r\n\tprint(float32(m0000), f32(m0000))\r\n\tprint(float32(m1000), f32(m1000))\r\n\tprint(float32(m1001), f32(m1001))\r\n\tprint(float32(m1011), f32(m1011))\r\n\tprint(float32(m1100), f32(m1100))\r\n}\r\n\r\nfunc f32(x float64) float32 {\r\n\treturn float32(x)\r\n}\r\n\r\nfunc print(a, b float32) {\r\n\tfmt.Printf(\"%016x  %016x\\n\", math.Float32bits(a), math.Float32bits(b))\r\n}\r\n```\r\nproduces\r\n```\r\n0000000000000000  0000000000000000\r\n0000000000000000  0000000000000000\r\n0000000000000000  0000000000000001\r\n0000000000000000  0000000000000001\r\n0000000000000001  0000000000000001\r\n```\r\n(the left column is incorrect).\r\n\r\nThe problem in this case seems to be with rounding per se, and not so much the Float32/64 conversions.\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-03-22T17:09:50Z",
+	"created_at": "2016-03-04T23:45:14Z",
+	"updated_at": "2016-03-22T17:09:50Z"
+}

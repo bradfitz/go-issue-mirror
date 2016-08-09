@@ -1,0 +1,22 @@
+{
+	"id": 51288885,
+	"number": 8931,
+	"state": "closed",
+	"title": "code.google.com/p/go.tools/godoc/vfs: named type ReadSeekCloser inhibits reuse of FileSystem by external pkgs",
+	"body": "\u003cpre\u003eIn the go.tools repo, godoc/vfs/vfs.go defines a very useful FileSystem type:\n\ntype FileSystem interface {\n        Opener\n        Lstat(path string) (os.FileInfo, error)\n        Stat(path string) (os.FileInfo, error)\n        ReadDir(path string) ([]os.FileInfo, error)\n        String() string\n}\n\ntype Opener interface {\n        Open(name string) (ReadSeekCloser, error)\n}\n\ntype ReadSeekCloser interface {\n        io.Reader\n        io.Seeker\n        io.Closer\n}\n\nThere are other useful packages in go.tools (and elsewhere on GitHub) that make use of\nFileSystem interface implementations.\n\nBut the fact that ReadSeekCloser is a named type makes it impossible (as best I can\ntell) to implement vfs.FileSystem in an external package without importing vfs (and thus\npulling down the whole go.tools repo). This goes against the spirit of implicit\nsatisfaction of interfaces.\n\nFor example, I created a package (\u003ca href=\"https://sourcegraph.com/sourcegraph/go-vcs)\"\u003ehttps://sourcegraph.com/sourcegraph/go-vcs)\u003c/a\u003e that\nimplements an almost identical interface to vfs.FileSystem, but to avoid adding go.tools\nas a dependency, I copied the 3 above types to my package. Now people want to use my\npackage's VCS FileSystem implementation with other godoc/vfs/... packages, and they\ncan't (see \u003ca href=\"https://github.com/sourcegraph/go-vcs/issues/11)\"\u003ehttps://github.com/sourcegraph/go-vcs/issues/11)\u003c/a\u003e.\n\nI believe that vfs.FileSystem is an extremely useful building block, and it would make\nit much easier if people could build interchangeable implementations of it without\nimporting go.tools. (As an aside, we use it in multiple places at Sourcegraph, and\nJeremy Saenz mentioned it on stage at dotGo as a \u0026quot;hidden gem\u0026quot;.)\n\nWould you consider any of the following solutions?\n\n1) Changing godoc/vfs's (Opener).Open method to return\n(interface{io.Reader;io.Seeker;io.Closer},error) instead of creating a separate named\nReadSeekCloser type (external packages could satisfy the interface by simply using the\nanonymous interface type)\n2) Adding ReadSeekCloser to the stdlib as io.ReadSeekCloser\u003c/pre\u003e",
+	"user": {
+		"login": "sqs",
+		"id": 1976,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2014-12-08T10:49:13Z",
+	"created_at": "2014-10-14T11:44:02Z",
+	"updated_at": "2016-06-25T01:43:03Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 69724465,
+	"body": "@mattn The approach is reasonable but I don't think you need to stop the timer when it fires (it\r\nwill stop then anyway)\r\n\r\n    cmd := exec.Command(\"ping\", \"127.0.0.1\", `-t`)\r\n    if err := cmd.Start(); err != nil {\r\n        log.Fatal(err)\r\n    }\r\n    timer := time.AfterFunc(3 * time.Second, func() {\r\n        cmd.Process.Kill()\r\n    })\r\n    err := cmd.Wait()\r\n    timer.Stop()\r\n \r\nYou can tell if the cmd was killed by looking at err, or (with high probabilty\r\nand no need for syscall) by checking whether timer.Stop returns false.\r\n\r\nThe disadvantage of this approach is that sometimes a process\r\nisn't killable, so it may fail sometimes.\r\n\r\nThe advantage is that it's possible to read from StdoutPipe\r\n(running Wait in a separate goroutine has issues with\r\nStdoutPipe - see http://golang.org/pkg/os/exec/#Cmd.StdoutPipe )\r\n\r\n\r\n",
+	"user": {
+		"login": "rogpeppe",
+		"id": 66491,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-01-13T10:29:07Z",
+	"updated_at": "2015-01-13T10:29:07Z"
+}

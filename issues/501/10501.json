@@ -1,0 +1,22 @@
+{
+	"id": 69476086,
+	"number": 10501,
+	"state": "closed",
+	"title": "cmd/link: testdata rebuilding has bitrotted and tests fail when it is refreshed",
+	"body": "The Makefile in cmd/link/testdata invokes go tool 6a to rebuild the .6 files, which obviously no longer works.  When that's fixed like this:\r\n\r\n```diff\r\n--- a/src/cmd/link/testdata/Makefile\r\n+++ b/src/cmd/link/testdata/Makefile\r\n@@ -9,7 +9,7 @@ ALL=\\\r\n all: $(ALL)\r\n \r\n %.6: %.s\r\n-       GOARCH=amd64 GOOS=darwin go tool 6a -trimpath=$(shell pwd) $*.s\r\n+       GOARCH=amd64 GOOS=darwin go tool asm -I $(shell go env GOROOT)/pkg/include -trimpath=$(shell pwd) $*.s\r\n \r\n pclntab.s: genpcln.go\r\n        go run genpcln.go \u003epclntab.s\r\n```\r\n\r\ngo test cmd/link fails like this:\r\n\r\n```\r\n--- FAIL: TestAuto (0.00s)\r\n\tauto_test.go:32: zeronoptr: unexpected symbol kind STLSBSS\r\n\tauto_test.go:32: nonzeronoptr: unexpected symbol kind STLSBSS\r\n\tauto_test.go:32: start: unknown relocation type 11\r\n\tauto_test.go:32: start: unknown relocation type 11\r\n--- FAIL: TestLayout (0.00s)\r\n\tlayout_test.go:16: noptrdata_sym: unexpected symbol kind STLSBSS\r\n\tlayout_test.go:16: noptrbss_sym: unexpected symbol kind STLSBSS\r\n--- FAIL: TestLinkHello (0.00s)\r\n\tlink_test.go:18: _rt0_go: unknown relocation type 11\r\n--- FAIL: TestPclntab (0.00s)\r\n\tpclntab_test.go:27: start: unknown relocation type 11\r\n```\r\n\r\nWhich suggests cmd/internal/goobj hasn't kept up to date with object file format changes -- not sure what though, that hasn't changed in a whlie (and I want to change it now!)",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2015-04-22T20:33:13Z",
+	"created_at": "2015-04-19T23:34:20Z",
+	"updated_at": "2016-06-25T02:05:58Z"
+}

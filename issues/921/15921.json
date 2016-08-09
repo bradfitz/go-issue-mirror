@@ -1,0 +1,28 @@
+{
+	"id": 157977187,
+	"number": 15921,
+	"state": "closed",
+	"title": "cmd/cgo: _cgoCheckPointer call occurs too early for deferred function calls.",
+	"body": "I found a related-but-different problem when investigating issue #13830.\r\n\r\nMaking the _cgoCheckPointer call explicitly in the function parameters of a deferred call causes the pointer check to occur at the wrong time.  We end up checking whether the argument had a Go pointer at the point where the call was deferred, not whether the argument had a Go pointer at the point where the C call was actually made.\r\n\r\nConsider this program:\r\n\r\n```go\r\npackage main\r\n\r\n/*\r\n#include \u003cstdint.h\u003e\r\n\r\nstruct sneaky {\r\n  int *p;\r\n};\r\n\r\nvoid sneak(struct sneaky *s, uintptr_t *u) {\r\n  *u = (uintptr_t)(s-\u003ep);\r\n}\r\n*/\r\nimport \"C\"\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tvar s C.struct_sneaky\r\n\tvar u C.uintptr_t\r\n\r\n\tdefer func() { fmt.Println(u) }()\r\n\tdefer C.sneak(\u0026s, \u0026u)\r\n\r\n\tvar escapee C.int\r\n\ts.p = \u0026escapee\r\n}\r\n```\r\n\r\nWith go version go1.6.1 linux/amd64, the program (incorrectly) prints a leaked address and exits with code 0.\r\n\r\nChanging the call to `C.sneak` to an explicit call at the end of `main` causes the program to (correctly) panic with a cgo pointer violation.\r\n\r\nThe problem is that the _cgoCheckPointer calls wrap the function's arguments, not the function call itself:\r\n\r\n```go\r\n  defer _Cfunc_sneak(_cgoCheckPointer((*_Ctype_struct_sneaky)(\u0026s), true).(*_Ctype_struct_sneaky), \u0026u)\r\n```",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-06-03T20:53:51Z",
+	"created_at": "2016-06-01T18:36:16Z",
+	"updated_at": "2016-06-03T20:53:51Z",
+	"milestone": {
+		"id": 1714149,
+		"number": 40,
+		"title": "Go1.7Maybe"
+	}
+}

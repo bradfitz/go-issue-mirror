@@ -1,0 +1,12 @@
+{
+	"id": 138790682,
+	"body": "I tried implementing this (windows-386 only):\r\n```\r\ndiff --git a/src/runtime/defs_windows_386.go b/src/runtime/defs_windows_386.go\r\nindex bac6ce7..04c6d7c 100644\r\n--- a/src/runtime/defs_windows_386.go\r\n+++ b/src/runtime/defs_windows_386.go\r\n@@ -16,8 +16,10 @@ const (\r\n \t_THREAD_PRIORITY_HIGHEST = 0x2\r\n \r\n \t_SIGINT           = 0x2\r\n+\t_SIGTERM          = 0xf\r\n \t_CTRL_C_EVENT     = 0x0\r\n \t_CTRL_BREAK_EVENT = 0x1\r\n+\t_CTRL_CLOSE_EVENT = 0x2\r\n \r\n \t_CONTEXT_CONTROL = 0x10001\r\n \t_CONTEXT_FULL    = 0x10007\r\ndiff --git a/src/runtime/os1_windows.go b/src/runtime/os1_windows.go\r\nindex f608b4a..8315375 100644\r\n--- a/src/runtime/os1_windows.go\r\n+++ b/src/runtime/os1_windows.go\r\n@@ -448,19 +448,20 @@ func usleep(us uint32) {\r\n }\r\n \r\n func ctrlhandler1(_type uint32) uint32 {\r\n-\tvar s uint32\r\n-\r\n \tswitch _type {\r\n \tcase _CTRL_C_EVENT, _CTRL_BREAK_EVENT:\r\n-\t\ts = _SIGINT\r\n-\tdefault:\r\n-\t\treturn 0\r\n-\t}\r\n-\r\n-\tif sigsend(s) {\r\n-\t\treturn 1\r\n+\t\tif sigsend(_SIGINT) {\r\n+\t\t\treturn 1\r\n+\t\t}\r\n+\t\texit(2)\r\n+\tcase _CTRL_CLOSE_EVENT:\r\n+\t\tif sigsend(_SIGTERM) {\r\n+\t\t\t// should not return from ctrlhandler1,\r\n+\t\t\t// otherwise windows will terminate us immediately.\r\n+\t\t\tusleep(100 * 1000000)\r\n+\t\t}\r\n+\t\texit(2)\r\n \t}\r\n-\texit(2) // SIGINT, SIGTERM, etc\r\n \treturn 0\r\n }\r\n \r\n```\r\n\r\nand the only way I can stop Windows closing my process is by not returning from ctrlhandler1 (see usleep I have inserted there). This way everything works as expected - I get new signal and can act on it as I wish.\r\n\r\nUnfortunately my change has one bad side effect. I cannot close console window with my process running in it now (unless I have Go SIGTERM handler doing exiting explicitly). We cannot have this change of default behaviour.\r\n\r\nI don't see how we can overcome this.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-09-09T05:39:25Z",
+	"updated_at": "2015-09-09T05:39:25Z"
+}

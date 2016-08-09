@@ -1,0 +1,12 @@
+{
+	"id": 97086852,
+	"body": "I have a bit of a conundrum.  I am writing code that executes payment transactions against various payment processors.  It has strict timeout and other requirements, and I need to re-queue failed transactions for specific types of failures.  I really need to know how/why a request failed, not just that it failed, and parsing the `error.String()` seems like a terrible idea.\r\n\r\nIt is important for me to know that the request timed out, or even that it was a temporary failure that may benefit from an immediate re-try.  Reading through this thread, and via some experimentation, I have this to determine temp/timeout condition (seems only slightly better than parsing the full `error.String()`\r\n\r\n```go\r\nfunc IsTempOrTimeout(err error) (temp bool, timeout bool) {\r\n  if urlerr, ok := err.(*url.Error); ok {\r\n     return checkNetError(urlerr.Err)\r\n  }\r\n  return chenkNetError(err)\r\n}\r\n\r\nfunc checkNetError(err error) (temp bool, timeout bool) {\r\n  if nerr, ok := err.(net.Error); ok {\r\n    return nerr.Temporary(), nerr.Timeout()\r\n  }\r\n  return false, false\r\n}\r\n```\r\n\r\nI'm looking for feedback on the best way to proceed here: \r\n\r\n* Is this reasonable approach to determine if an error condition was either temporary or a timeout?\r\n* Is it possible I could get a different set of wrapped errors that may embed an error not covered here which could also indicate a temporary failure or timeout condition?",
+	"user": {
+		"login": "davisford",
+		"id": 186677,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2015-04-28T14:37:54Z",
+	"updated_at": "2015-04-28T14:37:54Z"
+}

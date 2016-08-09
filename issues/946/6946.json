@@ -1,0 +1,33 @@
+{
+	"id": 51285966,
+	"number": 6946,
+	"state": "closed",
+	"title": "runtime: crash in GoroutineProfile",
+	"body": "\u003cpre\u003eThis program should run forever. It crashes quickly, because GoroutineProfile is using\nthe wrong pc/sp combination for the traceback if the corresponding goroutine has just\ncome out of a system call.\n\nThe only workaround is not to call GoroutineProfile. Possible #go121 candidate.\n\npackage main\n\nimport (\n\t\u0026quot;runtime\u0026quot;\n\t\u0026quot;syscall\u0026quot;\n)\n\nfunc main() {\n\truntime.GOMAXPROCS(200)\n\tfor i := 0; i \u0026lt; 10; i++ {\n\t\tgo func() {\n\t\t\tfor {\n\t\t\t\tsyscall.Close(-1)\n\t\t\t}\n\t\t}()\n\t}\n\tstk := make([]runtime.StackRecord, 1000)\n\tfor n := 0;; n++ {\n\t\t_, ok := runtime.GoroutineProfile(stk)\n\t\tif !ok {\n\t\t\tpanic(\u0026quot;GoroutineProfile refused\u0026quot;)\n\t\t}\n\t\tif n\u0026amp;(n-1) == 0 {\n\t\t\tprintln(n)\n\t\t}\n\t}\n}\n\npanic: invalid memory address or nil pointer dereference\nfatal error: panic during gc\n[signal 0xb code=0x1 addr=0x0 pc=0x1a7f5]\n\ngoroutine 1 [running]:\nruntime.throw(0x6b1ac)\n\t/Users/rsc/g/go/src/pkg/runtime/panic.c:462 +0x69 fp=0x2210248d40\nruntime.panicstring(0x6b5b9)\n\t/Users/rsc/g/go/src/pkg/runtime/panic.c:477 +0x8d fp=0x2210248d68\nruntime.sigpanic()\n\t/Users/rsc/g/go/src/pkg/runtime/os_darwin.c:450 +0x16a fp=0x2210248d80\nruntime.gentraceback(0x7850, 0x0, 0x0, 0x2100d8ea0, 0x0, ...)\n\t/Users/rsc/g/go/src/pkg/runtime/traceback_x86.c:101 +0x745 fp=0x2210248e40\nsaveg(0x7850, 0x0, 0x2100d8ea0, 0x210148600)\n\t/Users/rsc/rscgo/src/pkg/runtime/mprof.goc:531 +0x76 fp=0x2210248ea0\nruntime.GoroutineProfile(0x210148000, 0x3e8, 0x3e8, 0xc, 0x301)\n\t/Users/rsc/rscgo/src/pkg/runtime/mprof.goc:559 +0x148 fp=0x2210248ee8\nmain.main()\n\t/Users/rsc/x.go:19 +0xbd fp=0x2210248f48\nruntime.main()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:220 +0x11f fp=0x2210248fa0\nruntime.goexit()\n\t/Users/rsc/g/go/src/pkg/runtime/proc.c:1394 fp=0x2210248fa8\u003c/pre\u003e",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:38:40Z",
+	"created_at": "2013-12-13T03:12:44Z",
+	"updated_at": "2016-06-25T01:23:48Z",
+	"milestone": {
+		"id": 1067208,
+		"number": 15,
+		"title": "Go1.2.1"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"id": 51279056,
+	"number": 2326,
+	"state": "closed",
+	"title": "UdpConn.Close() does not wake threads blocked on ReadFrom()",
+	"body": "by **awreece**:\n\n\u003cpre\u003eIf a thread is blocked on udpConn.ReadFrom, udpConn.Close() does not wake it up.\nConsider the following:\n\nfunc TestCloseUdp(t *testing.T) {\n    iroutines := runtime.Goroutines()\n\n    conn, _ := net.ListenPacket(\u0026quot;udp\u0026quot;, \u0026quot;:6666\u0026quot;)\n\n    go func() {\n        var buf [100]byte\n        conn.ReadFrom(buf[:])\n    }()\n\n    conn.Close()\n    // 16 minutes seems like long enough time for every other thread to block or die.\n    time.Sleep(1e12)\n\n    if nroutines := runtime.Goroutines(); iroutines != nroutines {\n        msg := fmt.Sprint(\u0026quot;Leaked threads: was \u0026quot;, nroutines, \u0026quot; but expected \u0026quot;, iroutines)\n        panic(msg)\n    }           \n}\n\nWhich produces the unexpected output:\n\npanic: Leaked threads: was 4 but expected 2\n\ngoroutine 41 [running]:\nmain.TestCloseUdp()\n\t~/net_test.go:199 +0x291\ntesting.tRunner(0x187175d0, 0x82797cc, 0x0)\n\t$GOROOT/src/pkg/testing/testing.go:156 +0x39\ncreated by testing.RunTests\n\t$GOROOT/src/pkg/testing/testing.go:200 +0x511\n\ngoroutine 1 [chan receive]:\ntesting.RunTests(0x8048c00, 0x82796e8, 0x26)\n\t$GOROOT/src/pkg/testing/testing.go:201 +0x53f\ntesting.Main(0x8048c00, 0x82796e8, 0x26, 0x26, 0x8282f30, ...)\n\t$GOROOT/src/pkg/testing/testing.go:168 +0x49\nmain.main()\n\t~/_test/_testmain.go:32 +0x43\n\ngoroutine 43 [chan receive]:\nnet.(*pollServer).WaitRead(0x1874ef30, 0x1870e680, 0x64)\n\t$GOROOT/src/pkg/net/fd.go:257 +0x5c\nnet.(*netFD).ReadFrom(0x1870e680, 0x187e4070, 0x64, 0x64, 0xffffffff, ...)\n\t$GOROOT/src/pkg/net/fd.go:417 +0x299\nnet.(*UDPConn).ReadFromUDP(0x187780e0, 0x187e4070, 0x64, 0x64, 0x0, ...)\n\t$GOROOT/src/pkg/net/udpsock_posix.go:156 +0xb9\nnet.(*UDPConn).ReadFrom(0x187780e0, 0x187e4070, 0x64, 0x64, 0x0, ...)\n\t$GOROOT/src/pkg/net/udpsock_posix.go:171 +0x84\nmain._func_015(0x187780a0, 0x187789e8)\n\t~/net_test.go:191 +0xbd\ncreated by main.TestCloseUdp\n\t~/net_test.go:192 +0x91\n\n\ngoroutine 42 [syscall]:\nsyscall.Syscall6()\n\t$GOROOT/src/pkg/syscall/asm_linux_386.s:46 +0x27\nsyscall.EpollWait(0x6, 0x18792148, 0xa, 0xa, 0xffffffff, ...)\n\t$GOROOT/src/pkg/syscall/zsyscall_linux_386.go:200 +0x9d\nnet.(*pollster).WaitFD(0x18792140, 0x1874ef30, 0x0, 0x0, 0x0, ...)\n\t$GOROOT/src/pkg/net/fd_linux.go:141 +0x1b6\nnet.(*pollServer).Run(0x1874ef30, 0x18700dc0)\n\t$GOROOT/src/pkg/net/fd.go:228 +0x146\ncreated by net.newPollServer\n\t$GOROOT/src/pkg/net/newpollserver.go:36 +0x464\ngb error: [_test/_testmain]: exit status 2\n\n\nWhich compiler are you using (5g, 6g, 8g, gccgo)?\n8g\n\nWhich operating system are you using?\nLinux\n\nWhich revision are you using?  (hg identify)\n253f02222ab0 tip\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2014-12-08T10:12:30Z",
+	"created_at": "2011-10-01T01:30:57Z",
+	"updated_at": "2016-06-24T19:35:36Z"
+}

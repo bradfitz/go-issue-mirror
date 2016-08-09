@@ -1,0 +1,28 @@
+{
+	"id": 138526383,
+	"number": 14646,
+	"state": "closed",
+	"title": "cmd/compile: bad line numbers for deferred function in new SSA back end",
+	"body": "\t$ n /tmp/x.go\r\n\t    1\tpackage main\r\n\t    2\t\r\n\t    3\timport \"runtime\"\r\n\t    4\t\r\n\t    5\tfunc main() {\r\n\t    6\t\tvar file string\r\n\t    7\t\tvar line int\r\n\t    8\t\tfunc() {\r\n\t    9\t\t\tdefer func() {\r\n\t   10\t\t\t\t_, file, line, _ = runtime.Caller(1)\r\n\t   11\t\t\t}()\r\n\t   12\t\t}()\r\n\t   13\t\tprintln(file, line)\r\n\t   14\t}\r\n\t$ go1.4 run /tmp/x.go\r\n\t/tmp/x.go 12\r\n\t$ go1.5 run /tmp/x.go\r\n\t/tmp/x.go 12\r\n\t$ go1.6 run /tmp/x.go\r\n\t/tmp/x.go 12\r\n\t$ go run /tmp/x.go\r\n\t/tmp/x.go 8\r\n\t$ \r\n\r\nThe file and line of the caller of a deferred function should appear to be the end of that function or the explicit return statement that triggered the deferred function calls. It has regressed since Go 1.6 was cut to report the beginning of the function. We should fix this and add a test.\r\n\r\nIt looks like explicit returns are handled correctly and that only the implicit return inserted at the end of the function is generated with incorrect line information:\r\n\r\n\t$ n /tmp/x.go\r\n\t    1\tpackage main\r\n\t    2\t\r\n\t    3\timport (\r\n\t    4\t\t\"os\"\r\n\t    5\t\t\"runtime\"\r\n\t    6\t)\r\n\t    7\t\r\n\t    8\tfunc main() {\r\n\t    9\t\tvar file string\r\n\t   10\t\tvar line int\r\n\t   11\t\tfunc() {\r\n\t   12\t\t\tdefer func() {\r\n\t   13\t\t\t\t_, file, line, _ = runtime.Caller(1)\r\n\t   14\t\t\t}()\r\n\t   15\t\t\tif len(os.Args) \u003e 1 {\r\n\t   16\t\t\t\treturn\r\n\t   17\t\t\t}\r\n\t   18\t\t\treturn\r\n\t   19\t\t}()\r\n\t   20\t\tprintln(file, line)\r\n\t   21\t}\r\n\t$ go1.6 run /tmp/x.go\r\n\t/tmp/x.go 18\r\n\t$ go1.6 run /tmp/x.go -\r\n\t/tmp/x.go 16\r\n\t$ go run /tmp/x.go\r\n\t/tmp/x.go 18\r\n\t$ go run /tmp/x.go -\r\n\t/tmp/x.go 16\r\n\t$ \r\n\r\n/cc @randall77 @dr2chase",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-03-08T19:23:53Z",
+	"created_at": "2016-03-04T17:02:20Z",
+	"updated_at": "2016-03-08T19:23:53Z",
+	"milestone": {
+		"id": 1414136,
+		"number": 32,
+		"title": "Go1.7Early"
+	}
+}

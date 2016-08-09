@@ -1,0 +1,12 @@
+{
+	"id": 177421474,
+	"body": "Oh, wow. So many points to reply to. Well, a healthy discussion :-)\r\nI'll put all my replies into this one message.\r\n\r\n1: I have not observed problems running Go code with overcommit disabled.\r\n\r\n2: I'm interested in catching failures in large allocations as well as many small allocations buried in a library I don't control.\r\n\r\n3: Emergency GC would probably work if I still got a notification that stopped processing in the goroutines I've registered and called my recovery code.\r\n\r\n4: Latency of emergency GC is unfortunate but is better than the alternative (dying).\r\n\r\n5: I don't think providing feedback when we're \"close\" to running out of memory is viable. It won't work on a multi-tenant system, and even on a single tenant system knowing how much is available is difficult and non-portable (even on Linux: think nested containers versus no containers). It's also a problem when allocations are done deep inside a library that one does not control. I think it's unrealistic to expect that lots of library code will be refactored to perform periodic checks.\r\n\r\n6: Yes, my proposal is to GC at the beginning and the end of recovery.\r\n\r\n7: Failed allocations in system goroutines are just like application goroutines that have not registered interest in recovering from OOM. The heavy allocators are the ones where there is a benefit to doing recovery (lots of allocations, OOM, recover, drop references and abort transaction). Everyone else should be able to get by with the memory that the emergency GC frees up. We rely on their cleanup to bring the system back from the brink of disaster.\r\n\r\n8: A TryAndReserveMem(bytes int64) bool function has similar issues to (5): between when you ask and when you try to do a real allocation, the situation can change. There is the same problem with refactoring libraries. Further, it's difficult to know _how much_ memory I'm about to use. Go allocates a lot of memory under the covers for housekeeping. That's really significant with large numbers of small allocations.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-01-31T07:24:17Z",
+	"updated_at": "2016-01-31T07:24:17Z"
+}

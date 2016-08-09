@@ -1,0 +1,12 @@
+{
+	"id": 225409450,
+	"body": "@alexbrainman I don't see an inconsistency in the use of `runtime.KeepAlive`.  In the e-mail thread you link to, you asked whether `runtime.KeepAlive` would provide access to those bytes until the program exits.  It won't.  Matthew said that it's not an malloc/free mechanism, and that is correct.\r\n\r\nMy suggestion here is not to use `runtime.KeepAlive` to control the garbage collector.  It's to use it to control when values are live.  The problem here is that `lpSubKey` and `lpValue` are not live throughout `RegGetValue`, which means they can be collected.  Adding `runtime.KeepAlive` after the call to `regGetValue.Call` will keep them live past the point of the call, so they won't be collected.\r\n\r\nIt's very much the same kind of thing as finalizers, although there is no actual finalizer.  Think of an implicit finalizer being discarding the values.  `runtime.KeepAlive` will prevent that implicit finalizer from running.\r\n\r\nWhat do you think of https://golang.org/cl/24030?",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-06-12T04:23:11Z",
+	"updated_at": "2016-06-12T04:23:11Z"
+}

@@ -1,0 +1,28 @@
+{
+	"id": 51277234,
+	"number": 1009,
+	"state": "closed",
+	"title": "crypto/tls: fetch root certificates using Mac OS API",
+	"body": "by **dacc@exaptic.com**:\n\n\u003cpre\u003eWhat steps will reproduce the problem?\n1. Attempt to retrieve a document from an https location using e.g.\nhttp.Get(\u0026quot;\u003ca href=\"https://google.com/\u0026quot\"\u003ehttps://google.com/\u0026quot\u003c/a\u003e;)\n\nWhat is the expected output?\nSuccess.\n\nWhat do you see instead?\nError with \u0026quot;bad certificate\u0026quot;.\n\nWhat is your $GOOS?  $GOARCH?\ndarwin / i386\n\nWhich revision are you using?  (hg identify)\ndb904d88dc0e+ tip\n\nPlease provide any additional information below.\n\nThis is caused by missing CA certificates.  In src/pkg/crypt/tls/common.go the default\nconfig looks for curl's root CA bundle at these locations:\n\n\u0026lt;pre\u0026gt;\nvar certFiles = []string{\n\t\u0026quot;/etc/ssl/certs/ca-certificates.crt\u0026quot;, // Linux etc\n\t\u0026quot;/usr/share/curl/curl-ca-bundle.crt\u0026quot;, // OS X\n}\n\u0026lt;/pre\u0026gt;\n\nOn the two OS 10.6 systems I checked the second location didn't exist.  In fact, I\ncouldn't find this file anywhere after trying the following:\n\n\u0026lt;pre\u0026gt;\n\n{dan@godel /}$ mdfind curl-ca-bundle.crt|grep -v '^/opt'\n/Users/dan/src/golang/src/pkg/crypto/tls/common.go\n{dan@godel /}$ curl-config --ca                         \n\n{dan@godel /}$ \n\u0026lt;/pre\u0026gt;\n\nCurl can still retrieve HTTPS URLs.  I patched my common.m to look for the MacPorts\nversion of this file:\n\n\u0026lt;pre\u0026gt;\n\n{dan@godel ~/src/golang}$ hg diff\ndiff -r db904d88dc0e src/pkg/crypto/tls/common.go\n--- a/src/pkg/crypto/tls/common.go\tFri Jul 30 14:48:30 2010 +1000\n+++ b/src/pkg/crypto/tls/common.go\tSun Aug 08 01:47:51 2010 -0700\n@@ -138,7 +138,8 @@\n // the same root set that curl uses.\n var certFiles = []string{\n \t\u0026quot;/etc/ssl/certs/ca-certificates.crt\u0026quot;, // Linux etc\n-\t\u0026quot;/usr/share/curl/curl-ca-bundle.crt\u0026quot;, // OS X\n+\t\u0026quot;/usr/share/curl/curl-ca-bundle.crt\u0026quot;, // OS X (\u0026lt;= 10.5?)\n+\t\u0026quot;/opt/local/share/curl/curl-ca-bundle.crt\u0026quot;, // OS X (MacPorts)\n }\n \n func initDefaultConfig() {\n{dan@godel ~/src/golang}$ \n\u0026lt;/pre\u0026gt;\u003c/pre\u003e",
+	"user": {
+		"login": "gopherbot",
+		"id": 8566911,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		}
+	],
+	"assignee": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2014-12-08T10:06:41Z",
+	"created_at": "2010-08-08T08:48:03Z",
+	"updated_at": "2016-06-24T19:18:52Z"
+}

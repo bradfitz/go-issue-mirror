@@ -1,0 +1,25 @@
+{
+	"id": 51287029,
+	"number": 7657,
+	"state": "closed",
+	"title": "language: bool to numeric and numeric to bool type conversions",
+	"body": "\u003cpre\u003eOverview\nThis proposal would allow bidirectional type conversions between all of the builtin\nscalar numeric types and the builtin \u0026quot;bool\u0026quot; type. The syntax and grammar of\nthe language already allows these conversions but the current compiler doesn't implement\nthese particular conversions and gives error messages. As has been standard since\n\u0026quot;C\u0026quot; was developed the numeric value of 0 is considered \u0026quot;false\u0026quot; and\nany non-zero numeric value is considered \u0026quot;true\u0026quot;, but the canonical value of\n\u0026quot;true\u0026quot; is numeric 1.\n\nDescription\nToday if you want to convert between a numeric type and the \u0026quot;bool\u0026quot; type you\nhave to create a function to do it. For example:\n\u003ca href=\"http://play.golang.org/p/jUlDoCCI5N\"\u003ehttp://play.golang.org/p/jUlDoCCI5N\u003c/a\u003e\n\nvar itob = func(int i) bool {\n    if i == 0 {\n        return false\n    }\n    return true\n}\n\nvar btoi = func(bool b) int {\n    if b {\n        return 1\n    }\n    return 0\n}\n\nThese functions also define the semantics I propose for the conversions proposed.\n\nBecause there are currently no generic functions and no trinary operator one often has\nto implement multiple versions of the above functions.\n\nIf this proposal is accepted and implemented the following two conversions and others\nlike them would no longer generate the following compiler errors in the cg compilers:\n\nvar i int= 1\nb := bool(i)\ni := int(b)\n\n./bool.go:24: cannot convert i (type int) to type bool\n./bool.go:25: cannot convert b (type bool) to type int\n\nJustification\nAfter several years of Go programming I long for this functionality. I often need to\nconvert a slice of numbers to bools or bools to numbers in a loop. Having to call a user\ndefined function for each conversion is slow and in many (all) cases these conversions\ncan be handled without branches and in any case these conversions can and should be\ninlined.\n\nImplementation\nThe implementation requires that the compilers be updated to allow these conversions and\ngenerate code for each case. The scalar numeric types affected are:\nuint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64, uint, int,\nbyte, rune\n\nSince I have seen integers passed as a uintptr using OpenGL via Cgo I suggest that the\ntype \u0026quot;uintptr\u0026quot; also be allowed as a numeric type that can be converted to and\nfrom a \u0026quot;bool\u0026quot;.\n\nDocumentation\nIn the \u0026quot;Conversions\u0026quot; section of the \u0026quot;The Go Programming Language\nSpecification\u0026quot; the following line would change from:\n\u0026quot;x's type and T are both integer or floating point types.\u0026quot;\u0026quot;\nto:\n\u0026quot;x's type and T are both integer, floating point, or bool types.\u0026quot;\n\nIssues\nI am unsure of how to handle floating point +0.0 and -0.0. Right now I think only\nregular 0.0 is \u0026quot;false\u0026quot; but I am unsure about this.\n\nRelated Issues\n\u003ca href=\"https://golang.org/issue/6011\"\u003ehttps://golang.org/issue/6011\u003c/a\u003e\nThis is similar to #6011 except the proposed syntax is different. I believe the syntax\nproposed here is more consistent with the spirit of the language and is simpler too.\nImportantly, I would like to point out that the Type Assertion syntax isn't needed here\nbecause any numeric value can be converted to a \u0026quot;bool\u0026quot; and any\n\u0026quot;bool\u0026quot; can be converted to a numeric value so these conversions can never fail.\u003c/pre\u003e",
+	"user": {
+		"login": "tildeleb",
+		"id": 834628,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "FrozenDueToAge"
+		},
+		{
+			"name": "LanguageChange"
+		}
+	],
+	"comments": 7,
+	"closed_at": "2014-12-08T10:42:32Z",
+	"created_at": "2014-03-28T02:48:58Z",
+	"updated_at": "2016-06-25T01:30:58Z"
+}
