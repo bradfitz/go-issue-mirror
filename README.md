@@ -6,6 +6,36 @@ This repo is a mirror of the
 The goal is to permit offline access and more powerful searches. It
 also doesn't take any quota to query this way.
 
-This repo is entirely data, not code. The tools for updating it and
-reading will live elsewhere. They will be linked from here when ready.
+To use it:
 
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/bradfitz/go-issue-mirror/issues"
+	"github.com/google/go-github/github"
+)
+
+func main() {
+	root, err := issues.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	is, err := root.Issue(1234)
+	log.Printf("Issue: %#v, %v", is, err)
+
+	c, err := root.IssueComment(1234, 66053086)
+	log.Printf("Comment: %#v, %v", c, err)
+
+	root.ForeachIssue(func(is *github.Issue) error {
+		log.Printf("Issue %d: %v", *is.Number, *is.Title)
+		root.ForeachIssueComment(*is.Number, func(c *github.IssueComment) error {
+			log.Printf("  comment from %v at %v", *c.User.Login, *c.CreatedAt)
+			return nil
+		})
+		return nil
+	})
+}
+```
