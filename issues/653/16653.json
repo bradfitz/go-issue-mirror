@@ -1,0 +1,27 @@
+{
+	"id": 170325280,
+	"number": 16653,
+	"state": "open",
+	"title": "cmd/compile: missed prove inferences with uint conversions",
+	"body": "[moved from private email with @brtzsnr]\r\n\r\nConsider [this code](https://play.golang.org/p/IkoGpJyE0Z), adapted from test/prove.go:\r\n\r\n```go\r\npackage p\r\n\r\nfunc f(a []int, i int) int {\r\n\tif i \u003e= 0 \u0026\u0026 i \u003c len(a) {\r\n\t\treturn a[i]\r\n\t}\r\n\tif i \u003e= 10 \u0026\u0026 i \u003c len(a) {\r\n\t\treturn a[i]\r\n\t}\r\n\treturn 0\r\n}\r\n\r\nfunc g(a []int, i int) int {\r\n\tif uint(i) \u003c uint(len(a)) {\r\n\t\treturn a[i]\r\n\t}\r\n\tif i \u003e= 10 \u0026\u0026 i \u003c len(a) {\r\n\t\treturn a[i]\r\n\t}\r\n\treturn 0\r\n}\r\n```\r\n\r\nFunctions f and g are equivalent. The only difference between them is the expression `i \u003e= 0 \u0026\u0026 i \u003c len(a)` in f vs `uint(i) \u003c uint(len(a))`. And these are equivalent, because we know that len(a) is non-negative. But compiling with `go tool compile -d=ssa/prove/debug=3 x.go`, we get:\r\n\r\n```\r\nx.go:5: Proved non-negative bounds IsInBounds\r\nx.go:8: Proved non-negative bounds IsInBounds\r\nx.go:15: Proved IsInBounds\r\nx.go:18: Disproved IsInBounds\r\n```\r\n\r\nGoing from \"x.go:5: Proved non-negative bounds IsInBounds\" to \"x.go:15: Proved IsInBounds\" is a bit unfortunate, but ok. Going from \"x.go:8: Proved non-negative bounds IsInBounds\" to \"x.go:18: Disproved IsInBounds\" seems incorrect.\r\n\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "brtzsnr",
+		"id": 57079,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-08-10T04:25:53Z",
+	"updated_at": "2016-08-10T19:05:51Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}
