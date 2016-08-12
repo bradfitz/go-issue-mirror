@@ -131,8 +131,8 @@ func (s issuesService) List(ctx context.Context, repo issues.RepoSpec, opt issue
 		for _, l := range issue.Labels {
 			color, err := ghColor(l.Color)
 			if err != nil {
-				// issuemirror doesn't seem to provide label colors now, so fall back to white.
-				color = issues.RGB{R: 255, G: 255, B: 255}
+				// issuemirror doesn't seem to provide label colors now, so fall back to a default light gray.
+				color = issues.RGB{R: 0xed, G: 0xed, B: 0xed}
 			}
 			labels = append(labels, issues.Label{
 				Name:  *l.Name,
