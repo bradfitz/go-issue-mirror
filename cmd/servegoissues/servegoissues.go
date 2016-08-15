@@ -30,10 +30,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// issuesapp requires an issues.Service and users.Service implementations.
 	// We provide a simple read-only implementation of issues.Service on top of root,
-	// and a no users service since this runs locally and doesn't need user authentication.
-	issuesApp := issuesapp.New(issuesService{root: root}, noUsersService{}, issuesapp.Options{
+	// and a nil users service since this runs locally and doesn't need user authentication.
+	issuesApp := issuesapp.New(issuesService{root: root}, nil, issuesapp.Options{
 		Context: func(req *http.Request) context.Context {
 			return context.TODO()
 		},
@@ -299,30 +298,4 @@ func ghColor(hex *string) (issues.RGB, error) {
 		return issues.RGB{}, fmt.Errorf("color value %q has unexpected format, error parsing: %v", *hex, err)
 	}
 	return c, nil
-}
-
-// noUsersService implements users.Service without any users.
-// There can never be an authenticated user either.
-type noUsersService struct{}
-
-// Get fetches the specified user.
-func (noUsersService) Get(ctx context.Context, user users.UserSpec) (users.User, error) {
-	return users.User{}, fmt.Errorf("%v not found, this is a users service that contains no users", user)
-}
-
-// GetAuthenticatedSpec fetches the currently authenticated user specification,
-// or UserSpec{ID: 0} if there is no authenticated user.
-func (noUsersService) GetAuthenticatedSpec(ctx context.Context) (users.UserSpec, error) {
-	return users.UserSpec{}, nil
-}
-
-// GetAuthenticated fetches the currently authenticated user,
-// or User{UserSpec: UserSpec{ID: 0}} if there is no authenticated user.
-func (noUsersService) GetAuthenticated(ctx context.Context) (users.User, error) {
-	return users.User{}, nil
-}
-
-// Edit the authenticated user.
-func (noUsersService) Edit(ctx context.Context, er users.EditRequest) (users.User, error) {
-	return users.User{}, errors.New("Edit is not implemented")
 }
