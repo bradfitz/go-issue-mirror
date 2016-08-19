@@ -39,3 +39,8 @@ func main() {
 	})
 }
 ```
+
+There is also a program that will display the issues in your browser.
+It will work when offline. Install it with
+`go get -u github.com/bradfitz/go-issue-mirror/cmd/servegoissues`,
+then run `servegoissues` and navigate to http://localhost:8080/ in your browser.
