@@ -1,0 +1,12 @@
+{
+	"id": 240704953,
+	"body": "As @ALTree said, we need some more information. Maybe you can also give us some more information about your CSV files, like the number of rows and columns.\r\n\r\nThere are currently no options that you could specify for better performance.\r\n\r\nThe internal reader used by encoding/csv uses a `bufio.Reader` with default buffer size (4096 bytes). You could try to wrap your reader with an `bufio.Reader` by using `bufio.NewReaderSize` with a bigger buffer size, but I don't except this to yield any nig performance gains as the reader only reads from an in-memory byte slice.\r\n\r\nMaybe you can try to read directly from the files, instead of reading them into memory first? This could reduce the memory usage (quite) a bit.\r\n\r\nI have a [CL open](https://golang.org/cl/24723) that optimizes the encoding/csv a bit by avoiding some allocations (basically reducing allocations from 1\\*columns\\*rows to 1\\*rows in your case). In a simple synthetic test reading ~15 million rows of CSV I got a 17% win with my CL.\r\n\r\nIf you have multiple files you could also try to parse them with multiple goroutines in parallel.",
+	"user": {
+		"login": "nuss-justin",
+		"id": 6443781,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-18T12:13:09Z",
+	"updated_at": "2016-08-18T12:17:10Z"
+}

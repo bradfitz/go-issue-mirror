@@ -1,7 +1,7 @@
 {
 	"id": 154879948,
 	"number": 15686,
-	"state": "open",
+	"state": "closed",
 	"title": "go/types: incorrect scope positioning for variables defined by RangeStmt",
 	"body": "In go/types/stmt.go:818,819, there's this code to handle declaring for a RangeStmt's Key and Value variables:\r\n\r\n    scopePos := s.End()\r\n    check.declare(check.scope, nil /* recordDef already called */, obj, scopePos)\r\n\r\nThis is wrong though, because s refers to the RangeStmt itself, so s.End() is the closing brace.  The consequence of this is if you try to use scope.LookupParent or types.Eval with a position inside the RangeStmt's block, it can't find the Key or Value variables.\r\n\r\nI think the correct fix is to use s.X.End() instead.\r\n\r\nReviewing other check.declare calls, I think type switches are technically mishandled too.  The spec says \"the variable is declared at the beginning of the implicit block in each clause\".  I believe that should be the position of the \"case\" or \"default\" keywords, or at least at or immediately after the colon; not at the start of the first statement within the body.\r\n\r\nThese are preexisting issues, but fixing them should be very non-intrusive, so I'm hopeful it can still make 1.7.\r\n\r\n/cc @griesemer @alandonovan ",
 	"user": {
@@ -16,9 +16,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 3,
+	"comments": 4,
+	"closed_at": "2016-08-18T20:07:30Z",
 	"created_at": "2016-05-14T22:58:45Z",
-	"updated_at": "2016-05-18T20:48:15Z",
+	"updated_at": "2016-08-18T20:07:30Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

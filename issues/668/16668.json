@@ -1,0 +1,22 @@
+{
+	"id": 170609913,
+	"number": 16668,
+	"state": "closed",
+	"title": "x/net/context/ctxhttp: implementation for \u003c1.7 may not be correct",
+	"body": "```\r\ngo version go1.6.3 darwin/amd64\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/megrez/Code/project/wosai/push/worker\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.6.3/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.6.3/libexec/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nI dont think the ctx implementation in go 1.6 is semantically correct `https://github.com/golang/net/blob/master/context/ctxhttp/ctxhttp_pre17.go`\r\n\r\nIt simply start a goroutine to do the request and discard response\r\n\r\nIt will send request first and the peer will receive the request and make response, which will make some mistake in some specific situations\r\n\r\nLike a MQ server will consider A client has been received message so that the message cannot be consumed by B client who should have received this message.\r\n\r\nconsider following flow:\r\n\r\n1. cancel `A` client, but the request `R` is under flying, for `R` is a blocking request\r\n2. start client `B` and send a message `M`\r\n3. `A` client may have chance to receive the message `M` for we cannot determine who will receive the message, so i have to wait all `A`'s requests fail then start B which may a waste of time\r\n",
+	"user": {
+		"login": "lujiajing1126",
+		"id": 2568208,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "WaitingForInfo"
+		}
+	],
+	"comments": 4,
+	"closed_at": "2016-08-12T13:06:01Z",
+	"created_at": "2016-08-11T10:01:18Z",
+	"updated_at": "2016-08-12T18:29:04Z"
+}

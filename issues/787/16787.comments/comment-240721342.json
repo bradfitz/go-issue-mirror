@@ -1,0 +1,12 @@
+{
+	"id": 240721342,
+	"body": "This is unfortunately just how Unix pipes work. You need to read from both pipes at the same time. What's happening is that `cat` is trying to write to stdout, but its attempt to write is blocked because the stdout buffer is full. You're trying to `ReadAll` from stderr, but stderr won't be closed until cat exits, which won't happen until it finishes writing to stdout. So, deadlock.\r\n\r\nThis is why `Command` provides `Output` and `CombinedOutput` methods; they are careful to always read from both pipes at once. If you want both stdout and stderr but not in the same byte slice, you can also do what `CombinedOutput` does under the covers and assign separate `bytes.Buffer` to `Stdout` and `Stderr`. Or you can just use Goroutines to read from both at once.",
+	"user": {
+		"login": "quentinmit",
+		"id": 115761,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-18T13:23:51Z",
+	"updated_at": "2016-08-18T13:23:51Z"
+}

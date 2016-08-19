@@ -1,0 +1,22 @@
+{
+	"id": 170996516,
+	"number": 16684,
+	"state": "closed",
+	"title": "cmd/compile: assume use of variable if explicitly assigned to _",
+	"body": "Using `Go1.7rc6`\r\n\r\nThe new SSA compiler is too smart ;)\r\n\r\nConsider the following benchmark:\r\n```go\r\nfunc ReverseUint64(v uint64) uint64 {\r\n\tv = (v\u00260xaaaaaaaaaaaaaaaa)\u003e\u003e1 | (v\u00260x5555555555555555)\u003c\u003c1\r\n\tv = (v\u00260xcccccccccccccccc)\u003e\u003e2 | (v\u00260x3333333333333333)\u003c\u003c2\r\n\tv = (v\u00260xf0f0f0f0f0f0f0f0)\u003e\u003e4 | (v\u00260x0f0f0f0f0f0f0f0f)\u003c\u003c4\r\n\tv = (v\u00260xff00ff00ff00ff00)\u003e\u003e8 | (v\u00260x00ff00ff00ff00ff)\u003c\u003c8\r\n\tv = (v\u00260xffff0000ffff0000)\u003e\u003e16 | (v\u00260x0000ffff0000ffff)\u003c\u003c16\r\n\tv = (v\u00260xffffffff00000000)\u003e\u003e32 | (v\u00260x00000000ffffffff)\u003c\u003c32\r\n\treturn v\r\n}\r\n\r\nfunc BenchmarkReverse64(b *testing.B) {\r\n\tu := uint64(0x123456789abcdef)\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tReverseUint64(u)\r\n\t}\r\n}\r\n```\r\n\r\nOn Go 1.6, this runs in 4.20ns/op, while on Go 1.7, this runs in 0.28ns/op. While this sounds wonderful, the problem is that the above benchmark is completely useless on Go 1.7.\r\n\r\nThe current compiler compiles the `BenchmarkReverse64` as the following:\r\n```\r\n\t0x0000 00000 (/tmp/sandbox508321108/main_test.go:21)\tMOVQ\t\"\".b+8(FP), AX\r\n\t0x0005 00005 (/tmp/sandbox508321108/main_test.go:21)\tMOVQ\t$0, CX\r\n\t0x0007 00007 (/tmp/sandbox508321108/main_test.go:21)\tMOVQ\t184(AX), DX\r\n\t0x000e 00014 (/tmp/sandbox508321108/main_test.go:21)\tCMPQ\tCX, DX\r\n\t0x0011 00017 (/tmp/sandbox508321108/main_test.go:21)\tJGE\t$0, 34\r\n\t0x0013 00019 (/tmp/sandbox508321108/main_test.go:21)\tINCQ\tCX\r\n\t0x0016 00022 (/tmp/sandbox508321108/main_test.go:21)\tMOVQ\t184(AX), DX\r\n\t0x001d 00029 (/tmp/sandbox508321108/main_test.go:21)\tCMPQ\tCX, DX\r\n\t0x0020 00032 (/tmp/sandbox508321108/main_test.go:21)\tJLT\t$0, 19\r\n```\r\nwhich completely eliminates all of the code worth benchmarking.\r\n\r\nThe optimizations that the current compiler does is reasonable, IMHO. So I tried adjusting my benchmark to the following:\r\n```\r\nfunc BenchmarkReverse64(b *testing.B) {\r\n\tu := uint64(0x123456789abcdef)\r\n\tvar v uint64\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tv += ReverseUint64(u)\r\n\t}\r\n\t_ = v\r\n}\r\n```\r\nMy goal was to try and use the result of `ReverseUint64` to defeat the optimization. However, the optimizations still occurred and the benchmark measures pretty much nothing.\r\n\r\nIn order to finally get it to measure properly I did the following hack:\r\n```\r\nfunc BenchmarkReverse64(b *testing.B) {\r\n\tu := uint64(0x123456789abcdef)\r\n\tvar v uint64\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tv += ReverseUint64(u)\r\n\t}\r\n\tif \u0026v == nil {\r\n\t\tb.Log(v) // Ensure that the compiler thinks that v is being used.\r\n\t}\r\n}\t\r\n```\r\nHowever, this is clunky and not very intuitive.\r\n\r\nI propose that the assignment of a variable to `_` by itself indicates that the variable is being used, and this prevents whatever optimization is screwing with benchmarks.\r\n\r\n/CC @randall77 @dr2chase @cherrymui \r\n",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-08-13T17:09:06Z",
+	"created_at": "2016-08-13T06:48:07Z",
+	"updated_at": "2016-08-13T21:05:51Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

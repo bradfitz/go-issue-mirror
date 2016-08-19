@@ -1,0 +1,12 @@
+{
+	"id": 240804106,
+	"body": "Okay, I have a fuzzy theory, so let's just use this bug, since it was never fixed anyway.\r\n\r\nThe crash is because `persistConn.t` is nil and we're crashing on the mutex Lock line here:\r\n\r\n```go\r\nfunc (pc *persistConn) closeConnIfStillIdle() {\r\n        t := pc.t\r\n        t.idleMu.Lock()  // \u003c--- BOOM, because t == nil\r\n```\r\n\r\nAs far as I can tell, the only place where`t` is nil (since it's never set to nil once created) is in the HTTP/2 (`alt`) path:\r\n\r\n```go\r\n   return \u0026persistConn{alt: next(cm.targetAddr, pconn.conn.(*tls.Conn))}, nil\r\n```\r\n\r\nSo somehow that `persistConn` is getting into the `tryPutIdleConn` path. I suspect it's via `t.putOrCloseIdleConn`, in this path:\r\n\r\n```go\r\n        handlePendingDial := func() {\r\n                testHookPrePendingDial()\r\n                go func() {\r\n                        if v := \u003c-dialc; v.err == nil {\r\n                                t.putOrCloseIdleConn(v.pc)  // \u003c--- here\r\n                        }\r\n                        testHookPostPendingDial()\r\n                }()\r\n        }\r\n``` \r\n\r\nI don't have a repro yet, but it looks suspicious.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-18T17:57:19Z",
+	"updated_at": "2016-08-18T17:57:19Z"
+}

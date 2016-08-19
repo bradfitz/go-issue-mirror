@@ -1,0 +1,12 @@
+{
+	"id": 239537401,
+	"body": "So...\r\n\r\n```go\r\n// NextResultSet prepares *Rows for the next result set and returns true.\r\n// If there are no more result sets it returns false.\r\nfunc (r *Rows) NextResultSet() bool\r\n```\r\n\r\nBut you probably don't want to use an enclosing `for { ... }` loop though as you will likely have to keep track of which result set your are processing as you'll likely be (using your example at the top) Scaning into different structs depending on which result set you are processing. So probably more like\r\n\r\n```go\r\nfunc DoQuery() error {\r\n  rows, err := db.Query(\"query with 2 result sets\")\r\n  if err != nil {\r\n    return err\r\n  }\r\n  defer rows.Close()\r\n  // Handle result set 1\r\n  for rows.Next() {\r\n    if err := rows.Scan(\u0026structTypeA); err != nil {\r\n      return err\r\n    }\r\n    ...\r\n  }\r\n  if err := rows.Err(); err != nil {\r\n    return err\r\n  }\r\n  if !rows.NextResultSet() {\r\n    panic(\"Expected more rows!\")\r\n  }\r\n  for rows.Next() {\r\n    if err := rows.Scan(\u0026structTypeB); err != nil {\r\n      return err\r\n    }\r\n    ...\r\n  }\r\n  if err := rows.Err(); err != nil {\r\n    return err\r\n  }\r\n  if rows.NextResultSet() {\r\n    panic(\"Didn't export more rows!\")\r\n  }\r\n}\r\n```",
+	"user": {
+		"login": "freeformz",
+		"id": 103,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-12T19:22:13Z",
+	"updated_at": "2016-08-12T19:22:57Z"
+}

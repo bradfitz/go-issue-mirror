@@ -1,0 +1,32 @@
+{
+	"id": 171958407,
+	"number": 16794,
+	"state": "open",
+	"title": "spec: implementation and spec differ w/ respect to scope of implicit type switch vars",
+	"body": "Per the spec:\r\n\r\nThe TypeSwitchGuard may include a short variable declaration. When that form is used, the variable is declared at the beginning of the implicit block in each clause. (https://tip.golang.org/ref/spec#Switch_statements)\r\n\r\nand:\r\n\r\nEach clause in a \"switch\" or \"select\" statement acts as an implicit block. (https://tip.golang.org/ref/spec#Blocks)\r\n\r\nwith:\r\n```\r\nTypeCaseClause  = TypeSwitchCase \":\" StatementList .\r\nTypeSwitchCase  = \"case\" TypeList | \"default\" .\r\n```\r\n\r\nThus, the variable is declared at the position of the `case`. However, that is not what the compilers (nor go/types) do. The following program is accepted:\r\n```\r\n    package main\r\n    func main() {\r\n        var x interface{} = 42\r\n        switch int := x.(type) {\r\n        case int: // \u003c\u003c\u003c this 'int' refers to the predeclared type int\r\n            println(int)\r\n        }\r\n    }\r\n```\r\nPer the spec, the `int` in the case clause would have to be the implicitly declared variable `int`.\r\n\r\nChange the spec as follows (suggestion):\r\n\r\nThe TypeSwitchGuard may include a short variable declaration. When that form is used, the variable is declared at the end of each TypeSwitchCase in each clause.\r\n\r\n(This form matches variable declarations where variables also get declared at the end of the respective VarSpec.)\r\n\r\n(issue identified and change suggested by @mdempsky)\r\n",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-08-18T17:38:55Z",
+	"updated_at": "2016-08-18T21:00:35Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 240602257,
+	"body": "The code you disassembled in\nhttps://github.com/golang/go/issues/11058#issuecomment-167939906\nlooked safe to call from Go stack, however, it didn't show the whole\nfunction.\n\nFor example, when the TLS index is bigger than or equal to 0x40,\nit jumps to 0x7c845054.\n\nWhat does code at that location look like? I imagine code there\nprobably need to check and allocate new storage for TLS, and that\ncould easily overflow the limited Go stack lead to hard to diagnose\nproblems that are hard to reproduce too (the TLS index must be\nlarge enough to trigger the alternate code path, which usually\nmeans the problem won't manifest in simple test case.)\n\nOf course, we can check the TLS index ourselves and switch to\nsystem stack to call TlsGetValue when it's too big, however, this\ndesign looks pretty fragile to me. (We make assumption on:\n1. the threshold for TLS index values, and\n2. TlsGetValue is safe to call on Go stack when TLS index is less\nthan the assumed threshold.)\n\nRegarding two separate TLS mechanism for Windows exe and\nDLLs, I think that's hard to maintain and if we don't good test\ncoverage of the DLL tests, it's bound to bit rot.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-18T01:54:16Z",
+	"updated_at": "2016-08-18T01:54:16Z"
+}

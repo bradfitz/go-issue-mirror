@@ -1,0 +1,12 @@
+{
+	"id": 240012528,
+	"body": "A `Result` struct containing either `*TestResult` or `*BenchmarkResult`, with optional `*CoverageResult` SGTM.\r\n\r\nI assume by encapsulating any test program output you imply to replace os.Std{out,err} with `os.Pipe`s (too bad they are not io.Writer), encapsulate the output with JSON object and write JSON objects to real stdout/stderr. We cannot associate these objects with any tests because it won't work in parallel test execution case. This SGTM too.\r\n\r\nOverall it sounds like the `Result` struct is going look like\r\n\r\n```go\r\ntype Result struct {\r\n    Name  string\r\n    State State\r\n    Procs int    // The value of runtime.GOMAXPROCS for this benchmark run.\r\n    Log   string // The log created by calling (*B).Log and (*B).Logf.\r\n\r\n    // these two fields are mutually exclusive\r\n    Test *TestResult\r\n    Benchmark *BenchmarkResult\r\n\r\n    CoverageMode string\r\n    TotalStatements  int64\r\n    ActiveStatements int64\r\n    CoveredPackages  []string\r\n\r\n    Stdout string\r\n    Stderr string\r\n}\r\n```\r\n\r\nwhere `Stdout` or `Stderr` is non-zero only when something is written to os.Stdout/os.Stderr. If any of them are non-zero, the rest of the fields must be zero.\r\n\r\nThis struct is not idiomatic at all, rather tailored to a simple JSON output format, so maybe we should not give it a more concrete name than generic \"Result\".\r\n\r\nApologies for the delay.",
+	"user": {
+		"login": "nodirt",
+		"id": 643254,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-16T06:13:46Z",
+	"updated_at": "2016-08-16T06:13:46Z"
+}

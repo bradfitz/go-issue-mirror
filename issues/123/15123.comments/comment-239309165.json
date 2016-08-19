@@ -1,0 +1,12 @@
+{
+	"id": 239309165,
+	"body": "@bradfitz \r\n\r\nContext is a great fit for sql. Almost all rdbms have a query cancel method and all databases need to ensure their connections are returned to the pool when the request is finished.\r\n\r\nOne option I could see is in sql.DB add a `Ctx(context.Context) *sql.DB` method who'd methods use a context under the covers.\r\n\r\nIn the driver you might need new interfaces that could be tested for, such as\r\n```\r\ntype ConnCtx interface {\r\n        PrepareCtx(ctx context.Context, query string) (sql.Stmt, error)\r\n        CloseCtx(ctx context.Context) error\r\n        BeginCtx(ctx context.Context) (sql.Tx, error)\r\n}\r\ntype DriverCtx interface {\r\n        OpenCtx(ctx context.Context, name string) (Conn, error)\r\n}\r\ntype ExecerCtx interface {\r\n        ExecCtx(ctx context.Context, query string, args []Value) (Result, error)\r\n}\r\ntype QueryerCtx interface {\r\n        QueryCtx(ctx context.Context, query string, args []Value) (Rows, error)\r\n}\r\ntype StmtCtx interface {\r\n        CloseCtx(ctx context.Context) error\r\n        ExecCtx(ctx context.Context, args []Value) (Result, error)\r\n        QueryCtx(ctx context.Context, args []Value) (Rows, error)\r\n}\r\ntype TxCtx interface {\r\n        CommitCtx(ctx context.Context) error\r\n        RollbackCtx(ctx context.Context) error\r\n}\r\n```\r\n\r\nDoes that sound about right?",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-11T22:11:11Z",
+	"updated_at": "2016-08-11T22:11:11Z"
+}

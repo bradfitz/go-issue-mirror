@@ -1,0 +1,12 @@
+{
+	"id": 239668908,
+	"body": "The problem doesn't seem to be caused by not using TLS. I've just re-tested with the following code, and an 'https://' URL, but keep having the same issues. \r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"time\"\r\n\r\n\t\"golang.org/x/net/http2\"\r\n)\r\n\r\nconst cHTTPRequestURL = \"https://EXAMPLE.com/test.pasf\"\r\nconst cNumberOfRequests = 20\r\n\r\nfunc main() {\r\n\thttp2.VerboseLogs = true\r\n\ttransport := \u0026http2.Transport{}\r\n\thttpClient := http.Client{Transport: transport}\r\n\r\n\tcount := 0\r\n\r\n\trequests := make([]chan struct{}, cNumberOfRequests)\r\n\tfor i := 0; i \u003c cNumberOfRequests; i++ {\r\n\t\thttpRequest, _ := http.NewRequest(\"GET\", cHTTPRequestURL, nil)\r\n\t\trequests[i] = make(chan struct{})\r\n\t\thttpRequest.Cancel = requests[i]\r\n\t\tgo httpDo(httpClient, httpRequest, count)\r\n\t\tcount++\r\n\t}\r\n\tfor i := 0; i \u003c cNumberOfRequests; i++ {\r\n\t\tclose(requests[i])\r\n\t}\r\n\ttime.Sleep(time.Duration(10) * time.Second)\r\n}\r\n\r\nfunc httpDo(client http.Client, httpRequest *http.Request, count int) {\r\n\tlog.Printf(\"Requesting...%d\\n\", count)\r\n\tresponse, httpError := client.Do(httpRequest)\r\n\tif httpError != nil {\r\n\t\tlog.Printf(\"HTTP Error %d: %s\\n\", count, httpError)\r\n\t\treturn\r\n\t}\r\n\tdefer response.Body.Close()\r\n\r\n\tvar ioErr error\r\n\t_, ioErr = ioutil.ReadAll(response.Body)\r\n\r\n\tif ioErr != nil {\r\n\t\tlog.Printf(\"Body read error %d: %s\\n\", count, ioErr)\r\n\t\treturn\r\n\t}\r\n\tlog.Printf(\"Done %d\\n\", count)\r\n\treturn\r\n}\r\n```\r\n\r\nClient log: http://pastebin.com/tJSGLfMp\r\nServer log: http://pastebin.com/7ivBC5TM\r\n\r\nLet me know if I can help by providing a server for you to test against. ",
+	"user": {
+		"login": "rayvbr",
+		"id": 1939375,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-14T11:33:56Z",
+	"updated_at": "2016-08-14T11:33:56Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 239173350,
+	"body": "@alexbrainman \r\n\r\n\u003eIf window XP doesn't reserve symbolic tag, there are possibility to make same structure as a malformed data. And if we transfer that file to windows 10 (I don't know it is possible or not),\r\nwe can propagate malformed data. Or there is a something easier way to make malformed input on windows 10. I just want an evidence for necessity of validation. \r\n\r\nI've retried it.\r\nHere, I call \"an invalid symlink\" as a reparse point its SubstituteNameOffset exceeds  PathBuffer's size.\r\nFirst, I tried `BackupWrite` to create an invalid symlink instead of using `DeviceIoControl` on Windows 10. But results are nothing changed. It can create a normal symlink, can't create an invalid symlink. So I gave up making an invalid symlink on Windows 10.\r\nSecond, I tried to create an invalid symlink on Windows XP, and it succeeded.\r\nThird,  I mounted the drive (which contains invalid symlinks) on Windows 10.\r\nI called `os.Readlink` with an invalid symlink, and I saw `ERROR_INVALID_REPARSE_DATA`.\r\n\r\nSummary:\r\n\r\n* `DeviceIoControl` validate both input/output data. Therefore, `syscall.Readlink` doesn't panic even without validation. (If `DeviceIoControl`'s validation covered all cases. As I said MSDN doesn't explain validation behaviors)\r\n* On Windows XP, it can panics. (I know `os.Readlink` on XP isn't useful, though)\r\n\r\nSo, I failed to collect good evidences for implementing our own validation.\r\n\r\nI still think we should validate it, and there are similar issues that their CLs are without testing.\r\n#16475 #15653\r\n\r\nI'll let you decide what to do.\r\n\r\n\u003eWhat validation do you propose we add?\r\n\r\n* ensure that input data size is greater or equal to 20 (header size)\r\n* ensure that input data size is greater or equal to 8 + ReparseDataLength\r\n* ensure that XXXOffset, XXXLength are even number.\r\n* ensure that XXXOffset+XXXLength doesn't exceed PathBuffer's size\r\n\r\nThank you.",
+	"user": {
+		"login": "hirochachacha",
+		"id": 898442,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-11T14:14:48Z",
+	"updated_at": "2016-08-11T14:14:48Z"
+}

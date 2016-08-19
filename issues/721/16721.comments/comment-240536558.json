@@ -1,0 +1,12 @@
+{
+	"id": 240536558,
+	"body": "OK, so I made a prototype implementation that accepts a comparison function whose arguments are pointers to the slice elements, not indices. Here's the implementation:\r\n* [sort.go](https://gist.github.com/joshlf/fa6eb5f52069c882e09d2819c01e7a19)\r\n* [sort_test.go](https://gist.github.com/joshlf/2fc41e13ff18debb48a6a2c3539c8523)\r\n\r\nThe signature is:\r\n\r\n```\r\n// Sort sorts the slice using less as the comparison\r\n// function. slice must be a slice type, and less must\r\n// be a function which takes two arguments - both poiners\r\n// to slice's element type - and returns a bool.\r\n// Effectively, the type signature is:\r\n//  Sort(slice []T, less func(*T, *T) bool)\r\nfunc Sort(slice, less interface{})\r\n```\r\n\r\nThe performance is actually decent - using this `Sort` function takes ~170% as long as `sort.Sort` in the stdlib (see `sort_test.go` linked above). Here are the exact measurements:\r\n\r\n```\r\nBenchmarkSort-4              \t  100000\t     13367 ns/op\r\nBenchmarkNativeSort-4        \t  200000\t      7612 ns/op\r\nBenchmarkSortPerOp-4         \t 5000000\t       374 ns/op\r\nBenchmarkNativeSortPerOp-4   \t10000000\t       250 ns/op\r\n```\r\n\r\nUnder the hood, the implementation does two key things: First, it generates and caches sort implementations by type (similar to, for example, `encoding/json`). Second, it uses `unsafe` to avoid expensive reflection logic. I'm not too proficient with the details of how to do this reliably, so there are probably issues, but I'm sure someone who's better at this could modify the implementation so that it is guaranteed to work properly (e.g., guarantee that the GC won't be confused by what we're doing).\r\n\r\nThoughts?",
+	"user": {
+		"login": "joshlf",
+		"id": 1046063,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-17T20:25:56Z",
+	"updated_at": "2016-08-17T20:25:56Z"
+}

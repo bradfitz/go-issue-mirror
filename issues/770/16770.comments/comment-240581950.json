@@ -1,0 +1,12 @@
+{
+	"id": 240581950,
+	"body": "Here's what I think is happening here.  Go builds `go/src/crypto/x509/root_cgo_darwin.go` with:\r\n\r\n```\r\n-mmacosx-version-min=10.6\r\n```\r\n\r\nThis means that any code added after 10.6 gets a weak link.  That's (one of) the things that the new linker flag disallows.\r\n\r\nIf I'm understanding the Go code correctly, it makes sense that Go does this because (a) it is building content that it'll static link into the binaries it produces, which should deploy back to 10.6 and (b) it has a check before its use of `SecCertificateCopyNormalizedIssuerContent` to fallback to an older path on older OS, which is the correct way to use a weak link.\r\n\r\nIn general, disallowing weak links in homebrew makes sense because you are building software to run on the current machine and by-far most software homebrew builds isn't expecting weak link behavior.  But, building what's essentially a compiler runtime isn't one of those cases.  I think homebrew will have to opt go out of this behavior.\r\n\r\n(For context, the goal of -no_weak_imports is to improve the case that you are building software to run on the exact minimum deployment target you specify by moving runtime errors to compile time, where autoconf and/or the developer/packager can deal with them.  Go (correctly) setting an old target subverts that.)",
+	"user": {
+		"login": "achivetta",
+		"id": 56388,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-17T23:37:19Z",
+	"updated_at": "2016-08-17T23:37:19Z"
+}

@@ -1,0 +1,17 @@
+{
+	"id": 171312278,
+	"number": 16716,
+	"state": "closed",
+	"title": "net/http: `dns-should-not-resolve.golang` DNS record found in the `4.2.2.2` DNS server.",
+	"body": "Building go 1.7 with `all.bash` on osx/amd64, I noticed the following fail in the `net/http` package:\r\n\r\n```\r\n--- FAIL: TestTransportEventTraceRealDNS (0.06s)\r\n\ttransport_test.go:3386: expected error during DNS lookup\r\nFAIL\r\n```\r\n\r\nI dumped the `httptrace` used in the request that failed and found:\r\n\r\n```\r\n2016/08/15 22:23:02 DNSStart: {Host:dns-should-not-resolve.golang}\r\n2016/08/15 22:23:02 DNSDone: {Addrs:[{IP:198.105.244.11 Zone:} {IP:198.105.254.11 Zone:}] Err:\u003cnil\u003e Coalesced:false}\r\n2016/08/15 22:23:02 ConnectStart: tcp 198.105.244.11:80\r\n2016/08/15 22:23:02 ConnectDone: tcp 198.105.244.11:80 \u003cnil\u003e\r\n```\r\n\r\nSeeing that the DNS was resolving I tested further with nslookup and discovered the DNS server I had been using (4.2.2.2) contained an entry.  \r\n\r\n```\r\njason@mba ~ : nslookup dns-should-not-resolve.golang\r\nServer:\t\t4.2.2.2\r\nAddress:\t4.2.2.2#53\r\n\r\nNon-authoritative answer:\r\nName:\tdns-should-not-resolve.golang\r\nAddress: 198.105.244.11\r\nName:\tdns-should-not-resolve.golang\r\nAddress: 198.105.254.11\r\n```\r\n\r\nChanging the DNS server to a different provider (8.8.8.8) showed no entry.\r\n\r\n```\r\njason@mba ~ : nslookup dns-should-not-resolve.golang\r\nServer:\t\t8.8.8.8\r\nAddress:\t8.8.8.8#53\r\n\r\n** server can't find dns-should-not-resolve.golang: NXDOMAIN\r\n```\r\n\r\nThis error has prevented my `all.bash` tests from passing.  I'm not sure if there's a responsibility here to write tests that cannot be spoofed.  What is the course to take?\r\n\r\n",
+	"user": {
+		"login": "jasonmoo",
+		"id": 242808,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-08-16T07:11:17Z",
+	"created_at": "2016-08-16T02:53:54Z",
+	"updated_at": "2016-08-16T14:52:21Z"
+}

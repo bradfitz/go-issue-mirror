@@ -1,7 +1,7 @@
 {
 	"id": 167765483,
 	"number": 16510,
-	"state": "open",
+	"state": "closed",
 	"title": "x/net/http2: one slow stream may block all other steams in the same connection",
 	"body": "\r\nRef: https://github.com/golang/go/issues/16481\r\n\r\n[h2test.tar.gz](https://github.com/golang/go/files/385278/h2test.tar.gz)\r\nHere is a test to produce the bug, you can change the bad handler (h2bad) to a slow consumer instead of stalling:\r\n\r\n```go\r\nfunc h2good(w http.ResponseWriter, r *http.Request) {\r\n    buf := make([]byte, 10)\r\n    for {\r\n        n,err := r.Body.Read(buf)\r\n        if err != nil {\r\n            return\r\n        }\r\n        time.Sleep(1*time.Second)\r\n        log.Println(\"h2good read\", n)\r\n    }\r\n}\r\n```\r\n\r\nFrom rfc7540:\r\n5.2. Flow Control\r\n\"A flow-control scheme ensures that streams on the same connection do not destructively interfere with each other. \"\r\n\r\nThis is a real world case, a steam with a slow consumer (for example, the handler can't consume data fast enough) can block all other steams in the same connection, even if the connection is wide open and have lots of available bandwidth.\r\n\r\nHere is a suggested fix:\r\n\r\n```patch\r\ndiff --git a/http2/server.go b/http2/server.go\r\nindex f368738..b924c3d 100644\r\n--- a/http2/server.go\r\n+++ b/http2/server.go\r\n@@ -1277,6 +1277,9 @@ func (sc *serverConn) processSettingInitialWindowSize(val uint32) error {\r\n\r\n func (sc *serverConn) processData(f *DataFrame) error {\r\n        sc.serveG.check()\r\n+       if len(f.Data()) \u003e 0 {\r\n+               sc.sendWindowUpdate(nil, len(f.Data())) // conn-level\r\n+       }\r\n        // \"If a DATA frame is received whose stream is not in \"open\"\r\n        // or \"half closed (local)\" state, the recipient MUST respond\r\n        // with a stream error (Section 5.4.2) of type STREAM_CLOSED.\"\r\n@@ -1764,7 +1767,7 @@ func (sc *serverConn) noteBodyReadFromHandler(st *stream, n int) {\r\n\r\n func (sc *serverConn) noteBodyRead(st *stream, n int) {\r\n        sc.serveG.check()\r\n-       sc.sendWindowUpdate(nil, n) // conn-level\r\n+       //sc.sendWindowUpdate(nil, n) // conn-level\r\n        if st.state != stateHalfClosedRemote \u0026\u0026 st.state != stateClosed {\r\n                // Don't send this WINDOW_UPDATE if the stream is closed\r\n                // remotely.\r\n```\r\n\r\nThe problem is that current implementation sends window update for both connection level and stream level when data is read by handler. The correct way should be to only send window update for steam level when data is read by handler, send connection level window update as soon as a data frame is received, doesn't matter if it is delivered of discarded.",
 	"user": {
@@ -10,14 +10,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"labels": [
-		{
-			"name": "WaitingForInfo"
-		}
-	],
-	"comments": 4,
+	"comments": 5,
+	"closed_at": "2016-08-16T16:40:11Z",
 	"created_at": "2016-07-27T04:01:15Z",
-	"updated_at": "2016-07-27T07:26:17Z",
+	"updated_at": "2016-08-16T16:40:11Z",
 	"milestone": {
 		"id": 1067491,
 		"number": 22,

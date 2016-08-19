@@ -1,0 +1,16 @@
+{
+	"id": 240384599,
+	"body": "I also dislike that we need top-level types to use sorting. I like the suggestion to eliminate this. Like @robpike I don't think that it happens often enough that I'm terribly concerned about the pure typing effort.\r\n\r\nI dislike this particular proposal, because a) it suggests that using interface{} to circumvent the type system is a good way to implement generic functions, which will lead to people doing it much more than before and b) it uses \"magic\" that is approximately only available to the stdlib to do that, so it excludes people wanting to imitate this methodology. I'd consider `sort` to be a \"normal\" stdlib package (as opposed to, e.g. `syscall`, `runtime` or `os/exec`), one that shouldn't use tricks to work with the runtime and should be possible to write as a stand-alone package. I don't thinks that's feasible with this proposal, because as you pointed out to get similar performance you need to cooperate with the GC, which is only really feasible for stdlib packages that are released in lockstep with go versions.\r\n\r\nIn short: People will complain about the go authors wanting generics themselves and cheating the type system, but not allowing them to do the same.\r\n\r\nAs an alternative, it could be considered to provide this in `sort`:\r\n\r\n```go\r\ntype LocalSorter struct {\r\n\tLen  int\r\n\tSwap func(i, j int)\r\n\tLess func(i, j int) bool\r\n}\r\n\r\nfunc (s LocalSorter) Len() int { return s.Len }\r\n\r\nfunc (s LocalSorter) Swap(i, j int) { l.Swap(i, j) }\r\n\r\nfunc (s LocalSorter) Less(i, j int) bool { return l.Less(i, j) }\r\n```\r\n\r\n(the type name is… arbitrary. Couldn't come up with a good one in 15s). It's trivial, doesn't eliminate the same amount of duplication and it can be easily provided by an external library too, but it allows using `sort` for custom slices without needing package-scoped types at least, thus partially addressing the motivation for this proposal (and the part I, personally at least, care about).\r\n\r\nIf go goes the way of this proposal, I'd like to see the kind of magic it employs to speed up the `interface{}` workaround so that third parties can use it too (as I don't know how that magic looks, I don't know if there'd be a sensible API for that).",
+	"user": {
+		"login": "Merovius",
+		"id": 720787,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-08-17T11:26:53Z",
+	"updated_at": "2016-08-17T11:26:53Z"
+}

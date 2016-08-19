@@ -1,0 +1,27 @@
+{
+	"id": 170925867,
+	"number": 16679,
+	"state": "open",
+	"title": "spec: clarify acceptable indices in array/slice composite literals",
+	"body": "Per the spec:\r\n\"An element with a key uses the key as its index; the key must be a constant integer expression.\" (https://golang.org/ref/spec#Composite_literals).\r\n\r\nIt's not clear if this permits untyped constant expressions that are representable as integers, or if the constant must be of integer type. gccgo and go/types accept constant indices that are representable as ints; cmd/compile does not. For:\r\n```\r\npackage p\r\nvar a []int = []int{-1: 1}\r\nvar b []int = []int{2.0: 2}\r\nvar c []int = []int{2i: 3}\r\nvar d []int = []int{\"a\": 4}\r\nvar e []int = []int{3 + 0i: 3}\r\n```\r\ngccgo reports:\r\n```\r\nx.go:2:21: error: index expression is negative\r\n var a []int = []int{-1: 1}\r\n                     ^\r\nx.go:4:21: error: index expression is not integer constant\r\n var c []int = []int{2i: 3}\r\n                     ^\r\nx.go:5:22: error: index expression is not integer constant\r\n var d []int = []int{\"a\": 4}\r\n                      ^\r\n```\r\ngotype reports:\r\n```\r\nx.go:2:21: invalid argument: index -1 (constant of type int) must not be negative\r\nx.go:4:21: 2i (untyped complex constant (0 + 2i)) truncated to int\r\nx.go:5:21: cannot convert \"a\" (untyped string constant) to int\r\n```\r\ncmd/compile doesn't accept any of these.\r\n\r\nSince cmd/compile (and gccgo and gotype) accept untyped constant index expressions that are representable as (positive) ints in regular index and slice expressions, it makes sense to accept them as composite literal indices for consistency.\r\n\r\nSee also #16439 and #4532 .",
+	"user": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "griesemer",
+		"id": 8528975,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-08-12T18:01:22Z",
+	"updated_at": "2016-08-12T18:01:28Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

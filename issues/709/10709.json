@@ -1,7 +1,7 @@
 {
 	"id": 73456546,
 	"number": 10709,
-	"state": "open",
+	"state": "closed",
 	"title": "go/types: recursive functions cause broken InitOrder",
 	"body": "If you have a recursive function called in an `init` function (or toplevel `var` block), the parsed `InitOrder` can be broken.  It will report that some variables should be initialized before their dependencies.\r\n\r\nFor example, in `program.go` below, we have two variables: `m` and `fooInst`.  The variable `m` depends on `fooInst`, and `fooInst` is the result of a recursive function call.\r\n\r\n```\r\npackage program\r\n\r\nvar (\r\n\tm       = fooInst.Method()\r\n\tfooInst = newFoo()\r\n)\r\n\r\ntype Foo struct{}\r\n\r\nfunc (t *Foo) Method() bool {\r\n\treturn true\r\n}\r\n\r\nfunc newFoo() *Foo {\r\n\treturn newFoo()\r\n}\r\n```\r\n\r\nThe initialization order should be `fooInst` then `m`.\r\n\r\nHowever, after parsing `program.go` with `parser.ParseFile` and then calling `config.Check`, the resulting `InitOrder` has `m` initialized before `fooInst`.\r\n\r\nHere is the parsing program I used:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"go/ast\"\r\n\t\"go/parser\"\r\n\t\"go/token\"\r\n\t\"golang.org/x/tools/go/types\"\r\n)\r\n\r\nfunc main() {\r\n\tfset := token.NewFileSet()\r\n\r\n\tf, err := parser.ParseFile(fset, \"program.go\", nil, 0)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tinfo := \u0026types.Info{}\r\n\tconfig := types.Config{}\r\n\r\n\t_, err = config.Check(\"\", fset, []*ast.File{f}, info)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tfor k, v := range info.InitOrder {\r\n\t\tfmt.Printf(\"Initializer #%v: %v\\n\", k, v)\r\n\t}\r\n}\r\n```\r\n\r\nAnd the output:\r\n```\r\nInitializer #0: m = fooInst.Method()\r\nInitializer #1: fooInst = newFoo()\r\n```\r\n\r\nThis order is clearly broken, since `m` cannot be initialized before `fooInst`.\r\n\r\n(All tests done with go version go1.4 linux/amd64)\r\n",
 	"user": {
@@ -17,8 +17,9 @@
 		"site_admin": false
 	},
 	"comments": 5,
+	"closed_at": "2016-08-16T00:18:26Z",
 	"created_at": "2015-05-05T22:57:14Z",
-	"updated_at": "2016-06-15T02:00:19Z",
+	"updated_at": "2016-08-16T00:18:26Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

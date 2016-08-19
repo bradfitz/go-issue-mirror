@@ -1,0 +1,12 @@
+{
+	"id": 240559329,
+	"body": "After playing around for a bit, I believe I've found the problem.\r\n\r\nBoltDB allocates byte slices for some structs, and uses a marker field on the end of the page type to indicate where the key/value pairs for that page start being stored. In the case that the page has no key/value pairs, it allocates less space than for the entire struct. Later, we construct a slice pointing at that last marker field. Since there were no key/value pairs, the slice is unused, but under the SSA code, something attempts to do a read anyway. When the allocated memory happens to end right at some unmapped memory or something, a SIGBUS happens.\r\n\r\nIt seems like the main take away is that before it wasn't a problem to create a slice pointing past some allocation, but now it is. No idea if that's intended behavior, or whatever.",
+	"user": {
+		"login": "zeebo",
+		"id": 96925,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-17T21:46:34Z",
+	"updated_at": "2016-08-17T21:46:34Z"
+}

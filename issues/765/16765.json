@@ -1,0 +1,27 @@
+{
+	"id": 171712039,
+	"number": 16765,
+	"state": "closed",
+	"title": "cmd/compile: elide write barriers for pointer swaps",
+	"body": "This might be hard to accomplish, but consider:\r\n\r\n```go\r\npackage p\r\n\r\nfunc f(s []*int, i, j int) {\r\n\ts[i], s[j] = s[j], s[i]\r\n}\r\n```\r\n\r\nThis generates two `writebarrierptr` calls. But since no actual pointers were harmed in the making of this swap, it seems to me that ought to be doable with no write barriers at all.\r\n\r\nThat would transform this:\r\n\r\n```\r\n\"\".f t=1 size=202 args=0x28 locals=0x28\r\n\t0x0000 00000 (x.go:3)\tTEXT\t\"\".f(SB), $40-40\r\n\t0x0000 00000 (x.go:3)\tMOVQ\t(TLS), CX\r\n\t0x0009 00009 (x.go:3)\tCMPQ\tSP, 16(CX)\r\n\t0x000d 00013 (x.go:3)\tJLS\t192\r\n\t0x0013 00019 (x.go:3)\tSUBQ\t$40, SP\r\n\t0x0017 00023 (x.go:3)\tMOVQ\tBP, 32(SP)\r\n\t0x001c 00028 (x.go:3)\tLEAQ\t32(SP), BP\r\n\t0x0021 00033 (x.go:3)\tFUNCDATA\t$0, gclocals·943e4296f97f1071542b1de0f5e26987(SB)\r\n\t0x0021 00033 (x.go:3)\tFUNCDATA\t$1, gclocals·c2934d28c868ce52e67cf0667b9c3035(SB)\r\n\t0x0021 00033 (x.go:4)\tMOVQ\t\"\".i+72(FP), AX\r\n\t0x0026 00038 (x.go:4)\tMOVQ\t\"\".s+56(FP), CX\r\n\t0x002b 00043 (x.go:4)\tCMPQ\tAX, CX\r\n\t0x002e 00046 (x.go:4)\tJCC\t$0, 185\r\n\t0x0034 00052 (x.go:4)\tMOVQ\t\"\".s+48(FP), DX\r\n\t0x0039 00057 (x.go:4)\tMOVQ\t(DX)(AX*8), BX\r\n\t0x003d 00061 (x.go:4)\tMOVQ\tBX, \"\".autotmp_1+24(SP)\r\n\t0x0042 00066 (x.go:4)\tLEAQ\t(DX)(AX*8), SI\r\n\t0x0046 00070 (x.go:4)\tMOVQ\t\"\".j+80(FP), DI\r\n\t0x004b 00075 (x.go:4)\tCMPQ\tDI, CX\r\n\t0x004e 00078 (x.go:4)\tJCC\t$0, 185\r\n\t0x0050 00080 (x.go:4)\tMOVQ\t(DX)(DI*8), CX\r\n\t0x0054 00084 (x.go:4)\tLEAQ\t(DX)(DI*8), R8\r\n\t0x0058 00088 (x.go:4)\tMOVQ\tR8, \"\".autotmp_2+16(SP)\r\n\t0x005d 00093 (x.go:4)\tMOVL\truntime.writeBarrier(SB), R9\r\n\t0x0064 00100 (x.go:4)\tTESTL\tR9, R9\r\n\t0x0067 00103 (x.go:4)\tJNE\t$0, 149\r\n\t0x0069 00105 (x.go:4)\tMOVQ\tCX, (DX)(AX*8)\r\n\t0x006d 00109 (x.go:4)\tMOVL\truntime.writeBarrier(SB), AX\r\n\t0x0073 00115 (x.go:4)\tTESTL\tAX, AX\r\n\t0x0075 00117 (x.go:4)\tJNE\t$0, 133\r\n\t0x0077 00119 (x.go:4)\tMOVQ\tBX, (DX)(DI*8)\r\n\t0x007b 00123 (x.go:5)\tMOVQ\t32(SP), BP\r\n\t0x0080 00128 (x.go:5)\tADDQ\t$40, SP\r\n\t0x0084 00132 (x.go:5)\tRET\r\n\t0x0085 00133 (x.go:4)\tMOVQ\tR8, (SP)\r\n\t0x0089 00137 (x.go:4)\tMOVQ\tBX, 8(SP)\r\n\t0x008e 00142 (x.go:4)\tPCDATA\t$0, $0\r\n\t0x008e 00142 (x.go:4)\tCALL\truntime.writebarrierptr(SB)\r\n\t0x0093 00147 (x.go:5)\tJMP\t123\r\n\t0x0095 00149 (x.go:4)\tMOVQ\tSI, (SP)\r\n\t0x0099 00153 (x.go:4)\tMOVQ\tCX, 8(SP)\r\n\t0x009e 00158 (x.go:4)\tPCDATA\t$0, $1\r\n\t0x009e 00158 (x.go:4)\tCALL\truntime.writebarrierptr(SB)\r\n\t0x00a3 00163 (x.go:4)\tMOVQ\t\"\".s+48(FP), DX\r\n\t0x00a8 00168 (x.go:4)\tMOVQ\t\"\".autotmp_1+24(SP), BX\r\n\t0x00ad 00173 (x.go:4)\tMOVQ\t\"\".j+80(FP), DI\r\n\t0x00b2 00178 (x.go:4)\tMOVQ\t\"\".autotmp_2+16(SP), R8\r\n\t0x00b7 00183 (x.go:4)\tJMP\t109\r\n\t0x00b9 00185 (x.go:4)\tPCDATA\t$0, $2\r\n\t0x00b9 00185 (x.go:4)\tCALL\truntime.panicindex(SB)\r\n\t0x00be 00190 (x.go:4)\tUNDEF\r\n\t0x00c0 00192 (x.go:4)\tNOP\r\n\t0x00c0 00192 (x.go:3)\tCALL\truntime.morestack_noctxt(SB)\r\n\t0x00c5 00197 (x.go:3)\tJMP\t0\r\n```\r\n\r\ninto this:\r\n\r\n```\r\n\"\".f t=1 size=76 args=0x28 locals=0x0\r\n\t0x0000 00000 (x.go:3)\tTEXT\t\"\".f(SB), $0-40\r\n\t0x0000 00000 (x.go:3)\tMOVQ\t(TLS), CX\r\n\t0x0009 00009 (x.go:3)\tCMPQ\tSP, 16(CX)\r\n\t0x000d 00013 (x.go:3)\tJLS\t69\r\n\t0x000f 00015 (x.go:3)\tFUNCDATA\t$0, gclocals·3cadd97b66f25a3a642be35e9362338f(SB)\r\n\t0x000f 00015 (x.go:3)\tFUNCDATA\t$1, gclocals·69c1753bd5f81501d95132d08af04464(SB)\r\n\t0x000f 00015 (x.go:4)\tMOVQ\t\"\".i+32(FP), AX\r\n\t0x0014 00020 (x.go:4)\tMOVQ\t\"\".s+16(FP), CX\r\n\t0x0019 00025 (x.go:4)\tCMPQ\tAX, CX\r\n\t0x001c 00028 (x.go:4)\tJCC\t$0, 62\r\n\t0x001e 00030 (x.go:4)\tMOVQ\t\"\".s+8(FP), DX\r\n\t0x0023 00035 (x.go:4)\tMOVQ\t(DX)(AX*8), BX\r\n\t0x0027 00039 (x.go:4)\tMOVQ\t\"\".j+40(FP), SI\r\n\t0x002c 00044 (x.go:4)\tCMPQ\tSI, CX\r\n\t0x002f 00047 (x.go:4)\tJCC\t$0, 62\r\n\t0x0031 00049 (x.go:4)\tMOVQ\t(DX)(SI*8), CX\r\n\t0x0035 00053 (x.go:4)\tMOVQ\tCX, (DX)(AX*8)\r\n\t0x0039 00057 (x.go:4)\tMOVQ\tBX, (DX)(SI*8)\r\n\t0x003d 00061 (x.go:5)\tRET\r\n\t0x003e 00062 (x.go:4)\tPCDATA\t$0, $1\r\n\t0x003e 00062 (x.go:4)\tCALL\truntime.panicindex(SB)\r\n\t0x0043 00067 (x.go:4)\tUNDEF\r\n\t0x0045 00069 (x.go:3)\tCALL\truntime.morestack_noctxt(SB)\r\n\t0x004a 00074 (x.go:3)\tJMP\t0\r\n```\r\n\r\ncc @mdempsky @randall77 @aclements @dr2chase \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2016-08-17T19:49:38Z",
+	"created_at": "2016-08-17T17:15:25Z",
+	"updated_at": "2016-08-17T19:49:38Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

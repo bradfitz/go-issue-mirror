@@ -1,0 +1,12 @@
+{
+	"id": 240141001,
+	"body": "```\r\n(lldb) register read sp\r\n      sp = 0x000000016fd29d20\r\n(lldb) memory read --size 8 --format x --count 16 0x000000016fd29d20\r\n0x16fd29d20: 0x00000001000f0fac 0x0000000100201488\r\n0x16fd29d30: 0x0000000100100194 0x000000013fc50000\r\n0x16fd29d40: 0xffffffffffff0000 0x0000000000000005\r\n0x16fd29d50: 0x000000010010024c 0x000000013fc50000\r\n0x16fd29d60: 0xffffffffffff0000 0x0000000000000000\r\n0x16fd29d70: 0xffffffffffff0000 0x0000000102170aa0\r\n0x16fd29d80: 0x000000010012fd38 0x0000000100201488\r\n0x16fd29d90: 0xffffffffffffffff 0x0000000000000000\r\n```\r\n```\r\nint madvise(void *addr, size_t len, int advice);\r\naddr=0x000000013fc50000\r\nlen=0xffffffffffff0000  -65536 // size_t should be an unsigned int,this is wired.\r\nadvice=0x0000000000000005  _MADV_FREE\r\n```\r\n\r\nThen I add one line here:\r\n![image](https://cloud.githubusercontent.com/assets/1107541/17706627/5f591f0e-640f-11e6-94f9-d815f442f542.png)\r\n/usr/local/go/src/runtime/mheap.go:933\r\n\r\nThen I got following from xcode:\r\n```\r\nbefore debug.FreeOSMemory()\r\n-65536(lldb) \r\n```\r\n\r\nSo I found the reason of EINVAL, The value of advice is incorrect.\r\n\r\n--------\r\n\r\nlet's print again:\r\n```\r\nprintln(\"[scavengelist]\",len,start,end,s.base(),s.npages,sys.PhysPageSize,_PageSize)\r\n```\r\n\r\nThen I got following:\r\n```\r\n[scavengelist] -65536 4972019712 4971954176 4972003328 1 65536 8192\r\n```\r\n",
+	"user": {
+		"login": "bronze1man",
+		"id": 1107541,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-16T15:35:26Z",
+	"updated_at": "2016-08-16T16:43:17Z"
+}

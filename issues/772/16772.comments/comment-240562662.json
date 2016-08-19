@@ -1,0 +1,12 @@
+{
+	"id": 240562662,
+	"body": "The playground link above is fairly minimal. Most of it is to exercise making as many page writes as possible. The slice is constructed and read from every time, but it will only crash when the bytes after the allocation will cause a fault. If there's a debug flag that puts guard pages around memory allocations that would make this much more deterministic.\r\n\r\nI'll do my best with an ascii diagram.\r\n\r\n```\r\n+---------------------------------------+\r\n|Full allocation                        |\r\n+--------------------+------------------+------|\r\n|Some bucket header  |The page struct   |p.ptr |\r\n|--------------------|------------------|------|\r\n|blah fields here    |fields here       |      |\r\n+--------------------+------------------+------+\r\n```\r\n\r\nWe construct a slice who's backing array starts at p.ptr, which is outside of the allocation. The slice ends up unused because the for loop has zero iterations, but for some reason, the SSA code dereferences the first byte of the slice (I think. asm output for both here: https://play.golang.org/p/QNYzVjU1ls)\r\n\r\nI've added code to Bolt to avoid constructing these slices when it's known the size of the slice will be zero and the crashes go away.",
+	"user": {
+		"login": "zeebo",
+		"id": 96925,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-17T22:00:35Z",
+	"updated_at": "2016-08-17T22:00:35Z"
+}

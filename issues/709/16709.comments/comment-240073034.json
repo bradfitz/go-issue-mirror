@@ -1,0 +1,12 @@
+{
+	"id": 240073034,
+	"body": "Also happened to find this problem. I deleted a directory that was being watched, then I tried to invoke `inotify.RemoveWatch` and it erred out \"inotify_rm_watch: invalid argument\". I think disallowing to remove watch on a deleted directory is the normal behavior of kernel. `inotify.go` should delete the keys from `watches` and `paths` map and suppress the error returned by `syscall.InotifyRmWatch` in this situation. \r\n\r\n@agorman I think you fix is wrong, `ok` in the statement `if !ok \u0026\u0026 success == -1 {`should always be true. My fix is as follows\r\n\r\n```\r\ndiff --git a/vendor/golang.org/x/exp/inotify/inotify_linux.go b/vendor/golang.org/x/exp/inotify/inotify_linux.go\r\nindex 901f308..c8bd944 100644\r\n--- a/vendor/golang.org/x/exp/inotify/inotify_linux.go\r\n+++ b/vendor/golang.org/x/exp/inotify/inotify_linux.go\r\n@@ -141,7 +141,10 @@ func (w *Watcher) RemoveWatch(path string) error {\r\n        }\r\n        success, errno := syscall.InotifyRmWatch(w.fd, watch.wd)\r\n        if success == -1 {\r\n-               return os.NewSyscallError(\"inotify_rm_watch\", errno)\r\n+               // If path not exists, we should continue delete keys from watchs and paths\r\n+               if _, err := os.Stat(path); err == nil {\r\n+                       return os.NewSyscallError(\"inotify_rm_watch\", errno)\r\n+               }\r\n        }\r\n        delete(w.watches, path)\r\n        // Locking here to protect the read from paths in readEvents.\r\n```",
+	"user": {
+		"login": "chenchun",
+		"id": 985861,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-16T11:11:53Z",
+	"updated_at": "2016-08-16T11:11:53Z"
+}

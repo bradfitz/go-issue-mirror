@@ -1,7 +1,7 @@
 {
 	"id": 138776033,
 	"number": 14668,
-	"state": "open",
+	"state": "closed",
 	"title": "Proposal: automatically set a \"test\" tag during \"go test\"",
 	"body": "This is a [proposal](https://github.com/golang/proposal) for a change to `go test`.  The goal is to make it easier to enable conditional compilation of test-only code, which is useful to stub out code during testing, by introducing a build tag that is automatically set during `go test`, similarly to how the `race` tag is automatically added for builds that use the `-race` flag.\r\n\r\nFor example, let's say we have some code that uses the `unix.Setns()` system call, which is a Linux-specific privileged system call (usually requires `root` or some elevated privileges like `CAP_SYS_ADMIN`).  One way to make such code testable independently of the platform and privilege level is [to do](https://github.com/aristanetworks/goarista/blob/master/netns/netns_linux.go):\r\n```go\r\nvar setNs = func(h handle) error {\r\n\treturn unix.Setns(h.fd(), unix.CLONE_NEWNET)\r\n}\r\n```\r\n\r\nThis way [unit tests](https://github.com/aristanetworks/goarista/blob/master/netns/netns_test.go) can override the call by changing the layer of indirection that the global variable creates:\r\n```go\r\nfunc TestNetNs(t *testing.T) {\r\n\t// Mock setNs\r\n\toldSetNs := setNs\r\n\tsetNs = func(fd handle) error {\r\n\t\treturn nil\r\n\t}\r\n\tdefer func() {\r\n\t\tsetNs = oldSetNs\r\n\t}()\r\n```\r\n\r\nHowever this is a bit tedious to do, it creates an unnecessary level of indirection in the production code and clutters the test code.  Another solution that addresses this is to use a build tag instead:\r\n\r\n```go\r\n// in setns_linux.go\r\n\r\n// +build !test\r\n\r\nfunc setNs(h handle) error {\r\n\treturn unix.Setns(h.fd(), unix.CLONE_NEWNET)\r\n}\r\n```\r\n\r\n```go\r\n// in setns_test.go\r\nfunc setNs(h handle) error {\r\n\treturn nil\r\n}\r\n```\r\n\r\nThe downside is that now `go test ./...` doesn't work anymore, one needs to know to pass `-tags test`.  In a large codebase, people choose to use different build tags to implement this mechanism, which leads to inconsistencies, unless `Makefile`s (or equivalent) are used and `go test` is not to be run \"manually\".\r\n\r\nAnother place where a built-in `test` tag could be useful is when factoring out test libraries.  Code in `foo_test.go` files is only visible in the current package and can't be imported from one package to another.  Therefore it's common to create a [`test` package](https://github.com/aristanetworks/goarista/tree/master/test) to factor out test code re-used across packages.  Doing this unfortunately creates room for production code importing test code.  By flagging the test code with a build tag, this possibility is significantly reduced.  But again, the build tag creates a usability issue.\r\n\r\nThere are a number of packages that already use a `test` tag (see for example the [GitHub search for `language:go \"// +build test\" filename:_test.go`](https://github.com/search?utf8=✓\u0026q=language%3Ago+\"%2F%2F+%2Bbuild+test\"+filename%3A_test.go\u0026type=Code)).  Some of these packages would benefit from the usability improvement (for example `golang.org/x/text` does not use a `Makefile` but [`unicode/norm/forminfo_test.go`](https://github.com/golang/text/blob/master/unicode/norm/forminfo_test.go) assumes the `test` tag is used), other packages would start behaving differently (for example [github.com/netrack/netrack-server](https://github.com/netrack/netrack-server/blob/master/Makefile) would start running both the integration tests and the unit tests when `make integration-test` is run, instead of just the integration tests as the intent of the `Makefile` appears to be).\r\n\r\nAlternatively the built-in tag could be `gotest`, which [doesn't seem to be used on GitHub](https://github.com/search?utf8=%E2%9C%93\u0026q=language%3Ago+%22%2F%2F+%2Bbuild+gotest%22+filename%3A_test.go\u0026type=Code).\r\n\r\nLooking forward to your feedback on this small proposal.  Thanks in advance.",
 	"user": {
@@ -10,9 +10,18 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 9,
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2016-08-15T23:54:56Z",
 	"created_at": "2016-03-06T09:49:55Z",
-	"updated_at": "2016-04-09T22:33:12Z",
+	"updated_at": "2016-08-15T23:55:12Z",
 	"milestone": {
 		"id": 1055141,
 		"number": 6,

@@ -1,0 +1,12 @@
+{
+	"id": 239885219,
+	"body": "Thanks for the list of problems.  My thoughts:\r\n\r\n  1. That's true, but [go/types already special cases C.f](https://github.com/golang/go/blob/master/src/go/types/call.go#L284) when in FakeImportC mode.  I don't imagine it to be any more invasive to change the later `if !exp.Exported()` check to something like `if !exp.Exported() \u0026\u0026 !pkg.imported.cgo`.\r\n  2. True.  The importer would also need a way to access the C preamble.  Since C imports needs to be handled specially anyway, I was envisioning just handling them internally within go/types.  If customizing its behavior proved useful, we could provide a CgoImporter interface.\r\n  3. That's an interesting point.  I see two possible ways to address it:\r\n     1. Do something similar to how we already handle \"commaok\" expressions.  We could potentionally reuse TypeAndValue.HasOk for this, or add TypeAndValue.HasCgoErr if cleaner.\r\n     2. For each C function, define two go/types.Func objects: one for the single-value variant, and another for the two-value variant.  Within go/types, we can arrange for Info.Uses, etc. to point to the contextually appropriate variant.\r\n\r\nIt seems unlikely to me that we'd add functionality to cmd/cgo that go/types could not support *at all*.  The source Cgo files will need to remain representable by go/ast so that cmd/gofmt can format them.  If it ever becomes necessary to process additional inputs beyond the .go files for Cgo processing, we can extend go/types.Checker's API to allow callers to provide them.\r\n\r\nLastly, for completeness: to support cgo in go/types, users will need to provide an AST with the C preamble comments, but by default go/parser discards comments.  There are a couple ways to resolve this:\r\n  1. Add a ParseCgo Mode flag or something to go/parser (and perhaps ScanCgo flag to go/scanner).  This would indicate the resulting parse tree should preserve any comments used by cgo, but all other comments in the source file can be omitted.\r\n  2. ParseCgo could just be the default behavior, or we just require users to always set ParseCgo/ParseComments when they want to analyze Cgo packages.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-15T18:26:01Z",
+	"updated_at": "2016-08-15T18:26:01Z"
+}

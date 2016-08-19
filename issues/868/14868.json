@@ -1,7 +1,7 @@
 {
 	"id": 141960673,
 	"number": 14868,
-	"state": "open",
+	"state": "closed",
 	"title": "math/big: Float.{Add, Sub} allocate even when receiver does not alias the arguments",
 	"body": "Currently `big.Float.Add` and `big.Float.Sub` allocate even if none of the arguments alias the receiver. Code:\r\n\r\n```go\r\npackage benchAddSub\r\n\r\nimport (\r\n\t\"math/big\"\r\n\t\"testing\"\r\n)\r\n\r\nvar prec uint = 1e5\r\n\r\nvar x *big.Float = new(big.Float).SetPrec(prec).SetUint64(2)\r\nvar y *big.Float = new(big.Float).SetPrec(prec)\r\nvar t *big.Float = new(big.Float).SetPrec(prec)\r\n\r\nfunc init() {\r\n\ty.Parse(\"1.4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727350138462309122970249248360558507372126441214970999358314132226659275055927557999505011527820605714701095599716059702745345968620147285174186408891986095523292304843087143214508397626036279952514079896872533965463318088296406206152583523950547457502877599617298355752203375318570113543746034084988471603868999706990048150305440277903164542478230684929369186215805784631115966687130130156185689872372352885092648612494977154218334204285686060146824720771435854874155657069677653720226485447015858801620758474922657226002085584466521458398893944370926591800311388246468157082630100594858704003186480342194897278290641045072636881313739855256117322040245091227700226941127573627280495738108967504018369868368450725799364729060762996941380475654823728997180326802474420629269124859052181004459842150591120249441341728531478105803603371077309182869314710171111683916581726889419758716582152128229518488472089694633862891562882765952635140542\", 10)\r\n}\r\n\r\nfunc BenchmarkAddFloats(b *testing.B) {\r\n\tb.ReportAllocs()\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tt.Add(x, y)\r\n\t}\r\n}\r\n\r\nfunc BenchmarkSubFloats(b *testing.B) {\r\n\tb.ReportAllocs()\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tt.Sub(x, y)\r\n\t}\r\n}\r\n```\r\n(playground http://play.golang.org/p/rNaj0NwPOT) gives\r\n\r\n```\r\nBenchmarkAddFloats-4   \t  200000\t      6124 ns/op\t   13568 B/op\t       1 allocs/op\r\nBenchmarkSubFloats-4   \t  300000\t      5732 ns/op\t   13568 B/op\t       1 allocs/op\r\n```\r\nThe relevant code (for `Add`) is here: https://github.com/golang/go/blob/master/src/math/big/float.go#L1229-L1242\r\n\r\nLooks like it shouldn't be hard to fix, maybe something like\r\n```go\r\nal := alias(z.mant, x.mant) || alias(z.mant, y.mant)\r\n\r\nswitch {\r\ncase ex \u003c ey:\r\n\tif !al { // no aliasing, can re-use z\r\n\t\tz.mant = z.mant.shl(y.mant, uint(ey-ex))\r\n\t\tz.mant = z.mant.sub(x.mant, z.mant)\r\n\t} else {\r\n\t\tt := nat(nil).shl(y.mant, uint(ey-ex))\r\n\t\tz.mant = t.sub(x.mant, t)\r\n\t}\r\n...\r\n```",
 	"user": {
@@ -17,8 +17,9 @@
 		"site_admin": false
 	},
 	"comments": 0,
+	"closed_at": "2016-08-17T17:57:00Z",
 	"created_at": "2016-03-18T19:41:16Z",
-	"updated_at": "2016-03-19T00:32:35Z",
+	"updated_at": "2016-08-17T17:57:00Z",
 	"milestone": {
 		"id": 1055141,
 		"number": 6,

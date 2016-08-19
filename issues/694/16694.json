@@ -1,0 +1,27 @@
+{
+	"id": 171086678,
+	"number": 16694,
+	"state": "open",
+	"title": "flag: panic in flag.PrintDefaults when zero value violates invariants",
+	"body": "(version details below)\r\n\r\nRepro: https://play.golang.org/p/UU4V3BQDHA\r\n\r\nNote that the playground is currently running an older version that doesn't have this problem. Download the code and use \"go run\" with a recent 1.7 release candidate (≥ rc3 has the break, as far as I can tell). \r\n\r\nI believe this was introduced by https://github.com/golang/go/commit/3659645cb1f32d7b1eeefdb65f1339fe54f0f6eb\r\n\r\nSummary: Given a user-defined type implementing the flag.Getter interface, register a value of the type using flag.Var. In some cases a panic occurs when flag.PrintDefaults tries to print a value for it. This appears to happen because the package is reflectively constructing an empty value of the implementing type—and that value may violate invariants of the original value.\r\n\r\nI discovered this because I have a custom flag type whose package provides a constructor to ensure the value is always correct. The reflection bypasses this, of course, and constructs a value that crashes when its methods are called. \r\n\r\nI can work around this by making sure my methods \"work\" when the invariants are violated, but this is a regression from go1.6 and arguably should be fixed. It's too subtle for a documentation patch.\r\n\r\n$ go version\r\ngo version go1.7rc6 darwin/amd64\r\n\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/usr/local/share/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n",
+	"user": {
+		"login": "creachadair",
+		"id": 19258,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"created_at": "2016-08-14T23:31:57Z",
+	"updated_at": "2016-08-15T17:56:50Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

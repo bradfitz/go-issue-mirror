@@ -1,0 +1,12 @@
+{
+	"id": 240194110,
+	"body": "This only simplifies a trivial unimportant amount of code so I don't see it as more than, at best, a minor annoyance, regardless of frequency. \r\n\r\nI'm sure Brad's implementation is a negligible hit on performance compared to the current way, but it would have to be used in function bodies to close over the slice like:\r\n```\r\nfunc something() {\r\n  //...\r\n  sort.Slice(things, func(i, j int) bool) {\r\n     //...\r\n   })\r\n  //...\r\n}\r\n```\r\nso you have to pay the cost of allocating the closure and building the generic sorter on each invocation of `something`, when you don't have to pay anything defining the methods yourself, other than the usual indirections interfaces involve. That's going to be negligible to the cost of sorting anything for all but the smallest of n, and, if it shows up in profiling, it's simple enough to rewrite it the old way, but this sort of code is generally discouraged by the stdlib.\r\n\r\nIf this is going for pure convenience, I'd prefer the version @ianlancetaylor hinted at where the comparator is an interface containing a `func(a, b T) bool` (though the runtime hit from that would certainly be less negligible, even modulo potential copying overhead, and it's even further afield of encouraged practice). \r\n\r\nMaybe I'm just uncomfortable that this is at a weird level between convenient and practical that results in this awkward situation where you have to close over a slice that's being permuted under the covers.\r\n\r\nAll that said, if this goes in, I'll use it—I'm lazy and hypocritical!\r\n\r\nI don't have any problem with this existing—it's the inclusion in the stdlib that gives me pause. I have absolutely zero reservations about this being a go gettable library: people could even start using it today. The excellent go4.org or even golang.org/x seem like fine places to put this, and if it gets used a lot without issues moving it to the stdlib would be fine with me.",
+	"user": {
+		"login": "jimmyfrasche",
+		"id": 375553,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-16T18:29:40Z",
+	"updated_at": "2016-08-16T18:29:40Z"
+}

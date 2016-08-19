@@ -1,0 +1,12 @@
+{
+	"id": 240315670,
+	"body": "Note that this is about all the `strings.Trim*` and `bytes.Trim*` functions.\r\n\r\nIt looks like if the compiler could inline the super-trivial single-line makeCutsetFunc, then the escape analysis does work.\r\n\r\nThis patch makes removes the only allocation from `strings.TrimLeft`:\r\n\r\n```patch\r\ndiff --git a/src/strings/strings.go b/src/strings/strings.go\r\nindex 738c493..7faa447 100644\r\n--- a/src/strings/strings.go\r\n+++ b/src/strings/strings.go\r\n@@ -600,7 +600,7 @@ func TrimLeft(s string, cutset string) string {\r\n        if s == \"\" || cutset == \"\" {\r\n                return s\r\n        }\r\n-       return TrimLeftFunc(s, makeCutsetFunc(cutset))\r\n+       return TrimLeftFunc(s, func(r rune) bool { return IndexRune(cutset, r) \u003e= 0 })\r\n }       \r\n         \r\n```\r\n\r\nwhere `makeCutsetFunc` is just:\r\n\r\n```go\r\nfunc makeCutsetFunc(cutset string) func(rune) bool {\r\n        return func(r rune) bool { return IndexRune(cutset, r) \u003e= 0 }\r\n}\r\n```\r\n\r\nI guess that is too \"hairy\" to be inlined, but it probably should be.\r\n\r\n/cc @dr2chase @randall77 @mdempsky @josharian \r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-17T05:16:17Z",
+	"updated_at": "2016-08-17T05:16:17Z"
+}

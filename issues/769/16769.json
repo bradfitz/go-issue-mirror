@@ -1,0 +1,21 @@
+{
+	"id": 171722140,
+	"number": 16769,
+	"state": "open",
+	"title": "cmd/compile: incorrect assignment to uint64 via pointer converted to *uint16 (new in 1.7)",
+	"body": "#### What version of Go are you using (`go version`)?\r\n\r\n`go version go1.7 darwin/amd64` and `go version go1.7 linux/amd64`.\r\n\r\nThis issue is not present in `go1.6.2`.\r\n\r\n#### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\n```\r\n\r\nand\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\n```\r\n\r\n#### What did you do?\r\n\r\nAssign a `uint16` (or `uint32`) to a previously unused `uint64` via converted pointer on a little-endian architecture. `go run` the following program:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"unsafe\"\r\n)\r\n\r\nfunc main() {\r\n\tvar x uint64\r\n\t*(*uint16)(unsafe.Pointer(\u0026x)) = 0xffee\r\n\tfmt.Printf(\"%x\\n\", x)\r\n\r\n\tvar y uint64\r\n\tfmt.Printf(\"%x\\n\", y)\r\n\t*(*uint16)(unsafe.Pointer(\u0026y)) = 0xffee\r\n\tfmt.Printf(\"%x\\n\", y)\r\n}\r\n```\r\n\r\n#### What did you expect to see?\r\n\r\n```\r\nffee\r\n0\r\nffee\r\n```\r\n\r\n#### What did you see instead?\r\n\r\n```\r\nc42000ffee\r\n0\r\nffee\r\n```\r\n\r\n\r\nA test that passes with Go 1.6 but not with Go 1.7:\r\n\r\n```go\r\n// +build amd64\r\n\r\npackage main\r\n\r\nimport (\r\n    \"fmt\"\r\n    \"unsafe\"\r\n)\r\n\r\nfunc ExampleUint16NoAccessBeforeAssignment() {\r\n\tvar x uint64\r\n\t*(*uint16)(unsafe.Pointer(\u0026x)) = 0xffee\r\n\tfmt.Printf(\"%x\\n\", x)\r\n    // Output:\r\n    // ffee\r\n}\r\n\r\nfunc ExampleUint16AccessBeforeAssignment() {\r\n\tvar x uint64\r\n\tfmt.Printf(\"%x\\n\", x)\r\n\t*(*uint16)(unsafe.Pointer(\u0026x)) = 0xffee\r\n\tfmt.Printf(\"%x\\n\", x)\r\n    // Output:\r\n    // 0\r\n    // ffee\r\n}\r\n\r\nfunc ExampleUint32NoAccessBeforeAssignment() {\r\n\tvar x uint64\r\n\t*(*uint32)(unsafe.Pointer(\u0026x)) = 0xffeeddcc\r\n\tfmt.Printf(\"%x\\n\", x)\r\n    // Output:\r\n    // ffeeddcc\r\n}\r\n\r\nfunc ExampleUint32AccessBeforeAssignment() {\r\n\tvar x uint64\r\n\tfmt.Printf(\"%x\\n\", x)\r\n\t*(*uint32)(unsafe.Pointer(\u0026x)) = 0xffeeddcc\r\n\tfmt.Printf(\"%x\\n\", x)\r\n    // Output:\r\n    // 0\r\n    // ffeeddcc\r\n}\r\n```",
+	"user": {
+		"login": "kelseyfrancis",
+		"id": 333244,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 19,
+	"created_at": "2016-08-17T18:02:47Z",
+	"updated_at": "2016-08-18T19:30:02Z",
+	"milestone": {
+		"id": 1944056,
+		"number": 44,
+		"title": "Go1.7.1"
+	}
+}

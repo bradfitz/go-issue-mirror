@@ -1,0 +1,17 @@
+{
+	"id": 171137566,
+	"number": 16700,
+	"state": "closed",
+	"title": "file lock auto closed by go",
+	"body": "i come across a problem and can not find a same issue, using go1.4 \r\n\r\ni used a file lock for process anti-reentry setting it to syscall.LOCK_EX|syscall.LOCK_NB in a function, but this lock would always be auto closed  after 2 minutes\r\n\r\ni have attempted to use an struct member variable to store this file descriptor, but it was closed after 2 minites again\r\n\r\ni have attempted to use an global variable to store it , and it works.\r\n\r\n```\r\nfunc LockUntilEx(lockfile string) (*os.File, error) {\r\n    var mode os.FileMode = 0777\r\n    file, err := os.OpenFile(lockfile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, mode)\r\n    if err != nil {\r\n        return nil, err\r\n    }\r\n\r\n    err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)\r\n    if err != nil {\r\n        return nil, err\r\n    }\r\n\r\n    _, _, errno := syscall.RawSyscall(syscall.SYS_FCNTL, file.Fd(), syscall.F_SETFD, syscall.FD_CLOEXEC)\r\n    if errno != 0 {\r\n        return nil, errors.New(fmt.Sprintf(\"fail to set FD_CLOEXEC, for \", lockfile))\r\n    }\r\n    return file, nil\r\n}\r\nvar usefulLock *os.File\r\n\r\ntype TestLock struct {\r\n    uselessLock *os.File\r\n}\r\n\r\nfunc (this *TestLock) Lock() (err error) {\r\n    path := \"/tmp/filename\"\r\n    this.uselessLock, err = LockUntilEx(path)\r\n    if err != nil {\r\n        return err \r\n    }   \r\n    return nil \r\n}\r\n\r\nfunc  Lock() (err error) {\r\n    path := \"/tmp/filename\"\r\n    uselessLock, err := LockUntilEx(path)\r\n    if err != nil {\r\n        return err \r\n    }   \r\n    fmt.Println(\"lock succ \", uselessLock)\r\n    return nil \r\n}\r\n\r\nfunc main() {\r\n    l := new(TestLock)\r\n    if err := l.Lock(); err != nil {\r\n        fmt.Println(err)\r\n        return\r\n    }   \r\n    for {\r\n        fmt.Println(time.Now())\r\n        time.Sleep(time.Second)\r\n    }   \r\n}\r\n```\r\n\r\nmy questions are:\r\n1.  is this file descriptor closed by gc? why struct member variable closed and global variable not? \r\n2. is there any suggested way to use file lock\r\n\r\n\r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "galric",
+		"id": 9695504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-08-15T14:55:29Z",
+	"created_at": "2016-08-15T09:29:54Z",
+	"updated_at": "2016-08-15T14:55:29Z"
+}

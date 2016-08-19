@@ -1,0 +1,12 @@
+{
+	"id": 239890123,
+	"body": "I see identical behavior for net.Listen(\"tcp\", \"127.0.0.1:0\") in Go 1.6 and Go 1.7.\r\n\r\nIn both cases, I can open around 28,000 before the kernel gets angry at me:\r\n\r\n```go\r\npackage main  \r\n\r\nimport (\r\n        \"log\" \r\n        \"net\"\r\n)\r\n       \r\nfunc main() {\r\n        var lns []net.Listener\r\n        for i := 0; i \u003c 1e9; i++ {\r\n                ln, err := net.Listen(\"tcp\", \"127.0.0.1:0\")\r\n                if err != nil {\r\n                        log.Fatalf(\"%d: %v\", i, err)\r\n                }\r\n                log.Printf(\"%v: %v\", i, ln.Addr().String())\r\n                lns = append(lns, ln)\r\n        }\r\n}          \r\n```\r\n\r\nBoth say:\r\n```\r\n2016/08/15 18:37:31 28223: 127.0.0.1:54252\r\n2016/08/15 18:37:31 28224: 127.0.0.1:54253\r\n2016/08/15 18:37:31 28225: 127.0.0.1:54254\r\n2016/08/15 18:37:31 28226: 127.0.0.1:54275\r\n2016/08/15 18:37:31 28227: 127.0.0.1:54276\r\n2016/08/15 18:37:31 28228: 127.0.0.1:54284\r\n2016/08/15 18:37:31 28229: 127.0.0.1:54309\r\n2016/08/15 18:37:31 28230: 127.0.0.1:54314\r\n2016/08/15 18:37:31 28231: 127.0.0.1:54320\r\n2016/08/15 18:37:31 28232: 127.0.0.1:54321\r\n2016/08/15 18:37:31 28233: listen tcp 127.0.0.1:0: bind: address already in use\r\n```\r\n\r\nGiven that you see this in a stress test, I imagine you're forgetting to close something somewhere and just running out of ports in the kernel.\r\n\r\nI suspect the difference you see between Go 1.6 and Go 1.7 is related to GC/liveness/finalizers and you were getting luckier before in Go 1.6 with something closing listeners more aggressively for you.\r\n\r\nI'm not sure we can help more until we know more. Ping this bug if you discover something more specific?\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-15T18:42:51Z",
+	"updated_at": "2016-08-15T18:42:51Z"
+}
