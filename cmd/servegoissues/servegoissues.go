@@ -33,9 +33,6 @@ func main() {
 	// We provide a simple read-only implementation of issues.Service on top of root,
 	// and a nil users service since this runs locally and doesn't need user authentication.
 	issuesApp := issuesapp.New(issuesService{root: root}, nil, issuesapp.Options{
-		Context: func(req *http.Request) context.Context {
-			return context.TODO()
-		},
 		RepoSpec: func(req *http.Request) issues.RepoSpec {
 			return issues.RepoSpec{URI: "github.com/golang/go"}
 		},
