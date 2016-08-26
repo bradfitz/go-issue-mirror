@@ -1,0 +1,22 @@
+{
+	"id": 172059169,
+	"number": 16797,
+	"state": "closed",
+	"title": "x/net/ipv4: Recieving multiple Multicast UDP streams with same ports",
+	"body": "go version:\r\ngo version go1.7 linux/amd64\r\n\r\ngo env:\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/aissa/code/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/aissa/go\"\r\nGOTOOLDIR=\"/home/aissa/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build583051275=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\nwith referance to : https://godoc.org/golang.org/x/net/ipv4\r\n\r\nIm trying to catch to different multicast streams  having the same port and saving its data to two separate files, both files are created but both files are having duplicate content from both streams.\r\n\r\n'netstat -tulnp' is giving the below:\r\n\r\n`udp        0      0 0.0.0.0:1234            0.0.0.0:*                           24951/main    `      \r\n`udp        0      0 0.0.0.0:1234            0.0.0.0:*                           24951/main` \r\n\r\nis should be \r\n\r\n`udp        0     238.1.2.2:1234            0.0.0.0:*                           24951/main `         \r\n`udp        0      238.1.2.1:1234            0.0.0.0:*                           24951/main`\r\n\r\n\r\nthe code  is below:\r\n\r\n\r\n`package main\r\n\r\n        import (\r\n            \"io\"\r\n            \"net\"\r\n            \"os\"\r\n            \"time\"\r\n\r\n            \"golang.org/x/net/ipv4\"\r\n        )\r\n\r\n        func main() {\r\n            c1, err := net.ListenPacket(\"udp4\", \"224.0.0.0:1234\")\r\n            if err != nil {\r\n                // error handling\r\n            }\r\n            en0, err := net.InterfaceByName(\"en0\")\r\n            if err != nil {\r\n                // error handling\r\n            }\r\n            c2, err := net.ListenPacket(\"udp4\", \"224.0.0.0:1234\")\r\n            if err != nil {\r\n                // error handling\r\n            }\r\n            p1 := ipv4.NewPacketConn(c1)\r\n            if err := p1.JoinGroup(en0, \u0026net.UDPAddr{IP: net.IPv4(238, 1, 2, 2)}); err != nil {\r\n                // error handling\r\n            }\r\n            p2 := ipv4.NewPacketConn(c2)\r\n            if err := p2.JoinGroup(en0, \u0026net.UDPAddr{IP: net.IPv4(238, 1, 2, 1)}); err != nil {\r\n                // error handling\r\n            }\r\n            fo1, err := os.Create(\"test1.ts\")\r\n            defer fo1.Close()\r\n            if err != nil {\r\n                return\r\n            }\r\n            go io.Copy(fo1, p1)\r\n            fo2, err := os.Create(\"test2.ts\")\r\n            defer fo2.Close()\r\n            if err != nil {\r\n                return\r\n            }\r\n            go io.Copy(fo2, p2)\r\n            time.Sleep(time.Second * 10)\r\n            p1.LeaveGroup(en0, c1.LocalAddr())\r\n            p1.Close()\r\n            c1.Close()\r\n            p2.LeaveGroup(en0, c2.LocalAddr())\r\n            p2.Close()\r\n            c2.Close()\r\n        }\r\n`",
+	"user": {
+		"login": "ahmadissa",
+		"id": 9936573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-08-21T00:25:00Z",
+	"created_at": "2016-08-19T05:46:44Z",
+	"updated_at": "2016-08-21T00:25:00Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"id": 172503314,
+	"number": 16836,
+	"state": "open",
+	"title": "crypto/x509: Certs with odd RDN layouts not handled, cause confusing errors",
+	"body": "1. What version of Go are you using (`go version`)?\r\n\r\n```\r\ngo version go1.7 linux/amd64\r\n```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/tv/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/tv/src/go-1.7\"\r\nGOTOOLDIR=\"/home/tv/src/go-1.7/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/home/tv/tmp/go-build877219418=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nThe program in in https://play.golang.org/p/I8S80_1P1p gave a confusing error (https://github.com/golang/go/issues/16834  created about the message itself). This issue digs into *why* he ended up with such a parsed certificate, and what should have happened instead.\r\n\r\nThe cert in that play snippet is from https://github.com/wbond/badtls.io specifically https://github.com/wbond/badtls.io/blob/master/certs/domain-match.crt\r\n\r\nWhat seems to have happened is that the cert there is structured like `seq(set(a=b, c=d, e=f))` instead of what I seem to be getting from elsewhere, `seq(set(a=b), set(c=d), set(e=f))`. I may be very wrong about this, my asn.1 is 10 years rusty.\r\n\r\n4. What did you expect to see?\r\n\r\nHopefully, either \r\n\r\n- Go crypto/tls client behavior matches old openssl behavior (seen in osx, debian jessie: https://gist.github.com/joneskoo/eff2607bab6c29d153b276938afc59ff ), and connection succeeds\r\n\r\nor\r\n\r\n- Go crypto/tls behaves more like openssl 1.0.2d and refuses that connection (this part is fine, and probably wiser, though I can't see anything in openssl changelog that would be the reason)\r\n- BUT ALSO do something reasonable with RDN sequences where the set contains multiple values. Give an error *or* parse all the key-value pairs in every set. Right now, entries after the first are silently ignored: https://github.com/golang/go/blob/7c5f33b173d7bde6b3ae33bab940b76b4c991556/src/crypto/x509/pkix/pkix.go#L67 -- of course, I have no idea how much real world usage this would break. Ain't it great to have such a flexible and underspecified security mechanism?\r\n\r\n5. What did you see instead?\r\n\r\nMost of the subject RDN content discarded silently. Confusing error message. Behavior that differs from `curl` on OS X and Debian Jessie.\r\n",
+	"user": {
+		"login": "tv42",
+		"id": 419909,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-08-22T17:01:15Z",
+	"updated_at": "2016-08-22T17:04:18Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 241953871,
+	"body": "Both of those already have a `IsTimeout() bool` method which return true.\r\n\r\nI don't want the error package to be a minefield of error types and variables obscuring the useful parts.\r\n\r\nI also don't want the implementation to be restricted to returning specific error variables over time, constraining the ability to refactor things. I'd rather promise properties of the errors, like that its `IsTimeout() == true` (ideally with a helper somewhere to get at it) or things like \"if the context becomes done, you get back its error, wrapped in a URLError\", which is kinda implicit already from the http docs.\r\n\r\nActually, it's not. The only mention of url.Error at https://golang.org/pkg/net/http/ is this one appearance:\r\n\r\n```\r\n        // If CheckRedirect returns an error, the Client's Get\r\n        // method returns both the previous Response (with its Body\r\n        // closed) and CheckRedirect's error (wrapped in a url.Error)\r\n        // instead of issuing the Request req.\r\n```\r\n\r\nBut nothing else talks about *url.Error.\r\n\r\nBefore we start ad-hoc fixing stuff like exporting single variables, I'd rather have a concerted effort to document the status quo where one already exists, make inconsistent things consistent, then document them, and write new tests locking in behavior for the documentation. Maybe we have some of those tests already, and some (but not enough) docs.\r\n\r\nBut I don't think the answer is more error variables right now.\r\n\r\nWitness this error variable:\r\n\r\n```\r\n        // Deprecated: ErrWriteAfterFlush is no longer used.\r\n        ErrWriteAfterFlush = errors.New(\"unused\")\r\n```\r\n\r\nIt's in the public docs and was only documented to be no longer used after it was discovered that it was vestigial (#15150). We don't want more of those.\r\n\r\nDo you want to specifically know when a TLS handshake timeout happens? Can you not already tell between httptrace hooks and the `Timeout() bool` method?",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-24T04:23:15Z",
+	"updated_at": "2016-08-24T04:23:15Z"
+}

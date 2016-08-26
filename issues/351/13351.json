@@ -1,7 +1,7 @@
 {
 	"id": 118214440,
 	"number": 13351,
-	"state": "open",
+	"state": "closed",
 	"title": "x/exp/shiny: cursor API proposal",
 	"body": "The mouse cursor is a humble little pointer. It never *needs* to change for correct program operation, but the subtle feedback provided by doing so can translate to a great improvement to the user experience.\r\n\r\nTo start the conversation I propose a simple API along the lines;\r\n\r\n```\r\n// Cursor may identify a pre-defined system cursor or custom (user-created) cursor\r\ntype Cursor int\r\n\r\nconst (\r\n    UnspecifiedCursor Cursor = iota\r\n    NormalCursor\r\n    CrosshairCursor\r\n    IBeamCursor\r\n    // you get the idea -- the full set of portable cursors is discussed below\r\n}\r\n\r\ninterface CursorCreator {\r\n    // CreateCursor gracefully degrades if eg. a coloured image is provided but the\r\n    // driver only supports greyscale/monochrome cursors\r\n    CreateCursor(img image.Image, hotspot imagePoint) Cursor\r\n}\r\n\r\ninterface CursorSetter {\r\n    SetCursor(c Cursor)\r\n}\r\n```\r\n\r\nThe underlying platforms do things a bit differently. In windows, changing the cursor affects the entire desktop, but users are advised to be courteous and \"set the cursor shape only when the cursor is in its client area or when the window is capturing mouse input\"[1]. In OSX, changing the cursor affects only the calling application (and all windows it has open). In X11, changing the cursor is a window-specific operation, and only affects the cursor while it is over the window in question. X11's API suggests SetCursor must be implemented by shiny.Window.\r\n\r\n[1] https://msdn.microsoft.com/en-us/library/windows/desktop/ms648393(v=vs.85).aspx\r\n\r\nIt might be useful for SetCursor to return the previously active Cursor. But since the cursor is application-local in X11/OSX and best practice in windows is to try and avoid affecting other applications, in most circumstances the caller already knows the cursor's previous state (because it was responsible for the previous change, if any).\r\n\r\n\r\nPortable cursors:\r\n\r\nName | WIN32 | OSX | X11 | Notes\r\n---- | ----- | --- | --- | -----\r\nNormal | :+1: | :+1: | :+1: |\r\nCrosshair | :+1: | :+1: | :+1: |\r\nIBeam | :+1: | :+1: | :+1: |\r\nHand | :+1: | :+1: | :+1: | OSX has both open and closed variants\r\nNotAllowed | :+1: | :+1: | | (but X11 *does* provide a space shuttle!)\r\nBusy | :+1: | [2] | :+1: | \r\nResizeN | [3] | :+1: | :+1: |\r\nResizeS | [3] | :+1: | :+1: |\r\nResizeE | [3] | :+1: | :+1: |\r\nResizeW | [3] | :+1: | :+1: |\r\nResizeNS | :+1: | :+1: | :+1: |\r\nResizeEW | :+1: | :+1: | :+1: |\r\nResizeNE | [3] | [4] | :+1: |\r\nResizeSE | [3] | [4] | :+1: |\r\nResizeSW | [3] | [4] | :+1: |\r\nResizeNW | [3] | [4] | :+1: |\r\nResizeNESW | :+1: | [4] | |\r\nResizeNWSE | :+1: | [4] | |\r\n\r\n[2] OSX's \"busy\" spinning wheel cursor is automatically displayed by the system if the application's main loop stops responding. There is no API allowing the application to set this cursor on request. Modern versions of windows have similar automatic behaviour which hints at consensus that setting the cursor to a busy icon has been decided to be a poor ux -- it may not be worth providing the busy cursor.\r\n\r\n[3] Windows just has the four double-sided resize arrows - NS, EW, NESW, and NWSE. These can be reused to cover the N, S, E, W, NE, NW, SE, SW cases.\r\n\r\n[4] OSX *has* diagonal resize cursors but they are not easily available to applications. possible workaround: http://stackoverflow.com/questions/10733228/native-osx-lion-resize-cursor-for-custom-nswindow-or-nsview . Alternately it may be worth automatically generating custom cursors to cover both these and X11's lack of NotAllowed cursor.\r\n\r\n\r\nI gathered this information while implementing a cursor API for go.wde, primarily through API docs and explorative code. I do not have a wide experience with graphics APIs in general.",
 	"user": {
@@ -10,9 +10,21 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 4,
+	"labels": [
+		{
+			"name": "NeedsDecision"
+		}
+	],
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-08-25T06:23:54Z",
 	"created_at": "2015-11-21T18:53:37Z",
-	"updated_at": "2016-02-24T18:33:38Z",
+	"updated_at": "2016-08-26T05:16:41Z",
 	"milestone": {
 		"id": 1067491,
 		"number": 22,

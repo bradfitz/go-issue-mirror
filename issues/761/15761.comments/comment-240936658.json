@@ -1,0 +1,12 @@
+{
+	"id": 240936658,
+	"body": "The test you reference checks redefinition of an existing template. That is disallowed by the documentation for (*Template).Parse. But the bug is that no new template may be added to a namespace once any template in that namespace has been executed. I doubt that behavior is intentional.\r\n\r\nThe bug can be illustrated concisely by adding this test near the one you reference:\r\n\r\n```go\r\n\tif _, err := t1.Parse(`{{define \"unrelated\"}} OK {{end}}`); err != nil {\r\n\t\tt.Errorf(`define \"unrelated\": got err %v want nil`, err)\r\n\t}\r\n```\r\n\r\nIn Go 1.5, the test passes. In Go 1.6 and 1.7, the test fails with `define \"unrelated\": got err html/template: cannot redefine \"a\" after it has executed want nil`.\r\n\r\nFor context, here's how the bug bit me: I had a web server installed at client sites that did a fair amount of setup work before serving normal pages, including parsing the majority of its templates from files. During startup, most requests were answered by executing a template named \"startup\" that told the user that things would be operational soon. If there was an error, a template named \"trouble\" would be executed. The \"startup\" and \"trouble\" templates weren't read from external files; they were included in the Go source code to be available before other templates were parsed, and even if the template files were missing. All the templates were associated so there was only one namespace.\r\n\r\nThis worked fine in Go 1.4 and Go 1.5, but after updating to Go 1.6, clients started getting mysterious, rare failures with the error message `cannot redefine \"startup\" after it has executed`. It turned out that there was now a race: if a web request happened to come in before the external templates were parsed, then parsing them would fail, even though no templates were ever redefined.\r\n",
+	"user": {
+		"login": "mstetson",
+		"id": 1238707,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-19T06:12:15Z",
+	"updated_at": "2016-08-19T06:12:15Z"
+}

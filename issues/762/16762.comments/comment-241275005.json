@@ -1,0 +1,12 @@
+{
+	"id": 241275005,
+	"body": "The code looks a little suspicious.\r\n\r\nThere's code in `resolver.go` to reset the same `Once` you're finding crashing:\r\n\r\n```go\r\nfunc (r *resolver) FlushExtServers() {                                           \r\n        for i := 0; i \u003c maxExtDNS; i++ {                                         \r\n                if r.extDNSList[i].extConn != nil {                              \r\n                        r.extDNSList[i].extConn.Close()                          \r\n                }                                                                \r\n                                                                                 \r\n                r.extDNSList[i].extConn = nil                                    \r\n                r.extDNSList[i].extOnce = sync.Once{}                            \r\n        }                                                                        \r\n}                                                                                \r\n```\r\n\r\nAnd that is part of the `Resolver` interface:\r\n\r\n```go\r\n        // FlushExtServers clears the cached UDP connections to external                                                                                           \r\n        // nameservers                                                                                                                                             \r\n        FlushExtServers()                                                        \r\n```\r\n\r\nAnd is call by `endpoint.go` via:\r\n\r\n```go\r\nfunc (ep *endpoint) Join(sbox Sandbox, options ...EndpointOption) error {\r\n```\r\n\r\nI'm going to close this bug for now. I think you need to do an audit of libnetwork's locking.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-21T18:59:20Z",
+	"updated_at": "2016-08-21T18:59:20Z"
+}

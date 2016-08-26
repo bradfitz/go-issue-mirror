@@ -1,0 +1,27 @@
+{
+	"id": 172670739,
+	"number": 16847,
+	"state": "closed",
+	"title": "x/net/http2: requests with absolute URIs in URL.Opaque produce incorrect :path header",
+	"body": "    go version go1.7 darwin/amd64\r\n\r\nIf one sets URL.Opaque in a request to an absolute URI or a scheme-relative one (e.g. \"//example.com/foo\"), that request would work over HTTP/1.1, but fail over HTTP/2 on some servers (e.g. NGINX) with a PROTOCOL_ERROR.\r\n\r\n````\r\nfunc main() {\r\n\treq, _ := http.NewRequest(\"GET\", \"https://nginx.0f.io/hello\", nil)\r\n\treq.URL.Opaque = \"//nginx.0f.io/hello\"\r\n\tresp, err := http.DefaultClient.Do(req)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlog.Println(resp.Proto)\r\n}\r\n````\r\n````\r\n$ GODEBUG=http2client=0 go run play.go \r\n2016/08/23 11:53:48 HTTP/1.1\r\n$ GODEBUG=http2client=1 go run play.go \r\n2016/08/23 11:53:50 Get https://nginx.0f.io/: stream error: stream ID 1; PROTOCOL_ERROR\r\nexit status 1\r\n````\r\nThat's because x/net/http2 uses URL.Opaque (if present) for the :path header. And while HTTP/1.1 allows a [Request-URI](https://tools.ietf.org/html/rfc2616#section-5.1.2) to be an absolute URI, HTTP/2 expects the [:path](https://tools.ietf.org/html/rfc7540#section-8.1.2.3) header to be just the [path](https://tools.ietf.org/html/rfc3986#section-3.3) part. URL.Opaque now has two slightly different meanings in the context of http.\r\n\r\nI'm happy to write a CL to for http2 to ignore URL.Opaque for :path, or maybe parse it and use its path part. That would make existing packages that use Opaque (e.g. [googleapi](https://github.com/google/google-api-go-client/blob/7b2847ee16541b59d2a5004bb75794ebdc2246c4/googleapi/googleapi.go#L300)) not break on the upgrade to http2.\r\n\r\nBut perhaps just documenting this Opaque caveat is sufficient.\r\n\r\nhttp2debug=1 output:\r\n````\r\n$ GODEBUG=http2debug=1 go run play.go \r\n2016/08/23 11:54:41 http2: Transport failed to get client conn for nginx.0f.io:443: http2: no cached connection was available\r\n2016/08/23 11:54:41 http2: Transport creating client conn 0xc420136000 to [2400:cb00:2048:1::681c:50d]:443\r\n2016/08/23 11:54:41 http2: Transport encoding header \":authority\" = \"nginx.0f.io\"\r\n2016/08/23 11:54:41 http2: Transport encoding header \":method\" = \"GET\"\r\n2016/08/23 11:54:41 http2: Transport encoding header \":path\" = \"https://nginx.0f.io/\"\r\n2016/08/23 11:54:41 http2: Transport encoding header \":scheme\" = \"https\"\r\n2016/08/23 11:54:41 http2: Transport encoding header \"accept-encoding\" = \"gzip\"\r\n2016/08/23 11:54:41 http2: Transport received SETTINGS len=18, settings: MAX_CONCURRENT_STREAMS=128, INITIAL_WINDOW_SIZE=65536, MAX_FRAME_SIZE=16777215\r\n2016/08/23 11:54:41 http2: Transport encoding header \"user-agent\" = \"Go-http-client/2.0\"\r\n2016/08/23 11:54:41 http2: Transport received WINDOW_UPDATE len=4 (conn) incr=2147418112\r\n2016/08/23 11:54:41 http2: Transport received SETTINGS flags=ACK len=0\r\n2016/08/23 11:54:41 http2: Transport received RST_STREAM stream=1 len=4 ErrCode=PROTOCOL_ERROR\r\n2016/08/23 11:54:41 RoundTrip failure: stream error: stream ID 1; PROTOCOL_ERROR\r\n2016/08/23 11:54:41 Get https://nginx.0f.io/: stream error: stream ID 1; PROTOCOL_ERROR\r\nexit status 1\r\n````",
+	"user": {
+		"login": "saljam",
+		"id": 751023,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 13,
+	"closed_at": "2016-08-25T02:15:09Z",
+	"created_at": "2016-08-23T11:02:50Z",
+	"updated_at": "2016-08-25T02:15:09Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

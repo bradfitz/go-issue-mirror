@@ -1,0 +1,12 @@
+{
+	"id": 241124576,
+	"body": "[RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.3.2) does seem to make a distinction between a zero-length body and no body:\r\n\r\n\u003e A user agent SHOULD send a Content-Length in a request message when no Transfer-Encoding is sent and the request method defines a meaning for an enclosed payload body.  For example, a Content-Length header field is normally sent in a POST request even when the value is 0 (indicating an empty payload body).  A user agent SHOULD NOT send a Content-Length header field when the request message does not contain a payload body and the method semantics do not anticipate such a body.\r\n\r\nBy that, if a request explicitly has a `Content-Length: 0` header, it does not have \"framing indicat[ing] that there is no message body\", but rather has a payload which is zero-length. As for whether the server \"has already received some or all of the message body for the corresponding request\", I'm not sure a server can be said to have received \"some or all\" of a zero-length payload, since definitionally it can't have read any of the payload. Thus, I don't think RFC 7231 exempts the server from sending the `100 Continue` for zero-length requests.\r\n\r\nThat's being pedantic, but I think it's the right interpretation. I do agree with you that the client code is being dumb in either case, but I need to work with that dumb client code, and the http package does not provide any mechanism for changing this behavior from outside.\r\n\r\nThe fix is to remove the second condition from [this if-statement](https://github.com/golang/go/blob/master/src/net/http/server.go#L1565). It shouldn't impact existing servers. If you agree that it's a small enough change and worthwhile, I'll submit a patch.",
+	"user": {
+		"login": "bwross",
+		"id": 1565320,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-19T20:20:26Z",
+	"updated_at": "2016-08-19T20:20:26Z"
+}

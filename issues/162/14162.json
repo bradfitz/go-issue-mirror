@@ -1,7 +1,7 @@
 {
 	"id": 130007903,
 	"number": 14162,
-	"state": "open",
+	"state": "closed",
 	"title": "proposal: make it possible to catch failed memory allocations",
 	"body": "There's currently no way to safely allocate memory in Go without running the risk of the process panicing. This makes it very difficult to have an application that automatically scales to fit the machine (or container) resources. Further, for an application to determine how much memory is available for allocation from the OS is non-portable and unreliable, so it's not like an application can wrap allocations inside a function that checks to see if they will fit. The guess it can make about available memory can be under or over the real value, leading to wasted resources or OOM panics.\r\n\r\nI realise that running defer() code when a memory allocation has failed could in turn fail, since the recovery code will also need to allocation memory. However, the common case is probably that a large allocation failed, and there is room for small allocations needed for cleanup, so just allowing applications to catch OOM panics would probably help most of the time. If there is another memory allocation failure during recovery, kill the application.\r\n\r\nA more complete solution would be to reserve a chunk of memory that is freed/made available during OOM recovery, which is re-reserved once recovery is complete. That would also allow effective recovery if a small memory allocation failed. As long as the recovery code uses less memory than the reserved size, this approach should be robust. The memory would be allocated with the normal internal mechanisms, so it wouldn't be \"special\". The OOM handling code would be the only place where a reference was kept.\r\n\r\nThis reservation could be done implicitly, but it's probably cleaner to require the application to enable this feature. That would ensure that applications that don't need OOM avoidance don't have to pay the price of the reserved memory. I suggest the following API:\r\nfunc runtime.ReserveOOMBuffer(size uint64)\r\n\r\nThe OOM handler would drop the reference to the reserved memory, call runtime.GC() and then generate a normal panic() rather than panic+kill. The recovery code in the application would be expected to call runtime.ReserveOOMBuffer() again (probably after calling runtime.GC()).\r\n\r\nA less attractive option is to add trymake() and tryappend() built-in functions, which return a value,error tuple and a tryinsert() built-in which inserts into a map and returns an error value. I like this less because there are many other ways in which memory is allocated, so one cannot catch them all. It also requires changing a large number of callsites. Nevertheless, it would be better than the current situation.",
 	"user": {
@@ -15,12 +15,17 @@
 			"name": "Proposal"
 		}
 	],
-	"comments": 26,
+	"comments": 27,
+	"closed_at": "2016-08-22T23:51:28Z",
 	"created_at": "2016-01-30T16:38:02Z",
-	"updated_at": "2016-07-09T22:06:07Z",
+	"updated_at": "2016-08-22T23:51:28Z",
 	"milestone": {
 		"id": 1373555,
 		"number": 30,
 		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
 	}
 }

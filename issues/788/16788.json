@@ -1,7 +1,7 @@
 {
 	"id": 171906891,
 	"number": 16788,
-	"state": "open",
+	"state": "closed",
 	"title": "net/http/httputil: Proxy terminates HTTP/2 stream before reading response body.",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n**1. What version of Go are you using (`go version`)?**\r\n\r\n`go version go1.7 darwin/amd64`\r\n\r\n**2. What operating system and processor architecture are you using (`go env`)?**\r\n\r\n```\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\n```\r\n\r\n**3. What did you do?**\r\n\r\n* Running a reverse proxy using https://golang.org/pkg/net/http/httputil/\r\n* Proxies HTTP on host:port to a target server defined by the `-proxy` flag.\r\n* Sending POST data through the proxy (the proxy manipulates CORS headers)\r\n\r\n**4. What did you expect to see?**\r\n\r\n* A HTTP 200 (or other successful status code).\r\n\r\n**5. What did you see instead?**\r\n\r\n* A HTTP 502 and a proxy error due to premature termination of the HTTP/2 stream.\r\n\r\n```\r\ngo run simple.go -proxy=https://repeater.getattest.io/post/data -port=8001\r\n```\r\n```\r\ncurl http://localhost:8001/post/data -d \"gophers=yes;\"\r\n```\r\n```\r\nts=\"2016/08/18 06:40:38\" msg=\"http: proxy error: stream error: stream ID 3; STREAM_CLOSED\"\r\nts=2016-08-18T06:40:38-07:00 status=502 method=POST uri=https://repeater.getattest.io/post/data duration=20.74786ms bytes=0 from=127.0.0.1:56479\r\n```\r\n\r\n* The proxy I'm running (single file): https://gist.github.com/elithrar/a47af11adb818571d364cc5797ce0fb6 - run it, then hit with the curl above. *Updated with simpler code*\r\n* The upstream, in this case, is nginx (CloudFlare; HTTP/2), fronting my test server (Go on Heroku HTTP/1.1).\r\n* Running `binaryname -proxy=https://post.workwithgo.com/post/data` (Caddy, HTTP/2, proxying the same origin application) and running the same curl does not cause the same error.\r\n* To be tested: *nginx mainline over HTTP/2*, which appears to be the last remaining variable.\r\n\r\nNote: Disabling HTTP/2 via a custom transport on the upstream leg avoids the issue (as you would expect, given the error). I have yet to test on another HTTP/2 origin (I'll spin up a raw Caddy instance shortly).",
 	"user": {
@@ -15,12 +15,17 @@
 			"name": "NeedsInvestigation"
 		}
 	],
-	"comments": 13,
+	"comments": 18,
+	"closed_at": "2016-08-22T00:56:13Z",
 	"created_at": "2016-08-18T13:55:13Z",
-	"updated_at": "2016-08-18T22:39:13Z",
+	"updated_at": "2016-08-22T00:56:13Z",
 	"milestone": {
 		"id": 1944056,
 		"number": 44,
 		"title": "Go1.7.1"
+	},
+	"reactions": {
+		"total_count": 1,
+		"heart": 1
 	}
 }

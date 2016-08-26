@@ -1,0 +1,26 @@
+{
+	"id": 172477644,
+	"number": 16833,
+	"state": "open",
+	"title": "cmd/compile: teach BCE about copy return value",
+	"body": "```go\r\npackage p\r\n\r\nfunc f(s, t []byte) {\r\n\tx := copy(s, t)\r\n\t_ = s[x:]\r\n}\r\n```\r\n\r\ncompiles to\r\n\r\n```\r\n\"\".f t=1 size=122 args=0x30 locals=0x28\r\n\t0x0000 00000 (x.go:3)\tTEXT\t\"\".f(SB), $40-48\r\n\t0x0000 00000 (x.go:3)\tMOVQ\t(TLS), CX\r\n\t0x0009 00009 (x.go:3)\tCMPQ\tSP, 16(CX)\r\n\t0x000d 00013 (x.go:3)\tJLS\t115\r\n\t0x000f 00015 (x.go:3)\tSUBQ\t$40, SP\r\n\t0x0013 00019 (x.go:3)\tMOVQ\tBP, 32(SP)\r\n\t0x0018 00024 (x.go:3)\tLEAQ\t32(SP), BP\r\n\t0x001d 00029 (x.go:3)\tFUNCDATA\t$0, gclocals·5bdb7effe3ac48180ac4cdf9d49dc4dd(SB)\r\n\t0x001d 00029 (x.go:3)\tFUNCDATA\t$1, gclocals·69c1753bd5f81501d95132d08af04464(SB)\r\n\t0x001d 00029 (x.go:4)\tMOVQ\t\"\".s+56(FP), AX\r\n\t0x0022 00034 (x.go:4)\tMOVQ\t\"\".t+80(FP), CX\r\n\t0x0027 00039 (x.go:4)\tCMPQ\tAX, CX\r\n\t0x002a 00042 (x.go:4)\tJLE\t110\r\n\t0x002c 00044 (x.go:4)\tMOVQ\tCX, \"\".x+24(SP)\r\n\t0x0031 00049 (x.go:4)\tMOVQ\t\"\".s+48(FP), DX\r\n\t0x0036 00054 (x.go:4)\tMOVQ\tDX, (SP)\r\n\t0x003a 00058 (x.go:4)\tMOVQ\t\"\".t+72(FP), DX\r\n\t0x003f 00063 (x.go:4)\tMOVQ\tDX, 8(SP)\r\n\t0x0044 00068 (x.go:4)\tMOVQ\tCX, 16(SP)\r\n\t0x0049 00073 (x.go:4)\tPCDATA\t$0, $0\r\n\t0x0049 00073 (x.go:4)\tCALL\truntime.memmove(SB)\r\n\t0x004e 00078 (x.go:5)\tMOVQ\t\"\".x+24(SP), AX\r\n\t0x0053 00083 (x.go:5)\tMOVQ\t\"\".s+56(FP), CX\r\n\t0x0058 00088 (x.go:5)\tCMPQ\tAX, CX\r\n\t0x005b 00091 (x.go:5)\tJHI\t$0, 103\r\n\t0x005d 00093 (x.go:6)\tMOVQ\t32(SP), BP\r\n\t0x0062 00098 (x.go:6)\tADDQ\t$40, SP\r\n\t0x0066 00102 (x.go:6)\tRET\r\n\t0x0067 00103 (x.go:5)\tPCDATA\t$0, $1\r\n\t0x0067 00103 (x.go:5)\tCALL\truntime.panicslice(SB)\r\n\t0x006c 00108 (x.go:5)\tUNDEF\r\n\t0x006e 00110 (x.go:4)\tMOVQ\tAX, CX\r\n\t0x0071 00113 (x.go:4)\tJMP\t44\r\n\t0x0073 00115 (x.go:4)\tNOP\r\n\t0x0073 00115 (x.go:3)\tCALL\truntime.morestack_noctxt(SB)\r\n\t0x0078 00120 (x.go:3)\tJMP\t0\r\n```\r\n\r\nObserve the bounds check on `_ = s[x:]`. In comparison, using `_ = s[len(s):]` doesn't generate a bounds check. But the semantics of `copy` guarantee that `x \u003c= len(s)`. So we should be able to eliminate the check.\r\n\r\nSee [CL 27460](https://go-review.googlesource.com/#/c/27460/) for a concrete instance in the runtime.\r\n\r\ncc @brtzsnr @bradfitz \r\n\r\n\r\n\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-08-22T15:09:43Z",
+	"updated_at": "2016-08-22T15:40:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

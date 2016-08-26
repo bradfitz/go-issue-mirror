@@ -2,7 +2,7 @@
 	"id": 155608860,
 	"number": 15734,
 	"state": "open",
-	"title": "proposal: build dependent packages as soon as export data is ready",
+	"title": "cmd/go: build dependent packages as soon as export data is ready",
 	"body": "This is a trace of the activity on an 8 core machine running 'go build -a std':\r\n\r\n![trace_build_std](https://cloud.githubusercontent.com/assets/67496/15375421/d9e4433c-1d03-11e6-84f6-a5dd03774d56.png)\r\n\r\nFor those who want to explore more, here is an [html version](https://github.com/golang/go/files/271422/std.html.gz). (Hint: Use a, d, w, and s keys to navigate.)\r\n\r\nThere are a few early bottlenecks (`runtime`, `reflect`, `fmt`) and a long near linear section at the end (`net`, `crypto/x509`, `crypto/tls`, `net/http`). Critical path scheduling (#8893) could help some with this, as could scheduling cgo invocations earlier (#15681). This issue is to discuss another proposal that complements those.\r\n\r\nWe currently wait until a package is finished building before building packages that depend on it. However, dependent packages only need export data, not machine code, to start building. I believe that that could be available once we're done with escape analysis and closure transformation, and before we run `walk`.\r\n\r\nFor the bottlenecks listed above:\r\n\r\n| package | time until export data available | total compilation time |\r\n| ------------- | ------------- | ---- |\r\n| runtime  | 226ms | 1300ms |\r\n| reflect  | 174ms | 960ms |\r\n| fmt  | 33ms | 229ms |\r\n| net  | 114ms | 846ms |\r\n| crypto/x509  | 66ms | 253ms |\r\n| crypto/tls  | 82ms | 461ms |\r\n| net/http  | 168ms | 1310ms |\r\n\r\nThough slightly optimistic (writing export data isn't instantaneous), this does suggest that this would in general significantly reduce time spent waiting for dependencies to compile.\r\n\r\nThis pattern of large, slow, linear dependency chains also shows up in bigger projects, like juju.\r\n\r\n@rsc implemented one enabling piece by adding [a flag to emit export data separately from machine code](https://go-review.googlesource.com/22500).\r\n\r\nRemaining work to implement this, and open questions:\r\n\r\n* Emitting export data before `walk` means that inlined functions would get walked and expanded at use rather than at initial package compilation. Does this matter? If so, an alternative is to change the compiler structure to walk all functions and then compile all functions. Would this increase high water memory mark?\r\n* How would the compiler signal to cmd/go that it is done emitting export data? I don't know of a clean, simple, portable cross-process semaphore.\r\n* This would be a pretty major upheaval in how cmd/go schedules builds. Making this work more fine-grained would be useful anyway, but it'd be a lot of high risk change.\r\n\r\nGiven the scope of the change, I'm marking this as a proposal. I'd love feedback.\r\n",
 	"user": {
 		"login": "josharian",
@@ -23,11 +23,11 @@
 	},
 	"comments": 6,
 	"created_at": "2016-05-18T21:44:50Z",
-	"updated_at": "2016-05-19T17:47:10Z",
+	"updated_at": "2016-08-22T23:28:34Z",
 	"milestone": {
-		"id": 1373555,
-		"number": 30,
-		"title": "Proposal"
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
 	},
 	"reactions": {
 		"total_count": 7,

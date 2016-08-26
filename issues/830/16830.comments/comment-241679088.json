@@ -1,0 +1,12 @@
+{
+	"id": 241679088,
+	"body": "**On gzip handling:**\r\nOkay, sorry for bothering you then, I expected these libs to be working from the beginning; in fact I only started seeing those `multiple WriteHeader calls` errors from logs only after upgrading servers to 1.7, I got lucky and made wrong assumptions.\r\n\r\n**On the http server recovering panic:**\r\nSorry again, I also expected to get a header 500 on an panic by default and I was wrong, that's specific behavior.\r\nI expected this since `Writing` anything would add headers `200` and a default behavior of writing a `500` on an unrecovered panic seems like an idea golang people would also have.\r\n\r\nLessons learned: **don't expect anything.**\r\n\r\nHere is an interesting snippet containing all that wrongitude that behaves exactly the same on 1.6 \u0026 1.7:\r\n```\r\npackage main\r\n\r\nimport \"net/http\"\r\n\r\nfunc DeferWriteNil(next http.Handler) http.Handler {\r\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tdefer w.Write(nil)\r\n\t\tnext.ServeHTTP(w, r)\r\n\t})\r\n}\r\n\r\nfunc CatchPanic(next http.Handler) http.Handler {\r\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tdefer func() {\r\n\t\t\tif err := recover(); err != nil {\r\n\t\t\t\tw.WriteHeader(http.StatusInternalServerError)\r\n\t\t\t}\r\n\t\t}()\r\n\t\tnext.ServeHTTP(w, r)\r\n\t})\r\n}\r\n\r\nfunc main() {\r\n\tpanicker := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tpanic(\"banana\")\r\n\t})\r\n\r\n\thttp.Handle(\"/panic\", panicker) // empty http response !!!\r\n\thttp.Handle(\"/\", CatchPanic(DeferWriteNil(panicker))) // 200 !!!\r\n\thttp.ListenAndServe(\"0.0.0.0:8000\", nil)\r\n}\r\n```",
+	"user": {
+		"login": "azr",
+		"id": 1024852,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-23T09:37:40Z",
+	"updated_at": "2016-08-23T10:50:37Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 172093975,
+	"number": 16800,
+	"state": "open",
+	"title": "crypto/x509: Verify returns incorrect chains for some situations",
+	"body": "1. What version of Go are you using?\r\nThis was first observed with Go 1.5.3, and still exists as of Go 1.7.  From cursory historical code inspection, this problem looks like it has existed well before Go 1.5.3.\r\n\r\n2. What operating system and processor architecture are you using?\r\nLinux AMD64\r\n\r\n3. What did you do? \u003cbr\u003e\r\n\\(A\\) Verifying TLS server cert from a trusted CA hierarchy: https://play.golang.org/p/6L_GA0ZkcD\r\n\\- This example simulates what happens when a Go TLS client talks to a TLS server that is sending the root cert as part of the server cert's chain.  Even though sending the root is not a TLS best practice, such TLS servers are still quite common on the public Internet.\u003cbr\u003e\r\n\\(B\\) Verifying TLS server cert that is self-signed: https://play.golang.org/p/ycS8K__AwJ\r\n\\- This example simulates what is more likely to happen in an enterprise / private environment.  Obviously, the Go TLS client must not be using InsecureSkipVerify.  Either the TLS server's self-signed cert must be explicitly set as one of the roots in the options passed to x509.Verify or the system's roots must be modified to include the self-signed cert.\r\n\r\n4. What did you expect to see?\u003cbr\u003e\r\n\\(A\\) I expect to see only one verified chain: [Leaf] -\u003e [Intermediate] -\u003e [Root] \u003cbr\u003e\r\n\\(B\\) I expect to see only one verified chain: [Root]\r\n\r\n5. What did you see instead?\u003cbr\u003e\r\n\\(A\\) I see two verified chains:\r\n\u003col type=\"I\"\u003e\r\n\u003cli\u003e correct: [Leaf] -\u003e [Intermediate] -\u003e [Root]\u003c/li\u003e\r\n\u003cli\u003e *not* correct: [Leaf] -\u003e [Intermediate] -\u003e [Root] -\u003e [Root]\u003c/li\u003e\r\n\u003c/ol\u003e\r\n\u003cbr\u003e\\(B\\) I see one verified chain that is \\*not\\* correct: [Root] -\u003e [Root]\r\n\r\nThe cause for both (A) and (B) seems to stem from x509.buildChains.\r\n\r\n(B) should be fully addressed by yesterday's fix (https://go-review.googlesource.com/#/c/27393/2/src/crypto/x509/verify.go) by @agl for Issue #16763.",
+	"user": {
+		"login": "ramoas",
+		"id": 13425463,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-08-19T09:45:24Z",
+	"updated_at": "2016-08-20T00:12:16Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

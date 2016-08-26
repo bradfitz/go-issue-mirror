@@ -1,0 +1,21 @@
+{
+	"id": 172076639,
+	"number": 16799,
+	"state": "open",
+	"title": "net/http: HTTP server should respond with 100 Continue for zero-length \"Expect: 100-continue\" requests",
+	"body": "1. What version of Go are you using (`go version`)?\r\ngo1.6.3 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOOS=\"linux\"\r\n\r\n3. What did you do?\r\nMake an HTTP request with the headers `Expect: 100-continue` and `Content-Length: 0` to an `http.Server`. The server handler reads the (zero-length) response body and responds with a success status.\r\n\r\n4. What did you expect to see?\r\nA `100 Continue` response on the wire, followed by a `200 OK`.\r\n\r\n5. What did you see instead?\r\nOnly a `200 OK` response.\r\n\r\n[RFC 2616](https://www.ietf.org/rfc/rfc2616.txt) says the following:\r\n\r\n\u003e Upon receiving a request which includes an Expect request-header field with the \"100-continue\" expectation, an origin server MUST either respond with 100 (Continue) status and continue to read from the input stream, or respond with a final status code. The origin server MUST NOT wait for the request body before sending the 100 (Continue) response. If it responds with a final status code, it MAY close the transport connection or it MAY continue to read and discard the rest of the request.  **It MUST NOT perform the requested method if it returns a final status code.**\r\n\r\nThe last sentence implies that, when an `Expect: 100-continue` request header is present and the request was successfully handled by the server, it's incorrect behavior for the server to send a `200 OK` without a preceding `100 Continue`.\r\n\r\n`http.Server` does not exhibit the correct behavior with zero-length requests.",
+	"user": {
+		"login": "bwross",
+		"id": 1565320,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-08-19T08:06:30Z",
+	"updated_at": "2016-08-20T00:46:26Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

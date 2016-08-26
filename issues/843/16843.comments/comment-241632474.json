@@ -1,0 +1,12 @@
+{
+	"id": 241632474,
+	"body": "It would be nice to have the ability to set a limit to the memory usage. \r\n\r\nAfter a limit is set, perhaps the runtime could provide a clear indication that we're under memory pressure and that the application should avoid creating new allocations. Example new runtime APIs that would help:\r\n\r\n- `func InMemoryPushback() bool`; or\r\n- `func RegisterPushbackFunc(func(inPushback bool))`\r\n\r\nThat would provide a clear signal to the application. _How_ exactly that's decided should be an internal implementation decision and not part of the API.  An example implementation, to illustrate: if we limit ourselves to the heap size specified by the user, we could trigger GC whenever the used heap is close to the limit. Then we could enter pushback whenever the GC performance (latency or CPU overhead) is outside certain bounds. Apply smoothing as needed.\r\n\r\nThe approach suggested by this API has limitations.\r\n\r\nFor example, it's still possible for an application that is behaving well to do one monstrous allocation after it has checked for the pushback state. This would be common for HTTP and RPC servers that do admittance control at the beginning of the request processing. If the monstrous allocation would bring the memory heap above the limit, Go should probably panic. Since we don't want to change the language to add memory allocation error checks, I think this is fine. And we have no other option :).\r\n\r\nAnother problem is that deciding what is the right time to pushback can be hard. Whatever the runtime implements, some folks may find it too aggressive (pushing back too much, leading to poor resource utilization) or too conservative (pushing back too late, leading to high latency due to excessive GC). I guess the go team could provide a knob similar to GOGC to control the _pushbackiness_ of the runtime, if folks are really paranoid about it.\r\n",
+	"user": {
+		"login": "nictuku",
+		"id": 202998,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-23T05:42:55Z",
+	"updated_at": "2016-08-23T05:43:08Z"
+}

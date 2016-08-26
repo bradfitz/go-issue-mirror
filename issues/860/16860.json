@@ -1,0 +1,27 @@
+{
+	"id": 172912969,
+	"number": 16860,
+	"state": "open",
+	"title": "cmd/go: support reproducible builds regardless of build path?",
+	"body": "It would be good if go was able to generate bit-for-bit identical binaries, even if the build environment changes in unimportant ways. (For example, so users can reproduce binaries without requiring root.)\r\n\r\nUp until recently, we have been able to reproduce go binaries whilst modifying many parts of the build environment, except that we kept the build-path constant. However recently, we started to also vary the build-path. (Why \"recently\", is irrelevant to this report, but I can go into it if you ask.)\r\n\r\nAnyway, now we can see that `.gopclntab` embeds the build path into the resulting binary. This patch will get rid of this environment-specific information, but I know it's not perfect:\r\n\r\n~~~~\r\n--- src/cmd/link/internal/ld/pcln.go\r\n+++ src/cmd/link/internal/ld/pcln.go\r\n@@ -41,6 +41,8 @@\r\n \r\n // iteration over encoded pcdata tables.\r\n \r\n+var cwd, _ = os.Getwd()\r\n+\r\n func getvarint(pp *[]byte) uint32 {\r\n \tv := uint32(0)\r\n \tp := *pp\r\n@@ -152,7 +154,8 @@\r\n \t\t\tf.Value = int64(ctxt.Nhistfile)\r\n \t\t\tf.Type = obj.SFILEPATH\r\n \t\t\tf.Next = ctxt.Filesyms\r\n-\t\t\tf.Name = expandGoroot(f.Name)\r\n+\t\t\t//f.Name = expandGoroot(f.Name)\r\n+\t\t\tf.Name, _ = filepath.Rel(cwd, f.Name)\r\n \t\t\tctxt.Filesyms = f\r\n \t\t}\r\n \t}\r\n~~~~\r\n\r\nIn particular, I'm not sure how this will interfere with readers of this information. I know that `src/debug/pclntab.go` carries an API for this, but I'm not sure what sorts of contracts you have published for that, that people expect.\r\n\r\nAlso, the part where I comment out `expandGoroot` is not strictly necessary for reproducibility, but would allow, e.g. a user to try to reproduce a binary from his *own* go toolchain - which is some extra assurance that the copies behave the same way.\r\n\r\nThe call to `Getwd` during static initialisation is also a bit dirty; I could delay this for later but that may or may not require locks, or pass it in from an parent/ancestor caller but that would require adding extra arguments to some functions.\r\n\r\nHowever if you give me some guidelines on how to make this patch acceptable, I'll be happy to do this work and submit a PR.\r\n",
+	"user": {
+		"login": "infinity0",
+		"id": 78398,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "neild",
+		"id": 52544,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-08-24T10:04:47Z",
+	"updated_at": "2016-08-24T21:33:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

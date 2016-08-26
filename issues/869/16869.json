@@ -1,0 +1,30 @@
+{
+	"id": 173081018,
+	"number": 16869,
+	"state": "open",
+	"title": "cmd/compile: inline reflect.TypeOf?",
+	"body": "@randall77 was mentioning the compiler maybe inlining reflect.TypeOf calls the other day. Or somebody was.\r\n\r\nToday I ran across the github.com/vmware/govmomi/vim25/types package which has 5769 calls to reflect.TypeOf, populating a map:\r\n\r\n```\r\ntypes.go:       t[\"WillLoseHAProtection\"] = reflect.TypeOf((*WillLoseHAProtection)(nil)).Elem()\r\ntypes.go:       t[\"WillLoseHAProtectionFault\"] = reflect.TypeOf((*WillLoseHAProtectionFault)(nil)).Elem()\r\ntypes.go:       t[\"WillModifyConfigCpuRequirements\"] = reflect.TypeOf((*WillModifyConfigCpuRequirements)(nil)).Elem()\r\ntypes.go:       t[\"WillModifyConfigCpuRequirementsFault\"] = reflect.TypeOf((*WillModifyConfigCpuRequirementsFault)(nil)).Elem()\r\ntypes.go:       t[\"WillResetSnapshotDirectory\"] = reflect.TypeOf((*WillResetSnapshotDirectory)(nil)).Elem()\r\ntypes.go:       t[\"WillResetSnapshotDirectoryFault\"] = reflect.TypeOf((*WillResetSnapshotDirectoryFault)(nil)).Elem()\r\ntypes.go:       t[\"WinNetBIOSConfigInfo\"] = reflect.TypeOf((*WinNetBIOSConfigInfo)(nil)).Elem()\r\ntypes.go:       t[\"WipeDiskFault\"] = reflect.TypeOf((*WipeDiskFault)(nil)).Elem()\r\ntypes.go:       t[\"WipeDiskFaultFault\"] = reflect.TypeOf((*WipeDiskFaultFault)(nil)).Elem()\r\ntypes.go:       t[\"XmlToCustomizationSpecItem\"] = reflect.TypeOf((*XmlToCustomizationSpecItem)(nil)).Elem()\r\ntypes.go:       t[\"XmlToCustomizationSpecItemRequestType\"] = reflect.TypeOf((*XmlToCustomizationSpecItemRequestType)(nil)).Elem()\r\ntypes.go:       t[\"ZeroFillVirtualDiskRequestType\"] = reflect.TypeOf((*ZeroFillVirtualDiskRequestType)(nil)).Elem()\r\ntypes.go:       t[\"ZeroFillVirtualDisk_Task\"] = reflect.TypeOf((*ZeroFillVirtualDisk_Task)(nil)).Elem()\r\n```\r\n\r\nIf the compiler could inline the `reflect.TypeOf` calls then they could stop autogenerating the Elem part too, and it's all just static data and their init load could drop a bunch.\r\n\r\nreflect.TypeOf is just:\r\n\r\n```go\r\n// TypeOf returns the reflection Type that represents the dynamic type of i.                                                                                            \r\n// If i is a nil interface value, TypeOf returns nil.                                                                                                                   \r\nfunc TypeOf(i interface{}) Type {\r\n        eface := *(*emptyInterface)(unsafe.Pointer(\u0026i))\r\n        return toType(eface.typ)\r\n}\r\n\r\nfunc toType(t *rtype) Type {\r\n        if t == nil {\r\n                return nil\r\n        }\r\n        return t\r\n}\r\n```\r\n\r\nLow priority.",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-08-24T23:22:18Z",
+	"updated_at": "2016-08-25T01:53:29Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 3
+	}
+}

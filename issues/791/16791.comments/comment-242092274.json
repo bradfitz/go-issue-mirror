@@ -1,0 +1,12 @@
+{
+	"id": 242092274,
+	"body": "Replacing `[rR]eadRune` by `[rR]eadByte` gives me around 18% speedup, see [my implementation](https://gist.github.com/kokes/4f3e14beac648f3ec3790ffb8d2ee5a1). This is obviously just for testing, since I rip out the `rune` handling altogether.\r\n\r\nFrom what I can see, we read runes just because we *can* have a rune delimiter (and/or comment). We can add a private byte `comma` to `Reader` and populate it iff the separator is byte-sized, which is both the default (an actual comma) and the most likely case (has anyone ever split a CSV on a rune?). And if we have a byte-sized separator, we can replace all rune reading and writing with byte reading and writing.\r\n\r\nI can imagine the `Read` method to test the size and then dispatch a different method, which only uses byte reading, writing, and switching.\r\n\r\n```\r\nif r.Comma \u003c utf8.RuneSelf {\r\n    r.comma = byte(r.Comma)\r\n    record, err = r.parseRecordByBytes()\r\n} else {\r\n    record, err = r.parseRecord()\r\n}\r\n```\r\n\r\n(Or it could be equally incorporated to `parseField`, but there would be a lot of switching back and forth, depending on the byte/rune context.)\r\n\r\n(Handling of r.Comment would be handled similarly, but that's a rather minor issue.)\r\n\r\n(I don't know much about runes, but could we maybe just read on bytes and stop on the first byte of a rune, regardless of its length? And if it's a multibyte character, then check the subsequent bytes for a match. I don't know how many false positives this would yield though.)",
+	"user": {
+		"login": "kokes",
+		"id": 8451755,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-24T14:52:11Z",
+	"updated_at": "2016-08-24T14:52:11Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 242276739,
+	"body": "Yeah, that appears to be part of the problem at least.  libresolv in glibc uses cfg.timeout to compute individual UDP round-trip timeouts, not as a global timeout.\r\n\r\nIt has a kind of goofy timeout calculation logic though.  For the first server in the nameserver list, it uses cfg.timeout directly.  But for the rest, it uses `(cfg.timeout \u003c\u003c ns) / len(cfg.servers)`, where `ns` is the server's (0-based) index in `cfg.servers`.\r\n\r\nChecking glibc commit history, it looks like that logic came from BIND 8.2.3 in 2000 (see bminor/glibc@e685e07).  Prior to that, there was a somewhat seemingly more sane approach: for the first *attempt* to each server, use `cfg.timeout` directly; but for retries use `(cfg.timeout \u003c\u003c try) / len(cfg.servers)`.\r\n\r\nI want to say this is just an accident because of how they split out a function similar to our `exchange`, but renaming the variable from `try` to `ns` seems like it was intentional.\r\n\r\ndjbdns's client library doesn't respect the timeout/retry settings in resolv.conf.  In stub resolver mode, it simply always uses 3 retries, and uses timeouts of 3s, 11s, and 45s per UDP query.",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-25T04:12:19Z",
+	"updated_at": "2016-08-25T04:12:19Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 241455862,
+	"body": "Follow the link ! :)\r\n\r\nOr here it is : \r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"compress/gzip\"\r\n\t\"io\"\r\n\t\"net/http\"\r\n)\r\n\r\ntype gzipResponseWriter struct {\r\n\tio.Writer\r\n\thttp.ResponseWriter\r\n}\r\n\r\nfunc (w gzipResponseWriter) Write(b []byte) (int, error) {\r\n\treturn w.Writer.Write(b)\r\n}\r\n\r\n// EnableGZIP will attempt to compress the response if the client has passed a\r\n// header value for Accept-Encoding which allows gzip\r\nfunc EnableGZIP(fn http.Handler) http.Handler {\r\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tgz := gzip.NewWriter(w)\r\n\t\tdefer gz.Close()\r\n\t\tgzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}\r\n\t\tfn.ServeHTTP(gzr, r)\r\n\t})\r\n}\r\n\r\nfunc CatchPanic(next http.Handler) http.Handler {\r\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tdefer func() {\r\n\t\t\tif err := recover(); err != nil {\r\n\t\t\t\tw.WriteHeader(http.StatusInternalServerError)\r\n\t\t\t}\r\n\t\t}()\r\n\t\tnext.ServeHTTP(w, r)\r\n\t})\r\n}\r\n\r\nfunc main() {\r\n\thandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\r\n\t\tpanic(\"banana\")\r\n\t})\r\n\r\n\thttp.Handle(\"/nocatch\", EnableGZIP(handler))\r\n\r\n\thttp.Handle(\"/catch\", CatchPanic(EnableGZIP(handler)))\r\n\r\n\thttp.ListenAndServe(\"0.0.0.0:8000\", nil)\r\n}\r\n\r\n```\r\n\r\nIt changed when I started using 1.7 sorry I didn't mention that ...",
+	"user": {
+		"login": "azr",
+		"id": 1024852,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-22T15:44:57Z",
+	"updated_at": "2016-08-22T15:44:57Z"
+}

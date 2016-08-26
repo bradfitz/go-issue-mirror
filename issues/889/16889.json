@@ -1,0 +1,21 @@
+{
+	"id": 173439572,
+	"number": 16889,
+	"state": "open",
+	"title": "cmd/compile: performance regression in Bessel functions on AMD64",
+	"body": "Comparing 1.6 vs 1.7 performance  I see:\r\n...\r\nJ0-4            57.0ns ± 0%  71.9ns ± 1%   +26.17%        (p=0.000 n=19+20)\r\nJ1-4            57.7ns ± 0%  71.6ns ± 0%   +24.04%        (p=0.000 n=20+19)\r\nJn-4             126ns ± 0%   153ns ± 0%   +21.43%        (p=0.000 n=20+20)\r\n\r\n...\r\nY0-4            56.5ns ± 0%  70.8ns ± 0%   +25.31%        (p=0.000 n=19+19)\r\nY1-4            56.3ns ± 0%  70.8ns ± 0%   +25.68%        (p=0.000 n=20+20)\r\nYn-4             122ns ± 0%   149ns ± 0%   +22.13%        (p=0.000 n=20+19)\r\n\r\nThis is mainly due to time spent in pzero/qzero/... functions.\r\nQuick and dirty benchmark of  pzero shows:\r\n\r\nJ0_3-4  8.49ns ± 0%  13.90ns ± 0%  +63.72%  (p=0.001 n=6+7)\r\n\r\nAnalysis shows that main problem is due to :\r\n var p [6]float64\r\n...\r\n p = p0R3\r\n...\r\n r := p[0] +...\r\n\r\nPreviously this resulted in load directly from global  p0R3 array:\r\n\r\nmovsd  0x1f9d68(%rip),%xmm13        # 67bce0 \u003cmath.p0R3\u003e\r\nmovsd  0x1f9d67(%rip),%xmm12        # 67bce8 \u003cmath.p0R3+0x8\u003e\r\nmovsd  0x1f9d66(%rip),%xmm11        # 67bcf0 \u003cmath.p0R3+0x10\u003e\r\nmovsd  0x1f9d65(%rip),%xmm10        # 67bcf8 \u003cmath.p0R3+0x18\u003e\r\nmovsd  0x1f9d64(%rip),%xmm9        # 67bd00 \u003cmath.p0R3+0x20\u003e\r\nmovsd  0x1f9d64(%rip),%xmm2        # 67bd08 \u003cmath.p0R3+0x28\u003e\r\n\r\nBut with ssa we generate  duffcopy to stack and than load to stack:\r\nLEAQ\t\"\".p0R3(SB), SI\r\nDUFFCOPY\t$854\r\n...\r\nMOVSD\t\"\".p(SP), X0\r\nMOVSD\t\"\".p+8(SP), X2\r\nMOVSD\t\"\".p+16(SP), X3\r\nMOVSD\t\"\".p+24(SP), X4\r\nMOVSD\t\"\".p+32(SP), X5\r\nMOVSD\t\"\".p+40(SP), X6\r\n\r\nOther code looks ~similar.\r\nI've verified that replacing local p with use of global p0R3 in go code  produces fast code for both 1.6  and 1.7",
+	"user": {
+		"login": "TocarIP",
+		"id": 16836375,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-08-26T12:13:40Z",
+	"updated_at": "2016-08-26T16:45:07Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 241764850,
+	"body": "I previously gave the reasoning why using a channel or a callback to receive memory exceeded events won't work: #14162 \r\nThat same reasoning applies to a channel whenever a GC run is completed.\r\n\r\nTo robustly handling exceeding a memory limit the check for the limit has to be part of the allocator, not done after a GC run. This is because you can't afford to wait. If you wait for the next GC run, it may be too late. Consider a single large slice allocation that would put you over the soft limit _and_ would exceed the hard memory limit. You'll get an OOM panic. The same applies to a callback function.\r\n\r\nYou need to immediately stop the code which is doing the heavy allocating. To do that you need a check in the allocator and you need to send a panic(). It's up to the application to set the soft memory limit at which these optional, catchable panics are sent.\r\n\r\nPlease, before rehashing old suggestions or coming up with new variants, read through #14162 where I gave the reasoning why a panic and a check in the allocator is needed. Otherwise we keep covering the same old ground.",
+	"user": {
+		"login": "rgooch",
+		"id": 9002662,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-23T15:13:33Z",
+	"updated_at": "2016-08-23T15:13:33Z"
+}

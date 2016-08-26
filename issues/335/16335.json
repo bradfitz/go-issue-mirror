@@ -1,7 +1,7 @@
 {
 	"id": 165107654,
 	"number": 16335,
-	"state": "open",
+	"state": "closed",
 	"title": "encoding/pem: pem.Decode should take care of PEM file's encapsulation boundaries",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n   ` go version go1.6.2 darwin/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n    ```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/Users/simon/go/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/simon/Myfruit/Go/imports:/Users/simon/Mygo\"\r\nGORACE=\"\"\r\nGOROOT=\"/Users/simon/go\"\r\nGOTOOLDIR=\"/Users/simon/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\ncode:  [https://play.golang.org/p/kjL-dBzhI5](https://play.golang.org/p/kjL-dBzhI5)\r\n\r\naccording to [rfc1421 4.4  Encapsulation Mechanism](https://tools.ietf.org/html/rfc1421), the key is in invaild format\r\n\r\nwhen I run the command `openssl rsa -noout -text -in test.key`, the following error occurred:\r\n```\r\nunable to load Private Key\r\n10374:error:0906D066:PEM routines:PEM_read_bio:bad end line:/SourceCache/OpenSSL098/OpenSSL098-50/src/crypto/pem/pem_lib.c:747:\r\n```\r\n\r\nsimilar issue goes here:\r\n[http://stackoverflow.com/questions/18460035/unable-to-load-private-key-pem-routinespem-read-biono-start-linepem-lib-c6](http://stackoverflow.com/questions/18460035/unable-to-load-private-key-pem-routinespem-read-biono-start-linepem-lib-c6)\r\n\r\n4. What did you expect to see?\r\n\r\noutput message: `fail to decode the key`\r\n\r\n5. What did you see instead?\r\n\r\noutput message: `success to decode the key`\r\n\r\n\r\n\r\nmaybe the following patch help\r\n\r\n\r\n```\r\ndiff --git a/src/encoding/pem/pem.go b/src/encoding/pem/pem.go\r\nindex 506196b..b00d504 100644\r\n--- a/src/encoding/pem/pem.go\r\n+++ b/src/encoding/pem/pem.go\r\n@@ -132,6 +132,11 @@ func Decode(data []byte) (p *Block, rest []byte) {\r\n                return decodeError(data, rest)\r\n        }\r\n\r\n+       endLine, next := getline(rest[endIndex:])\r\n+       if !bytes.HasSuffix(endLine, pemEndOfLine) {\r\n+               return decodeError(data, next)\r\n+       }\r\n+\r\n        base64Data := removeWhitespace(rest[:endIndex])\r\n        p.Bytes = make([]byte, base64.StdEncoding.DecodedLen(len(base64Data)))\r\n        n, err := base64.StdEncoding.Decode(p.Bytes, base64Data)\r\n```",
 	"user": {
@@ -17,8 +17,9 @@
 		"site_admin": false
 	},
 	"comments": 5,
+	"closed_at": "2016-08-19T16:30:18Z",
 	"created_at": "2016-07-12T15:21:16Z",
-	"updated_at": "2016-08-19T00:00:33Z",
+	"updated_at": "2016-08-19T16:30:18Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

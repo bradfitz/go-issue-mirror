@@ -1,7 +1,7 @@
 {
 	"id": 169576214,
 	"number": 16616,
-	"state": "open",
+	"state": "closed",
 	"title": "cmd/compile: package path of distinct types with unexported fields is the same",
 	"body": "Go version and environment:\r\ngo version go1.6.3 windows/amd64\r\n\r\nIssue:\r\nIf we have an exported function in a package, which has a parameter of anonymous struct type with unexported fields, e.g.:\r\n\r\n\tpackage subplay\r\n\t\r\n\timport \"fmt\"\r\n\t\r\n\tfunc PrintAnonymous(v struct{ i int }) {\r\n\t\tfmt.Printf(\"PrintAnonymous: %d\\n\", v.i)\r\n\t}\r\n\r\nWe can't call this function from another package, trying to pass an anonymous struct value (with matching fields), e.g.:\r\n\r\n\tvalue := struct{ i int }{1}\r\n\tsubplay.PrintAnonymous(value)\r\n\r\nWe get a compile-time error:\r\n\r\n\u003e cannot use value (type struct { i int }) as type struct { i int } in argument to subplay.PrintAnonymous\r\n\r\nUnderstandable, as the fields of the anonymous struct are unexported.\r\n\r\nIt is also understandable that we can use reflection to create a zero value of this type, and call `subplay.PrintAnonymous()` with this:\r\n\r\n\tv := reflect.ValueOf(subplay.PrintAnonymous)\r\n\tparamt := v.Type().In(0)\r\n\tv.Call([]reflect.Value{reflect.New(paramt).Elem()})\r\n\r\nWhich runs, and doesn't panic.\r\n\r\nBut now if I try to pass a `reflect.Value` of a value of **my own anonymous struct** (with matching, unexported fields), with non-zero values, it still runs without panic:\r\n\r\n\tvalue := struct{ i int }{1}\r\n\tv := reflect.ValueOf(subplay.PrintAnonymous)\r\n\tv.Call([]reflect.Value{reflect.ValueOf(value)})\r\n\r\nMy question: is this normal? If yes, then this should be possible without using reflection, too. If without reflection the compile-time error is justified, then using reflection should result in runtime panic.\r\n\r\nInspired by [this](http://stackoverflow.com/questions/38784963/golang-exporting-functions-with-anonymous-struct-or-empty-struct-as-a-parameter) StackOverflow question.\r\n",
 	"user": {
@@ -11,14 +11,15 @@
 		"site_admin": false
 	},
 	"assignee": {
-		"login": "griesemer",
-		"id": 8528975,
+		"login": "crawshaw",
+		"id": 161319,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 6,
+	"comments": 13,
+	"closed_at": "2016-08-26T11:46:28Z",
 	"created_at": "2016-08-05T10:15:29Z",
-	"updated_at": "2016-08-11T23:57:05Z",
+	"updated_at": "2016-08-26T11:46:28Z",
 	"milestone": {
 		"id": 1709364,
 		"number": 39,

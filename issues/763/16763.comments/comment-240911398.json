@@ -1,0 +1,12 @@
+{
+	"id": 240911398,
+	"body": "@agl Thanks for making this change.  It definitely makes a TLS client written in Go more consistent with other languages when setting explicit trust anchors and talking to TLS servers with self-signed certificates that you do not control.\r\n\r\nNot sure if it's what you observed, but I had previously encountered verification errors with TLS servers whose self-signed certificates would fail x509.CheckSignatureFrom (in call to opts.Roots.findVerifiedParents from inside buildChains).  For example, if a TLS server's self-signed cert was not marked as a CA with basicContraints = true or KeyUsage was present but missing keyCertSign.  After your change, such CA / KeyUsage enforcement will no longer be checked in this scenario.\r\n\r\nPreviously, if you controlled the TLS server, you could modify your TLS server's self-signed cert to conform to the stricter requirements imposed by x509.CheckSignatureFrom.  If you did not control the TLS server, your only option for a Go client would be to use InsecureSkipVerify and get zero verification or to use something like DialTLS and write your own verification logic.\r\n\r\nI always want to do as much TLS verification as possible, so this change now makes that easier to achieve.  Hopefully, more folks will stop using InsecureSkipVerify reflexively and just start setting the root explicitly when talking to TLS servers with self-signed certs.\r\n\r\nI did not report this previously because I assumed Go was deliberately trying to be more strict even though RFC 5280 is a bit ambiguous for this scenario.",
+	"user": {
+		"login": "ramoas",
+		"id": 13425463,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-19T02:24:44Z",
+	"updated_at": "2016-08-19T02:29:45Z"
+}
