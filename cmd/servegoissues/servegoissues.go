@@ -76,6 +76,11 @@ func main() {
 		box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
 	}
 </style>`,
+		BodyPre: `
+{{/* Override new comment component to link to original issue for leaving comments. */}}
+{{define "new-comment"}}<div class="event" style="margin-top: 20px; margin-bottom: 100px;">
+	View <a href="https://github.com/golang/go/issues/{{.Issue.ID}}#new_comment_field">original issue</a> to comment.
+</div>{{end}}`,
 	})
 
 	http.Handle("/", issuesApp)
