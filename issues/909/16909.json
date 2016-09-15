@@ -1,0 +1,17 @@
+{
+	"id": 173652214,
+	"number": 16909,
+	"state": "closed",
+	"title": "hash/crc32: clean up logic around tables",
+	"body": "The logic around the tables in crc32 is a nightmare. It all results from the rigid API in which `[256]uint32` `Table`s are passed around, pretty much assuming that a 256x4 table is the best and only thing needed to calculate a CRC. In the meantime, we got the optimized slicing-by-8 which needs 8 of these tables and some hardware-assisted implementations which need different tables, or need no tables at all.\r\n\r\nHere are a few problems and inconsistencies that should be addressed:\r\n - when using slicing-by-8, we also compute the \"old style\" table, even though it is always identical to the first of the 8 tables (so we compute and store it twice)\r\n - when using Castagnoli, we initialize the slicing-by-8 tables on the first `MakeTable`; when using IEEE, we initialize it on the first use (inside `updateIEEE`).\r\n - we don't use the faster slicing-by-8 for other polynomials\r\n - when SSE42 is available, `castagnoliTable` will be `nil`, and thus `MakeTable` will return `nil`; `nil` is accepted as a valid Castagnoli table so a typical user of the API won't notice, but this is not correct (this was introduced recently in #16107).\r\n\r\nIdeally, the API should be changed so that `Table` is an interface or struct with unexported fields. I don't know if this can be done without compatibility implications.",
+	"user": {
+		"login": "RaduBerinde",
+		"id": 16544120,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-08-31T15:18:20Z",
+	"created_at": "2016-08-28T15:31:35Z",
+	"updated_at": "2016-08-31T15:18:20Z"
+}

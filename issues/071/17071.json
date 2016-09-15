@@ -1,0 +1,28 @@
+{
+	"id": 176347174,
+	"number": 17071,
+	"state": "closed",
+	"title": "net/http: first byte of outgoing request body is sometimes lost",
+	"body": "    % go version\r\n    go version devel +8086e7c Mon Sep 12 06:12:35 2016 +0000 darwin/amd64\r\n\r\n(Apologies for not having been able to reproduce this hermetically. I suspect maybe it has something to do with SSL, which I don't know how to set up locally. I'm pretty sure the bug does lie in the Go client though; please keep reading.)\r\n\r\n[Here](https://gist.githubusercontent.com/jacobsa/3384e3c8024530c851aec14be4ef87c4/raw/aef13734bcc6322b7a4846aa09f6f5e9a1e0a81f/http2_bug.go) is a program that makes a bunch of calls to the Google Cloud Storage API. The calls are all identical. Although this is a heavily-reduced test case and they are not valid according to the GCS API (in particular they're missing credentials), they all do supply valid JSON in the request body.\r\n\r\nDespite this, every time I run the program, after at most a few tens of seconds I receive an HTTP 400 parse error from GCS:\r\n\r\n    % go run http2_bug.go\r\n    [...]\r\n    Req body:\r\n    {\"bucket\":\"foo\",\"name\":\"bar\"}\r\n    [...]\r\n    Resp body:\r\n    {\r\n     \"error\": {\r\n      \"errors\": [\r\n       {\r\n        \"domain\": \"global\",\r\n        \"reason\": \"parseError\",\r\n        \"message\": \"Parse Error\"\r\n       }\r\n      ],\r\n      \"code\": 400,\r\n      \"message\": \"Parse Error\"\r\n     }\r\n    }\r\n    \r\n    Status code: 400\r\n\r\nI happen to have insider knowledge that this charmingly terse error message from GCS indicates that the JSON in the request body could not be parsed. (If you want details, please contact me internally within Google.) In particular, the server on the other end does not receive the opening `{` character.\r\n\r\nGo's own HTTP2 debugging agrees.\r\n\r\n    % GODEBUG=http2debug=2 go run http2_bug.go\r\n\r\nWith this invocation, among lots of other output I see\r\n\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: wrote HEADERS flags=END_HEADERS stream=455 len=7\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: wrote DATA stream=455 len=1 data=\"\\\"\"\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: wrote DATA stream=455 len=27 data=\"bucket\\\":\\\"foo\\\",\\\"name\\\":\\\"bar\\\"}\"\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: wrote DATA flags=END_STREAM stream=455 len=0 data=\"\"\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: read HEADERS flags=END_HEADERS stream=455 len=94\r\n    2016/09/12 20:46:54 http2: Framer 0xc420242180: read DATA flags=END_STREAM stream=455 len=171 data=\"{\\n \\\"error\\\": {\\n  \\\"errors\\\": [\\n   {\\n    \\\"domain\\\": \\\"global\\\",\\n    \\\r\n\r\nThe http2 package has forgotten to write the opening curly brace. In contrast, everything works fine if I use `GODEBUG=http2client=0` to downgrade to HTTP1.\r\n\r\nFYI, I have observed this from Sydney (Google office and at home, multiple computers) and from a computer within a Google data center in the US. I've seen this in Go 1.7.1 and Go 1.6.1, as well as at HEAD.",
+	"user": {
+		"login": "jacobsa",
+		"id": 202895,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 9,
+	"closed_at": "2016-09-13T19:16:02Z",
+	"created_at": "2016-09-12T10:54:25Z",
+	"updated_at": "2016-09-13T20:00:30Z",
+	"milestone": {
+		"id": 1992436,
+		"number": 46,
+		"title": "Go1.7.2"
+	}
+}

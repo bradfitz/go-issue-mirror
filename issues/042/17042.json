@@ -1,0 +1,30 @@
+{
+	"id": 176059253,
+	"number": 17042,
+	"state": "closed",
+	"title": "x/sys/unix: should support Dup2 on Solaris",
+	"body": "Current go versions don't implement Dup2 for Solaris. \r\nThe fix is simple\r\n```\r\n--- golang-1.6.3/src/syscall/zsyscall_solaris_amd64.go.1        2016-09-09 17:36:48.176495144 +0300\r\n+++ golang-1.6.3/src/syscall/zsyscall_solaris_amd64.go  2016-09-09 17:41:06.974986783 +0300\r\n@@ -21,6 +21,7 @@\r\n //go:cgo_import_dynamic libc_Chroot chroot \"libc.so\"\r\n //go:cgo_import_dynamic libc_Close close \"libc.so\"\r\n //go:cgo_import_dynamic libc_Dup dup \"libc.so\"\r\n+//go:cgo_import_dynamic libc_Dup2 dup2 \"libc.so\"\r\n //go:cgo_import_dynamic libc_Exit exit \"libc.so\"\r\n //go:cgo_import_dynamic libc_Fchdir fchdir \"libc.so\"\r\n //go:cgo_import_dynamic libc_Fchmod fchmod \"libc.so\"\r\n@@ -104,6 +105,7 @@\r\n //go:linkname libc_Chroot libc_Chroot\r\n //go:linkname libc_Close libc_Close\r\n //go:linkname libc_Dup libc_Dup\r\n+//go:linkname libc_Dup2 libc_Dup2\r\n //go:linkname libc_Exit libc_Exit\r\n //go:linkname libc_Fchdir libc_Fchdir\r\n //go:linkname libc_Fchmod libc_Fchmod\r\n@@ -190,6 +192,7 @@\r\n        libc_Chroot,\r\n        libc_Close,\r\n        libc_Dup,\r\n+       libc_Dup2,\r\n        libc_Exit,\r\n        libc_Fchdir,\r\n        libc_Fchmod,\r\n@@ -412,6 +415,14 @@\r\n        return\r\n }\r\n \r\n+func Dup2(oldfd int, newfd int) (err error) {\r\n+        _, _, e1 := sysvicall6(uintptr(unsafe.Pointer(\u0026libc_Dup2)), 2, uintptr(oldfd), uintptr(newfd), 0, 0, 0, 0)\r\n+        if e1 != 0 {\r\n+                err = errnoErr(e1)\r\n+        }\r\n+        return\r\n+}\r\n+\r\n func Exit(code int) {\r\n        sysvicall6(uintptr(unsafe.Pointer(\u0026libc_Exit)), 1, uintptr(code), 0, 0, 0, 0, 0)\r\n        return\r\n\r\n```",
+	"user": {
+		"login": "pyhalov",
+		"id": 4092748,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "OS-Solaris"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-09-10T03:35:24Z",
+	"created_at": "2016-09-09T17:06:03Z",
+	"updated_at": "2016-09-10T03:37:18Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

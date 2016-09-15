@@ -1,0 +1,12 @@
+{
+	"id": 246024796,
+	"body": "But then you have 3 cases to reason about instead of 2,\r\n\r\n\"80\", true\r\n\"80\", false\r\n\"\", false\r\n\r\nand you can't use it as an expression, and you still need to do the `portString != \"\"` check, since the boolean doesn't tell you whether it's usable. I don't like that it looks like a \"comma-ok\" style method, but it's not.\r\n\r\nAnd then people will expect it to work on an http.ServerHTTP.Request, but incoming server requests don't know their listener necessarily and what scheme they even arrived on, so the port will usually be empty and it can't be inferred since you can't always infer the scheme of an incoming HTTP request, especially with proxies.\r\n\r\nMostly I don't like the that I can't use it as a string expression. If we did implicit ports from the scheme, I'd almost prefer two methods, like `Port() string` (with default) and `HasPort() bool` (whether `u.Host` had an explicit one). But really... how often are you going to care whether the port was explicit or not? The only time I can think it'd matter is when creating a URL again and you didn't want it to stringify to something verbose. But then you could just clone `URL` with its `Host` field instead.\r\n\r\nAlso, if we do default ports for a scheme, that either means including a static map of scheme name to default port number in the `net/url` package, or using `net.LookupPort` (which return an error too!) from the `net/url` package, but we can't ... that's not an existing dependency, and I don't think it would be acceptable to add. The `net` package is way larger.\r\n\r\nIf we do implicit ports, that means two copies of the implicit port map: one in the net package, and one in net/url. Maybe that's fine. Or maybe we share them via a third internal package if it actually mattered.\r\n\r\nI don't know. I'm undecided.\r\n\r\nData might be compelling. I wonder if the \"http\" =\u003e 80, \"https\" =\u003e 443 logic exists near lots of code parsing URLs and URL.Host. (Paging @campoy :))\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-09T20:06:26Z",
+	"updated_at": "2016-09-09T20:06:26Z"
+}

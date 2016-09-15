@@ -1,0 +1,12 @@
+{
+	"id": 246842751,
+	"body": "I don't see anything from Ian on CL 29079?\r\n\r\nI think the problem is that not nearly enough relocations are being emitted:\r\n\r\n```\r\n(master)mwhudson@aeglos:/opt/opensource/go/src$ go test reflect -o r1.ext -c -buildmode=pie -ldflags=-linkmode=external\r\n(master)mwhudson@aeglos:/opt/opensource/go/src$ go test reflect -o r1.int -c -buildmode=pie -ldflags=-linkmode=internal\r\n(master)mwhudson@aeglos:/opt/opensource/go/src$ readelf -r r1.int | wc -l\r\n2209\r\n(master)mwhudson@aeglos:/opt/opensource/go/src$ readelf -r r1.ext | wc -l\r\n35366\r\n```\r\n\r\nI got confused a bit by the lack of relative relocations but of course R_X86_64_64 should work fine, even if it's a bit inefficient. But there aren't enough of them.  There's this in adddynrel:\r\n\r\n```\r\n\t\tif s.Type != obj.SDATA \u0026\u0026 s.Type != obj.SRODATA {\r\n\t\t\tbreak\r\n\t\t}\r\n```\r\n\r\nwhich looks a bit suspicious but the naive thing of adding \"\u0026\u0026 Buildmode != BuildmodePIE\" on the end makes the linker consume unbounded amounts of RAM...",
+	"user": {
+		"login": "mwhudson",
+		"id": 672022,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T22:14:08Z",
+	"updated_at": "2016-09-13T22:14:08Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 174402192,
+	"number": 16944,
+	"state": "closed",
+	"title": "x/build/cmd/coordinator: git sync to github going slowly",
+	"body": "@dsnet reports that the Github sync of the code is behind.\r\n\r\nLuckily we have logs now:\r\n\r\nhttp://farmer.golang.org/debug/watcher/go\r\n```\r\nwatcher status for repo: \"go\"\r\n\r\n2016-08-31T23:18:55Z   23s ago              35360 refs to push; pushing batch\r\n2016-08-31T23:13:28Z   5m50s ago            35560 refs to push; pushing batch\r\n2016-08-31T23:07:51Z   11m27s ago           35760 refs to push; pushing batch\r\n2016-08-31T23:02:08Z   17m10s ago           35960 refs to push; pushing batch\r\n2016-08-31T22:56:29Z   22m49s ago           36160 refs to push; pushing batch\r\n2016-08-31T22:50:55Z   28m22s ago           36360 refs to push; pushing batch\r\n2016-08-31T22:45:21Z   33m56s ago           36560 refs to push; pushing batch\r\n2016-08-31T22:39:42Z   39m35s ago           36760 refs to push; pushing batch\r\n2016-08-31T22:34:05Z   45m12s ago           36960 refs to push; pushing batch\r\n2016-08-31T22:28:25Z   50m53s ago           37160 refs to push; pushing batch\r\n2016-08-31T22:22:46Z   56m32s ago           37360 refs to push; pushing batch\r\n2016-08-31T22:17:14Z   1h2m3s ago           37560 refs to push; pushing batch\r\n2016-08-31T22:11:47Z   1h7m30s ago          37760 refs to push; pushing batch\r\n2016-08-31T22:06:20Z   1h12m58s ago         37960 refs to push; pushing batch\r\n2016-08-31T22:00:52Z   1h18m26s ago         38160 refs to push; pushing batch\r\n2016-08-31T21:55:23Z   1h23m55s ago         38360 refs to push; pushing batch\r\n2016-08-31T21:49:52Z   1h29m26s ago         38560 refs to push; pushing batch\r\n2016-08-31T21:44:06Z   1h35m12s ago         38760 refs to push; pushing batch\r\n2016-08-31T21:38:27Z   1h40m50s ago         38960 refs to push; pushing batch\r\n2016-08-31T21:32:50Z   1h46m27s ago         39160 refs to push; pushing batch\r\n2016-08-31T21:27:02Z   1h52m15s ago         39360 refs to push; pushing batch\r\n2016-08-31T21:21:27Z   1h57m50s ago         39560 refs to push; pushing batch\r\n2016-08-31T21:15:48Z   2h3m29s ago          39760 refs to push; pushing batch\r\n2016-08-31T21:10:12Z   2h9m5s ago           39960 refs to push; pushing batch\r\n2016-08-31T21:04:48Z   2h14m30s ago         40160 refs to push; pushing batch\r\n2016-08-31T20:59:23Z   2h19m54s ago         40360 refs to push; pushing batch\r\n2016-08-31T20:53:44Z   2h25m33s ago         40560 refs to push; pushing batch\r\n2016-08-31T20:48:09Z   2h31m9s ago          40760 refs to push; pushing batch\r\n2016-08-31T20:42:29Z   2h36m49s ago         40960 refs to push; pushing batch\r\n2016-08-31T20:36:43Z   2h42m34s ago         41160 refs to push; pushing batch\r\n2016-08-31T20:30:55Z   2h48m22s ago         41360 refs to push; pushing batch\r\n2016-08-31T20:25:11Z   2h54m7s ago          41560 refs to push; pushing batch\r\n2016-08-31T20:19:23Z   2h59m55s ago         41760 refs to push; pushing batch\r\n2016-08-31T20:13:47Z   3h5m31s ago          41960 refs to push; pushing batch\r\n2016-08-31T20:08:12Z   3h11m5s ago          42160 refs to push; pushing batch\r\n2016-08-31T20:02:40Z   3h16m37s ago         42360 refs to push; pushing batch\r\n2016-08-31T19:56:39Z   3h22m39s ago         42560 refs to push; pushing batch\r\n2016-08-31T19:50:51Z   3h28m26s ago         42760 refs to push; pushing batch\r\n2016-08-31T19:45:20Z   3h33m57s ago         42960 refs to push; pushing batch\r\n2016-08-31T19:45:20Z   3h33m57s ago         sync: got 0 remote refs\r\n2016-08-31T19:43:13Z   3h36m4s ago          sync: fetching remote refs\r\n2016-08-31T19:43:13Z   3h36m4s ago          sync: got 42960 local refs\r\n2016-08-31T19:43:13Z   3h36m5s ago          sync: fetching local refs\r\n2016-08-31T19:43:13Z   3h36m5s ago          syncing to github, attempt 2\r\n2016-08-31T19:43:08Z   3h36m10s ago         git push failure\r\n2016-08-31T19:41:01Z   3h38m17s ago         1 refs to push; pushing batch\r\n2016-08-31T19:41:01Z   3h38m17s ago         sync: got 43078 remote refs\r\n2016-08-31T19:41:00Z   3h38m18s ago         sync: fetching remote refs\r\n2016-08-31T19:41:00Z   3h38m18s ago         sync: got 42960 local refs\r\n```\r\n\r\nThis is where things went poorly:\r\n\r\n```\r\n2016-08-31T19:45:20Z   3h33m57s ago         sync: got 0 remote refs\r\n2016-08-31T19:43:13Z   3h36m4s ago          sync: fetching remote refs\r\n```\r\n\r\nThe syncer got 0 remote refs from Github, so thought it had to push all 43000 refs, and has been working on it for the past 3 hours, doing 200 at a time, and doing them very slowly.\r\n\r\nNot sure why on either part.\r\n\r\nLast time we had problems we switched from the https git transport to the native and earlier ssh transport and things got super fast. Not sure why it's slow now.\r\n\r\n/cc @dsnet @broady @quentinmit ",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Builders"
+		}
+	],
+	"comments": 1,
+	"closed_at": "2016-09-08T04:56:45Z",
+	"created_at": "2016-08-31T23:22:45Z",
+	"updated_at": "2016-09-08T04:56:45Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

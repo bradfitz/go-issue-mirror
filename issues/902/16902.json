@@ -1,0 +1,28 @@
+{
+	"id": 173600627,
+	"number": 16902,
+	"state": "closed",
+	"title": "go/types: crash in unsafe.Offsetof",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n`go version devel +0d23c28 Sat Aug 27 00:08:36 2016 +0000 linux/amd64`\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n    ```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/home/ben/go/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/ben/.golang-path:/home/ben/.golang-bootstrap/path:/home/ben/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/ben/.golang\"\r\nGOTOOLDIR=\"/home/ben/.golang/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build819085466=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n    ```\r\nben@australium:~/go/src/hello$ go get -u golang.org/x/tools/cmd/ssadump\r\nben@australium:~/go/src/hello$ which ssadump\r\n/home/ben/go/bin/ssadump\r\nben@australium:~/go/src/hello$ ls\r\nhello.go\r\nben@australium:~/go/src/hello$ cat hello.go \r\npackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n        fmt.Println(\"hello world\")\r\n}\r\nben@australium:~/go/src/hello$ ssadump -build F .\r\npanic: runtime error: index out of range [recovered]\r\n        panic: runtime error: index out of range\r\n\r\ngoroutine 84 [running]:\r\npanic(0x692180, 0xc4200100b0)\r\n        /home/ben/.golang/src/runtime/panic.go:500 +0x1a0\r\ngo/types.(*Checker).handleBailout(0xc42024e620, 0xc420d77dd0)\r\n        /home/ben/.golang/src/go/types/check.go:213 +0xae\r\npanic(0x692180, 0xc4200100b0)\r\n        /home/ben/.golang/src/runtime/panic.go:458 +0x241\r\ngo/types.(*Config).offsetof(0xc42027ec40, 0x7fd4c0, 0xc4217ca660, 0xc421593030, 0x1, 0x1, 0xc421619e00)\r\n        /home/ben/.golang/src/go/types/sizes.go:194 +0x105\r\ngo/types.(*Checker).builtin(0xc42024e620, 0xc42159cc00, 0xc42040e400, 0x10, 0xc42159ca00)\r\n        /home/ben/.golang/src/go/types/builtins.go:567 +0x44e9\r\ngo/types.(*Checker).call(0xc42024e620, 0xc42159cc00, 0xc42040e400, 0x3)\r\n        /home/ben/.golang/src/go/types/call.go:44 +0x6ae\r\ngo/types.(*Checker).exprInternal(0xc42024e620, 0xc42159cc00, 0x7fde80, 0xc42040e400, 0x0, 0x0, 0x0)\r\n        /home/ben/.golang/src/go/types/expr.go:1369 +0x2063\r\ngo/types.(*Checker).rawExpr(0xc42024e620, 0xc42159cc00, 0x7fde80, 0xc42040e400, 0x0, 0x0, 0x0)\r\n        /home/ben/.golang/src/go/types/expr.go:945 +0x8d\r\ngo/types.(*Checker).multiExpr(0xc42024e620, 0xc42159cc00, 0x7fde80, 0xc42040e400)\r\n        /home/ben/.golang/src/go/types/expr.go:1475 +0x62\r\ngo/types.(*Checker).expr(0xc42024e620, 0xc42159cc00, 0x7fde80, 0xc42040e400)\r\n        /home/ben/.golang/src/go/types/expr.go:1469 +0x49\r\ngo/types.(*Checker).constDecl(0xc42024e620, 0xc4212de360, 0x0, 0x0, 0x7fde80, 0xc42040e400)\r\n        /home/ben/.golang/src/go/types/decl.go:124 +0x21f\r\ngo/types.(*Checker).objDecl(0xc42024e620, 0x801d00, 0xc4212de360, 0x0, 0xc420d77d18, 0x0, 0x8)\r\n        /home/ben/.golang/src/go/types/decl.go:78 +0x30f\r\ngo/types.(*Checker).packageObjects(0xc42024e620, 0xc4207d4000, 0x879, 0xa00)\r\n        /home/ben/.golang/src/go/types/resolver.go:423 +0x12c\r\ngo/types.(*Checker).checkFiles(0xc42024e620, 0xc420072000, 0x58, 0x58, 0x0, 0x0)\r\n        /home/ben/.golang/src/go/types/check.go:227 +0xe4\r\ngo/types.(*Checker).Files(0xc42024e620, 0xc420072000, 0x58, 0x58, 0x1d, 0xc420477770)\r\n        /home/ben/.golang/src/go/types/check.go:218 +0x49\r\ngolang.org/x/tools/go/loader.(*importer).addFiles(0xc420056480, 0xc42024a4d0, 0xc420072000, 0x58, 0x58, 0x1)\r\n        /home/ben/.golang-path/src/golang.org/x/tools/go/loader/loader.go:1009 +0x123\r\ngolang.org/x/tools/go/loader.(*importer).load(0xc420056480, 0xc4202afc00, 0xc42000a740)\r\n        /home/ben/.golang-path/src/golang.org/x/tools/go/loader/loader.go:975 +0x16c\r\ngolang.org/x/tools/go/loader.(*importer).startLoad.func1(0xc420056480, 0xc4202afc00, 0xc42087e780)\r\n        /home/ben/.golang-path/src/golang.org/x/tools/go/loader/loader.go:956 +0x35\r\ncreated by golang.org/x/tools/go/loader.(*importer).startLoad\r\n        /home/ben/.golang-path/src/golang.org/x/tools/go/loader/loader.go:958 +0x1e8\r\n```\r\n\r\n4. What did you expect to see?\r\n    The SSA representation of the program\r\n\r\n5. What did you see instead?\r\n    `panic: runtime error: index out of range` followed by a stack trace",
+	"user": {
+		"login": "BenLubar",
+		"id": 4257305,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-08-30T00:18:20Z",
+	"created_at": "2016-08-27T15:14:33Z",
+	"updated_at": "2016-08-30T00:18:20Z",
+	"milestone": {
+		"id": 1709364,
+		"number": 39,
+		"title": "Go1.8Early"
+	}
+}

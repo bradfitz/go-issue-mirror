@@ -1,0 +1,21 @@
+{
+	"id": 174862832,
+	"number": 16974,
+	"state": "open",
+	"title": "net/http: receiving DATA after sending (RST_STREAM) kills connection.",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version devel +e492d9f Tue Aug 16 21:52:44 2016 +0000 darwin/amd64\r\n\r\nI'm also using the http2 lib directly at: 1358eff22f0dd0c54fc521042cc607f6ff4b531a\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/bmizerany\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/dx/jcs03lw901vc05cjjqyjf8y00000gn/T/go-build664828230=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n### What did you do?\r\n\r\nI'm seeing DATA frames come in after sending a RST_STREAM which causes a write on a closed pipe buffer here:\r\n\r\nhttps://github.com/golang/net/blob/master/http2/transport.go#L1651\r\n\r\nLog:\r\n\r\n```\r\nclient: http2: Framer 0xc420deefc0: wrote RST_STREAM stream=477 len=4 ErrCode=CANCEL\r\nclient: http2: Framer 0xc420deefc0: read DATA flags=END_STREAM stream=477 len=23 data=\"\\x1f\\x8b\\b\\x00\\x00\\tn\\x88\\x00\\xff\\x01\\x00\\x00\\xff\\xff\\x00\\x00\\x00\\x00\\x\r\nclient: http2: Transport received DATA flags=END_STREAM stream=477 len=23 data=\"\\x1f\\x8b\\b\\x00\\x00\\tn\\x88\\x00\\xff\\x01\\x00\\x00\\xff\\xff\\x00\\x00\\x00\\x00\\x00\\x00\\\r\nclient: http2: Transport conn 0xc4218b0ea0 received error from processing frame DATA flags=END_STREAM stream=477 len=23 data=\"\\x1f\\x8b\\b\\x00\\x00\\tn\\x88\\x00\\xf\r\nserver: http2: Framer 0xc4201600c0: read RST_STREAM stream=477 len=4 ErrCode=CANCEL\r\nserver: http2: server read frame RST_STREAM stream=477 len=4 ErrCode=CANCEL\r\n\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nThe transport ignore the frame.\r\n\r\n### What did you see instead?\r\n\r\nThe transport attempts to write data to the response body causing an error and that error returned high enough to close the connection and error out all inflight requests.\r\n\r\n\r\n",
+	"user": {
+		"login": "bmizerany",
+		"id": 46,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-09-02T23:04:12Z",
+	"updated_at": "2016-09-06T21:44:24Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

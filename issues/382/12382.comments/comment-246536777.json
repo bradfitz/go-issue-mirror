@@ -1,0 +1,12 @@
+{
+	"id": 246536777,
+	"body": "@kardianos It wouldn't break current code bases, because current code bases are all dealing with single result set, so calling `Next()` after consuming the result set will still keep returning false. But I do also think it is better to be more explicit at the `database/sql` surface with a new `*Rows.NextResultSet()` api.\r\n\r\nI just think the underlying `database/sql/driver` interface for driver implementations doesn't has to be changed. It will be backward compatible because old drivers dealing only with single result set will always return a `io.EOF` after `io.EOF`. The other way to keep backward compatible with old drivers will be adding a separated interface in `database/sql/driver` because we can't just add that to the `Rows` interface, and testing against that interface in `database/sql`, which could still break if the new interface method name had already being used by old driver.\r\n\r\n`*Rows.NextResultSet()` could be:\r\n```go\r\nfunc (rs *Rows) NextResultSet() error {\r\n    if !rs.closed {\r\n         return ErrProcessing\r\n    }\r\n    if err := rs.rowsi.Next(nil); err != nil {\r\n        return err\r\n    }\r\n    rs.lasterr, rs.closed = nil, false\r\n    return nil\r\n}\r\n```\r\n",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T00:24:12Z",
+	"updated_at": "2016-09-13T00:24:12Z"
+}

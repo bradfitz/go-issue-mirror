@@ -1,0 +1,12 @@
+{
+	"id": 244783866,
+	"body": "Looks like VScale is fixed by \tc538795, so I focused on VMaxF32.\r\n\r\nI've tried implementing maxss recognition as part of phiopt, but while it produces smaller code:\r\n\r\n// 46bc06:\r\nmovss  (%rcx),%xmm1\r\nadd    $0x4,%rcx\r\ninc    %rdx\r\nmaxss  %xmm1,%xmm0\r\ncmp    %rax,%rdx\r\njl     46bc06 \u003c_/localdisk/itocar/go_tmp/golang/src.VMaxF32+0x36\u003e\r\n... // return\r\n\r\n\r\nIt executes with almost  the same speed as tip:\r\nname       old time/op    new time/op    delta\r\nVMaxF32-4    3.62µs ± 7%    3.40µs ± 0%  -6.04%  (p=0.000 n=20+20)\r\n\r\nname       old speed      new speed      delta\r\nVMaxF32-4  1.13GB/s ± 7%  1.20GB/s ± 0%  +6.32%  (p=0.000 n=20+18)\r\n\r\nBut has lower IPC \r\n2.01  insns per cycle vs 3.16  insns per cycle (according to perf stat)\r\n\r\nLooks like in 1.7 case, as well as in maxss case, there is a true dependency on previous value of  X1,\r\nwhich needs to be updated on each iteration.\r\nBut in 1.6 due to branch being highly predictable ( \u003c 0.1% mispredictions)\r\nseveral iterations can execute (speculatively) in parallel,\r\nBecause only in unlikely case (new random float is greater) we need to update X3 (current max).\r\n\r\nI've tried reducing size of array to 1 \u003c\u003c 6.\r\nThis makes maxss ~= 1.6 \u003e 1.7, but with only 60% gap between 1.6 and 1.7\r\nThis supports the hypothesis that 1.6 is faster on iterations where current max is not updated.\r\n\r\nI'm not sure what should be done:\r\nImplementing max recognition will speed up max for small array or just 2 elements,\r\nand this what Gcc does. But this won't help this case much and I'm not sure that all architectures has max instruction. Unroll and vectorization may help hide latency in the future.\r\n\r\nBtw b.SetBytes(benchSize) should be b.SetBytes(benchSize*4), if the intention is to measure MB/s instead of megafloat32/s",
+	"user": {
+		"login": "TocarIP",
+		"id": 16836375,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-05T16:40:45Z",
+	"updated_at": "2016-09-05T16:40:45Z"
+}

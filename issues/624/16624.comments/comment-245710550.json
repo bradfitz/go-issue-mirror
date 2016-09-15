@@ -1,0 +1,12 @@
+{
+	"id": 245710550,
+	"body": "I looked into this for a while because it was biting me as well.  Not being familiar with the code I wasn't able to create a quick fix but here's what I learned.\r\n\r\nThe shortcoming is in how **labeled** statements are handled.  The logic is all there for statements that can be departure points for control flow (i.e., goto statements are not the problem), but the logic is missing for statements that can be arrival points for control flow (i.e., labeled statements are the problem).\r\n\r\nThe problem can be understood by considering a labeled statement that can itself affect control flow:\r\n\r\n```\r\nL:\r\n    flowChangingStmt\r\n```\r\n\r\nThe instrumentation must insert a counter between the label and the statement, but this is delicate surgery because in the ast representation the label contains the statement.  The label could be removed from the flowChangingStmt and attached to an immediately preceding new counter statement.  However, labeled 'for','switch',or 'select' statements must not have their label removed.  It may be that the 'for', 'switch', and 'select' statements are not harmed by the lack of a counter between the label and the statement, so inserting the counter and re-attaching the label may only be necessary for non-'for','switch','select' statements.\r\n\r\nI hope this helps.  Unfortunately I don't have time to dig deeper.  An example file and its as-presently-created cover rewrite are shown below.\r\n\r\n```\r\npackage main\r\n\r\nfunc f(x int) int {\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\nL0:\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tgoto L1\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\nL1:\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n\treturn x\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n}\r\n```\r\n\r\n```\r\npackage main\r\n\r\nfunc f(x int) int {\r\n\tGoCover.Count[0] = 1\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\nL0:\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tgoto L1\r\n\tGoCover.Count[1] = 1\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\nL1:\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n\treturn x\r\n\tx++\r\n\tx++\r\n\tx++\r\n\tx++\r\n}\r\n\r\nvar GoCover = struct {\r\n\tCount     [2]uint32\r\n\tPos       [3 * 2]uint32\r\n\tNumStmt   [2]uint16\r\n} {\r\n\tPos: [3 * 2]uint32{\r\n\t\t3, 13, 0x90013, // [0]\r\n\t\t14, 27, 0x50002, // [1]\r\n\t},\r\n\tNumStmt: [2]uint16{\r\n\t\t9, // 0\r\n\t\t13, // 1\r\n\t},\r\n}\r\n```\r\n",
+	"user": {
+		"login": "jscrockett01",
+		"id": 9746353,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-08T19:22:25Z",
+	"updated_at": "2016-09-08T19:22:25Z"
+}

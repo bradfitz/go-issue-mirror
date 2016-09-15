@@ -1,0 +1,17 @@
+{
+	"id": 173552581,
+	"number": 16892,
+	"state": "closed",
+	"title": "cmd/pprof: forces choice between \"inuse\" and \"alloc\" heap profiles",
+	"body": "Hello! I've got a bug with `go tool pprof`'s proto format that forces a choice between \"inuse\" and \"alloc\" modes (assuming \"inuse\" by default), which means I've got to capture two separate profiles or use the standalone google/pprof tool.\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\n  ```\r\n$ go version\r\ngo version devel +8f3c8a3 Fri Aug 26 20:06:58 2016 +0000 darwin/amd64\r\n$ go1.7 version\r\ngo version go1.7 darwin/amd64\r\n```\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\n  darwin/amd64, though I've also observed this on linux/amd64.\r\n\r\n3. What did you do?\r\n\r\n  First, I run a trivial http server with pprof enabled. Then I point `go tool pprof` at it, asking the command to save a gzipped-protobuf-formatted heap profile. I then try to read that profile in various modes: inuse_space and alloc_space\r\n\r\n4. What did you expect to see?\r\n\r\n  I expected a single saved heap profile to be readable in all four modes (inuse_space, inuse_objects, alloc_space, alloc_objects). I expected this because the [other pprof tool](https://github.com/google/pprof) can do this, and because the text file served from /debug/pprof/heap can be interpreted in all four modes.\r\n\r\n5. What did you see instead?\r\n\r\n  A heap profile saved with `go tool pprof -proto -inuse_space -output ./file http://...` cannot be read with `go tool pprof -alloc_space ./file`, and vice versa.\r\n\r\nmain.go:\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"net/http\"\r\n\t_ \"net/http/pprof\"\r\n)\r\n\r\nvar sink []byte\r\n\r\nfunc main() {\r\n\tfor i := 0; i \u003c 10; i++ {\r\n\t\tsink = make([]byte, 1\u003c\u003c20)\r\n\t}\r\n\tpanic(http.ListenAndServe(\"127.0.0.1:8080\", nil))\r\n}\r\n```\r\n\r\ntest.sh:\r\n```\r\n#!/usr/bin/env bash\r\n\r\ngo version\r\n\r\ngo build -o ./server ./main.go\r\n./server \u0026\r\nserver=\"$!\"\r\nsleep 1\r\n\r\nfor tool in \"go tool pprof\" \"pprof\"; do\r\n\tfor record_style in \"\" \"-inuse_space\" \"-alloc_space\"; do\r\n\t\t$tool $record_style -proto -symbolize=remote -output ./heap.pb.gz http://127.0.0.1:8080/debug/pprof/heap \u0026\u003e/dev/null\r\n\t\tfor view_style in \"-inuse_space\" \"-alloc_space\"; do\r\n\t\t\t$tool $view_style -top ./heap.pb.gz \u0026\u003e/dev/null || printf \"failed tool=%q record=%q view=%q\\n\" \"$tool\" \"$record_style\" \"$view_style\"\r\n\t\tdone\r\n\t\trm ./heap.pb.gz\r\n\tdone\r\ndone\r\n\r\nkill -KILL -- \"$server\"\r\nrm ./server\r\n```\r\n\r\n```\r\n$ ./test.sh \r\ngo version devel +8f3c8a3 Fri Aug 26 20:06:58 2016 +0000 darwin/amd64\r\nfailed tool=go\\ tool\\ pprof record='' view=-alloc_space\r\nfailed tool=go\\ tool\\ pprof record=-inuse_space view=-alloc_space\r\nfailed tool=go\\ tool\\ pprof record=-alloc_space view=-inuse_space\r\n$ PATH=\"$HOME/go1.7/bin:$PATH\" ./test.sh \r\ngo version go1.7 darwin/amd64\r\nfailed tool=go\\ tool\\ pprof record='' view=-alloc_space\r\nfailed tool=go\\ tool\\ pprof record=-inuse_space view=-alloc_space\r\nfailed tool=go\\ tool\\ pprof record=-alloc_space view=-inuse_space\r\n```\r\n\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-09-06T19:22:42Z",
+	"created_at": "2016-08-26T22:04:37Z",
+	"updated_at": "2016-09-06T19:22:42Z"
+}

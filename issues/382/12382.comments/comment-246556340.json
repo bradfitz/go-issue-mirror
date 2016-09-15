@@ -1,0 +1,12 @@
+{
+	"id": 246556340,
+	"body": "The meaning of `database/sql.*Rows.Close()` also needs to be changed too. Whether we are closing a result set or aborting all remained result sets. This could be a bigger problem for backward compability.\r\n\r\nCurrently, `Close()` will close the statement and release the connection to the pool, and it is impliedly called in `Next()` if the underlying driver's `Next()` return a error. For user code backward compability, we should keep the semantic and behavior of `Close()`. Then we will need a `*Rows.CloseResultSet()` and change `Next()` to calling that instead of `Close()`. This can be done by adding a `resultsetClosed` field to `Rows`, and `NextResultSet()` should use `rs.resultsetClosed` instead of `rs.closed`.\r\n\r\nNow to implement of `*Rows.CloseResultSet()`, it could still use the underlying driver's `Close()` method like `NextResultSet()` use `Next()` of underlying driver, but it would be weird for driver to handle that `Close()` means `CloseResultSet` if the result set is open and means `CloseCommand` otherwise.\r\n\r\nSo I think it would be better adding a new interface to `database/sql/driver`:\r\n```go\r\ntype ResultSetsIter interface {\r\n    CloseResultSet() error\r\n    NextResultSet() error\r\n}\r\n```\r\n\r\nAnd in `database/sql`:\r\n```go\r\nfunc (rs *Rows) NextResultSet() error {\r\n    if err := rs.lasterr; err != nil \u0026\u0026 err != io.EOF {\r\n         return err\r\n    }\r\n    if !rs.resultsetClosed {\r\n         return ErrProcessing\r\n    }\r\n    next, ok := rs.rowsi.(driver.ResultSetsIter)\r\n    if !ok {\r\n        return ErrNotSupport\r\n    }\r\n    if err := next.NextResultSet(); err != nil {\r\n        return err\r\n    }\r\n    rs.resultsetClosed = false\r\n    return nil\r\n}\r\n\r\nfunc  (rs *Rows) CloseResultSet() error {\r\n    if rs.resultsetClosed {\r\n        return nil\r\n    }\r\n    rs.resultsetClosed = true\r\n    next, ok := rs.rowsi.(driver.ResultSetsIter)\r\n    if !ok {\r\n        return nil\r\n    }\r\n    return next.CloseResultSet()\r\n}\r\n```\r\n\r\nThen modify `*Rows.Close()` and `*Rows.Next()` in `database/sql` to call `*Rows.CloseResultSet()`.",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T02:36:39Z",
+	"updated_at": "2016-09-13T02:41:59Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 247008529,
+	"body": "\u003e Using NumGoroutine breaks down when you have long running goroutines that do background work (like periodically refreshing cache entries). This approach also breaks down for proxy servers as they spend most of their time waiting on the network.\r\n\r\nAs you say, you are looking for an approximation, and you care about load shedding.  Unless you start a long running goroutine for each incoming request, the number of long running goroutines should be a tiny fraction of the total number of goroutines, and are therefore ignorable for approximation purposes.\r\n\r\nI agree that proxy servers are a problem.\r\n\r\nSince you have proof of concept code, do you have a way to see the difference between `NumGoroutine` and `NumActiveGoroutine` for a large server?\r\n\r\nI would be less concerned about adding `NumActiveGoroutines` if it weren't for the ambiguity about `_Gsyscall`.  I'm worried about how to document what the result really means for programs that call C code.  It's probably unusual to call C code that makes direct network calls, but it's not in the least unusual to call C code that uses the file system, which may be networked, or that uses a library that in turn makes DNS lookups or in some other way uses the network.  So while `NumActiveGoroutines` is easy to understand for pure Go code, I don't see how it's easily generalizable for Go programs that call C code.\r\n\r\nOne possibility would be to return two numbers: the number of running/runnable goroutines and the number of goroutines waiting for a system call or C code.  But that seems to me to be too tied to the current details of how system calls and cgo are implemented.\r\n\r\nI assume you are looking for some sort of general framework here, because for any specific program that wants to do load shedding I would say just count the number of active requests.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-14T13:14:25Z",
+	"updated_at": "2016-09-14T13:14:25Z"
+}

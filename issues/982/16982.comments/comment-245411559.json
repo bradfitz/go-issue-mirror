@@ -1,0 +1,12 @@
+{
+	"id": 245411559,
+	"body": "@TocarIP, would pasting the code here work for you? Here it is, taken from https://play.golang.org/p/aAM1SuV6U4:\r\n\r\n```Go\r\n// Play with benchmarking a tight loop with many iterations and a func call,\r\n// compare gc vs GopherJS performance.\r\n//\r\n// An alternative more close-to-metal implementation that doesn't use math.Pow.\r\n//\r\n// Disclaimer: This is a microbenchmark and is very poorly representative of\r\n//             overall general real world performance of larger applications.\r\n//\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"time\"\r\n)\r\n\r\nfunc term(k int32) float64 {\r\n\t//       | Computer A   | Computer B\r\n\t// ------|--------------|-------------\r\n\t// SSA=0 | 6.431564409s | 2.564973583s\r\n\t// SSA=1 | 6.420316364s | 5.771555271s\r\n\tif k%2 == 0 {\r\n\t\treturn 4 / (2*float64(k) + 1)\r\n\t} else {\r\n\t\treturn -4 / (2*float64(k) + 1)\r\n\t}\r\n\r\n\t//       | Computer A    | Computer B\r\n\t// ------|---------------|--------------\r\n\t// SSA=0 | 6.703508163s  | 3.067721176s\r\n\t// SSA=1 | 11.302787342s | 14.389823165s\r\n\t//return 4 / (2*float64(k) + 1) * float64(1-2*(k%2))\r\n\r\n\t//       | Computer A    | Computer B\r\n\t// ------|---------------|--------------\r\n\t// SSA=0 | 10.206198046s | 12.165551807s\r\n\t// SSA=1 | 9.072183098s  | 10.452724107s\r\n\t//return float64(1-2*(k%2)) * 4 / (2*float64(k) + 1)\r\n}\r\n\r\n// pi performs n iterations to compute an approximation of pi.\r\nfunc pi(n int32) float64 {\r\n\tf := 0.0\r\n\tfor k := int32(0); k \u003c= n; k++ {\r\n\t\tf += term(k)\r\n\t}\r\n\treturn f\r\n}\r\n\r\nfunc main() {\r\n\t// Start measuring time from now.\r\n\tstarted := time.Now()\r\n\r\n\tconst n = 1000 * 1000 * 1000\r\n\tfmt.Printf(\"approximating pi with %v iterations.\\n\", n)\r\n\tfmt.Println(pi(n))\r\n\r\n\tfmt.Printf(\"total time taken is: %v\\n\", time.Since(started))\r\n}\r\n```",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-07T20:41:19Z",
+	"updated_at": "2016-09-07T20:41:19Z"
+}

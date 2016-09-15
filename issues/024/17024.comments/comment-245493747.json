@@ -1,0 +1,12 @@
+{
+	"id": 245493747,
+	"body": "There has been confusion around this in the past.\r\n\r\n@robpike added some tests for it with https://go-review.googlesource.com/#/c/11600/\r\nafter discussion in  https://github.com/golang/go/issues/10430 and https://github.com/golang/go/issues/11422.\r\n\r\nThe behavior for padding is consistent with go1.4 and i rewrote the %x formatting code in\r\nhttps://go-review.googlesource.com/#/c/20097/ for go1.7.\r\n\r\n\"That is sort of surprising; the '0' and ' ' are applied per element when the slice is non-zero length\"\r\nThe 2 is a bad test for the padding as %x will always print 2 places for strings/byteslices with a leading zero if need be.\r\n\r\nThe padding is always applied to the whole string because of:\r\n\"However, when printing a byte slice with a string-like verb (%s %q %x %X), it is treated identically to a string, as a single item.\"\r\n\r\nhttps://play.golang.org/p/G5bwjqt4SP\r\n\r\n%d is different from %x on strings and byte slices in that:\r\n\r\nThe %d on a slice is the recursive application:\r\n\"For compound operands such as slices and structs, the format applies to the elements of each operand, recursively, not to the operand as a whole.\"\r\nSo all the formatting applies to each element and fmt puts [ ] around the slice.\r\n\r\nThe %x is the special case:\r\n\"However, when printing a byte slice with a string-like verb (%s %q %x %X), it is treated identically to a string, as a single item.\"\r\n\r\nAnd %x for a string has these rules:\r\n' ': put spaces between bytes printing strings or slices in hex (% x, % X)\r\n%x\tbase 16, lower-case, two characters per byte\r\nand the 0 modifies the padding which is only applied to the whole string.\r\n\r\nSo it seems consistent to me with the specific interpretation outlined as %d and %x are not both recursive applications of the integer format verbs %d and %x when applied to strings and byte slices.",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-08T04:57:13Z",
+	"updated_at": "2016-09-08T05:26:22Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 246810292,
+	"body": "@kardianos In my [example](https://github.com/golang/go/issues/12381#issuecomment-246761126), `:ID`\u003c-\u003evar id\u003c-\u003e100. It even surpport syntax highlighting well, and if under a IDE, hover over id should display its value as 100.\r\n\r\nI just look at MSSQL's wire protocol, so now I understand why one whould want special support for that. For infomation I write it down here, note that I could be wrong.\r\n\r\nIn short, MSSQL's [MS-TDS](https://msdn.microsoft.com/en-us/library/dd304523.aspx) doesn't really support binded by position, actually it doesn't have a bind command. Parameters are just send alongside the statement text with a RPC call, [its structure](https://msdn.microsoft.com/en-us/library/dd340033.aspx) is something like:\r\n```go\r\ntype Param struct {\r\n\tName         string\r\n\tStatusFlags  uint8\r\n\tTypeInfos    []TypeInfo\r\n\tValueBytes   []byte\r\n}\r\n```\r\n\r\nSo it can't bind at database server that have all the infomation from parsing the statement, it must doing the binding from the client side. Even for positional binding, it will need to parse the statement text to get the placeholder and doing the binding in driver, by assign parsed results to `Param.Name`, under current stdlib interface. You can see that in a mssql driver for Go [here](https://github.com/denisenkom/go-mssqldb/blob/master/parser.go).\r\n\r\nIn my opinion, this is a corner case or a quirk of MSSQL, and it could well be solved by driver custom types. I will stop here and welcome others' opinion.\r\n\r\nEdit:\r\nAdd a example for custom type solution for this, it is even fancier than `sql.Param(name, value)`:\r\n```go\r\ntype InputValues map[string]driver.Value\r\n...\r\ndb.Exec(`\r\nIF :ID is null begin\r\n    insert into app.Invoice (Amount) values (:Amount);\r\n    set :ID = LASTVAL();\r\nend\r\n\r\nupdate app.Invoice set\r\n    Amount = :Amount,\r\n    TimeUpdated = GETDATE()\r\nwhere\r\n    ID = :ID;`, InputValues{\r\n    \":ID\":     100,\r\n    \":Amount\": 100,\r\n})\r\n```\r\n\r\nEdit2:\r\nI think leave out the `Name` part as empty string for all parameters in MS-TDS's RPC call could make MSSQL does positional binding by default. If this is true, drivers for MSSQL could just do what go-oci8 does to support named placeholders.",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T20:18:45Z",
+	"updated_at": "2016-09-14T13:08:10Z"
+}

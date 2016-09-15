@@ -1,0 +1,12 @@
+{
+	"id": 246549902,
+	"body": "While I agree that this would be useful, I agree with @bradfitz that it is difficult to see how it might be done without breaking backward compatibility.\r\n\r\nIf you want your program to crash when a panic happens, you can wrap your handlers (or even the root ServeMux) in something like the `panicHandler` type I have included below:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"log\"\r\n        \"net/http\"\r\n        \"os\"\r\n        \"runtime\"\r\n)       \r\n\r\ntype panicHandler struct {      \r\n        http.Handler\r\n}       \r\n\r\nfunc (h panicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\r\n        defer func() { \r\n                err := recover()\r\n                if err != nil {\r\n                        buf := make([]byte, 1\u003c\u003c20)\r\n                        n := runtime.Stack(buf, true)\r\n                        fmt.Fprintf(os.Stderr, \"panic: %v\\n\\n%s\", err, buf[:n])\r\n                        os.Exit(1)\r\n                }\r\n        }()\r\n        h.Handler.ServeHTTP(w, r)\r\n}       \r\n\r\nfunc handler(w http.ResponseWriter, r *http.Request) {\r\n        panic(\"oh no!\")\r\n}       \r\n\r\nfunc main() {\r\n        http.Handle(\"/\", panicHandler{http.HandlerFunc(handler)})\r\n        log.Fatal(http.ListenAndServe(\"localhost:8080\", nil))\r\n}\r\n```\r\n\r\nGiven the workaround and the difficulty of implementing the change, I am going to decline this proposal. Thanks≥\r\n",
+	"user": {
+		"login": "adg",
+		"id": 8446613,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T01:51:58Z",
+	"updated_at": "2016-09-13T01:51:58Z"
+}

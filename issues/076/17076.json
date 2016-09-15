@@ -1,0 +1,22 @@
+{
+	"id": 176434120,
+	"number": 17076,
+	"state": "closed",
+	"title": "cmd/compile: builmode pie with linkshared when std library is also shared fails",
+	"body": "When compiling standard library as shared library and use buildmode pie to compile position indedependent executable from our code it fails, but if we do not compile standard library as shared library but use our own libraries as shared library it compiles successfully\r\n\r\n### What version of Go are you using (`go version`)?\r\ntested with both Master and 1.7.1\r\ngo version go1.7.1 linux/amd64\r\n\u0026\r\ngo version devel +d817c4e Fri Sep 9 20:07:43 2016 +0000 linux/amd64\r\n\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n____________________\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/src/dev\"\r\nGORACE=\"\"\r\nGOROOT=\"/src/dev\"\r\nGOTOOLDIR=\"/src/dev/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build475536354=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\nand for Go 1.7.1:\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build856345781=/tmp/go-build -gno-record-gcc-switches\"\r\n\r\n\r\n### What did you do?\r\n\r\npiet.go\r\n_______________________________________________________________________\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"pack1\"\r\n        \"pack2\"\r\n)\r\nfunc main() {\r\n       fmt.Println(\"Inside Main\")\r\n        pack1.Checkit()\r\n        pack2.Checkit()\r\n}\r\n\r\n```\r\n_______________________________________________________________________\r\n\r\npack1 package:\r\npack1.go\r\n_______________________________________________________________________\r\n\r\n```\r\npackage pack1\r\n\r\nimport \"fmt\"\r\n\r\nfunc Checkit() {\r\n\r\n        fmt.Println(\"Inside pack1\")\r\n\r\n        return\r\n\r\n}\r\n\r\n```\r\n_______________________________________________________________________\r\n\r\npack2 package:\r\npack2.go\r\n_______________________________________________________________________\r\n\r\n```\r\npackage pack2\r\n\r\nimport \"fmt\"\r\n\r\nfunc Checkit() {\r\n\r\n        fmt.Println(\"Inside pack2\")\r\n\r\n        return\r\n\r\n}\r\n\r\n```\r\n_______________________________________________________________________\r\n\r\n\r\n### What did you expect to see?\r\n\r\ngo install -v -buildmode=shared -linkshared -pkgdir '/mnt/lib/' std\r\ngo install -v -buildmode=shared -linkshared -pkgdir '/mnt/lib/' pack1\r\ngo install -v -buildmode=shared -linkshared -pkgdir '/mnt/lib/' pack2\r\n\r\nthe above all built successfully\r\nthe following should succeed now:\r\n\r\ngo install -v -buildmode=pie -linkshared -pkgdir '/mnt/lib' piet\r\n\r\n\r\n\r\n### What did you see instead?\r\n\r\nbut it fails with:\r\ngo install -v -buildmode=pie -linkshared -pkgdir '/mnt/lib' piet\r\n```\r\npiet\r\n# piet\r\n/src/dev/pkg/tool/linux_amd64/link: running gcc failed: exit status 1\r\n/mnt/lib//libstd.so: undefined reference to `main.init'\r\n/mnt/lib//libstd.so: undefined reference to `main.main'\r\ncollect2: error: ld returned 1 exit status\r\n```\r\n\r\n\r\n### What ELSE?\r\n\r\nIf you do not build the std library  and skip that part\r\nrm -rf /mnt/lib\r\nmkdir -p /mnt/lib\r\ngo install -v -buildmode=shared -linkshared -pkgdir '/mnt/lib/' pack1\r\ngo install -v -buildmode=shared -linkshared -pkgdir '/mnt/lib/' pack2\r\ngo install -v -buildmode=pie -linkshared -pkgdir '/mnt/lib' piet\r\n\r\n\r\nIt successfully builds pie binary and uses pack1 and pack2 shared libraries , you can check that with ldd\r\n\r\n",
+	"user": {
+		"login": "kiap",
+		"id": 16517323,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-13T02:40:51Z",
+	"created_at": "2016-09-12T17:25:09Z",
+	"updated_at": "2016-09-13T02:40:52Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

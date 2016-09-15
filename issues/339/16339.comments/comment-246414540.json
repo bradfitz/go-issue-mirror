@@ -1,0 +1,12 @@
+{
+	"id": 246414540,
+	"body": "An aspect that might be obvious to some, but wasn't to me initially: this proposal partially solves the 'vendoring edge case', or rather could be used to work around it. To recap with a concrete example\r\n\r\n```go\r\npackage fooclient\r\n\r\nimport \"golang.org/x/net/websocket\" // vendored alongside package fooclient\r\n\r\nfunc DialWebsocket(b websocket.Config) (*Conn, error) { ... }\r\n```\r\n\r\nThe caller of DialWebsocket cannot construct websocket.Config because it cannot refer to it (vendored packages cannot be imported). There are a few ways around this problem right now, without type aliases:\r\n\r\n* don't use imported types in API surface (not always possible)\r\n* provide wrapper definitions (inconvenient, limiting)\r\n* limit use of vendoring\r\n\r\nAliases provide a workaround: package fooclient would declare aliases for websocket.Config which the caller can refer to. In this particular case, a suitable alias definition might be:\r\n\r\n```go\r\npackage fooclient\r\n\r\nimport \"golang.org/x/net/websocket\" // vendored alongside package fooclient\r\n\r\ntype WebsocketConfig =\u003e websocket.Config\r\nfunc NewWebsocketConfig =\u003e websocket.NewConfig\r\n\r\nfunc DialWebsocket(b *WebsocketConfig) (*Conn, error) { ... }\r\n```\r\n\r\nI'm not even sure myself whether this is a good or bad use of aliases. One nice aspect is that package fooclient stays in control of the exported API. On the flip side, readability is hindered because it is not clear what a WebsocketConfig actually consists of. This alias definition would be permanent.",
+	"user": {
+		"login": "fjl",
+		"id": 6915,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-12T16:58:36Z",
+	"updated_at": "2016-09-12T17:44:32Z"
+}

@@ -1,7 +1,7 @@
 {
 	"id": 164443190,
 	"number": 16293,
-	"state": "open",
+	"state": "closed",
 	"title": "runtime: goroutine execution stalled during GC",
 	"body": "This issue is occurring with Go 1.6.2 on linux/amd64.\r\n\r\nWe have a Go server that exhibits large latency spikes (hundreds of ms) during GCs even though the STW periods are small (1-2ms). The symptoms are somewhat similar to #14812; I'm reporting a new issue on @RLH's guidance.\r\n\r\nBackground on the Go program: it is a key/value store that fulfills put/get requests from clients via a simple custom protocol over TCP. The server creates a goroutine per connection, like net/http. The heap contains an extremely large map (\u003e100M keys). The server is written to be reasonably careful about memory allocation and the only GCs are those forced by sysmon every 2 minutes.\r\n\r\nWhen the server starts, the maximum request latency is a few ms. Requests touch disk so occasionally there are latency spikes of at most a few dozen ms. After about 5 days, the server is exhibiting ~500ms latency spikes at every GC. After a week or two, the spikes can grow to 1s or more.\r\n\r\nThe latency spikes do not affect every request that arrives during the GC; only a few requests seem affected (maybe just one?)\r\n\r\nLast week I restarted this server using `GODEBUG=gctrace=1,gcpacertrace=1` and with `net/http/pprof` enabled. Then a couple of days ago I captured both GC logs from a spike as well as a runtime execution trace.\r\n\r\nHere is what the spikes look like:\r\n\r\n![screen_20160706123408](https://cloud.githubusercontent.com/assets/318501/16674683/a512c582-446f-11e6-8c43-8132a3a46917.png)\r\n\r\n(The time series is bucketed at 10s intervals; the mis-alignment between the spike and the GC line is partly due to that and partly an artifact of how we collect runtime metrics.)\r\n\r\nWe'll take a closer look at the 18:35 spike. Here are the logs:\r\n\r\n```\r\n2016/07/06 18:35:09 GC forced\r\n2016/07/06 18:35:09 pacer: assist ratio=+8.551347e-003 (scan 81 MB in 9720-\u003e19297 MB) workers=2+0\r\n2016/07/06 18:35:09 pacer: H_m_prev=10117323976 h_t=+9.500000e-001 H_T=19728781753 h_a=+7.435357e-003 H_a=10192549896 h_g=+1.000000e+000 H_g=20234647952 u_a=+3.749354e-001 u_g=+2.500000e-001 W_a=85852208 goalΔ=+5.000000e-002 actualΔ=-9.425646e-001 u_a/u_g=+1.499742e+000\r\n2016/07/06 18:35:09 gc 3407 @409224.383s 0%: 0.099+504+0.77 ms clock, 0.79+504/508/9.2+6.2 ms cpu, 9720-\u003e9720-\u003e9648 MB, 19297 MB goal, 8 P\r\n2016/07/06 18:35:10 pacer: sweep done at heap size 9649MB; allocated 0MB of spans; swept 1246890 pages\r\n```\r\n\r\nHere's a screenshot of the trace:\r\n\r\n![screen_20160707175656](https://cloud.githubusercontent.com/assets/318501/16674761/5148e868-4470-11e6-88f3-6747359676ad.png)\r\n\r\nNote the long \"GC\" and \"gcBgMarkWorker\" lines that run for about 500ms and the single `(*Server).handleConn` line that runs for the same period. It seems that the goroutine managing that connection was stalled during the GC, yet many other requests were served on other connections in a few ms or less.\r\n\r\nI have added some further instrumentation to my code to pinpoint the delays, so I will attach more information later. (But I'll have to wait a few days.)\r\n\r\nThe program isn't open-source but I can provide the binary and execution trace privately. I might also be able to send over the source in some form, but it will take some work on my end to come up with a driver that can reproduce the problem.",
 	"user": {
@@ -10,9 +10,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 8,
+	"comments": 20,
+	"closed_at": "2016-09-06T19:27:50Z",
 	"created_at": "2016-07-08T01:42:59Z",
-	"updated_at": "2016-08-26T21:37:01Z",
+	"updated_at": "2016-09-06T19:27:50Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

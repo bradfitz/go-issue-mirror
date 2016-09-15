@@ -1,0 +1,17 @@
+{
+	"id": 174917356,
+	"number": 16983,
+	"state": "closed",
+	"title": "io: MultiReader doesn't free input readers after use (Go 1.7)",
+	"body": "I've noticed that io.MultiReader doesn't set input reader references to nil before shrinking its slice. From my understanding of Go's garbage collector this means that the Readers won't be freed before the whole underlying array is freed.\r\n\r\nIn other words I propose that:\r\n\r\n```\r\nn, err = mr.readers[0].Read(p)\r\nif err == EOF {\r\n\tmr.readers = mr.readers[1:]\r\n}\r\n```\r\nis changed to:\r\n```\r\nn, err = mr.readers[0].Read(p)\r\nif err == EOF {\r\n\tmr.readers[0] = nil\r\n\tmr.readers = mr.readers[1:]\r\n}\r\n```\r\nIn my encounter with this issue, the MultiReader may unnecessarily hold references to potentially large buffers (8 MB) for extended periods of time, wasting memory.",
+	"user": {
+		"login": "PhilipBorgesen",
+		"id": 1206583,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"closed_at": "2016-09-05T21:13:25Z",
+	"created_at": "2016-09-03T21:05:20Z",
+	"updated_at": "2016-09-08T01:00:28Z"
+}

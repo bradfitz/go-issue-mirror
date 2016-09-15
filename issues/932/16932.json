@@ -1,0 +1,27 @@
+{
+	"id": 174125170,
+	"number": 16932,
+	"state": "closed",
+	"title": "build: cgo assumes mingw, causes failures with clang for windows",
+	"body": "\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7 windows/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nWindows Server 2012 R2 / AMD64\r\n\r\n### What did you do?\r\n\r\nI used CGO with Clang for Windows 3.8.1 (http://llvm.org/releases/3.8.1/LLVM-3.8.1-win64.exe) like this:\r\n\r\nset CC=clang\r\nset CGO_CFLAGS=\"-m64 -Ipath/to/my/includes\"\r\nset CGO_LDFLAGS = \"-v -Xlinker -libpath:path/to/libs -lwldap32 -ladvapi32 -lws2_32 -ldbghelp -luser32\"\r\n\r\ngo build\r\n\r\n### What did you expect to see?\r\n\r\nExpected to see nothing (ie, successful compile)\r\n\r\n### What did you see instead?\r\n```\r\nclang version 3.8.1 (branches/release_38)\r\nTarget: x86_64-pc-windows-msvc\r\nThread model: posix\r\nInstalledDir: D:\\llvm\\bin\r\n \"C:\\\\Program Files (x86)\\\\Microsoft Visual Studio 14.0\\\\VC\\\\bin\\\\amd64\\\\link.exe\" \"-out:C:\\\\Users\\\\USAWTB~1\\\\AppData\\\\Local\\\\Temp\\\\2\\\\go-build808013706\\\\editor\r\n\\\\dom\\\\_obj\\\\_all.o\" \"-libpath:C:\\\\Program Files (x86)\\\\Microsoft Visual Studio\r\n14.0\\\\VC\\\\lib\\\\amd64\" \"-libpath:C:\\\\Program Files (x86)\\\\Windows Kits\\\\10\\\\Lib\\\\\r\n10.0.10586.0\\\\ucrt\\\\x64\" \"-libpath:C:\\\\Program Files (x86)\\\\Windows Kits\\\\10\\\\Li\r\nb\\\\10.0.10586.0\\\\um\\\\x64\" -nologo \"C:\\\\Users\\\\USAWTB~1\\\\AppData\\\\Local\\\\Temp\\\\2\\\r\n\\go-build808013706\\\\editor\\\\dom\\\\_obj\\\\_cgo_export.o\" \"C:\\\\Users\\\\USAWTB~1\\\\AppD\r\nata\\\\Local\\\\Temp\\\\2\\\\go-build808013706\\\\editor\\\\dom\\\\_obj\\\\binding.cgo2.o\" -Xlin\r\nker -r --start-group mingwex.lib mingw32.lib --end-group\r\nLINK : warning LNK4044: unrecognized option '/Xlinker'; ignored\r\nLINK : warning LNK4044: unrecognized option '/r'; ignored\r\nLINK : warning LNK4044: unrecognized option '/-start-group'; ignored\r\nLINK : warning LNK4044: unrecognized option '/-end-group'; ignored\r\nLINK : fatal error LNK1181: cannot open input file 'mingwex.lib'\r\nclang.exe: error: linker command failed with exit code 1181 (use -v to see invocation)\r\n```\r\n\r\nI believe the basic problem is the -Xlinker -r --start-group mingwex.lib mingw32.lib --end-group at the end. This is added in cmd/go/build.go, line 3427.\r\n\r\nPerhaps the go build command could check the version of the compiler, since:\r\n\r\n$ clang -v\r\nclang version 3.8.1 (branches/release_38)\r\nTarget: x86_64-pc-windows-msvc\r\nThread model: posix\r\nInstalledDir: D:\\llvm\\bin\r\n\r\nThe \"msvc\" tag would be a good indication not to use mingw.\r\n",
+	"user": {
+		"login": "nadiasvertex",
+		"id": 2034108,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2016-09-07T14:38:40Z",
+	"created_at": "2016-08-30T21:02:14Z",
+	"updated_at": "2016-09-07T14:38:40Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

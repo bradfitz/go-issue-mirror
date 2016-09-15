@@ -1,0 +1,17 @@
+{
+	"id": 176050535,
+	"number": 17041,
+	"state": "closed",
+	"title": "os/exec: Command with arguments does not behave well if those are not trimmed",
+	"body": "### What version of Go are you using (`go version`)?\r\ngo1.6.2\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nlinux/amd64\r\n\r\n### What did you do?\r\nI'm trying to run an external binary through the os/exec package and feed it with an argument (coming from another external binary, but it's a detail)\r\nHere is the minimal example I could build after finally finding the problem :\r\n```\r\n package main\r\n\r\n import (\r\n     \"fmt\"\r\n     \"os/exec\"\r\n )\r\n\r\n func main() {\r\n cmd := exec.Command(\"ls\",\"-l \")\r\n _ , err := cmd.Output()\r\n if err != nil {\r\n     fmt.Println(err)\r\n }\r\n fmt.Println(\"input:\", cmd)\r\n }\r\n\r\n```\r\n\r\n### What did you expect to see?\r\nI would expect the Command to run as if it were typed in a shell, or to exit with an explicit error in case of a problem.\r\n\r\n### What did you see instead?\r\nThe Output() function exited with an \"Exit status 1\" error or an \"Exit status 2\" one depending on the binary it was given and even when panicking on its error, the trace is of no use.\r\n\r\nAnd actually in my case it seems like it were some white-space which was causing the problem.\r\nHere is my real case : I'm feeding to a Command an argument coming from the Output of another Command, this other program outputs its result through a Printf (\"%s\\n\", result) and it causes the exact same problem to exec : it fails when I try to run using this output fetched from .Output() as an argument.\r\n\r\nI tried to take a look at the code of the exec package but I wasn't able to spot why it is failing like this.\r\n\r\nI think it would be a good idea to explicitly enforce in the Documentation that white-spaces in an argument are to be avoided and to implement more explicit errors maybe for this case ? ",
+	"user": {
+		"login": "AnomalRoil",
+		"id": 10077203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-09T16:25:42Z",
+	"created_at": "2016-09-09T16:23:25Z",
+	"updated_at": "2016-09-12T08:03:46Z"
+}

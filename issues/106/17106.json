@@ -1,0 +1,26 @@
+{
+	"id": 176967484,
+	"number": 17106,
+	"state": "open",
+	"title": "cmd/compile: combine contiguous multi-byte comparisons to a constant",
+	"body": "On architectures that allow unaligned loads, we should rewrite `b[0] == c1 \u0026\u0026 b[1] == c2` to `*(*uint16)(\u0026b[0]) == (c1 \u003c\u003c 8) + c2`. And do all architectures for cases in which we know b[0] is appropriately aligned. Also uint32 and uint64 (as appropriate).\r\n\r\nSee CL 26758 for more discussion; that CL will cause many of these to be generated.\r\n\r\nWe might also independently want to update the front end (near OCMPSTR) to generate the larger comparisons directly.\r\n\r\n```go\r\npackage p\r\n\r\nimport \"testing\"\r\n\r\nvar (\r\n\tsink   bool\r\n\tb1, b2 byte\r\n)\r\n\r\nfunc Benchmark8(b *testing.B) {\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tsink = b1 == 5 \u0026\u0026 b2 == 9\r\n\t}\r\n}\r\n\r\nfunc Benchmark16(b *testing.B) {\r\n\tu16 := uint16(b1\u003c\u003c8) + uint16(b2)\r\n\tconst c16 = (5 \u003c\u003c 8) + 9\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tsink = u16 == c16\r\n\t}\r\n}\r\n```\r\n\r\n```\r\nBenchmark8-8             \t2000000000\t         0.99 ns/op\r\nBenchmark16-8            \t2000000000\t         0.68 ns/op\r\n```\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 0,
+	"created_at": "2016-09-14T17:19:27Z",
+	"updated_at": "2016-09-14T17:19:27Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

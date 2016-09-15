@@ -1,0 +1,21 @@
+{
+	"id": 174018333,
+	"number": 16926,
+	"state": "open",
+	"title": "cmd/pprof: Profile is incorrect",
+	"body": "Go 1.7. I was inspecting a CPU profile sent to me for an ARM binary by a user. The top level items make sense but the deeper you get into the stack the more it veers off into cyberspace, with the call stack implicating functions and packages than can never be called from the higher levels. I'll link to the relevant files here and point out some of the discrepancies in the hope that the cause may be obvious to someone.\r\n\r\nThe profiled binary: https://github.com/syncthing/syncthing/releases/download/v0.14.5/syncthing-linux-arm-v0.14.5.tar.gz (compiled with Go 1.7 on linux-amd64 for linux-arm)\r\n\r\nThe profile: https://nym.se/t/syncthing-cpu-linux-arm-v0.14.5-142747.pprof\r\n\r\nA \"web\" overview: https://nym.se/r/dbqn.svg\r\n\r\nAn interesting branch to look at here is the `5.37s` one slightly to the right. It shows:\r\n\r\n```\r\ngithub.com/s/s/model.(*rwFolder).pullerIteration\r\n  |\r\n  v\r\ngithub.com/s/s/model.(*rwFolder).pullerRoutine\r\n  |\r\n  v\r\ngithub.com/s/s/lib/ignore.parseIgnoreFile\r\n  |\r\n  v\r\ntabwriter.(*Writer).writeN\r\n```\r\n\r\nHowever, none of the `rwFolder` methods ever call `ignore.parseIgnoreFile` - it's an unexported function in another package, after all - and the `github.com/syncthing/syncthing/lib/ignore` package does not import `tabwriter` nor do anything to cause calls to it via some other package.\r\n\r\nI'm fairly sure the profile is from the binary in question, as it has a function to create such a profile and tags it with the platform and release version as seen in the profile name.",
+	"user": {
+		"login": "calmh",
+		"id": 125426,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-08-30T13:25:44Z",
+	"updated_at": "2016-08-30T16:54:20Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

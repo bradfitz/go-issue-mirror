@@ -1,7 +1,7 @@
 {
 	"id": 159723118,
 	"number": 16036,
-	"state": "open",
+	"state": "closed",
 	"title": "net/http/httputil: ReverseProxy incompatible with http.Transport retries",
 	"body": "http://golang.org/cl/3210 by @bgentry (go 1.6) introduced code in http.Transport to retry certain replayable requests in certain error cases.  http://golang.org/cl/23160 by @bradfitz recently refactored this code, but not in a way relevant to the issue I am reporting.\r\n\r\nThis logic introduced a `Request`'s `isReplayable` method, which is only true if `r.Body == nil` (and the method is GET, HEAD, etc).\r\n\r\nhttputil.ReverseProxy creates the outgoing request by making a copy of the incoming request, which is probably a server request and which thus is very likely to have non-nil Body.  It then overwrites the outgoing request's Body with a new body in a the common case where request cancellation is possible.\r\n\r\nThus, if you use ReverseProxy to send requests over an http.Transport, you do not get the benefit of http://golang.org/cl/3210 because the outgoing request's Body is not nil.\r\n\r\nWould there be a downside to changing `isReplayable` to check for `r.ContentLength == 0` instead of `r.Body == nil`?  Happy to send a CL if this is reasonable.\r\n\r\n(We are working around this in our project by setting `r.Body` to nil if `ContentLength` is 0 before passing the request to ReverseProxy's ServeHTTP, but that only happens to work because we we have an intermediate RoundTripper between the ReverseProxy and the http.Transport which does not have a CancelRequest method.)",
 	"user": {
@@ -16,9 +16,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 3,
+	"comments": 5,
+	"closed_at": "2016-09-02T23:58:42Z",
 	"created_at": "2016-06-10T21:03:07Z",
-	"updated_at": "2016-06-29T22:04:27Z",
+	"updated_at": "2016-09-02T23:58:42Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

@@ -1,0 +1,21 @@
+{
+	"id": 174409926,
+	"number": 16945,
+	"state": "open",
+	"title": "x/net/websocket: fails to Receive a single frame sent in chunks from Browser",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n1.5 to 1.7\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/matthew/code/go:/home/matthew/code/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build629490277=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\nThis is a very difficult issue to reproduce, as the browsers themselves don't always exhibit the problem.\r\nReproducing in our environment means sending a large \u003e120k websocket message from the Browser (tested on Chrome) to the Go program from a \"clean\" browser - meaning either all caches, cookies cleared, or a new Incognito mode browser.\r\nWhen sent to the server, the browser will chunk the frame into multiple parts, setting the hybiFrameReader.header.Fin bit to false\r\n\r\n\r\n### What did you expect to see?\r\nI expected the whole frame to arrive.\r\n\r\n### What did you see instead?\r\narbitrary cut off of string frame.\r\n\r\nMy fix was to change the Receive function to check if the frame Fin was false, and if so, goto Again:\r\n\r\n```go\r\n// Receive receives single frame from ws, unmarshaled by cd.Unmarshal and stores in v.\r\nfunc (cd Codec) Receive(ws *Conn, v interface{}) (err error) {\r\n\tws.rio.Lock()\r\n\tdefer ws.rio.Unlock()\r\n\tif ws.frameReader != nil {\r\n\t\t_, err = io.Copy(ioutil.Discard, ws.frameReader)\r\n\t\tif err != nil {\r\n\t\t\treturn err\r\n\t\t}\r\n\t\tws.frameReader = nil\r\n\t}\r\n\tvar b bytes.Buffer\r\nagain:\r\n\tframe, err := ws.frameReaderFactory.NewFrameReader()\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tframe, err = ws.frameHandler.HandleFrame(frame)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tif frame == nil {\r\n\t\tgoto again\r\n\t}\r\n\tpayloadType := frame.PayloadType()\r\n\tdata, err := ioutil.ReadAll(frame)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\t_, err = b.Write(data)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tif !frame.(*hybiFrameReader).header.Fin {\r\n\t\tgoto again\r\n\t}\r\n\treturn cd.Unmarshal(b.Bytes(), payloadType, v)\r\n}\r\n\r\nI have a feeling Read(...) also suffers from this problem.\r\n```",
+	"user": {
+		"login": "mattbaird",
+		"id": 989763,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-09-01T00:26:21Z",
+	"updated_at": "2016-09-08T00:15:12Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

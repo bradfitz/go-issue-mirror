@@ -1,0 +1,12 @@
+{
+	"id": 244569041,
+	"body": "#### Additional findings\r\n\r\nIf I rewrite `term` to avoid an if branch, into this form:\r\n\r\n```Go\r\nreturn 4 / (2*float64(k) + 1) * float64(1-2*(k%2))\r\n```\r\n\r\nThen computer A performance becomes ~2x slower with SSA enabled, and computer B becomes ~4x slower.\r\n\r\n|       | Computer A    | Computer B    |\r\n|-------|---------------|---------------|\r\n| SSA=0 | 6.703508163s  | 3.067721176s  |\r\n| SSA=1 | 11.302787342s | 14.389823165s |\r\n\r\nHowever, if I simply move that `float64(1-2*(k%2))` multiplier to the front of the expression like this:\r\n\r\n```Go\r\nreturn float64(1-2*(k%2)) * 4 / (2*float64(k) + 1)\r\n```\r\n\r\n|       | Computer A    | Computer B    |\r\n|-------|---------------|---------------|\r\n| SSA=0 | 10.206198046s | 12.165551807s |\r\n| SSA=1 | 9.072183098s  | 10.452724107s |\r\n\r\nThen **suddenly** ssa=1 becomes equally as performant as ssa=0 on both computer A and B (or rather ssa=0 becomes much slower).\r\n\r\nAre these kind of fluctuations normal and expected, or this is unexpected and caused by an unintended bug?",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-03T20:49:04Z",
+	"updated_at": "2016-09-03T20:49:04Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 244471978,
+	"body": "Hm, yeah; reading it again it seems mostly equivalent to what I have anyway.\r\n\r\nMy question is is the `NextResultSet()` function really necessary? Or should just another call to `Next()` suffice? So repeated calls to `Next()` will return a set like\r\n\r\n```go\r\ntrue  // result set one - three rows\r\ntrue\r\ntrue\r\nfalse // end of result set one\r\ntrue  // result set two - two rows\r\ntrue\r\nfalse // end of result set two\r\nfalse // result set three - no rows\r\ntrue  // result set four - one row\r\nfalse // end of result set four\r\nfalse // no more result sets; return false forever\r\nfalse\r\n.\r\n.\r\n.\r\n```\r\n\r\nIf one of the result sets has no rows, then it'd just return false twice in a row. (This should not have any problems because of how `Next()` loops are already written; your own data structures would just be empty.)\r\n\r\nIf `NextResultSet()` is necessary, perhaps it should be\r\n\r\n```go\r\nfunc (r *Rows) NextResultSet() (err error)\r\n```\r\n\r\nIf the result set is empty, `nil` is returned, but the next call to `Next()` will immediately return `false`.\r\n\r\nMy reasoning for this is that since you know how many result sets the SQL query *should* return (and if you don't, why are you making a random query?), and you can assume there is no bug in the driver package, the only scenario for which there would be no more result sets early is if some error occurred; for example, a network connection problem. The final check in the linked comment is also not necessary for the same reason; once you have read the last row of what you already know is the last result set, you can safely just `Close()`.\r\n\r\n(Of course, with that thought process, we can conclude that `NextResultSet()` is still unnecessary; that can just be rolled into `Next()`, and the error handling remains simple.)\r\n\r\nOne additional question: how will stored procedure that issue statements that return a `Result` instead of rows be handled, such as an `INSERT` statement?",
+	"user": {
+		"login": "andlabs",
+		"id": 718242,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-02T19:51:25Z",
+	"updated_at": "2016-09-02T20:00:16Z"
+}

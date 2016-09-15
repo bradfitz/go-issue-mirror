@@ -1,7 +1,7 @@
 {
 	"id": 166352337,
 	"number": 16426,
-	"state": "open",
+	"state": "closed",
 	"title": "Proposal: encoding/json: Add Support of Simple Validation Tags",
 	"body": "# Abstract\r\nThis document proposes to support simple validation tags in the encoding/json module.\r\n\r\n# Background\r\nIt's very common for the 2 ends, which communicate in JSON, to validate the received data before processing it. Current approaches include making the validation by introducing a schema validation package or making an in-line validation. Either solution has its shortcomings. A schema validation package seems too heavy for a JSON message containing only simple validations and is not efficient because it causes an extra decoding cycle of the message. An in-line validation will need extra efforts to maintain when the message structure changes. \r\n\r\n# Proposal\r\nSimple validations can be specified in the tags of corresponding Go's struct. When json.Unmarshal is called to decode the data, these tags will be considered and the data passed in will be checked against them. If one of the validations fails, json.Unmarshal will return with an error describing this situation.\r\n\r\nFor instance, given the Go struct:\r\n```\r\ntype Message struct {\r\n    Type    int      `json:\"type,required\" json.enum:\"1,2,3\"`\r\n    Content string   `json:\"content\" json.len:\"[5,20]\"`\r\n}\r\n```\r\nonly a JSON object with a type field, which is of integer type and has a value between 1 and 3, and an optional content field, which is of string type and has a value containing 5 to 20 characters, can pass the validation.\r\n\r\nSuggested tags are:\r\n\r\nTag | Value | Effect Scope | Usage | Effect\r\n--- | --- | --- | --- | ---\r\nnoExtraFields|-|struct|json=\"[...],noExtraFields\"|the encoded data cannot contain extra fields other than listed in the struct\r\nrequired|-|field|json=\"[...],required\"|fields with this tag must appear in the encoded data\r\njson.default|field default value|field|json.default=\"...\"|provide a default value for that field if missing in the encoded data\r\njson.enum|value list seperated by ','|field|json.enum=\"value1,...\"|restrict the field value to be one of them\r\njson.pattern|a regular expression|field|json.pattern=\"...\"|restrict the field value must match the given regular expression\r\njson.multipleOf|a number|field|json.multipleOf=\"...\"|only valid to integer fields; restrict the field value must be a multiple of the given number\r\njson.range|a range|field|json.range=\"[min,max]\"|only valid to numeric fields; [ or ] means inclusive, ( or ) means exclusive; restrict the field value must be within the given range\r\njson.len|a range|field|json.range=\"[min,max]\"|only valid to string or array fields; [ or ] means inclusive, ( or ) means exclusive; restrict the field length must be within the given range\r\njson.format|date-time, email, hostname, ipv4, ipv6 or uri|field|json.format=\"...\"|restrict the field value must be in the given format\r\n\r\n# Impact\r\nThe proposal won't break current behaviours. It only has little performance penalty and the implementation will be a little bit complex. It will also bring in package dependency to the regexp package if the pattern or format tag is supported.\r\n\r\n# References\r\n[JSON Schema Validation](http://json-schema.org/latest/json-schema-validation.html)",
 	"user": {
@@ -10,16 +10,25 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 5,
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-09-12T23:14:59Z",
 	"created_at": "2016-07-19T14:54:27Z",
-	"updated_at": "2016-07-22T09:48:22Z",
+	"updated_at": "2016-09-12T23:15:14Z",
 	"milestone": {
 		"id": 1373555,
 		"number": 30,
 		"title": "Proposal"
 	},
 	"reactions": {
-		"total_count": 4,
-		"-1": 4
+		"total_count": 5,
+		"-1": 5
 	}
 }

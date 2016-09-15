@@ -1,0 +1,12 @@
+{
+	"id": 246918253,
+	"body": "\u003e *@ianlancetaylor:* The suggestion counts runnable goroutines, so it can be larger than GOMAXPROCS.\r\n\r\nThat is correct.\r\n\r\n\u003e *@ianlancetaylor:* My concern is that I don't see that this adds anything very useful over `NumGoroutine`.\r\n\r\nUsing `NumGoroutine` breaks down when you have long running goroutines that do background work (like periodically refreshing cache entries). This approach also breaks down for proxy servers as they spend most of their time waiting on the network.\r\n\r\n\u003e *@ianlancetaylor:* If you are worried about shedding load then I don't see why you want to ignore the system goroutines.\r\n\r\nBased on the POC that I made, It seems that at least some system goroutines always appear active. I could be wrong here as they might be blocking on a syscall (like say the netpoller).\r\n\r\nThe other reason I think system goroutines should be excluded is because `NumGoroutine` also excludes them.\r\n\r\n\u003e  *@ianlancetaylor:* Oh, I see, but then the goroutines in state `_Gsyscall` are ambiguous, as they could be blocked.\r\n\r\nThat is correct maybe the `g.waitreason` should be taken into account to?\r\nOtherwise the `_Gsyscall` state could be excluded.\r\n\r\n\u003e *@randall77:* Only things blocked in Go (select{}, ...) would not be counted if we used the raw goroutine states.\r\n\r\nHow can this be detected?\r\n\r\n---\r\n\r\nHere is the POC code I wrote: https://gist.github.com/fd/7136de67a56e174d8c06cb505f7278aa",
+	"user": {
+		"login": "fd",
+		"id": 591,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-14T06:26:52Z",
+	"updated_at": "2016-09-14T06:56:55Z"
+}

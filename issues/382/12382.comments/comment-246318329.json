@@ -1,0 +1,12 @@
+{
+	"id": 246318329,
+	"body": "I agree with @andlabs , implicit calling `*.Rows.Next()` or explicit calling a new `*Rows.NextResultSet()` could both works. And the underlying `database/sql/driver.Rows` interface doesn't have to change too.\r\n\r\nWhen a result set had been read to `io.EOF`, the next call to `Next()` method of the underlying driver should return a error (`io.EOF` or a ErrNoNewResultSet) if all result sets had been consumed, otherwise it should return `nil` and populate column nams from the next result set for the following `Columns()` calls.\r\n\r\nAnd methods of `database/sql.*Rows` should modify accordingly. It will need to call the underlying driver's `Next()` method again (explicitly or impliedly in its own `Next()` method) and reset the `closed` flag and `lasterr`, if needed.\r\n\r\nAnd we could use extra arguments in `Exec()` and `Query()` for output variable binding, which put after all the input parameter binding args. This way drivers can bind them and kown the number of output result sets or variables. The output binding could pass a pointer to a `Value` type if the output is a `Value`, or pass a integer for positional and a string for named `ref cursor` binding.\r\n\r\nAs for interleaved multiple result sets fetching support like MSSQL's [MARS](https://msdn.microsoft.com/en-us/library/ms131686.aspx), as @kardianos pointed out, it is uncommon, so I think it could be left out. And I think true session mutiplexing like Oracle supports is better, which could also fits in here.",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-12T11:18:58Z",
+	"updated_at": "2016-09-12T11:18:58Z"
+}

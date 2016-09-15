@@ -1,0 +1,17 @@
+{
+	"id": 176479245,
+	"number": 17079,
+	"state": "closed",
+	"title": "encoding/json: Go's json decoder should support '*' spill over",
+	"body": "If the process decoding JSON wants to detect unsupported fields its very difficult. Either the json has to be decoded into a map[string]json.RawMessage then parse out each field into sub object, etc. But this could be codified into the decoder very easily. For example I would love to see this work:\r\n\r\nWhat I would love is to be able to write this as code:\r\n\r\n```go\r\ntype Object struct {\r\n    Size int64 `json:\"size\"`\r\n    Name string`json:\"name\"`\r\n    Misc map[string]interface{} `json:\"*\"` \r\n}\r\n\r\nfunc ParseObject() error {\r\n    input := []byte(`{\r\n        \"size\": 1,\r\n        \"name\": \"user_name\",\r\n        \"unsupported_field\": 10\r\n    }`)\r\n\r\n    obj := new(Object)\r\n    if err := json.Unmarshal(input, obj); err != nil {\r\n       return err\r\n    }\r\n    if len(obj.Misc) != 0 {\r\n        return fmt.Errorf(\"Unsupported fields: %s\", MakeKeysAList(obj.Misc))\r\n    }\r\n\r\n    return nil\r\n}\r\n```\r\n\r\nIn order to work `json:\"*\"` should only be used on a map[string]interface{} or a map[string]json.RawMessage. That is the one oddity to this that I can see outright.",
+	"user": {
+		"login": "liquidgecka",
+		"id": 325667,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-12T21:42:58Z",
+	"created_at": "2016-09-12T20:42:43Z",
+	"updated_at": "2016-09-12T21:42:58Z"
+}

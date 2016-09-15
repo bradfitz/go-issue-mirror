@@ -1,0 +1,17 @@
+{
+	"id": 173707115,
+	"number": 16914,
+	"state": "closed",
+	"title": "Fine-tune sync.Once",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo version go1.7 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/wang/dev/\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/cf/kfbz84t902x4ssxy84rw2m0w0000gn/T/go-build294559391=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nFine-tune `sync.Once` so that it's faster. Modify `Do` method of `sync.Once` as following:\r\n\r\n```go\r\nfunc (o *Once) Do(f func()) {\r\n\tif atomic.LoadInt32(\u0026o.done) == 1 {\r\n\t\treturn\r\n\t}\r\n\to.m.Lock()\r\n\tif o.done == 0 {\r\n\t\tatomic.StoreInt32(\u0026o.done, 1)\r\n\t\to.m.Unlock()\r\n\t\tf()\r\n\t\treturn\r\n\t}\r\n\to.m.Unlock()\r\n}\r\n```\r\n\r\nThe result of bench testing:\r\n```sh\r\nBenchmark_StdOnce-4   \t1000000000\t         2.02 ns/op\r\nBenchmark_MyOnce-4    \t2000000000\t         1.53 ns/op\r\n```\r\n\r\nThe benchmark code as following:\r\n```go\r\nfunc onceFunc() {\r\n}\r\n\r\nfunc Benchmark_StdOnce(b *testing.B) {\r\n\tonce := new(sync.Once)\r\n\tb.RunParallel(func(pb *testing.PB) {\r\n\t\tfor pb.Next() {\r\n\t\t\tonce.Do(onceFunc)\r\n\t\t}\r\n\t})\r\n}\r\n\r\nfunc Benchmark_MyOnce(b *testing.B) {\r\n\tonce := new(Once)\r\n\tb.RunParallel(func(pb *testing.PB) {\r\n\t\tfor pb.Next() {\r\n\t\t\tonce.Do(onceFunc)\r\n\t\t}\r\n\t})\r\n}\r\n```\r\n\r\nAnd if `f()` costs a lot of time, current implemtation of `once.Do` would hold the mutex a long time.\r\n\r\n### What did you expect to see?\r\n\r\n\r\n### What did you see instead?\r\n\r\n\r\n",
+	"user": {
+		"login": "mkideal",
+		"id": 16500461,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-08-29T07:32:42Z",
+	"created_at": "2016-08-29T06:46:16Z",
+	"updated_at": "2016-08-29T07:32:42Z"
+}

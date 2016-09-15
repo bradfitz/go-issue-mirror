@@ -1,0 +1,12 @@
+{
+	"id": 245098680,
+	"body": "Simple repro:\r\n```\r\npackage c\r\n\r\nimport \"runtime\"\r\n\r\nfunc f(x, y *int) {\r\n\tA(x, y)\r\n\truntime.GC()\r\n}\r\nfunc A(args ...*int) {\r\n\tsink = args[0]\r\n}\r\n\r\nvar sink *int\r\n```\r\n```\r\n$go build -gcflags=\"-live -m\"\r\n# issue16996/c\r\n./c.go:9: leaking param content: args\r\n./c.go:5: leaking param: x\r\n./c.go:5: leaking param: y\r\n./c.go:6: f ... argument does not escape      \u003c- this means we can allocate the ... array on the stack\r\n./c.go:5: live at entry to f: x y\r\n./c.go:6: live at call to A: autotmp_3\r\n./c.go:7: live at call to GC: autotmp_3        \u003c- the ... array is still live after the call for which it was allocated\r\n./c.go:9: live at entry to A: args\r\n```\r\nIt is indeed a missing VarKill.  There seems to be some confusion around levels of escapedness.  If the ... arg escapes, or does not escape, then we generate correct code.  This example seems to be in a gray area - the arg of `A` is marked as \"param content escapes\".  The label is enough to get the ... array stack allocated, but not enough to get a VarKill added after the call.  Those two decisions should ideally match.\r\n@dr2chase\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-06T21:25:55Z",
+	"updated_at": "2016-09-06T21:25:55Z"
+}

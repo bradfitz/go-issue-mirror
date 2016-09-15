@@ -1,0 +1,25 @@
+{
+	"id": 174398638,
+	"number": 16943,
+	"state": "open",
+	"title": "cmd/compile: principled line numbering",
+	"body": "Currently, cmd/compile assigns line numbers somewhat ad-hocly based on whatever the global `lineno` value happens to be set at when it calls `Nod`.  With the new parser, @griesemer and I want to do a better job at this.  I think this will be especially useful if/once we start tracking/reporting column information; e.g., in error messages for #10324, or in export data for something like golang.org/cl/22936.\r\n\r\nI want to propose two simple rules:\r\n\r\n  1. Objects are associated with the identifier used to declare them; e.g., in `var x int = 3`, we associate the newly declared int variable with the position of the `x` identifier.\r\n  2. Non-terminal grammar rules are associated with a *terminal* token uniquely associated with that rule, generally the first.  For example, a binary expression `x + y` is associated with the `+` token, not `x` or `y`.  This ensures that compound expressions like `x + y + z` are unambiguous (at least when column position is available).\r\n\r\nContrived example:\r\n\r\n    var\r\n    a,\r\n    b int =\r\n    1,\r\n    f() +\r\n    2\r\n\r\nImplications:\r\n\r\n  * The variables `a` and `b` are associated with the line numbers their respective identifiers.\r\n  * Instructions to zero-initialize `a` and `b` would be associated with the `var` keyword (though in practice I expect they'd be optimized away).\r\n  * The add instruction for adding 2 and 3 would be associated with the `+` token.\r\n  * The call to `f()` is associated with the `(` token.\r\n  * Assigning the values to `a` and `b` would be associated with the `=` token.\r\n\r\nAs a near-term plan I'm trying to match the old behavior as much as possible to ease transition, and I'm now to the point where `go build -a -toolexec='toolstash -cmp' std cmd` passes with enabling the new parser.  I can continue matching more obscure line number behaviors, but unless people think line numbering compatibility is really important, I don't think it's worthwhile.  I'd rather focus on making sure performance is acceptable so we can switch over and continue cleaning up the compiler.\r\n\r\n/cc @griesemer @ianlancetaylor @alandonovan ",
+	"user": {
+		"login": "mdempsky",
+		"id": 38349,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 6,
+	"created_at": "2016-08-31T22:56:17Z",
+	"updated_at": "2016-09-06T20:56:11Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

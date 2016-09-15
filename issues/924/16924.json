@@ -1,0 +1,28 @@
+{
+	"id": 173950108,
+	"number": 16924,
+	"state": "closed",
+	"title": "compress: always return uncompressed data in the event of error",
+	"body": "For some applications it would be useful to be able to decompress only the beginning of a truncated archive. For example, for web content filtering by file type, it is usually sufficient to only look at the first few bytes of a response (\"magic bytes\") to determine if the content should be filtered, which greatly improves performance.\r\n\r\nAs of Go 1.7, decompressing the beginning of a truncated archives is not supported. I tested this for `compress/gzip`, `compress/zlib` (both of which use `compress/flate`) and `compress/bzip2`.\r\n\r\nHere is a simple example demonstrating the problem with `compress/gzip`: https://play.golang.org/p/S5WaR_bvy9\r\nThe compression algorithms seem to read the compressed data in blocks. In the case of a truncated archive, bytes may be missing from the end of the first block, so the error \"unexpected EOF\" is returned and nothing is written to the reader, as we can see in the example. However, even in the face of a truncated block, the algorithm should be able to decompress the first bytes of the block. The UNIX tool `zcat` is able to do so when invoked on the same input data:\r\n\r\n    $ zcat /tmp/test.gz\r\n    \u003c!DOCTYPE html\u003e\r\n    gzip: /tmp/test.gz: unexpected end of file\r\n\r\n`zcat` also encounters the \"unexpected EOF\" error, but still returns all the bytes it can decompress. It would be nice to have that in Go too.\r\n\r\nThis should actually not be too hard to implement. At least for `compress/flate`, the decompressor already holds the decompressed bytes in an internal data structure when the \"unexpected EOF\" occurs. Writing those bytes to the reader is thus merely a matter of adding something like\r\n\r\n    if f.err == io.ErrUnexpectedEOF {\r\n        f.flush(f.step)\r\n    }\r\n\r\nto `(*flate.decompressor).Read`. Alternatively, we could add a new method to flush the currently decompressed bytes to a reader, in case of an error.",
+	"user": {
+		"login": "js6626069",
+		"id": 21306010,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-08-31T01:12:34Z",
+	"created_at": "2016-08-30T07:39:14Z",
+	"updated_at": "2016-08-31T01:12:34Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,7 +1,7 @@
 {
 	"id": 151832459,
 	"number": 15486,
-	"state": "open",
+	"state": "closed",
 	"title": "mime/quotedprintable: Read() returns error when underlying string ends with soft-break (\"=\")",
 	"body": "go1.6.1 linux/amd64\r\n\r\nhttps://play.golang.org/p/j9BAuXothm\r\n\r\nThe implementation of Read() in mime/quotedprintable/reader.go returns an error when the underlying string ends with an equals character (\"=\"), indicating a soft-break:\r\n\r\n_quotedprintable: invalid bytes after =: \"\"_\r\n\r\nIf I remove the last \"=\", it works great.\r\n\r\nI am not familiar with all the details of RFC 2045, but I interpret point 3 on page 22 in the standard to say that the Go implementation technically is correct. But, as it says in point 2 on the same page, it would be more robust to accept it. Also note that these strings occur in the wild; the software that produced this particular string is:\r\n\r\nX-Mailer: Apple Mail (2.3124)\r\n\r\nI also take this into account (from mime/quotedprintable/reader.go, lines 73-76:\r\n\t\t// Deviations from RFC 2045:\r\n\t\t// 1. in addition to \"=\\r\\n\", \"=\\n\" is also treated as soft line break.\r\n\t\t// 2. it will pass through a '\\r' or '\\n' not preceded by '=', consistent\r\n\t\t//    with other broken QP encoders \u0026 decoders.\r\n\r\nI would **love** it if Go was practical enough to add a point \"3. it will pass though EoB preceeded by '=' due to broken QP encoders\" as that will save a lot of edge cases and extra code further up the chain, but I understand If you disagree.",
 	"user": {
@@ -19,8 +19,9 @@
 		}
 	],
 	"comments": 3,
+	"closed_at": "2016-09-11T01:51:23Z",
 	"created_at": "2016-04-29T10:01:28Z",
-	"updated_at": "2016-08-22T22:00:35Z",
+	"updated_at": "2016-09-11T01:51:23Z",
 	"milestone": {
 		"id": 1748849,
 		"number": 42,

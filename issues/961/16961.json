@@ -1,0 +1,17 @@
+{
+	"id": 174645456,
+	"number": 16961,
+	"state": "closed",
+	"title": "Solution to the problem of restful 204",
+	"body": "\r\n[Text translated by google]\r\n\r\nYesterday I made a consultation here . I asked him siquiente :\r\n\r\nI have the following problem : I want to process a function that returns the 204 HTTP status code and function never finishes .\r\n\r\nThis resource , need absolutely return nothing in the body of the message , but return at the head need a key ( token ) .\r\n\r\nBy doing this, the service hangs .\r\nThe issue is that I have a function called \" Retornar\" , which resolves these issues me automatically. The function is as follows :\r\n\r\n    // Responder el resultado de la consulta\r\n    // Retornar el resultado restful por HTTP\r\n    func Responder(w http.ResponseWriter, token string, respuesta interface{}) {\r\n        estadoHttp := Estado_200_Ok // int 200\r\n\r\n        // Verificar Si el valor a retornar es de tipo recursos.Error\r\n        // o es de un tipo de estructura del negocio.\r\n        err, esError := respuesta.(*Error)\r\n        if esError {\r\n            estadoHttp = err.EstadoHttp\r\n        } else {\r\n            if respuesta == nil {\r\n                estadoHttp = Estado_204_SinContenido // 204\r\n            }\r\n        }\r\n\r\n        // Si el token tiene un valor, retornarlo en el campo\r\n        // \"authorization\" del Header del mensaje.\r\n        if token != \"\" {\r\n            w.Header().Set(\"authorization\", token)\r\n        }\r\n\r\n        // Valores de retorno del mensaje por defecto:\r\n        // Retorno en JSON y conjunto de caracteres UTF-8\r\n        w.Header().Set(\"Content-Type\", \"application/json; charset=UTF-8\") //***ERROR***\r\n        w.Header().Set(\"Access-Control-Allow-Origin\", \"*\")\r\n        w.WriteHeader(estadoHttp)\r\n\r\n        // Escribir en el body siempre y cuando no sea vacío\r\n        if respuesta != nil {\r\n            if err := json.NewEncoder(w).Encode(respuesta); err != nil {\r\n                panic(err)\r\n            }\r\n        }\r\n    }\r\n\r\nI thank the people who answered me , but I did not solve the problem , the appeal was hanged.\r\nThe solution is very simple, remove the line (for error is processed ) :\r\n\r\n    w.Header().Set(\"Content-Type\", \"application/json; charset=UTF-8\")\r\n\r\nSince \" Content- Type\" refers to the message body . Consequently , the service was frozen !\r\n\r\nConclusion : If you want to return a status code 204 ( cin content in the body ) but containing fields in the header , as in the case of \"Authorization \" , never place :\r\n\r\n    w.Header().Set(\"Content-Type\", \"application/json; charset=UTF-8\")\r\n\r\n\r\n### What version of Go are you using (`go version`)?\r\n1.6.3\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n\r\n### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n\r\n### What did you expect to see?\r\nSolutionated\r\n\r\n### What did you see instead?\r\nSolutionated\r\n\r\n\r\n",
+	"user": {
+		"login": "fabianpallares",
+		"id": 5326640,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-09-02T00:19:28Z",
+	"created_at": "2016-09-01T23:01:37Z",
+	"updated_at": "2016-09-02T00:19:28Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 245912773,
+	"body": "A few thoughts:\r\n\r\n* Keep in mind that ports in Go are strings: https://play.golang.org/p/zk2WEri_E9\r\n* The URL.String method doesn't care about default ports: https://play.golang.org/p/WW91JnTb03\r\n* The `net` package in general doesn't know about default ports. It could, but currently only the `net/http` package does:\r\n\r\n```go\r\nvar portMap = map[string]string{\r\n        \"http\":  \"80\",\r\n        \"https\": \"443\",\r\n}\r\n```\r\n\r\n* We can't change existing behavior of anything. Adding new accessor methods is fine.\r\n* A `(*url.URL).Hostname() string` method returning the port-less `u.Host` sounds good, especially if it matches Javascript.\r\n* So then `(*url.URL).Port() string` too I guess? The question is what to do on missing/implicit ports. Since not all schemes have a known implicit port (and sometimes we don't even have a scheme), it would have to return an empty string sometimes, so we might as well always return an empty string when it's not present. This is less surprising, too.\r\n* My pet peeve: how do create a `\"host:port\"` string (as from `net.JoinHostPort`) from a `*url.URL`? This is where we need a default port. New method on URL alongside `Port() string`, like `PortOrDefault() string`? Or just a top-level function like:\r\n\r\n```go\r\nfunc DefaultPort(scheme string) string\r\n```\r\n\r\nBut then caller code has to do:\r\n\r\n```go\r\n     u, ... := url.Parse(urlString)\r\n     port := u.Port()\r\n     if port == \"\" {\r\n         port = net.DefaultPort(u.Scheme)\r\n     }\r\n     hostPort := net.JoinHostPort(u.HostName(), port)\r\n```\r\n\r\nMaybe that's acceptable? With `PortOrDefault()` or even `HostPort() string` it'd be:\r\n\r\n```go\r\n     u, ... := url.Parse(urlString)\r\n     c, err := net.Dial(\"tcp\" , u.HostPort())\r\n```\r\n\r\n```go\r\n     u, ... := url.Parse(urlString)\r\n     c, err := net.Dial(\"tcp\" , net.JoinHostPort(u.Hostname(), u.DefaultPort())\r\n```\r\n\r\nBut neither of those are great examples because anybody diving into calling `net.Dial` or otherwise using the `\"host:port\"` will want to do some validation on the scheme, host, and port anyway. So maybe just having a `(*url.URL).Port() string` + `Hostname() string` + `func DefaultPort(scheme string)` is sufficient.\r\n\r\nThoughts?\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-09T13:28:54Z",
+	"updated_at": "2016-09-09T13:28:54Z"
+}

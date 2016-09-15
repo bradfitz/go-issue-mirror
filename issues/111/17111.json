@@ -1,0 +1,27 @@
+{
+	"id": 177042398,
+	"number": 17111,
+	"state": "open",
+	"title": "cmd/compile: internal compiler error: unhandled OCONV STRUCT -\u003e STRUCT",
+	"body": "Commit dfc56a4cd313c9c5de37f4fadb14912286edc42f caused a regression where the following code fails to compile:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"testing\"\r\n\t\"time\"\r\n)\r\n\r\ntype Value interface{}\r\n\r\ntype DateTime time.Time\r\n\r\nvar _ Value = DateTime(time.Time{})\r\n\r\nvar (\r\n\tdate1Time = time.Date(2014, 2, 3, 1, 2, 3, 400000000, time.UTC)\r\n\tdate1     = DateTime(date1Time)\r\n)\r\n\r\nvar dateTimeNotSupported = []struct {\r\n\tin  Value\r\n\tout Value\r\n}{{in: date1, out: nil}}\r\n\r\nfunc Test(*testing.T) {}\r\n```\r\n\r\nOn the commit in question, I see the following:\r\n```\r\n# command-line-arguments\r\n./main_test.go:24: cannot use date1Time (type time.Time) as type DateTime in assignment\r\n./main_test.go:24: internal compiler error: unhandled OCONV STRUCT -\u003e STRUCT\r\n\r\ngoroutine 1 [running]:\r\nruntime/debug.Stack(0x0, 0x0, 0x0)\r\n\t/home/rawr/Projects/go/src/runtime/debug/stack.go:24 +0x79\r\ncmd/compile/internal/gc.Fatalf(0xab7efc, 0x18, 0xc42053e260, 0x2, 0x2)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/subr.go:165 +0x22f\r\ncmd/compile/internal/gc.(*ssaExport).Fatalf(0xde9a9a, 0x18, 0xab7efc, 0x18, 0xc42053e260, 0x2, 0x2)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:4772 +0x5d\r\ncmd/compile/internal/ssa.(*Config).Fatalf(0xc4204dc000, 0xc400000018, 0xab7efc, 0x18, 0xc42053e260, 0x2, 0x2)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/ssa/config.go:292 +0x6e\r\ncmd/compile/internal/gc.(*state).Fatalf(0xc4203f87e0, 0xab7efc, 0x18, 0xc42053e260, 0x2, 0x2)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:280 +0x83\r\ncmd/compile/internal/gc.(*state).expr(0xc4203f87e0, 0xc42053d560, 0x0)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:1698 +0x428b\r\ncmd/compile/internal/gc.(*state).stmt(0xc4203f87e0, 0xc42053c630)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:678 +0x409\r\ncmd/compile/internal/gc.(*state).stmts(0xc4203f87e0, 0xc4204b9fe0)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:481 +0x5e\r\ncmd/compile/internal/gc.buildssa(0xc42053c870, 0x0)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/ssa.go:126 +0x67f\r\ncmd/compile/internal/gc.compile(0xc42053c870)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/pgen.go:402 +0x209\r\ncmd/compile/internal/gc.funccompile(0xc42053c870)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/dcl.go:1260 +0x179\r\ncmd/compile/internal/gc.fninit(0xc4204bc300, 0x7, 0x8)\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/init.go:182 +0xb8f\r\ncmd/compile/internal/gc.Main()\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/gc/main.go:480 +0x23f5\r\ncmd/compile/internal/amd64.Main()\r\n\t/home/rawr/Projects/go/src/cmd/compile/internal/amd64/galign.go:93 +0x2fa\r\nmain.main()\r\n\t/home/rawr/Projects/go/src/cmd/compile/main.go:33 +0x279\r\n```\r\n\r\nI expect the test to compile and pass.\r\n\r\n/cc @josharian, @randall77, @mdempsky ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-09-14T22:47:04Z",
+	"updated_at": "2016-09-14T22:49:33Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

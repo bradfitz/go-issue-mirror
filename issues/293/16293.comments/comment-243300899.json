@@ -1,0 +1,12 @@
+{
+	"id": 243300899,
+	"body": "\u003e Can I have your permission to adapt it\r\n\r\nYes, please do!\r\n\r\n\u003e Given N large objects, at most N OS threads can get tied up in scanning those large objects, while the others continue to run (mostly) normally.\r\n\r\nThat's part of the story, @aclements. There's an additional implication of this bug that I think makes the workaround less practical than that.\r\n\r\nMy view is that this bug affects availability of all goroutines which allocate. With most of the process's memory tied up in N allocations (with N==1 for my reproducer), N goroutines which allocate during the concurrent mark phase will be assigned to scanning those large allocations. They'll tie up a P, and the G will be unable to run user code. Any additional goroutines that allocate during the concurrent mark phase will wait until the large scan tasks are done. These goroutines won't consume a P but their G will not be runnable, at least until there's scan credit available to steal (which might not be until nearly the end of the cycle). So long as there's a P available, each goroutine will be able to run _until_ it attempts to allocate memory. At that point, they end up stuck at the end of `runtime.gcAssistAlloc` on `goparkunlock(\u0026work.assistQueue.lock, \"GC assist wait\", traceEvGoBlock, 2)`\r\n\r\nGiven the \"GC forced\" logs in the first message on this issue, I suspect that @cespare 's server is careful to not allocate any memory at all in most goroutines which is why there continues to be a fair amount of goroutine scheduling activity and \"Network\" activity in the first message's execution trace.\r\n\r\nLess finely tuned servers—including ones built with net/http.Server—allocate at least a little in many goroutines. Those goroutines end up un-runnable for long periods of the GC cycle.\r\n\r\nIn servers built with net/http.Server, this bug affects a small number of threads and a large number of goroutines. All of our http.Handlers end up stalled during the GC, not just the unluckiest one.\r\n\r\n\u003e Given that this isn't a regression and I can't think of a super-low-risk way to do this, it doesn't fit the requirements for a point release.\r\n\r\nThank you for considering it.\r\n",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-30T00:45:39Z",
+	"updated_at": "2016-08-30T00:45:39Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 244774799,
+	"body": "Poked at this a bit. Two observations:\r\n\r\n* For constant denominator (n / 10, n % 10), which is probably the most common case, we already use magic multiplication and then a - b * (a / b) on all platforms. I [benchmarked](https://play.golang.org/p/3M9A6jVYms) and this appears 5x faster on x86 than using IDIVQ (2ns vs 10ns). There's a little bit of extra overhead with the IDIVQ checking for div by -1, but that branch would have been perfectly predictable in my benchmark.\r\n\r\n* For ARM, where DIV and MOD are lowered into runtime calls, adapting the existing amd64 approach and adding new ADIVMOD(U) calls and matching runtime functions would have high yield. But this only matters for the non-const case.\r\n\r\nBefore continuing on the original issue, I think it's worth knowing how common non-const divmod is. And even then, adding ADIVMOD(U) to ARM is probably the place to start.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-05T15:44:45Z",
+	"updated_at": "2016-09-05T15:44:45Z"
+}

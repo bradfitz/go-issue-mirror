@@ -1,7 +1,7 @@
 {
 	"id": 166672357,
 	"number": 16452,
-	"state": "open",
+	"state": "closed",
 	"title": "os: Remove can result in unreclaimed space due to interaction between syscall.Unlink and filesystem",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)? 1.6.3\r\n\r\n2. What operating system and processor architecture are you using (`go env`)? Solaris Variant (Illumos-based BrickstorOS)\r\n\r\n3. What did you do?\r\n\r\nThis is issue has been reproduced through a number of tests, all done over a tmpfs filesystem. At least as far we know, tmpfs as implemented on Solaris and variants anyway, does not result in space associated with children of a \"directory\" being reclaimed through a `unlink` syscall, without calling `rmdir`. What happens, based on the code in os.Remove is we first unlink and check for errors. If `syscall.Unlink` does not return an error, we assume we are done and return. Otherwise we try next case, which is `syscall.Rmdir`. In our case it appears that because Unlink does not result in an error, we never get to the Rmdir call, and so directory is apparently removed, but the capacity that was associated with its children is not reclaimed until after filesystem is unmounted.\r\n\r\nIf possible, provide a recipe for reproducing the error.\r\n\r\nRecipe is quite straight-forward. This is reproducible each time with the os.RemoveAll function, which uses os.Remove, where the problem seems to be.\r\n\r\n1) Create a directory and fill with some data, one or more files will do.\r\n2) Use os.RemoveAll to remove that directory and its contents.\r\n\r\n4. What did you expect to see?\r\n\r\nExpected for directory to be removed, and space associated with all files under that directory to be freed.\r\n\r\n5. What did you see instead?\r\n\r\nSpace is not freed as a result, only directory appears to be removed, as well as its contents.\r\n",
 	"user": {
@@ -15,9 +15,10 @@
 			"name": "OS-Solaris"
 		}
 	],
-	"comments": 5,
+	"comments": 7,
+	"closed_at": "2016-09-09T21:12:44Z",
 	"created_at": "2016-07-20T20:19:14Z",
-	"updated_at": "2016-07-21T14:35:42Z",
+	"updated_at": "2016-09-09T21:14:34Z",
 	"milestone": {
 		"id": 1748849,
 		"number": 42,

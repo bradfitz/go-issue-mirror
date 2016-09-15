@@ -1,0 +1,12 @@
+{
+	"id": 245004915,
+	"body": "From a quick look, here's what's going on.\r\n\r\nNote that I changed `buf1 := bytes.NewReader([]byte(\"foo\"))` into `buf1 := Reader(bytes.NewReader([]byte(\"foo\")))` and similarly so for buf2, and fixed up the other types. That moves the interface wrapping goo out of the way so we can see more clearly what is happening.\r\n\r\nOk. `mr = MultiReader(buf1, buf2)` gets rewritten by the compiler to `tmp := [2]Reader{buf1, buf2}; mr = MultiReader(tmp[:])`. Assembly:\r\n\r\n```\r\n\t0x01b1 00433 (multi_test.go:254)\tMOVQ\t$0, \"\".autotmp_238+336(SP)\r\n\t0x01bd 00445 (multi_test.go:254)\tMOVQ\t$0, \"\".autotmp_238+344(SP)\r\n\t0x01c9 00457 (multi_test.go:254)\tMOVQ\t$0, \"\".autotmp_238+352(SP)\r\n\t0x01d5 00469 (multi_test.go:254)\tMOVQ\t$0, \"\".autotmp_238+360(SP)\r\n\t0x01e1 00481 (multi_test.go:247)\tLEAQ\tgo.itab.*bytes.Reader,io.Reader(SB), CX\r\n\t0x01e8 00488 (multi_test.go:254)\tMOVQ\tCX, \"\".autotmp_238+336(SP)\r\n\t0x01f0 00496 (multi_test.go:254)\tMOVQ\t\"\".autotmp_262+248(SP), DX\r\n\t0x01f8 00504 (multi_test.go:254)\tMOVQ\tDX, \"\".autotmp_238+344(SP)\r\n\t0x0200 00512 (multi_test.go:254)\tMOVQ\tCX, \"\".autotmp_238+352(SP)\r\n\t0x0208 00520 (multi_test.go:254)\tMOVQ\tAX, \"\".autotmp_238+360(SP)\r\n\t0x0210 00528 (multi_test.go:254)\tLEAQ\t\"\".autotmp_238+336(SP), AX\r\n\t0x0218 00536 (multi_test.go:254)\tMOVQ\tAX, (SP)\r\n\t0x021c 00540 (multi_test.go:254)\tMOVQ\t$2, 8(SP)\r\n\t0x0225 00549 (multi_test.go:254)\tMOVQ\t$2, 16(SP)\r\n\t0x022e 00558 (multi_test.go:254)\tPCDATA\t$0, $7\r\n\t0x022e 00558 (multi_test.go:254)\tCALL\tio.MultiReader(SB)\r\n```\r\n\r\nautotmp_238 here is the `[2]Reader` array. It gets zeroed (unnecessarily?) from 0x01b1-0x01d5 and filled with the proper interface values (itab, data pairs for buf1 and buf2) from 0x01e1-0x0208. Then a slice is constructed on the stack with len and cap 2 from 0x0210-0x0225.\r\n\r\nAfter the call to io.MultiReader, autotmp_238 is never touched again. So the references to buf1 and buf2 remain on the stack until the function exits.\r\n\r\nOne fix would be to teach the compiler to explicitly zero the temporary that it creates (in mkdotargslice, in walk.go) after the call. This would add a bit of overhead to variadic calls, but allow faster reclamation.\r\n\r\nI don't currently plan to work on this further.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-06T16:18:18Z",
+	"updated_at": "2016-09-06T16:18:18Z"
+}

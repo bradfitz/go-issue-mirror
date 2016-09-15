@@ -1,0 +1,22 @@
+{
+	"id": 175205674,
+	"number": 16999,
+	"state": "closed",
+	"title": "runtime: remove maxstring restriction when printing strings",
+	"body": "go tip (go1.7 and many before)\r\n\r\nin runtime/string.go there is a maxstrings variable that starts with a value of 256 and is updated whenever rawstring is called.\r\n\r\nThis limit can be expanded by concatenating any strings.\r\n\r\nHowever it is not consistent with what the length of the longest go string really is:\r\n\r\nhttps://play.golang.org/p/BUY9zhs7pT\r\n\r\npackage main\r\n\r\n```\r\nfunc main() {\r\n\ts := \"012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\"+\r\n\t     \"012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\"+\r\n\t     \"012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\"+\r\n \t     \"012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\"\r\n\t_ = s+\" \"\r\n\tprint(s)\r\n}\r\n```\r\n\r\ne.g. defining a string constant that is longer than the starting maxstring value will not print.\r\n\r\nwhen updating the maxstring length by e.g. adding the string with \" \" (or adding any other strings where the concatination is longer than orginal s) the above program prints the string fine.\r\n\r\nSince gwrite later just truncates the string in a copy if it does not fit into the g.writebuf there seems no risk of out of bounds write. Since the limit can just be pushed upwards by arbitrary string concatenations there seems also to be no protection against the string output being cut off early depending on g.writebuf capacity.\r\n\r\nRemoving maxstring and running ./all.bash did not reveal any immediate problems.\r\n( apart from an explicit test that maxstring is updated by gostringnocopy which would be obsolete once maxstring is removed )\r\n\r\nrsc \"I don't see that it's causing any harm, and it's still useful.\":\r\nhttps://groups.google.com/forum/#!msg/golang-dev/J2OiPumlwuc/neEqKcCWyf8J\r\n\r\nhowever that seems to be from a time where runtime was not written in go and we did not have extra updates to maxstrings in e.g. gostringnocopy https://github.com/golang/go/issues/8706 .\r\n\r\nWould it be ok to remove maxstrings in runtime and maxstring updates from runtime/strings.go nowadays? \r\n\r\nIf not should cases were this protection against broken go string lengths is overprotecting be fixed (e.g. similar to /go/issues/8706) ?\r\n\r\n/cc @josharian @randall77 ",
+	"user": {
+		"login": "martisch",
+		"id": 184995,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-09-08T15:57:27Z",
+	"created_at": "2016-09-06T09:51:33Z",
+	"updated_at": "2016-09-08T15:57:27Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

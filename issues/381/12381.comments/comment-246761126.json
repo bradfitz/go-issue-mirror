@@ -1,0 +1,12 @@
+{
+	"id": 246761126,
+	"body": "@kardianos `：ID` will be sent only once as the first position, your database's sql syntax parser will understand `:ID` and `:Amount` are the only placeholders, and following `:ID` and `:Amount` are just reference with the same value.\r\n\r\nNote that, `'?'`,`':name'`, `':number'`, `'@name'`, `$number` are both just text input from a sql syntax parser's standpoint. The only different is what is allow for the first character of a placeholder to differ them with other identifiers in the same statement. While parsing placeholders, a parser will also indexing them, so it can easily map a number to a text fragment in the statement.\r\n\r\nIf your database doesn't support mapping index to name yet, you can still easily workaround it by using custom type (which not supported yet in the stdlib), and no need to add a special api in `database/sql`.\r\n\r\nYour example will just be:\r\n```go\r\nid, amount := 100, 100\r\ndb.Exec(`\r\nIF :ID is null begin\r\n    insert into app.Invoice (Amount) values (:Amount);\r\n    set :ID = LASTVAL();\r\nend\r\n\r\nupdate app.Invoice set\r\n    Amount = :Amount,\r\n    TimeUpdated = GETDATE()\r\nwhere\r\n    ID = :ID;`, id, amount)\r\n```\r\nand database driver will bind the value of id to position 1 and the value of amount to position 2.",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T17:36:58Z",
+	"updated_at": "2016-09-13T17:36:58Z"
+}

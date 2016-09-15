@@ -1,0 +1,12 @@
+{
+	"id": 246815656,
+	"body": "I would like to echo that this issue is problematic for our team. Totally fine with this being the default behavior, but the issue is exacerbated by the difficulty of working around it in Go.\r\n\r\nInitially, we tried working around this by launching a new Go process that would invoke `go vet` with a path that we resolved ourselves. Simplified example:\r\n\r\n```go\r\nwd, _ := os.Getwd() // path may be a symlink\r\nwd, _ = filepath.EvalSymlinks(wd) // this path is always absolute\r\ncmd := exec.Command(\"go\", \"vet\")\r\ncmd.Dir = wd // set working directory of command to explicitly be absolute path\r\ncmd.Run() // doesn't work -- os.Getwd() in relPaths() still returns symlink path\r\n```\r\n\r\nHowever, this still doesn't work -- the `os.Getwd()` call in the `relPaths` function of `build.go` still returns the symlink path. It appears that this technically doesn't violate any contracts since `os.Getwd()` states: \"If the current directory can be reached via multiple paths (due to symbolic links), Getwd may return any one of them.\", but is definitely unintuitive (since the path is explicitly set to be absolute).\r\n\r\nWe're working around this for now by taking advantage of the fact that `os.Getwd()` consults `$PWD` first, so setting `cmd.Env = append([]string{fmt.Sprintf(\"PWD=%v\", wd)}, os.Environ()...)` works causes this to work as expected. However, we know this is not ideal since it ties the behavior to an undocumented implementation detail that could change at any time.\r\n\r\nSo, long story short, I second that it would be nice to fix this issue -- although I agree and understand that symlinks into the Go path tree should be avoided, it would be nice to have the option to at least have a plausible work-around to handle this for tools that want to offer a more user-friendly experience.",
+	"user": {
+		"login": "nmiyake",
+		"id": 4267425,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T20:37:10Z",
+	"updated_at": "2016-09-13T20:37:10Z"
+}

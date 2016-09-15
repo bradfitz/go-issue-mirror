@@ -1,0 +1,16 @@
+{
+	"id": 245647382,
+	"body": "Thanks,\r\nI've tested 1.6 vs tip\r\nOn haswell both versions have the same speed.\r\nBut on Broadwell(sic!) and Skylake I was able to verify a 2x slowdown.\r\nLooking at asm main difference is usage of floating constants:\r\n1.6 always reload them, while 1.7 loads them once in the beginning of pi function.\r\nThis is due to both path ( k%2 == 0 and  k%2 == 1) writing to same register\r\nIn asm loop looks like:\r\njne    q2\r\ncvtsi2sd %ebx,%xmm3\r\nmulsd  %xmm0,%xmm3\r\naddsd  %xmm1,%xmm3\r\nmovsd  0xb817d(%rip),%xmm4        # 4b91c0 \u003c$f64.4010000000000000\u003e\r\ndivsd  %xmm5,%xmm4\r\n  q4:\r\nlea    0x1(%rbx),%ecx\r\naddsd  %xmm4,%xmm2\r\ncmp    %eax,%ecx\r\njle   q3\r\n  q1:\r\nmovsd  %xmm2,0x10(%rsp)\r\nretq\r\n q2:\r\ncvtsi2sd %ebx,%xmm3\r\nmulsd  %xmm0,%xmm3\r\naddsd  %xmm1,%xmm3\r\nmovsd  0xb8193(%rip),%xmm4        # 4b9200 \u003c$f64.c010000000000000\u003e\r\ndivsd  %xmm3,%xmm4\r\n\r\nIf I change xmm3 into xmm5:\r\njne    q2\r\ncvtsi2sd %ebx,%xmm5\r\nmulsd  %xmm0,%xmm5\r\naddsd  %xmm1,%xmm5\r\nmovsd  0xb817d(%rip),%xmm4        # 4b91c0 \u003c$f64.4010000000000000\u003e\r\ndivsd  %xmm5,%xmm4\r\n  q4:\r\nlea    0x1(%rbx),%ecx\r\naddsd  %xmm4,%xmm2\r\ncmp    %eax,%ecx\r\njle   q3\r\n  q1:\r\nmovsd  %xmm2,0x10(%rsp)\r\nretq\r\n q2:\r\ncvtsi2sd %ebx,%xmm3\r\nmulsd  %xmm0,%xmm3\r\naddsd  %xmm1,%xmm3\r\nmovsd  0xb8193(%rip),%xmm4        # 4b9200 \u003c$f64.c010000000000000\u003e\r\ndivsd  %xmm3,%xmm4\r\n\r\nPerformance improves by 2x (gets back to 1.6 level)\r\n\r\n\r\n",
+	"user": {
+		"login": "TocarIP",
+		"id": 16836375,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	},
+	"created_at": "2016-09-08T16:01:46Z",
+	"updated_at": "2016-09-08T16:01:46Z"
+}

@@ -1,0 +1,21 @@
+{
+	"id": 176576880,
+	"number": 17086,
+	"state": "open",
+	"title": "x/mobile: Java constructor proposal",
+	"body": "I've been looking at the generated code for Android, and I think we could really make it a lot more natural by generating constructors for Java classes instead of relying on creator methods.\r\n\r\nThe idea behind my proposal is that we could simply detect specific function naming convention in Go, and if that holds, generate a constructor instead of a static method.\r\n\r\n### Basic constructors\r\n\r\nIf I were to have a type on Go side:\r\n\r\n```go\r\ntype SomeType struct {}\r\n```\r\n\r\nThen either of the functions below could be interpreted as a constructor for `SomeType`:\r\n\r\n```go\r\nfunc NewSomeType(arg string) *SomeType {...}\r\n```\r\n```go\r\nfunc NewSomeType(arg string) (*SomeType, error) {...}\r\n```\r\n\r\nInstead of generating a static method in the root namespace, we could generate a public constructor:\r\n\r\n```java\r\nclass SomeType {\r\n    public SomeType(String arg) { ... }\r\n}\r\n```\r\n\r\nThe rule would be that if a Go package contains both TypeXXX and a function NewTypeXXX which returns TypeXXX and optionally an error, we can interpret that as a constructor.\r\n\r\n### Overloaded constructors\r\n\r\nAn even more interesting (alas less obvious) case are overloaded constructors. Many times it can happen that we need to create a new \"object\" from multiple possibly input types.\r\n\r\nOne example of such is Go's `binary` package:\r\n\r\n```go\r\nfunc NewBuffer(buf []byte) *Buffer { ... }\r\nfunc NewBufferString(s string) *Buffer { ... }\r\n```\r\n\r\nIn this case the \"Basic\" approach above would generate a constructor from the first, but not the second function. I'd propose that all functions called `NewTypeXXX\u003cwhatever\u003e` that have the required signature (returns a pointer to a type and an optional error) is used to generate overloaded constructors.\r\n\r\n#### Clashes\r\n\r\nOf course, since we're \"merging\" different named methods under the same constructor name, there's nothing stopping me from defining multiple methods in Go that would en up with the same constructor signature.\r\n\r\n```go\r\nfunc NewBuffer1(buf []byte) *Buffer { ... }\r\nfunc NewBuffer2(buf []byte) *Buffer { ... }\r\n```\r\n\r\nIn that case we can just fall back to the current behavior of retaining the methods and not creating constructors out of them.\r\n\r\nI'd be happy to code this up if there's interest. @eliasnaur ? :)",
+	"user": {
+		"login": "karalabe",
+		"id": 129561,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-09-13T08:08:30Z",
+	"updated_at": "2016-09-13T14:27:26Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

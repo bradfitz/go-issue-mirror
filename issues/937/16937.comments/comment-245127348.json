@@ -1,0 +1,12 @@
+{
+	"id": 245127348,
+	"body": "OS X mount,\r\nhttp://opensource.apple.com/source/diskdev_cmds/diskdev_cmds-582/mount.tproj/mount.c\r\n\r\n... calls `getmntinfo`:\r\n\r\nhttps://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/getmntinfo.3.html\r\n\r\nAnd its source:\r\n\r\nhttps://opensource.apple.com/source/Libc/Libc-167/gen.subproj/getmntinfo.c\r\n```c\r\nint\r\ngetmntinfo(mntbufp, flags)\r\n\tstruct statfs **mntbufp;\r\n\tint flags;\r\n{\r\n\tstatic struct statfs *mntbuf;\r\n\tstatic int mntsize;\r\n\tstatic long bufsize;\r\n\r\n\tif (mntsize \u003c= 0 \u0026\u0026 (mntsize = getfsstat(0, 0, MNT_NOWAIT)) \u003c 0)\r\n\t\treturn (0);\r\n\tif (bufsize \u003e 0 \u0026\u0026 (mntsize = getfsstat(mntbuf, bufsize, flags)) \u003c 0)\r\n\t\treturn (0);\r\n\twhile (bufsize \u003c= mntsize * sizeof(struct statfs)) {\r\n\t\tif (mntbuf)\r\n\t\t\tfree(mntbuf);\r\n\t\tbufsize = (mntsize + 1) * sizeof(struct statfs);\r\n\t\tif ((mntbuf = (struct statfs *)malloc(bufsize)) == 0)\r\n\t\t\treturn (0);\r\n\t\tif ((mntsize = getfsstat(mntbuf, bufsize, flags)) \u003c 0)\r\n\t\t\treturn (0);\r\n\t}\r\n\t*mntbufp = mntbuf;\r\n\treturn (mntsize);\r\n}\r\n```\r\n\r\nNotably:\r\n\r\n```c\r\n\t\tbufsize = (mntsize + 1) * sizeof(struct statfs);\r\n```\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-06T23:25:29Z",
+	"updated_at": "2016-09-06T23:25:29Z"
+}

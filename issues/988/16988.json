@@ -1,0 +1,27 @@
+{
+	"id": 174962059,
+	"number": 16988,
+	"state": "closed",
+	"title": "syscall: memoize convT2I from creating errors in WSARecv, WSASend, etc?",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo version go1.7 windows/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nWindows 7 SP1 Ultimate X64, Intel i7-3770K + Z77 chipset, go env prints:\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=\r\nset GORACE=\r\nset GOROOT=D:\\port\\go\r\nset GOTOOLDIR=D:\\port\\go\\pkg\\tool\\windows_amd64\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0 -fdebug-prefix-map=C:\\Users\\diogin\\AppData\\Local\\Temp\\go-build701008446=/tmp/go\r\n-build -gno-record-gcc-switches\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n\r\n### What did you do?\r\nA runnable server.go is at https://play.golang.org/p/Jg7xSHU3B4\r\nA runnable client.go is at https://play.golang.org/p/8u0y0j9IHh\r\n\r\nFirst, build and run server.go, and then client.go.\r\nAfter the server prints EOF, run:\r\n\r\ngo tool pprof -alloc_objects server.exe heap.pprof\r\n\r\nThen, run top in pprof:\r\n\r\n(pprof) top\r\n327685 of 327685 total (  100%)\r\nDropped 3 nodes (cum \u003c= 1638)\r\n      flat  flat%   sum%        cum   cum%\r\n    327685   100%   100%     327685   100%  syscall.WSARecv\r\n         0     0%   100%     327685   100%  main.main\r\n         0     0%   100%     327685   100%  net.(*conn).Read\r\n         0     0%   100%     327685   100%  net.(*ioSrv).ExecIO\r\n         0     0%   100%     327685   100%  net.(*netFD).Read\r\n         0     0%   100%     327685   100%  net.(*netFD).Read.func1\r\n         0     0%   100%     327685   100%  runtime.goexit\r\n         0     0%   100%     327685   100%  runtime.main\r\n\r\nWe see syscall.WSARecv allocates a lot of memory. Then list WS:\r\n\r\n(pprof) list WS\r\nTotal: 327685\r\nROUTINE ======================== syscall.WSARecv in D:/port/go/src/syscall/zsyscall_windows.go\r\n    327685     327685 (flat, cum)   100% of Total\r\n         .          .   1518:\r\n         .          .   1519:func WSARecv(s Handle, bufs *WSABuf, bufcnt uint32, recvd *uint32, flags *uint32, overlapped *Overl\r\napped, croutine *byte) (err error) {\r\n         .          .   1520:   r1, _, e1 := Syscall9(procWSARecv.Addr(), 7, uintptr(s), uintptr(unsafe.Pointer(bufs)), uintptr(\r\nbufcnt), uintptr(unsafe.Pointer(recvd)), uintptr(unsafe.Pointer(flags)), uintptr(unsafe.Pointer(overlapped)), uintptr(unsafe.Poi\r\nnter(croutine)), 0, 0)\r\n         .          .   1521:   if r1 == socket_error {\r\n         .          .   1522:           if e1 != 0 {\r\n    327685     327685   1523:                   err = error(e1)\r\n         .          .   1524:           } else {\r\n         .          .   1525:                   err = EINVAL\r\n         .          .   1526:           }\r\n         .          .   1527:   }\r\n         .          .   1528:   return\r\n\r\nAnd disasm WS:\r\n\r\n    327685     327685     48e33b: CALL runtime.convT2I(SB)\r\n\r\nSo line 1523 allocates a lot of memory, only to make a useless error, which means \"overlapped i/o operation is in progress\".\r\n\r\n### What did you expect to see?\r\nThe memory consumption don't increase.\r\n\r\n### What did you see instead?\r\nIt allocates a lot of memory.\r\n\r\n",
+	"user": {
+		"login": "diogin",
+		"id": 371642,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 11,
+	"closed_at": "2016-09-11T01:42:52Z",
+	"created_at": "2016-09-04T18:14:09Z",
+	"updated_at": "2016-09-11T01:42:53Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

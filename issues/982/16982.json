@@ -1,0 +1,21 @@
+{
+	"id": 174916637,
+	"number": 16982,
+	"state": "open",
+	"title": "cmd/compile: SSA performance inconsistency/regression difference across amd64 CPUs.",
+	"body": "_Disclaimer: This is not necessarily an issue, I'm opening this thread to provide information that I hope may be helpful. It contains a microbenchmark which is not representative of real world performance, just a tiny subset. But there's **something unusual/strange about it**, which is why I think there's a chance this might be helpful and I'm reporting this. Please close if it's not helpful and nothing needs to be done._\r\n\r\nI had a little microbenchmark snippet I used previously to [compare gc and GopherJS performance](http://www.gopherjs.org/blog/2015/09/28/surprises-in-gopherjs-performance/), and I decided to try it on the SSA backend of Go 1.7. I found a surprise where one `amd64` computer behaves very differently to all others I've tried it on, and I'm wondering if it's caused by an unintended bug somewhere or not.\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\n```\r\ngo version go1.7 darwin/amd64\r\n```\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/Dmitri/Dropbox/Work/2013/GoLanding:/Users/Dmitri/Dropbox/Work/2013/GoLand\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/g3/yrvdj9f55ll7jy7l5ygz82yc0000gn/T/go-build084371455=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\nI ran the following program with and without SSA backend on two different computers (both have `amd64` CPU architecture).\r\n\r\nhttps://play.golang.org/p/aAM1SuV6U4\r\n\r\nComputer A is a MacBook Pro (15-inch, Late 2011), running OS X 10.11.6, with 2.4 GHz Intel Core i7-2760QM CPU @ 2.40GHz x 8.\r\n\r\n```\r\n$ go build -gcflags=\"-ssa=0\" -o /tmp/o \u0026\u0026 /tmp/o\r\napproximating pi with 1000000000 iterations.\r\n3.1415926545880506\r\ntotal time taken is: 6.431564409s\r\n\r\n$ go build -gcflags=\"-ssa=1\" -o /tmp/o \u0026\u0026 /tmp/o\r\napproximating pi with 1000000000 iterations.\r\n3.1415926545880506\r\ntotal time taken is: 6.420316364s\r\n```\r\n\r\nComputer B is a MacBook (Retina, 12-inch, Early 2016), running OS X 10.11.6, with 1.1 GHz Intel Core m3-6Y30 CPU @ 0.90GHz x 4.\r\n\r\n```\r\n$ go build -gcflags=\"-ssa=0\" -o /tmp/o \u0026\u0026 /tmp/o\r\napproximating pi with 1000000000 iterations.\r\n3.1415926545880506\r\ntotal time taken is: 2.564973583s\r\n\r\n$ go build -gcflags=\"-ssa=1\" -o /tmp/o \u0026\u0026 /tmp/o\r\napproximating pi with 1000000000 iterations.\r\n3.1415926545880506\r\ntotal time taken is: 5.771555271s\r\n```\r\n\r\n(There is a variance of about ±5% between individual runs.)\r\n\r\n|       | Computer A   | Computer B   |\r\n|-------|--------------|--------------|\r\n| SSA=0 | 6.431564409s | 2.564973583s |\r\n| SSA=1 | 6.420316364s | 5.771555271s |\r\n\r\n### What did you expect to see?\r\n\r\nGiven that the SSA backend generated code that performed roughly equally well on computer A, I expected that it have a similar result on computer B.\r\n\r\n### What did you see instead?\r\n\r\nInstead, I saw that on computer B (and but not on computer A) enabling SSA reduces the performance by a factor of more than two.",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"created_at": "2016-09-03T20:48:42Z",
+	"updated_at": "2016-09-09T16:00:20Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

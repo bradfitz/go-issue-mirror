@@ -1,0 +1,17 @@
+{
+	"id": 175227930,
+	"number": 17003,
+	"state": "closed",
+	"title": "src/log/log.go: What makes it expensive in this code of log.go?",
+	"body": "Hey, It's commented \"release lock while getting caller info - it's expensive\" in source code of /src/log/log.go line:150. \r\n\r\nI'm confused with what makes it expensive if we didn't unlock the l.mu ? \r\n\r\n```golang\r\nfunc (l *Logger) Output(calldepth int, s string) error {\r\n\tnow := time.Now() // get this early.\r\n\tvar file string\r\n\tvar line int\r\n\tl.mu.Lock()\r\n\tdefer l.mu.Unlock()\r\n\tif l.flag\u0026(Lshortfile|Llongfile) != 0 {\r\n\t\t// release lock while getting caller info - it's expensive.\r\n\t\tl.mu.Unlock()\r\n\t\tvar ok bool\r\n\t\t_, file, line, ok = runtime.Caller(calldepth)\r\n\t\tif !ok {\r\n\t\t\tfile = \"???\"\r\n\t\t\tline = 0\r\n\t\t}\r\n\t\tl.mu.Lock()\r\n\t}\r\n\tl.buf = l.buf[:0]\r\n\tl.formatHeader(\u0026l.buf, now, file, line)\r\n\tl.buf = append(l.buf, s...)\r\n\tif len(s) == 0 || s[len(s)-1] != '\\n' {\r\n\t\tl.buf = append(l.buf, '\\n')\r\n\t}\r\n\t_, err := l.out.Write(l.buf)\r\n\treturn err\r\n}\r\n```\r\n\r\nAND\r\n\r\nWhat will happen if I moved the `_, file, line, ok = runtime.Caller(calldepth)` like below?\r\n\r\n```golang\r\nfunc (l *Logger) Output(calldepth int, s string) error {\r\n\tnow := time.Now() // get this early.\r\n\tvar file string\r\n\tvar line int\r\n       \r\n        //moved here\r\n    var ok bool\r\n    _, file, line, ok = runtime.Caller(calldepth)\r\n\r\n\tl.mu.Lock()\r\n\tdefer l.mu.Unlock()\r\n\r\n        l.buf = l.buf[:0]\r\n\tif l.flag\u0026(Lshortfile|Llongfile) != 0 {\r\n\t\tif !ok {\r\n\t\t\tfile = \"???\"\r\n\t\t\tline = 0\r\n\t\t}\r\n\t        l.formatHeader(\u0026l.buf, now, file, line)\r\n\t}\r\n\t\r\n\tl.buf = append(l.buf, s...)\r\n\tif len(s) == 0 || s[len(s)-1] != '\\n' {\r\n\t\tl.buf = append(l.buf, '\\n')\r\n\t}\r\n\t_, err := l.out.Write(l.buf)\r\n\treturn err\r\n}\r\n```\r\nThanks for all",
+	"user": {
+		"login": "maxwell92",
+		"id": 4422664,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-09-06T12:53:35Z",
+	"created_at": "2016-09-06T11:52:40Z",
+	"updated_at": "2016-09-06T12:53:35Z"
+}

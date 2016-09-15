@@ -1,0 +1,12 @@
+{
+	"id": 245749893,
+	"body": "@ianlancetaylor \r\n\u003e channels are level-triggered. A channel has a value or it does not, and values do not disappear until somebody reads them.\r\n\r\n`default` cases convert between \"edge-triggered\" and \"level-triggered\" events on channels.  (For example, consider the usage of [`time.Ticker.C`](https://golang.org/pkg/time/#Ticker).)\r\n\r\nIn particular, a send-with-default converts an edge-triggered event into a level-triggered event by \"latching\" on the first edge-crossing.  A receive-with-default converts a level-triggered event to an edge-triggered event by \"unlatching\" the channel when the edge-trigger no longer applies.\r\n\r\n\u003e The Broadcast method is easy to understand in terms of edge-triggering: everything that is waiting right now is alerted. Implementing that was level-triggering, without race conditions, is much more complex. Do we wake all select statements waiting on the channel right now? What value do we hand them?\r\n\r\nOn a `Broadcast`, we would wake all select statements that have evaluated the `case` to receive it (and reacquire the lock before unblocking the `case`, which would either require a language change or a very deep runtime hook).\r\n\r\nWith the \"channel as cond-var\" pattern we can implement without such a hook, `Broadcast` corresponds to `close` (and unfortunately you end up needing to allocate a new channel every time you `Broadcast`).\r\n\r\nWith a built-in mechanism, we could do even better: we could have the `Signal` and `Broadcast` operations receive values, and the `Wait` operation return the value from the corresponding signal.  (If we want something compatible with sync.Cond, I would propose that we send `c.L` as the value.)  You could imagine using the same (or a similar) mechanism for implementing futures natively: a future is a selectable that can be sent to exactly once but received from any number of times.  And there are also some interesting possibilities involving `Broadcast` with a channel (or another `Cond`) as a parameter...\r\n\r\nThe tricky part, I think, is constructing the API such that either the sender or the receiver can abandon a case after it has marked the other side as \"ready\".",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-08T21:38:36Z",
+	"updated_at": "2016-09-08T21:38:36Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 176933629,
+	"number": 17101,
+	"state": "open",
+	"title": "crypto/tls: handshake race between read and write goroutines in go1.7",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo1.7\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nlinux\r\n\r\n### What did you do?\r\nWe have a simple Stubby-alike RPC protocol (\"Sake\"), which spins up input and output goroutines. We don't currently force a handshake, so input and output race to handshake. (I'll be fixing that after I file this bug.)\r\n\r\n1. \"Read\" and \"Write\" goroutines race to handshake, racing for `in` at the point where the handshake routine tries to give up `handshakeMutex` and grab `in`.\r\n2. \"Read\" gets `in` and completes handshake.\r\n3. \"Read\" gets `in`, and blocks forever, waiting for input. Because this is a simple client-server protocol, with client-initiated communication, after the connection is established and the handshake is finished, nothing will ever be read except in response to a client-initiated request.\r\n4. \"Write\" gets stuck forever trying to take `in` inside of `Handshake()`.\r\n\r\nThe comment here https://github.com/golang/go/blob/5a589904a3/src/crypto/tls/conn.go#L1204 exactly describes the problem.\r\n\r\nIt was introduced in this commit: https://github.com/golang/go/commit/af125a5193c75dd59307fcf1b26d885010ce8bfd#diff-ef0187d9cfe69a02cab179f844c8e712R1167\r\n\r\n### What did you expect to see?\r\nSuccessful connections and communications.\r\n\r\n### What did you see instead?\r\nThe output thread stuck indefinitely until a redeploy of the other end tears down all the connections.\r\n\r\n### Notes\r\n\r\nIn our staging environment, I have a test client running on two hosts, each making 300 connections to a test server. It took me six or seven restarts to see this problem happen on one connection, so let's guess one attempt in two thousand. Ish.\r\n\r\nAn apology: it should be possible to reproduce in a test case, but I haven't the time to write it right now: set up a simple server, using TLS, and repeatedly try to connect pairs of input/output goroutines. A watchdog goroutine checks for hung connections.\r\n\r\n@agl ",
+	"user": {
+		"login": "zellyn",
+		"id": 33625,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "agl",
+		"id": 21203,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"created_at": "2016-09-14T15:09:15Z",
+	"updated_at": "2016-09-14T20:00:37Z",
+	"milestone": {
+		"id": 1992436,
+		"number": 46,
+		"title": "Go1.7.2"
+	}
+}

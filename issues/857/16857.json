@@ -2,7 +2,7 @@
 	"id": 172841942,
 	"number": 16857,
 	"state": "open",
-	"title": "internal/syscall/windows GetACP returns wrong codepage",
+	"title": "internal/syscall/windows: GetACP returns wrong codepage",
 	"body": "1. What version of Go are you using (`go version`)?\r\n1.7\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nWindows, arm64\r\n`go env`:\r\n\r\n  ```\r\n  set GOARCH=amd64\r\n  set GOBIN=\r\n  set GOEXE=.exe\r\n  set GOHOSTARCH=amd64\r\n  set GOHOSTOS=windows\r\n  set GOOS=windows\r\n  set GOPATH=C:\\dev\\golang\r\n  set GORACE=\r\n  set GOROOT=C:\\Go\r\n  set GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\n  set CC=gcc\r\n  set GOGCCFLAGS=-m64 -mthreads -fmessage-length=0 -fdebug-prefix-map=C:\\Users\\Tobias\\AppData\\Local\\Temp\\go-build473402786=/tmp/go-build -gno-record-gcc-switches\r\n  set CXX=g++\r\n  set CGO_ENABLED=1\r\n    ```\r\n\r\n3. What did you do?\r\nI wrote a program which just reads bytes from `os.Stdin` and prints their values as Hex to Stdout. I started the program, typed a `ä` to the console and pressed enter.\r\n\r\n4. What did you expect to see?\r\nI expected to see the correct UTF-8 sequence for a `ä` which is `C3 A4`\r\n\r\n5. What did you see instead?\r\nI see the Hex-sequence `E2 80 9E`\r\n\r\n\r\nI found that internal/syscall/windows GetACP() returns 1252 even though I can verify that the `ä` is encoded in CP850. Because of this wrongly returned codepage, Stdin.readConsole tries to decode the character from 1252 to UTF-8 instead of from 850 to UTF-8. As you see in my Post on [Stackoverflow](http://stackoverflow.com/questions/39111624/golang-stdin-reads-german-umlauts-wrong), when I read from stdin through CGO I get the byte 0x84 which is the value for a `ä` in CP850, it should've been 0xE4 if it were in 1252. The value 0x84 decoded from `golang.org/x/text/encoding/charmap`.`CodePage850` decodes to the correct UTF-8 character.\r\n\r\n`chcp` tells me that the active codepage is 850.",
 	"user": {
 		"login": "tkausl",
@@ -12,5 +12,10 @@
 	},
 	"comments": 23,
 	"created_at": "2016-08-24T01:00:13Z",
-	"updated_at": "2016-08-24T07:58:14Z"
+	"updated_at": "2016-09-06T19:15:51Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
 }

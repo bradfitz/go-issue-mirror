@@ -1,0 +1,12 @@
+{
+	"id": 246040452,
+	"body": "Solaris does not support using unlink() on directories on ZFS or tmpfs, Solaris 10 and newer (at least) will fail with EPERM if you attempt this either using a ZFS or tmpfs system, so the tmpfs bug appears to be specific to Illumos.\r\n\r\nUsing the sample program, we can see this if we truss it on any version of Solaris 10+:\r\n\r\n\u003e /1:     unlink(\"/tmp/tdir\")                             Err#1 EPERM\r\n\u003e /1:     lwp_unpark(4)                                   = 0\r\n\u003e /4:     lwp_park(0x00000000, 0)                         = 0\r\n\u003e /1:     rmdir(\"/tmp/tdir\")                              Err#17 EEXIST\r\n\u003e ...\r\n\u003e /1:     unlink(\"/tmp/tdir/testfile.txt\")                = 0\r\n\u003e ...\r\n\u003e /1:     unlink(\"/tmp/tdir\")                             Err#1 EPERM\r\n\u003e /1:     lwp_unpark(4)                                   = 0\r\n\u003e /4:     lwp_park(0x00000000, 0)                         = 0\r\n\u003e /1:     rmdir(\"/tmp/tdir\")                              = 0\r\n\u003e /1:     _exit(0)\r\n\r\nOn Solaris, go should always use rmdir() instead to not only avoid the unnecessary overhead of trying and failing repeatedly, but the other undesirable semantics if it is allowed:\r\n\r\n\u003e        If the path  argument  is  a  directory  and  the  filesystem  supports\r\n\u003e        unlink()  and unlinkat() on directories, the directory is unlinked from\r\n\u003e        its parent with **no cleanup being performed**.  In UFS,  the  disconnected\r\n\u003e        directory  will  be  found the next time the filesystem is checked with\r\n\u003e        fsck(1M). The unlink() and unlinkat() functions will  not  fail  simply\r\n\u003e        because  a directory is not empty. The user with appropriate privileges\r\n\u003e        can orphan a non-empty directory without generating an error message.\r\n\r\nNote the \"no cleanup\" bit above.\r\n\r\nIn short, Go should not generally be using unlink() to remove directories, at least on Solaris, since it's unlikely to ever work as expected.  \r\n\r\nOpenSolaris-based derivatives may behave differently of course.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-09T21:08:43Z",
+	"updated_at": "2016-09-09T21:14:34Z"
+}

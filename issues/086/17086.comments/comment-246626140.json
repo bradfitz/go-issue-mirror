@@ -1,0 +1,12 @@
+{
+	"id": 246626140,
+	"body": "This is precisely what I have implemented as part of my proposal at https://github.com/golang/go/issues/16876. I implemented automatic constructors for different reasons than you:\r\n\r\n1. My proposal enables Go structs to extend and implement Java classes and interfaces. I needed to implement automatic constructors to access the arguments to non-empty super class constructors. This point is irrelevant to this proposal.\r\n2. Instance identity: If you `new Something(...)` from Java, you expect that instance to stay constant. In Gomobile that is not true today:  If you pass in a Java Something instance to Go, it is unwrapped to a Go `Something` instance. If that Go instance is then passed to Java again, either as an argument or return value, it is re-wrapped in a different Java `Something` instance. For my proposal I needed instance identity and I needed to retain the state from Java super classes (consider an Android `Activity` implemented in Go. Re-wrapping that instance won't work).\r\n\r\nThe instance identity only covers Go structs extending or implementing Java classes and interfaces. Generalizing instance identity to cover every Go (and Java) type doesn't (readily) work: Gomobile statically determines the proxy type from the call site, not the actual type of the argument or return value. So if you have a Go `struct S`, it might appear as an Java `S` at one calls, while being a Java `I` in another. In that case, maintaining instance identity for the two sites is impossible since Java `S` and `I` are different types.\r\n\r\nPreserving instance identity is attractive for several other reasons (fewer proxy allocations and the property that for equal Go instances, the proxies are also equal), so I haven't given up yet. However, I believe automatic constructors are not meaningful without some form of identity preservation.",
+	"user": {
+		"login": "eliasnaur",
+		"id": 524812,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T09:27:46Z",
+	"updated_at": "2016-09-13T09:27:46Z"
+}

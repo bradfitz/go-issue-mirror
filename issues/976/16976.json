@@ -1,0 +1,30 @@
+{
+	"id": 174882889,
+	"number": 16976,
+	"state": "closed",
+	"title": "proposal: allow append to update slice capacity",
+	"body": "Background\r\n==\r\n\r\nWhen allocating byte slices, the `len` and `cap` values of the slice are set based on the arguments passed in to `make`:\r\n```\r\nfoo = make([]byte, size, size) // len=size cap=size\r\nfoo = make([]byte, size) // len=size cap=size\r\n```\r\n\r\nFrom my understanding of the memory allocator, it appears that there is actually a small amount of wasted space in the underlying span if the size doesn't match up properly.  It seems that the only way currently to expand the capacity to match the available underlying is by calling `append`, which allocates a slice that does fill the span and sets the `cap` appropriately.  This causes an unnecessary copy and reallocation\r\n\r\nProposal\r\n==\r\nI would like to propose a minor, language level change that alters the `append` function.  If the passed in slice has `len == cap`, and there are no arguments given to `append`, then the returned slice should have the capacity set to the maximum amount available.  For example:\r\n\r\n```\r\nfoo := make([]byte, 1500)\r\nfoo = append(foo)\r\n// len=1500 cap=1536 \r\n```\r\n\r\nNote that this overload would be distinct from the vararg version that may have an empty slice provided. The user intended behavior is less clear in that scenario, and it may be surprising to have the capacity change when the argument is empty.  The intent is much more clear when there are no extra arguments to the `append` call at all.\r\n\r\nAs before, `bar = append(foo)` will not alter `foo`.  Though I am not strongly tied to this exact solution, there needs to be some good answer for optimizing Go program memory that doesn't involve knowing the exact underlying span sizes.\r\n\r\nA secondary use case for this would be for implementing a \"prepend\" operation on slices.   When a slice needs to be expanded for a prepend operation, the newly resized slice needs to be as big as possible in order to leave as much room as possible at the beginning.   Reallocating the slice has to be done manually, which means using `make`, which forces the capacity to less than the max that the analogous `append` operation would use.  \r\n\r\nA third place where this would be useful is in `bytes.Buffer`.  The function `Buffer.grow` implements slice resizing manually, meaning that it also has to use `make`.  It could expand its reallocated slices more effectively if the capacity was set to the true maximum.",
+	"user": {
+		"login": "carl-mastrangelo",
+		"id": 8943572,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Declined"
+		}
+	],
+	"comments": 18,
+	"closed_at": "2016-09-13T16:47:09Z",
+	"created_at": "2016-09-03T06:46:34Z",
+	"updated_at": "2016-09-13T16:47:13Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	}
+}

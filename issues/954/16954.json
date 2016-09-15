@@ -1,0 +1,21 @@
+{
+	"id": 174510777,
+	"number": 16954,
+	"state": "open",
+	"title": "cmd/compile: wrong output for a non-canonical import path ",
+	"body": "When importing a package with a non-canonical import path (ending in a slash), the compiler error tells you about it and points you to the offending import.\r\n\r\nIf the imported package imports a *vendored* package (and only then), the compiler error points to the wrong location and the error text is wrong too. See below in the expected/actual output.\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7 linux/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/opt/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/opt/go_dist/go\"\r\nGOTOOLDIR=\"/opt/go_dist/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build865793365=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLEgo build ./...\r\n# github.com/benma/test/lib/\r\nlib/lib.go:3: non-canonical import path \"github.com/benma/test//vendor/vendoredlib\" (should be \"github.com/benma/test/vendor/vendoredlib\")\r\nlib/lib.go:3: can't find import: \"github.com/benma/test//vendor/vendoredlib\"\r\nD=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\n`go build ./...` in a project with those three files inside:\r\n\r\nmain.go:\r\n```Go\r\npackage main\r\n\r\nimport \"github.com/benma/test/lib/\" // error here, but compiler points somewhere else!\r\n\r\nvar _ = lib.Foo\r\n\r\nfunc main() {}\r\n```\r\n\r\nlib/lib.go:\r\n```Go\r\npackage lib\r\n\r\nimport \"vendoredlib\"\r\n\r\nvar Foo = vendoredlib.Foo\r\n```\r\n\r\nvendor/vendoredlib/vendoredlib.go:\r\n```Go\r\npackage vendoredlib\r\n\r\nvar Foo = true\r\n```\r\n\r\n\r\n### What did you expect to see?\r\n\r\nCompiler error like this:\r\n```\r\ngo build ./...\r\n# github.com/benma/test\r\n./main.go:3: non-canonical import path \"github.com/benma/test/lib/\" (should be \"github.com/benma/test/lib\")\r\n./main.go:3: can't find import: \"github.com/benma/test/lib/\"\r\n```\r\n\r\n### What did you see instead?\r\n\r\n```\r\ngo build ./...\r\n# github.com/benma/test/lib/\r\nlib/lib.go:3: non-canonical import path \"github.com/benma/test//vendor/vendoredlib\" (should be \"github.com/benma/test/vendor/vendoredlib\")\r\nlib/lib.go:3: can't find import: \"github.com/benma/test//vendor/vendoredlib\"\r\n```\r\n\r\nNote that the error points to an import in lib.go, where everything is correct, instead of to main.go. Also the error text talks about `github.com/benma/test//vendor/vendoredlib` vs `github.com/benma/test/vendor/vendoredlib`, where the actual import in lib.go:3 is simply `import \"vendoredlib\"`.\r\n\r\nOn a related note, shouldn't `goimports` fix wrong imports like that (and simply strip the trailing slash)?",
+	"user": {
+		"login": "benma",
+		"id": 1225267,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"created_at": "2016-09-01T12:30:20Z",
+	"updated_at": "2016-09-06T21:13:08Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,30 @@
+{
+	"id": 174821410,
+	"number": 16973,
+	"state": "open",
+	"title": "cmd/compile: use common ancestor blocks in CSE?",
+	"body": "```go\r\npackage x\r\n\r\nvar p *int\r\n\r\nfunc f(b bool) int {\r\n\tif b \u0026\u0026 *p == 0 {\r\n\t\treturn 0\r\n\t}\r\n\treturn *p\r\n}\r\n```\r\n\r\nThe load `*p` occurs regardless of the value of b. That is, the compiler should treat this as equivalent to:\r\n\r\n```go\r\npackage x\r\n\r\nvar p *int\r\n\r\nfunc f(b bool) int {\r\n\ti := *p\r\n\tif b \u0026\u0026 i == 0 {\r\n\t\treturn 0\r\n\t}\r\n\treturn i\r\n}\r\n```\r\n\r\nIt does not. The latter generates better code.\r\n\r\nThe reason is that neither block containing `*p` is an ancestor of the other, so CSE ignores the `*p` values. However, they share a common ancestor in which all of the values' arguments are available.\r\n\r\nThis happened in practice in CL 22712. Perhaps CSE should be taught to recognize situations like this.\r\n\r\nPotential downsides:\r\n\r\n* This might move easily-recalculated values far from their uses, causing additional spills. (Aside: I think this is what went wrong with CL 28219. And yet making tighten more aggressive causes problems as well. We clearly need a more sophisticated approach in general to scheduling, so that we can pick up all these nickels without losing any dollar bills along the way.) \r\n* This might be computationally expensive, and CSE was long a problem child for performance.\r\n\r\ncc @randall77 @dr2chase @aclements @bradfitz @tzneal \r\n\r\nIf we fix this, we should consider reverting CL 22712.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-09-02T18:30:31Z",
+	"updated_at": "2016-09-02T19:53:20Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

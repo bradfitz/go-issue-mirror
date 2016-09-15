@@ -1,0 +1,12 @@
+{
+	"id": 243594895,
+	"body": "```\r\nfunc f(x uint) uint {\r\n\treturn x \u0026 0xff\r\n}\r\nfunc g(x *uint) uint {\r\n\treturn *x \u0026 0xff\r\n}\r\n```\r\ncode from `f`:\r\n```\r\n\t0x0000 00000 (/usr/local/google/home/khr/go/tmp1.go:4)\tMOVQ\t\"\".x+8(FP), AX\r\n\t0x0005 00005 (/usr/local/google/home/khr/go/tmp1.go:4)\tMOVBLZX\tAL, AX\r\n```\r\ncode from `g`:\r\n```\r\n\t0x0000 00000 (/usr/local/google/home/khr/go/tmp1.go:7)\tMOVQ\t\"\".x+8(FP), AX\r\n\t0x0005 00005 (/usr/local/google/home/khr/go/tmp1.go:7)\tMOVQ\t(AX), CX\r\n\t0x0008 00008 (/usr/local/google/home/khr/go/tmp1.go:7)\tMOVBLZX\tCL, CX\r\n```\r\nSo we are now rewriting the AND to a MOVZX.\r\n\r\nAlexandru is right, combining the extension with the load in `f` is harder because the MOVQ is generated from a LoadReg which doesn't appear in the SSA intermediate representation until regalloc.  For `g` we could combine the extension and load.  I'll send out a CL.  It won't handle all cases, but the common case like in `g` it should be simple.  (The harder cases are indexed loads and such where we would need lots more SSA opcodes to cover all the addressing modes.)\r\n",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-30T21:58:38Z",
+	"updated_at": "2016-08-30T21:58:38Z"
+}

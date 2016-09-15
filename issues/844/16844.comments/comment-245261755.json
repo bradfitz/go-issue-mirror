@@ -1,0 +1,16 @@
+{
+	"id": 245261755,
+	"body": "We've done (using https://github.com/minio/dsync) some performance comparisons between `net/rpc` and `grpc` and we’ve been surprised to find that `grpc` is **slower by about 4x** (given same CPU load).\r\n\r\nThe following table lists the results of a test with 8 EC2 servers that shows that `grpc` gives roughly half the results at double the CPU load.\r\n\r\n| Package | EC2 Instance Type | Servers |       Locks/server/sec | Total Locks/sec | CPU Usage |\r\n| ------- | ----------------- | -------:| ----------------------:| ---------------:| ---------:|\r\n| net/rpc | c3.2xlarge        |       8 |   (min=1884, max=2096) |           15920 |       25% |\r\n| grpc    | c3.2xlarge        |       8 |    (min=798,  max=923) |            6884 |       55% |\r\n\r\nTo verify that the actual (distributed) locking functionality is not influencing the tests negatively, we repeated the measurements without any server side logic (all code commented out) which gave these results (note that a single lock takes 16 messages, namely 8 locks plus 8 unlocks):\r\n\r\n| Package | EC2 Instance Type | Servers |    Messages/server/sec |  Total Msgs/sec | CPU Usage |\r\n| ------- | ----------------- | -------:| ----------------------:| ---------------:| ---------:|\r\n| net/rpc | c3.2xlarge        |       8 | (min=43974, max=53790) |          391056 |       30% |\r\n| grpc    | c3.2xlarge        |       8 | (min=20177, max=22272) |          169796 |       60% |\r\n\r\nAgain the `grpc` performance is about half that of `net/rpc` at double the CPU load. (Note that the grpc measurements were done using a separate branch, see https://github.com/fwessels/dsync/tree/performance-grpc).\r\n\r\nWe also found another reference graph that shows \"Go sync\" performance: https://performance-dot-grpc-testing.appspot.com/explore?dashboard=5760820306771968\u0026widget=828849126\u0026container=1808124444 \r\nThis shows that the performance for “Go sync” is about 48K QPS for an 8 core server (equivalent of 6K/per core...) which seems to be inline with the results that we are getting. C++ is close to an order of magnitude faster (albeit async) which looks more like it.\r\n\r\nSo it looks like `grpc` adds significant overhead compared to `net/rpc` so we’ll hold off on migrating just yet…\r\n\r\nAre there any plans to bring the performance of `grpc` up to par with `net/rpc` ?",
+	"user": {
+		"login": "fwessels",
+		"id": 1576013,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 6,
+		"+1": 6
+	},
+	"created_at": "2016-09-07T12:15:37Z",
+	"updated_at": "2016-09-07T12:15:37Z"
+}

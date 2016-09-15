@@ -1,0 +1,12 @@
+{
+	"id": 246800390,
+	"body": "@noblehng Thank you for the pointers to the docs. While not exactly the same, another, separate issue is to support `Tx.Savepoint(name string)` and `Tx.RolebackTo(name string)`. The API at large doesn't support resuming transactions at present. I don't know what a Loosely coupled branch or tightly coupled branch is, nor do I know what a separable transaction is.\r\n\r\nI'm open to having an API like:\r\n```\r\ntype TxFlag interface{\r\n    TxFlagValue() interface{}\r\n    String() string\r\n}\r\n\r\ntype Isolation byte\r\nfunc (i Isolation) TxFlagValue() interface{} {\r\n    return i\r\n}\r\n\r\nconst (\r\n    IsoDefault Isolation = iota * 2\r\n    IsoReadUncommited\r\n    IsoReadCommited\r\n    IsoWriteCommited\r\n    IsoRepeatableRead\r\n    IsoSerializable\r\n    IsoSnapshot\r\n    IsoLinearizable\r\n)\r\n\r\ntype TxAccessMode byte\r\n\r\nconst ReadOnly TxAccessMode\r\n\r\nfunc (m TxAccessMode) TxFlagValue() interface{} {\r\n    return m\r\n}\r\n\r\nfunc (db *DB) BeginLevel(ctx context.Context, flags ...TxFlag) (*Tx, error)\r\n```\r\n \r\nThat way the driver has the option to define additional flags, and the flags could contain data for the something like the Oracle `USE ROLLBACK SEGMENT \u003cname\u003e`, where `\u003cname\u003e` would be the value in the interface.\r\n```\r\npackage oracle\r\n\r\ntype TxRollback string\r\nfunc (r TxRollback) TxFlagValue() interface{}\r\n    return string(r)\r\n}\r\n```\r\n\r\nUsed like:\r\n```\r\ndb.BeginLevel(ctx, sql.IsoSerializable, oracle.TxRollback(\"DANCING_CATS\"))\r\n```\r\n\r\nI would be interested to hear what you and @bradfitz think of that.\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T19:44:10Z",
+	"updated_at": "2016-09-14T15:49:35Z"
+}

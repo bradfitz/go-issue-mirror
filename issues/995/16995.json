@@ -1,0 +1,17 @@
+{
+	"id": 175099696,
+	"number": 16995,
+	"state": "closed",
+	"title": "runtime: slice capacity do not reduce",
+	"body": "### What version of Go are you using (`go version`)?\r\n`golang v1.7`\r\n### What operating system and processor architecture are you using (`go env`)?\r\n`amd64`\r\n\r\n### What did you do?\r\nI don't if this is a problem.When i use amqp library,i found the slice to buffer data from io will increase and don't reduce down at last  \r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"log\"\r\n\t\"sync\"\r\n\t\"time\"\r\n\r\n\t\"github.com/streadway/amqp\"\r\n)\r\n\r\nvar queue []*amqp.Delivery\r\nvar waitGroup sync.WaitGroup\r\n\r\nfunc bufferDeliveries(in chan *amqp.Delivery, out chan amqp.Delivery) {\r\n\tdefer waitGroup.Done()\r\n\tvar queueIn = in\r\n\r\n\tfor delivery := range in {\r\n\t\tselect {\r\n\t\tcase out \u003c- *delivery:\r\n\t\t\t// delivered immediately while the consumer chan can receive\r\n\t\tdefault:\r\n\t\t\tqueue = append(queue, delivery)\r\n\t\t}\r\n\r\n\t\tfor len(queue) \u003e 0 {\r\n\t\t\tselect {\r\n\t\t\tcase out \u003c- *queue[0]:\r\n\t\t\t\tqueue = queue[1:]\r\n\t\t\tcase delivery, open := \u003c-queueIn:\r\n\t\t\t\tif open {\r\n\t\t\t\t\tqueue = append(queue, delivery)\r\n\t\t\t\t} else {\r\n\t\t\t\t\t// stop receiving to drain the queue\r\n\t\t\t\t\tqueueIn = nil\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\r\n\tclose(out)\r\n}\r\n\r\nfunc main() {\r\n\tin := make(chan *amqp.Delivery)\r\n\tout := make(chan amqp.Delivery)\r\n\r\n\twaitGroup.Add(3)\r\n\tgo bufferDeliveries(in, out)\r\n\r\n\tgo func() {\r\n\t\tdefer waitGroup.Done()\r\n\t\tcounter := 0\r\n\t\tfor {\r\n\t\t\tcounter++\r\n\t\t\t//log.Println(\"send\", counter)\r\n\t\t\tin \u003c- \u0026amqp.Delivery{\r\n\t\t\t\tBody: []byte(fmt.Sprintf(\"%d\", counter)),\r\n\t\t\t}\r\n\t\t\tif counter == 1000000 {\r\n\t\t\t\tclose(in)\r\n\t\t\t\treturn\r\n\t\t\t}\r\n\t\t}\r\n\t}()\r\n\r\n\tgo func() {\r\n\t\tdefer waitGroup.Done()\r\n\t\tpre := 0\r\n\t\tvar counter int\r\n\t\tfor d := range out {\r\n\t\t\tfmt.Sscanf(string(d.Body), \"%d\", \u0026counter)\r\n\t\t\tif pre \u003e= counter {\r\n\t\t\t\tlog.Println(\"bad order\", pre, counter, string(d.Body))\r\n\t\t\t\tpanic(\"bad order\")\r\n\t\t\t}\r\n\t\t\tpre = counter\r\n\t\t\t\u003c-time.After(time.Microsecond)\r\n\t\t}\r\n\t}()\r\n\twaitGroup.Wait()\r\n\tlog.Println(\"the last:\", cap(queue), len(queue))\r\n\t\u003c-time.After(time.Hour)\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nAfter run a moment,the slice capacity did not reduce any more.\r\n\r\n### What did you see instead?\r\nI think there maybe some way to reduce the free the memory.\r\n\r\n\r\n",
+	"user": {
+		"login": "lvhuat",
+		"id": 20853184,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-09-05T17:25:00Z",
+	"created_at": "2016-09-05T16:08:59Z",
+	"updated_at": "2016-09-05T17:25:00Z"
+}

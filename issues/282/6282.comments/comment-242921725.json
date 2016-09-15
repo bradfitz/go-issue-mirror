@@ -1,0 +1,12 @@
+{
+	"id": 242921725,
+	"body": "with the new `unshape` builtin, I must say it's starting to become a bit crowded.\r\n\r\nI am tempted to bring back my original suggestion (somewhere on gonum-dev):\r\n\r\n```go\r\nslice := make([*]int, 2, 3, 4)      // a 2x3x4 n-dim slice\r\nsub1 := slice[:,1,:]                // a 2x4 n-dim slice\r\nsub2 := reshape(slice, 6, 4)[:2,:3] // a 2x3 n-dim slice\r\n\r\nfor i, v := range slice {\r\n    for j, u := range v {\r\n        for k := range w {\r\n            fmt.Printf(\"slice[%d,%d,%d] = %v\\n\", slice[i,j,k])\r\n        }\r\n    }\r\n}\r\n```\r\n\r\n- `[*]T` is a strided-ndim slice whose elements have type `T`.\r\n- `len(slice)` returns a slice of length equal to the number of dimensions of the ndim-slice (ie: `[]int{2,3,4}` for the above `slice` ndim-slice)\r\n- a ndim-slice can not be appended to, and has a fixed capacity, equal to its length\r\n\r\nat the `reflect` level, an ndim-slice could be represented like:\r\n\r\n```go\r\ntype NdSliceHeader struct {\r\n    Data   unsafe.Pointer\r\n    Len    []int\r\n    Stride []int\r\n}\r\n```\r\n\r\n## nd-slice literals\r\n\r\n```go\r\nv := [*]int{1,2,3,4} // a 1x4 nd-slice\r\nu := reshape([*]int{1,2,3,4}, 2, 2) // a 2x2 nd-slice\r\nw := reshape([*]int{1,2,3,4}, 2, 1, 2} // a 2x1x2 nd-slice\r\n\r\n// reshaping a slice is also allowed and creates an nd-slice\r\nv := reshape([]int{1,2,3,4}, 2, 2) // a 2x2 nd-slice\r\n// perhaps also this conversion could be allowed, like string/[]byte:\r\nv := [*]int([]int{1,2,3,4}) // a 1x4 nd-slice\r\n```\r\n\r\n## copy\r\n\r\n```go\r\nsrc := make([*]int, 2, 3)\r\ndst := make([*]int, 4, 3)\r\n// copy returns the number of elements copied in each dimension\r\nn := copy(dst[:2,:], src[:1,1:]) // n == []int{1, 2}\r\n```\r\n\r\n---\r\n\r\n_wrt_ to the non-strided proposal, you get the ability to slice in all dimensions.\r\nyou loose the compile-time check of rank (ie number of dimensions) of an ndim-slice, so you could imagine a situation where you'd pass a 2d ndim-slice to a functions expecting a 3d one.\r\nand you probably loose a bit in random-access to elements because you need to multiply by the stride in each dimension (and fetch those strides).",
+	"user": {
+		"login": "sbinet",
+		"id": 1070920,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-08-27T14:54:41Z",
+	"updated_at": "2016-08-27T14:54:41Z"
+}

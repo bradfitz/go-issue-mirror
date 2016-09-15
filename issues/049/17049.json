@@ -1,0 +1,17 @@
+{
+	"id": 176156491,
+	"number": 17049,
+	"state": "closed",
+	"title": "some questions in fmt source code",
+	"body": "I reorganized this issue. (Don't mind my words, my English is poor.)\r\n\r\nI was reading fmt source code and found a few questions:\r\n\r\n---\r\n\r\n**Question 1**\r\n\r\ngo/src/fmt/print.go\r\nversion 1.7\r\n\r\nThis format should be the wrong way (%.[1]3d):\r\n```go\r\nfmt.Printf(\"%.[1]3d\", 1)\r\n```\r\nThe correct way is (%.3[1]d):\r\n```go\r\nfmt.Printf(\"%.3[1]d\", 1)\r\n```\r\n\r\nReplace line 1046(doPrintf method) by the following code to fix:\r\n\r\n```go\r\n} else if afterIndex { // \"%.[3]2d\"\r\n    p.goodArgNum = false\r\n}\r\n```\r\n\r\n---\r\n\r\n**Question 2**\r\n\r\ngo/src/fmt/format.go\r\nversion 1.7\r\n\r\nline 205:\r\n```go\r\nwidth := 3 + f.wid + f.prec // wid and prec are always positive.\r\n```\r\n\r\nFor `fmt.Printf(\"%#60.30x\", 1)`, it only needs 63 width, but the value of 'width' is 93, and then, it will allocate more unused memory by `make([]byte, width)`.\r\n\r\nI think the right 'width' should be:\r\n\r\n```go\r\nwidth := 3\r\nif f.wid \u003e f.prec {\r\n    width += f.wid\r\n} else {\r\n    width += f.prec\r\n}\r\n```\r\n\r\n---\r\n\r\nGOARCH=amd64\r\nGOOS=linux\r\n",
+	"user": {
+		"login": "fu607666",
+		"id": 20315889,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-09-10T15:48:56Z",
+	"created_at": "2016-09-10T04:29:00Z",
+	"updated_at": "2016-09-10T15:48:56Z"
+}

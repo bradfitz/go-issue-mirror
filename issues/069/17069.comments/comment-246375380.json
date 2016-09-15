@@ -1,0 +1,12 @@
+{
+	"id": 246375380,
+	"body": "Also, sin and cosine are not candidates for this unless their inputs are range-reduced, and they're also x87 FP, not \"modern\" Intel FP.  Very large inputs merely set a flag and return their input unmodified, so sin(2-to-the-64) returns 2-to-the-64. Intel hardware transcendentals use a 68-bit approximation of Pi (66-bits, but the first two missing bits are zero, so 68) which means that sin(machinePi) (for 53-bit mantissa double) is incorrect in its 16th bit, or at least it was back in the x87.  (I may have misremembered the number of bits, but the last hex digit is C and it is more than 64)\r\n```\r\n// use number[m:n] notation to indicate value with same exponent as number, mantissa zero\r\n// except for bits m through n-1 inclusive, where they are equal to their corresponding bits in\r\n// number.  The first bit of the mantissa has index zero.\r\nhwPi = realPi - realpi[68:]\r\nswPi = realPi - realPi[53:]\r\n\r\n// mathematical result -- goal is it get correctly rounded 53 bits of this.\r\nsin (swPi) = sin (realPi - realPi[53:]) = sin(realPi[53:]) approx= realPi[53:]\r\n\r\n// machine result \"sin\" = machine sine, sin = mathematical sine\r\n\"sin\" (swPi) = \"sin\" (realPi - realPi[53:]) = - sin (realPi - realPi[53:] - hwPi) =\r\n   - sin (realPi - realPi[53:] - (realPi - realpi[68:])) = -sin(realpi[68:]-realPi[53:]) =\r\n  sin(realpi[53:]-realPi[68:]) = sin(realpi[53:68]) approx = realpi[53:68]\r\n// i.e. 15 bits, then zeroes, where the true answer would have its 16th bit set.\r\n```\r\n\r\nI know this well, because Java's hotspot compiler once replaced correct software sine with incorrect hardware sine after the test loop had been executed \"enough\".  Moving the problematic case to the front of the iteration ran it through the software path, and the problem would disappear.",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-12T14:58:17Z",
+	"updated_at": "2016-09-12T14:58:17Z"
+}

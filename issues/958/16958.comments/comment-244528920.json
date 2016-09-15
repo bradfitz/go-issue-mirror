@@ -1,0 +1,12 @@
+{
+	"id": 244528920,
+	"body": "@prabrisat1 \r\nBut, after the first request completes **is** the start of the next request when the TCP connection is reused as part of HTTP 1.1 keepalives. That is when you have to start the read timeout, otherwise a client can just hold open the connection and starve you of resources. In effect ReadTimeout becomes RequestTimeout though because of it.\r\n\r\nHere is the sequence of events as I've seen them:\r\nClient Issues Get -\u003e Server SetsDeadline to 100ms in the future as part of readRequest -\u003e Handler is fired, which sleeps for 40ms (60ms left) -\u003e Sends Response -\u003e Server SetsDeadline(100ms in the future) as part of readRequest (for next request, which blocks waiting on i/o from the client) -\u003e client sleeps for 70ms (only ~30ms left until new deadline) -\u003e client Issues Get -\u003e Handler is fired, which sleeps 40ms (boom because only 30ms left).\r\n\r\nWe could keep extending the deadline in various places, but that is costly from a syscall perspective IIRC. Possibly other issues with that as well, not sure. I defer to @bradfitz.\r\n\r\nAt the very least this should be documented better. If there is interest in that I can work up a PR that attempts to explain it.",
+	"user": {
+		"login": "freeformz",
+		"id": 103,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-03T05:55:45Z",
+	"updated_at": "2016-09-03T05:55:45Z"
+}

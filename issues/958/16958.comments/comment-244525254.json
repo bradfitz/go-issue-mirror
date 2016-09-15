@@ -1,0 +1,12 @@
+{
+	"id": 244525254,
+	"body": "You're correct that as soon as the server finishes the first request it resets the deadline. That is the problem, the readtimeout is reset after first request is completed, not after the message is read specifically.\r\n\r\nIts much clearer if you take a look at the attached wireshark logs. The read timeout is not being reset after the request is read, but after the request has been read and the handler's work has been completed. In the above example, the client receives a 200 OK ~41ms after process starts, and the readTimeout is reset here @ 41ms. The server receives the next request at ~116ms, so ~75ms later. The message is just a GET with no body and takes ~1-2ms to be read, a total of ~77ms after the timer has been reset, so we should have read a message within the readTimeout right? This isn't true because the readTimeout is limiting the readTime and the time required for the handler to complete, which is why we receive a closeNotify signal at ~142ms before our 40ms of work on the request completes at ~117ms.\r\n\r\nEffectively, the current readTimeout measures (time spent waiting for a request + time spend reading request + time spent doing work on the request) when it should really only represent either (time waiting on request + time reading request) or even just (time spent reading request) for the name readTimeout to actually be applicable.",
+	"user": {
+		"login": "prabrisat1",
+		"id": 1643824,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-03T04:07:14Z",
+	"updated_at": "2016-09-03T04:08:56Z"
+}

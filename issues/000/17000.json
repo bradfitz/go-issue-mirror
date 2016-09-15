@@ -1,0 +1,21 @@
+{
+	"id": 175209724,
+	"number": 17000,
+	"state": "open",
+	"title": "database/sql: conn(cachedOrNewConn) errs unnecessarily when maxLifetime is set",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n1.6\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nLinux x86\r\n\r\n### What did you do?\r\nSet db connections to expire:\r\n\r\n    db.SetConnMaxLifetime(5 * time.Minute)\r\n\r\nCreate some connections, use them, and occasionally call db.Ping().\r\n\r\n### What did you expect to see?\r\n\r\nPing returning nil.\r\n\r\n### What did you see instead?\r\n\r\nPing returning ErrBadConn.\r\n\r\nThere are two problems here.  The major problem is that conn() with strategy cachedOrNewConn isn't very tolerant of expired connections in the pool, and returns an error if the first connection happens to be expired.  I think conn() should loop through all connections in the pool looking for an unexpired one, and then fall back to creating a new one if there are no unexpired ones available.\r\n\r\nThe secondary problem is that Ping() isn't very tolerant of conn(cachedOrNewConn) failures.  Most other functions that call this (e.g. Prepare, Exec, Query) do so in a loop for maxBadConnRetries, but Ping doesn't have this retry logic.  Therefore users of Ping() are more susceptible to spurious errors.\r\n",
+	"user": {
+		"login": "mikewilliamson",
+		"id": 5558731,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-09-06T10:11:35Z",
+	"updated_at": "2016-09-06T15:23:59Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

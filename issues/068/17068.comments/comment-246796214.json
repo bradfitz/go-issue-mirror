@@ -1,0 +1,12 @@
+{
+	"id": 246796214,
+	"body": "CL 29079 was a wild red herring chase. Starting from the beginning:\r\n\r\nOn Ubuntu 14.04 I can successfully build and run a hello world program with\r\n\r\n```go build -buildmode=pie -ldflags=-linkmode=internal hello.go```\r\n\r\nOn Ubuntu 16.04 it crashes. It *also* crashed on 14.04 if it is run under gdb. It gives a nice clear error when it does so:\r\n\r\n```\r\n(gdb) run\r\nStarting program: /usr/local/google/home/crawshaw/go/src/junk \r\n\r\nProgram received signal SIGSEGV, Segmentation fault.\r\nruntime.moduledataverify1 (datap=0x5555555f8620 \u003cruntime.firstmoduledata\u003e) at /usr/local/google/home/crawshaw/go/src/runtime/symtab.go:259\r\n259             if pcln32[0] != 0xfffffffb || pcln[4] != 0 || pcln[5] != 0 || pcln[6] != sys.PCQuantum || pcln[7] != sys.PtrSize {\r\n(gdb) bt\r\n#0  runtime.moduledataverify1 (datap=0x5555555f8620 \u003cruntime.firstmoduledata\u003e) at /usr/local/google/home/crawshaw/go/src/runtime/symtab.go:259\r\n#1  0x000055555558af89 in runtime.moduledataverify () at /usr/local/google/home/crawshaw/go/src/runtime/symtab.go:247\r\n#2  0x0000555555578e77 in runtime.schedinit () at /usr/local/google/home/crawshaw/go/src/runtime/proc.go:438\r\n#3  0x000055555559bd91 in runtime.rt0_go () at /usr/local/google/home/crawshaw/go/src/runtime/asm_amd64.s:145\r\n```\r\n\r\nThat combined with Ian's explanation on CL 29079 makes everything clear, because gdb loads PIE at a fixed and unusual address. A relocation that needs to be statically resolved as PC-relative is instead being statically resolved as something else, probably absolute to the beginning of the program.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-13T19:29:10Z",
+	"updated_at": "2016-09-13T19:29:10Z"
+}
