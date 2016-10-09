@@ -1,0 +1,22 @@
+{
+	"id": 181550948,
+	"number": 17372,
+	"state": "closed",
+	"title": "cmd/compile: optimize range comparisons like 'A' \u003c= c \u0026\u0026 c \u003c= 'Z'",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7.1 windows/amd64\r\n\r\n### What did you do?\r\n\r\nhttps://play.golang.org/p/91drTKDs_m\r\n\r\n### What did you expect to see?\r\n\r\n```\r\nandl    $-33, %eax\r\nsubl    $65, %eax\r\ncmpb    $25, %al\r\nsetbe   %al\r\nmovzbl  %al, %eax\r\n```\r\n\r\nThis is what GCC 5.4.0 produces. I was surprised by this code, since I only expected it to combine the `CMP + CMP` to a `SUB + CMP`. But now that I see this, I'd like the Go compiler to produce similar code.\r\n\r\n### What did you see instead?\r\n\r\n```\r\n   MOVZX 0x8(SP), AX\r\n   CMPL $0x41, AL\r\n   JB L2\r\n   CMPL $0x5a, AL\r\n   JA L2\r\n   MOVL $0x1, AX\r\nL1:\r\n   MOVB AL, 0x10(SP)\r\n   RET\r\nL2:\r\n   CMPL $0x61, AL\r\n   JB L3\r\n   CMPL $0x7a, AL\r\n   SETBE AL\r\n   JMP L1\r\nL3:\r\n   XORL AX, AX\r\n   JMP L1\r\n```\r\n",
+	"user": {
+		"login": "rillig",
+		"id": 3233724,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 3,
+	"closed_at": "2016-10-07T00:40:28Z",
+	"created_at": "2016-10-06T23:33:57Z",
+	"updated_at": "2016-10-07T00:40:28Z"
+}

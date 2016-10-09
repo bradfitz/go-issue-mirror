@@ -1,0 +1,17 @@
+{
+	"id": 181010658,
+	"number": 17340,
+	"state": "closed",
+	"title": "net/url: Path and RawPath are hard to use",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.6 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n    GOARCH=\"amd64\"\r\n    GOBIN=\"\"\r\n    GOEXE=\"\"\r\n    GOHOSTARCH=\"amd64\"\r\n    GOHOSTOS=\"darwin\"\r\n    GOOS=\"darwin\"\r\n    GOPATH=\"/Users/david/dev/go\"\r\n    GORACE=\"\"\r\n    GOROOT=\"/usr/local/go\"\r\n    GOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\n    GO15VENDOREXPERIMENT=\"1\"\r\n    CC=\"clang\"\r\n    GOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\n    CXX=\"clang++\"\r\n    CGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\n\r\nI wanted to create a URL where a path segment had an encoded slash. This is because usernames in our system are allowed to contain any valid UTF-8 character, and usernames are used in URLs. But getting the url package to properly encode the slash is tricky. Sample code:\r\n\r\n\tusername := \"foo/bar\"\r\n\turl := url.URL{\r\n\t\tScheme: \"https\",\r\n\t\tHost:   \"example.com\",\r\n\t\tPath:   \"/user/\" + username,\r\n\t}\r\n\tprintln(url.String())\r\n\r\n### What did you expect to see?\r\n\r\n    https://example.com/user/foo%2Fbar\r\n\r\n### What did you see instead?\r\n\r\n    https://example.com/user/foo/bar\r\n\r\nOf course I understand that it's impossible for this example to know that \"foo/bar\" is a single path segment, instead of two. But I tried also supplying a raw path:\r\n\r\n\tusername := \"foo/bar\"\r\n\turl := url.URL{\r\n\t\tScheme:  \"https\",\r\n\t\tHost:    \"example.com\",\r\n\t\tPath:    \"/user/\" + username,\r\n\t\tRawPath: \"user/\" + strings.Replace(username, \"/\", \"%2F\", -1),\r\n\t}\r\n\tprintln(url.String())\r\n\r\nBut the output was the same. The only way I've been able to figure out how to get it to know that \"foo/bar\" is a single segment is by manually encoding each segment myself and then having the url package parse it:\r\n\r\n\tusername := \"foo/bar\"\r\n\traw := \"https://example.com/user/\" + strings.Replace(\r\n\t\t(\u0026url.URL{Path: username}).String(),\r\n\t\t\"/\", \"%2F\", -1,\r\n\t)\r\n\r\n\turl, err := url.Parse(raw)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tprintln(url.String())\r\n\r\nThis outputs the correct value:\r\n\r\n    https://example.com/user/foo%2Fbar\r\n\r\nHowever, since the whole point of constructing a URL from its parts it to generate a string representation (e.g., to pass to `http.Get()`), this kind of defeats the whole purpose: I can simply use the `raw` variable.\r\n\r\nI'd like a way to be able to specify the path as a slice of segments, so that the url package knows which parts are directory segments and which aren't. Something like:\r\n\r\n\turl := url.URL{\r\n\t\tScheme:  \"https\",\r\n\t\tHost:    \"example.com\",\r\n\t\tSegments: []string{\"user\", username}\r\n\t}\r\n",
+	"user": {
+		"login": "theory",
+		"id": 46604,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-10-04T22:33:59Z",
+	"created_at": "2016-10-04T21:33:08Z",
+	"updated_at": "2016-10-04T23:01:58Z"
+}

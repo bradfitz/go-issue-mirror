@@ -1,0 +1,12 @@
+{
+	"id": 251479568,
+	"body": "I think this was fixed in 1.7.1 by https://golang.org/cl/28057\r\n\r\nI was able to reproduce this with the Go resolver on 1.7:\r\n```\r\n# cat /etc/resolv.conf\r\nnameserver 8.8.8.9\r\nnameserver 8.8.8.8\r\n# go version\r\ngo version go1.7 linux/amd64\r\n# GODEBUG=netdns=go+2 go run main.go\r\ngo package net: GODEBUG setting forcing use of Go's resolver\r\ngo package net: hostLookupOrder(www.google.ca) = files,dns\r\nlookup www.google.ca on 8.8.8.8:53: dial udp 8.8.8.8:53: i/o timeout\r\nexit status 1\r\n```\r\n\r\nWith Go 1.7.1 the sample program correctly resolves the address:\r\n```\r\n# cat /etc/resolv.conf\r\nnameserver 8.8.8.9\r\nnameserver 8.8.8.8\r\n# go version\r\ngo version go1.7.1 linux/amd64\r\n# GODEBUG=netdns=go+2 go run main.go\r\ngo package net: GODEBUG setting forcing use of Go's resolver\r\ngo package net: hostLookupOrder(www.google.ca) = files,dns\r\n[172.217.3.163 2607:f8b0:400a:801::2003]\r\n```\r\n\r\n(The cgo resolver did not exhibit the issue for 1.7 or 1.7.1)\r\n\r\nNote that I modified the demo program to just do the DNS lookup:\r\n``` go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\tips, err := net.LookupIP(\"www.google.ca\")\r\n\tif err != nil {\r\n\t\tfmt.Println(err)\r\n\t\tos.Exit(1)\r\n\t}\r\n\tfmt.Println(ips)\r\n}\r\n```",
+	"user": {
+		"login": "vcabbage",
+		"id": 10789027,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-04T18:55:11Z",
+	"updated_at": "2016-10-04T18:55:11Z"
+}

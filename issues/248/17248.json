@@ -1,0 +1,17 @@
+{
+	"id": 179405455,
+	"number": 17248,
+	"state": "closed",
+	"title": "cmd/go: `go test` takes extra time to run even for packages that do not have any test files",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\n`go version go1.7.1 darwin/amd64`\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/cyli/Go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.7.1/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.7.1/libexec/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/v9/wzpq8hm56b943960j1qrnblm0000gp/T/go-build685341822=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\n`time go test $(go list ./... | grep -v vendor)`\r\n`time go test $(go list -f '{{ if .TestGoFiles }}{{ .ImportPath }}{{ end }}' ./... | grep -v vendor)`\r\n\r\n### What did you expect to see?\r\n\r\nI expected they would take the same mostly the same amount of time\r\n\r\n### What did you see instead?\r\n\r\n`time go test $(go list -f '{{ if .TestGoFiles }}{{ .ImportPath }}{{ end }}' ./... | grep -v vendor)` is reliably faster.  I've also tried running `time for i in {1..10}; do \u003ccommand\u003e; done` and on average it is faster than not first excluding the packages without tests.\r\n\r\nThis is the case even if `-parallel #` is set, whether or not `-race` or if coverage numbers are generated.  For instance, when running the tests for https://github.com/docker/swarmkit:\r\n\r\n```\r\n$  time go test -parallel 8 -race $(go list -f '{{ if .TestGoFiles }}{{ .ImportPath }}{{ end }}' ./... | grep -v vendor)\r\n...\r\nreal\t0m17.380s\r\nuser\t0m51.668s\r\nsys\t0m7.717s\r\n\r\n$  time go test -parallel 8 -race $(go list ./... | grep -v vendor)\r\n...\r\nreal\t0m27.161s\r\nuser\t1m26.491s\r\nsys\t0m15.368s\r\n\r\n$  time go test $(go list -f '{{ if .TestGoFiles }}{{ .ImportPath }}{{ end }}' ./... | grep -v vendor)\r\n...\r\nreal\t0m15.005s\r\nuser\t0m41.354s\r\nsys\t0m6.796s\r\n\r\n$  time go test $(go list  ./... | grep -v vendor)\r\n...\r\nreal\t0m26.743s\r\nuser\t1m4.753s\r\nsys\t0m13.017s\r\n```\r\n\r\nIn case `time` is excluding how long `go list` takes:\r\n\r\n```\r\n$  time (go list  ./... | grep -v vendor)\r\n...\r\nreal\t0m0.308s\r\nuser\t0m0.239s\r\nsys\t0m0.136s\r\n\r\n$  time (go list -f '{{ if .TestGoFiles }}{{ .ImportPath }}{{ end }}' ./... | grep -v vendor)\r\n...\r\nreal\t0m0.318s\r\nuser\t0m0.248s\r\nsys\t0m0.141s\r\n```\r\n\r\nI'm not sure if this is the issue, but maybe `go test` can automatically exclude packages provided to it that don't have tests first, and not even start building the test binary for those? \r\n",
+	"user": {
+		"login": "cyli",
+		"id": 223200,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-27T06:34:48Z",
+	"created_at": "2016-09-27T06:12:57Z",
+	"updated_at": "2016-09-27T06:48:23Z"
+}

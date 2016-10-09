@@ -5,14 +5,19 @@
 	"title": "net: revisit unconditional use of cgo lookups for darwin",
 	"body": "https://golang.org/cl/8945 changed to using the native Go stub resolver for most systems. Darwin was excluded, [here](https://github.com/golang/go/blob/a1110c39301b21471c27dad0e50cdbe499587fc8/src/net/conf.go#L68-L74), due to firewall warnings.\r\n\r\nIs this still an issue?\r\n\r\nOn my 10.11 system with the firewall enabled this test program doesn't produce any warnings, even with cgo disabled:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"net\"\r\n)\r\n\r\nfunc main() {\r\n\tns, err := net.LookupHost(\"www.google.com\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tfmt.Println(ns)\r\n}\r\n```\r\n\r\n```\r\n% CGO_ENABLED=0 GODEBUG=netdns=2 go run main.go\r\ngo package net: built with netgo build tag; using Go's DNS resolver\r\ngo package net: hostLookupOrder(www.google.com) = files,dns\r\n[216.58.192.164 2607:f8b0:4009:80e::2004]\r\n```\r\n\r\n(nothing pops up when running)\r\n\r\nThere are probably other reasons to conditionally exclude Darwin for now, such as if /etc/resolver config is used (https://github.com/golang/go/issues/12524), but perhaps removing this blanket condition could be a start.\r\n\r\ncc @mdempsky and @bradfitz since you authored that change.",
 	"user": {
-		"login": "dpiddy",
+		"login": "danp",
 		"id": 2182,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 10,
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 16,
 	"created_at": "2016-07-13T15:44:05Z",
-	"updated_at": "2016-09-09T14:20:11Z",
+	"updated_at": "2016-10-07T20:23:14Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

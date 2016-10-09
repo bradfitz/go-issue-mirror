@@ -1,7 +1,7 @@
 {
 	"id": 174656950,
 	"number": 16962,
-	"state": "open",
+	"state": "closed",
 	"title": "x/crypto/ssh: guessed kex handled improperly",
 	"body": "### Go env information\r\n\r\n```\r\n% go version\r\ngo version go1.7 linux/amd64\r\n% go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/belak/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build164292563=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\nAttempt to connect to a golang ssh server using dropbear\r\n\r\n### What did you expect to see?\r\n\r\nA successful handshake\r\n\r\n### What did you see instead?\r\n\r\nDropbear fails to connect, claiming the server closed the connection.\r\n\r\nI initially tested disabling the guess in dropbear entirely, and that avoids this bug. Enabling debugHandshake, I saw `server exited key exchange (first true), err ssh: unexpected message type 30 (expected 21)`\r\n\r\nhttps://tools.ietf.org/html/rfc4250#section-4.1.2 states that 21 is SSH_MSG_NEWKEYS (essentially the end of the kex) and https://tools.ietf.org/html/rfc5656#section-7.1 states that 30 is SSH_MSG_KEX_ECDH_INIT. So, this means the server was getting an extra 30 before getting 21.\r\n\r\n### Potential fix\r\n\r\nUnder https://tools.ietf.org/html/rfc4253#section-7, it states that a guess can be counted as wrong if \"the kex algorithm and/or the host key algorithm is guessed wrong (server and client have different preferred algorithm)\" or all the algorithms cannot be agreed upon. Currently the check in x/crypto/ssh only checks `algs.kex != otherInit.KexAlgos[0]` and not the host key algorithm. The following patch is a quick and dirty way of solving this which also checks the host key algorithm. I'm not sure what the proper solution would be, but if requested, I can try to submit this.\r\n\r\nThis is what was causing the problem because the server and the client didn't agree that the first kex packet should be ignored, so the client sent another one (because it realized that the host key algorithms didn't match) and the server thought it was fine (because the kex algorithm matched). After the first kex packet is handled by the server, it finds another one, and not SSH_MSG_NEWKEYS as expected.\r\n\r\n```patch\r\ndiff --git a/ssh/handshake.go b/ssh/handshake.go\r\nindex ae26191..04ad3e7 100644\r\n--- a/ssh/handshake.go\r\n+++ b/ssh/handshake.go\r\n@@ -371,7 +371,7 @@ func (t *handshakeTransport) enterKeyExchangeLocked(otherInitPacket []byte) erro\r\n        }\r\n \r\n        // We don't send FirstKexFollows, but we handle receiving it.\r\n-       if otherInit.FirstKexFollows \u0026\u0026 algs.kex != otherInit.KexAlgos[0] {\r\n+       if otherInit.FirstKexFollows \u0026\u0026 (algs.kex != otherInit.KexAlgos[0] || algs.hostKey != otherInit.ServerHostKeyAlgos[0]) {\r\n                // other side sent a kex message for the wrong algorithm,\r\n                // which we have to ignore.\r\n                if _, err := t.conn.readPacket(); err != nil {\r\n```",
 	"user": {
@@ -11,8 +11,9 @@
 		"site_admin": false
 	},
 	"comments": 3,
+	"closed_at": "2016-09-20T07:34:14Z",
 	"created_at": "2016-09-02T00:38:20Z",
-	"updated_at": "2016-09-08T00:01:03Z",
+	"updated_at": "2016-09-20T07:34:14Z",
 	"milestone": {
 		"id": 1067491,
 		"number": 22,

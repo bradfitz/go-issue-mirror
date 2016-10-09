@@ -1,0 +1,12 @@
+{
+	"id": 249132638,
+	"body": "Finally I got working example:\r\n\r\nmain.go:\r\n```go\r\npackage main\r\n\r\n/*\r\n#cgo CFLAGS: -Wall -O2 -Wno-unused-function\r\n#cgo linux LDFLAGS: -lpthread\r\ntypedef struct cb {\r\n        void (*on_test)();\r\n} cb;\r\nextern void start_test(cb *c);\r\nextern void onTest();\r\nstatic void test_cb(cb *c) {\r\n        c-\u003eon_test = \u0026onTest;\r\n}\r\n*/\r\nimport \"C\"\r\n\r\ntype T struct {\r\n        t int\r\n}\r\nvar t = \u0026T{}\r\n\r\n//export onTest\r\nfunc onTest() {\r\n        t.t++\r\n}\r\n\r\nfunc main() {\r\n        var c C.cb\r\n        C.test_cb(\u0026c)\r\n        C.start_test(\u0026c)\r\n        go func() {\r\n                for {\r\n                        t.t++\r\n                }\r\n        }()\r\n        for {}\r\n}\r\n```\r\n\r\nlib.go:\r\n```go\r\npackage main\r\n\r\n/*\r\n#cgo CFLAGS: -Wall -O2 -Wno-unused-function\r\n#include \u003cpthread.h\u003e\r\n\r\ntypedef struct cb {\r\n        void (*on_test)();\r\n} cb;\r\n\r\nvoid *call_test(void *p) {\r\n        cb *c = (cb*)p;\r\n        c-\u003eon_test();\r\n        return NULL;\r\n}\r\n\r\nvoid start_test(cb *c) {\r\n        pthread_t thr;\r\n        pthread_create(\u0026thr, NULL, call_test, c);\r\n}\r\n*/\r\nimport \"C\"\r\n```\r\n",
+	"user": {
+		"login": "sisoftrg",
+		"id": 492146,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-23T08:25:14Z",
+	"updated_at": "2016-09-23T08:25:14Z"
+}

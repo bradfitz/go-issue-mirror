@@ -1,0 +1,16 @@
+{
+	"id": 181850587,
+	"number": 17388,
+	"state": "open",
+	"title": "cmd/compile: escape analysis too pessimistic for value-captures at closure evaluation.",
+	"body": "```\r\npackage main\r\n\r\nvar s int\r\n\r\n//go:noinline\r\nfunc qux(ops func(i, j int) int, j int) (err *int) {\r\n\tenqueue := func(i int) *int {\r\n\t\ts = ops(i, j)\r\n\t\treturn \u0026s\r\n\t}\r\n\terr = enqueue(4)\r\n\treturn\r\n}\r\n\r\n//go:noinline\r\nfunc barfun(i, j int, ops func(i, j int) int) *int {\r\n\ts = ops(i, j)\r\n\treturn \u0026s\r\n}\r\n\r\n//go:noinline\r\nfunc bar(ops func(i, j int) int, j int) (err *int) {\r\n\terr = barfun(4, j, ops)\r\n\treturn\r\n}\r\n\r\nfunc main() {\r\n\tq := func(i, j int) int {\r\n\t\treturn i + j\r\n\t}\r\n\tprintln(\"*qux(q,3) =\", *qux(q, 3))\r\n\r\n\tb := func(i, j int) int {\r\n\t\treturn i + j\r\n\t}\r\n\tprintln(\"*bar(b,3) =\", *bar(b, 3))\r\n}\r\n```\r\n\r\nThe parameter `ops` to `qux` is inferred to escape, incorrectly,\r\ncompared to the equivalent rewriting into `bar` and `barfun`.\r\n`go build -gcflags '-m -l' e2.go` yields\r\n```\r\n./e2.go:7: func literal escapes to heap\r\n./e2.go:6: leaking param: ops to result err level=0\r\n./e2.go:9: \u0026s escapes to heap\r\n./e2.go:6: leaking param: ops\r\n./e2.go:18: \u0026s escapes to heap\r\n./e2.go:16: barfun ops does not escape\r\n./e2.go:22: bar ops does not escape\r\n./e2.go:28: func literal escapes to heap\r\n./e2.go:28: func literal escapes to heap\r\n./e2.go:33: main func literal does not escape\r\n```\r\n\r\nI think this results from a very simple model of closure behavior; anything captured is regarded as transmitted to any result, regardless of the actual behavior of the closure.\r\n\r\nIt is plausible that the escape behavior of closures could be modeled in the same way as the escape behavior for ordinary functions, with captured-by-value parameters treated equivalently.",
+	"user": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-10-08T21:47:11Z",
+	"updated_at": "2016-10-08T21:47:11Z"
+}

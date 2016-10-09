@@ -1,0 +1,26 @@
+{
+	"id": 178812996,
+	"number": 17206,
+	"state": "open",
+	"title": "syscall: TestUnshare fails with \"operation not permitted\", even with CONFIG_NET_NS=y",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\nnone\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nlinux arm64\r\n\r\n### What did you do?\r\n#If possible, provide a recipe for reproducing the error.\r\n#A complete runnable program is good.\r\n#A link on play.golang.org is best.\r\n\r\nI am building go1.7.1 on my arm64 machine, with go-linux-arm64-bootstrap.\r\nI performed **all.bash** in src directory.\r\n\r\n\r\n### What did you expect to see?\r\nCompleted build without any error.\r\n\r\n### What did you see instead?\r\nBuild failed with the following error\r\n```\r\n...\r\n--- FAIL: TestUnshare (0.01s)\r\n\texec_linux_test.go:171: Cmd failed with err fork/exec /bin/cat: operation not permitted, output: \r\nFAIL\r\nFAIL\tsyscall\t0.960s\r\n...\r\n```\r\nSo, I changed the **exec_linux_test.go** from this,\r\n```\r\n165         cmd := exec.Command(\"cat\", path)\r\n166         cmd.SysProcAttr = \u0026syscall.SysProcAttr{\r\n167                 Unshareflags: syscall.CLONE_NEWNET,\r\n168         }\r\n169         out, err := cmd.CombinedOutput()\r\n170         if err != nil {\r\n171                 t.Fatalf(\"Cmd failed with err %v, output: %s\", err, out)\r\n172         }\r\n173 \r\n174         // Check there is only the local network interface\r\n175         sout := strings.TrimSpace(string(out))\r\n176         if !strings.Contains(sout, \"lo:\") {\r\n177                 t.Fatalf(\"Expected lo network interface to exist, got %s\", sout)\r\n178         }\r\n179 \r\n180         lines := strings.Split(sout, \"\\n\")\r\n181         if len(lines) != 3 {\r\n182                 t.Fatalf(\"Expected 3 lines of output, got %d\", len(lines))\r\n183         }\r\n```\r\nto this,\r\n```\r\n165         cmd := exec.Command(\"cat\", path)\r\n166         //cmd.SysProcAttr = \u0026syscall.SysProcAttr{\r\n167         //      Unshareflags: syscall.CLONE_NEWNET,\r\n168         //}\r\n169         out, err := cmd.CombinedOutput()\r\n170         if err != nil {\r\n171                 t.Fatalf(\"Cmd failed with err %v, output: %s\", err, out)\r\n172         }\r\n173 \r\n174         // Check there is only the local network interface\r\n175         sout := strings.TrimSpace(string(out))\r\n176         if !strings.Contains(sout, \"lo:\") {\r\n177                 t.Fatalf(\"Expected lo network interface to exist, got %s\", sout)\r\n178         }\r\n179 \r\n180         lines := strings.Split(sout, \"\\n\")\r\n181         //if len(lines) != 3 {\r\n182         if len(lines) != 4 {\r\n183                 t.Fatalf(\"Expected 3 lines of output, got %d\", len(lines))\r\n184         }\r\n```\r\nAfter those changes, building finished without error.",
+	"user": {
+		"login": "owlab-exp",
+		"id": 15954928,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"comments": 6,
+	"created_at": "2016-09-23T08:15:56Z",
+	"updated_at": "2016-10-03T15:56:55Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,7 +1,7 @@
 {
 	"id": 163340806,
 	"number": 16239,
-	"state": "open",
+	"state": "closed",
 	"title": "x/exp/io/spi: support csChange on a per-tx basis in spidev",
 	"body": "I'm interfacing with a Silicon Labs ZigBee chip as a network co-processor using their EZSP protocol over SPI ([that's documented here FYI](http://www.silabs.com/Support%20Documents/TechnicalDocs/AN711.pdf)). It's a bit non-standard in that they expect you to transmit a command frame, then continue reading off the SPI until a response has been received (which can take up to 300ms). During this whole time, the chip select must stay active, then get released when the whole transaction is done.\r\n\r\nThe devfs/spidev driver has a struct that contains a `csChange` field, however that is not exposed anywhere. I tried tweaking the `payload` in the source to set `csChange` to 1, and that does seem to give me the behavior that I want in that I can keep submitting multiple `Tx()` calls and keep the chip select enabled.\r\n\r\nThis is the basic flow I'll need to make this work:\r\n1. Send a message payload with the bytes of the EZSP command. Set `csChange` to 1 for this payload so chip select stays enabled.\r\n2. Repeatedly send small (~8 byte) message payloads and read equal amounts of response, keeping `csChange` at 1.\r\n3. Once one of these calls returns bytes that contain the EZSP response frame terminator, send an empty payload that sets `csChange` to its default value of 0.\r\n\r\nI'm happy to attempt this change myself but thought it would be good to see if anybody has thought about how this might fit in with the `Driver` and `Device` interfaces (especially @rakyll).\r\n\r\nThanks!",
 	"user": {
@@ -16,9 +16,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 1,
+	"comments": 2,
+	"closed_at": "2016-09-28T18:48:47Z",
 	"created_at": "2016-07-01T08:01:33Z",
-	"updated_at": "2016-07-13T20:24:39Z",
+	"updated_at": "2016-09-28T18:48:47Z",
 	"milestone": {
 		"id": 1067491,
 		"number": 22,

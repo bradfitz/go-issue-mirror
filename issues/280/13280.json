@@ -1,7 +1,7 @@
 {
 	"id": 117224581,
 	"number": 13280,
-	"state": "open",
+	"state": "closed",
 	"title": "cmd/internal/obj/arm: suboptimal handling of \"MOVW $-N(Rx), Ry\"",
 	"body": "Currently, cmd/internal/obj/arm optimizes this instruction in sys_linux_arm.s:\r\n\r\n    sys_linux_arm.s:202          MOVW    $8(R13), R1  // timespec\r\n\r\ninto this ADD instruction:\r\n\r\n        sys_linux_arm.s:202     0xe87b4 e28d1008        ADD $8, R13, R1\r\n\r\nbut misses an opportunity to optimize this move:\r\n\r\n    sys_linux_arm.s:261          MOVW    $-16(R1), R1\r\n\r\ninto a SUB instruction:\r\n\r\n        sys_linux_arm.s:261     0xe8870 e59fb0b4        MOVW 0xb4(R15), R11\r\n        sys_linux_arm.s:261     0xe8874 e081100b        ADD R11, R1, R1\r\n        ...\r\n        sys_linux_arm.s:324     0xe892c fffffff0        ?\r\n\r\nAlternatively, there's not a lot of explicit \"MOVW $-N(Rx), Ry\" instructions in the ARM assembly, and the only compiler generated ones I've found are from cmd/internal/obj/arm's stacksplit function, so it's feasible to just change them all to use explicit SUB instructions instead.\r\n\r\nChanging just stacksplit to use ASUB instead of AMOVW shaves ~5kB of text off cmd/go:\r\n\r\n       text\t   data\t    bss\t    dec\t    hex\tfilename\r\n    6666309\t 103960\t  85812\t6856081\t 689d91\tgo.after\r\n    6671670\t 103960\t  85812\t6861442\t 68b282\tgo.before\r\n",
 	"user": {
@@ -11,8 +11,9 @@
 		"site_admin": false
 	},
 	"comments": 0,
+	"closed_at": "2016-09-29T15:21:54Z",
 	"created_at": "2015-11-16T21:41:57Z",
-	"updated_at": "2015-11-16T21:41:57Z",
+	"updated_at": "2016-09-29T15:21:54Z",
 	"milestone": {
 		"id": 1055141,
 		"number": 6,

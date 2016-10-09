@@ -1,0 +1,12 @@
+{
+	"id": 250645029,
+	"body": "I compared huge pages to tip using the x/benchmarks garbage benchmark on both Skylake and Sandy Bridge. This is with the arena, the bitmap, and the spans array backed by huge pages. I haven't tried a more dynamic approach yet. Also, I dug into hardware counters after running these and found that fixalloc (which is allocating mspans) and the mark bitmap allocator are still using 4K pages, which means this reduced TLB misses by only 4X and most remaining TLB misses are in the garbage collector. I'll try to fix that and rerun the benchmarks.\r\n\r\nNevertheless, this shows some pretty good speedup, especially on Skylake, which has good huge page TLB support. Sandy Bridge's huge page TLB support is surprisingly bad, but it gets some speedup, too.\r\n\r\nSkylake (64 4KB + 32 2MB entry L1 LTB, 1536 entry unified L2 TLB):\r\n```\r\nname           old time/op  new time/op  delta\r\nXGarbage1GB-4  7.13ms ± 2%  7.00ms ± 2%  -1.73%  (p=0.000 n=20+19)\r\nXGarbage64M-4  6.79ms ± 3%  6.71ms ± 3%  -1.26%  (p=0.000 n=16+16)\r\n```\r\n\r\nSandy Bridge (64 4KB + 32 2MB entry L1 TLB, 512 4KB entry L2 TLB, no 2MB L2):\r\n```\r\nname            old time/op  new time/op  delta\r\nXGarbage1GB-12  2.49ms ± 0%  2.48ms ± 1%  -0.67%  (p=0.000 n=17+17)\r\nXGarbage64M-12  2.27ms ± 0%  2.26ms ± 1%  -0.61%  (p=0.000 n=17+19)\r\n```",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-30T02:38:22Z",
+	"updated_at": "2016-09-30T02:38:22Z"
+}

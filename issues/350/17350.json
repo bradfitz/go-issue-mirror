@@ -1,0 +1,31 @@
+{
+	"id": 181263767,
+	"number": 17350,
+	"state": "open",
+	"title": "proposal: extend the \"append\" built-in to work with maps",
+	"body": "There is currently an unpleasant asymmetry between nil maps and nil slices.  It's very easy to safely append to a slice regardless of whether the source is nil:\r\n```go\r\ns = append(s, e)\r\n```\r\nbut tedious to safely extend a nil map in a similar way:\r\n```go\r\nif m == nil {\r\n    m = make(map[foo]bar)\r\n}\r\nm[k] = v\r\n```\r\n\r\nMap insertions are common in application code, and the amount of boilerplate involved makes multi-level maps in particular quite awkward to work with.  A simple bit of syntactic sugar would make the code much more readable, and provide a pattern (along the lines of the `append` pattern for slices) that is much more robust to nils: \r\n```go\r\nm = append(m, map[foo]bar{k: v}...)\r\n```\r\n\r\nThe specific proposal involves two (backward-compatible) changes to the spec.\r\n\r\n#### [Passing arguments to ... parameters](https://golang.org/ref/spec#Passing_arguments_to_..._parameters)\r\n…\r\n\r\n**If the final argument is assignable to a map type `map[K]V` and `struct{K; V}` is assignable to `T`, the map may be passed as the value for a `...T` parameter if the argument is followed by `...`.  The value passed is a new slice of type `[]T` with a new underlying array whose successive elements are structs containing the keys and corresponding values of the map in unspecified order.**\r\n\r\n…\r\n\r\n#### [Appending to and copying slices **and maps**](https://golang.org/ref/spec#Appending_and_copying_slices)\r\nThe variadic function append appends zero or more values x to s of type S, which must be a slice *or map* type, and returns the resulting slice **or map**, also of type S.  **For slices, the** values `x` are passed to a parameter of type `...T` where `T` is the element type of `S` and the respective parameter passing rules apply.  **For maps, the values `x` are passed to a parameter of type `...struct{K; V}` where `K` is the key type of `S` and `V` is the element type.**  As a special case, append also accepts a first argument assignable to type `[]byte` with a second argument of string type followed by `...`. This form appends the bytes of the string.\r\n\r\n```go\r\nappend(s S, x ...T) S  // T is the element type of S\r\nappend(s S, x ...struct{K; V}) S // K and V are the key and element types of S\r\n```\r\n\r\nIf **`s` is a slice and** the capacity of `s` is not large enough to fit the additional values, append allocates a new, sufficiently large underlying array that fits both the existing elements and the additional values. Otherwise, append re-uses the underlying array.\r\n\r\n**If `s` is a map and the value of the map is nil, append allocates a new map value containing the argument keys and element values.  Otherwise, append inserts the keys and values into the existing map in order, replacing any existing element value for the key.**\r\n\r\n…\r\n\r\n----\r\n\r\nThe proposed syntax would go nicely with proposal #12854:\r\n\r\n```go\r\nm = append(m, {k1, v1}, {k2, v2})\r\n```\r\nor\r\n```go\r\nm = append(m, {k1: v1, k2: v2, k3: v3}...)\r\n```\r\n",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 26,
+	"created_at": "2016-10-05T20:56:48Z",
+	"updated_at": "2016-10-06T16:54:14Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 3,
+		"+1": 1,
+		"-1": 2
+	}
+}

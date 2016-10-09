@@ -1,0 +1,30 @@
+{
+	"id": 178163825,
+	"number": 17168,
+	"state": "closed",
+	"title": "runtime: hangup in umtx_op system call when changing system clock",
+	"body": "Version: go1.6.2 freebsd/amd64\r\nEnvironment:\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"freebsd\"\r\nGOOS=\"freebsd\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/freebsd_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"cc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\nWhen running the following code sample:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"time\"\r\n\t\"fmt\"\r\n)\r\n\r\nfunc main() {\r\n\tvar t time.Time\r\n\r\n\tfor {\r\n\t\tx := time.After(5 * time.Second)\r\n\t\tt = \u003c-x\r\n\t\tfmt.Println(t)\r\n\t}\r\n}\r\n```\r\n\r\nIn between 5 second output intervals adjust the system time backwards and notice the output. FreeBSD is documented as an OS that supports monotonic timers so I would expect the output to happen 5 seconds after the last line. However, it waits until the system time catches up with the scheduled time. The code above works as expected on another OS that supports monotonic timers (Windows).\r\n\r\nAlso, I tried calling clock_gettime() directly with CLOCK_MONOTONIC on the same system and was able to get monotonic time. Based on the source of sys_freebsd_amd64.s it doesn't seem like clock_gettime() is used inside runtime·nanotime as in sys_linux_amd64.s.\r\n",
+	"user": {
+		"login": "RichardLaos",
+		"id": 1774557,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "OS-FreeBSD"
+		}
+	],
+	"comments": 8,
+	"closed_at": "2016-10-01T01:25:41Z",
+	"created_at": "2016-09-20T19:56:30Z",
+	"updated_at": "2016-10-01T01:25:41Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

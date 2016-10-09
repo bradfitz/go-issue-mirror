@@ -1,0 +1,17 @@
+{
+	"id": 177848844,
+	"number": 17160,
+	"state": "closed",
+	"title": "runtime: spurious cgo dynamic check failure on darwin/amd64",
+	"body": "On darwin/amd64, several uses of ```C.free(unsafe.Pointer(cstr))``` in plugin/plugin_dlopen.go get caught incorrectly on the dynamic cgo check:\r\n\r\n```\r\npanic: runtime error: cgo argument has Go pointer to Go pointer\r\n\r\ngoroutine 1 [running]:\r\npanic(0x40b85c0, 0xc42000c280)\r\n\t/Users/crawshaw/go/src/runtime/panic.go:496 +0x1a0\r\nplugin._cgoCheckPointer0(0x4303550, 0x0, 0x0, 0x0, 0x1)\r\n\tplugin/_obj/_cgo_gotypes.go:41 +0x59\r\nplugin.open(0x40cff89, 0x7, 0x0, 0x0, 0x0)\r\n\t/Users/crawshaw/go/src/plugin/plugin_dlopen.go:106 +0x828\r\nplugin.Open(0x40cff89, 0xa, 0x403e78e, 0xc42000c208, 0xc42000c200)\r\n\t/Users/crawshaw/go/src/plugin/plugin.go:28 +0x35\r\nmain.main()\r\n\t/Users/crawshaw/go/misc/cgo/testplugin/src/host/host.go:24 +0x5c\r\n```\r\n\r\nCalling a C helper function, C.freestr(cstr), does not get caught.\r\n\r\nI spent a while trying to isolate a test case, but no luck. Once I've mailed the darwin plugin CLs, replacing C.freestr with C.free shows the error consistently when running misc/cgo/testplugin.\r\n\r\n/cc @ianlancetaylor ",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 7,
+	"closed_at": "2016-09-23T02:35:22Z",
+	"created_at": "2016-09-19T17:39:22Z",
+	"updated_at": "2016-09-23T02:35:22Z"
+}

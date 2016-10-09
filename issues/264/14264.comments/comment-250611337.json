@@ -1,0 +1,12 @@
+{
+	"id": 250611337,
+	"body": "A little more digging.\r\n\r\nThe reason we generally don't see many huge pages backing the Go heap is that we grow it by 1MB at a time (unless the growing allocation needs more) and fault the new space almost immediately. The fault handler sees that the VMA doesn't span the full huge page frame, so it has no choice but to back it with a normal page. When we later grow the heap mapping by another 1MB, since there are already normal pages in the huge page frame from the earlier fault, the page fault handler keeps backing the area with normal pages. I'm not sure why the background scrubber didn't clean this up after some time, but it's better if we don't force it to copy all of that memory around anyway.\r\n\r\nI spent a while digging into why only half of the heap was backed by huge pages only to discover that I could no longer reproduce that behavior once I had read the THP code. It must have noticed I was poking around.\r\n\r\nWe should probably just grow the heap in 2MB (and 2MB aligned) chunks. We could do the same for the heap bitmap and the spans. This means very small Go binaries will use between 6MB and 8MB. That may be okay, especially since, as @quentinmit pointed out, environments will very little RAM are likely to have THP disabled (in fact, the kernel disables THP by default if there's less then 512MB of physical memory).",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-29T22:33:42Z",
+	"updated_at": "2016-09-29T22:33:42Z"
+}

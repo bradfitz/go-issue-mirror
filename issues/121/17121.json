@@ -1,0 +1,29 @@
+{
+	"id": 177215281,
+	"number": 17121,
+	"state": "open",
+	"title": "math: Lgamma got slower from Go 1.6 to Go 1.7",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo1.6.3, go version devel +8086e7c\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build584510834=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\nInvestigating slowdown of Lgamma benchmark.\r\n1.6 vs 1.7 gives:\r\nname      old time/op  new time/op  delta\r\nLgamma-4  11.9ns ± 0%  14.2ns ± 0%  +19.33%  (p=0.000 n=29+29)\r\n\r\nIt might be compiler issue(code not changed). Looking into objdump of lgamma function for both versions I see different instruction order and registers used:\r\nIn 1.7:\r\nREPNE MOVSD_XMM 0x14a4b5(IP), X3\r\nREPNE MOVSD_XMM 0x14a4bd(IP), X5\r\nREPNE MOVSD_XMM 0x14a4c5(IP), X6\r\nREPNE MOVSD_XMM 0x14a4cd(IP), X7\r\nREPNE MOVSD_XMM 0x14a4d4(IP), X8\r\nREPNE MOVSD_XMM 0x14a4db(IP), X9\r\nREPNE MULSD X4, X9\r\nREPNE ADDSD X9, X8\r\nREPNE MULSD X4, X8\r\nREPNE ADDSD X8, X7\r\nREPNE MULSD X4, X7\r\nREPNE ADDSD X7, X6\r\nREPNE MULSD X4, X6\r\n...\r\nIn 1.6:\r\nREPNE MOVSD_XMM 0x1f94c0(IP), X0\r\nREPNE MOVSD_XMM 0x1f94c0(IP), X1\r\nREPNE MULSD X3, X1\r\nREPNE ADDSD X1, X0\r\nREPNE MULSD X3, X0\r\nREPNE MOVSD_XMM 0x1f949c(IP), X1\r\nREPNE ADDSD X1, X0\r\nREPNE MULSD X3, X0\r\nREPNE MOVSD_XMM 0x1f9484(IP), X1\r\nREPNE ADDSD X1, X0\r\nREPNE MULSD X3, X0\r\n...\r\nTried force scheduler to generate instruction order like in 1.6\r\n(for that expanded all expressions like p1 := _lgamT[0] + w*(_lgamT[3]+w*(_lgamT[6]+w*(_lgamT[9]+w*_lgamT[12]))) with tmp variables).\r\nBut result was still bad:\r\nname      old time/op  new time/op  delta\r\nLgamma-4  11.9ns ± 0%  13.1ns ± 0%  +10.08%  (p=0.000 n=29+19)\r\n\r\nAlso tried to generate random registers - no much effect:\r\nname      old time/op  new time/op  delta\r\nLgamma-4  11.9ns ± 0%  13.5ns ± 0%  +13.45%  (p=0.000 n=29+10)",
+	"user": {
+		"login": "bulatm",
+		"id": 20091452,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-09-15T15:51:41Z",
+	"updated_at": "2016-10-03T22:35:48Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

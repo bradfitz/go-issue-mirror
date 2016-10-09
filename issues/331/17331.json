@@ -1,0 +1,26 @@
+{
+	"id": 180746946,
+	"number": 17331,
+	"state": "closed",
+	"title": "proposal: Add Form and Multipart Form to encoding package",
+	"body": "I propose adding a package, `encoding/form` (or possibly `encoding/url` and `encoding/multipart`, benefits to be weighed in the proposal document), that implements an HTTP `application/x-www-form-urlencoded` and `multipart/form-data` encoder and decoder with an API similar to the `encoding/json` and `encoding/xml` packages and can marshal/unmarshal forms and structs.\r\n\r\nThe primary use case I see in this would be to simplify accepting HTTP requests where the body may be a form submission or a JSON or XML encoded API request without having to leave the well-vetted comfort of the standard library. There are existing packages which implement an API similar to this eg. [`gorilla/schema`](https://godoc.org/github.com/gorilla/schema), but it seems like such a common use case and would most likely be used very often next to the JSON/XML packages, that I feel it's worth having in the standard library.\r\n\r\n```go\r\n// implemented by json.Decoder, xml.Decoder, and eventually by our proposed\r\n// form decoder(s)\r\ntype InterfaceDecoder interface {\r\n  Decode(v interface{}) error\r\n}\r\n\r\n// Holds the body of an incoming request\r\ntype APIBody struct {\r\n  ID int `json:\"id\" form:\"-\"`\r\n  XSRF `json:\"-\" form:\"_csrf\"`\r\n  Field string `json:\"somefield\" form:\"somefield\"`\r\n}\r\n\r\nfunc HandleRequest(w ResponseWriter, r *Request) {\r\n  var d InterfaceDecoder\r\n  switch r.Header.Get(\"Content-Type\") {\r\n  case \"application/json\":\r\n    d = json.NewDecoder(r.Body)\r\n  case \"application/xml\", \"text/xml\":\r\n    d = xml.NewDecoder(r.Body)\r\n  case \"application/x-www-form-urlencoded\", \"multipart/form-data\":\r\n    d = form.NewDecoder(r.Body)\r\n  }\r\n\r\n  data := \u0026APIBody{}\r\n  if err := d.Decode(data); err != nil {\r\n    panic(err)\r\n  }\r\n  …\r\n}\r\n```\r\n\r\nI have begun working on a proposal document which will outline an exact API. This issue is to discuss the idea and see if it would be accepted in the first place and as a location for the proposal document to reference.",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-10-05T15:08:22Z",
+	"created_at": "2016-10-03T21:05:17Z",
+	"updated_at": "2016-10-05T15:08:23Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

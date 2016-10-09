@@ -1,0 +1,12 @@
+{
+	"id": 249346271,
+	"body": "I don't like the idea of always requiring external linker to build Go\nprograms (even pure Go programs, is that what you're proposing to fix the\ngettimeofday abi breakage from recurring?).\n\nXcode is not a standard component on Darwin, so we should keep internal\nlinking for as long as possible.\n\nRegarding the TLV support, one problem is that if we end up using the\nplatform support, we can't assume anything about the nature of the indirect\ncall. It can use arbitrary amount of stack, or even do blocking syscalls,\nso we will have to switch stacks to system stack before the call. Right now\nwe access g at the prologue of all non-nosplit functions, so the overhead\nof using native TLV will be prohibitly high. At least we should implement\ncaching of g in a regular machine register first.\n\nI should add that a similar problem also appears on Windows, which also\nrequires you to call a function to get TLV address. Disassembly of that\nfunction showed that it has a fast path and a slow path. We can afford the\nfast path with the nosplit stack, but not the slow path.\n\nWe have never received reports for key contention on Darwin, which suggests\nthat we can delay handling this a little later and hope that Darwin has\nimproved TLV support in the future.\n\nFinally, there is an even simpler solution to our problem. If we assume\nthat we can always access TLV at a certain offset from fs, instead of hard\ncoding the offset, we can store the offset in a global variable. The cost\nis just one more memory load per g access, which is certainly better than\none indirect call per g access.\n",
+	"user": {
+		"login": "minux",
+		"id": 135652,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-24T05:23:08Z",
+	"updated_at": "2016-09-24T05:23:08Z"
+}

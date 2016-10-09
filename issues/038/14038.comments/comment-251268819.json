@@ -1,0 +1,12 @@
+{
+	"id": 251268819,
+	"body": "I think this change to documentation is not accurate. Here is a example with a slightly change from the first example of OP that adopt the doc, which does not concurrently receive on `timer.C`, and it deadlock:\r\n```go\r\npackage main\r\n\r\nimport (\r\n     \"time\"\r\n)\r\n\r\nfunc main() {\r\n    timer := time.NewTimer(1 * time.Second)\r\n\r\n    for i := 0; i \u003c 2; i++ {\r\n            if !timer.Stop() {\r\n                    \u003c-timer.C\r\n            }\r\n            timer.Reset(1 * time.Second)\r\n            \u003c-timer.C\r\n    }\r\n}\r\n```\r\n\r\nI think the problem is that, the first call of both `Reset()` and `Stop()` only tells whether the old timer has expired, but not whether the event has been consumed. To reset old timer in normal path even when it could still have been expired before next operation, the first example of OP could be changed to:\r\n```go\r\ntimeout := time.NewTimer(T)\r\nfor {\r\n    timeout.Reset(T)\r\n\r\n    select {\r\n    case \u003c- ...: ...\r\n        if !timeout.Stop() {\r\n            \u003c-timeout.C\r\n        }\r\n    case \u003c-timeout.C: ...\r\n    }\r\n}\r\n```\r\nOr don't do that but just use a longer timeout duration and accept a concurrently timeout is still a timeout.\r\n\r\nThe current behavior of `Reset()` should be that it changes the timer to expire after duration d if the timer have not been expired or the expire event had been consumed but not in between. But this way its return value will be inconsistent, for example:\r\n```go\r\npackage main\r\n\r\nimport (\r\n    \"time\"\r\n)\r\n\r\nfunc main() {\r\n    timer := time.NewTimer(1 * time.Second)\r\n    time.Sleep(2 * time.Second)\r\n    println(timer.Reset(1 * time.Second))\r\n    println(timer.Reset(1 * time.Second))\r\n}\r\n```\r\nwill print true for the second `Reset()`.\r\n\r\nThere are still use cases for this behavior without first draining the old timer's channel, for example:\r\n```go\r\n// goroutine 1\r\nfor {\r\n    if err := doSomething(ctx); err != nil {\r\n        return err\r\n    }\r\n    timer.Reset(d)\r\n}\r\n\r\n// goroutine 2\r\n\u003c-timer.C\r\ncancel() // call the CancelFunc of ctx\r\n```",
+	"user": {
+		"login": "noblehng",
+		"id": 6649504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-04T00:56:44Z",
+	"updated_at": "2016-10-04T00:56:44Z"
+}

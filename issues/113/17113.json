@@ -1,0 +1,29 @@
+{
+	"id": 177076972,
+	"number": 17113,
+	"state": "open",
+	"title": "cmd/compile: pointless static copy code",
+	"body": "```go\r\npackage main\r\n\r\ntype I int\r\n\r\nvar (\r\n\ti int\r\n\tx = I(i)\r\n)\r\n```\r\n\r\ncompiles to:\r\n\r\n```\r\n\".init t=1 size=72 args=0x0 locals=0x0\r\n\t0x0000 00000 (issue17111.go:17)\tTEXT\t\"\".init(SB), $0-0\r\n\t0x0000 00000 (issue17111.go:17)\tMOVQ\t(TLS), CX\r\n\t0x0009 00009 (issue17111.go:17)\tCMPQ\tSP, 16(CX)\r\n\t0x000d 00013 (issue17111.go:17)\tJLS\t65\r\n\t0x000f 00015 (issue17111.go:17)\tFUNCDATA\t$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x000f 00015 (issue17111.go:17)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x000f 00015 (issue17111.go:17)\tMOVBLZX\t\"\".initdone·(SB), AX\r\n\t0x0016 00022 (issue17111.go:17)\tCMPB\tAL, $1\r\n\t0x0018 00024 (issue17111.go:17)\tJLS\t$0, 27\r\n\t0x001a 00026 (issue17111.go:17)\tRET\r\n\t0x001b 00027 (issue17111.go:17)\tJNE\t$0, 36\r\n\t0x001d 00029 (issue17111.go:17)\tPCDATA\t$0, $0\r\n\t0x001d 00029 (issue17111.go:17)\tCALL\truntime.throwinit(SB)\r\n\t0x0022 00034 (issue17111.go:17)\tUNDEF\r\n\t0x0024 00036 (issue17111.go:17)\tMOVB\t$1, \"\".initdone·(SB)\r\n\t0x002b 00043 (issue17111.go:13)\tMOVQ\t\"\".i(SB), AX\r\n\t0x0032 00050 (issue17111.go:13)\tMOVQ\tAX, \"\".x(SB)\r\n\t0x0039 00057 (issue17111.go:17)\tMOVB\t$2, \"\".initdone·(SB)\r\n\t0x0040 00064 (issue17111.go:17)\tRET\r\n\t0x0041 00065 (issue17111.go:17)\tNOP\r\n\t0x0041 00065 (issue17111.go:17)\tCALL\truntime.morestack_noctxt(SB)\r\n\t0x0046 00070 (issue17111.go:17)\tJMP\t0\r\n\t0x0000 65 48 8b 0c 25 00 00 00 00 48 3b 61 10 76 32 0f  eH..%....H;a.v2.\r\n\t0x0010 b6 05 00 00 00 00 3c 01 76 01 c3 75 07 e8 00 00  ......\u003c.v..u....\r\n\t0x0020 00 00 0f 0b c6 05 00 00 00 00 01 48 8b 05 00 00  ...........H....\r\n\t0x0030 00 00 48 89 05 00 00 00 00 c6 05 00 00 00 00 02  ..H.............\r\n\t0x0040 c3 e8 00 00 00 00 eb b8                          ........\r\n\trel 5+4 t=15 TLS+0\r\n\trel 18+4 t=14 \"\".initdone·+0\r\n\trel 30+4 t=7 runtime.throwinit+0\r\n\trel 38+4 t=14 \"\".initdone·+-1\r\n\trel 46+4 t=14 \"\".i+0\r\n\trel 53+4 t=14 \"\".x+0\r\n\trel 59+4 t=14 \"\".initdone·+-1\r\n\trel 66+4 t=7 runtime.morestack_noctxt+0\r\ngclocals·33cdeccccebe80329f1fdbee7f5874cb t=9 dupok size=8\r\n\t0x0000 01 00 00 00 00 00 00 00                          ........\r\ngo.info.\"\".init t=47 size=27\r\n\t0x0000 02 22 22 2e 69 6e 69 74 00 00 00 00 00 00 00 00  .\"\".init........\r\n\t0x0010 00 00 00 00 00 00 00 00 00 01 00                 ...........\r\n\trel 9+8 t=1 \"\".init+0\r\n\trel 17+8 t=1 \"\".init+72\r\n\"\".i t=34 size=8\r\n\"\".x t=34 size=8\r\n\"\".initdone· t=34 size=1\r\n\"\".init·f t=9 dupok size=8\r\n\t0x0000 00 00 00 00 00 00 00 00                          ........\r\n\trel 0+8 t=1 \"\".init+0\r\nruntime.gcbits.01 t=9 dupok size=1\r\n\t0x0000 01                                               .\r\ntype..namedata.*main.I. t=9 dupok size=10\r\n\t0x0000 01 00 07 2a 6d 61 69 6e 2e 49                    ...*main.I\r\ntype.*\"\".I t=9 size=56\r\n\t0x0000 08 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00  ................\r\n\t0x0010 d3 75 f9 8b 00 08 08 36 00 00 00 00 00 00 00 00  .u.....6........\r\n\t0x0020 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................\r\n\t0x0030 00 00 00 00 00 00 00 00                          ........\r\n\trel 24+8 t=1 runtime.algarray+80\r\n\trel 32+8 t=1 runtime.gcbits.01+0\r\n\trel 40+4 t=5 type..namedata.*main.I.+0\r\n\trel 48+8 t=1 type.\"\".I+0\r\ngo.typelink.*\"\".I t=9 size=4\r\n\t0x0000 00 00 00 00                                      ....\r\n\trel 0+4 t=5 type.*\"\".I+0\r\nruntime.gcbits. t=9 dupok size=0\r\ntype.\"\".I t=9 size=64\r\n\t0x0000 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................\r\n\t0x0010 d1 cd b2 de 07 08 08 82 00 00 00 00 00 00 00 00  ................\r\n\t0x0020 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................\r\n\t0x0030 00 00 00 00 00 00 00 00 10 00 00 00 00 00 00 00  ................\r\n\trel 24+8 t=1 runtime.algarray+80\r\n\trel 32+8 t=1 runtime.gcbits.+0\r\n\trel 40+4 t=5 type..namedata.*main.I.+0\r\n\trel 44+4 t=5 type.*\"\".I+0\r\n\trel 48+4 t=5 type..importpath.\"\".+0\r\n```\r\n\r\nObserve that we generate init code to copy i to x, even though x could be entirely staticly initialized.\r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		},
+		{
+			"name": "ToolSpeed"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-09-15T03:05:56Z",
+	"updated_at": "2016-09-15T04:00:20Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

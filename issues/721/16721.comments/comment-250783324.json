@@ -1,0 +1,17 @@
+{
+	"id": 250783324,
+	"body": "TL;DR: Can we do just sort.Slice and not all the general stuff below it?\r\n\r\nI looked at the go4 code and the pending CL 27321. I agree that it would be good to make sort easier to use. I see a few different parts here:\r\n\r\n- sort.Slice, as in the go4 code.\r\n- sort.MakeInterface and reflect.Swapper.\r\n- sort.With.\r\n- sort.By from @infogulch above.\r\n\r\nI would be happy to see sort.Slice in Go 1.8. It's a nice API and will be a significant improvement for the vast majority of sort.Sort uses. \r\n\r\nThe rest seem unfortunate. Specifically:\r\n\r\n- sort.MakeInterface can be written today, although it would execute a little less efficiently when used. It seems to exist only to implement sort.With, except that sort.With doesn't even use it.\r\n- Exposing reflect.Swapper may be a necessary evil. That's OK. Better to require other Go implementations to implement/port reflect.Swapper than to port unsafe code tucked into package sort.\r\n- sort.With can be written today (like sort.MakeInterface). As an API, it's not great because basically every call is going to use reflect.Swapper as the second argument, and it would be nice if reflect.Swapper were never mentioned again, especially not by Go users.\r\n- sort.By is a helper that others can provide easily enough. Unlike the others here, there's no obvious speedup behind the scenes if implemented inside package sort. Better to leave this one out for now.\r\n\r\nStepping back a bit, I guess the approach here is a few steps:\r\n\r\n1. Define a function-based sort API (sort.With)\r\n2. Define a converter from function API to interface API (sort.MakeInterface).\r\n3. Define a helper (reflect.Swapper) for sorting slices.\r\n\r\nThe alternative is one step: \"add sort.Slice\". Unless there is evidence that the intermediate steps have compelling uses to clean up existing code other than getting to slices, I'd rather not commit to the details of those steps in public API. sort.Slice this way ends up being a helper like sort.Ints, not a gateway to a whole parallel API.\r\n\r\nI would also like to see sort.SliceStable added at the same time. It needs to be just as easy to do a stable sort as an unstable sort. I don't care much one way or the other about sort.SliceIsSorted but I would lean toward including it by analogy with the Ints functions.\r\n\r\nI considered suggesting that sort.Slice return a sort.Interface, so that you'd write:\r\n\r\n    sort.Sort(sort.Slice(x, func(i, j int) bool { return x[i] \u003c x[j] }))\r\n    sort.Stable(sort.Slice(x, func(i, j int) bool { return x[i] \u003c x[j] }))\r\n    sort.IsSorted(sort.Slice(x, func(i, j int) bool { return x[i] \u003c x[j] }))\r\n\r\nbut I think that's overkill. sort.Slice is a helper, so it should be helpful. The fact that the comparison takes indexes instead of values means that in basically every call there's going to be a closure, so we should avoid piling on too much other stutter. These are clearer:\r\n\r\n    sort.Slice(x, func(i, j int) bool { return x[i] \u003c x[j] })\r\n    sort.SliceStable(x, func(i, j int) bool { return x[i] \u003c x[j] })\r\n    sort.SliceIsSorted(x, func(i, j int) bool { return x[i] \u003c x[j] }))\r\n",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 4,
+		"+1": 2,
+		"-1": 2
+	},
+	"created_at": "2016-09-30T16:00:41Z",
+	"updated_at": "2016-09-30T16:00:41Z"
+}

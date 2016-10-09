@@ -1,0 +1,16 @@
+{
+	"id": 181832476,
+	"number": 17386,
+	"state": "open",
+	"title": "x/text/secure/precis: Comparison API",
+	"body": "Currently, the PRECIS comparison function is implemented as a method on a profile:\r\n\r\n```go\r\nfunc (p *Profile) Compare(a, b string) bool {}\r\n```\r\n\r\nThis is a pretty straight forward API, but it means we have to perform enforcement (with any additional canonical form mappings) every time we want to compare two strings. If we want to compare, say, a nickname against three other nicknames, we have to do 6 transformations (the first nickname three times and the three we're comparing it against once each). It would be useful to have an API to do comparison that required us to transform each string we want to compare only once (4 transformations in the prevoius scenario).\r\n\r\nI see a few options:\r\n\r\n1. Memoize calls to `enforce` internally or perform some other caching (eg. cache all steps up to where enforcement and comparison diverge, then when the user calls the comparison method only execute the last few steps, possibly caching that output too)\r\n2. A function that returns a new transformer that creates canonical strings for comparison (and possibly other related functions to actually do the transformation on strings and bytes, mirroring the existing API for enforcement)\r\n3. A function that returns a new canonical version of the entire profile\r\n\r\nInternally caching enforcement operations would potentially make the package less useful on resource constrained environments (not sure if we care or not), and is potentially a lot of work. Since this package isn't for a specific use case, it may be hard to create an effective caching strategy.\r\n\r\nAdding some functions that mirror the enforcement API make sense:\r\n\r\n```go\r\nfunc (p *Profile) CanonicalString(s string) (string, error) {}\r\nfunc (p *Profile) CanonicalBytes(b []byte) ([]byte, error)  {}\r\nfunc (p *Profile) CanonicalTransformer() *Transformer {}\r\n```\r\n\r\nbut this may be confusing (since the user will have to manually remember what transformation to apply in each situation, or whether or not they'd already mapped something to its canonical form before they do comparison, etc.)\r\n\r\nAllowing them to keep a single, separate \"comparison\" profile may help this, but I'm not sure if it's all that much better to have to think about two separate profiles and when to use them:\r\n\r\n```go\r\nfunc (p *Profile) CanonicalProfile() *Profile {}\r\n```\r\n\r\nOther suggestions appreciated; or maybe this is a non-issue that doesn't really matter given how fast the transformations in the x/text packages are?\r\n\r\n/cc @mpvl @nigeltao ",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-10-08T15:40:38Z",
+	"updated_at": "2016-10-08T15:41:58Z"
+}

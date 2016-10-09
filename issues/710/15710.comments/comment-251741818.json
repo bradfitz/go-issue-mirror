@@ -1,0 +1,12 @@
+{
+	"id": 251741818,
+	"body": "`zmq4.NewSocket` is defined in a file that imports `\"C\"`.  The bug is in the way that, for speed, guru disables cgo preprocessing for many type-base queries including `describe` and `definition`.  Guru sets `build.Context.CgoEnabled=false`, which causes the cgo files to appear not under `build.Package.CgoFiles` but under `Package.IgnoredGoFiles`.  The `go/loader` package doesn't parse or type-check these files, so it is as if they don't exist.  Ideally the loader would do the best it can to type-check these files without cgo preprocessing, but it can't simply parse the IgnoredCgoFiles because there are many reasons a file may be ignored, such as having the wrong GOOS or GOARCH.\r\n\r\nTo avoid the cgo files ending up in the wrong bucket, the loader must not call `build.Context.Import` with `Context.CgoEnabled=0`.  It must, in effect, temporarily save, set, and restore this flag around the Import call, and then, if the restored flag was clear, tack any CgoFiles that were found on to the regular GoFiles list so that they are parsed without cgo preprocessing.",
+	"user": {
+		"login": "alandonovan",
+		"id": 8433140,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-05T17:26:49Z",
+	"updated_at": "2016-10-05T17:26:49Z"
+}

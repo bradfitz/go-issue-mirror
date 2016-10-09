@@ -1,0 +1,12 @@
+{
+	"id": 249424243,
+	"body": "It seems missing something like `AllowResponseBeforeBody` in #13444 for HTTP 1.1\r\nAnd if i modify a little to emulate to normal CONNECT proxy behavior, it also hangs.\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"io\"\r\n        \"io/ioutil\"\r\n        \"log\"\r\n        \"net/http\"\r\n        \"os\"\r\n        \"time\"\r\n)\r\n\r\nfunc main() {\r\n        pr, pw := io.Pipe()\r\n        req, err := http.NewRequest(\"PUT\", \"https://http2.golang.org/ECHO\", ioutil.NopCloser(pr))\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        res, err := http.DefaultClient.Do(req)\r\n        if err != nil {\r\n                log.Fatal(err)\r\n        }\r\n        log.Printf(\"Got: %#v\", res)\r\n        go func() {\r\n\t        for {   \r\n\t                time.Sleep(1 * time.Second)\r\n\t                fmt.Fprintf(pw, \"It is now %v\\n\", time.Now())\r\n\t        }\r\n        }()\r\n        n, err := io.Copy(os.Stdout, res.Body)\r\n        log.Fatalf(\"copied %d, %v\", n, err)\r\n}\r\n```\r\n\r\nIt seems that, after something write to req.Body, the request actually sent out; if nothing write to req.Body, nothing sent out to proxy server. However, nearly all proxy client (including Chromium) will wait for `200 Connection Established` and then send real request, so it happens to be a deadlock.",
+	"user": {
+		"login": "ayanamist",
+		"id": 406779,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-25T14:18:26Z",
+	"updated_at": "2016-09-25T14:59:58Z"
+}

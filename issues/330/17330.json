@@ -1,0 +1,26 @@
+{
+	"id": 180710831,
+	"number": 17330,
+	"state": "open",
+	"title": "cmd/compile: unnecessary write barriers to stack",
+	"body": "There's some situation in which the compiler generates unnecessary write barriers when writing to a pointer in the current stack frame. Here's a simple script to find these (it may have false positives, but I didn't find any when flipping through them):\r\n\r\n```shell\r\ngo tool objdump `which go` | awk '/LEAQ .*\\(SP\\),/ {lea=$0;next} /writebarrierptr/ \u0026\u0026 lea {if (text){print text;text=\"\"};print lea;print} $4!=\"MOVQ\"{lea=\"\"} /^TEXT/ {text=$0}'\r\n```\r\n\r\nThese are currently harmless. However, with the hybrid barrier it's important not to generate these because the stack slot being written to may be dead prior to this write and currently contain junk (such as a pointer to a dead object).\r\n\r\nI flipped through several of these but there wasn't an obvious pattern to me.\r\n\r\n/cc @dr2chase @cherrymui @randall77 ",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-10-03T18:26:01Z",
+	"updated_at": "2016-10-04T14:10:16Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

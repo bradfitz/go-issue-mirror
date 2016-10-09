@@ -1,0 +1,12 @@
+{
+	"id": 250632134,
+	"body": "\u003e We could always grow \u003c2MB for the first few grows and 2MB after that.\r\n\r\nIf we wait to switch to huge pages (and assuming the THP scrubber doesn't fix things), the first 4 MB of the heap will already be enough to blow out the 1024 entry L2 TLB on a Haswell. What I find compelling about backing things with huge pages from the start is that it lets us fit the *entire address space* of a 2 GB heap in the TLB.\r\n\r\nI certainly think we should back the heap arena with huge pages from the start, since we already assume it's going to grow to at least 4MB. I'm less convinced about the bitmap and spans regions, since those don't grow to a whole huge page until the heap itself grows to 64MB and 2GB, respectively.\r\n\r\nI wish there was a way we could ask the system to defrag a specific page [1]. Then we could switch already-mapped pages to huge pages once if we see the heap growing. But I poked around and didn't find one.\r\n\r\n[1] Strictly speaking, we can do it ourselves by `mremap`ing the existing pages to some temporary location, re-`mmap`ing the region we want to be huge pages, and copying the data over, but that doesn't seem worth the complexity.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-30T00:52:06Z",
+	"updated_at": "2016-09-30T00:52:06Z"
+}

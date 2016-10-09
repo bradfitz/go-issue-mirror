@@ -1,0 +1,33 @@
+{
+	"id": 181409308,
+	"number": 17354,
+	"state": "closed",
+	"title": "math: calls to math.Sqrt not inlined when called from other math pkg functions",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo version devel +91706c0 Thu Oct 6 11:45:48 2016 +0000 linux/ppc64le\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nUbuntu 16.04 ppc64le\r\n\r\n### What did you do?\r\nInspecting code in math.hypot\r\n\r\n### What did you expect to see?\r\nCall to math.Sqrt inlined as fsqrt.\r\n\r\n### What did you see instead?\r\nOut of line call to math.Sqrt\r\n\r\nSimple testcase containg a call to math.Sqrt shows that it is inlined.  The function f looks like this:\r\n\r\nfunc f(f float64) float64 {\r\n    return math.Sqrt(f)\r\n}\r\n\r\nThe initial ssa output for the good case looks like this:\r\n   v1 = InitMem \u003cmem\u003e\r\n    v2 = SP \u003cuintptr\u003e\r\n    v3 = SB \u003cuintptr\u003e DEAD\r\n    v4 = Addr \u003c*float64\u003e {f} v2 DEAD\r\n    v5 = Addr \u003c*float64\u003e {~r1} v2\r\n    v6 = Arg \u003cfloat64\u003e {f}\r\n    v7 = Const64F \u003cfloat64\u003e [0] DEAD\r\n    v8 = Sqrt \u003cfloat64\u003e v6\r\n    v9 = VarDef \u003cmem\u003e {~r1} v1\r\n    v10 = Store \u003cmem\u003e [8] v5 v8 v9\r\n    v15 = Unknown \u003cinvalid\u003e DEAD\r\n    Ret v10\r\n\r\nFinal asm looks like this:         00000 (/home/boger/gotests/test-sqrt.go:8)      TEXT    \"\".f(SB)\r\n        00001 (/home/boger/gotests/test-sqrt.go:8)      FUNCDATA        $0, \"\".gcargs·0(SB)\r\n        00002 (/home/boger/gotests/test-sqrt.go:8)      FUNCDATA        $1, \"\".gclocals·1(SB)\r\n        00003 (/home/boger/gotests/test-sqrt.go:8)      TYPE    \"\".f(FP)type.float64\r\n        00004 (/home/boger/gotests/test-sqrt.go:8)      TYPE    \"\".~r1+8(FP)type.float64\r\nv9      00005 (/home/boger/gotests/test-sqrt.go:9)      VARDEF  \"\".~r1+8(FP)\r\nv5      00006 (/home/boger/gotests/test-sqrt.go:9)      FMOVD   \"\".f(FP), F1\r\nv8      00007 (/home/boger/gotests/test-sqrt.go:9)      FSQRT   F1, F1\r\nv10     00008 (/home/boger/gotests/test-sqrt.go:9)      FMOVD   F1, \"\".~r1+8(FP)\r\nb1      00009 (/home/boger/gotests/test-sqrt.go:9)      RET\r\n        00010 (\u003cunknown line number\u003e)   END\r\n\r\nHowever a function in the math package like hypot is not inlining Sqrt.  The initial SSA output looks like this:\r\n  b54: \u003c- b52\r\n    v104 = Copy \u003cfloat64\u003e v130\r\n    v105 = Copy \u003cfloat64\u003e v124\r\n    v106 = Div64F \u003cfloat64\u003e v104 v105\r\n    v108 = Mul64F \u003cfloat64\u003e v106 v106\r\n    v109 = Add64F \u003cfloat64\u003e v107 v108\r\n    v111 = Copy \u003cmem\u003e v1\r\n    v112 = Store \u003cmem\u003e [8] v110 v109 v111\r\n    v113 = StaticCall \u003cmem\u003e {Sqrt} [16] v112\r\n    v115 = Load \u003cfloat64\u003e v114 v113\r\n    v116 = Mul64F \u003cfloat64\u003e v105 v115\r\n    v117 = VarDef \u003cmem\u003e {~r2} v113\r\n    v118 = Store \u003cmem\u003e [8] v6 v116 v117\r\n    Ret v118\r\n\r\nAnd it is not inlined in this case.\r\n\r\nThis does not appear to be specific to ppc64le.  I looked at an objdump on x86 and also saw a call to Sqrt from inside hypot.  This happens for all the functions in the math package that call Sqrt.\r\n\r\n\r\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "cherrymui",
+		"id": 14119929,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-10-06T14:57:21Z",
+	"created_at": "2016-10-06T13:05:03Z",
+	"updated_at": "2016-10-06T14:57:21Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

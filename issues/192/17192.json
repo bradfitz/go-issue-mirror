@@ -1,0 +1,17 @@
+{
+	"id": 178620965,
+	"number": 17192,
+	"state": "closed",
+	"title": "x/gomobile: CFLAGS not properly quoted?",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/dotan.nahum/data/workspaces/golang\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.7/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.7/libexec/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/5q/3bf3sq556h5ctn3q4tqsxv90pwddrg/T/go-build061676628=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\n\r\nTrying to run `gomobile bind`\r\n\r\n### What did you expect to see?\r\n\r\nBuild to happen.\r\n\r\n### What did you see instead?\r\n\r\nProcess hangs, 100% cpu.\r\n\r\nAfter digging in `-x` mode, `ctrl-\\` and going into the temp build folder, trying to reproduce the effect, I found out that the shell command is fundamentally broken:\r\n\r\n```\r\nGOOS=darwin GOARCH=arm GOARM=7 CC=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang CGO_CFLAGS=-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.0.sdk -miphoneos-version-min=6.1 -arch armv7 CGO_LDFLAGS=-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.0.sdk -miphoneos-version-min=6.1 -arch armv7 CGO_ENABLED=1 go build -pkgdir=$GOMOBILE/pkg_darwin_arm -tags=\"\" -x -buildmode=c-archive -tags=ios -o $WORK/hello-arm.a $WORK/src/iosb\r\n```\r\n\r\nNote this part:\r\n\r\n```\r\nCGO_CFLAGS=-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.0.sdk -miphoneos-version-min=6.1 -arch armv7 CGO_LDFLAGS=-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.0.sdk -miphoneos-version-min=6.1 -arch armv7\r\n```\r\n\r\nWhere none of this is quoted. After quoting properly, everything runs OK (however now everything hangs at linking, which is another issue I'm trying to debug).\r\n\r\nAlso note that tests use the non-quoted CFLAGs form here:\r\n\r\nhttps://github.com/golang/mobile/blob/0ba4e6463d71334d91dfbe1e4a92bb4ab2091716/cmd/gomobile/build_darwin_test.go#L53\r\n\r\n\r\n",
+	"user": {
+		"login": "jondot",
+		"id": 83390,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-09-25T10:42:51Z",
+	"created_at": "2016-09-22T14:11:02Z",
+	"updated_at": "2016-09-25T10:42:51Z"
+}

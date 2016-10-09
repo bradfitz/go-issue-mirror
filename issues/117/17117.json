@@ -1,0 +1,17 @@
+{
+	"id": 177195466,
+	"number": 17117,
+	"state": "closed",
+	"title": "reflect.Value.Elem is unaddressable for interfaces",
+	"body": "### What version of Go are you using (`go version`)?\r\ntip, go version devel +27eebba\r\n\r\n### What did you do?\r\nI tried to change the value inside interface{} variable.\r\n```\r\ni := interface{}(\"hello\")\r\nv := reflect.ValueOf(\u0026i).Elem()\r\nv.Elem().SetString(\"world\")\r\nfmt.Println(i)\r\n```\r\nhttps://play.golang.org/p/U8WaCBA4o4\r\n\r\n### What did you expect to see?\r\n\"world\" stored in i.\r\n\r\n### What did you see instead?\r\nRuntime error.\r\n\r\n### Proposed change\r\n```(diff)\r\ndiff --git a/src/reflect/all_test.go b/src/reflect/all_test.go\r\nindex 780799c..4bb408b 100644\r\n--- a/src/reflect/all_test.go\r\n+++ b/src/reflect/all_test.go\r\n@@ -5752,3 +5752,10 @@ func BenchmarkNew(b *testing.B) {\r\n \t\tNew(v)\r\n \t}\r\n }\r\n+\r\n+func TestInterfaceElemSet(t *testing.T) {\r\n+\ti := interface{}(\"hello\")\r\n+\tv := ValueOf(\u0026i).Elem()\r\n+\tv.Elem().SetString(\"world\")\r\n+\tassert(t, i.(string), \"world\")\r\n+}\r\ndiff --git a/src/reflect/value.go b/src/reflect/value.go\r\nindex e6b846e..0340d25 100644\r\n--- a/src/reflect/value.go\r\n+++ b/src/reflect/value.go\r\n@@ -714,6 +714,9 @@ func (v Value) Elem() Value {\r\n \t\tx := unpackEface(eface)\r\n \t\tif x.flag != 0 {\r\n \t\t\tx.flag |= v.flag \u0026 flagRO\r\n+\t\t\tif x.flag\u0026flagIndir != 0 {\r\n+\t\t\t\tx.flag |= flagAddr\r\n+\t\t\t}\r\n \t\t}\r\n \t\treturn x\r\n \tcase Ptr:\r\n```",
+	"user": {
+		"login": "dmage",
+		"id": 443137,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-09-15T15:20:58Z",
+	"created_at": "2016-09-15T14:39:49Z",
+	"updated_at": "2016-09-15T15:20:58Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 250219244,
+	"body": "context does store values and that can be useful at times. But context is mostly about limiting the life span of requests in a consistent manner. Cancellation and timeout. This might be worthy of a blog post, but here is how you might use context here:\r\n```\r\nvar db *sql.DB\r\nfunc InitialProgramSetup() error {\r\n    var err error\r\n    db, err = sql.Open(\"pg\", \"connect-to-server\")\r\n    return err\r\n}\r\nfunc (h *MyHTTPHandler) ServeHTTP(w http.RequestWriter, r *http.Request) {\r\n    // r.Context() will automatically cancel when this request is done.\r\n    // TODO: use trace package to inject UUID to context used for tracing execution.\r\n    ctx, cancel := context.WithTimeout(r.Context(), time.Second * 1)\r\n    defer cancel() // Not needed, the r.Context() will cancel when the request is done already.\r\n    r = r.WithContext(ctx)\r\n\r\n    switch r.URL.Path {\r\n    default:\r\n        http.Error(w, \"not found\", 404)\r\n    case \"/d/user\":\r\n        h.dataUser(w, r)\r\n    }\r\n}\r\n\r\nfunc (h *MyHTTPHandler) dataUser(w http.RequestWriter, r *http.Request) {\r\n    tx, err := db.BeginContext(r.Context())\r\n    if err != nil {...}\r\n    // The following would timeout and and the Tx would rollback any changes.\r\n    // The err would be \"context.DeadlineExceeded\".\r\n    // Drivers can also tie into this to cancel the query on the server to prevent the\r\n    // server from consuming additional resources.\r\n    row, err :=  tx.QueryRow(r.Context(), \"sleep 99999; select * from user where ID = ?;\", 42)\r\n    if err != nil {...}\r\n    tx.Commit()\r\n}\r\n```\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-28T16:23:44Z",
+	"updated_at": "2016-09-28T16:23:44Z"
+}

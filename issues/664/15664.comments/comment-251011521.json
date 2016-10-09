@@ -1,0 +1,16 @@
+{
+	"id": 251011521,
+	"body": "I tried debugging this. If I apply\r\n```\r\ndiff --git a/src/mime/mediatype.go b/src/mime/mediatype.go\r\nindex 1845401..fa599ca 100644\r\n--- a/src/mime/mediatype.go\r\n+++ b/src/mime/mediatype.go\r\n@@ -102,6 +102,7 @@ func checkMediaTypeDisposition(s string) error {\r\n // The returned map, params, maps from the lowercase\r\n // attribute to the attribute value with its case preserved.\r\n func ParseMediaType(v string) (mediatype string, params map[string]string, err error) {\r\n+\tfmt.Printf(\"ParseMediaType(%q)\\n\", v)\r\n \ti := strings.Index(v, \";\")\r\n \tif i == -1 {\r\n \t\ti = len(v)\r\n@@ -127,6 +128,7 @@ func ParseMediaType(v string) (mediatype string, params map[string]string, err e\r\n \t\t\tbreak\r\n \t\t}\r\n \t\tkey, value, rest := consumeMediaParam(v)\r\n+\t\tfmt.Printf(\"key=%q value=%q\\n\", key, value)\r\n \t\tif key == \"\" {\r\n \t\t\tif strings.TrimSpace(rest) == \";\" {\r\n \t\t\t\t// Ignore trailing semicolons.\r\n```\r\nagainst db82cf4e506938, the program will output\r\n```\r\nC:\\tmp\u003eu:\\test\r\nParseMediaType(\"multipart/form-data; boundary=---------------------------7e0f124280332\")\r\nkey=\"boundary\" value=\"---------------------------7e0f124280332\"\r\nParseMediaType(\"multipart/form-data; boundary=---------------------------7e0f124280332\")\r\nkey=\"boundary\" value=\"---------------------------7e0f124280332\"\r\nParseMediaType(\"form-data; name=\\\"file\\\"; filename=\\\"C:\\\\dev\\\\go\\\\robots.txt\\\"\")\r\nkey=\"name\" value=\"file\"\r\nkey=\"filename\" value=\"C:devgorobots.txt\"\r\nmap[Content-Disposition:[form-data; name=\"file\"; filename=\"C:\\dev\\go\\robots.txt\"\r\n] Content-Type:[text/plain]]\r\nC:devgorobots.txt\r\n```\r\n\r\nSo the problem is in mime/consumeValue. IE does not escape \\ in the filename. And, unlike all other browsers I tried, IE sends full path - which is, probably, not secure.\r\n\r\nI googled for solutions:\r\nhttps://java.net/jira/si/jira.issueviews:issue-html/JERSEY-759/JERSEY-759.html\r\nhttps://github.com/mscdex/busboy/issues/24\r\nhttp://jersey.576304.n2.nabble.com/Jersey-truncating-the-slashes-from-the-uploaded-file-name-td5984041.html\r\n\r\nMaybe we should try and return the last element of filename path. I am not sure.\r\n\r\nI will let @bradfitz decide here.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"reactions": {
+		"total_count": 1,
+		"hooray": 1
+	},
+	"created_at": "2016-10-03T01:44:06Z",
+	"updated_at": "2016-10-03T01:44:06Z"
+}

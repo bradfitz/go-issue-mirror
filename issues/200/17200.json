@@ -1,0 +1,25 @@
+{
+	"id": 178774690,
+	"number": 17200,
+	"state": "open",
+	"title": "cmd/compile, cmd/link: use dyld TLV support on darwin",
+	"body": "We have an unpleasant hack for thread-local storage on OS X. The compiler assumes we can use a fixed offset (pthread key) and on initialization we call pthread_create_key until we get it, crashing if we don't. No real programs crash yet, but eventually a Go program depending on enough C libraries will.\r\n\r\nMore details about how this works: https://github.com/golang/go/blob/0c7ccbf601976a/src/runtime/cgo/gcc_darwin_386.c#L23\r\n\r\nIn OS X 10.7, the dynamic linker, dyld, was taught some rudiments of thread-local variables (TLVs) for C11's __thread, and the C++ equivalent. If we are willing to drop support for Mac OS X 10.6, we can also drop the fixed offset hack.\r\n\r\nI haven't been able to find any documentation for this feature. All there is is dyld source code and speculatively compiling C programs:\r\n\r\nhttp://opensource.apple.com//source/dyld/dyld-195.5/src/threadLocalVariables.c\r\nhttp://opensource.apple.com//source/dyld/dyld-195.5/src/threadLocalHelpers.s\r\n\r\nIn particular, here's two interesting pieces of C, and what they compile to on OS X:\r\n\r\n```\r\nint y;\r\n\r\nvoid use_y() {\r\n\ty = 7;\r\n}\r\n\r\n_use_y:\r\n0000000100000e80\tpushq\t%rbp\r\n0000000100000e81\tmovq\t%rsp, %rbp\r\n0000000100000e84\tleaq\t_y(%rip), %rax\r\n0000000100000e8b\tmovl\t$0x7, (%rax)\r\n0000000100000e91\tpopq\t%rbp\r\n0000000100000e92\tretq\r\n0000000100000e93\tnopw\t%cs:(%rax,%rax)\r\n```\r\n\r\n```\r\n__thread int x;\r\n\r\nvoid use_x() {\r\n\tx = 7;\r\n}\r\n\r\n_use_x:\r\n0000000100000e60\tpushq\t%rbp\r\n0000000100000e61\tmovq\t%rsp, %rbp\r\n0000000100000e64\tleaq\t_x(%rip), %rdi\r\n0000000100000e6b\tcallq\t*(%rdi)\r\n0000000100000e6d\tmovl\t$0x7, (%rax)\r\n0000000100000e73\tpopq\t%rbp\r\n0000000100000e74\tretq\r\n0000000100000e75\tnopw\t%cs:(%rax,%rax)\r\n```\r\n\r\nSo accessing a TLV (x) is just like accessing a global (x), except before using the value you call it like a function.\r\n\r\nI believe what's happening here is the ```__thread x``` is a ```TLVDescriptor``` as defined in the threadLocalVariables.c linked above. The first field, thunk, is a callable function pointer that dyld fills out for you, if you ask for it nicely in the appropriate mach-o header field.\r\n\r\nThe extra call should be easy enough to generate in cmd/compile. And while I haven't extracted the mach-o TLV definition header yet, we only need the one, runtime.tlsg, so it should be easy enough to add that to cmd/link.\r\n\r\nI'm not planning on working on this, I just wanted to write it down because I can't find details about this anywhere else. If anyone sees the error message:\r\n\r\n```runtime/cgo: pthread_key_create failed```\r\n\r\nor\r\n\r\n```runtime/cgo: could not obtain pthread_keys```\r\n\r\nfrom their Go program on OS X, I hope they find this.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 10,
+	"created_at": "2016-09-23T03:15:19Z",
+	"updated_at": "2016-09-26T00:24:41Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"id": 178522515,
+	"number": 17188,
+	"state": "closed",
+	"title": "encoding/json: Enforcement of string-only key type",
+	"body": "So, the JSON requirement for string-only dictionary keys is enforced by Go, which is fine. However, Go does not accommodate any custom encoders/decoders that might help the developer get around this. I was trying to investigate where in the JSON code this became an error in order to see if I could quickly throw-together a PR to add this, but I'm having difficulty. For your convenience, this is a walkthrough of the execution path and why it seems I'm getting mixed signals about whether this should actually be a problem.\r\n\r\nI'm running on *master* (\u003e1.7.1), by the way.\r\n\r\n1.\r\n\r\nIf a map needs to be marshaled, and we don't yet have a cached encoder for a map, `newTypeEncoder()` creates a `mapEncoder` struct:\r\n\r\n```\r\n\tcase reflect.Struct:\r\n\t\treturn newStructEncoder(t)\r\n\tcase reflect.Map:\r\n\t\treturn newMapEncoder(t)\r\n\tcase reflect.Slice:\r\n\t\treturn newSliceEncoder(t)\r\n```\r\n\r\n2.\r\n\r\n`newMapEncoder()` seems to approve of a multitude of different key types, not just string:\r\n\r\n```\r\nfunc newMapEncoder(t reflect.Type) encoderFunc {\r\n\tswitch t.Key().Kind() {\r\n\tcase reflect.String,\r\n\t\treflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,\r\n\t\treflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:\r\n\tdefault:\r\n\t\tif !t.Key().Implements(textMarshalerType) {\r\n\t\t\treturn unsupportedTypeEncoder\r\n\t\t}\r\n\t}\r\n\tme := \u0026mapEncoder{typeEncoder(t.Elem())}\r\n\treturn me.encode\r\n}\r\n```\r\n\r\n3.\r\n\r\nSo, when `Marshal()` calls `marshal()` calls `reflectValue()` calls the cached callback pointing to `mapEncoder.encode()`, the last collects a list of the keys and calls `reflectWithString.resolve()` on each:\r\n\r\n```\r\n\tsv := make([]reflectWithString, len(keys))\r\n\tfor i, v := range keys {\r\n\t\tsv[i].v = v\r\n\t\tif err := sv[i].resolve(); err != nil {\r\n\t\t\te.error(\u0026MarshalerError{v.Type(), err})\r\n\t\t}\r\n\t}\r\n\tsort.Sort(byString(sv))\r\n```\r\n\r\n4.\r\n\r\n`reflectWithString.resolve()` also doesn't seem to have a problem with the key being any of a number of different types:\r\n\r\n```\r\nfunc (w *reflectWithString) resolve() error {\r\n\tif w.v.Kind() == reflect.String {\r\n\t\tw.s = w.v.String()\r\n\t\treturn nil\r\n\t}\r\n\tif tm, ok := w.v.Interface().(encoding.TextMarshaler); ok {\r\n\t\tbuf, err := tm.MarshalText()\r\n\t\tw.s = string(buf)\r\n\t\treturn err\r\n\t}\r\n\tswitch w.v.Kind() {\r\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\r\n\t\tw.s = strconv.FormatInt(w.v.Int(), 10)\r\n\t\treturn nil\r\n\tcase reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:\r\n\t\tw.s = strconv.FormatUint(w.v.Uint(), 10)\r\n\t\treturn nil\r\n\t}\r\n\tpanic(\"unexpected map key type\")\r\n```\r\n\r\nSo, what's actually complaining and why?\r\n\r\n```\r\n    PST: {\r\n      I:  921001155220166838 ,\r\n      T:  /* json: unsupported type: map[int64][]int64 */null ,\r\n      L:  /* json: unsupported type: map[int64]*ilfdata.Classifier */null \r\n    }\r\n};\r\n```\r\n",
+	"user": {
+		"login": "dsoprea",
+		"id": 715626,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-09-22T15:57:16Z",
+	"created_at": "2016-09-22T04:57:58Z",
+	"updated_at": "2016-09-22T15:57:17Z"
+}

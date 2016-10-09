@@ -1,0 +1,26 @@
+{
+	"id": 181485377,
+	"number": 17364,
+	"state": "open",
+	"title": "x/crypto/ssh/terminal: wrapping logic sends a NL but no CR, resulting in misformatted output",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo version go1.7.1 linux/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/ziz/src/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"os\"\r\n\t\"syscall\"\r\n\r\n\t\"golang.org/x/crypto/ssh/terminal\"\r\n)\r\n\r\nfunc main() {\r\n\toldTermState, err := terminal.MakeRaw(syscall.Stdin)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer terminal.Restore(syscall.Stdin, oldTermState)\r\n\r\n\tterm := terminal.NewTerminal(os.Stdin, \"Hello World\u003e \")\r\n\terr = term.SetSize(50, 24)\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tcmdline, err := term.ReadLine()\r\n\t// This will also stairstep, since we're still in raw mode at this point.\r\n\tfmt.Println(cmdline)\r\n}\r\n```\r\n\r\nRun this program in a window that is more than 50 characters wide.  Type or paste in several lines of text; I used the standard lorem ipsum text.  (This also causes an issue when the terminal emulator is the width that crypto/ssh/terminal thinks it is - visible as an extra blank line between lines - but the effect is starker in an example with a larger difference between window size and term.SetSize size.)\r\n\r\n### What did you expect to see?\r\nExpected: Input lines wrap correctly at the 50-character mark.\r\n\r\n### What did you see instead?\r\n\r\nActual: Lines newline but do not carriage return at the 50-character mark, leading to the classic stairstepped output:\r\n\r\n![go-term-wrapping](https://cloud.githubusercontent.com/assets/6026/19163573/5e25e22e-8bb1-11e6-9ddf-d40ebeb99005.png)\r\n\r\nThis appears to be a consequence of #15625, the solution to which made the MakeRaw function behave more accurately - but now in [Terminal.advanceCursor](https://github.com/golang/crypto/blob/master/ssh/terminal/terminal.go#L336) the lone `\\n` is insufficient to return the cursor to column 0.\r\n\r\nIt is likely that sending `\\r\\n` rather than `\\n` alone is the correct solution in light of the new MakeRaw behavior.",
+	"user": {
+		"login": "ziz",
+		"id": 6026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 0,
+	"created_at": "2016-10-06T18:04:54Z",
+	"updated_at": "2016-10-06T20:49:13Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

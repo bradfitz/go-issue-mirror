@@ -1,0 +1,28 @@
+{
+	"id": 177651431,
+	"number": 17147,
+	"state": "closed",
+	"title": "cmd/compile: binary.LittleEndian.Uint32 doesn't generate a single load anymore",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo 1.7 and tip\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\ndarwin amd64\r\n\r\n### What did you do?\r\n```\r\nfunc setupState(state *[16]uint32, key *[32]byte, nonce []byte) {\r\n\tstate[0] = 0x61707865\r\n\tstate[1] = 0x3320646e\r\n\tstate[2] = 0x79622d32\r\n\tstate[3] = 0x6b206574\r\n\r\n\tstate[4] = binary.LittleEndian.Uint32(key[0:4])\r\n\tstate[5] = binary.LittleEndian.Uint32(key[4:8])\r\n\tstate[6] = binary.LittleEndian.Uint32(key[8:12])\r\n\tstate[7] = binary.LittleEndian.Uint32(key[12:16])\r\n\tstate[8] = binary.LittleEndian.Uint32(key[16:20])\r\n\tstate[9] = binary.LittleEndian.Uint32(key[20:24])\r\n\tstate[10] = binary.LittleEndian.Uint32(key[24:28])\r\n\tstate[11] = binary.LittleEndian.Uint32(key[28:32])\r\n\r\n\tstate[12] = 0\r\n\tstate[13] = binary.LittleEndian.Uint32(nonce[:4])\r\n\tstate[14] = binary.LittleEndian.Uint32(nonce[4:8])\r\n\tstate[15] = binary.LittleEndian.Uint32(nonce[8:12])\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nI would expect those 32-bit loads to be collapsed into a single `MOVL` instruction. This was implemented during the 1.7 cycle but apparently broke at some point.\r\n\r\n### What did you see instead?\r\n```\r\n\"\".setupState t=1 size=400 args=0x28 locals=0x0\r\n        0x0000 00000 (speed.go:9)       TEXT    \"\".setupState(SB), $0-40\r\n        0x0000 00000 (speed.go:9)       FUNCDATA        $0, gclocals·40ab8381cc1118f82a27deeb35bb6e5c(SB)\r\n        0x0000 00000 (speed.go:9)       FUNCDATA        $1, gclocals·69c1753bd5f81501d95132d08af04464(SB)\r\n        0x0000 00000 (speed.go:11)      MOVQ    $3684054920433006693, AX\r\n        0x000a 00010 (speed.go:11)      MOVQ    \"\".state+8(FP), CX\r\n        0x000f 00015 (speed.go:11)      MOVQ    AX, (CX)\r\n        0x0012 00018 (speed.go:13)      MOVQ    $7719281312240119090, AX\r\n        0x001c 00028 (speed.go:13)      MOVQ    AX, 8(CX)\r\n        0x0020 00032 (speed.go:15)      MOVQ    \"\".key+16(FP), AX\r\n        0x0025 00037 (speed.go:15)      MOVBLZX 2(AX), DX\r\n        0x0029 00041 (speed.go:15)      MOVWLZX (AX), BX\r\n        0x002c 00044 (speed.go:15)      SHLL    $16, DX\r\n        0x002f 00047 (speed.go:15)      ORL     BX, DX\r\n        0x0031 00049 (speed.go:15)      MOVBLZX 3(AX), BX\r\n        0x0035 00053 (speed.go:15)      SHLL    $24, BX\r\n        0x0038 00056 (speed.go:15)      ORL     BX, DX\r\n        0x003a 00058 (speed.go:15)      MOVL    DX, 16(CX)\r\n        0x003d 00061 (speed.go:16)      MOVWLZX 4(AX), DX\r\n        0x0041 00065 (speed.go:16)      MOVBLZX 6(AX), BX\r\n        0x0045 00069 (speed.go:16)      SHLL    $16, BX\r\n        0x0048 00072 (speed.go:16)      ORL     DX, BX\r\n        0x004a 00074 (speed.go:16)      MOVBLZX 7(AX), DX\r\n        0x004e 00078 (speed.go:16)      SHLL    $24, DX\r\n        0x0051 00081 (speed.go:16)      ORL     DX, BX\r\n        0x0053 00083 (speed.go:16)      MOVL    BX, 20(CX)\r\n        0x0056 00086 (speed.go:17)      MOVWLZX 8(AX), DX\r\n        0x005a 00090 (speed.go:17)      MOVBLZX 10(AX), BX\r\n        0x005e 00094 (speed.go:17)      SHLL    $16, BX\r\n        0x0061 00097 (speed.go:17)      ORL     DX, BX\r\n        0x0063 00099 (speed.go:17)      MOVBLZX 11(AX), DX\r\n        0x0067 00103 (speed.go:17)      SHLL    $24, DX\r\n        0x006a 00106 (speed.go:17)      ORL     DX, BX\r\n        0x006c 00108 (speed.go:17)      MOVL    BX, 24(CX)\r\n        0x006f 00111 (speed.go:18)      MOVWLZX 12(AX), DX\r\n        0x0073 00115 (speed.go:18)      MOVBLZX 14(AX), BX\r\n```\r\n\r\netc. that is, the `Uint32()` calls are being generated with loads and shifts.",
+	"user": {
+		"login": "rasky",
+		"id": 1014109,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-23T19:32:58Z",
+	"created_at": "2016-09-18T13:20:21Z",
+	"updated_at": "2016-09-23T19:32:58Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

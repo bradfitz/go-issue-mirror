@@ -1,0 +1,21 @@
+{
+	"id": 179387523,
+	"number": 17247,
+	"state": "open",
+	"title": "x/tools/cmd/eg: new import declarations can include \"vendor\" segments",
+	"body": "This is a refinement of #16580. The bug described there is about code that is temporarily invalid due to the types in the \"a/vendor/b\" package being different from those in the \"b\" package. This bug is about what's likely a less controversial problem—that the `eg` command writes import declarations that include \"/vendor/\".\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\n`go version go1.7.1 darwin/amd64`, with golang/tools@c2ef61f450233d3c629ade8eb2083e43fa75c97a\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/rhys/work\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/49/zmds5zsn75z1283vtzxyfr5hj7yjq4/T/go-build542934852=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\nI ran `eg` against a file with access to a \"vendor\" directory. The template rewrote a function call from one provided by a package in the GOPATH to one provided by a package under the \"vendor\" directory. The contents of the GOPATH are shown (far) below.\r\n\r\n### What did you expect to see?\r\n\r\nI expected `eg`'s rewrite to result in valid `import` declarations, containing only the section of the path after the \"vendor\" segment.\r\n\r\n### What did you see instead?\r\n\r\nThe import declarations written by `eg` include a \"/vendor/\" segment.\r\n\r\n---\r\n\r\nHere are the contents of the GOPATH where I've reproduced the issue:\r\n\r\n./src/dep0/dep0.go:\r\n\r\n```\r\npackage dep0\r\n\r\nfunc C() {}\r\n\r\nfunc D() {}\r\n```\r\n\r\n./src/prog/vendor/dep1/dep1.go:\r\n\r\n```\r\npackage dep1\r\n\r\nfunc E() {}\r\n```\r\n\r\n./src/prog/main.go:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"dep0\"\r\n)\r\n\r\nfunc example() {\r\n\tdep0.C()\r\n\tdep0.D()\r\n}\r\n```\r\n\r\nAnd the template:\r\n\r\n```\r\npackage eg\r\n\r\nimport (\r\n\t\"dep0\"\r\n\t\"dep1\"\r\n)\r\n\r\n// Test of adding a dependency that is found via a \"vendor\" directory\r\n\r\nfunc before() { dep0.D() }\r\nfunc after()  { dep1.E() }\r\n```",
+	"user": {
+		"login": "rhysh",
+		"id": 230685,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-09-27T03:10:50Z",
+	"updated_at": "2016-10-04T22:46:43Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

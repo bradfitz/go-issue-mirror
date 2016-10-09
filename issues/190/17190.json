@@ -1,0 +1,33 @@
+{
+	"id": 178540963,
+	"number": 17190,
+	"state": "closed",
+	"title": "runtime: race-detector crash when using cgo and threads",
+	"body": "### What version of Go are you using (`go version`)?\r\n```go1.7.1 linux/amd64```\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```sh\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nCC=\"x86_64-pc-linux-gnu-gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build555128270=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"x86_64-pc-linux-gnu-g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n###\r\n\r\nI'm use external library (pjsip, which using pthreads) with help of cgo. Without enabled race-detector all works well, but I want to debug some race-conditions in Go code.\r\nWhen I turn on race-detector, app crashes after external library creates some threads.\r\n\r\nCrash log:\r\n\r\n```go\r\nruntime: invalid pc-encoded table f=runtime.needm pc=0x499718 targetpc=0x49971f tab=[0/0]0x0\r\n        value=56 until pc=0x499718\r\nfatal error: invalid runtime symbol table\r\n\r\nruntime stack:\r\nruntime.throw(0x9c37b9, 0x1c)\r\n        /usr/lib/go/src/runtime/panic.go:566 +0x95\r\nruntime.pcvalue(0xa86610, 0x3dec9, 0x49971f, 0x0, 0x1, 0xb9)\r\n        /usr/lib/go/src/runtime/symtab.go:472 +0x4cd\r\nruntime.funcline1(0xa86610, 0x49971f, 0x801, 0x4b23b1, 0x4995d0, 0xddd780)\r\n        /usr/lib/go/src/runtime/symtab.go:496 +0x76\r\nruntime.funcline(0xa86610, 0x49971f, 0x3, 0x48, 0x50)\r\n        /usr/lib/go/src/runtime/symtab.go:507 +0x3a\r\nruntime.raceSymbolizeCode(0x7fe42f7fdc50)\r\n        /usr/lib/go/src/runtime/race.go:105 +0x84\r\nruntime.racecallback(0x1, 0x7fe42f7fdc50)\r\n        /usr/lib/go/src/runtime/race.go:85 +0x78\r\nruntime.racecallbackthunk(0x49971f)\r\n        /usr/lib/go/src/runtime/race_amd64.s:424 +0x66\r\n\r\ngoroutine 35 [running]:\r\nfatal error: unexpected signal during runtime execution\r\npanic during panic\r\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x28 pc=0x4b7545]\r\n\r\nruntime stack:\r\nruntime.startpanic_m()\r\n        /usr/lib/go/src/runtime/panic.go:623 +0xfc\r\nruntime.systemstack(0xa01d78)\r\n        /usr/lib/go/src/runtime/asm_amd64.s:314 +0xab\r\nruntime.startpanic()\r\n        /usr/lib/go/src/runtime/panic.go:544 +0x1e\r\nruntime.throw(0x9c8d0a, 0x2a)\r\n        /usr/lib/go/src/runtime/panic.go:565 +0x88\r\nruntime.sigpanic()\r\n        /usr/lib/go/src/runtime/sigpanic_unix.go:12 +0x2cc\r\nruntime.gentraceback(0xffffffffffffffff, 0x0, 0x0, 0xc420091380, 0x0, 0x0, 0x64, 0x0, 0x0, 0x0, ...)\r\n        /usr/lib/go/src/runtime/traceback.go:295 +0x14f5\r\nruntime.traceback1(0xffffffffffffffff, 0xffffffffffffffff, 0x0, 0xc420091380, 0x0)\r\n        /usr/lib/go/src/runtime/traceback.go:661 +0x121\r\nruntime.traceback(0xffffffffffffffff, 0xffffffffffffffff, 0x0, 0xc420091380)\r\n        /usr/lib/go/src/runtime/traceback.go:622 +0x52\r\nruntime.tracebackothers(0xc420121520)\r\n        /usr/lib/go/src/runtime/traceback.go:767 +0x292\r\nruntime.dopanic_m(0xc420121520, 0x494995, 0x7fe42f7fd8f0)\r\n        /usr/lib/go/src/runtime/panic.go:669 +0x182\r\nruntime.dopanic.func1()\r\n        /usr/lib/go/src/runtime/panic.go:553 +0x3c\r\nruntime.systemstack(0x7fe42f7fd8c0)\r\n        /usr/lib/go/src/runtime/asm_amd64.s:314 +0xab\r\nruntime.dopanic(0x0)\r\n        /usr/lib/go/src/runtime/panic.go:554 +0x70\r\nruntime.throw(0x9c37b9, 0x1c)\r\n        /usr/lib/go/src/runtime/panic.go:566 +0x95\r\nruntime.pcvalue(0xa86610, 0x3dec9, 0x49971f, 0x0, 0x1, 0xb9)\r\n        /usr/lib/go/src/runtime/symtab.go:472 +0x4cd\r\nruntime.funcline1(0xa86610, 0x49971f, 0x801, 0x4b23b1, 0x4995d0, 0xddd780)\r\n        /usr/lib/go/src/runtime/symtab.go:496 +0x76\r\nruntime.funcline(0xa86610, 0x49971f, 0x3, 0x48, 0x50)\r\n        /usr/lib/go/src/runtime/symtab.go:507 +0x3a\r\nruntime.raceSymbolizeCode(0x7fe42f7fdc50)\r\n        /usr/lib/go/src/runtime/race.go:105 +0x84\r\nruntime.racecallback(0x1, 0x7fe42f7fdc50)\r\n        /usr/lib/go/src/runtime/race.go:85 +0x78\r\nruntime.racecallbackthunk(0x49971f)\r\n        /usr/lib/go/src/runtime/race_amd64.s:424 +0x66\r\n```\r\n",
+	"user": {
+		"login": "sisoftrg",
+		"id": 492146,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "RaceDetector"
+		}
+	],
+	"assignee": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"closed_at": "2016-09-25T12:22:27Z",
+	"created_at": "2016-09-22T07:29:06Z",
+	"updated_at": "2016-09-25T12:35:09Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

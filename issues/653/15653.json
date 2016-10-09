@@ -1,7 +1,7 @@
 {
 	"id": 154337039,
 	"number": 15653,
-	"state": "open",
+	"state": "closed",
 	"title": "syscall: ParseDirent is unsafe",
 	"body": "syscall.ParseDirent does not sufficiently validate its inputs to avoid crashes or returning uninitialized memory to the caller (via unsafe use of unsafe).\r\n\r\ne.g., from syscall_linux.go:\r\n\r\n```go\r\nfunc ParseDirent(buf []byte, max int, names []string) (consumed int, count int, newnames []string) {\r\n        origlen := len(buf)\r\n        count = 0\r\n        for max != 0 \u0026\u0026 len(buf) \u003e 0 { // \u003c-- should check to see if len(buf) \u003e= sizeof(Dirent) \r\n                dirent := (*Dirent)(unsafe.Pointer(\u0026buf[0]))\r\n                buf = buf[dirent.Reclen:] // \u003c-- should validate dirent.Reclen isn't out of bound \r\n                if dirent.Ino == 0 { // File absent in directory.\r\n                        continue\r\n                }\r\n                bytes := (*[10000]byte)(unsafe.Pointer(\u0026dirent.Name[0]))\r\n                var name = string(bytes[0:clen(bytes[:])]) // \u003c-- should make sure this doesn't read more than dirent.Reclen\r\n                if name == \".\" || name == \"..\" { // Useless names\r\n                        continue\r\n                }\r\n                max--\r\n                count++\r\n                names = append(names, name)\r\n        }\r\n        return origlen - len(buf), count, names\r\n}\r\n```",
 	"user": {
@@ -22,8 +22,9 @@
 		"site_admin": false
 	},
 	"comments": 2,
+	"closed_at": "2016-09-20T19:28:18Z",
 	"created_at": "2016-05-11T20:36:33Z",
-	"updated_at": "2016-06-03T23:00:29Z",
+	"updated_at": "2016-09-20T19:28:18Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

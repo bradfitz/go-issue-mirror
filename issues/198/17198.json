@@ -1,0 +1,17 @@
+{
+	"id": 178754507,
+	"number": 17198,
+	"state": "closed",
+	"title": "exec.Cmd.Dir does not set working directory properly for symlinks",
+	"body": "### What version of Go are you using (`go version`)?\r\ngo version go1.7.1\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\ndarwin/amd64\r\n\r\n### What did you do?\r\nSet the value of `exec.Cmd.Dir` to be a symlink and performed operations that depend on the path of the current working directory.\r\n\r\nMinimal example:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"io/ioutil\"\r\n\t\"path\"\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n)\r\n\r\nfunc main() {\r\n\ttmpDir, _ := ioutil.TempDir(\"\", \"\")\r\n\tdefer os.RemoveAll(tmpDir)\r\n\r\n\trealDir := path.Join(tmpDir, \"real\")\r\n\t_ = os.MkdirAll(realDir, 0755)\r\n\r\n\tsymlinkDir := path.Join(tmpDir, \"symlink\")\r\n\t_ = os.Symlink(realDir, symlinkDir)\r\n\r\n\tcmd := exec.Command(\"pwd\")\r\n\tcmd.Dir = symlinkDir\r\n\tstdout, _ := cmd.Output()\r\n\tfmt.Printf(\"Expected: %v\\nActual:   %v\", symlinkDir, string(stdout))\r\n}\r\n```\r\n\r\nExpanded example that demonstrates that running equivalent commands as a script produces expected behavior:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"os\"\r\n\t\"io/ioutil\"\r\n\t\"path\"\r\n\t\"fmt\"\r\n\t\"os/exec\"\r\n)\r\n\r\nfunc main() {\r\n\ttmpDir, _ := ioutil.TempDir(\"\", \"\")\r\n\tdefer os.RemoveAll(tmpDir)\r\n\r\n\trealDir := path.Join(tmpDir, \"real\")\r\n\t_ = os.MkdirAll(realDir, 0755)\r\n\r\n\tsymlinkDir := path.Join(tmpDir, \"symlink\")\r\n\t_ = os.Symlink(realDir, symlinkDir)\r\n\r\n\t// run \"pwd\" after setting cmd.Dir\r\n\tcmd := exec.Command(\"pwd\")\r\n\tcmd.Dir = symlinkDir\r\n\tstdout, _ := cmd.Output()\r\n\tfmt.Printf(\"Expected: %v\\nActual:   %v\", symlinkDir, string(stdout))\r\n\r\n\t// run \"pwd\" after running \"cd\"\r\n\tcmd = exec.Command(writeScript(tmpDir), symlinkDir)\r\n\tcmd.Dir = symlinkDir\r\n\tstdout, _ = cmd.Output()\r\n\tfmt.Printf(\"Expected: %v\\nActual:   %v\", symlinkDir, string(stdout))\r\n\r\n\tfmt.Println()\r\n}\r\n\r\nfunc writeScript(tmpDir string) string {\r\n\tf, _ := ioutil.TempFile(tmpDir, \"\")\r\n\t_, _ = f.WriteString(`#!/bin/bash\r\ncd \"$1\"\r\npwd`)\r\n\t_ = f.Chmod(0755)\r\n\t_ = f.Close()\r\n\treturn f.Name()\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nExpected that, if `exec.Cmd.Dir` is explicitly set to be a symlink, then the path operations would perform as it would if a Go program was executed from that directory as the working directory.\r\n\r\n### What did you see instead?\r\nThe working directory of the new process is the resolved location of the symlink instead of the path of the symlink itself.\r\n\r\n",
+	"user": {
+		"login": "nmiyake",
+		"id": 4267425,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 2,
+	"closed_at": "2016-09-23T22:06:05Z",
+	"created_at": "2016-09-23T00:28:38Z",
+	"updated_at": "2016-09-23T23:35:35Z"
+}

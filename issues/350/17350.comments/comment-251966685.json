@@ -1,0 +1,12 @@
+{
+	"id": 251966685,
+	"body": "@bcmills I'm not convinced that `struct { K; V }` is a meaningful idiom in Go -- for example, I've only seen it used in intermediate processing. For that to be truly powerful in Go, the language would have needed to incorporate it into many aspects of the language design, such as treating maps as a semantically-equivalent optimization of `[]struct{ K; V }`.\r\n\r\nAs they stand currently, maps are more expensive than other builtin data-structures in Go, and arguably people are using maps-of-maps-of-maps (k^3 maps, where k is the depth) when they should be using k maps. For example, instead of:\r\n\r\n```go\r\nm := make(map[A]map[B]map[C]D)\r\n// do initialization checking at each level -- lots of if's.\r\n```\r\n\r\nYou can use:\r\n```go\r\nvar (\r\n   mA   = make(map[A][]B)\r\n   mAB  = make(map[struct{A; B}][]C)\r\n   mABC = make(map[struct{ A; B; C }]D)\r\n)\r\n// initialization is done (no if's), potentially 100k's fewer maps for the GC to scan\r\n```\r\n\r\nIf you don't need to iterate or find values based on \"partial keys\", the second solution would only require a single `mABC` map. The patterns people tend to use with maps are often very suboptimal already: my stance on this proposal is that it would aid the abuse of a technique that should be avoided in most cases.\r\n\r\nAdditionally, an unstated implication of this proposal is that it would prevent type inference in more cases with append. For example, the language team may decide to explore relaxing explicit typing of appends-to-nil, such as:\r\n\r\n```go\r\nx := append(nil, struct { K; V }{\"a\", 5})\r\n```\r\n\r\nGiven the current Go language, with such a relaxation, x's type would be unambiguously inferable as `[]struct{ K; V }`. With this proposal, it would be unclear as to whether the `nil` refers to a nil `map[K]V` or a nil slice. Making nil appends more convenient is not entirely compelling, but given the comparative centrality of slices in Go, I've seen many more \"append chains\" involving a `[]string(nil)` as the first append argument than I have seen deeply nested maps.",
+	"user": {
+		"login": "extemporalgenome",
+		"id": 536740,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-06T13:49:43Z",
+	"updated_at": "2016-10-06T13:49:43Z"
+}

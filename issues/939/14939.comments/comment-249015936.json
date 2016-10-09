@@ -1,0 +1,12 @@
+{
+	"id": 249015936,
+	"body": "I analyzed the performance of the following benchmark to understand better where the costs really are:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"sync\"\r\n\t\"testing\"\r\n)\r\n\r\nvar mu sync.Mutex\r\n\r\n//go:noinline\r\nfunc deferLock() {\r\n\tmu.Lock()\r\n\tdefer mu.Unlock()\r\n}\r\n\r\n//go:noinline\r\nfunc noDeferLock() {\r\n\tmu.Lock()\r\n\tmu.Unlock()\r\n}\r\n\r\nfunc BenchmarkDeferLock(b *testing.B) {\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tdeferLock()\r\n\t}\r\n}\r\n\r\nfunc BenchmarkNoDeferLock(b *testing.B) {\r\n\tfor i := 0; i \u003c b.N; i++ {\r\n\t\tnoDeferLock()\r\n\t}\r\n}\r\n```\r\n\r\nThis is similar to @minux's benchmark, but slightly more realistic. The results on my laptop are:\r\n\r\n```\r\nBenchmarkDeferLock-4     \t200000000\t        83.7 ns/op\r\nBenchmarkNoDeferLock-4   \t1000000000\t        16.1 ns/op\r\n```\r\n\r\nThat is, the defer-based benchmark is 5.2X more expensive. The 83.7 ns in BenchmarkDeferLock breaks down as follows:\r\n\r\n```\r\ndeferproc 23ns\r\n  allocate defer 10ns\r\n\r\ndeferreturn 22ns\r\n  free defer 9ns\r\n  jump defer 4.8ns\r\n```\r\n\r\nSurprisingly, relatively little time is spent actually allocating or freeing defers. Most of the time is spread out across bookkeeping and shuffling frames around. I can't tell where the remaining 23ns of difference are going.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-22T20:17:51Z",
+	"updated_at": "2016-09-22T20:17:51Z"
+}

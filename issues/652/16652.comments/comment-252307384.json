@@ -1,0 +1,12 @@
+{
+	"id": 252307384,
+	"body": "For my own private project, I took almost this exact approach when hacking the `sql` API. My changes looked something like this (omitting the `ColumnType` type in both packages):\r\n\r\n\r\n```go\r\npackage driver\r\n\r\ntype ColumnTyper interface {\r\n\tColumnTypes() ([]ColumnType, error)\r\n}\r\n```\r\n\r\nEDIT FOR CLARITY : this copy-n-edit snippet below (which exposes the driver package) is a poor example: `driver.ColumnType` would need to be wrapped in `sql.ColumnType`.\r\n\r\n```go\r\npackage sql\r\n\r\nfunc (rs *Rows) ColumnTypes() ([]driver.ColumnType, error) {\r\n\tif rs.closed {\r\n\t\treturn nil, errors.New(\"sql: Rows are closed\")\r\n\t}\r\n\tif rs.rowsi == nil {\r\n\t\treturn nil, errors.New(\"sql: no Rows available\")\r\n\t}\r\n\r\n\tif colTyper, ok := rs.rowsi.(driver.ColumnTyper); ok {\r\n\t\treturn colTyper.ColumnTypes()\r\n\t}\r\n\r\n\treturn nil, errors.New(\"sql: driver does not provide column type data\")\r\n}\r\n```\r\nIn my own project I have already implemented the `ColumnTyper` API changes for Postgres (`lib/pq`), MySQL (`go-sql-driver`) and SQLite (`mattn`), so I know from first-hand implementation experience that this approach works just fine. And it seems less complicated than the proposed approach.",
+	"user": {
+		"login": "neilotoole",
+		"id": 6013203,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-07T17:06:51Z",
+	"updated_at": "2016-10-07T18:12:39Z"
+}

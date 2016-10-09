@@ -1,0 +1,21 @@
+{
+	"id": 181518463,
+	"number": 17369,
+	"state": "open",
+	"title": "x/mobile/cmd/gomobile: type conversion not working on iOS",
+	"body": "Hey,\r\n\r\nI have a (hopefully small) issue with type conversion related to usage of gomobile:\r\n\r\n### What version of Go are you using (`go version`)?\r\n```\r\ngo version go1.7.1 darwin/amd64\r\n```\r\n```\r\ngomobile version +6ea0bb5 Wed Oct 5 13:16:13 2016 +0000 (android,ios); androidSDK=/Users/.../Library/Android/sdk/platforms/android-23\r\n```\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\n```\r\n### What did you do?\r\n1. Write code with composed interface. Can be something like\r\n```go\r\ntype Car interface {\r\n\tWheelCount() int\r\n}\r\ntype Limousine interface {\r\n\tCar\r\n\tSeats() int\r\n\tSetSeats(seats int)\r\n}\r\n```\r\nFull go code is available at [Go Code](https://play.golang.org/p/pnVP8_CLqs)\r\n2. Generate go mobile bindings for iOS and android, e.g.\r\n`gomobile bind -target=ios data`\r\n3. Create platform specific app and call a go method which tries to do type conversion. Type conversion may be:\r\n```go\r\nfunc PrintCar(car Car) {\r\n\tfmt.Println(\"Car: \", car)\r\n\tfmt.Println(\"Wheels: \", car.WheelCount())\r\n\r\n\tlimousine, ok := car.(Limousine)\r\n\tfmt.Println(\"Limousine cast was \", ok, \", Content:\", limousine)\r\n\tif ok {\r\n\t\tfmt.Println(\"Seats: \", limousine.Seats())\r\n\t}\r\n}\r\n``` \r\nand platform specific code like this for iOS\r\n```objc\r\nid\u003cGoDataLimousine\u003e car = GoDataNewLimousine();\r\n[car setSeats:5];\r\nGoDataPrintCar(car);\r\n```\r\n4. Execute the program on iOS or Android\r\n\r\n### What did you expect to see?\r\nType conversion from Car to Limousine should be possible if the object fulfills Limousine.\r\nOutput of type conversion on Go, iOS and Android:\r\n```\r\nCar:  \u0026{4 5}\r\nWheels:  4\r\nLimousine cast was  true , Content: \u0026{4 5}\r\nSeats:  5\r\n```\r\n### What did you see instead?\r\nType conversion is not possible on iOS between interfaces. Output of type conversion Go, Android (as expected):\r\n```\r\nCar:  \u0026{4 5}\r\nWheels:  4\r\nLimousine cast was  true , Content: \u0026{4 5}\r\nSeats:  5\r\n```\r\niOS, fails to do type conversion. The limousine is stripped down to fulfill the car interface only and does not fulfill the limousine interface anymore:\r\n```\r\nCar:  \u0026{42}\r\nWheels:  4\r\nLimousine cast was  false , Content: \u003cnil\u003e\r\n```\r\n\r\nSo in my understanding type conversion should work on iOS as it does on android and in normal go itself. But using gomobile on iOS, interfaces seem to loose other fulfilled interfaces once they're passed to a method which receives a specific interface only.\r\n\r\nOr am I doing something wrong? Otherwise I would like to help solving this issue. Sadly I am new to the go mobile tooling itself. Maybe somebody can point me into the right direction? \r\n\r\nIs this intentionally not working or is it expected to work?\r\n\r\nThanks for your help!\r\n\r\n",
+	"user": {
+		"login": "jtandler",
+		"id": 5231602,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-10-06T20:34:26Z",
+	"updated_at": "2016-10-08T09:32:31Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

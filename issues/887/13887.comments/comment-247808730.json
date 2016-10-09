@@ -1,0 +1,12 @@
+{
+	"id": 247808730,
+	"body": "The author of the failing test (the one that runs `goroutine 2 bt`), noted in the commit message that the test should be run with\r\n\r\n\u003egoroutine 2 [...], since goroutine 1 has its stack pointer set to 0 for some reason\r\n\r\nHe opened an issue about this, #10468, where he wrote:\r\n\r\n\u003e This only occurs for goroutine #1, and causes a Python exception. As far as I can tell, it is because for goroutine 1, pc is valid but sp is 0x0\r\n\r\nHe's correct in that the cause of the Python exception is the `sp` having value `0x0`, but it's not true that this only occurs in goroutine 1. Take for example:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"sync\"\r\n)\r\n\r\nfunc main() {\r\n\tvar wg sync.WaitGroup\r\n\twg.Add(1)\r\n\tgo func() {\r\n\t\tfmt.Println(\"hi\")\r\n\t\twg.Done()\r\n\t}()\r\n\twg.Wait()\r\n\r\n\tfmt.Println(\"hello\")\r\n}\r\n```\r\n\r\n```\r\n$ gdb ./test\r\n[...]\r\n(gdb) b 14\r\n(gdb) r\r\n(gdb) info goroutines\r\n  1 waiting  runtime.gopark\r\n  2 waiting  runtime.gopark\r\n  17 waiting  runtime.gopark\r\n  18 waiting  runtime.gopark\r\n* 19 running  main.main.func1\r\n```\r\n\r\n`bt` works on goroutine 1, but it fails with goroutine 19 (the running one):\r\n\r\n```\r\n(gdb) goroutine 19 bt\r\n#0  main.main.func1 (\u0026wg=\u003cerror reading variable: Cannot access memory at address 0x8\u003e)\r\n    at /home/alberto/prova.go:13\r\nBacktrace stopped: Cannot access memory at address 0x0\r\n```\r\nwhich has a `0x0` stackpointer.\r\n\r\nMaybe the gdb-test is failing because it sometimes happens that the test is run while the tested goroutine (2) is running?\r\n\r\nUnfortunately I wasn't able to observe the python exception with my gdb 7.11 (not even changing the test to backtrace on goroutine 1, which is usually running, causes an exception to be raised), so I can't really go on with my investigation : )\r\n\r\n\r\n",
+	"user": {
+		"login": "ALTree",
+		"id": 3586803,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-17T21:18:44Z",
+	"updated_at": "2016-09-17T21:18:44Z"
+}

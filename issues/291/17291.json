@@ -1,0 +1,26 @@
+{
+	"id": 180173848,
+	"number": 17291,
+	"state": "open",
+	"title": "runtime: stackCache = 0 seems broken",
+	"body": "If runtime/stack.go:stackCache = 0, various tests found in test/ will fail unexpectedly, but all tests work when stackCache = 1 on current gate tip (Solaris amd64):\r\n\r\n```\r\n# go run run.go -- cmp.go\r\nexit status 1\r\n0xc420026000 0xc420026000\r\nfatal error: bad span state\r\n\r\nruntime stack:\r\nruntime.throw(0x472b3a, 0xe)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/panic.go:582 +0x95\r\nruntime.stackfree(0xc420026000, 0xc4200267e0, 0x800)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:472 +0x184\r\nruntime.copystack(0xc4200001a0, 0x1000, 0x1)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:910 +0x3b8\r\nruntime.newstack()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:1070 +0x35b\r\nruntime.morestack()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/asm_amd64.s:366 +0x91\r\n\r\ngoroutine 1 [copystack, locked to thread]:\r\nruntime.init.1()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/mstats.go:408 fp=0xc420032f30 sp=0xc420032f28\r\nruntime.init()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/write_err.go:14 +0x9b fp=0xc420032f58 sp=0xc420032f30\r\nruntime.main()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/proc.go:141 +0xf6 fp=0xc420032fb0 sp=0xc420032f58\r\nruntime.goexit()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/asm_amd64.s:2158 +0x1 fp=0xc420032fb8 sp=0xc420032fb0\r\nexit status 2\r\n\r\nFAIL    cmp.go  0.735s\r\n    1 FAIL\r\n\r\n```\r\n\r\nIn fact, setting stackCache = 0 won't even let you build packages and commands for make.bash:\r\n\r\n```\r\n##### Building packages and commands for solaris/amd64.\r\n0xc42002a000 0xc42002a000\r\nfatal error: bad span state\r\n\r\nruntime stack:\r\nruntime.throw(0x6a1a21, 0xe)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/panic.go:582 +0x95\r\nruntime.stackfree(0xc42002a000, 0xc42002a7e0, 0x800)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:472 +0x184\r\nruntime.copystack(0xc4200001a0, 0x1000, 0x1)\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:910 +0x3b8\r\nruntime.newstack()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/stack.go:1070 +0x35b\r\nruntime.morestack()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/asm_amd64.s:366 +0x91\r\n\r\ngoroutine 1 [copystack, locked to thread]:\r\nruntime.init.1()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/mstats.go:408 fp=0xc420036f30 sp=0xc420036f28\r\nruntime.init()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/write_err.go:14 +0x9b fp=0xc420036f58 sp=0xc420036f30\r\nruntime.main()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/proc.go:141 +0xf6 fp=0xc420036fb0 sp=0xc420036f58\r\nruntime.goexit()\r\n        /builds/srwalker/golang/go-trunk/src/runtime/asm_amd64.s:2158 +0x1 fp=0xc420036fb8 sp=0xc420036fb0\r\n```\r\n\r\nI'm currently attempting to debug stack allocation issues on the sparc64 port and was hoping to use this mechanism, but when I discovered that it didn't work on amd64 either, decided a bug might be worth filing.\r\n\r\nAnd yes, this is from the correct go binary in $PATH:\r\n```\r\ngo version devel +c1e06dc Thu Sep 29 20:43:04 2016 +0000 solaris/amd64\r\n```\r\n\r\nThe only change in the workspace is setting stackCache = 0.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-09-29T21:59:00Z",
+	"updated_at": "2016-10-04T22:26:36Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

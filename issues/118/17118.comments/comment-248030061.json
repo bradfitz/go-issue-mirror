@@ -1,0 +1,12 @@
+{
+	"id": 248030061,
+	"body": "@randall77 , results are way better now:\r\n```\r\nBenchmarkEfaceArg-4   \t200000000\t         8.41 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkIntArg-4     \t2000000000\t         0.98 ns/op\t       0 B/op\t       0 allocs/op\r\n```\r\n\r\nThere is no `convT2E` in cpu profile now, but there is a `assertE2T`, which, in turn, calls `typedmemmove` -\u003e `memmove`:\r\n\r\n```\r\n(pprof) top\r\n9.22s of 9.22s total (  100%)\r\n      flat  flat%   sum%        cum   cum%\r\n     3.23s 35.03% 35.03%      9.22s   100%  _/home/aliaksandr/work/rev-share-backend.BenchmarkEfaceArg\r\n     2.12s 22.99% 58.03%      5.99s 64.97%  runtime.assertE2T\r\n        2s 21.69% 79.72%         2s 21.69%  runtime.memmove\r\n     1.87s 20.28%   100%      3.87s 41.97%  runtime.typedmemmove\r\n         0     0%   100%      9.22s   100%  runtime.goexit\r\n         0     0%   100%      9.22s   100%  testing.(*B).launch\r\n         0     0%   100%      9.22s   100%  testing.(*B).runN\r\n\r\n(pprof) list assertE2T\r\nTotal: 9.22s\r\nROUTINE ======================== runtime.assertE2T in /home/aliaksandr/work/go1.5/src/runtime/iface.go\r\n     2.12s      5.99s (flat, cum) 64.97% of Total\r\n         .          .    227:\t\ttypedmemmove(t, r, i.data)\r\n         .          .    228:\t}\r\n         .          .    229:\treturn true\r\n         .          .    230:}\r\n         .          .    231:\r\n     670ms      670ms    232:func assertE2T(t *_type, e eface, r unsafe.Pointer) {\r\n      70ms       70ms    233:\tif e._type == nil {\r\n         .          .    234:\t\tpanic(\u0026TypeAssertionError{\"\", \"\", t.string(), \"\"})\r\n         .          .    235:\t}\r\n     370ms      370ms    236:\tif e._type != t {\r\n         .          .    237:\t\tpanic(\u0026TypeAssertionError{\"\", e._type.string(), t.string(), \"\"})\r\n         .          .    238:\t}\r\n      50ms       50ms    239:\tif r != nil {\r\n     240ms      240ms    240:\t\tif isDirectIface(t) {\r\n         .          .    241:\t\t\twritebarrierptr((*uintptr)(r), uintptr(e.data))\r\n         .          .    242:\t\t} else {\r\n     360ms      4.23s    243:\t\t\ttypedmemmove(t, r, e.data)\r\n         .          .    244:\t\t}\r\n         .          .    245:\t}\r\n     360ms      360ms    246:}\r\n         .          .    247:\r\n```",
+	"user": {
+		"login": "valyala",
+		"id": 283442,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-19T15:40:56Z",
+	"updated_at": "2016-09-19T15:40:56Z"
+}

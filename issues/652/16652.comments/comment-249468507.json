@@ -1,0 +1,12 @@
+{
+	"id": 249468507,
+	"body": "@kardianos @bradfitz @kirubasankars \r\n\r\nI hope the ship hasn't sailed on the column size decision. I've been working with this very issue literally two minutes ago on my own project, decided I better drop in on this ticket again.\r\n\r\nI'll give you a specific use-case where knowing the column size is important (and this is only just my particular case from tonight, this is a common occurrence with ETL software). I'm working on an app that moves data between heterogenous datasources (where the schemata are not known ahead of time, etc). Sometimes this means that there's a scratch DB in the middle where data munging/staging goes on. Let's say I've got `oracle1.tblUser` and `postgres1.tblAddress`, and there's a bunch of text fields on each, let's say `email VARCHAR(64)` and `city VARCHAR(255)`. Right now, how I make this work is that I have a thin layer wrapping each and every SQL driver so that I can get access to the field type/size etc so that I can present it in a uniform manner to the worker (with `go-mysql` I made my own fork because for some inexplicable reason the driver doesn't export the field info). \r\n\r\nNow, under the proposal above, yes I would know that a column is a text-ish field, but without knowing the size the best one can do is create a `LONGTEXT` col or such, even though the drivers have access to the fact that those text cols are of max size `64` and `255`. If you're dealing with throughput of billions of rows, the performance difference between a `VARCHAR(64)` / `VARCHAR(255)` and a `LONGTEXT` does become significant (and in some databases, egregiously so).\r\n\r\nAgain, the col size is data that is ordinarily available to the driver. If for some reason the driver can't present that information, we could use `-1` as a sentinel to indicate it's not available. Hell, you can make that the default in the `sql` layer. But please, at least make it possible for drivers to provide this information back up through the API layer to the caller. There's no downside to it.",
+	"user": {
+		"login": "neilotoole",
+		"id": 6013203,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-26T02:50:33Z",
+	"updated_at": "2016-09-26T02:51:47Z"
+}

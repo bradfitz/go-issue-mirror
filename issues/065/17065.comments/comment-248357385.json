@@ -1,0 +1,12 @@
+{
+	"id": 248357385,
+	"body": "@josharian can you provide a GOTRACEBACK=system and/or gdb/lldb stacks?\r\n\r\nWe filter out addresses without shadow memory:\r\n```go\r\nfunc isvalidaddr(addr unsafe.Pointer) bool {\r\n\treturn racearenastart \u003c= uintptr(addr) \u0026\u0026 uintptr(addr) \u003c racearenaend ||\r\n\t\tracedatastart \u003c= uintptr(addr) \u0026\u0026 uintptr(addr) \u003c racedataend\r\n}\r\n```\r\n\r\n```go\r\nTEXT\tracecalladdr\u003c\u003e(SB), NOSPLIT, $0-0\r\n\tget_tls(R12)\r\n\tMOVQ\tg(R12), R14\r\n\tMOVQ\tg_racectx(R14), RARG0\t// goroutine context\r\n\t// Check that addr is within [arenastart, arenaend) or within [racedatastart, racedataend).\r\n\tCMPQ\tRARG1, runtime·racearenastart(SB)\r\n\tJB\tdata\r\n\tCMPQ\tRARG1, runtime·racearenaend(SB)\r\n\tJB\tcall\r\ndata:\r\n\tCMPQ\tRARG1, runtime·racedatastart(SB)\r\n\tJB\tret\r\n\tCMPQ\tRARG1, runtime·racedataend(SB)\r\n\tJAE\tret\r\n```\r\n\r\nSo I don't understand what tries to access these addresses.",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-20T16:35:28Z",
+	"updated_at": "2016-09-20T16:35:28Z"
+}

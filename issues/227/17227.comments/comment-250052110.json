@@ -1,0 +1,12 @@
+{
+	"id": 250052110,
+	"body": "After a little modification for my test, it still not work.\r\n`golang.org/x/net` using f09c4662a0bd6bd8943ac7b4931e185df9471da4\r\nUsing nghttp2 with fiddler to support h2c (which is handy to see detail in wireshark)\r\n```\r\nlog-level=INFO\r\nbackend=127.0.0.1,8888\r\nfrontend=127.0.0.1,8125;no-tls\r\nhttp2-proxy=yes\r\n```\r\nUse this test code\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/tls\"\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"net\"\r\n\t\"net/http\"\r\n\t\"os\"\r\n\r\n\t\"golang.org/x/net/http2\"\r\n)\r\n\r\nfunc main() {\r\n\ttr := \u0026http2.Transport{\r\n\t\tDialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {\r\n\t\t\treturn net.Dial(\"tcp\", \"127.0.0.1:8125\")\r\n\t\t},\r\n\t\tAllowHTTP: true,\r\n\t}\r\n\tpr, pw := io.Pipe()\r\n\treq, err := http.NewRequest(\"CONNECT\", \"http://www.baidu.com/\", pr)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tresp, err := tr.RoundTrip(req)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tlog.Printf(\"resp: %v\", resp)\r\n\tif resp.StatusCode != http.StatusOK {\r\n\t\tlog.Fatalf(\"want 200 OK, got %s\", resp.Status)\r\n\t}\r\n\treq, _ = http.NewRequest(\"GET\", \"http://www.baidu.com/\", nil)\r\n\tif err = req.Write(pw); err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\tio.Copy(os.Stdout, resp.Body)\r\n}\r\n```\r\nAfter running `go run`, it still hangs. nghttpx log shows SETTINGS frame timeout, and wireshark shows no concrete request is sent out to nghttpx from golang program.",
+	"user": {
+		"login": "ayanamist",
+		"id": 406779,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-28T02:00:50Z",
+	"updated_at": "2016-09-28T02:00:50Z"
+}

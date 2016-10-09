@@ -1,7 +1,7 @@
 {
 	"id": 157072585,
 	"number": 15852,
-	"state": "open",
+	"state": "closed",
 	"title": "time: AddDate() should use UTC if loc is nil ",
 	"body": "I added all my env info at the end since everything is reproducible on play.golang.org \r\n\r\n#### What did you do?\r\nI called time's AddDate whit a time object that was missing a location\r\n\r\nhttps://play.golang.org/p/S-ZZKabdyL\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\ttime.Time{}.AddDate(0,0,0)\r\n}\r\n```\r\n\r\n#### What did you expect to see?\r\nI expected that `AddDate` would follow the behavior specified by `loc` documentation that it should use the default UTC as location when calling Date  \r\n\r\n```\r\nOnly the zero Time has a nil Location.\r\nIn that case it is interpreted to mean UTC.\r\n```\r\nRef: https://golang.org/src/time/time.go?s=2261:2352\r\n\r\nThe expected behavior can be seen here: https://play.golang.org/p/-9Bp0rjphc\r\n\r\n#### What did you see instead?\r\n```\r\npanic: time: missing Location in call to Date\r\n\r\ngoroutine 1 [running]:\r\npanic(0xd6660, 0x1030a078)\r\n\t/usr/local/go/src/runtime/panic.go:481 +0x700\r\ntime.Date(0x1, 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)\r\n\t/usr/local/go/src/time/time.go:1030 +0xa0\r\ntime.Time.AddDate(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)\r\n\t/usr/local/go/src/time/time.go:658 +0x100\r\nmain.main()\r\n\t/tmp/sandbox596209771/main.go:8 +0x60\r\n```\r\n\r\n#### My suggested solution\r\n```diff\r\n$ git diff\r\ndiff --git a/src/time/time.go b/src/time/time.go\r\nindex d9dbd34..6ead1ce 100644\r\n--- a/src/time/time.go\r\n+++ b/src/time/time.go\r\n@@ -652,7 +652,8 @@ func Since(t Time) Duration {\r\n func (t Time) AddDate(years int, months int, days int) Time {\r\n        year, month, day := t.Date()\r\n        hour, min, sec := t.Clock()\r\n-       return Date(year+years, month+Month(months), day+days, hour, min, sec, int(t.nsec), t.loc)\r\n+       location := t.Location()\r\n+       return Date(year+years, month+Month(months), day+days, hour, min, sec, int(t.nsec), location)\r\n }\r\n\r\n const (\r\n```\r\nDose the fix look good? Should I submit it for review?\r\n\r\n\r\n#### What version of Go are you using (`go version`)?\r\n```\r\n$ go version\r\ngo version go1.6.1 linux/amd64\r\n```\r\n\r\n#### What operating system and processor architecture are you using (`go env`)?\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/simonr/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n",
 	"user": {
@@ -16,8 +16,9 @@
 		}
 	],
 	"comments": 5,
+	"closed_at": "2016-10-06T18:41:40Z",
 	"created_at": "2016-05-26T20:32:06Z",
-	"updated_at": "2016-05-28T16:00:24Z",
+	"updated_at": "2016-10-06T18:41:40Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

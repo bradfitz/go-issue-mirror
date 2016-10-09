@@ -1,0 +1,26 @@
+{
+	"id": 180168200,
+	"number": 17289,
+	"state": "open",
+	"title": "runtime: stackFromSystem can leak memory or leave unmapped memory behind",
+	"body": "When stackFromSystem = 1, the stack allocation size is rounded to the nearest page size:\r\n\r\n```\r\n 339         if debug.efence != 0 || stackFromSystem != 0 {\r\n 340                 v := sysAlloc(round(uintptr(n), _PageSize), \u0026memstats.stacks_sys)\r\n```\r\n...however, that rounded size is not returned to/used by the caller of stackalloc(), so when a stackfree() is later done:\r\n\r\n```\r\n 436         if debug.efence != 0 || stackFromSystem != 0 {\r\n 437                 if debug.efence != 0 || stackFaultOnFree != 0 {\r\n 438                         sysFault(v, n)\r\n 439                 } else {\r\n 440                         sysFree(v, n, \u0026memstats.stacks_sys)\r\n 441                 }\r\n```\r\n\r\nWe'll either set less than the actual bytes allocated for faulted access, or fail to free/unmap all of the memory.",
+	"user": {
+		"login": "binarycrusader",
+		"id": 541114,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-09-29T21:29:54Z",
+	"updated_at": "2016-10-04T22:26:04Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

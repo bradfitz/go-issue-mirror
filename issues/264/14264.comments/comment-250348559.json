@@ -1,0 +1,12 @@
+{
+	"id": 250348559,
+	"body": "This is pretty low priority, so Go1.8Maybe is fine.\r\n\r\nHowever, I did some quick experiments tonight and learned some interesting things:\r\n\r\n1. `mmap` with `MAP_HUGETLB` is not an option `MAP_HUGETLB` 1) can only draw on the \"persistent\" huge page pool, which is usually uncofigured and empty and 2) can only be used by processes in the GID configured in `/proc/sys/vm/hugetlb_shm_group`, which is only root by default.\r\n\r\n2. Given this, you might expect `madvise(MADV_HUGEPAGE)` to be useful, but it doesn't change anything. If a range hasn't been explicitly advised one way or the other, it takes the system default, which is generally to enable THP anyway.\r\n\r\n3. What *does* matter is how much we map at a time. I increased _HeapAllocChunk and bitmapChunk to 2 MB and the AnonHugePages count in smaps shot up to 1GB out of a 2GB heap (I'm not sure why it didn't go higher; maybe I ran out of huge pages). If we map in smaller chunks, I never see AnonHugePages go above 0, even if I let the process sit for several THP scrubbing cycles.\r\n\r\nThis suggests we should be mapping in larger chunks. Possibly we should do this in proportion to how much is already mapped, though _HeapAllocChunk is already 1MB.\r\n\r\nIt's also possible that the reduced TLB pressure from huge pages was the actual cause of the performance boost observed with a larger _HeapAllocChunk in #16866.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-29T01:38:45Z",
+	"updated_at": "2016-09-29T01:38:45Z"
+}

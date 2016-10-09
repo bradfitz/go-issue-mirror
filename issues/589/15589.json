@@ -1,7 +1,7 @@
 {
 	"id": 153574303,
 	"number": 15589,
-	"state": "open",
+	"state": "closed",
 	"title": "runtime: using CryptGenRandom to generate randomness slows process startup",
 	"body": "In Windows's `runtime.getRandomData()`, [CryptGenRandom](https://msdn.microsoft.com/en-us/library/windows/desktop/aa379942(v=vs.85).aspx) is used to retrieve random data from the system random number generator. Using this API causes initialization of the entire Windows crypto API surface, which is expensive and probably usually otherwise unnecessary.\r\n\r\nThe recommended way to fix this is to use [BCryptGenRandom](https://msdn.microsoft.com/en-us/library/windows/desktop/aa375458(v=vs.85).aspx) with a `NULL` provider and `BCRYPT_USE_SYSTEM_PREFERRED_RNG`. This is what .NET Core does on Windows, for example. However, this is only supported on Windows 7 and newer OSes.\r\n\r\nA slightly faster approach and one that works on XP is to use [RtlGenRandom](https://msdn.microsoft.com/en-us/library/windows/desktop/aa387694(v=vs.85).aspx). Although this function is not well-documented, it uses the same RNG as the other functions, it has been recommended by Microsoft in [a blog](https://blogs.msdn.microsoft.com/michael_howard/2005/01/14/cryptographically-secure-random-number-on-windows-without-using-cryptoapi/), and it is used in other open source projects such as Chromium and Firefox.\r\n\r\nI have a prototype (38633e27df4ce0d1e3f95bcefe3bae330ff66c0d) of that uses `RtlGenRandom` that reduces process startup time from 22ms to 20ms on my machine.\r\n\r\nIf this approach seems worthwhile then I can send out a code review.",
 	"user": {
@@ -15,9 +15,16 @@
 			"name": "OS-Windows"
 		}
 	],
-	"comments": 2,
+	"assignee": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-09-28T05:22:14Z",
 	"created_at": "2016-05-07T05:07:13Z",
-	"updated_at": "2016-05-09T17:46:57Z",
+	"updated_at": "2016-09-28T05:22:14Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

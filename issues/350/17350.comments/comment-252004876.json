@@ -1,0 +1,12 @@
+{
+	"id": 252004876,
+	"body": "@extemporalgenome \r\n\u003e For that to be truly powerful in Go, the language would have needed to incorporate it into many aspects of the language design […]\r\n\r\nI'm not proposing for it to be \"truly powerful\".  I'm merely proposing for it to reduce the boilerplate required when using nil maps.\r\n\r\n\u003e arguably people are using maps-of-maps-of-maps (k^3 maps, where k is the depth) when they should be using k maps\r\n\r\nAgreed.  A more realistic version of @bradfitz's example using multi-level maps would probably involve one or more of:\r\n* an intermediate struct at each level, e.g.:\r\n```go\r\ntype County struct {\r\n  SeatName string\r\n  Cities map[string]*City\r\n}\r\ntype Nation struct {\r\n  Languages []string\r\n  Counties map[string]*County\r\n}\r\ntype Continent map[string]*Nation\r\n```\r\n(But in that case, the syntactic sugar for multi-level maps isn't helpful.)\r\n\r\n* or, using the sub-maps as individual values (for example, passing the elements of a `map[foo]map[bar]baz` to a `func(map[bar]baz)`).  In that case the syntactic sugar *is* helpful, but only marginally.  It's clear enough to write the levels separately:\r\n```go\r\nm1 := insert(m[1], {true, \"foo\"})\r\nm = insert(m, {1, m1})\r\n```\r\n\r\n\u003e Additionally, an unstated implication of this proposal is that it would prevent type inference in more cases with append.\r\n[…]\r\nGiven the current Go language, with such a relaxation, x's type would be unambiguously inferable as `[]struct{ K; V }`.\r\n\r\nNo.  You already need the concrete type of the slice being appended to: the elements  passed to append need only be _assignable to_ the type of the slice elements, not the exact type.  In the example you give, a declaration\r\n```go\r\ntype Foo struct { K; V }\r\n```\r\nwould make it ambiguous whether the type of `x` should be `[]Foo` or `[]struct{K; V}`.\r\n\r\nIf you're appending individual elements to a `nil` slice you probably ought to be using a slice literal anyway.  (The useful case for `append(nil, …)` is for copying an existing slice of unknown length.)",
+	"user": {
+		"login": "bcmills",
+		"id": 5200974,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-06T15:50:53Z",
+	"updated_at": "2016-10-06T16:47:56Z"
+}

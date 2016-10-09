@@ -1,0 +1,30 @@
+{
+	"id": 179909759,
+	"number": 17271,
+	"state": "open",
+	"title": "proposal: incrementally modify the Go toolchain to work without GOPATH",
+	"body": "Over the years, when helping people approaching existing Go projects (colleagues, friends, etc.) the number one problem is of course that they don't know about `GOPATH`, they don't have one configured, and they expect to be able to clone an existing project wherever they want on the disk, and be able to build it. I think the problem statement is clear and the problem is well known.\r\n\r\nWith the introduction and adoption of the vendoring folder, most Go applications do not even require `go get` to run: all the source code required to compile them is already available in the source tree; it's just that the Go tool doesn't know where to look if `GOPATH` is not defined.\r\n\r\nInstead of suggesting a default `GOPATH` (which does not solve the fact that people will need to find out about it and use it somehow), I suggest that we change the Go toolchain in multiple steps (each one can be independently released as an experiment):\r\n\r\n * **STEP 1**: If `GOPATH` is not set, the Go tool will use any existing `./vendor` directory as it was part of the `GOPATH`. (I think of this as defaulting `GOPATH/src` to `./vendor`).  At least `go build` and `go run` are guaranteed to work. Anything else, like `go install` and `go get`, would fail with an error pointing to the `GOPATH` documentation.  \r\n * **STEP 2**: if `GOPATH` is not set, the Go toolchain would be updated to use `$HOME/.gopkg` (or similar) as `pkg` directory. This would allow other commands to work (e.g.: `go build -i` or `go install`).\r\n * **STEP 3**: if `GOPATH` is not set, `go get` (or the new package manager, if/when it gets released) would be modified to download packages directly into `./vendor`\r\n\r\nAs shown in Step 2, I think this proposal would also interact well with the existing proposal/discussion of dropping `pkg` in favour of a hidden cache directory, as that would move things further into the direction of not needing `GOPATH` anymore for a whole class of development; in fact, this functionality could be prototyped in this specific scenario of \"`GOPATH` not defined\", where it would make sense to do it without facing the bigger discussion of deprecating `pkg` for a normal `GOPATH` scenario.\r\n\r\nAs shown in Step 3, I also think that this might interact well with the new package manager. I saw many people requested that the new package manager ought to be able to download dependencies directly into the vendor folder (like `govendor` and `glide` can do); if this functionality lands in the new package manager, it would be a perfect default for the \"`GOPATH` not defined\" scenario described here. Alternatively, it might make sense to discuss modifying `go get` to have this behaviour.\r\n\r\nI think this proposal is incremental, backward-compatible, doesn't affect existing users that successfully use `GOPATH`, and allow beginners to approach existing Go codebases without stumbling too soon into `GOPATH`.",
+	"user": {
+		"login": "rasky",
+		"id": 1014109,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 5,
+	"created_at": "2016-09-28T22:42:10Z",
+	"updated_at": "2016-10-04T22:47:06Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 4,
+		"+1": 4
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 251008602,
+	"body": "This looks like a heap-\u003estack pointer.\r\nThe thing on the stack is a closure.  I think it is correctly allocated on the stack.  That is, its lifetime does not exceed the lifetime of the stack frame it is in.\r\nThe pointer to this closure is passed down the callstack.  A subsequent function stores that closure pointer in another closure.  That other closure is allocated on the heap, establishing a heap-\u003estack pointer.  That isn't allowed (except in special cases, this not being one of them).  The GC then barfs when it sees that pointer.\r\n\r\nThe original stack-allocated closure is from github.com/havoc-io/go-closure-issue/server.go:50.  It is passed in the call at line 59 to CreateDelta.  CreateDelta (in /bitbucket.org/kardianos/rsync/rsync.go) makes the heap closure at line 247.  (I don't understand why this closure is heap allocated.  That's a separate issue I think.)\r\n\r\nI suspect the bug is that we need to make sure that if a pointer is captured in a heap-allocated closure, then its referents must be treated as escaping.\r\n\r\n@dr2chase ",
+	"user": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-03T01:01:42Z",
+	"updated_at": "2016-10-03T01:01:42Z"
+}

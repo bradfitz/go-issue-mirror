@@ -1,0 +1,16 @@
+{
+	"id": 181546711,
+	"number": 17371,
+	"state": "open",
+	"title": "cmd/compile: group all calls to runtime.panicindex",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7.1 windows/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=C:\\Users\\rillig\\go\r\nset GORACE=\r\nset GOROOT=C:\\Program Files (x86)\\Go1.7.1\r\nset GOTOOLDIR=C:\\Program Files (x86)\\Go1.7.1\\pkg\\tool\\windows_amd64\r\nset CGO_ENABLED=1\r\n\r\n### What did you do?\r\n\r\nhttps://play.golang.org/p/vTaV_KfhNg\r\n\r\n### What did you expect to see?\r\n\r\nAll calls to `runtime.panicindex` and `runtime.panicslice` are grouped at the end of the function, so that they don't interrupt the control flow when a human reads the assembly code. This could also prevent some cache lines from being loaded, since the calls to `panic` are unlikely to be ever executed.\r\n\r\nAlternatively, these `panic` calls should be near the code that could produce them, to make the `JAE` instruction shorter, using 2 bytes instead of 6.\r\n\r\n### What did you see instead?\r\n\r\nThe calls to `panicindex` and `panicslice` appear in the middle of the application code.\r\n\r\n```\r\n        varassign.go:82 0x401429        48898c2418010000                MOVQ CX, 0x118(SP)\r\n        varassign.go:82 0x401431        488bac2498000000                MOVQ 0x98(SP), BP\r\n        varassign.go:82 0x401439        4881c4a0000000                  ADDQ $0xa0, SP\r\n        varassign.go:82 0x401440        c3                              RET\r\n        varassign.go:6  0x401441        31c0                            XORL AX, AX\r\n        varassign.go:82 0x401443        e94affffff                      JMP 0x401392\r\n        varassign.go:81 0x401448        e843240200                      CALL runtime.panicslice(SB)\r\n        varassign.go:81 0x40144d        0f0b                            UD2\r\n        varassign.go:80 0x40144f        e83c240200                      CALL runtime.panicslice(SB)\r\n        varassign.go:80 0x401454        0f0b                            UD2\r\n        varassign.go:79 0x401456        e835240200                      CALL runtime.panicslice(SB)\r\n        varassign.go:79 0x40145b        0f0b                            UD2\r\n...\r\n        varassign.go:17 0x4016ae        80fb61                          CMPL $0x61, BL\r\n        varassign.go:22 0x4016b1        7209                            JB 0x4016bc\r\n        varassign.go:17 0x4016b3        80fb7a                          CMPL $0x7a, BL\r\n        varassign.go:22 0x4016b6        0f8611faffff                    JBE 0x4010cd\r\n```\r\n\r\nThe `RET` instruction at 0x401440 even starts on a cache line on its own, and the rest of the cache line is probably unused.\r\n",
+	"user": {
+		"login": "rillig",
+		"id": 3233724,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-10-06T23:02:55Z",
+	"updated_at": "2016-10-06T23:02:55Z"
+}

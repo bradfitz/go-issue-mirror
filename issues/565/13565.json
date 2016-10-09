@@ -1,7 +1,7 @@
 {
 	"id": 121530885,
 	"number": 13565,
-	"state": "open",
+	"state": "closed",
 	"title": "fmt: confusion about Scanf patterns, newline, space",
 	"body": "While updating code using fmt.Scanf after CL 16165, I discovered that there were users with patterns ending in \\n as a way to assert that Scanf had consumed an entire input.\n\nThe examples that follow are given as three-line stanzas printed by the program at the end of the report. The first line is the Scanf call, the second line is its return values, and the third line is the values of x and y after the call.\n\nThe case that CL 16165 changed intentionally is:\n\n\t# Go 1.5\n\tfmt.Sscanf(\"1,2\", \"%d,%d\\n\", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\nwhich became:\n\n\tfmt.Sscanf(\"1,2\", \"%d,%d\\n\", \u0026x, \u0026y)\n\t2 input does not match format\n\t1 2\n\nBut there exists code using a \\n at the end of the pattern to reject matching a partial input token:\n\n\t# code doesn't want this match\n\tfmt.Sscanf(\"1,2,3\", \"%d,%d\", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\n\t# so it uses this instead\n\tfmt.Sscanf(\"1,2,3\", \"%d,%d\\n\", \u0026x, \u0026y)\n\t2 expected space in input to match format\n\t1 2\n\nThe \\n here is serving to reject inputs that would be accepted without it, because \\n matched end-of-string in Go 1.5 and earlier. Unfortunately, in Go 1.6 the \\n will reject end-of-string, so code like this needs to be adjusted. How?\n\nIt seems that changing \\n to space works: space matches end-of-string still.\n\n\t# space accepts end-of-string\n \tfmt.Sscanf(\"1,2\", \"%d,%d \", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\n\t# space still rejects non-space additional text\n\tfmt.Sscanf(\"1,2,3\", \"%d,%d \", \u0026x, \u0026y)\n\t2 expected space in input to match format\n\t1 2\n\nOf course, using space in this way still accepts spaces, which \\n did not. So if \\n was being used this way:\n\n\t# Go 1.5\n\tfmt.Sscanf(\"1 2\", \"%d %d\\n\", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\tfmt.Sscanf(\"1 2 3\", \"%d %d\\n\", \u0026x, \u0026y)\n\t2 newline in format does not match input\n\t1 2\n\nnow the same code produces:\n\n\tfmt.Sscanf(\"1 2\", \"%d %d\\n\", \u0026x, \u0026y)\n\t2 input does not match format\n\t1 2\n\tfmt.Sscanf(\"1 2 3\", \"%d %d\\n\", \u0026x, \u0026y)\n\t2 newline in format does not match input\n\t1 2\n\nand changing \\n to space in the pattern does not help reject the second input:\n\n\tfmt.Sscanf(\"1 2\", \"%d %d \", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\tfmt.Sscanf(\"1 2 3\", \"%d %d \", \u0026x, \u0026y)\n\t2 \u003cnil\u003e\n\t1 2\n\nThe reason this seems to come up is that people read a line at a time from some source and then process it with fmt.Scanf with a pattern containing \\n, perhaps not realizing that the \\n has been stripped off by the line reader, or perhaps just taking advantage of the fact that \\n served like the regexp $ in such processing.\n\nI am not sure how people should update their code. I can't find any promise in the docs that a space in the pattern matches end-of-string, and it seems odd to me that it does. But if we don't do that, then there's no way to update some common uses. And even if we do make the promise, it doesn't help reject unmatched text beginning with space, as in the last few examples. (To be fair, \\n doesn't help reject unmatched text beginning with \\n, but that doesn't come up in line-at-a-time processing, as seems to be common.)\n\n1. Should we roll back CL 16165 and simply document that a single \\n at end of pattern is allowed to match end-of-string.\n2. Or should we document that space at end of pattern matches end-of-string?\n3. Or should we make space at end of pattern not match end-of-string?\n\nIf we do (3), then there becomes no way to preserve the semantics of many existing uses, since Scanf gives no indication that it did not process the entire input string.",
 	"user": {
@@ -10,15 +10,21 @@
 		"type": "User",
 		"site_admin": false
 	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
 	"assignee": {
-		"login": "robpike",
-		"id": 4324516,
+		"login": "rsc",
+		"id": 104030,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 11,
+	"comments": 13,
+	"closed_at": "2016-10-07T03:48:20Z",
 	"created_at": "2015-12-10T16:53:35Z",
-	"updated_at": "2016-05-05T17:23:20Z",
+	"updated_at": "2016-10-07T03:48:20Z",
 	"milestone": {
 		"id": 1709364,
 		"number": 39,

@@ -1,0 +1,33 @@
+{
+	"id": 181013446,
+	"number": 17341,
+	"state": "closed",
+	"title": "runtime: concurrent phase of GC causing full request stalls",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\nGo 1.7\r\nAlso tried with: GO: fd296282e0a5058351954f1a7ea2dac5ef87f052\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\nWrote a benchmark to showcase the issue using native net/http library:\r\nhttps://gist.github.com/zviadm/18263037d4b9b624fc8a5b4cb7005bb4\r\n\r\nWhat this benchmark does is, create a simple http server, and then create lots of connections to it and perform very simple requests to it from those connections/goroutines. This simulates having an http server and lots of clients where most of them are idle.\r\n\r\n### What did you expect to see?\r\nWhen run using something like:\r\n$: ulimit -Sn 500000\r\n$: GODEBUG=gctrace=1 ./net_gctest -port=5002 -nroutines=30000 -sleep_t=3s -max_latency=30ms \u0026\u003e benchout.txt\r\n\r\nExpect to see it doing 10k QPS, with no stalls or tail latencies.\r\n\r\n### What did you see instead?\r\nSample output: https://gist.github.com/zviadm/82e9b899833db9dc741f9a6400a09d6c\r\n\r\ngc 25 @222.337s 0%: 0.34+165+1.3 ms clock, 11+477/1307/2896+43 ms cpu, 1411-\u003e1415-\u003e723 MB, 1447 MB goal, 32 P\r\ngc 26 @237.844s 0%: 0.30+165+1.4 ms clock, 9.8+504/1306/3076+47 ms cpu, 1411-\u003e1415-\u003e723 MB, 1447 MB goal, 32 P\r\ngc 27 @253.378s 0%: 0.30+162+1.2 ms clock, 9.4+485/1286/2993+39 ms cpu, 1411-\u003e1415-\u003e723 MB, 1447 MB goal, 32 P\r\n\r\neven though, STW phase of GC is \u003c2ms, we see lots of stalls of \u003e30ms while concurrent phase of the GC runs. pretty much all requests stall during that time period.\r\n\r\n\r\nThis is a pretty serious issue because that basically means if you have lots of idle connections (or potentially just go routines?) in a server, it causes huge tail latency spikes. And in real programs GC frequency will be higher, it can happen once every 5-10 seconds and now these spikes easily show up in p95/p99 latency times.\r\n\r\nNote that the cpu utilization is very low throughout the test. If we perform same test with much smaller number of go routines, say only 200 or 300, it can do 200k QPS without any STALLs on that same machine.",
+	"user": {
+		"login": "zviadm",
+		"id": 517937,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-10-05T17:59:57Z",
+	"created_at": "2016-10-04T21:46:42Z",
+	"updated_at": "2016-10-05T18:13:22Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

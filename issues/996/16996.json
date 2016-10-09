@@ -1,7 +1,7 @@
 {
 	"id": 175128321,
 	"number": 16996,
-	"state": "open",
+	"state": "closed",
 	"title": "cmd/compile: liveness / GC bug with variadic call",
 	"body": "When writing a test for #16983, I encountered what looks like perhaps a liveness bug with variadic calls.\r\n\r\nIf I set \"const useVariadic\" to true below, the test fails (buf1 is never collected), but if I set it to false, buf1 is collected.\r\n\r\n```go\r\nfunc twoReader(b1, b2 *bytes.Reader) Reader {\r\n        return MultiReader(b1, b2)\r\n}\r\n        \r\nfunc TestMultiReaderFreesExhaustedReaders(t *testing.T) {\r\n        var mr Reader\r\n        closed := make(chan struct{})\r\n        {\r\n                buf1 := bytes.NewReader([]byte(\"foo\"))\r\n                buf2 := bytes.NewReader([]byte(\"bar\"))\r\n                const useVariadic = true // set to true to see the bug; false to see the workaround                                                                          \r\n                if useVariadic {\r\n                        mr = MultiReader(buf1, buf2)\r\n                } else {\r\n                        mr = twoReader(buf1, buf2)\r\n                }\r\n                runtime.SetFinalizer(buf1, func(*bytes.Reader) {\r\n                        close(closed)\r\n                })\r\n        }\r\n\r\n        buf := make([]byte, 4)\r\n        if n, err := ReadFull(mr, buf); err != nil || string(buf) != \"foob\" {\r\n                t.Fatalf(`ReadFull = %d (%q), %v; want 3, \"foo\", nil`, n, buf[:n], err)\r\n        }\r\n                \r\n        println(\"runtime.GC...\")\r\n        runtime.GC()\r\n        println(\"waiting...\")\r\n        select {\r\n        case \u003c-closed:\r\n        case \u003c-time.After(5 * time.Second):\r\n                t.Fatal(\"timeout waiting for collection of buf1\")\r\n        }\r\n\r\n        if n, err := ReadFull(mr, buf[:2]); err != nil || string(buf[:2]) != \"ar\" {\r\n                t.Fatalf(`ReadFull = %d (%q), %v; want 2, \"ar\", nil`, n, buf[:n], err)\r\n        }\r\n}\r\n```\r\n\r\n/cc @randall77 @josharian @minux @cherrymui ",
 	"user": {
@@ -16,9 +16,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 11,
+	"comments": 12,
+	"closed_at": "2016-09-19T16:42:21Z",
 	"created_at": "2016-09-05T21:19:44Z",
-	"updated_at": "2016-09-08T01:00:29Z",
+	"updated_at": "2016-09-19T16:42:22Z",
 	"milestone": {
 		"id": 1748849,
 		"number": 42,

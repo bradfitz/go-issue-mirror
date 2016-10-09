@@ -1,0 +1,29 @@
+{
+	"id": 180784549,
+	"number": 17332,
+	"state": "open",
+	"title": "sort: Slice* functions should not cause input to escape",
+	"body": "Using 7e0218cdb204cec082601988324d54ef484a8f5f.\r\n\r\nI've been wanting the ability to sort a slice on the stack without it escaping to the heap. When I investigated why `sort.Sort` escape, I found out it was because calling a method on an interface causes the receiver to escape (since the compiler can't prove whether the method causes the receiver to escape). As far as I can tell, this makes it such that `sort.Sort` will always cause the input to escape.\r\n\r\nHowever, looking at the API for `sort.Slice` introduced in #16721, I suspect that it should be possible to sort a slice without causing the input slice to escape. Currently, using `sort.Slice` to sort a slice on the stack still causes the slice to escape. Digging into the code, I believe it has to deal with the fact that `sort.Slice` relies on `reflect.ValueOf` which [currently always escapes the input](https://github.com/golang/go/blob/95df0c6ab93f6a42bdc9fd45500fd4d56bfc9add/src/reflect/value.go#L2088-L2092).\r\n\r\nAs a test of this theory, I [copied the logic of `sort.Slice` and avoided use of `reflect`](https://play.golang.org/p/5X3Adk8-D2) and it seems we can avoid allocations. Thus, if we can get `reflect` to not escape the input, I believe we can get `sort.Slice` to not escape the input as well.\r\n\r\nI realize that the core of this issue might be the `reflect` package. We can rename the issue if that's appropriate.\r\n\r\nAs a moonshot, it'd be nice if `sort.Slice` was completely allocation free.",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		},
+		{
+			"name": "Performance"
+		}
+	],
+	"comments": 8,
+	"created_at": "2016-10-04T01:08:17Z",
+	"updated_at": "2016-10-04T22:43:35Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 249928040,
+	"body": "I will begin writing a design doc since I use the XML package heavily for XMPP which I think could benefit from a more tree-like API.\r\n\r\n*EDIT:* Removed the \"if no one else is interested\" disclaimer; I will start writing a design doc either way, if someone else already has something or wants to handle it themselves, feel free to ping me.\r\n\r\n*EDIT 2:* Quickly threw together a draft: https://go-review.googlesource.com/c/30364/ happy to continue working on it or turn over work to one of the original issue participants.\r\n\r\nIt currently does exactly what was proposed by rsc above. Current usage would look something like this:\r\n\r\n```go\r\n// A simple XMPP message; don't worry about the syntax, what's important is that it's XML.\r\nconst msg = `\u003cmessage type=\"chat\" to=\"notviola@chat.shakespeare.lit\" from=\"feste@shakespeare.lit\"\u003e\r\n\u003cbody\u003eFoolery, sir, does walk about the orb, like the sun; it shines everywhere.\u003c/body\u003e\r\n\u003cthread\u003e0297358d-df91-4741-9435-c3783ec456ba\u003c/thread\u003e\r\n\u003c/message\u003e`\r\n\r\nd := xml.NewDecoder(strings.NewReader(msg))\r\n\r\ntok, _ := d.Token()\r\n\r\n// Decode full element:\r\n// el, err := d.Element(tok.(StartElement))\r\n\r\n// Decode partial element (we only care about the body)\r\nel := xml.Element{StartElement: tok.(StartElement)}\r\nfor ; err == nil; tok, err = d.Token() {\r\n\tif start, ok := tok.(StartElement); ok \u0026\u0026 start.Name.Local == \"body\" {\r\n\t\tchild := xml.Child{}\r\n\t\t_ = xml.DecodeElement(\u0026child, start)\r\n\t\tel.Child = append(el.Child, child)\r\n\t\treturn\r\n\t}\r\n}\r\n```\r\n\r\nThe only real problem I see with this API (which may not be a problem at all) is that it doesn't really simplify things over working with the raw token stream all that much when we only want to partially decode an element, although this may be outside of the scope of this proposal and not something we care to solve right now (if at all).",
+	"user": {
+		"login": "SamWhited",
+		"id": 512573,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-27T16:58:39Z",
+	"updated_at": "2016-10-05T16:14:00Z"
+}

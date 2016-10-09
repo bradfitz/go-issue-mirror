@@ -1,7 +1,7 @@
 {
 	"id": 124666885,
 	"number": 13807,
-	"state": "open",
+	"state": "closed",
 	"title": "cmd/compile: convT2E calls should allocate on the stack when they can",
 	"body": "    package main\r\n\r\n    type T struct {\r\n    \tx int\r\n    }\r\n\r\n    func (t *T) Set1(i interface{}) {\r\n        t.x = i.(int)\r\n    }\r\n    func (t *T) Set2(i interface{}) {\r\n        x := i.(int)\r\n        t.x = x\r\n    }\r\n\r\n    func main() {\r\n        var t T\r\n        t.Set1(5)\r\n        t.Set2(7)\r\n    }\r\n\r\nBoth Set1 and Set2 are inlined.  At the Set1 callsite, the call to convT2E to build the interface{} is passed nil for a storage location for the int.  At the Set2 callsite, it is passed a pointer to a stack location.  We should always use the stack allocation in these cases, like the Set2 callsite does.  The Set1 callsite ends up mallocing.\r\n\r\nProbably some interaction between inlining and the optimization to pass a non-nil storage location to convT2E.\r\n\r\nSee issue #13805 .",
 	"user": {
@@ -15,9 +15,10 @@
 			"name": "Performance"
 		}
 	],
-	"comments": 0,
+	"comments": 1,
+	"closed_at": "2016-10-05T17:24:55Z",
 	"created_at": "2016-01-03T19:32:45Z",
-	"updated_at": "2016-04-29T04:38:25Z",
+	"updated_at": "2016-10-05T17:24:55Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

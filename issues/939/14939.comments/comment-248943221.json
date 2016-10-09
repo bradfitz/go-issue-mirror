@@ -1,0 +1,12 @@
+{
+	"id": 248943221,
+	"body": "@dr2chase and I have been discussing an alternate approach to this that's somewhat less general than stack-allocated defers but should have essentially zero overhead versus a function call when it applies.\r\n\r\nThe idea is to take a page out of the C++ exception handling book, open code the defer execution, and use a PC value table to figure out where the defer code is when handling a panic.\r\n\r\nSpecifically, if the set of defers can be statically determined at every PC in a function, then the compiler would turn those defers into closures built on the stack and generate code at every exit point to directly call the appropriate defer closures for that exit point. In the common case, then, there would be no deferreturn logic at all and the defer execution would look essentially like hand-expanding the defer (like what CL 29379 did).\r\n\r\nTo keep this working with panics, the compiler would generate a PC value table for every function where this optimization applies that logically records, for every PC, where in the stack frame to find the set of defer closures to run for that PC. This actual encoding of this table could be quite compact in general, since large runs of PCs will have the same set of defer closures, and we could encode the tree-like structure of the set of defers to run directly in this table, so each entry would contain at most one defer closure offset and the PC to use to look up the next defer closure offset.\r\n\r\nWhen panic walks the stack, it would keep an eye on both this PC value table and the defer stack. A given frame could have either defers on the stack or a defer offset PC value table, but not both. If a frame has a defer offset PC value table, panic would use the table to find the defer closures and call them.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-22T15:46:52Z",
+	"updated_at": "2016-09-22T15:46:52Z"
+}

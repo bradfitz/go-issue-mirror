@@ -1,0 +1,12 @@
+{
+	"id": 250793277,
+	"body": "@quentinmit on my desktop now, I'll try to expand.\r\nI'll try to give a few examples, but first, I'd like to better understand your particular use case. In what situation do you have a static context you would like to append to each individual request, but do not have the values that go into the context?\r\n\r\nExample 1: append to context using a function\r\n```\r\n// If you do have the values available:\r\nfunc defaultContext(ctx context.Context) context.Context {\r\n   ctx = v1.WithContext(ctx)\r\n   /// etc\r\n   return ctx\r\n}\r\nhttp.ListenAndServe(\":8080\", http.HandleFunc(\"/\", func(w, r) {\r\n    ctx := defaultContext(r.Context())\r\n    mux.ServeHTTP(w, r.WithContext(ctx))\r\n})\r\n```\r\n\r\nExample 2: assume your bag of values context is opaque. Unsure when this would actually happen in practice.\r\n```\r\nvar bgCtx = MyBackgroundContext\r\n\r\nhttp.ListenAndServe(\":8080\", http.HandleFunc(\"/\", func(w, r) {\r\n    ctx, cancel := context.WithCancel(bgCtx)\r\n    defer cancel()\r\n    mux.ServeHTTP(w, r.WithContext(ctx))\r\n})\r\n```\r\n\r\nExample 3: assume you have values from an external context AND it has a cancel function. This wouldn't be possible with setting a background context.\r\n```\r\n// Incoming connection is forwarded from another service with a deadline and specific header values.\r\n// transform the request into a context value.\r\nfunc deriveRequestContext(r http.Request) context.Context {...}\r\n\r\nhttp.ListenAndServe(\":8080\", http.HandleFunc(\"/\", func(w, r) {\r\n    rctx := deriveRequestContext(r)\r\n    rctx, cancel := context.WithCancel(rctx)\r\n    defer cancel()\r\n    mux.ServeHTTP(w, r.WithContext(rctx))\r\n})\r\n```\r\n\r\nYou could also probably do something fancier by starting a goroutine and waiting on two ctx.Done() in a select, but the above should work. The second example, where you have a bag of opaque values but no deadline seems odd. Could you explain why you have this situation? Examples 1 and 3 seem far more likely.\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-09-30T16:42:18Z",
+	"updated_at": "2016-09-30T16:42:18Z"
+}

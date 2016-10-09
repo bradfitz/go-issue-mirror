@@ -1,8 +1,8 @@
 {
 	"id": 171324550,
 	"number": 16721,
-	"state": "open",
-	"title": "proposal: sort: make sorting easier",
+	"state": "closed",
+	"title": "sort: make sorting easier, add Slice, SliceStable, SliceIsSorted, reflect.Swapper",
 	"body": "**EDIT:** the proposal has changed later in this thread. See https://github.com/golang/go/issues/16721#issuecomment-241085266 and https://github.com/golang/go/issues/16721#issuecomment-241221703\r\n\r\nI propose we make sorting slices a first class concept in Go 1.8.\r\n\r\nI think everybody appreciates the cute `sort.Interface` type at this point, but the reality is that:\r\n\r\n  * nobody really sorts anything except slices (the handful of exceptions can keep doing what they're doing)\r\n  * the Len and Swap functions are redundant. They're always the same for slices.\r\n  * naming a new type (e.g. \"widgetsByName\") is tedious to many (including me; I still loathe it after 6+ years)\r\n  * making a new type and three methods at the top-level (because it has to have methods, so it can't be a local type) is more difficult to read, since I'd prefer my `Less` function inline with my code, in context.\r\n\r\nI think we should add to package sort at least:\r\n\r\n```go\r\npackage sort\r\n\r\n// Slice sorts the provided slice using the function less.\r\n// The sort is not stable.\r\n// If slice is not a slice, Slice panics.\r\nfunc Slice(slice interface{}, less func(i, j int) bool)\r\n```\r\n\r\nAnd maybe at the same time, or in the future:\r\n\r\n```go\r\n// SliceSorter returns an sorter for the provided slice, suitable\r\n// for with Reverse or Stable.\r\n// If slice is not a slice, SliceSorter panics.\r\nfunc SliceSorter(slice interface{}, less func(i, j int) bool) Interface\r\n```\r\n\r\nThe assumption is that the user's `less` function would close over the data to be sorted.\r\n\r\nFor speed, this would not be purely reflect-based (except for one call to to get the slice length). The implementation would generate a custom swapper as needed for the type of the slice elements such that it's compatible with the GC \u0026 write barriers. I did a prototype of this which shows that it's as fast as the typical way.\r\n\r\nI think there's plenty of evidence in the Github BigQuery dataset that we're making sort way too hard for users.\r\n\r\n/cc @griesemer @robpike @ianlancetaylor @adg @broady",
 	"user": {
 		"login": "bradfitz",
@@ -12,30 +12,37 @@
 	},
 	"labels": [
 		{
+			"name": "NeedsFix"
+		},
+		{
 			"name": "Proposal"
+		},
+		{
+			"name": "Proposal-Accepted"
 		}
 	],
 	"assignee": {
-		"login": "griesemer",
-		"id": 8528975,
+		"login": "bradfitz",
+		"id": 2621,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 144,
+	"comments": 158,
+	"closed_at": "2016-10-03T16:10:17Z",
 	"created_at": "2016-08-16T04:52:44Z",
-	"updated_at": "2016-09-08T20:03:58Z",
+	"updated_at": "2016-10-04T16:25:30Z",
 	"milestone": {
-		"id": 1373555,
-		"number": 30,
-		"title": "Proposal"
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
 	},
 	"reactions": {
-		"total_count": 383,
-		"+1": 307,
-		"-1": 13,
+		"total_count": 396,
+		"+1": 319,
+		"-1": 14,
 		"laugh": 4,
-		"confused": 4,
+		"confused": 3,
 		"heart": 12,
-		"hooray": 43
+		"hooray": 44
 	}
 }

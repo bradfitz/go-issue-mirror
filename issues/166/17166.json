@@ -1,0 +1,17 @@
+{
+	"id": 178053104,
+	"number": 17166,
+	"state": "closed",
+	"title": "pkg/net/http/ - missing information about the need to empty the resp.Body, possible memory leak",
+	"body": "Package: https://golang.org/pkg/net/http/\r\n\r\nStated in this link (http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/) and confirmed on the official #go-nuts IRC channel the behaviour for resp.Body.Close() changed\r\n\r\n\u003e The original implementation for resp.Body.Close() also reads and discards the remaining response body data. This ensured that the http connection could be reused for another request if the keepalive http connection behavior is enabled. The latest http client behavior is different. Now it's your responsibility to read and discard the remaining response data. If you don't do it the http connection might be closed instead of being reused. This little gotcha is supposed to be documented in Go 1.5.\r\n\r\nBut I can't find anything about this in the http docs which leads to wasted ressources if you have to open a new http connection for every request instead of reusing the old ones.\r\n\r\nAlso the memory leak when you have a \"stopped after 10 redirects\" where the resp is non-nil but the error is also non-nil, with the standard \r\n\r\n`if err != nil  {\r\n log.error(err)\r\nreturn \r\n}\r\nresp.Body.Close()`\r\n\r\nyou just leak memory every time this occurs.\r\n\r\n`if err != nil  {\r\n log.error(err) \r\nif resp != nil {\r\n\t\tif resp != nil {\r\n\t\t\t_, _ = ioutil.ReadAll(resp.Body)\r\n\t\t\tdefer resp.Body.Close()\r\n}\r\nreturn\r\n}\r\n`\r\n\r\nwould be needed here. This must also be in the documentation.\r\n",
+	"user": {
+		"login": "Marmeladenbrot",
+		"id": 9965585,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-09-20T15:13:10Z",
+	"created_at": "2016-09-20T13:01:41Z",
+	"updated_at": "2016-09-20T15:13:11Z"
+}

@@ -1,0 +1,27 @@
+{
+	"id": 178978463,
+	"number": 17214,
+	"state": "closed",
+	"title": "cmd/compile: regalloc spilling unecessarily before ops with constrained inputs",
+	"body": "In  the s390x port we have quite a few ops that heavily constrain input registers. For example, STMG4 forces its inputs into R1, R2, R3 and R4. It does this because it requires consecutive registers and there is no other way (that I can think of) to get consecutive input registers using SSA rules. We have a similar problem with instructions that require an even-odd register pair. Other architectures also do something similar for LoweredMoves because it clobbers the input registers.\r\n\r\nUnfortunately constraining the input registers can cause the register allocator problems. For example, in BenchmarkAppend:\r\n\r\n```\r\nat entry: R1=b R3=d R4=c\r\n\r\na = MOVDaddr \u003cuintptr\u003e {type.int} _ : R1 // forces b out of R1\r\nb = LoadReg \u003c*uint8\u003e _ : R2\r\nc = Copy \u003cint\u003e R4 : R3                   // forces d out of R3\r\nd = LoadReg \u003cint\u003e _ : R4\r\n_ = STMG4 \u003cmem\u003e _ a b c d _\r\n```\r\n\r\n`b` and `d` are spilled unnecessarily because we have unallocated registers available and could have re-arranged the inputs as:\r\n\r\n```\r\nb = Copy \u003c*uint8\u003e R1 : R2\r\na = MOVDaddr \u003cuintptr\u003e {type.int} : R1\r\n_ = Copy \u003cint\u003e R3 : R5\r\nc = Copy \u003cint\u003e R4 : R3\r\nd = Copy \u003cint\u003e R5 : R4\r\n_ = STMG4 \u003cmem\u003e _ a b c d _\r\n```\r\n\r\nI'm planning to take a look at the register allocator to see if I can fix this. I think both these cases are a little fiddly though. I'm not sure if there is a general solution to this problem... Perhaps copying evicted values to a new register when there are further uses close by?\r\n\r\nIn this particular case it would also help if the `StoreReg` ops were moved into this basic block (I noticed there are some TODOs to do this in the regalloc code). Currently the generated code ends up something like this:\r\n\r\n```\r\nfor {\r\n     // spill here\r\n     if unlikely {\r\n          // load spilled values\r\n     }\r\n}\r\n```",
+	"user": {
+		"login": "mundaym",
+		"id": 15000766,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 6,
+	"closed_at": "2016-10-03T19:16:38Z",
+	"created_at": "2016-09-23T21:35:06Z",
+	"updated_at": "2016-10-03T21:43:57Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}
