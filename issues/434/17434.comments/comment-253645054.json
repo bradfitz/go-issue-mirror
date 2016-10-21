@@ -1,0 +1,12 @@
+{
+	"id": 253645054,
+	"body": "\u003e I see. I said \"GC pause times\" just because that's the only time duration that I could see in package runtime.MemStats or runtime/debug.GCStats, and I naively assumed it somehow represented total GC overhead. I guess it actually means only STW time?\r\n\r\nRight. The only thing in MemStats that accounts for concurrent GC time is GCCPUFraction, but I don't think that would help here.\r\n\r\n\u003e Also, currently I think we only measure per-phase wallclock time. I wonder if we need to measure per-phase CPU-seconds instead, since the GC is concurrent (and possibly the compiler itself will be too, in the future).\r\n\r\nI'm not so sure. What people generally care about when they're running the compiler is how long it took, not how many CPU-seconds it took.\r\n\r\n\u003e I meant (for example) to make an explicit runtime.GC() call at the end of the frontend phases and record the runtime.MemStats.Heap{Alloc,Objects} values. The hypothesis being that 1) they represent how much data the FE has allocated that will continue to remain live throughout the BE phases, and 2) improving those numbers should reduce the amount of GC work necessary during the BE phases. Is that sound, or is my model of GC effects too naive?\r\n\r\nI think that's a good thing to measure, however, the effect is somewhat secondary to just how many allocations the FE does. To a first order, if the FE retained set doubles, each GC during the BE will cost twice as much but they will happen half as often, so the total cost doesn't change. (It does matter to a second order, since longer GCs are less efficient GCs because of write barrier overheads and floating garbage.)\r\n\r\nHowever, my point about running a GC between phases just to reset the GC pacing still stands. Imagine the GC runs exactly 1 second, 2 seconds, etc. after the process starts; if you change the time some phase takes, all of the later phases will line up with the GC ticks differently, causing fluctuations in measured performance. `runtime.GC()` lets you reset the clock, so if you do it at the beginning of each compiler phase, only that phase's \"timing\" will matter for its own measurement. The GC actually runs in logical \"heap time\", but the analogy is quite close.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-13T21:31:47Z",
+	"updated_at": "2016-10-13T21:31:47Z"
+}

@@ -1,0 +1,26 @@
+{
+	"id": 182719965,
+	"number": 17427,
+	"state": "open",
+	"title": "os: CtrlZ doesn't work on Windows",
+	"body": "### What version of Go are you using (`go version`)?\r\n\r\ngo version devel +1af769d Thu Oct 13 06:16:53 2016 +0000 windows/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nWindows7 64bit\r\n\r\n### What did you do?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"os\"\r\n)\r\n\r\nfunc main() {\r\n\t_, err := io.Copy(os.Stdout, os.Stdin)\r\n\tif err != nil {\r\n\t\tlog.Print(err)\r\n\t}\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\n\r\nbreak blocking of io.Copy.\r\n\r\n### What did you see instead?\r\n\r\ndoesn't break blocking of io.Copy.\r\n\r\nI suggest to change like below\r\n\r\n```diff\r\ndiff --git a/src/os/file_windows.go b/src/os/file_windows.go\r\nindex ed06b55..ad47ee3 100644\r\n--- a/src/os/file_windows.go\r\n+++ b/src/os/file_windows.go\r\n@@ -233,7 +233,7 @@ func (f *File) readOneUTF16FromConsole() (uint16, error) {\r\n \t\t\treturn 0, err\r\n \t\t}\r\n \t\tif nmb == 0 {\r\n-\t\t\tcontinue\r\n+\t\t\treturn 0, nil\r\n \t\t}\r\n \t\tmbytes = append(mbytes, buf[0])\r\n \r\n@@ -269,7 +269,7 @@ func (f *File) readConsole(buf []byte) (n int, err error) {\r\n \t\treturn f.copyReadConsoleBuffer(buf)\r\n \t}\r\n \twchar, err := f.readOneUTF16FromConsole()\r\n-\tif err != nil {\r\n+\tif err != nil || wchar == 0 {\r\n \t\treturn 0, err\r\n \t}\r\n \tr := rune(wchar)\r\n```\r\n\r\nI wonder what way is best for go because below's C code work with different behavior to go.\r\n\r\n```c\r\n#include \u003cstdio.h\u003e\r\n\r\nint\r\nmain(int argc, char* argv[]) {\r\n  char buf[256];\r\n  printf(\"%d\\n\", fread(buf, 1, sizeof(buf), stdin));\r\n  perror(\"fread\");\r\n  return 0;\r\n}\r\n```\r\n\r\n![C](https://cloud.githubusercontent.com/assets/10111/19340667/1257969e-9165-11e6-8f7d-3dc033edd72f.gif)\r\n\r\n![Go](https://cloud.githubusercontent.com/assets/10111/19340961/64ad464a-9166-11e6-8f17-53e39399adc9.gif)\r\n\r\n\r\nMicrosoft C runtime seeks break fread when typing CTRL-Z in the beigin of the line. But my patch break even though typing CTRL-Z at end of the line.\r\n\r\n__I don't say that Go have to work as same as C. But I worry about the right way for go.__\r\n\r\nrelated issue https://github.com/golang/go/issues/17097, https://github.com/golang/go/issues/16857",
+	"user": {
+		"login": "mattn",
+		"id": 10111,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 7,
+	"created_at": "2016-10-13T07:56:16Z",
+	"updated_at": "2016-10-19T05:22:39Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

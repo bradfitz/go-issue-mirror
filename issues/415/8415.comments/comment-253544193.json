@@ -1,0 +1,12 @@
+{
+	"id": 253544193,
+	"body": "@bradfitz @kardianos \r\n\r\nI disagree but at the end of the day I can live with it.  My main concerns are this:\r\n\r\n1) The client doesn't always control NULL vs not NULL on a per column basis.  The existing database/sql implementation makes writing client side code using the Valuer interface problematic.  For example, the code @kardianos is suggesting above would cause a break in my project.go file.  I find the other options to make the Valuer interface work on both NULL and not NULL columns a bit hack-ish (like adding an IsNull property in the type).\r\n\r\n2) Implementing the Value() function with a value receiver is not user error per se.  Nothing in the application will ever call that function, only the database/sql package.\r\n\r\nFor what it's worth, the person consuming the database/sql package is likely an average application programmer like myself and they - for better or worse - expect it to \"just work\".  With all due respect, if @bradfitz says \"that bug is confusing\" you can be sure it is confusing for the average programmer consuming the database/sql package.\r\n\r\nOur workaround has been to implement the Value() function with a pointer receiver, remove the not NULL constraints on all corresponding columns and (obviously) use pointers for all our client side variables.  That's the only way we can be reasonably sure not to cause a conflict at the dbase since our client side applications are of significant enough size that we could never guarantee none of our pointers will be nil.\r\n",
+	"user": {
+		"login": "220kts",
+		"id": 11798252,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-13T15:16:32Z",
+	"updated_at": "2016-10-13T15:16:32Z"
+}

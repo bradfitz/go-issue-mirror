@@ -1,7 +1,7 @@
 {
 	"id": 108975506,
 	"number": 12791,
-	"state": "open",
+	"state": "closed",
 	"title": "x/tools/cmd/vet: check JSON fields have the same struct tag",
 	"body": "I'm on go version 1.5.0 on Mac OS X. The same problem occurs in the playground, which right now uses go 1.5.1. `json.Marshal` does not appear to encode any fields that have conflicting json struct tags. For example, the following type will get marshaled to an empty json object (`\"{}\"`):\r\n\r\n```go\r\ntype MyStruct struct {\r\n\tA string `json:\"a\"`\r\n\tB int    `json:\"a\"`\r\n}\r\n```\r\n\r\nSee [this playground example](http://play.golang.org/p/8KR89jLh_Y). This just bit me in a real world application with a fairly large codebase and was hard to track down.\r\n\r\nAfter re-reading the documentation for [`json.Marshal`](https://golang.org/pkg/encoding/json/#Marshal), it appears that this behavior is consistent with the documentation. However, I would consider this a silent failure, and I would like to consider having `json.Marshal` return an error for this specific case.\r\n\r\nThis in contrast to embedded structs with conflicting field names or struct tags. Here's a [playground example with embedded structs](http://play.golang.org/p/b_KWxQDMji). In this case, `json.Marshal` chooses the field in the parent struct. I believe that behavior is correct and consistent. I can imagine many cases where an embedded struct will have field names which \"conflict\" with the parent struct. In fact, it's a pattern I have used on occasion to share common behavior and data structures.  \r\n\r\nThe case I am presenting is different, because I cannot imagine sane code which would assign conflicting struct tags to two different fields in the same struct. This was clearly an error on my part and can be easily fixed. The json package should help me, and other developers who make the same mistake, discover it and fix it as quickly as possible.",
 	"user": {
@@ -10,9 +10,15 @@
 		"type": "User",
 		"site_admin": false
 	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
 	"comments": 13,
+	"closed_at": "2016-10-13T02:09:13Z",
 	"created_at": "2015-09-29T22:49:31Z",
-	"updated_at": "2016-05-11T17:36:29Z",
+	"updated_at": "2016-10-13T02:09:13Z",
 	"milestone": {
 		"id": 1748849,
 		"number": 42,

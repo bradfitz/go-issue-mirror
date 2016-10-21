@@ -1,0 +1,12 @@
+{
+	"id": 254047082,
+	"body": "@cznic futures are selectable, so you may combine them with timeouts, other futures and channels  \r\n@Merovius channels are not the same as a future, cause many receivers may wait for a same value from a future, but is is hard to wait same value from a channel.\r\n\r\nExample:\r\n````go\r\ntype usersMap struct {\r\n  m sync.Mutex\r\n  u map[int] future User\r\n}\r\nvar users = usersMap{ u: make(map[int] future User }\r\nfunc userFuture(uid int) (f future User) {\r\n    users.m.Lock()\r\n    if f, ok := users.u[uid]; !ok {\r\n        f = make(future User)\r\n        go func() {\r\n            f \u003c- findUser(uid)\r\n        }()\r\n        users.u[uid] = f\r\n    }\r\n    user.m.Unlock()\r\n    return f\r\n}\r\nfunc getWithTimeout(uid int, timeout time.Duration) (u User, err error) {\r\n    f := userFuture(uid)\r\n    to := time.NewTimer(timeout)\r\n    select {\r\n    case u = \u003c- f: // that is how it differs from sync.Once()\r\n        return u, nil\r\n    case \u003c-to.C:\r\n        err = TimeoutError\r\n        return\r\n    }\r\n}\r\n// that is why channel is not suitable (several receivers of same value)\r\ngo func() {\r\n   if user, err := getWithTimeout(1, time.Second); err != nil {\r\n     sendToParis(user)\r\n   }\r\n}()\r\ngo func {\r\n   if user, err := getWithTimeout(1, time.Millisecond); err != nil {\r\n      giveAPresent(user)\r\n   }\r\n}()\r\n````\r\nIt could be implemented with more wrapper code, as example: https://github.com/Workiva/go-datastructures/blob/master/futures/selectable.go\r\nBut if it were internal type, then it will be more elegant and type-safe.",
+	"user": {
+		"login": "funny-falcon",
+		"id": 249427,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-16T13:31:28Z",
+	"updated_at": "2016-10-16T13:31:44Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 255145418,
+	"body": "Yep, I think we're all in agreement about how `DoWithLabels` should work. I still think that it needs a better name and/or a different package, because otherwise I find the current state confusing.\r\n\r\nAs for reading labels, your proposal currently says:\r\n\r\n```\r\n// ProfileLabels is an immutable map of profiler labels. A nil\r\n// *ProfileLabels is an empty map of labels.\r\n// There is intentionally no way to access the profile labels contained\r\n// inside the ProfLabels because doing so could create a goroutine-local\r\n// storage mechanism.\r\ntype ProfileLabels struct { /* runtime-internal unexported fields */ }\r\n```\r\n\r\nFrom talking to @ianlancetaylor, the thing we are trying to prevent is goroutine-local storage. I missed the fact that `runtime.SetProfileLabels` returns a pointer to the previous ProfileLabels struct. I don't see why we need that instead of just restoring the labels from the context as my code above does. Then ProfileLabels would not need to be opaque.\r\n\r\nEither way, we need to add a way to get at the labels in a context. This could be a `func pprof.LabelsFromContext(context.Context) [][2]string` or similar (in the same package that `DoWithLabels` ends up in).",
+	"user": {
+		"login": "quentinmit",
+		"id": 115761,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-20T15:47:08Z",
+	"updated_at": "2016-10-20T15:47:08Z"
+}

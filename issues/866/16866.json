@@ -2,7 +2,7 @@
 	"id": 173065234,
 	"number": 16866,
 	"state": "open",
-	"title": "proposal: make GO_HEAP_MALLOC_MB configurable by environment variable",
+	"title": "runtime: adjust _HeapAllocChunk dynamically to improve performance",
 	"body": "I know there is a huge desire to limit the number of user-facing variables for memory allocation and garbage collection, but through internal testing @rw found that increasing `GO_HEAP_MALLOC_MB` can give us performance gains that we can't obtain by modifying `GOGC` alone. Specifically, increasing it to 64MB from the default of 1MB gave us a ~60% boost in write throughput.\r\n\r\nI realize that opening this up for user modification might be a non-starter, but I figured I'd bring it up for discussion since the 1.8 dev cycle is kicking off. Curious to hear what you guys think about this. Let me know if you've got any questions about our use case or testing.\r\n\r\nHere's a quick patch for the change that @rw put together:\r\n```\r\n--- src/runtime/malloc.go       2016-08-12 00:04:10.524693000 +0000\r\n+++ src/runtime/malloc.go       2016-08-12 00:12:04.328693000 +0000\r\n@@ -109,6 +109,27 @@\r\n        _PageMask  = _PageSize - 1\r\n )\r\n\r\n+// modeled after `readgogc`\r\n+func readgoheapallocmb() uintptr {\r\n+       p := gogetenv(\"GO_HEAP_MALLOC_MB\")\r\n+       if p == \"\" {\r\n+               return 1 \u003c\u003c 20\r\n+       }\r\n+       mb := atoi(p)\r\n+       sz := mb \u003c\u003c 20\r\n+       println(\"GO_HEAP_MALLOC_MB\", mb)\r\n+       println(\"GO_HEAP_MALLOC_MB as bytes\", sz)\r\n+       return uintptr(sz)\r\n+}\r\n+\r\n+// we're in the allocator guts here, so ensure this is always sane by\r\n+// initializing it:\r\n+var _HeapAllocChunk uintptr = 1 \u003c\u003c 20\r\n+\r\n+func init() {\r\n+       _HeapAllocChunk = readgoheapallocmb()\r\n+}\r\n+\r\n const (\r\n        // _64bit = 1 on 64-bit systems, 0 on 32-bit systems\r\n        _64bit = 1 \u003c\u003c (^uintptr(0) \u003e\u003e 63) / 2\r\n@@ -129,7 +150,6 @@\r\n\r\n        _FixAllocChunk  = 16 \u003c\u003c 10               // Chunk size for FixAlloc\r\n        _MaxMHeapList   = 1 \u003c\u003c (20 - _PageShift) // Maximum page length for fixed-size list in MHeap.\r\n-       _HeapAllocChunk = 1 \u003c\u003c 20                // Chunk size for heap growth\r\n\r\n        // Per-P, per order stack segment cache size.\r\n        _StackCacheSize = 32 * 1024\r\n```\r\n\r\n/cc @pauldix @jwilder @rw",
 	"user": {
 		"login": "toddboom",
@@ -21,9 +21,9 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 4,
+	"comments": 6,
 	"created_at": "2016-08-24T21:42:57Z",
-	"updated_at": "2016-10-03T22:45:12Z",
+	"updated_at": "2016-10-21T00:07:34Z",
 	"milestone": {
 		"id": 1748849,
 		"number": 42,

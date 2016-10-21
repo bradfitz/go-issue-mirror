@@ -1,8 +1,8 @@
 {
 	"id": 136585226,
 	"number": 14518,
-	"state": "open",
-	"title": "net: add a new type that represents IP address prefix instead of IPNet",
+	"state": "closed",
+	"title": "net: InterfaceAddrs is not good for multi-homed IP node",
 	"body": "I propose adding the missing Zone field to IPNet structure.\r\n\r\nA trouble: The lack of IPv6 addressing scope information makes IPNet less usable. For example, when we have an IPNet and it represents an IPv6 link-local address, it's hard for us to distinguish the address belongs to which link/network interface.\r\n\r\nA workaround: Rescan IP routing information by using Interfaces function and Addrs method of Interface structure (and play a guessing game when the address comes from foreign packages because it's possible to have the same IPv6 link-local address on all the equipped links.)\r\n\r\nProposal:  From Go 1.6 the network interface and interface address identification feature works correctly for both IPv4 and IPv6 on tier-1 platforms. I think it makes sense to add Zone field to IPNet structure the same as {IP,TCP,UDP}Addr structures like the following:\r\n```\r\ntype IPNet struct {\r\n        IP   IP     // network number\r\n        Mask IPMask // network mask\r\n        Zone string // IPv6 scoped addressing zone\r\n}\r\n```\r\nmake IPNet.String return \"fe80::1%en0/64\" and ParseCIDR function being able to parse IPv6 address prefix literal including zone identifier such as \"fe80::1%en0/64\". Also network interface and interface address identification feature comprised of Interfaces function and Addrs method of Interface structure behaves the same as IP address resolution and connection setup features; just handles unicast IPv6 link-local addressing scope information only.\r\n\r\nAn implementation: https://go-review.googlesource.com/#/c/19946/",
 	"user": {
 		"login": "mikioh",
@@ -12,12 +12,16 @@
 	},
 	"labels": [
 		{
-			"name": "Proposal"
+			"name": "Documentation"
+		},
+		{
+			"name": "NeedsFix"
 		}
 	],
-	"comments": 9,
+	"comments": 11,
+	"closed_at": "2016-10-18T11:46:44Z",
 	"created_at": "2016-02-26T03:26:14Z",
-	"updated_at": "2016-05-06T01:05:26Z",
+	"updated_at": "2016-10-18T11:46:44Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

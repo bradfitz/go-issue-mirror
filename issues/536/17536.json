@@ -1,0 +1,26 @@
+{
+	"id": 184383015,
+	"number": 17536,
+	"state": "open",
+	"title": "os/exec: Command does not pass absolute path to argv[0]",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n`go version go1.7.1 darwin/amd64`\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n`darwin amd64`\r\n\r\n### What did you do?\r\nRun `sshd` in `exec.Command()` fails due to an incorrect absolute path.\r\nhttps://play.golang.org/p/z1UMtdSY2N\r\n\r\n### What did you expect to see?\r\nSuccessful execution of the command\r\n```\r\nServer listening on 0.0.0.0 port 8022.\r\nServer listening on :: port 8022.\r\n```\r\n\r\n\r\n### What did you see instead?\r\nA message indicating that the command was not executed as it should be.\r\n```\r\nsshd re-exec requires execution with an absolute path\r\n```\r\n\r\n## Discussion\r\n\r\n[`exec.Command`](https://golang.org/src/os/exec/exec.go?s=4289:4334#L119) does in fact expand the absolute path of a command and save it to `cmd.Path`; however, it does not update the value of `cmd.Args[0]`, which remains the original string `name`.\r\n\r\nEven though the executed program is run correctly from its full system path, programs like `sshd` may make [application-level checks](https://github.com/openssh/openssh-portable/blob/1cfd5c06efb121e58e8b6671548fda77ef4b4455/sshd.c#L1509) against `argv[0]`. In these cases, we see the failure case as above.\r\n\r\nNote that this may be intentional, but the docs for `Command` state that the path is resolved to a complete name, which makes the behavior above a little unexpected.\r\n\u003eIf name contains no path separators, Command uses LookPath to resolve the path to a complete name if possible. Otherwise it uses name directly.",
+	"user": {
+		"login": "APTy",
+		"id": 9010671,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Documentation"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-10-21T02:03:46Z",
+	"updated_at": "2016-10-21T05:48:11Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

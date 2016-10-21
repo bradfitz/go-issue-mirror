@@ -1,0 +1,32 @@
+{
+	"id": 182217413,
+	"number": 17406,
+	"state": "open",
+	"title": "cmd/pprof: Syscalls profiled incorrectly on macOS",
+	"body": "I've encountered a strong discrepancy between pprof and dtrace while profiling [quic-go](https://github.com/lucas-clemente/quic-go). I've managed to reduce it to a somewhat simple test case ([link](https://gist.github.com/lucas-clemente/8a6029552fdc6bcba609a840d04da699)), where (in a loop) data is sent via UDP to localhost and some CPU intensive computation that takes a few ms runs.\r\n\r\nProfiling this via dtrace gives the expected result, with the CPU intensive part taking the majority of the time. dtrace (imo correctly) shows `doSomething` taking almost all of the runtime, whereas pprof says 62% is spent in `syscall.Syscall6`, called by the `netFD.Write` method.\r\n\r\nThe dtrace profile is generated using [flamegraph](https://github.com/brendangregg/FlameGraph) with\r\n\r\n```\r\nsudo dtrace -x ustackframes=1000 -n 'profile-99 /execname == \"pprof-test\" \u0026\u0026 arg1/ { @[ustack()] = count(); } tick-20s { exit(0); }' -o out.dtrace \u0026\u0026 ~/src/FlameGraph/stackcollapse.pl out.dtrace \u003e folded.dtrace \u0026\u0026 ~/src/FlameGraph/flamegraph.pl folded.dtrace \u003e dtrace.svg\r\n```\r\n\r\n\u003cimg width=\"1192\" alt=\"screenshot 2016-10-11 11 24 04\" src=\"https://cloud.githubusercontent.com/assets/918034/19265667/4d2de5f4-8fa6-11e6-9c01-8f226cec38a9.png\"\u003e\r\n\r\nThe pprof profile is generated using\r\n\r\n```\r\ngo build \u0026\u0026 ./pprof-test\r\n# in another shell\r\ngo tool pprof pprof-test localhost:8080/debug/pprof/profile\r\n```\r\n\r\n\u003cimg width=\"530\" alt=\"screenshot 2016-10-11 11 24 08\" src=\"https://cloud.githubusercontent.com/assets/918034/19265668/4d2fc70c-8fa6-11e6-8307-f2f2faed28ac.png\"\u003e\r\n\r\n### All files\r\n\r\n- [The dtrace flamegraph SVG](https://dl.dropboxusercontent.com/u/1428776/pprof-report/dtrace.svg)\r\n- [The dtrace output](https://dl.dropboxusercontent.com/u/1428776/pprof-report/out.dtrace)\r\n- [The pprof SVG](https://dl.dropboxusercontent.com/u/1428776/pprof-report/pprof.svg)\r\n- [The pprof profile](https://dl.dropboxusercontent.com/u/1428776/pprof-report/pprof.pprof-test.localhost%3A8080.samples.cpu.002.pb.gz)\r\n- [The compiled binary from which the profile was generated](https://dl.dropboxusercontent.com/u/1428776/pprof-report/pprof-test)\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7.1 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nmacOS 10.12 (16A323)\r\n\r\n```\r\n~/D/pprof-test → go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/lucas/src/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.7.1/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.7.1/libexec/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/8c/y8j1444j1fbddn6bl788p1ym0000gn/T/go-build975132377=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n",
+	"user": {
+		"login": "lucas-clemente",
+		"id": 918034,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "HelpWanted"
+		},
+		{
+			"name": "NeedsInvestigation"
+		},
+		{
+			"name": "OS-Darwin"
+		}
+	],
+	"comments": 3,
+	"created_at": "2016-10-11T09:32:40Z",
+	"updated_at": "2016-10-11T23:47:10Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 255206026,
+	"body": "Yes, what we do is modify the stack to look like a call to `runtime.sigpanic`, and then set the stack pointer and PC in the `ucontext_t` structure passed to the signal handler.  When we return from the signal handler, we expect that to execute the `sigreturn` system call which should then re-enter the user program with the stack pointer and PC set to the values in the `ucontext_t` (on some systems we execute `sigreturn` directly).  On tip this is done in `sigctxt.preparePanic`, which has CPU-specific versions in signal_GOARCH.go and for modifying the `ucontext_t` struct relies on support in signal_GOOS_GOARCH.go.\r\n\r\nLooking at your log that is at least partially working.  I see that the signal handler is indeed returning to `sigpanic` as it should.  What seems to be failing is that `g.sigcode0` does not have the expected value in `sigpanic`.  That field is set from the `si_code` field of the `siginfo_t` passed to the signal handler.  If you want to pursue this further, change `sigpanic` to print out the `g.sigcode0` field.",
+	"user": {
+		"login": "ianlancetaylor",
+		"id": 3194333,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-20T19:36:00Z",
+	"updated_at": "2016-10-20T19:36:00Z"
+}

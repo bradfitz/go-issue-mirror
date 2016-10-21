@@ -1,0 +1,26 @@
+{
+	"id": 184084350,
+	"number": 17520,
+	"state": "open",
+	"title": "net: remove mutex from UDP reads/writes",
+	"body": "Reads and writes on net.UDPConns are guarded by a mutex. Contention on the mutex makes it difficult to efficiently handle UDP requests concurrently. Or perhaps I'm overlooking the right way to do this.\r\n\r\nThe attached benchmark attempts to demonstrate the problem:\r\n[socks_test.go.txt](https://github.com/golang/go/files/540322/socks_test.go.txt)\r\n\r\nAnnotated benchmark results from my desktop:\r\n\r\n```\r\n# All tests are of a server reading 64-byte UDP messages and responding to them.\r\n#\r\n# /echo tests are of an echo server--no processing is done of messages, so\r\n# the test time is entirely spent in socket operations.\r\n#\r\n# /sha tests compute a SHA-256 sum of the input message 50 times, to simulate\r\n# doing a small amount of real work per message.\r\n\r\n# The read_1 tests process messages in serial on a single goroutine.\r\n#\r\n# Increasing GOMAXPROCS introduces a minor inefficiency for some reason,\r\n# but these results are largely what you would expect from a non-concurrent server.\r\nBenchmarkUDP/read_1/echo                 1000000              8698 ns/op\r\nBenchmarkUDP/read_1/echo-2               1000000             11229 ns/op\r\nBenchmarkUDP/read_1/echo-4               1000000             11873 ns/op\r\nBenchmarkUDP/read_1/sha                   200000             29676 ns/op\r\nBenchmarkUDP/read_1/sha-2                 200000             30997 ns/op\r\nBenchmarkUDP/read_1/sha-4                 200000             35817 ns/op\r\n\r\n# The read_n tests start multiple goroutines, each of which reads from\r\n# and writes to a shared UDP socket.\r\n#\r\n# Increasing the number of goroutines causes the server to become slower,\r\n# presumably due to lock contention on the socket.\r\nBenchmarkUDP/read_n/echo                 1000000             10201 ns/op\r\nBenchmarkUDP/read_n/echo-2                500000             19274 ns/op\r\nBenchmarkUDP/read_n/echo-4                300000             24263 ns/op\r\nBenchmarkUDP/read_n/sha                   200000             29522 ns/op\r\nBenchmarkUDP/read_n/sha-2                 200000             41015 ns/op\r\nBenchmarkUDP/read_n/sha-4                 200000             58748 ns/op\r\n\r\n# The read_1n1 tests start one reader, one writer, and multiple worker goroutines\r\n# connected by channels.\r\n#\r\n# Increasing the number of worker goroutines does not improve performance here either,\r\n# presumably due to lock contention on the channels.\r\nBenchmarkUDP/read_1n1/echo               1000000             11194 ns/op\r\nBenchmarkUDP/read_1n1/echo-2              500000             20991 ns/op\r\nBenchmarkUDP/read_1n1/echo-4              300000             28297 ns/op\r\nBenchmarkUDP/read_1n1/sha                 200000             39178 ns/op\r\nBenchmarkUDP/read_1n1/sha-2               200000             45770 ns/op\r\nBenchmarkUDP/read_1n1/sha-4               200000             38197 ns/op\r\n\r\n# The read_fake tests just run the work function in a loop without network operations.\r\n# Performance scales mostly linearly with the number of worker goroutines.\r\nBenchmarkUDP/read_fake/echo             2000000000               4.05 ns/op\r\nBenchmarkUDP/read_fake/echo-2           3000000000               2.00 ns/op\r\nBenchmarkUDP/read_fake/echo-4           10000000000              1.02 ns/op\r\nBenchmarkUDP/read_fake/sha                300000             21178 ns/op\r\nBenchmarkUDP/read_fake/sha-2              500000             10691 ns/op\r\nBenchmarkUDP/read_fake/sha-4             1000000              5609 ns/op\r\n```",
+	"user": {
+		"login": "neild",
+		"id": 52544,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-10-19T21:54:56Z",
+	"updated_at": "2016-10-20T00:45:54Z",
+	"milestone": {
+		"id": 2038341,
+		"number": 47,
+		"title": "Go1.9Early"
+	}
+}

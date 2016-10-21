@@ -1,7 +1,7 @@
 {
 	"id": 155840497,
 	"number": 15758,
-	"state": "open",
+	"state": "closed",
 	"title": "testing: complain loudly during concurrent use of T.FatalX and T.SkipX",
 	"body": "The `testing` package is explicit about the following:\r\n\r\n\u003e A test ends when its Test function returns or calls any of the methods FailNow, Fatal, Fatalf, SkipNow, Skip, or Skipf. Those methods, as well as the Parallel method, must be called only from the goroutine running the Test function.\r\n\r\nHowever, this is easy to overlook and it is not immediately obvious that the code below is a bad test:\r\n```go\r\nfunc TestFoo(t *testing.T) {\r\n\tgo func() {\r\n\t\tt.Fatal(\"fatal\") // Called from outside the Test function\r\n\t}()\r\n\ttime.Sleep(1 * time.Second)\r\n}\r\n```\r\n\r\nThis currently outputs (what a user expects):\r\n```\r\n--- FAIL: TestFoo (1.00s)\r\n\tfoo_test.go:10: fatal\r\n```\r\nHowever, since t.Fatal is not safe to call outside of the Test function, this is poor feedback since it makes the user think that the test is correctly written when it is actually racy. Instead it should complain loudly that this is wrong.\r\n\r\nAs I'm debugging poor tests, I've noticed that the calling of t.Fatal in a goroutine is actually a fairly common phenomenon.\r\n\r\nRelated: #15674 \r\n\r\n/cc @mpvl @bradfitz ",
 	"user": {
@@ -10,18 +10,28 @@
 		"type": "User",
 		"site_admin": false
 	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
 	"assignee": {
 		"login": "mpvl",
 		"id": 6445383,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 0,
+	"comments": 4,
+	"closed_at": "2016-10-18T03:25:22Z",
 	"created_at": "2016-05-19T21:33:20Z",
-	"updated_at": "2016-05-21T16:43:35Z",
+	"updated_at": "2016-10-19T18:38:10Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,
 		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 1,
+		"+1": 1
 	}
 }

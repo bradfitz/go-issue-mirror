@@ -1,7 +1,7 @@
 {
 	"id": 167389636,
 	"number": 16490,
-	"state": "open",
+	"state": "closed",
 	"title": "net/http: support multiple identical Content-Length headers",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\ngo version go1.6.3 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n3. What did you do?\r\nFetch URL from vendor which unfortunately returns duplicate (identical) Content-Length headers.\r\n\r\n4. What did you expect to see?\r\n\r\nI expected http response.\r\n\r\n\r\n5. What did you see instead?\r\n\r\nhttp: message cannot contain multiple Content-Length headers\r\n\r\n\r\nThe Patch:\r\nhttps://github.com/golang/go/commit/300d9a21583e7cf0149a778a0611e76ff7c6680f\r\n\r\nAdded check -\u003e net/http: harden Server against request smuggling\r\n\r\nThe check as is doesn't allow the optional response of multiple Content-Length headers as long as they match.\r\n\r\nhttps://tools.ietf.org/html/rfc7230#page-30\r\n\r\n   If a message is received that has multiple Content-Length header\r\n   fields with field-values consisting of the same decimal value, or a\r\n   single Content-Length header field with a field value containing a\r\n   list of identical decimal values (e.g., \"Content-Length: 42, 42\"),\r\n   indicating that duplicate Content-Length header fields have been\r\n   generated or combined by an upstream message processor, then the\r\n   recipient MUST **either** reject the message as invalid **or replace the\r\n   duplicated field-values with a single valid Content-Length field\r\n   containing that decimal value prior to determining the message body\r\n   length or forwarding the message**.\r\n\r\n\r\nCurrent check:\r\n\r\n\tif len(contentLens) \u003e 1 {\r\n \t\t// harden against HTTP request smuggling. See RFC 7230.\r\n \t\treturn 0, errors.New(\"http: message cannot contain multiple Content-Length headers\")\r\n \t}\r\n\r\n\r\nProposed alteration to check allowing duplicate Content-Length headers:\r\n\r\n\tif len(contentLens) \u003e 1 {\r\n\t\t// harden against HTTP request smuggling. See RFC 7230.\r\n\t\tcheck := contentLens[0]\r\n\t       for _, contentLength := range contentLens {\r\n\t\t\tif check != contentLength {\r\n\t\t\t\treturn 0, errors.New(\"http: message cannot contain multiple Content-Length header values\")\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\r\nExample response header from vendor tools:\r\n\r\n\u003c HTTP/1.1 200 Ok\r\n\u003c Date: Mon, 25 Jul 2016 15:01:09 GMT\r\n\u003c Server: Apache/2.2.3 (Red Hat)\r\n\u003c Content-Length: 9606\r\n\u003c Server-Application: Video Appliance\r\n\u003c Server-Address: 10.133.14.24\r\n\u003c Connection: close\r\n\u003c Content-Length: 9606\r\n\u003c Content-Type: text/html; charset=iso-8859-1\r\n\u003c\r\n\r\n",
 	"user": {
@@ -12,7 +12,13 @@
 	},
 	"labels": [
 		{
+			"name": "HelpWanted"
+		},
+		{
 			"name": "NeedsFix"
+		},
+		{
+			"name": "Suggested"
 		}
 	],
 	"assignee": {
@@ -21,12 +27,27 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 2,
+	"comments": 5,
+	"closed_at": "2016-10-17T09:03:00Z",
 	"created_at": "2016-07-25T15:07:35Z",
-	"updated_at": "2016-10-07T20:02:00Z",
+	"updated_at": "2016-10-17T09:03:00Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,
 		"title": "Go1.8"
-	}
+	},
+	"assignees": [
+		{
+			"login": "bradfitz",
+			"id": 2621,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "odeke-em",
+			"id": 4898263,
+			"type": "User",
+			"site_admin": false
+		}
+	]
 }

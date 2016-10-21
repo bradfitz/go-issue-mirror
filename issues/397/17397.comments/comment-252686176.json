@@ -1,0 +1,12 @@
+{
+	"id": 252686176,
+	"body": "I'm going to say this as working as intended.\r\n\r\n\u003e 1. Set session.Stdout to an instance of bytes.Buffer.\r\n\u003e 2. Try feeding this buffer to gzip.NewReader\r\n\r\nThis is not safe. The SSH session will be writing to the bytes.Buffer concurrently while gzip.Reader is reading from the buffer. This is racy and I suspect that running the program with the race detector will report an error. You should be using [`io.Pipe`](https://golang.org/pkg/io/#Pipe).\r\n\r\n\u003e 1. First problem: gzip.NewReader is blocking - why do you try to read in this function?\r\n\r\nThat is how GZIP works. There is a header that has to be read.\r\n\r\n\u003e 2. Second problem: gzip code seems to not be able to read from stream\r\n\r\nGZIP uses DEFLATE under the hood. Read only returns data when the internal dictionary is filled (every ~32KB of output or so) or if there was a special synchronization marker. These markers are only inserted if `gzip.Writer.Flush` is called or if `Z_SYNCFLUSH` is used in the C library.\r\n\r\n\u003e 3. Error message in both bytes and in gzip packages are nondescript\r\n\r\nMy guess is that the program is racy. I don't think we'll be able to provide good errors in this case.\r\n\r\n",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-10T17:28:05Z",
+	"updated_at": "2016-10-10T17:28:55Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 255152022,
+	"body": "\u003e surely, it is not just to simply release one copy.\r\n\r\nThe potentially unsafe thing is, that you need to modify a string, that could get modified concurrently.\r\n\r\nSay, e.g. `a = { 0x1234, 42 }, b = { 0x2345, 42 }, c = { 0x3456, 1000 }` and 0x1234 and 0x2345 contain the same data. Let's say you have a goroutine A that does `b, c = c, b` in a loop. Another goroutine B does `a == b` in a loop. At some point, this will evaluate to true and the compiler will emit code to do `b = a`, to release `0x2345`. But, it is racing with the other goroutine, so you might end up with `b == { 0x1234, 1000 }` because A assigned the pointer over it and B assigned the length. Now you can use that to do an out-of-bounds ~~write~~read.\r\n\r\nOf course this isn't complete, but it illustrates the issue. There would need to be some locking around this optimization, which just makes it bonkers, because you pay synchronization cost on every string assign and comparison.",
+	"user": {
+		"login": "Merovius",
+		"id": 720787,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-20T16:10:00Z",
+	"updated_at": "2016-10-20T16:10:51Z"
+}

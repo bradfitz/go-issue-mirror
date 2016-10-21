@@ -1,0 +1,17 @@
+{
+	"id": 183184817,
+	"number": 17450,
+	"state": "closed",
+	"title": "space optimization possible? struct{} takes up space when it is listed last in a struct",
+	"body": "I have a use case where it would be useful to have a field inside of a struct that gets changed in type from something to type struct{} -- and then no longer takes up space (I want to use golang structs like protobuf message definitions). \r\n\r\nWhen I checked my assumption however, I find a surprise: when the struct{} field is alone, it doesn't take up any space, as expected. But when the struct{} field is with another member, then it takes up 8 bytes. Ouch!  It seems like an opportunity for optimization has been missed.\r\n\r\n```\r\npackage main\r\n\r\n// run on : go version go1.7 darwin/amd64  (osx 10.11.6)\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"unsafe\"\r\n)\r\n\r\n// A is size 0\r\ntype A struct {\r\n\tNotAMystery struct{} // takes up 0 bytes, as expected\r\n}\r\n\r\n// B is size 8\r\ntype B struct {\r\n\tHithere int64 // takes up 8 bytes, as expected.\r\n}\r\n\r\n// C is size 16\r\ntype C struct {\r\n\tHithere int64\r\n\tMystery struct{} // takes up 8 bytes, HUH??\r\n}\r\n\r\nfunc main() {\r\n\tvar a A\r\n\tvar b B\r\n\tvar c C\r\n\tfmt.Printf(\"size of A is '%v'\\n\", unsafe.Sizeof(a))\r\n\tfmt.Printf(\"size of B is '%v'\\n\", unsafe.Sizeof(b))\r\n\tfmt.Printf(\"size of C is '%v'\\n\", unsafe.Sizeof(c))\r\n}\r\n\r\n/*output\r\n\r\n$ go run meas.go\r\nsize of A is '0'\r\nsize of B is '8'\r\nsize of C is '16'\r\n\r\n*/\r\n```",
+	"user": {
+		"login": "glycerine",
+		"id": 445247,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"closed_at": "2016-10-15T04:43:00Z",
+	"created_at": "2016-10-15T02:56:39Z",
+	"updated_at": "2016-10-15T04:43:00Z"
+}

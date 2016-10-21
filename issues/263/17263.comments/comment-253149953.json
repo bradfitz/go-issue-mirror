@@ -1,0 +1,12 @@
+{
+	"id": 253149953,
+	"body": "\u003e  “Open a TLS connection to the domain name being validated on the requested port”\r\n\u003e  I think we should update the spec\r\n\r\nThere's no way to specify the port, AFAIK.\r\nForgot to link acme issue: https://github.com/ietf-wg-acme/acme/issues/4 is what you want, I believe.\r\n\r\n\u003e Is there by any chance a code example explaining how to use the `dns-01` challenge with acme.Client?\r\n\r\n```go\r\nimport \"golang.org/x/crypto/acme\"\r\n\r\nkey, err := rsa.GenerateKey(rand.Reader, 2048)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\nclient := \u0026acme.Client{Key: key}\r\n\r\nctx := context.Background()\r\na, err := client.Authorize(ctx, \"example.com\")\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\nif a.Status == acme.StatusValid {\r\n  // Client.Key is already authorized for example.com.\r\n  // Skip DNS record provisioning and go to client.CreateCert\r\n}\r\n\r\n// Find dns-01 challenge in a.Challenges.\r\n// Let's assume the var name is challenge.\r\ntok, err := client.DNS01ChallengeRecord(challenge.Token)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\n// Provision tok value under _acme-challenge.example.com as a TXT record.\r\n// Remember to defer unprovision().\r\n// Once provisioned and propagated in DNS:\r\nif _, err := client.Accept(ctx, challenge); err != nil {\r\n  log.Fatal(err)\r\n}\r\na, err = client.WaitAuthorization(ctx, a.URI)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\nif a.Status != acme.StatusValid {\r\n  log.Fatal(\"domain authorization failed\")\r\n}\r\n\r\n// Create the certificate.\r\npriv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\nreq := \u0026x509.CertificateRequest{DNSNames: []string{\"example.com\"}} // populate other fields\r\ncsr, err := x509.CreateCertificateRequest(rand.Reader, req, priv)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\npub, _, err := client.CreateCert(ctx, csr, 0, true)\r\nif err != nil {\r\n  log.Fatal(err)\r\n}\r\n\r\n// priv is now the private part of the cert.\r\n// pub is the public part (DER format), including the chain.\r\n```",
+	"user": {
+		"login": "x1ddos",
+		"id": 25405,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-12T08:22:56Z",
+	"updated_at": "2016-10-12T08:26:30Z"
+}

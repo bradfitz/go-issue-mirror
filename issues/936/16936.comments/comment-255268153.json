@@ -1,0 +1,12 @@
+{
+	"id": 255268153,
+	"body": "@sh4m1l65, if you are interested in debugging this, the thing to do would be to try to make this failure dump /proc/self/maps as it dies.\n\nYou'd do that by adding code something like this to runtime/mem_linux.go and rebuilding the runtime and your binary:\n\n```\ndiff --git a/src/runtime/mem_linux.go b/src/runtime/mem_linux.go\nindex 094658d..2805050 100644\n--- a/src/runtime/mem_linux.go\n+++ b/src/runtime/mem_linux.go\n@@ -206,6 +206,8 @@ func sysReserve(v unsafe.Pointer, n uintptr, reserved *bool) unsafe.Pointer {\n \treturn p\n }\n \n+var mapbuf [10 * 1024]byte\n+\n func sysMap(v unsafe.Pointer, n uintptr, reserved bool, sysStat *uint64) {\n \tmSysStatInc(sysStat, n)\n \n@@ -217,6 +219,11 @@ func sysMap(v unsafe.Pointer, n uintptr, reserved bool, sysStat *uint64) {\n \t\t}\n \t\tif p != v {\n \t\t\tprint(\"runtime: address space conflict: map(\", v, \") = \", p, \"\\n\")\n+\t\t\tprint(\"/proc/self/maps:\\n\")\n+\t\t\tfd := open(\"/proc/self/maps\", 0, 0)\n+\t\t\tn := read(fd, unsafe.Pointer(\u0026mapbuf[0]), int32(len(mapbuf)))\n+\t\t\tclosefd(fd)\n+\t\t\twrite(2, unsafe.Pointer(\u0026mapbuf[0]), int32(n))\n \t\t\tthrow(\"runtime: address space conflict\")\n \t\t}\n \t\treturn\n```\n\nThanks.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-21T01:03:48Z",
+	"updated_at": "2016-10-21T01:03:48Z"
+}

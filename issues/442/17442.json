@@ -1,0 +1,32 @@
+{
+	"id": 183019940,
+	"number": 17442,
+	"state": "open",
+	"title": "runtime: fatal error: stopTheWorld: not stopped",
+	"body": "go version devel +d13fa4d Fri Oct 14 03:58:15 2016 +0000 linux/amd64\r\n\r\nI am seeing the following crashes:\r\n```\r\nfatal error: stopTheWorld: not stopped\r\nSIGABRT: abort\r\nPC=0x448321 m=0\r\n\r\ngoroutine 0 [idle]:\r\nruntime.futex(0x4ccb10, 0x0, 0x0, 0x0, 0x7f8f00000000, 0x7ffdfc0c2030, 0x0, 0x0, 0x7ffdfc0c2060, 0x409c7b, ...)\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/sys_linux_amd64.s:387 +0x21 fp=0x7ffdfc0c1ff0 sp=0x7ffdfc0c1fe8\r\nruntime.futexsleep(0x4ccb10, 0x0, 0xffffffffffffffff)\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/os_linux.go:45 +0x62 fp=0x7ffdfc0c2040 sp=0x7ffdfc0c1ff0\r\nruntime.notesleep(0x4ccb10)\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/lock_futex.go:145 +0x6b fp=0x7ffdfc0c2070 sp=0x7ffdfc0c2040\r\nruntime.stopm()\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/proc.go:1596 +0xad fp=0x7ffdfc0c2098 sp=0x7ffdfc0c2070\r\nruntime.gcstopm()\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/proc.go:1800 +0xb7 fp=0x7ffdfc0c20c0 sp=0x7ffdfc0c2098\r\nruntime.schedule()\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/proc.go:2086 +0x110 fp=0x7ffdfc0c2100 sp=0x7ffdfc0c20c0\r\nruntime.goschedImpl(0xc4200001a0)\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/proc.go:2200 +0xfb fp=0x7ffdfc0c2120 sp=0x7ffdfc0c2100\r\nruntime.gopreempt_m(0xc4200001a0)\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/proc.go:2215 +0x36 fp=0x7ffdfc0c2138 sp=0x7ffdfc0c2120\r\nruntime.newstack()\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/stack.go:1052 +0x2d6 fp=0x7ffdfc0c22b0 sp=0x7ffdfc0c2138\r\nruntime.morestack()\r\n\t/tmp/go-fuzz-build962140472/goroot/src/runtime/asm_amd64.s:366 +0x7f fp=0x7ffdfc0c22b8 sp=0x7ffdfc0c22b0\r\n```\r\nFull crash message:\r\nhttps://gist.github.com/dvyukov/7968c10af421d0ef5c5dcc6a9cdfff43\r\n\r\nTo reproduce:\r\ncheck out github.com/dvyukov/go-fuzz on 430caef0d9e2de9993a25311ada71d9857cf9f80\r\napply:\r\n```\r\ndiff --git a/examples/test/test.go b/examples/test/test.go\r\nindex 04740b8..3d4c5d28 100644\r\n--- a/examples/test/test.go\r\n+++ b/examples/test/test.go\r\n@@ -34,7 +34,7 @@ func init() {\r\n }\r\n \r\n func Fuzz(data []byte) int {\r\n-       // runtime.GOMAXPROCS(runtime.NumCPU())\r\n+       runtime.GOMAXPROCS(runtime.NumCPU())\r\n        if len(data) == 1 {\r\n                if data[0] == '!' || data[0] == '#' {\r\n                        panic(\"bingo 0\")\r\n```\r\nfrom go-fuzz dir:\r\ngo install ./go-fuzz ./go-fuzz-build\r\ngo-fuzz-build github.com/dvyukov/go-fuzz/examples/test\r\ngo-fuzz -bin test-fuzz.zip -workdir examples/test\r\nafter some time the crash report appears in examples/test/crashers/*.output\r\nif go-fuzz crashes with a panic, restart it, it crashes for unrelated reason",
+	"user": {
+		"login": "dvyukov",
+		"id": 1095328,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-10-14T10:46:58Z",
+	"updated_at": "2016-10-21T00:53:20Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

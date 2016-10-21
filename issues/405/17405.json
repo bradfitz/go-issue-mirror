@@ -1,0 +1,36 @@
+{
+	"id": 182190642,
+	"number": 17405,
+	"state": "open",
+	"title": "cmd/compile: optimize single return value type assertion",
+	"body": "This is a follow-up for #17118 .\r\n\r\nCurrently in go tip single return value type assertion is much slower comparing to type assertion returning two values:\r\n\r\n```go\r\nfunc BenchmarkTypeAssertSingleReturnValue(b *testing.B) {\r\n        n := 42\r\n        v := interface{}(n)\r\n        for i := 0; i \u003c b.N; i++ {\r\n                a := v.(int)\r\n                if a != n {\r\n                        b.Fatalf(\"unexpected a: %d. Expecting %d\", a, n)\r\n                }\r\n        }\r\n}\r\n\r\nfunc BenchmarkTypeAssertTwoReturnValues(b *testing.B) {\r\n        n := 42\r\n        v := interface{}(n)\r\n        for i := 0; i \u003c b.N; i++ {\r\n                a, ok := v.(int)\r\n                if !ok {\r\n                        b.Fatalf(\"type assertion failed for v=%v\", v)\r\n                }\r\n                if a != n {\r\n                        b.Fatalf(\"unexpected a: %d. Expecting %d\", a, n)\r\n                }\r\n        }\r\n}\r\n```\r\n\r\nResults:\r\n\r\n```\r\nBenchmarkTypeAssertSingleReturnValue-4   \t200000000\t         7.97 ns/op\t       0 B/op\t       0 allocs/op\r\nBenchmarkTypeAssertTwoReturnValues-4     \t2000000000\t         1.09 ns/op\t       0 B/op\t       0 allocs/op\r\n```\r\n\r\nThe compiler may optimize single return value type assertion (`x := v.(T)`) by rewriting it into the following code:\r\n\r\n```go\r\nx, ok := v.(T)\r\nif !ok {\r\n    panic(...)\r\n}\r\n```",
+	"user": {
+		"login": "valyala",
+		"id": 283442,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "randall77",
+		"id": 6889504,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-10-11T07:20:23Z",
+	"updated_at": "2016-10-15T22:54:50Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	},
+	"reactions": {
+		"total_count": 2,
+		"+1": 2
+	}
+}

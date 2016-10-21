@@ -1,0 +1,12 @@
+{
+	"id": 253645293,
+	"body": "I don't know how columns nullability got involved, but the reason I followed this discussion is represented in the OP. Given the following code\r\n\r\n```\r\ntype Person struct {\r\n    ID *uuid.UUID\r\n}\r\n```\r\n\r\nWhen uuid.UUID is a Valuer the database/sql codebase tries to call `.Value()` even when the pointer is nil which causes the error in the OP: \"panic: value method main.Person.Value called using nil *Person pointer.\" Given a nil pointer the database/sql package should try to insert NULL into the database column. If the database has an issue with that then that error can be raised separately. \r\n\r\nI guess what I'm saying is that the database/sql package should not rely on the result of `Value()` if the pointer is nil. If the pointer is nil, then assume the database value is NULL. Is that a bad assumption? If so, how?\r\n\r\nI understand that someone may want to cover these problems with their codebase, but isn't there a better way to handle that? If I wanted to substitute `*uuid.UUID` with some default value (i.e. not NULL) then I could do that before calling the database/sql package and not within the `Value()` method. Also, if the database doesn't allow nulls then why use a pointer as the struct property? Why not use `uuid.UUID` rather than `*uuid.UUID` and then you don't have to worry about getting a NULL?",
+	"user": {
+		"login": "blockloop",
+		"id": 3022496,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-13T21:32:48Z",
+	"updated_at": "2016-10-13T21:47:25Z"
+}

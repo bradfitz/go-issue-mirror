@@ -1,0 +1,12 @@
+{
+	"id": 254926479,
+	"body": "Hi, with this program I see what I think is unnecessary bound checking,\r\n\r\n```go\r\nfunc isPalindrome(s string) bool {\r\n\trunes := []rune(s)\r\n\tfor len(runes) \u003e 1 {\r\n\t\tif runes[0] != runes[len(runes)-1] {\r\n\t\t\treturn false\r\n\t\t}\r\n\t\trunes = runes[1:len(runes)-1]\r\n\t}\r\n\treturn true\r\n}\r\n```\r\n\r\nRelevant assembly loop is,\r\n\r\n```\r\n0000000000002097        movq    0x18(%rsp), %rax\r\n000000000000209c        movq    0x20(%rsp), %rcx  // len(runes)\r\n00000000000020a1        movq    0x28(%rsp), %rdx\r\n00000000000020a6        cmpq    $0x1, %rcx\r\n00000000000020aa        jle     0x20ec\r\n00000000000020ac        movl    (%rax), %ebx             /|\r\n00000000000020ae        leaq    -0x1(%rcx), %rsi         /| %rsi = len(runes) - 1\r\n00000000000020b2        cmpq    %rcx, %rsi               /| %rcx = len(runes)\r\n00000000000020b5        jae     0x2127                   /| panicindex (seem unnecessary)\r\n00000000000020b7        movl    -0x4(%rax,%rcx,4), %edi  /|\r\n00000000000020bb        cmpl    %edi, %ebx               /|\r\n00000000000020bd        jne     0x210f                   // if runes[0] != runes[len(runes)-1]\r\n00000000000020bf        cmpq    $0x1, %rsi\r\n00000000000020c3        jb      0x2108\r\n00000000000020c5        cmpq    %rdx, %rsi\r\n00000000000020c8        ja      0x2108\r\n00000000000020ca        addq    $-0x2, %rcx\r\n00000000000020ce        leaq    -0x1(%rdx), %rbx\r\n00000000000020d2        cmpq    $0x1, %rdx\r\n00000000000020d6        je      0x2104\r\n00000000000020d8        movq    $0x1, %rdx\r\n00000000000020df        leaq    (%rax,%rdx,4), %rax\r\n00000000000020e3        movq    %rbx, %rdx\r\n00000000000020e6        cmpq    $0x1, %rcx\r\n00000000000020ea        jg      0x20ac\r\n```\r\n\r\nVersion: go version go1.7.1 darwin/amd64\r\nPlatform: OSX\r\n\r\nThought maybe now with SSA Go will have range analysis and would know in this case that since `len(runes) \u003e 1`, `runes[len(runes)-1]` does not need a bound check.",
+	"user": {
+		"login": "charlie-ht",
+		"id": 14251608,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-19T20:11:26Z",
+	"updated_at": "2016-10-19T20:18:38Z"
+}

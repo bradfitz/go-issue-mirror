@@ -1,7 +1,7 @@
 {
 	"id": 96447649,
 	"number": 11813,
-	"state": "open",
+	"state": "closed",
 	"title": "cmd/compile: use branchless instructions for simple conditionals",
 	"body": "When I compile the following:\r\n```go\r\nfunc sign(b bool) int {\r\n    // Equivalent to: return 2*btoi(b)-1\r\n    if b {\r\n        return +1\r\n    }\r\n    return -1\r\n}\r\n\r\nfunc btoi(b bool) int {\r\n    if b {\r\n        return 1\r\n    }\r\n    return 0\r\n}\r\n\r\nfunc min(a, b int) int {\r\n    if a \u003c b {\r\n        return a\r\n    }\r\n    return b\r\n}\r\n\r\nfunc abs(a int) int {\r\n    if a \u003c 0 {\r\n        return -a\r\n    }\r\n    return a\r\n}\r\n```\r\n\r\nI notice the following output:\r\n```asm\r\n\"\".sign t=1 size=32 value=0 args=0x10 locals=0x0\r\n\t0x0000 00000 (/home/rawr/main7.go:3)\tTEXT\t\"\".sign(SB), $0-16\r\n\t0x0000 00000 (/home/rawr/main7.go:3)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:3)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:3)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0000 00000 (/home/rawr/main7.go:3)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0000 00000 (/home/rawr/main7.go:4)\tCMPB\t\"\".b+8(FP), $0\r\n\t0x0005 00005 (/home/rawr/main7.go:4)\tJEQ\t17\r\n\t0x0007 00007 (/home/rawr/main7.go:5)\tMOVQ\t$1, \"\".~r1+16(FP)\r\n\t0x0010 00016 (/home/rawr/main7.go:5)\tRET\r\n\t0x0011 00017 (/home/rawr/main7.go:7)\tMOVQ\t$-1, \"\".~r1+16(FP)\r\n\t0x001a 00026 (/home/rawr/main7.go:7)\tRET\r\n\t0x0000 80 7c 24 08 00 74 0a 48 c7 44 24 10 01 00 00 00  .|$..t.H.D$.....\r\n\t0x0010 c3 48 c7 44 24 10 ff ff ff ff c3                 .H.D$......\r\n\"\".btoi t=1 size=32 value=0 args=0x10 locals=0x0\r\n\t0x0000 00000 (/home/rawr/main7.go:10)\tTEXT\t\"\".btoi(SB), $0-16\r\n\t0x0000 00000 (/home/rawr/main7.go:10)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:10)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:10)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0000 00000 (/home/rawr/main7.go:10)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0000 00000 (/home/rawr/main7.go:11)\tCMPB\t\"\".b+8(FP), $0\r\n\t0x0005 00005 (/home/rawr/main7.go:11)\tJEQ\t17\r\n\t0x0007 00007 (/home/rawr/main7.go:12)\tMOVQ\t$1, \"\".~r1+16(FP)\r\n\t0x0010 00016 (/home/rawr/main7.go:12)\tRET\r\n\t0x0011 00017 (/home/rawr/main7.go:14)\tMOVQ\t$0, \"\".~r1+16(FP)\r\n\t0x001a 00026 (/home/rawr/main7.go:14)\tRET\r\n\t0x0000 80 7c 24 08 00 74 0a 48 c7 44 24 10 01 00 00 00  .|$..t.H.D$.....\r\n\t0x0010 c3 48 c7 44 24 10 00 00 00 00 c3                 .H.D$......\r\n\"\".min t=1 size=32 value=0 args=0x18 locals=0x0\r\n\t0x0000 00000 (/home/rawr/main7.go:17)\tTEXT\t\"\".min(SB), $0-24\r\n\t0x0000 00000 (/home/rawr/main7.go:17)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:17)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:17)\tMOVQ\t\"\".a+8(FP), CX\r\n\t0x0005 00005 (/home/rawr/main7.go:17)\tMOVQ\t\"\".b+16(FP), AX\r\n\t0x000a 00010 (/home/rawr/main7.go:17)\tFUNCDATA\t$0, gclocals·790e5cc5051fc0affc980ade09e929ec(SB)\r\n\t0x000a 00010 (/home/rawr/main7.go:17)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x000a 00010 (/home/rawr/main7.go:18)\tCMPQ\tCX, AX\r\n\t0x000d 00013 (/home/rawr/main7.go:18)\tJGE\t21\r\n\t0x000f 00015 (/home/rawr/main7.go:19)\tMOVQ\tCX, \"\".~r2+24(FP)\r\n\t0x0014 00020 (/home/rawr/main7.go:19)\tRET\r\n\t0x0015 00021 (/home/rawr/main7.go:21)\tMOVQ\tAX, \"\".~r2+24(FP)\r\n\t0x001a 00026 (/home/rawr/main7.go:21)\tRET\r\n\t0x0000 48 8b 4c 24 08 48 8b 44 24 10 48 39 c1 7d 06 48  H.L$.H.D$.H9.}.H\r\n\t0x0010 89 4c 24 18 c3 48 89 44 24 18 c3                 .L$..H.D$..\r\n\"\".abs t=1 size=32 value=0 args=0x10 locals=0x0\r\n\t0x0000 00000 (/home/rawr/main7.go:24)\tTEXT\t\"\".abs(SB), $0-16\r\n\t0x0000 00000 (/home/rawr/main7.go:24)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:24)\tNOP\r\n\t0x0000 00000 (/home/rawr/main7.go:24)\tMOVQ\t\"\".a+8(FP), AX\r\n\t0x0005 00005 (/home/rawr/main7.go:24)\tFUNCDATA\t$0, gclocals·23e8278e2b69a3a75fa59b23c49ed6ad(SB)\r\n\t0x0005 00005 (/home/rawr/main7.go:24)\tFUNCDATA\t$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)\r\n\t0x0005 00005 (/home/rawr/main7.go:25)\tCMPQ\tAX, $0\r\n\t0x0009 00009 (/home/rawr/main7.go:25)\tJGE\t23\r\n\t0x000b 00011 (/home/rawr/main7.go:26)\tMOVQ\tAX, BX\r\n\t0x000e 00014 (/home/rawr/main7.go:26)\tNEGQ\tBX\r\n\t0x0011 00017 (/home/rawr/main7.go:26)\tMOVQ\tBX, \"\".~r1+16(FP)\r\n\t0x0016 00022 (/home/rawr/main7.go:26)\tRET\r\n\t0x0017 00023 (/home/rawr/main7.go:28)\tMOVQ\tAX, \"\".~r1+16(FP)\r\n\t0x001c 00028 (/home/rawr/main7.go:28)\tRET\r\n```\r\nThe compiled program uses the JGE and JEQ instruction to branch when it is possible to compile the above functions without branches.\r\n\r\nThis optimization is useful in situations where the conditional is not easily predictable, leading to poor branch predictor performance.\r\n\r\nI'm using Go1.5beta2",
 	"user": {
@@ -12,12 +12,16 @@
 	},
 	"labels": [
 		{
+			"name": "NeedsFix"
+		},
+		{
 			"name": "Performance"
 		}
 	],
-	"comments": 4,
+	"comments": 11,
+	"closed_at": "2016-10-17T19:07:27Z",
 	"created_at": "2015-07-22T00:44:34Z",
-	"updated_at": "2016-10-06T23:06:36Z",
+	"updated_at": "2016-10-17T19:07:27Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

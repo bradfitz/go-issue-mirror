@@ -1,0 +1,32 @@
+{
+	"id": 183264507,
+	"number": 17466,
+	"state": "closed",
+	"title": "Proposal: add \"future\" internal type (similar to channel)",
+	"body": "\"Future\" is commonly used synchronization primitive used in many languages and environments.\r\nIt allows several \"receivers\" to wait \"computaion\" of a single value, and single \"receiver\" to wait for several values to be computed using same convenient construction.\r\nAlthough Golang already has channels, it is more like \"stream/queue of values\" instead of \"single value to be computed\". To make several \"receivers\" to wait on single value, one ought to use relatively complex wrappers around channel (usually, waiting for channel to be closed). And usually it lacks of type information of value cause uses `interface{}` for value.\r\n\r\nProposal\r\n------------\r\nAdd future primitive derived and equal rights to channels. Obviously, it will share representation and a lot of code with channels.\r\n- it is created with `make` sentence:\r\n````go\r\n    f := make(future string)\r\n```` \r\n- it could be then split to `receive` and `send` subtypes:\r\n````go\r\n    var rf \u003c-future string = f\r\n    var sf future\u003c- string = f\r\n````\r\n- future has same internal representation to buffered channel with capacity == 1, and uses similar receive and send operations.\r\n````go\r\n    f \u003c- \"hello\"\r\n    s := \u003c- f\r\n````\r\n- there is no \"close\" of future.\r\n- 'receive\" operation is almost equal to receiving from channel with excepts:\r\n  - receiver doesn't pop value from a buffer, every receiver receives same values sent to a future\r\n  ````go\r\n    s1 := \u003c- f\r\n    // it is possible to fetch same value several values\r\n    s2 := \u003c- f\r\n    if (s1 != s2 || \u0026s1[0] != \u0026s2[0]) { panic(\"not the same\") }\r\n  ````\r\n  - there is no \"receive with check\" operation (cause \"future\" could not be closed):\r\n  ````\r\n    s, ok := \u003c- f // this is syntax error\r\n  ````\r\n- \"send\" has properties of both sending to channel and closing channel:\r\n  - like `send to channel` it fills value, stored in a future's buffer,\r\n  - like `close of channel` it awakes all receivers blocked on a future,\r\n  - also, like `close of channel` second `send to future` leads to panic,\r\n  - to conditionally send value to a future, non-blocking send should be used (using `select` with `default`)\r\n  ````go\r\n    select {\r\n    case f \u003c- \"world\":\r\n       // do something, if we are first who sent value to a future\r\n    default:\r\n       // do something, if someone already filled future\r\n    }\r\n  `````\r\n  - to avoid semantic complexity, this is only allowed use of send to future inside of select. It is better to force it on a syntax level.\r\n  - as alternative, \"send with check\" could be introduced, (then \"send to future\" is completely forbidden inside of `select`) (it could be useful for sending to closed channels too, but it looks like it were rejected in the past).:\r\n  ````go\r\n    if ok := f \u003c- \"world\"; !ok {\r\n      // do something, if someone already filled future\r\n    }\r\n  ````\r\n\r\nNote: some names construction similar to future as 'I-var' - \"immutable variable\". Looks like, it will introduce less name collisions with existing code, so type could be named as `ivar`:\r\n````go\r\n    f := make(ivar string)\r\n    var rf \u003c-ivar string = f\r\n    var sf ivar\u003c- string = f\r\n````",
+	"user": {
+		"login": "funny-falcon",
+		"id": 249427,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Proposal"
+		}
+	],
+	"comments": 31,
+	"closed_at": "2016-10-20T06:02:00Z",
+	"created_at": "2016-10-16T12:28:08Z",
+	"updated_at": "2016-10-20T06:02:00Z",
+	"milestone": {
+		"id": 1373555,
+		"number": 30,
+		"title": "Proposal"
+	},
+	"reactions": {
+		"total_count": 15,
+		"+1": 5,
+		"-1": 10
+	}
+}

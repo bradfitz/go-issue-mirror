@@ -1,0 +1,21 @@
+{
+	"id": 183180874,
+	"number": 17448,
+	"state": "open",
+	"title": "net: DNS timeouts can alter the IPv4/IPv6-ity of LookupIP ",
+	"body": "When using the non-cgo DNS resolver, the following program:\r\n\r\n    addrs, err := net.LookupIP(\"kernel.org.\")\r\n    fmt.Printf(\"addrs=%v\\nerr=%v\\n\", addrs, err)\r\n\r\nOutputs kernel.org's IPv4/IPv6 addresses, as expected:\r\n\r\n    addrs=[2620:3:c000:a:0:1991:8:25 2001:4f8:1:10:0:1991:8:25 199.204.44.194 149.20.4.69 198.145.20.140]\r\n    err=\u003cnil\u003e\r\n\r\nHowever, if you blackhole `AAAA` responses, the output becomes IPv4-only:\r\n\r\n    $ sudo iptables -I INPUT -p udp -m string --algo kmp --hex-string '|06 6b 65 72 6e 65 6c 03 6f 72 67 00 00 1c 00 01|' -j DROP\r\n    $ go run test.go\r\n    addrs=[149.20.4.69 198.145.20.140 199.204.44.194]\r\n    err=\u003cnil\u003e\r\n\r\nAnd vice versa for `A` responses:\r\n\r\n    $ sudo iptables -I INPUT -p udp -m string --algo kmp --hex-string '|06 6b 65 72 6e 65 6c 03 6f 72 67 00 00 01 00 01|' -j DROP\r\n    $ go run test.go\r\n    addrs=[2620:3:c000:a:0:1991:8:25 2001:4f8:1:10:0:1991:8:25]\r\n    err=\u003cnil\u003e\r\n\r\nIf you replace `INPUT` with `OUTPUT`, the timeouts become socket errors, and the same thing happens, but more quickly.\r\n\r\nEssentially, the problem is that `LookupIP` presents the pair of queries as a single transaction, but internally, failures are non-atomic, so a flaky network can cause the function to report success, but only provide half of the addresses.  The fix is to return a failure instead of a half-success.\r\n\r\nAt Google, there have been cases involving other resolvers (b/31811300) where network flakiness causes a client to make an incorrect address selection decision, leading to minor outages, confused engineers, and/or ugly workarounds.  I haven't directly observed problems with Go's resolver in particular, but I'd like to preemptively fix this while it's still theoretical.\r\n\r\nThe relevant `dnsclient_unix.go` changes would be:\r\n- In `tryOneName`, distinguish socket errors from DNS protocol errors.  My best idea is to set `IsTimeout=true` for all socket errors, because `IsTemporary` is already used to indicate `SERVFAIL`.\r\n- In `goLookupIPOrder`, cause any `Timeout()` error to abort the `nameList` loop, discard all addresses, and fail immediately.\r\n\r\n(Interestingly, `getaddrinfo` also exhibits this problem, but asymmetrically: dropping `AAAA` replies causes a name to become IPv4-only, but dropping `A` replies returns an error.)",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 8,
+	"created_at": "2016-10-15T01:25:57Z",
+	"updated_at": "2016-10-20T20:01:51Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

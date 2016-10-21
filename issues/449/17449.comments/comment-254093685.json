@@ -1,0 +1,12 @@
+{
+	"id": 254093685,
+	"body": "Okay, so code duplicated by race instrumentation is more than just inline-label.\r\n\r\n[Here](https://gist.github.com/dhananjay92/936885ee83e40e6d3e358402947aed28#file-1-human-readable-ultra-clean) is a human readable form of dumped code after race instrumentation. Notice that code between `ORIGINAL CODE BEGINS` and ` ORIGINAL CODE ENDS` is repeated inside `AS-init` block (marked with `REPEATED CODE BEGINS/ENDS`). \r\n\r\nThis happens because in [`instrumentnode()`](https://github.com/golang/go/blob/master/src/cmd/compile/internal/gc/racewalk.go#L166), it copies parent's generated nodes to `outn` and then [appends `outn` to child's `Ninit`](https://github.com/golang/go/blob/master/src/cmd/compile/internal/gc/racewalk.go#L172). This copies over all the parent block's generated nodes so far which in this case includes inline-label, `i4` (or `.inlret7` in Go 1.7.1's case). \r\n\r\nI have a solution at https://github.com/dhananjay92/go/commit/7b1b24d58da6477243f243b902dbd7bbbb1eac1d. It passes all the tests and compiles this code successfully, but I am not sure if that's good enough.\r\n\r\n(Side note: [Another file](https://gist.github.com/dhananjay92/936885ee83e40e6d3e358402947aed28#file-2-dumped-code-with-manually-added-pseudo-code) that shows `\u003coutput of Dump()\u003e : \u003chuman readable pseudo code\u003e`.)",
+	"user": {
+		"login": "dhananjay92",
+		"id": 6269279,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-17T01:40:11Z",
+	"updated_at": "2016-10-17T01:44:55Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 254107764,
+	"body": "I looked at CL 31114 and I am not sure new behavior (the way you convert Ctrl+Z into bytes/errors returned by os.Stdin,Read) in CL is correct. @rsc approved original CtrlZ change (CL 4310), so he, probably, knows what we want here.\r\n\r\nI run your program above with this small change:\r\n\r\n```\r\ndiff --git a/src/os/file_windows.go b/src/os/file_windows.go\r\nindex ed06b55..d94bd9b 100644\r\n--- a/src/os/file_windows.go\r\n+++ b/src/os/file_windows.go\r\n@@ -229,6 +229,7 @@ func (f *File) readOneUTF16FromConsole() (uint16, error) {\r\n \tfor {\r\n \t\tvar nmb uint32\r\n \t\terr := readFile(f.fd, buf[:], \u0026nmb, nil)\r\n+\t\tprintln(\"nmb=\", nmb, \" buf[0]=\", buf[0], \" err=\", err)\r\n \t\tif err != nil {\r\n \t\t\treturn 0, err\r\n \t\t}\r\n```\r\n\r\nThen I pressed:\r\n```\r\n\"abc\" and Enter\r\nCtrlZ and Enter\r\n\"abc\" and CtrlZ and \"def\" and Enter\r\n```\r\nI see this output:\r\n```\r\nC:\\dev\\src\\issues\\issue17427\u003ego run main.go\r\nabc\r\nnmb= 1  buf[0]= 97  err= (0x0,0x0)\r\nanmb= 1  buf[0]= 98  err= (0x0,0x0)\r\nbnmb= 1  buf[0]= 99  err= (0x0,0x0)\r\ncnmb= 1  buf[0]= 13  err= (0x0,0x0)\r\nnmb= 1  buf[0]= 10  err= (0x0,0x0)\r\n\r\n^Z\r\nnmb= 0  buf[0]= 26  err= (0x0,0x0)\r\nnmb= 1  buf[0]= 13  err= (0x0,0x0)\r\nnmb= 1  buf[0]= 10  err= (0x0,0x0)\r\n\r\nabc^Zdef\r\nnmb= 1  buf[0]= 97  err= (0x0,0x0)\r\nanmb= 1  buf[0]= 98  err= (0x0,0x0)\r\nbnmb= 1  buf[0]= 99  err= (0x0,0x0)\r\ncnmb= 0  buf[0]= 26  err= (0x0,0x0)\r\nnmb= 1  buf[0]= 100  err= (0x0,0x0)\r\ndnmb= 1  buf[0]= 101  err= (0x0,0x0)\r\nenmb= 1  buf[0]= 102  err= (0x0,0x0)\r\nfnmb= 1  buf[0]= 13  err= (0x0,0x0)\r\nnmb= 1  buf[0]= 10  err= (0x0,0x0)\r\n\r\n```\r\n\r\nRuss, what whould new code for os.Stdin.Read return here? Assume we have changed the program above to loop forever instead of exiting after io.Copy returns. Should os.Stdin.Read return more data after it returns io.EOF? Should os.Stdin.Read return 26 when we press CtrlZ?\r\n\r\nThank you.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-17T03:59:54Z",
+	"updated_at": "2016-10-17T03:59:54Z"
+}

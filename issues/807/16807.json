@@ -1,7 +1,7 @@
 {
 	"id": 172223877,
 	"number": 16807,
-	"state": "open",
+	"state": "closed",
 	"title": "unsafe: clarify what \"equivalent memory layout\" means",
 	"body": "One of package unsafe's valid patterns is:\r\n\r\n\u003e (1) Conversion of a *T1 to Pointer to *T2.\r\n\u003e\r\n\u003e Provided that T2 is no larger than T1 and that the two share an equivalent memory layout, this conversion allows reinterpreting data of one type as data of another type.\r\n\r\nThere have been arguments about what \"equivalent memory layout\" means (e.g., #16769, and the [\"Guarantees for package unsafe\"](https://groups.google.com/forum/#!topic/golang-dev/uCP4P12xS9Y) thread on golang-dev).\r\n\r\nE.g., in C/C++, it's valid to cast from a pointer to a struct to a pointer to another struct containing a prefix of the fields to support things like casting from `struct sockaddr_in *` to `struct sockaddr *`.  But package unsafe gives an example of converting from `*float64` to `*uint64`, which wouldn't be valid in C/C++.\r\n\r\nIn [crypto/md5](https://github.com/golang/go/blob/master/src/crypto/md5/md5block.go#L41), there's code that converts `\u0026p[0]` (of type `*byte`) to `*[16]uint32`, after verifying `len(p) \u003e= 48`.  Assuming we think this should remain valid, that seems to suggest it's okay to convert `*[4]byte` to `*uint32`; i.e., that primitive data types need not exactly match in size either.\r\n\r\n  * Aside: Technically this conversion isn't protected by rule 1 anyway, because T2 (`[16]uint32`) is larger than T1 (`byte`), but I think it's arguably within the spirit of the rule because of the length check.\r\n\r\nMy understanding of the phrase's intent was to disallow accessing pointer slots as non-pointer types.  E.g., you can't convert from `**int` to `*uintptr`, even though sizeof(`*int`) == sizeof(`uintptr`).\r\n\r\n@dr2chase suggested that it could be interpreted to imply sensitivity to the machine's endianness, which may disallow converting `*uint64` to `*uint16`.\r\n\r\nIn https://go-review.googlesource.com/#/c/18640/ this wording was discussed:\r\n\r\n\u003e @alandonovan: Is \"equivalent memory layout\" defined anywhere?\r\n\u003e @rsc: No, but I'd rather not. I'm trying to write useful text without writing a legal document. I hope people can at least understand memory layouts and whether the conversion they want makes sense. If not they probably shouldn't be using unsafe.\r\n\r\nUnfortunately it seems even within the Go compiler team there's disagreement/uncertainty on what \"equivalent memory layout\" means, even for concrete examples like converting `*uint64` to `*uint16`.\r\n\r\n/cc @ianlancetaylor @randall77 ",
 	"user": {
@@ -13,14 +13,18 @@
 	"labels": [
 		{
 			"name": "Documentation"
+		},
+		{
+			"name": "NeedsDecision"
 		}
 	],
-	"comments": 9,
+	"comments": 10,
+	"closed_at": "2016-10-21T01:36:24Z",
 	"created_at": "2016-08-19T21:26:45Z",
-	"updated_at": "2016-09-06T16:42:12Z",
+	"updated_at": "2016-10-21T01:36:24Z",
 	"milestone": {
-		"id": 1709363,
-		"number": 38,
-		"title": "Go1.8"
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
 	}
 }

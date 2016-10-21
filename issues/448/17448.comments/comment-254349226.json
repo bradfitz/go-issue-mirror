@@ -1,0 +1,12 @@
+{
+	"id": 254349226,
+	"body": "\u003e There are environments where real queries fail like this\r\n\r\nI'm curious, do you have actual examples of this?  I've heard of cases where AAAA queries return REFUSED or SERVFAIL, but no response at all is pretty harsh.\r\n\r\n\u003e What is the actual harm if the non-preferred address family is used?\r\n\r\nFor `net.Dial`, it's not a big deal because the DNS and TCP connections are part of the same operation, so a flaky network could just as easily steer the TCP connection toward a non-preferred family, and DNS must be re-queried if the operation fails.\r\n\r\nThe harm arises when applications use DNS responses in less-obvious ways.  For example, imagine a connection algorithm that says:\r\n\r\n1. Query DNS until it succeeds\r\n2. Make TCP connections until it succeeds\r\n\r\nWhere the operation can only be restarted by killing the process.  If the client is IPv4-only or IPv6-only, then it could get stuck connecting to a non-viable address family.\r\n\r\nOr, consider an application that generates a unique ID by querying DNS, selecting one result with a fixed IPv4 or IPv6 bias.  DNS flakiness could alter the answer, when it would be more correct for an incomplete result to fail.\r\n\r\nI'm not trying to argue that the above are *ideal* designs, but they work 99.9...% of the time, and the principle of least astonishment would suggest adding more nines.\r\n\r\n\u003e I'd also like to see a summary of how the popular system resolvers behave.\r\n\r\nCan you suggest a list?  Note that only resolvers exposing \"Lookup A+AAAA\" as a single operation are in scope for this issue.",
+	"user": {
+		"login": "pmarks-net",
+		"id": 4578188,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-17T22:07:52Z",
+	"updated_at": "2016-10-17T22:07:52Z"
+}

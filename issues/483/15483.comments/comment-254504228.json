@@ -1,0 +1,12 @@
+{
+	"id": 254504228,
+	"body": "I would expect the go:generate line in the _linux.go file to generate a Linux-specific code (probably in a Linux-specific output file) and the go:generate line in the _windows.go file to generate Windows-specific code (probably in a Windows-specific and therefore different output file) but that both generators would typically be portable. So running \"go generate\" would invoke both generators to update both files. That way if you need to update all the generated code in the directory you run \"go generate\". You don't have to run \"go generate\" once for every OS/ARCH combination you have.\r\n\r\nMany of our generators work that way: for example you might reasonably mention the generator for amd64 assembly in foo_amd64.go, but the generator itself - while it produces amd64-specific output - is a portable program and can be run on any system.\r\n\r\nFor example, we had in #16368 a problem where the generate line for Windows system calls - a portable program - was naturally recorded in syscall_windows.go. This had the effect of being ignored on Linux, and there was no work around: if you said GOOS=windows go generate, then the generator itself would run with GOOS=windows, and it ran \"go run\", which - because of the GOOS override - tried to build and run a Windows exe binary. With the change being proposed in this issue / CL 31147, \"go generate\" would just work in that case.\r\n\r\nThe only case where I can see an argument for the current behavior is if you intend to put go:generate lines that can only be run on Linux in _linux.go files and go:generate lines that can only be run on Windows in _windows.go files. But that conflates \"this source code is for this system\" and \"this pre-build step must be run on this system\". The latter seems inconsistent with our general focus on cross-compilation and portability. It doesn't seem like it should be forced as the default behavior.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-18T13:16:50Z",
+	"updated_at": "2016-10-18T13:16:50Z"
+}

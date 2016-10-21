@@ -1,0 +1,26 @@
+{
+	"id": 184030384,
+	"number": 17517,
+	"state": "open",
+	"title": "cmd/compile: regression in type switch deduplication",
+	"body": "8c85e23087d90e831a70ccd199cac49a38d91027 caused a regression where duplicate cases fail to be detected in a switch.\r\n\r\n```go\r\npackage main\r\n\r\nfunc main() {\r\n\tvar a int\r\n\tswitch a {\r\n\tcase 0,1:\r\n\tcase 0:\r\n\t}\r\n}\r\n```\r\n\r\nOn Go1.7, the above program fails:\r\n```\r\n./main.go:13: duplicate case 0 in switch\r\n\tprevious case at ./main.go:12\r\n```\r\n\r\nOn Go1.8dev, the above program, unexpectedly succeeds.\r\n\r\nI understand that this is not a language guarantee:\r\n\u003e Implementation restriction: A compiler *may* disallow multiple case expressions evaluating to the same constant. For instance, the current compilers disallow duplicate integer, floating point, or string constants in case expressions.\r\n\r\nHowever, we should be consistent with how it is done. The following snippet is rejected on both Go1.7 and Go1.8dev:\r\n```go\r\nvar a int\r\nswitch a {\r\ncase 0:\r\ncase 0:\r\n}\r\n```\r\n\r\n/cc @josharian @mdempsky ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 4,
+	"created_at": "2016-10-19T17:50:36Z",
+	"updated_at": "2016-10-21T07:35:08Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

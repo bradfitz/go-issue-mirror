@@ -1,0 +1,12 @@
+{
+	"id": 252760144,
+	"body": "So I have implemented a `NoSIGPIPEDialer/Transport` that leverages `SO_NOSIGPIPE`, and the problem goes away.\r\nSince threads are suspended while sleeping, it may be a good idea to force all connections to have this flag.\r\n\r\nFor future somebody who runs into this problem, here is some code:\r\n```go\r\n// SilenceSIGPIPE configures the net.Conn in a way that silences SIGPIPEs with\r\n// the SO_NOSIGPIPE socket option.\r\nfunc SilenceSIGPIPE(c net.Conn) error {\r\n\t// use reflection until https://github.com/golang/go/issues/9661 is fixed\r\n\tfd := int(reflect.ValueOf(c).Elem().FieldByName(\"fd\").Elem().FieldByName(\"sysfd\").Int())\r\n\treturn syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_NOSIGPIPE, 1)\r\n}\r\n\r\n// NoSIGPIPEDialer returns a dialer that won't SIGPIPE should a connection\r\n// actually SIGPIPE. This prevents the debugger from intercepting the signal\r\n// even though this is normal behaviour.\r\ntype NoSIGPIPEDialer net.Dialer\r\n\r\nfunc (d *NoSIGPIPEDialer) handle(c net.Conn, err error) (net.Conn, error) {\r\n\tif err != nil {\r\n\t\treturn nil, err\r\n\t}\r\n\tif err := SilenceSIGPIPE(c); err != nil {\r\n\t\tc.Close()\r\n\t\treturn nil, err\r\n\t}\r\n\treturn c, err\r\n}\r\n\r\nfunc (d *NoSIGPIPEDialer) Dial(network, address string) (net.Conn, error) {\r\n\tc, err := (*net.Dialer)(d).Dial(network, address)\r\n\treturn d.handle(c, err)\r\n}\r\n\r\nfunc (d *NoSIGPIPEDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {\r\n\tc, err := (*net.Dialer)(d).DialContext(ctx, network, address)\r\n\treturn d.handle(c, err)\r\n}\r\n```\r\n\r\nAnd `http.Transport`:\r\n```go\r\n// NoSIGPIPETransport is a default HTTP transport (configured in the same manner)\r\nvar NoSIGPIPETransport http.RoundTripper = \u0026http.Transport{\r\n\tProxy: http.ProxyFromEnvironment,\r\n\tDialContext: (\u0026NoSIGPIPEDialer{\r\n\t\tTimeout:   30 * time.Second,\r\n\t\tKeepAlive: 30 * time.Second,\r\n\t\tDualStack: true,\r\n\t}).DialContext,\r\n\tMaxIdleConns:          100,\r\n\tIdleConnTimeout:       90 * time.Second,\r\n\tTLSHandshakeTimeout:   10 * time.Second,\r\n\tExpectContinueTimeout: 1 * time.Second,\r\n}\r\n\r\nfunc init() {\r\n\t// Install NoSIGPIPETransport as the default HTTP transport\r\n\thttp.DefaultTransport = NoSIGPIPETransport\r\n}\r\n```",
+	"user": {
+		"login": "steeve",
+		"id": 137467,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-10T22:13:30Z",
+	"updated_at": "2016-10-10T22:16:59Z"
+}

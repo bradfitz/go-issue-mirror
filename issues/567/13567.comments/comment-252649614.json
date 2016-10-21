@@ -1,0 +1,12 @@
+{
+	"id": 252649614,
+	"body": "Databases can support non-standard result types. Common ones that are found include arrays, JSON, XML, table valued types, IP addresses, and GIS types.\r\n\r\nFor scanning custom result types I propose the following changes are made:\r\n\r\n```\r\npackage driver\r\n\r\ntype ScanAssigner interface {\r\n    Rows\r\n    Assign(dest, src interface{}) (ok bool, err error)\r\n}\r\n\r\npackage sql\r\n\r\n// Existing struct\r\ntype Rows struct {\r\n    // New field, assigned when Rows is created.\r\n    assigner driver.ScanAssigner\r\n}\r\n\r\n// modify existing function, pass new assigner from Rows into convertAssign.\r\nfunc convertAssign(assigner driver.ScanAssigner, dest, src interface{}) error {\r\n    ok, err := assigner.Assign(dest, src) // Before anything existing.\r\n    if err != nil {\r\n        return err\r\n    }\r\n    if ok {\r\n        return nil\r\n    }\r\n    // Existing function\r\n}\r\n\r\n```\r\n\r\nI think the above should allow *returning* any database supported type. Using any type as input parameters will be another issue.\r\n",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-10T15:03:18Z",
+	"updated_at": "2016-10-10T15:03:18Z"
+}

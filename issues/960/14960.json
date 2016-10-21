@@ -1,7 +1,7 @@
 {
 	"id": 143441749,
 	"number": 14960,
-	"state": "open",
+	"state": "closed",
 	"title": "x/net/http2: data race in request body buffer sharing",
 	"body": "I suspect I introduced a data race in https://go-review.googlesource.com/20542 when I introduced the reuse of the 64k request body buffers.\r\n\r\nFrom a grpc-go travis failure (https://github.com/grpc/grpc-go/pull/604):\r\n\r\n```\r\nWARNING: DATA RACE\r\nRead by goroutine 1272:\r\n  runtime.slicecopy()\r\n      /home/travis/.gimme/versions/go1.6.linux.amd64/src/runtime/slice.go:113 +0x0\r\n  golang.org/x/net/http2.(*fixedBuffer).Read()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/fixed_buffer.go:29 +0x19b\r\n  golang.org/x/net/http2.(*pipe).Read()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/pipe.go:45 +0x2a7\r\n  golang.org/x/net/http2.(*requestBody).Read()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:1824 +0x14e\r\n  google.golang.org/grpc/transport.(*serverHandlerTransport).HandleStreams.func3()\r\n      /home/travis/gopath/src/google.golang.org/grpc/transport/handler_server.go:318 +0x111\r\n\r\nPrevious write by goroutine 1180:\r\n  runtime.slicecopy()\r\n      /home/travis/.gimme/versions/go1.6.linux.amd64/src/runtime/slice.go:113 +0x0\r\n  golang.org/x/net/http2.(*fixedBuffer).Write()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/fixed_buffer.go:54 +0x2db\r\n  golang.org/x/net/http2.(*pipe).Write()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/pipe.go:72 +0x268\r\n  golang.org/x/net/http2.(*serverConn).processData()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:1307 +0x6f8\r\n  golang.org/x/net/http2.(*serverConn).processFrame()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:1087 +0x746\r\n  golang.org/x/net/http2.(*serverConn).processFrameFromReader()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:1039 +0xb81\r\n  golang.org/x/net/http2.(*serverConn).serve()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:712 +0xd46\r\n  golang.org/x/net/http2.(*Server).ServeConn()\r\n      /home/travis/gopath/src/golang.org/x/net/http2/server.go:334 +0x1009\r\n  google.golang.org/grpc.(*Server).serveUsingHandler()\r\n      /home/travis/gopath/src/google.golang.org/grpc/server.go:354 +0x24f\r\n  google.golang.org/grpc.(*Server).handleRawConn()\r\n      /home/travis/gopath/src/google.golang.org/grpc/server.go:287 +0x577\r\n```\r\n\r\nThe Read and Write calls are both protected by a mutex, but at this point it's a different mutex I suspect, with each caller having a different `*pipe` value.\r\n\r\nWe can't return the buffer when the stream closes, as a caller might still be using it in their ServeHTTP goroutine. Instead, we can have the ServeHTTP goroutine's exit itself return it, after first acquiring the lock and niling it out, in case the ServeHTTP goroutine retains the request.body somehow.\r\n\r\n/cc @iamqizhao @broady ",
 	"user": {
@@ -16,9 +16,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 1,
+	"comments": 2,
+	"closed_at": "2016-10-19T14:54:49Z",
 	"created_at": "2016-03-25T07:04:05Z",
-	"updated_at": "2016-03-25T20:19:16Z",
+	"updated_at": "2016-10-19T15:00:40Z",
 	"milestone": {
 		"id": 1067491,
 		"number": 22,

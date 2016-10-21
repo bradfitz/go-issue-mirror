@@ -1,0 +1,36 @@
+{
+	"id": 182390566,
+	"number": 17411,
+	"state": "closed",
+	"title": "cmd/link: build broken on plan9/amd64 since CL 27790",
+	"body": "Since [CL 27790](https://golang.org/cl/27790), the build is broken on plan9/amd64.\r\n\r\n```\r\n##### Building packages and commands for plan9/amd64.\r\npanic: runtime error: invalid memory address or nil pointer dereference\r\n[signal sys: trap: fault read code=0x0 addr=0x18 pc=0x3ba12e]\r\n\r\ngoroutine 1 [running]:\r\npanic(0x45a620, 0x6129f0)\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/runtime/panic.go:496 +0x18d\r\nreflect.(*rtype).Elem(0x43a6e0, 0x0, 0x608000)\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/reflect/type.go:927 +0xe\r\ntext/template.init()\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/text/template/exec.go:599 +0xb4\r\ngo/doc.init()\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/go/doc/synopsis.go:83 +0x5f\r\ngo/build.init()\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/go/build/zcgo.go:33 +0x76\r\nmain.init()\r\n\t/tmp/gobuilder/plan9-amd64-9front-b4efd09d1880/go/src/cmd/go/zosarch.go:43 +0x91\r\n```\r\n\r\nSee https://build.golang.org/log/4ca47ecfe2249b3368d4488118da1dd4ca9850ec\r\n\r\nThe issue is related to this specific change:\r\n\r\n```\r\n--- a/src/cmd/link/internal/ld/data.go\r\n+++ b/src/cmd/link/internal/ld/data.go\r\n@@ -544,7 +544,14 @@ func relocsym(ctxt *Link, s *Symbol) {\r\n \t\t\to = Symaddr(r.Sym) + r.Add - int64(r.Sym.Sect.Vaddr)\r\n \r\n \t\tcase obj.R_ADDROFF:\r\n-\t\t\to = Symaddr(r.Sym) - int64(r.Sym.Sect.Vaddr) + r.Add\r\n+\t\t\t// The method offset tables using this relocation expect the offset to be relative\r\n+\t\t\t// to the start of the first text section, even if there are multiple.\r\n+\r\n+\t\t\tif r.Sym.Sect.Name == \".text\" {\r\n+\t\t\t\to = Symaddr(r.Sym) - int64(Segtext.Vaddr) + r.Add\r\n+\t\t\t} else {\r\n+\t\t\t\to = Symaddr(r.Sym) - int64(r.Sym.Sect.Vaddr) + r.Add\r\n+\t\t\t}\r\n \r\n \t\t\t// r-\u003esym can be null when CALL $(constant) is transformed from absolute PC to relative PC call.\r\n \t\tcase obj.R_CALL, obj.R_GOTPCREL, obj.R_PCREL:\r\n```\r\n\r\nCC @ianlancetaylor ",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		},
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 5,
+	"closed_at": "2016-10-12T13:15:01Z",
+	"created_at": "2016-10-11T22:27:29Z",
+	"updated_at": "2016-10-12T15:23:12Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

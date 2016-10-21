@@ -1,0 +1,27 @@
+{
+	"id": 183910895,
+	"number": 17511,
+	"state": "open",
+	"title": "image/png: decoding images with truecolor transparency returns wrong error",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\n    go version go1.7.1 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/tmp/gopath:/Users/artyom/gopath\"\r\nGORACE=\"\"\r\nGOROOT=\"/Users/artyom/Library/go\"\r\nGOTOOLDIR=\"/Users/artyom/Library/go/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/lb/3rk8rqs53czgb4v35w_342xc0000gn/T/go-build425021710=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.\r\n\r\n1. Save linked [original png file](https://gitlab.com/assets/gitlab_logo-7ae504fe4f68fdebb3c2034e36621930cd36ea87924c11ff65dbcb8ed50dca58.png) or its [attached copy](https://cloud.githubusercontent.com/assets/68182/19512700/d7ef53ee-95f5-11e6-8d4f-a8c192b5843f.png) as `/tmp/bad.png`.\r\n2. Save and run  https://play.golang.org/p/7KawpAoMqX\r\n\r\n### What did you expect to see?\r\n\r\nEither no error message or png.UnsupportedError text.\r\n\r\n### What did you see instead?\r\n\r\n    png: invalid format: chunk out of order\r\n\r\n* * *\r\n\r\nInitially I thought that file was incorrect but that doesn't seem to be the case:\r\n\r\n```\r\n$ pngcheck -v -p /tmp/bad.png \r\nFile: /tmp/bad.png (3616 bytes)\r\n  chunk IHDR at offset 0x0000c, length 13\r\n    128 x 128 image, 24-bit RGB, non-interlaced\r\n  chunk tRNS at offset 0x00025, length 6\r\n    red = 0x00ff, green = 0x00ff, blue = 0x00ff\r\n  chunk IDAT at offset 0x00037, length 3541\r\n    zlib: deflated, 32K window, superfast compression\r\n  chunk IEND at offset 0x00e18, length 0\r\nNo errors detected in /tmp/bad.png (4 chunks, 92.6% compression).\r\n```\r\n\r\nIt seems to have tRNS chunk but no PLTE chunk, as it's a truecolor transparent file, which is valid per spec. [Ordering](http://www.libpng.org/pub/png/spec/iso/index-object.html#5ChunkOrdering) seem to be valid as well.\r\n\r\nApplying the following patch:\r\n\r\n```\r\ndiff --git i/src/image/png/reader.go w/src/image/png/reader.go\r\nindex 2dd5ed8..6159323 100644\r\n--- i/src/image/png/reader.go\r\n+++ w/src/image/png/reader.go\r\n@@ -709,7 +709,7 @@ func (d *decoder) parseChunk() error {\r\n \t\td.stage = dsSeenPLTE\r\n \t\treturn d.parsePLTE(length)\r\n \tcase \"tRNS\":\r\n-\t\tif d.stage != dsSeenPLTE {\r\n+\t\tif d.stage != dsSeenPLTE \u0026\u0026 d.stage != dsSeenIHDR {\r\n \t\t\treturn chunkOrderError\r\n \t\t}\r\n \t\td.stage = dsSeentRNS\r\n```\r\n\r\nresults in error reported as `png: unsupported feature: truecolor transparency` which seems to be the correct message for this case.\r\n\r\n/cc @nigeltao ",
+	"user": {
+		"login": "artyom",
+		"id": 68182,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "nigeltao",
+		"id": 8565232,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 0,
+	"created_at": "2016-10-19T09:30:33Z",
+	"updated_at": "2016-10-19T10:17:22Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

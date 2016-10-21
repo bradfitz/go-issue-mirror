@@ -1,0 +1,38 @@
+{
+	"id": 183356282,
+	"number": 17477,
+	"state": "open",
+	"title": "net: TestReadTimeoutUnblocksRead is failing on Plan 9",
+	"body": "[CL 31178](https://golang.org/cl/31178) added TestReadTimeoutUnblocksRead. However, this test is failing on Plan 9, because deadlines aren't implemented on Plan 9 yet (#11932).\r\n\r\n```\r\nStacks at timeout:\r\n goroutine 135 [running]:\r\nnet.TestReadTimeoutUnblocksRead.func1(0x10640b18, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/net/net_test.go:486 +0x199\r\nnet.withTCPConnPair.func2(0x24c860, 0x10640ac0, 0x10644f80, 0x10640a88)\r\n\t/tmp/workdir/go/src/net/net_test.go:446 +0xbf\r\ncreated by net.withTCPConnPair\r\n\t/tmp/workdir/go/src/net/net_test.go:447 +0xfd\r\n\r\ngoroutine 1 [chan receive]:\r\ntesting.(*T).Run(0x1048e400, 0x1a448a, 0x1b, 0x1abaf8, 0x93901)\r\n\t/tmp/workdir/go/src/testing/testing.go:658 +0x244\r\ntesting.RunTests.func1(0x1048e400)\r\n\t/tmp/workdir/go/src/testing/testing.go:804 +0x4c\r\ntesting.tRunner(0x1048e400, 0x104b7f00)\r\n\t/tmp/workdir/go/src/testing/testing.go:621 +0x73\r\ntesting.RunTests(0x1ab798, 0x262320, 0x99, 0x99, 0xb)\r\n\t/tmp/workdir/go/src/testing/testing.go:810 +0x229\r\ntesting.(*M).Run(0x104b7f7c, 0x1)\r\n\t/tmp/workdir/go/src/testing/testing.go:754 +0x6a\r\nnet.TestMain(0x104b7f7c)\r\n\t/tmp/workdir/go/src/net/main_test.go:48 +0x25\r\nmain.main()\r\n\tnet/_test/_testmain.go:400 +0xbb\r\n\r\ngoroutine 133 [chan receive]:\r\nnet.withTCPConnPair(0x10650880, 0x10640a90, 0x10640a88)\r\n\t/tmp/workdir/go/src/net/net_test.go:449 +0x136\r\nnet.TestReadTimeoutUnblocksRead(0x10650880)\r\n\t/tmp/workdir/go/src/net/net_test.go:498 +0xbe\r\ntesting.tRunner(0x10650880, 0x1abaf8)\r\n\t/tmp/workdir/go/src/testing/testing.go:621 +0x73\r\ncreated by testing.(*T).Run\r\n\t/tmp/workdir/go/src/testing/testing.go:657 +0x223\r\n\r\ngoroutine 134 [chan receive]:\r\nnet.TestReadTimeoutUnblocksRead.func2(0x10640b00, 0x24d7b4, 0x10640b00)\r\n\t/tmp/workdir/go/src/net/net_test.go:495 +0x31\r\nnet.withTCPConnPair.func1(0x24c860, 0x10640ac0, 0x10644f80, 0x10640a90)\r\n\t/tmp/workdir/go/src/net/net_test.go:437 +0x89\r\ncreated by net.withTCPConnPair\r\n\t/tmp/workdir/go/src/net/net_test.go:438 +0xc7\r\n\r\ngoroutine 137 [syscall]:\r\nsyscall.Syscall6(0x8, 0x10498fa7, 0x1, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x10649738, 0x10498f6c, 0x1064eae0, ...)\r\n\t/tmp/workdir/go/src/syscall/asm_plan9_386.s:57 +0x5\r\nsyscall.Pread(0x8, 0x10498fa7, 0x1, 0x1, 0xffffffff, 0xffffffff, 0xca024, 0x10645040, 0x0)\r\n\t/tmp/workdir/go/src/syscall/zsyscall_plan9_386.go:228 +0x62\r\nsyscall.Read(0x8, 0x10498fa7, 0x1, 0x1, 0x10492000, 0x800000, 0x0)\r\n\t/tmp/workdir/go/src/syscall/syscall_plan9.go:124 +0x48\r\nos.(*File).read(0x10640b08, 0x10498fa7, 0x1, 0x1, 0x4, 0x10490f20, 0x10498f60)\r\n\t/tmp/workdir/go/src/os/file_plan9.go:242 +0x3c\r\nos.(*File).Read(0x10640b08, 0x10498fa7, 0x1, 0x1, 0x10492000, 0x10645040, 0x0)\r\n\t/tmp/workdir/go/src/os/file.go:101 +0x44\r\nnet.(*netFD).Read(0x10645040, 0x10498fa7, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/net/fd_plan9.go:82 +0xea\r\nnet.(*conn).Read(0x10640b18, 0x10498fa7, 0x1, 0x1, 0x0, 0x0, 0x0)\r\n\t/tmp/workdir/go/src/net/net.go:176 +0x55\r\nnet.TestReadTimeoutUnblocksRead.func1.1(0x10645080, 0x10640b18)\r\n\t/tmp/workdir/go/src/net/net_test.go:476 +0x87\r\ncreated by net.TestReadTimeoutUnblocksRead.func1\r\n\t/tmp/workdir/go/src/net/net_test.go:480 +0xa5\r\n\r\ngoroutine 25 [syscall]:\r\nsyscall.Syscall6(0x3, 0x10499e10, 0x19, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x10, 0xffffffff, 0xffffffff, ...)\r\n\t/tmp/workdir/go/src/syscall/asm_plan9_386.s:57 +0x5\r\nsyscall.Pwrite(0x3, 0x10499e10, 0x19, 0x20, 0xffffffff, 0xffffffff, 0x2, 0x2, 0x369a0)\r\n\t/tmp/workdir/go/src/syscall/zsyscall_plan9_386.go:245 +0x62\r\nsyscall.Write(0x3, 0x10499e10, 0x19, 0x20, 0x2, 0x2, 0x2)\r\n\t/tmp/workdir/go/src/syscall/syscall_plan9.go:128 +0x48\r\nos.(*File).write(0x1049e650, 0x10499e10, 0x19, 0x20, 0x10499e10, 0x10499e78, 0x19)\r\n\t/tmp/workdir/go/src/os/file_plan9.go:260 +0x40\r\nos.(*File).Write(0x1049e650, 0x10499e10, 0x19, 0x20, 0x19, 0x20, 0x0)\r\n\t/tmp/workdir/go/src/os/file.go:142 +0x44\r\nos.(*File).WriteString(0x1049e650, 0x10499e78, 0x19, 0x1049180f, 0x11, 0x10499e78)\r\n\t/tmp/workdir/go/src/os/file.go:203 +0x60\r\nnet.dialPlan9Blocking(0x24ca20, 0x104917c0, 0x19e24f, 0x3, 0x24c540, 0x0, 0x24c540, 0x104917e0, 0x0, 0x0, ...)\r\n\t/tmp/workdir/go/src/net/ipsock_plan9.go:200 +0xe7\r\nnet.dialPlan9.func2(0x24ca20, 0x104917c0, 0x19e24f, 0x3, 0x24c540, 0x0, 0x24c540, 0x104917e0, 0x104bb480)\r\n\t/tmp/workdir/go/src/net/ipsock_plan9.go:178 +0x85\r\ncreated by net.dialPlan9\r\n\t/tmp/workdir/go/src/net/ipsock_plan9.go:186 +0x10c\r\n\r\n--- FAIL: TestReadTimeoutUnblocksRead (5.03s)\r\n\tnet_test.go:450: timeout waiting for Read to finish\r\n```\r\n\r\nSee https://build.golang.org/log/61959edbf9a940676d03349ba91d02f17bf9541f\r\n\r\n",
+	"user": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Blocked"
+		},
+		{
+			"name": "NeedsFix"
+		},
+		{
+			"name": "OS-Plan9"
+		}
+	],
+	"assignee": {
+		"login": "0intro",
+		"id": 6043744,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-10-17T08:37:21Z",
+	"updated_at": "2016-10-17T19:47:26Z",
+	"milestone": {
+		"id": 1055141,
+		"number": 6,
+		"title": "Unplanned"
+	}
+}

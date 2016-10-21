@@ -1,0 +1,23 @@
+{
+	"id": 183775836,
+	"number": 17507,
+	"state": "closed",
+	"title": "cmd/compile: unnecessary compares following FP instructions in ppc64le",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ntip\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nUbuntu 16.04\r\n\r\n### What did you do?\r\nLooking for performance improvements to the function math.mod when run as part of the math package testcase (math.test).\r\n\r\n### What did you see instead?\r\nI'm seeing some unusual and unnecessary compare type instructions that are following floating point compare instructions when the compare is gt or lt.  The eq and ne appear good.\r\n\r\nI'm seeing code like this:\r\n\r\n     7f5a0:       00 20 03 fc     fcmpu   cr0,f3,f4\r\n     7f5a4:       01 00 e0 3b     li      r31,1\r\n     7f5a8:       5e 00 7f 7c     iselgt  r3,r31,r0\r\n     7f5ac:       00 00 03 7c     cmpw    r3,r0\r\n\r\nShould be just bgt or blt after the fcmpu.\r\n\r\nIf the compare following the fcmpu is beq or bne then it avoids the isel like this:\r\n\r\n    7f58c:       00 10 01 fc     fcmpu   cr0,f1,f2\r\n    7f590:       60 01 82 41     beq     7f6f0 \u003cmath.mod+0x190\u003e\r\n\r\n",
+	"user": {
+		"login": "laboger",
+		"id": 9433228,
+		"type": "User",
+		"site_admin": false
+	},
+	"assignee": {
+		"login": "dr2chase",
+		"id": 1928999,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 4,
+	"closed_at": "2016-10-20T15:34:34Z",
+	"created_at": "2016-10-18T19:07:55Z",
+	"updated_at": "2016-10-20T15:34:34Z"
+}

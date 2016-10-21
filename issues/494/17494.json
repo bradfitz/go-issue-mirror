@@ -1,0 +1,32 @@
+{
+	"id": 183570292,
+	"number": 17494,
+	"state": "open",
+	"title": "net/http: regression caused by copying headers in redirects",
+	"body": "http://golang.org/cl/28930 caused a regression. The CL in question fixes #4800 by automatically copying the headers when following a redirect. In the situation where the initial request has some cookie set and one of the redirects sets the cookie to a different value, we should change the cookies sent in subsequent requests to use newly set cookies.\r\n\r\nThis pattern is used by some login logic where credentials are stored in the cookies. Suppose the client has a stale auth cookie and makes a request. The server redirects the client to some other page to obtain a new auth cookie (and gets redirected back to the original page). When the client redirects back to original page, it presents both the stale and new auth cookie, which confuses the server. Since the server still thinks the client is not logged in, it sends it through the redirect loop again.\r\n\r\nMinimum reproducing case:\r\n```go\r\nfunc main() {\r\n\t// Start a trivial server.\r\n\tgo func() {\r\n\t\thttp.HandleFunc(\"/\", func(resp http.ResponseWriter, req *http.Request) {\r\n\t\t\tfmt.Println(\"Got cookie:\", req.Header.Get(\"Cookie\"))\r\n\r\n\t\t\t// Set the cookie to a new value.\r\n\t\t\thttp.SetCookie(resp, \u0026http.Cookie{\r\n\t\t\t\tName:  \"YumYumCookie\",\r\n\t\t\t\tValue: \"NewValue\",\r\n\t\t\t\tPath:  \"/\",\r\n\t\t\t})\r\n\r\n\t\t\t// Keep redirecting to yourself until you see the new cookie value.\r\n\t\t\tck, _ := req.Cookie(\"YumYumCookie\")\r\n\t\t\tif ck.Value != \"NewValue\" {\r\n\t\t\t\thttp.Redirect(resp, req, \"/\", http.StatusFound)\r\n\t\t\t}\r\n\t\t})\r\n\t\thttp.ListenAndServe(\"localhost:8888\", nil)\r\n\t}()\r\n\r\n\ttime.Sleep(time.Second)\r\n\r\n\t// Make a request to the server. Initialize the request with an old value for the cookie.\r\n\tjar, _ := cookiejar.New(nil)\r\n\tclient := \u0026http.Client{Jar: jar}\r\n\treq, _ := http.NewRequest(\"GET\", \"http://localhost:8888/\", nil)\r\n\treq.AddCookie(\u0026http.Cookie{\r\n\t\tName:  \"YumYumCookie\",\r\n\t\tValue: \"OldValue\",\r\n\t\tPath:  \"/\",\r\n\t})\r\n\treq.Header.Add(\"HeaderKey\", \"HeaderValue\")\r\n\tfmt.Println(client.Do(req))\r\n}\r\n```\r\n\r\nOn go1.7, I see:\r\n```\r\nGot cookie: YumYumCookie=OldValue\r\nGot cookie: YumYumCookie=NewValue\r\n\u0026{200 OK 200 HTTP/1.1 1 1 map[Content-Type:[text/plain; charset=utf-8] Set-Cookie:[YumYumCookie=NewValue; Path=/] Date:[Tue, 18 Oct 2016 01:38:34 GMT] Content-Length:[0]] 0x784480 0 [] false false map[] 0xc4201261e0 \u003cnil\u003e} \u003cnil\u003e\r\n```\r\n\r\nOn go1.8dev, I see:\r\n```\r\nGot cookie: YumYumCookie=OldValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\nGot cookie: YumYumCookie=OldValue; YumYumCookie=NewValue\r\n\u0026{302 Found 302 HTTP/1.1 1 1 map[Location:[/] Set-Cookie:[YumYumCookie=NewValue; Path=/] Date:[Tue, 18 Oct 2016 01:38:54 GMT] Content-Length:[24] Content-Type:[text/html; charset=utf-8]] 0xc42004e640 24 [] false false map[] 0xc42012c3c0 \u003cnil\u003e} Get /: stopped after 10 redirects\r\n```\r\n\r\n/cc @bradfitz ",
+	"user": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-10-18T01:46:37Z",
+	"updated_at": "2016-10-18T22:05:39Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

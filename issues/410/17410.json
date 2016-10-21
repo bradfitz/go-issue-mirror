@@ -1,0 +1,26 @@
+{
+	"id": 182375340,
+	"number": 17410,
+	"state": "open",
+	"title": "cmd/objdump: MULSD disassembles as REPNE MULSD",
+	"body": "When the go disassembler (as seen in `go tool objdump` or `go tool pprof -disasm`, SSE floating point instructions are encoded with a seemingly incorrect \"REPNE\" prefix.\r\n\r\nSo `REPNE` is `F2` and `MULSD` with an `XMM` operand is `F2 0F 59`, but the go disassembler decodes `F2 0F 59` as `REPNE MULSD_XMM`, in opposition to gobjdump just saying `mulsd`.\r\n\r\nOriginally I was confused, and thought that maybe this was something like [`REPZ RET`](http://repzret.org/p/repzret/), but the more I looked, the more this seemed like a bug in x86 decoding.\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\n    go version go1.7 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/joshua/golang\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/Cellar/go/1.7/libexec\"\r\nGOTOOLDIR=\"/usr/local/Cellar/go/1.7/libexec/pkg/tool/darwin_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/var/folders/25/9fgzr84d7td1bkn4_wxnvgfc0000gn/T/go-build068341104=/tmp/go-build -gno-record-gcc-switches -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n### What did you do?\r\n\r\nCompile this code:\r\n\r\n```\r\nfunc fastPow(x float64, n uint) (r float64) {\r\n\tr = x\r\n\tn--\r\n\tfor ; n \u003e 0; n \u003e\u003e= 1 {\r\n\t\tif n\u00261 == 1 {\r\n\t\t\tr *= x\r\n\t\t}\r\n\t\tx *= x\r\n\t}\r\n\treturn\r\n}\r\n```\r\n\r\nCompare the output of GNU binutils `objdump` vs `go tool objdump`.\r\n\r\n### What did you expect to see?\r\n\r\nOutput like GNU objdump:\r\n\r\n```\r\n0000000000074eb0 \u003c.../main.fastPow\u003e:\r\n   74eb0:       48 8b 44 24 10          mov    0x10(%rsp),%rax\r\n   74eb5:       48 ff c8                dec    %rax\r\n   74eb8:       f2 0f 10 44 24 08       movsd  0x8(%rsp),%xmm0\r\n   74ebe:       0f 10 c8                movups %xmm0,%xmm1\r\n   74ec1:       48 85 c0                test   %rax,%rax\r\n   74ec4:       76 20                   jbe    74ee6 \u003c.../main.fastPow+0x36\u003e\r\n   74ec6:       48 89 c1                mov    %rax,%rcx\r\n   74ec9:       48 83 e0 01             and    $0x1,%rax\r\n   74ecd:       48 83 f8 01             cmp    $0x1,%rax\r\n   74ed1:       75 04                   jne    74ed7 \u003c.../main.fastPow+0x27\u003e\r\n   74ed3:       f2 0f 59 c8             mulsd  %xmm0,%xmm1\r\n   74ed7:       48 d1 e9                shr    %rcx\r\n   74eda:       f2 0f 59 c0             mulsd  %xmm0,%xmm0\r\n   74ede:       48 89 c8                mov    %rcx,%rax\r\n   74ee1:       48 85 c0                test   %rax,%rax\r\n   74ee4:       77 e0                   ja     74ec6 \u003c.../main.fastPow+0x16\u003e\r\n   74ee6:       f2 0f 11 4c 24 18       movsd  %xmm1,0x18(%rsp)\r\n   74eec:       c3                      retq\r\n   74eed:       cc                      int3\r\n   74eee:       cc                      int3\r\n   74eef:       cc                      int3\r\n```\r\n\r\n### What did you see instead?\r\n\r\n```\r\nTEXT .../main.fastPow(SB) .../foo.go\r\n\tfoo.go:78\t0x74eb0\t488b442410\tMOVQ 0x10(SP), AX\r\n\tfoo.go:78\t0x74eb5\t48ffc8\t\tDECQ AX\r\n\tfoo.go:80\t0x74eb8\tf20f10442408\tREPNE MOVSD_XMM 0x8(SP), X0\r\n\tfoo.go:80\t0x74ebe\t0f10c8\t\tMOVUPS X0, X1\r\n\tfoo.go:80\t0x74ec1\t4885c0\t\tTESTQ AX, AX\r\n\tfoo.go:80\t0x74ec4\t7620\t\tJBE 0x74ee6\r\n\tfoo.go:81\t0x74ec6\t4889c1\t\tMOVQ AX, CX\r\n\tfoo.go:81\t0x74ec9\t4883e001\tANDQ $0x1, AX\r\n\tfoo.go:81\t0x74ecd\t4883f801\tCMPQ $0x1, AX\r\n\tfoo.go:81\t0x74ed1\t7504\t\tJNE 0x74ed7\r\n\tfoo.go:82\t0x74ed3\tf20f59c8\tREPNE MULSD X0, X1\r\n\tfoo.go:80\t0x74ed7\t48d1e9\t\tSHRQ $0x1, CX\r\n\tfoo.go:84\t0x74eda\tf20f59c0\tREPNE MULSD X0, X0\r\n\tfoo.go:80\t0x74ede\t4889c8\t\tMOVQ CX, AX\r\n\tfoo.go:80\t0x74ee1\t4885c0\t\tTESTQ AX, AX\r\n\tfoo.go:80\t0x74ee4\t77e0\t\tJA 0x74ec6\r\n\tfoo.go:164\t0x74ee6\tf20f114c2418\tREPNE MOVSD_XMM X1, 0x18(SP)\r\n\tfoo.go:164\t0x74eec\tc3\t\tRET\r\n\t:-1\t\t\t0x74eed\tcc\t\tINT $0x3\r\n\t:-1\t\t\t0x74eee\tcc\t\tINT $0x3\r\n\t:-1\t\t\t0x74eef\tcc\t\tINT $0x3\r\n```",
+	"user": {
+		"login": "jcorbin",
+		"id": 49715,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 0,
+	"created_at": "2016-10-11T21:10:24Z",
+	"updated_at": "2016-10-20T18:06:59Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": 254080163,
+	"body": "I am trying to understand the issue, the fix, and its implications better. I would like to be confident this is the right fix for `vcs.FromDir` since so many tools depend on its behavior being true to what its documentation says.\r\n\r\n[`vcs.FromDir`](https://godoc.org/golang.org/x/tools/go/vcs#FromDir) is documented as:\r\n\r\n\u003e FromDir inspects dir and its parents to determine the version control system and code repository to use. On return, root is the import path corresponding to the root of the repository.\r\n\r\nThe original issue said:\r\n\r\n\u003e godep is using https://godoc.org/golang.org/x/tools/go/vcs#FromDir to determine if the current directory contains a git repo. This command does not correctly identify git submodules because the implementation searches for .git directory.\r\n\r\nAfter the change in [CL 21430](https://golang.org/cl/21430), `vcs.FromDir` returns the root of either the repository of a git submodule you're in.\r\n\r\nIs a git submodule considered a \"git repository\"?\r\n\r\n---\r\n\r\nA consequence that I noticed is that if you're using `vcs.FromDir` on a vendored Go package inside a git repository, and that vendored Go package [happens to be implemented as a git submodule](https://github.com/shazow/ssh-chat/tree/master/vendor/github.com/alexcesaro), you will now get the root of the git submodule instead of the root of the git repository that contains the submodule.\r\n\r\nFor example, if you do `export GOPATH=/tmp/gopath`, `go get -u -d github.com/shazow/ssh-chat`, and then:\r\n\r\n```Go\r\nvcs, root, err := vcs.FromDir(\"/tmp/gopath/src/github.com/shazow/ssh-chat/vendor/github.com/alexcesaro/log\", \"/tmp/gopath/src\")\r\n```\r\n\r\nBefore CL 21430, the value of `root` would be \"github.com/shazow/ssh-chat\". After, it's \"github.com/shazow/ssh-chat/vendor/github.com/alexcesaro/log\".\r\n\r\nIs that intended and expected behavior for `vcs.FromDir`, given how it's documented?\r\n\r\nNow that [CL 30948](https://golang.org/cl/30948) is about to apply the same change for `go get`, wouldn't that mean that trying to do `go get -u` inside `/tmp/gopath/src/github.com/shazow/ssh-chat/vendor/github.com/alexcesaro/log` would try to update the vendored Go package instead of the `github.com/shazow/ssh-chat` git repository. Is that what we want?",
+	"user": {
+		"login": "shurcooL",
+		"id": 1924134,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-16T22:36:11Z",
+	"updated_at": "2016-10-16T22:37:04Z"
+}

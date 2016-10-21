@@ -1,0 +1,12 @@
+{
+	"id": 254589254,
+	"body": "\u003e       sum_arm.s:367   0xd1e58 e52de11c        MOVW.W R14, -0x11c(R13)\r\nThis has been added by the compiler, although I'm not sure why.\r\n\r\nWhen you declare frame size in `TEXT`, the assembler backend actually allocate the frame with this size, by inserting an instruction to decrement SP. (It also saves LR on stack, because it is non-leaf, and merges into a single instruction).\r\n\r\nIt is very rare that hand written assembly decrement SP, probably only in code that manipulates stack frame.\r\n\r\n\u003e  sum_arm.s:368   0xd1e5c e59d4120        MOVW 0x120(R13), R4\r\n        sum_arm.s:369   0xd1e60 e59d5124        MOVW 0x124(R13), R5\r\n        sum_arm.s:370   0xd1e64 e59d6128        MOVW 0x128(R13), R6\r\n        sum_arm.s:371   0xd1e68 e59d712c        MOVW 0x12c(R13), R7\r\nThis is the loading of argument from the stack, but the offsets assume that R13 has already been moved down ~280 bytes, although I don't know when that happened.\r\n\r\nBecause it decremented SP first.\r\n\r\n\u003e sum_arm.s:373   0xd1e6c e1a0800d        MOVW R13, R8\r\n        sum_arm.s:374   0xd1e70 e3cdd03f        BIC $63, R13, R13 \r\n        sum_arm.s:375   0xd1e74 e24dd040        SUB $64, R13, R13\r\nThis will subtract between 64 and 127 bytes from the stack pointer and end up aligning it to 64 bytes. The rest of the code here operates on a datastructure that's ~64 bytes and which will be placed at this point in the stack.\r\n\r\nThis, as well as other `SUB $n, R13` and `MOVM.DB.W`'s, *further* decrement SP from the alreadly-decremented-by-280 SP. That may cause overflow, because the stack split check code cannot see them.\r\n\r\n\u003e Can the GC preempt arbitrarily, or only at stack splits?\r\n\r\nOnly on preemption points, i.e. stack splits. So this is fine.\r\n",
+	"user": {
+		"login": "cherrymui",
+		"id": 14119929,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-18T18:02:17Z",
+	"updated_at": "2016-10-18T18:02:17Z"
+}

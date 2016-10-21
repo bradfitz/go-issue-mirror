@@ -1,0 +1,12 @@
+{
+	"id": 254046634,
+	"body": "Your preferable solution is possible, but a bit involved. The module data is put on the linked list by runtime.addmoduledata, called from an ELF .init_array. It's called with the C calling convention and doesn't have the Go machinery setup to call progToPointerMask. I think the easiest thing to do would be to have addmoduledata put the module on a pending linked list, and then have plugin_lastmoduleinit initialize gccdatamask/gccbssmask, then move the module to the main linked list.\r\n\r\nBut a (somewhat depressing) question before that: if we are concurrently reading/writing moduledata.next, does that mean we should be atomically loading/storing it?\r\n\r\nIf so, then I think while I'll keep the pending data structure used by addmouledata a linked list, the list of active modules should turn into a global slice, so all the sites were we iterate through modules only gets hit with a single atomic load.",
+	"user": {
+		"login": "crawshaw",
+		"id": 161319,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-16T13:22:56Z",
+	"updated_at": "2016-10-16T13:25:03Z"
+}

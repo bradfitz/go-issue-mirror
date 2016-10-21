@@ -2,7 +2,7 @@
 	"id": 165162535,
 	"number": 16338,
 	"state": "open",
-	"title": "cmd/compile: issues with variable locations ",
+	"title": "cmd/compile: DWARF variable info includes compiler temporaries",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version devel +5701174\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOOS=\"linux\"\r\n\r\n3. What did you do?\r\n\r\nWhile debugging a problem in a toy go application that I'm writing, I noticed an issue with the debug/DWARF being generated for one of the subroutines I was looking at.\r\n\r\nSpecifically, the .debug_info seems to contain variables + locations for compiler temporaries -- this not what I would have expected. Here is a reproducer:\r\n\r\n% go get github.com/thanm/gccgo-demangler/gccgo-dem\r\n% cd $GOPATH/src/github.com/thanm/gccgo-demangler/gccgo-dem\r\n% git checkout ceda66eb429a9750e4fc56059455f9a5006e131a\r\n% go build .\r\n% gdb gccgo-dem\r\n...\r\n(gdb) b 'github.com/thanm/gccgo-demangler/demangler.dem_struct'\r\nBreakpoint 1 at 0x46fee0: file ... demangler.go, line 139.\r\n(gdb) run -i testdata/driver.go.dump.ast\r\n...\r\n(gdb) b 200\r\nBreakpoint 2 at 0x470d8d: file ... /demangler.go, line 200.\r\n(gdb) c\r\n...\r\n\r\n\r\nAt this point in the GDB session if you issue an \"info args\" command, the resulting info looks fine:\r\n\r\n(gdb) info args\r\nid =  []uint8 = {83 'S', 52 '4', 95 '_', 114 'r', 101 'e', 115 's', 48 '0', \r\n  78 'N', 51 '3', 95 '_', 105 'i', 110 'n', 116 't', 52 '4', 95 '_', 114 'r', \r\n  101 'e', 115 's', 49 '1', 78 'N', 53 '5', 95 '_', 101 'e', 114 'r', 114 'r', \r\n  111 'o', 114 'r', 101 'e'}\r\nres =  []uint8 = {64 '@'}\r\nconsumed = 32\r\nerr = {tab = 0x8, data = 0x10}\r\n\r\n\r\nThe story is not so good for local variables:\r\n\r\n(gdb) info locals\r\nlen = 4\r\nidx = 27\r\ni = 2\r\nlen = 5\r\ncap = 22\r\nftcons = 8\r\nlen = 842350941560\r\ncap = 842350941576\r\nfncons = 6\r\nlen = 4\r\ncap = 29\r\nlen = 2\r\ncap = 16\r\nlen = 0\r\ncap = 16\r\nlen = 2\r\ncap = 16\r\nptr = 0xc4200ca2a3 \"res1N5_errore)\"\r\nptr = 0xc4200ca2aa \"errore)\"\r\nitab = 0xc420075678 \"\\270V\\a\", \u003cincomplete sequence \\304\u003e\r\ndata = 0x43cf9e \u003cruntime.slicebytetostring+126\u003e \"H\\213D$@H\\211D$xH\\213D$8H\\211\\204$\\200\"\r\nitab = 0x0\r\ndata = 0x0\r\nptr = 0xc4200aafa9 \"5\"\r\nitab = 0x0\r\ndata = 0x0\r\nptr = 0xc4200ca2a3 \"res1N5_errore)\"\r\nptr =  []uint8 * = {105 'i', 110 'n', 116 't'}\r\nptr =  []uint8 *\u003cerror reading variable: Cannot access memory at address 0x8\u003e\r\nptr =  []uint8 * = {114 'r', 101 'e', 115 's', 48 '0'}\r\n(gdb)\r\n\r\n\r\nFirst problem is that some of the local variables (ex: fieldnames) that should be in scope are not present in the output (I verified with readelf --debug-dump that they are missing from the DWARF). \r\n\r\nSecond problem is that there seem to be a lot of compiler-generated temporary variables showing up instead (ex: itab, ptr, data, ...). This is a bit unfriendly, also will add a lot of bloat to the DWARF.\r\n\r\n\r\n",
 	"user": {
 		"login": "thanm",
@@ -10,12 +10,17 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 3,
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 4,
 	"created_at": "2016-07-12T19:40:44Z",
-	"updated_at": "2016-07-14T12:41:43Z",
+	"updated_at": "2016-10-20T14:14:26Z",
 	"milestone": {
-		"id": 1748849,
-		"number": 42,
-		"title": "Go1.8Maybe"
+		"id": 2053058,
+		"number": 49,
+		"title": "Go1.9"
 	}
 }

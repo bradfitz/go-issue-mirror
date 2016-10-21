@@ -1,0 +1,12 @@
+{
+	"id": 253670210,
+	"body": "@bradfitz The posters are creating a MyType that implements the driver.Valuer interface. They have an existing practice in their applications of representing nullable columns as *(type) and not null columns as (type). The issue they are running into is that when they have a *MyType driver.Valuer it fails because the implementation `func (mt MyType) Value() (driver.Value, error)` is implemented on the value type rather than the pointer value type. They define the Value function on the non-pointer value because then they can use the type with both their \"nullable\" types and \"not null\" types, because they made the choice to represent nullable types with *(type).\r\n\r\nOf course the above doesn't mesh with how Go operates, as it makes a situation where the valuer type is of type MyType so the Valuer interface is not nil but points to nothing and the Valuer method cannot be used as it isn't called in this case.\r\n\r\n---\r\n\r\nI see two solutions that doesn't involve modifying `database/sql`:\r\n\r\n * Use a type that encodes NULL internally (with a bool for example) rather than on the type itself.\r\n * Define type Value method on the pointer value type and always use the type consistently, regardless of the database type definition.\r\n\r\nI understand both of these solutions would alter how you handle NULL values in your existing programs, or at least how you would prefer to handle them.\r\n\r\n---\r\n\r\nAs a personal opinion, I think it is a mistake to construe Go's nil with the database NULL concept. There is a great talk about how the nil value is still useful and is distinct from database NULL you may have seen https://speakerdeck.com/campoy/understanding-nil https://www.youtube.com/watch?v=ynoY2xz-F8s .",
+	"user": {
+		"login": "kardianos",
+		"id": 755121,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-13T23:35:46Z",
+	"updated_at": "2016-10-14T03:36:07Z"
+}

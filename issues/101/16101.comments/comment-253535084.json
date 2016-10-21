@@ -1,0 +1,12 @@
+{
+	"id": 253535084,
+	"body": "@adg here is a repro that crashes consistently on my MacBook dual core / macOS Sierra / Go 1.7.1:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"html/template\"\r\n\t\"io/ioutil\"\r\n\t\"log\"\r\n\t\"sync\"\r\n\t\"time\"\r\n)\r\n\r\nvar (\r\n\toverlayTmpl *template.Template\r\n\tmasterTmpl  *template.Template\r\n)\r\n\r\nfunc main() {\r\n\tconst (\r\n\t\tmaster = `\r\n\u003c!DOCTYPE HTML\u003e\r\n\u003chtml\u003e\r\n\u003chead\u003e\r\n\u003ctitle\u003e\r\n{{block \"a\" . }}Default{{end}}\r\n\u003c/title\u003e\r\n\u003c/head\u003e\r\n\u003cbody\u003e\r\n{{block \"b\" .}}Default{{end}}\r\n{{block \"c\" .}}Default{{end}}\r\n\u003c/body\u003e\r\n\u003c/html\u003e\r\n`\r\n\t\toverlay = `\r\n{{define \"b\"}}A{{end}} \r\n`\r\n\t)\r\n\r\n\tvar err error\r\n\r\n\tmasterTmpl, err = template.New(\"master\").Parse(master)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\toverlayTmpl, err = template.Must(masterTmpl.Clone()).Parse(overlay)\r\n\tif err != nil {\r\n\t\tlog.Fatal(err)\r\n\t}\r\n\r\n\tvar wg sync.WaitGroup\r\n\r\n\tfor i := 0; i \u003c 100; i++ {\r\n\t\twg.Add(1)\r\n\t\tgo func() {\r\n\t\t\tdefer wg.Done()\r\n\t\t\tfor i := 0; i \u003c 1000; i++ {\r\n\t\t\t\tif err := overlayTmpl.Execute(ioutil.Discard, \"data\"); err != nil {\r\n\t\t\t\t\tlog.Fatal(err)\r\n\t\t\t\t}\r\n\t\t\t\ttime.Sleep(23 * time.Millisecond)\r\n\t\t\t}\r\n\t\t}()\r\n\t}\r\n\r\n\twg.Wait()\r\n\tlog.Println(\"Done ...\")\r\n}\r\n\r\n```\r\n\r\n```\r\ngo run main.go -race \u0026\u003e race.txt\r\n```\r\n\r\nThis is becoming a fairly painful issue in Hugo -- and any advice for a workaround would be appreciated.",
+	"user": {
+		"login": "bep",
+		"id": 394382,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-13T14:46:56Z",
+	"updated_at": "2016-10-13T14:46:56Z"
+}

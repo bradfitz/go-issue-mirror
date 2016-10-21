@@ -1,0 +1,17 @@
+{
+	"id": 183962213,
+	"number": 17514,
+	"state": "closed",
+	"title": "reflect/type.go : struct tag Lookup can not find right tag name",
+	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\ngo version go1.7.1\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\ndarwin/amd64\r\n\r\n### What did you do?\r\ncall  [Lookup](https://golang.org/pkg/reflect/#StructTag.Lookup) will not find the tag name if it's not the first tag name. \r\n\r\nplaybord:\r\nhttps://play.golang.org/p/NRLtObwwTD\r\n\r\ndetail info : \r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"reflect\"\r\n)\r\n\r\ntype demo1 struct {\r\n\tName string `json:\"name\",valid:\"string\"`\r\n}\r\n\r\ntype demo2 struct {\r\n\tName string `valid:\"string\",json:\"name\"`\r\n}\r\n\r\nfunc main() {\r\n\tdemo1Tag := reflect.TypeOf(demo1{}).Field(0).Tag\r\n\tif value, ok := demo1Tag.Lookup(\"valid\"); ok {\r\n\t\tfmt.Println(\"demo1 valid tag : \", value)\r\n\t}\r\n\r\n\tdemo2Tag := reflect.TypeOf(demo2{}).Field(0).Tag\r\n\tif value, ok := demo2Tag.Lookup(\"valid\"); ok {\r\n\t\tfmt.Println(\"demo2 valid tag : \", value)\r\n\t}\r\n}\r\n\r\n```\r\n\r\n\r\n### What did you expect to see?\r\nout put result should be:\r\n\r\ndemo1 valid tag :  string\r\ndemo2 valid tag :  string\r\n\r\n### What did you see instead?\r\ndemo2 valid tag :  string\r\n\r\n\r\n### maybe the reason\r\nIn source code,after check the first tag name, rest tag string will include the delimiter of the tag name,then the next tag name's first character will be the delimiter.\r\n\r\nAnd if change as follow,it will work:\r\n\r\n```\r\ndiff --git a/src/reflect/type.go b/src/reflect/type.go\r\nindex 8916710..1188229 100644\r\n--- a/src/reflect/type.go\r\n+++ b/src/reflect/type.go\r\n@@ -1183,7 +1183,13 @@ func (tag StructTag) Lookup(key string) (value string, ok bool) {\r\n                        break\r\n                }\r\n                qvalue := string(tag[:i+1])\r\n-               tag = tag[i+1:]\r\n+\r\n+               // skip tag name delimeter\r\n+               if i+2 \u003e= len(tag) {\r\n+                       tag = \"\"\r\n+               } else {\r\n+                       tag = tag[i+2:]\r\n+               }\r\n \r\n                if key == name {\r\n                        value, err := strconv.Unquote(qvalue)\r\n```\r\n",
+	"user": {
+		"login": "Tang-RoseChild",
+		"id": 5513188,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"closed_at": "2016-10-19T13:33:35Z",
+	"created_at": "2016-10-19T13:30:44Z",
+	"updated_at": "2016-10-19T13:33:35Z"
+}

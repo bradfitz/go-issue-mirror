@@ -1,0 +1,12 @@
+{
+	"id": 254075520,
+	"body": "We're calling `getArgInfo` for `reflect.methodValueCall`:\r\n\r\n```\r\n(gdb) print 'runtime.firstmoduledata'.pclntable.array + f.nameoff\r\n$6 = (uint8 *) 0x50ae60 \u003cruntime.pclntab+263872\u003e \"reflect.methodValueCall\"\r\n(gdb) print/a *frame\r\n$10 = {fn = 0x50ae28 \u003cruntime.pclntab+263816\u003e, \r\n  pc = 0x480f00 \u003creflect.methodValueCall\u003e, continpc = 0x0, lr = 0x0, sp = 0x0, \r\n  fp = 0x0, varp = 0x0, argp = 0xc420012180, arglen = 0x0, argmap = 0x0}\r\n```\r\n\r\nOf course, the crash is because sp is 0. sp is 0 because `getArgInfo`'s caller, `tracebackdefers`, never sets `frame.sp`. So this code probably never worked and we just don't have deferred reflection method calls during a GC very often.\r\n\r\nI would expect we could just set frame.sp to deferArgs(d), but gdb is telling me that won't work. I'm not sure why yet.",
+	"user": {
+		"login": "aclements",
+		"id": 2688315,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-16T21:15:42Z",
+	"updated_at": "2016-10-16T21:41:07Z"
+}
