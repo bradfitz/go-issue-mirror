@@ -1,0 +1,29 @@
+{
+	"id": 184457168,
+	"number": 17540,
+	"state": "open",
+	"title": "path/filepath: Walk recurses on directory symlinks on Windows",
+	"body": "In the documentation to filepath.Walk, it says \"Walk does not follow symbolic links.\" This is not the case on Windows, and I think it's a bug.\r\n\r\n### What version of Go are you using (`go version`)?\r\n```\r\n$ go version\r\ngo version go1.7.1 windows/amd64\r\n```\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```bash\r\n$ go env\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=x:\\go\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n### What did you do?\r\nRun the following program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"os\"\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main() {\r\n\ttempdir, err := ioutil.TempDir(\"\", \"\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer os.RemoveAll(tempdir)\r\n\r\n\terr = os.Symlink(`c:\\`, filepath.Join(tempdir, \"directorysymlink\"))\r\n\t// err = os.Symlink(\"/\", filepath.Join(tempdir, \"directorysymlink\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\terr = filepath.Walk(tempdir, func(path string, info os.FileInfo, err error) error {\r\n\t\tif err != nil {\r\n\t\t\treturn err\r\n\t\t}\r\n\r\n\t\t/*\r\n\t\tif info.Mode()\u0026os.ModeSymlink != 0 \u0026\u0026 info.Mode()\u0026os.ModeDir != 0 {\r\n\t\t\treturn filepath.SkipDir\r\n\t\t}\r\n\t\t*/\r\n\r\n\t\tfmt.Println(path)\r\n\r\n\t\treturn nil\r\n\t})\r\n\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nI expect filepath.Walk not to recurse into tmpdir/directorysymlink.  So I expect to see:\r\n```\r\nC:\\cygwin\\tmp\\337883043\r\nC:\\cygwin\\tmp\\337883043\\directorysymlink\r\n```\r\nWhen run on a non-Windows system, this is the behaviour seen.\r\n\r\n### What did you see instead?\r\nI see two problems.\r\n1) filepath.Walk recurses into tmpdir/directorysymlink (this issue).\r\n2) filepath.Walk hits an endless recursive loop due to #10424.  NB: This issue refers to NTFS junction points, whereas I am referring to directory symlinks.\r\n```\r\nC:\\cygwin\\tmp\\902833999\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\r\n...\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\nC:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\r\npanic: GetFileAttributesEx C:\\cygwin\\tmp\\902833999\\directorysymlink\\Documents and Settings\\All Users\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data\\Application Data: The system cannot find the path specified.\r\n```\r\n\r\nFinal notes:\r\n\r\n1) a workaround for getting better behaviour is presented in the code above commented with /*...*/, but I don't think the library caller should be required to do this.\r\n2) I think Go should respect the underlying platform's (right or wrong!) decision to allow filesystem objects which report as both directory and symlink, and handle this appropriately in filepath.Walk by casting out directories which are also symlinks.\r\n3) FWIW, I think #10424 is legitimate and filepath.Walk should also not follow directory junctions (hardlinks), so as to avoid recursive loops.",
+	"user": {
+		"login": "jim-minter",
+		"id": 1038301,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"comments": 9,
+	"created_at": "2016-10-21T10:53:24Z",
+	"updated_at": "2016-10-22T23:27:25Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

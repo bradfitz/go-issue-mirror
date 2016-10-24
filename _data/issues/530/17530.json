@@ -2,7 +2,7 @@
 	"id": 184287496,
 	"number": 17530,
 	"state": "closed",
-	"title": "Append consecutive slices, same underlying array",
+	"title": "runtime: Append consecutive slices, same underlying array",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n### What version of Go are you using (`go version`)?\r\n\r\ngo version go1.7.3 linux/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/npat\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build296609692=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\n\r\nIt seems that the built-in append does not check for a situation like the following (appending consecutive slices, with the same underlying array) , and needlessly copies data, when it could avoid it.\r\n\r\n```\r\n  func appendBytes(a, b []byte) []byte {\r\n          if len(b) == 0 {\r\n                  return a\r\n          }\r\n          // Shouldn't append() check for something like this?\r\n          if cap(a) \u003e= len(a)+len(b) \u0026\u0026 \u0026a[:len(a)+1][len(a)] == \u0026b[0] {\r\n                  return a[:len(a)+len(b)]\r\n          }\r\n          return append(a, b...)\r\n  }\r\n```\r\n\r\nIf I'm following the breadcrumbs correctly, they lead to the fact that `runtime-memmove()` does *not* short-circuit when source and destination addresses are the same (I may be wrong, though).\r\n\r\nRunning the simple benchmarks at:\r\n\r\n  https://gist.github.com/npat-efault/f055654633f43d0ef771d38657fd499e\r\n\r\nfor any value of N, demonstrates this.\r\n\r\n### What did you expect to see?\r\n\r\nBuilt-in append detecting the trivial case and behaving (performance-wise) like `appendBytes` above, running time being independent of slice `b` size\r\n\r\n### What did you see instead?\r\n\r\nRunning time increases with slice `b` size.\r\n\r\n\r\n",
 	"user": {
 		"login": "npat-efault",
@@ -13,5 +13,5 @@
 	"comments": 11,
 	"closed_at": "2016-10-20T18:00:11Z",
 	"created_at": "2016-10-20T17:09:46Z",
-	"updated_at": "2016-10-20T23:33:08Z"
+	"updated_at": "2016-10-23T21:33:57Z"
 }

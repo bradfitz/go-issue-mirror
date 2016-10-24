@@ -1,0 +1,35 @@
+{
+	"id": 184460042,
+	"number": 17541,
+	"state": "open",
+	"title": "archive/tar: FileInfoHeader cannot parse Windows directory symlinks",
+	"body": "On Windows, a symlink to a directory is reported as a directory and a symlink at the same time.  This confuses tar.FileInfoHeader, which reports the object as a directory, whereas on UNIX systems it would be reported as a symlink.  I believe it makes much more sense to report a symlink.\r\n\r\n### What version of Go are you using (`go version`)?\r\n```\r\n$ go version\r\ngo version go1.7.1 windows/amd64\r\n```\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\n```bash\r\n$ go env\r\nset GOARCH=amd64\r\nset GOBIN=\r\nset GOEXE=.exe\r\nset GOHOSTARCH=amd64\r\nset GOHOSTOS=windows\r\nset GOOS=windows\r\nset GOPATH=x:\\go\r\nset GORACE=\r\nset GOROOT=C:\\Go\r\nset GOTOOLDIR=C:\\Go\\pkg\\tool\\windows_amd64\r\nset CC=gcc\r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0\r\nset CXX=g++\r\nset CGO_ENABLED=1\r\n```\r\n\r\n### What did you do?\r\nRun the following program:\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"archive/tar\"\r\n\t\"fmt\"\r\n\t\"io/ioutil\"\r\n\t\"os\"\r\n\t\"path/filepath\"\r\n)\r\n\r\nfunc main() {\r\n\ttempdir, err := ioutil.TempDir(\"\", \"\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\tdefer os.RemoveAll(tempdir)\r\n\r\n\tos.Symlink(`c:\\`, filepath.Join(tempdir, \"directorysymlink\"))\r\n\t// os.Symlink(\"/\", filepath.Join(tempdir, \"directorysymlink\"))\r\n\r\n\tfi, err := os.Lstat(filepath.Join(tempdir, \"directorysymlink\"))\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\thdr, err := tar.FileInfoHeader(fi, \"directorysymlink\")\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n\r\n\tfmt.Printf(\"Typeflag: %c, Mode: 0x%x, Linkname: %q\\n\", hdr.Typeflag, hdr.Mode, hdr.Linkname)\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nOn Windows, this returns `Typeflag: 5, Mode: 0x41ff, Linkname: \"\"`\r\n\r\n### What did you see instead?\r\nI'd expect to see `Typeflag: 2, Mode: 0xa1ff, Linkname: \"directorysymlink\"`, as is reported on non-Windows systems.",
+	"user": {
+		"login": "jim-minter",
+		"id": 1038301,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		},
+		{
+			"name": "OS-Windows"
+		}
+	],
+	"assignee": {
+		"login": "dsnet",
+		"id": 6354026,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 1,
+	"created_at": "2016-10-21T11:09:07Z",
+	"updated_at": "2016-10-21T16:31:13Z",
+	"milestone": {
+		"id": 1748849,
+		"number": 42,
+		"title": "Go1.8Maybe"
+	}
+}

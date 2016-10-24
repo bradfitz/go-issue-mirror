@@ -1,0 +1,12 @@
+{
+	"id": 255382065,
+	"body": "It sounds like we just need to wait for clang and gcc to fix their reproducible build support.\n\n**clang**\n\nSupport for -fdebug-prefix-map was added Oct 2015. Clang 3.7.0 was released Sep 2015, Clang 3.7.1 was released Jan 2016, and Clang 3.8 was released Mar 2016. My guess is the change may have missed the Clang 3.7 point release but was likely in Clang 3.8. Without detecting support for the flag, the test is skipped. This is why we don't see failures before Clang 3.8.\n\nThe linux-amd64-clang gomote image is using Clang 3.5, so we don't test this case on the builder.\n\n@bradfitz, is it possible to update to a newer clang? Latest is 3.9.0 released Sep 2 2016. http://llvm.org/releases/\n\n**gcc**\n\nSupport for -fdebug-prefix-map is more widespread, but some versions don't quite work. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69821 shows that while -fdebug-prefix-map did the right thing to the debug symbols, gcc then included that option in the DW_AT_producer field of the dwarf. If the goal of -fdebug-prefix-map=old=new is to eliminate the string \"old\" from the binary, writing down that option into the binary defeats the purpose. The bug entry says the target milestone is gcc 6 and the discussion there sounds like the decision was not to backport to gcc 5. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=819176, the Debian entry for this bug, suggests it is fixed in Debian's gcc 5.4.0. It is unclear whether that means the fix is only in Debian's copy or is upstream. It's unclear to me when DW_AT_producer first started recording the whole command line.\n\nObviously the tests do pass on our gcc builders, and I confirmed that (unlike the clang builder) the gcc on the builder does support the flag, so the test should be running. Perhaps gcc 4.3 had a related problem.",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-21T13:50:04Z",
+	"updated_at": "2016-10-21T13:50:04Z"
+}

@@ -1,0 +1,12 @@
+{
+	"id": 255477190,
+	"body": "\u003e You should never skip a test until you understand it.\r\n\r\nAgreed, I always prefer to ask upstream maintainers for advice.\r\n\r\n\u003e Is stat expected to return complete information in your environment or do you fake the modtimes?\r\n\r\nWhat's happening is that I applied the fix for https://github.com/golang/go/issues/17276 as a patch, and that reset the mtimes to epoch. Our build system downloads the sources, unpacks and applies the patch, repacks the tarball, and caches that for later use. This process resets the mtimes to epoch (we invoke the repack tar with '--mtime=@0').\r\n\r\nGiven this information, do you think it's safe to skip the test? If I skipped the test, the mtimes would be unmodified from the upstream tarball.\r\n\r\nGenerally, is it a bad idea to build Go with the source file mtimes set to epoch? Could something go wrong that would not be caught by the test suite?\r\n\r\nWe don't \"fake\" the modtimes, or do anything special to the clock in the build environment. We do set the environment variable SOURCE_DATE_EPOCH=1 [0], but how this variable is used is determined by upstream maintainers.\r\n\r\nFor reference, I saved the failed build tree, and ran stat on that file:\r\n```\r\n$ stat ./go/src/net/http/testdata/index.html\r\n  File: './go/src/net/http/testdata/index.html'\r\n  Size: 22              Blocks: 2          IO Block: 1024   regular file\r\nDevice: fe04h/65028d    Inode: 260273      Links: 1\r\nAccess: (0644/-rw-r--r--)  Uid: (  999/guixbuilder01)   Gid: (  999/guixbuild)\r\nAccess: 2016-10-21 17:30:58.000000000 -0400\r\nModify: 1969-12-31 19:00:00.000000000 -0500\r\nChange: 2016-10-21 17:30:57.000000000 -0400\r\n Birth: -\r\n```\r\nHere is what I get from a freshly unpacked tarball:\r\n\r\n```\r\n$ stat ./go/src/net/http/testdata/index.html\r\n  File: './go/src/net/http/testdata/index.html'\r\n  Size: 22              Blocks: 8          IO Block: 4096   regular file\r\nDevice: 25h/37d Inode: 73162259    Links: 1\r\nAccess: (0644/-rw-r--r--)  Uid: ( 1000/     leo)   Gid: ( 1000/     leo)\r\nAccess: 2016-10-21 17:38:31.078167128 -0400\r\nModify: 2016-09-07 15:34:35.000000000 -0400\r\nChange: 2016-10-21 17:38:31.078167128 -0400\r\n Birth: -\r\n```\r\n\r\n[0]\r\nhttps://reproducible-builds.org/specs/source-date-epoch/",
+	"user": {
+		"login": "lfam",
+		"id": 6568228,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-21T22:08:36Z",
+	"updated_at": "2016-10-21T22:08:36Z"
+}

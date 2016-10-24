@@ -1,0 +1,12 @@
+{
+	"id": 255498503,
+	"body": "What if the mechanism to abort blocked read or write I/O is to just exit from the ServeHTTP function?\r\n\r\nSo then handlers can do their own timers before reads/writes and cancel or extend them as necessary. That implies that all such reads \u0026 writes would need to be done in a separate goroutine. And then if they're too slow and the timer fires before the hander's I/O goroutine completes, just return from ServeHTTP and we'd either kill the TCP connection (for http1) or do a RST_STREAM (for http2).\r\n\r\nI suppose then the problem is there's a small window where the I/O might've completed just in the window between the timer firing and the ServeHTTP code exiting, so then once the http package sees ServeHTTP is done, it may not see any calls still in Read or Write, and might then not fail the connection as intended.\r\n\r\nThat suggests we need some sort of explicit means of aborting a response. http1 has that with Hijacker.\r\n\r\nI've recommended in the past that people just panic, since the http package has that weird feature where it recovers panics.\r\n\r\nWould that work? Do all your I/O in separate goroutines, and panic if they take too long?\r\n\r\nWe might get data races with http1 and/or http2 with that, but I could probably make it work if you like the idea.\r\n",
+	"user": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-22T01:21:36Z",
+	"updated_at": "2016-10-22T01:21:36Z"
+}

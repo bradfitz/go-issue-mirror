@@ -1,0 +1,32 @@
+{
+	"id": 184702176,
+	"number": 17559,
+	"state": "open",
+	"title": "net/http: finishRequest() aborts ongoing background reads",
+	"body": "[ *continued from Issue #17547* ]\r\n\r\n**TL;DR:** [`abortPendingRead()`](https://github.com/golang/go/blob/master/src/net/http/server.go#L1461\u0026q=abortPendingRead) is called from `finishRequest()`, causing it to abort ongoing reads. This causes `deadline_exceeded` errors. `finishRequest()` should wait for reads to finish in normal case.\r\n\r\nConsider following sequence of events from [`http.conn.serve()`](https://github.com/golang/go/blob/master/src/net/http/server.go#L1591):\r\n\r\n1. \t`startBackgroundRead()` starts [`backgroundRead()` in another goroutine](https://github.com/golang/go/blob/master/src/net/http/server.go#L592\u0026q=cr.backgroundRead()).\r\n\r\n2. \tAssume that `backgroundRead()` from above step does not finish until after the next step. (*Simulated by [adding sleep](https://github.com/dhananjay92/go/commit/689a8d466e731e4e7d4c474be7daaa530a62bddc)*)\r\n\r\n\r\n3. \t`finishRequest()` called, which calls [`abortPendingRead()`](https://github.com/golang/go/blob/master/src/net/http/server.go#L1461\u0026q=abortPendingRead). abortPendingRead() then proceeds to abort ongoing background reads by [setting the read deadline to `aLongTimeAgo`](https://github.com/golang/go/blob/master/src/net/http/server.go#L624\u0026q=SetReadDeadline(aLongTimeAgo)). This causes the ongoing reads to report `deadline_exceeded`.\r\n\r\n/cc @bradfitz @dsnet @mdempsky\r\n\r\n",
+	"user": {
+		"login": "dhananjay92",
+		"id": 6269279,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsInvestigation"
+		}
+	],
+	"assignee": {
+		"login": "bradfitz",
+		"id": 2621,
+		"type": "User",
+		"site_admin": false
+	},
+	"comments": 3,
+	"created_at": "2016-10-23T17:18:10Z",
+	"updated_at": "2016-10-23T18:16:48Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

@@ -1,0 +1,29 @@
+{
+	"id": 184877974,
+	"number": 17566,
+	"state": "open",
+	"title": "cmd/compile: improve inlining cost model",
+	"body": "The current inlining cost model is simplistic. Every gc.Node in a function has a cost of one. However, the actual impact of each node varies. Some nodes (OKEY) are placeholders never generate any code. Some nodes (OAPPEND) generate lots of code.\r\n\r\nIn addition to leading to bad inlining decisions, this design means that any refactoring that changes the AST structure can have unexpected and significant impact on compiled code. See [CL 31674](golang.org/cl/31674) for an example.\r\n\r\nInlining occurs near the beginning of compilation, which makes good predictions hard. For example, `new` or `make` or `\u0026` might allocate (large runtime call, much code generated) or not (near zero code generated). As another example, code guarded by `if false` still gets counted. As another example, we don't know whether bounds checks (which generate lots of code) will be eliminated or not.\r\n\r\nOne approach is to hand-write a better cost model: append is very expensive, things that might end up in a runtime call are moderately expensive, pure structure and variable/const declarations are cheap or free.\r\n\r\nAnother approach is to compile lots of code and generate a simple machine-built model (e.g. linear regression) from it.\r\n\r\nI have tried both of these approaches, and believe both of them to be improvements, but did not mail either of them, for two reasons:\r\n\r\n* Inlining significantly impacts binary size, runtime performance, and compilation speed. Minor changes to the cost model or to the budget can have big impacts on all three. I hoped to find a model and budget that was clearly pareto optimal, but I did not. In order to make forward progress, we need to make a decision about what metric(s) we want to optimize for, and which code to measure those metric on. This is to my mind the single biggest blocker for improving inlining.\r\n\r\n* Changing inlining decisions impacts the runtime as well as other code and minor inlining changes to the runtime can have outsized performance impacts. I see several possible ways to address this. (1) We could add a //go:inline annotation for use in the runtime only, to allow runtime authors to force the compiler to inline performance-critical functions. If a non-inlinable function was marked //go:inline, compilation would fail. (2) We could add a //go:mustinline annotation for use in the runtime only (see [CL 22785](https://go-review.googlesource.com/c/22785/)), to allow runtime authors to protect currently-inlined functions against becoming non-inlined. (3) We could tune runtime inlining (cost model, budget, etc.) independently.\r\n\r\nThree other related ideas:\r\n\r\n* We might want to take into account the number and size of parameters and return values of a function when deciding whether to inline it, since those determine the cost in binary size of setting up the function call.\r\n\r\n* We might want to have separate budgets for expressions and control flow, since branches end up being more expensive on most metrics.\r\n\r\n* We could treat intra-package inlining different than inter-package inlining. When inlining across packages, we don't actually need to decide early on whether to allow inlining, since the actual inlining will occur in an entirely different compiler invocation. We could thus wait until function compilation is complete, and we know exactly how large the fully optimized code is, and then make our decision about whether other packages should inline that function. Downsides to this otherwise appealing idea are: (1) unexpected performance impact of moving a function from one package to another, (2) it introduces a significant dependency between full compilation and writing export data, which e.g. would prevent #15734.\r\n\r\ncc @dr2chase @randall77 @ianlancetaylor @mdempsky \r\n",
+	"user": {
+		"login": "josharian",
+		"id": 67496,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "Performance"
+		},
+		{
+			"name": "ToolSpeed"
+		}
+	],
+	"comments": 2,
+	"created_at": "2016-10-24T15:42:17Z",
+	"updated_at": "2016-10-24T16:52:14Z",
+	"milestone": {
+		"id": 2053058,
+		"number": 49,
+		"title": "Go1.9"
+	}
+}

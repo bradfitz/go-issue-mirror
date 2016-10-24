@@ -2,7 +2,7 @@
 	"id": 150195274,
 	"number": 15405,
 	"state": "open",
-	"title": "cmd/go: TestCgoConsistentResults fails with clang 3.8 or gcc 4.3",
+	"title": "cmd/go, cmd/cgo: repeatable builds with Clang 3.8",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n`go version devel +f8fc371 Thu Apr 21 17:04:01 2016 +0000 linux/amd64`\r\n(but `GOROOT_BOOTSTRAP` is set to an installation of `go1.6.2`)\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```go\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/etiennebruines/workspaces/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/etiennebruines/workspaces/go-master\"\r\nGOTOOLDIR=\"/home/etiennebruines/workspaces/go-master/pkg/tool/linux_amd64\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build179019630=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n(Tested different versions of `clang` (with different results!), more info down below. )\r\n```\r\n\r\n3. What did you do?\r\nAttempted to build `master` branch of Go (currently HEAD is at https://github.com/golang/go/commit/40f1d0ca9f978376f7db24de3737b58589c8542b )\r\n(more specifically: `./all.bash` within the `src` directory)\r\n\r\n4. What did you expect to see?\r\nNo errors. \r\n\r\n5. What did you see instead?\r\nAn error within the tests, namely:\r\n\r\n```\r\n--- FAIL: TestCgoConsistentResults (1.10s)\r\n    go_test.go:244: running testgo [build -o /tmp/gotest260338695/cgotest1 cgotest]\r\n    go_test.go:244: running testgo [build -x -o /tmp/gotest260338695/cgotest2 cgotest]\r\n    go_test.go:263: standard error:\r\n    go_test.go:264: WORK=/tmp/go-build737947577\r\n        mkdir -p $WORK/cgotest/_obj/\r\n        mkdir -p $WORK/\r\n        cd /home/etiennebruines/workspaces/go-master/src/cmd/go/testdata/src/cgotest\r\n        CGO_LDFLAGS=\"-g\" \"-O2\" /home/etiennebruines/workspaces/go-master/pkg/tool/linux_amd64/cgo -objdir $WORK/cgotest/_obj/ -importpath cgotest -- -I $WORK/cgotest/_obj/ m.go\r\n        cd $WORK\r\n        clang-3.8 -fdebug-prefix-map=a=b -c trivial.c\r\n        clang-3.8 -gno-record-gcc-switches -c trivial.c\r\n        cd /home/etiennebruines/workspaces/go-master/src/cmd/go/testdata/src/cgotest\r\n        clang-3.8 -I . -fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -I $WORK/cgotest/_obj/ -g -O2 -o $WORK/cgotest/_obj/_cgo_main.o -c $WORK/cgotest/_obj/_cgo_main.c\r\n        clang-3.8 -I . -fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -I $WORK/cgotest/_obj/ -g -O2 -o $WORK/cgotest/_obj/_cgo_export.o -c $WORK/cgotest/_obj/_cgo_export.c\r\n        clang-3.8 -I . -fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -I $WORK/cgotest/_obj/ -g -O2 -o $WORK/cgotest/_obj/m.cgo2.o -c $WORK/cgotest/_obj/m.cgo2.c\r\n        clang-3.8 -I . -fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -o $WORK/cgotest/_obj/_cgo_.o $WORK/cgotest/_obj/_cgo_main.o $WORK/cgotest/_obj/_cgo_export.o $WORK/cgotest/_obj/m.cgo2.o -g -O2\r\n        /home/etiennebruines/workspaces/go-master/pkg/tool/linux_amd64/cgo -objdir $WORK/cgotest/_obj/ -dynpackage cgotest -dynimport $WORK/cgotest/_obj/_cgo_.o -dynout $WORK/cgotest/_obj/_cgo_import.go\r\n        cd $WORK\r\n        clang-3.8 -no-pie -c trivial.c\r\n        cd /home/etiennebruines/workspaces/go-master/src/cmd/go/testdata/src/cgotest\r\n        clang-3.8 -I . -fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fdebug-prefix-map=$WORK=/tmp/go-build -gno-record-gcc-switches -o $WORK/cgotest/_obj/_all.o $WORK/cgotest/_obj/_cgo_export.o $WORK/cgotest/_obj/m.cgo2.o -g -O2 -Wl,-r -nostdlib -Wl,--build-id=none\r\n        /home/etiennebruines/workspaces/go-master/pkg/tool/linux_amd64/compile -o $WORK/cgotest.a -trimpath $WORK -p cgotest -buildid 1491fc40a2d4f2376923084c60120b2fd293fe0e -D _/home/etiennebruines/workspaces/go-master/src/cmd/go/testdata/src/cgotest -I $WORK -pack $WORK/cgotest/_obj/_cgo_gotypes.go $WORK/cgotest/_obj/m.cgo1.go $WORK/cgotest/_obj/_cgo_import.go\r\n        pack r $WORK/cgotest.a $WORK/cgotest/_obj/_all.o # internal\r\n        mkdir -p /tmp/gotest260338695/\r\n        mv $WORK/cgotest.a /tmp/gotest260338695/cgotest2\r\n\r\n    go_test.go:2775: building cgotest twice did not produce the same output\r\nFAIL\r\nFAIL    cmd/go  29.068s\r\n```\r\n\r\n## Notes\r\n* Without `clang`, this error is not thrown (fails at https://github.com/golang/go/issues/14602, so not sure if issue is present)\r\n* With `clang-3.6`, this error is not thrown (not sure why not, but some things are disabled with older clang and newer kernel (4.3))\r\n* With `clang-3.8`, this error is thrown (but https://github.com/golang/go/issues/14602 is \"fixed\"). \r\n\r\nWhen running `CGO_ENABLED=0`, all errors go away (makes sense). \r\n",
 	"user": {
 		"login": "EtienneBruines",
@@ -15,22 +15,16 @@
 			"name": "NeedsInvestigation"
 		}
 	],
-	"assignee": {
-		"login": "neild",
-		"id": 52544,
-		"type": "User",
-		"site_admin": false
-	},
-	"comments": 2,
+	"comments": 4,
 	"created_at": "2016-04-21T21:26:06Z",
-	"updated_at": "2016-06-09T00:30:05Z",
+	"updated_at": "2016-10-21T14:32:26Z",
 	"milestone": {
-		"id": 1709363,
-		"number": 38,
-		"title": "Go1.8"
+		"id": 2053058,
+		"number": 49,
+		"title": "Go1.9"
 	},
 	"reactions": {
-		"total_count": 2,
-		"+1": 2
+		"total_count": 3,
+		"+1": 3
 	}
 }

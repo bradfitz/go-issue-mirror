@@ -1,7 +1,7 @@
 {
 	"id": 183433898,
 	"number": 17480,
-	"state": "open",
+	"state": "closed",
 	"title": "x/net/http2: Transport hangs forever if using a pipe that has not been written to yet as req.Body",
 	"body": "**### What version of Go are you using (`go version`)?**\r\nGo 1.7.1\r\n\r\n**### What operating system and processor architecture are you using (`go env`)?**\r\n```\r\nset GOARCH=amd64                                                                                                                                                \r\nset GOBIN=                                                                                                                                                      \r\nset GOEXE=.exe                                                                                                                                                  \r\nset GOHOSTARCH=amd64                                                                                                                                            \r\nset GOHOSTOS=windows                                                                                                                                            \r\nset GOOS=windows                                                                                                                                                \r\nset GOPATH=D:\\src\\psg\\server;D:\\src\\psg\\server\\vendor                                                                                                           \r\nset GORACE=                                                                                                                                                     \r\nset GOROOT=C:\\apps\\Go                                                                                                                                           \r\nset GOTOOLDIR=C:\\apps\\Go\\pkg\\tool\\windows_amd64                                                                                                                 \r\nset CC=gcc                                                                                                                                                      \r\nset GOGCCFLAGS=-m64 -mthreads -fmessage-length=0 -fdebug-prefix-map=C:\\Users\\lunad\\AppData\\Local\\Temp\\go-build906126950=/tmp/go-build -gno-record-gcc-switches  \r\nset CXX=g++                                                                                                                                                     \r\nset CGO_ENABLED=1                                                                                                                                               \r\n```\r\n\r\n**### What did you do?\r\nIf possible, provide a recipe for reproducing the error.\r\nA complete runnable program is good.\r\nA link on play.golang.org is best.**\r\n\r\nI ran the following program:\r\n\r\n```\r\npackage main\r\n\r\nimport (\r\n\t\"crypto/rand\"\r\n\t\"io\"\r\n\t\"log\"\r\n\t\"net/http\"\r\n\t\"runtime/debug\"\r\n\t\"time\"\r\n\r\n\t\"golang.org/x/net/http2\"\r\n)\r\n\r\nfunc main() {\r\n\t// set a 10 second timer for success\r\n\tgo func() {\r\n\t\ttimer := time.NewTimer(10 * time.Second)\r\n\t\t\u003c-timer.C\r\n\t\tdebug.SetTraceback(\"all\")\r\n\t\tpanic(\"10 second test period expired\")\r\n\t}()\r\n\r\n\ttransport := \u0026http2.Transport{}\r\n\tc := \u0026http.Client{Transport: transport}\r\n\r\n\t// Get a set of pipes, we'll use these to send data to the server\r\n\tpipeReader, pipeWriter := io.Pipe()\r\n\r\n\t// Initialize the request\r\n\treq, err := http.NewRequest(\"PUT\", \"https://http2.golang.org/bidirectional-stream\", pipeReader)\r\n\tif err != nil {\r\n\t\tpipeWriter.Close()\r\n\t\tlog.Fatalf(\"Error while initializing http request: %v\", err)\r\n\t}\r\n\r\n\t// Set the body of the request to the reader end of our pipe, and initiate the request.\r\n\treq.Body = pipeReader\r\n\tresp, err := c.Do(req)\r\n\tif err != nil {\r\n\t\tpipeWriter.Close()\r\n\t\tlog.Fatalf(\"Error during http call: %v\", err)\r\n\t}\r\n\r\n\t// Check that we actually got a 200 OK, if not: error out\r\n\tif resp.StatusCode != http.StatusOK {\r\n\t\tresp.Body.Close()\r\n\t\tpipeWriter.Close()\r\n\t\tlog.Fatalf(\"http call got non-200 status code %d\", resp.StatusCode)\r\n\t}\r\n\r\n\t// Use a 10 byte buffer\r\n\tbuffer := make([]byte, 10)\r\n\r\n\t// Read some data\r\n\tdataLen, err := resp.Body.Read(buffer)\r\n\tif err != nil {\r\n\t\tlog.Fatalf(\"Error while reading data: %v\", err)\r\n\t}\r\n\r\n\tlog.Printf(\"Got data: %+v\", buffer[:dataLen])\r\n\r\n\t// Reply\r\n\tif _, err := rand.Read(buffer); err != nil {\r\n\t\tlog.Fatalf(\"Error while reading random data: %v\", err)\r\n\t}\r\n\r\n\tif _, err := pipeWriter.Write(buffer); err != nil {\r\n\t\tlog.Fatalf(\"Error while writing data: %v\", err)\r\n\t}\r\n}\r\n```\r\n\r\n**### What did you expect to see?**\r\nI expected to see a bidirectional http-2 stream, with the server talking first, and the client then replying to the server.\r\n\r\n**### What did you see instead?**\r\nThe program hangs within http2/transport.go, in the `bodyAndLength` function, due to that function doing a Read(), which ofcourse hangs.\r\n\r\n",
 	"user": {
@@ -10,15 +10,21 @@
 		"type": "User",
 		"site_admin": false
 	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
 	"assignee": {
 		"login": "bradfitz",
 		"id": 2621,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 9,
+	"comments": 10,
+	"closed_at": "2016-10-21T21:27:33Z",
 	"created_at": "2016-10-17T14:37:04Z",
-	"updated_at": "2016-10-19T12:05:32Z",
+	"updated_at": "2016-10-21T21:27:33Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

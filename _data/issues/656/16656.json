@@ -1,7 +1,7 @@
 {
 	"id": 170383777,
 	"number": 16656,
-	"state": "open",
+	"state": "closed",
 	"title": "x/net/http2: Requesting data via http2 and closing the response body early uses 3-5x more memory than via http1",
 	"body": "1. What version of Go are you using (`go version`)?\r\n\r\n```\r\ngo version go1.6.3 linux/amd64\r\n```\r\n\r\n(It was reported to also occur on Go 1.7rc6)\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n```\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/fd0/shared/work/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/home/fd0/src/go\"\r\nGOTOOLDIR=\"/home/fd0/src/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\n3. What did you do?\r\n\r\nWriting a program that requests a larger file via HTTP GET, but only reads the first few bytes of the response body, then calls `Close()` on it.\r\n\r\n4. What did you expect to see?\r\n\r\nI expect that the HTTP download is aborted soon after the body is closed. Especially, I expect that only very little data is read from the server and stored in a buffer, regardless of the underlying transmission protocol.\r\n\r\n5. What did you see instead?\r\n\r\nRequesting and then closing the body takes a lot of memory. Disabling http2 reduces this a lot.\r\n\r\nAt https://fd0.me/tmp/random100MB I've created a file with 100MB of random data. The following Go program was used to request the file, read the first 100 bytes, and then close the response body several times in a loop:\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n        \"fmt\"\r\n        \"io\"\r\n        \"net/http\"\r\n        \"runtime\"\r\n)\r\n\r\nfunc main() {\r\n        for i := 0; i \u003c 100; i++ {\r\n                resp, err := http.Get(fmt.Sprintf(\"https://fd0.me/tmp/random100MB?rand=%d\", i))\r\n                if err != nil {\r\n                        panic(err)\r\n                }\r\n\r\n                buf := make([]byte, 100)\r\n                _, err = io.ReadFull(resp.Body, buf)\r\n                if err != nil {\r\n                        panic(err)\r\n                }\r\n\r\n                err = resp.Body.Close()\r\n                if err != nil {\r\n                        panic(err)\r\n                }\r\n        }\r\n\r\n        var mem runtime.MemStats\r\n        runtime.ReadMemStats(\u0026mem)\r\n\r\n        fmt.Printf(\"requests are done, memory from system: %v\\n\", mem.Sys)\r\n}\r\n```\r\n\r\nWith Go 1.6.3 standard http client (uses http2), this takes about 500MB of memory:\r\n```\r\n$ go run http2test.go\r\nrequests are done, memory from system: 509364472\r\n```\r\n\r\nDisabling http2 reduces this a lot:\r\n```\r\n$ GODEBUG=http2client=0 go run http2test.go\r\nrequests are done, memory from system: 9312504\r\n```\r\n\r\nServer logs (Caddy in this case) show that much more data is actually read per request, ~2.5MiB via HTTP2 vs. ~200KiB via HTTP1:\r\n```\r\n1.2.3.4 - [09/Aug/2016:11:49:12 +0200] \"GET /tmp/random100MB?rand=96 HTTP/2.0\" 200 2490368\r\n1.2.3.4 - [09/Aug/2016:11:49:12 +0200] \"GET /tmp/random100MB?rand=97 HTTP/2.0\" 200 2523136\r\n1.2.3.4 - [09/Aug/2016:11:49:12 +0200] \"GET /tmp/random100MB?rand=98 HTTP/2.0\" 200 2523136\r\n1.2.3.4 - [09/Aug/2016:11:49:12 +0200] \"GET /tmp/random100MB?rand=99 HTTP/2.0\" 200 2293760\r\n```\r\n\r\n```\r\n1.2.3.4 - [09/Aug/2016:11:49:45 +0200] \"GET /tmp/random100MB?rand=96 HTTP/1.1\" 200 131072\r\n1.2.3.4 - [09/Aug/2016:11:49:45 +0200] \"GET /tmp/random100MB?rand=97 HTTP/1.1\" 200 294912\r\n1.2.3.4 - [09/Aug/2016:11:49:45 +0200] \"GET /tmp/random100MB?rand=98 HTTP/1.1\" 200 262144\r\n1.2.3.4 - [09/Aug/2016:11:49:45 +0200] \"GET /tmp/random100MB?rand=99 HTTP/1.1\" 200 131072\r\n```\r\n\r\nIn the real world, this came up as https://github.com/restic/restic/issues/565 where a user described that accessing backup data (restic is a backup program) on s3 over http2 is impossible because the OOM killer terminates the process.\r\n\r\nI'm not really sure what's going on here, or even if this is a bug at all.\r\n\r\nI have a hunch that, in addition to loading more data, the http2 client code in this case forgets to free some buffers.\r\n\r\nWhat do you think? Please feel free to use the URL above to test this.",
 	"user": {
@@ -10,23 +10,16 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"labels": [
-		{
-			"name": "HelpWanted"
-		},
-		{
-			"name": "NeedsInvestigation"
-		}
-	],
 	"assignee": {
 		"login": "bradfitz",
 		"id": 2621,
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 6,
+	"comments": 8,
+	"closed_at": "2016-10-21T21:00:20Z",
 	"created_at": "2016-08-10T10:25:27Z",
-	"updated_at": "2016-09-29T18:49:16Z",
+	"updated_at": "2016-10-22T17:12:57Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

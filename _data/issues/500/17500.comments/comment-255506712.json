@@ -1,0 +1,12 @@
+{
+	"id": 255506712,
+	"body": "\u003e On windows XP I seem to get the opposite results where \\\\?\\c: is not found but \\\\?\\c:\\ is.\r\n\r\nI can reproduce that, thank you very much.\r\n\r\nThe problem appears to be with the way we open file or directory. Windows does not have generic API that opens both. Instead we always try to open path as file first (see os.openFile function), and, if that fails, we assume we have directory here (os.openDir). Our logic assumes that directory cannot be opened with \"file opening\" API CreateFile, and that seems worked so far. But not in the issue above.\r\n\r\nWe could, probably, \"fix\" this by adding some extra checks after CreateFile returns (we could try and call GetFileInformationByHandle, even check returned parameter FileAttributes field if succeeds). But, I think, we should avoid using long paths (https://github.com/golang/go/issues/10577#issuecomment-96925558) in general, so adding extra code for every file open does not sounds right to me.\r\n\r\nAlex",
+	"user": {
+		"login": "alexbrainman",
+		"id": 9796621,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-22T04:25:56Z",
+	"updated_at": "2016-10-22T04:25:56Z"
+}

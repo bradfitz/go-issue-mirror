@@ -1,7 +1,7 @@
 {
 	"id": 104151668,
 	"number": 12421,
-	"state": "open",
+	"state": "closed",
 	"title": "net: go/cgo resolvers report malformed domains differently",
 	"body": "Given the following program:\r\n\r\n    package main\r\n    \r\n    import (\r\n            \"net\"\r\n            \"fmt\"\r\n    )\r\n    \r\n    func main() {\r\n            ips, err := net.LookupIP(\"!!!.local\")\r\n            fmt.Printf(\"%v %v\\n\", ips, err)\r\n    }\r\n\r\nA different error message is produced, depending on whether the go or cgo resolver is used:\r\n    \r\n    ~/src/go/src$ GODEBUG=netdns=go ../bin/go run ~/test/lookup.go\r\n    [] lookup !!!.local: invalid domain name\r\n    ~/src/go/src$ GODEBUG=netdns=cgo ../bin/go run ~/test/lookup.go\r\n    [] lookup !!!.local: no such host\r\n\r\nThis discrepancy exists because `src/net/dnsclient.go` uses `isDomainName` as a filter before starting the lookup, while `getaddrinfo` has no such filter, and returns the same error for malformed and nonexistent (NXDOMAIN) names.\r\n\r\nI think it's debatable whether this qualifies as a bug, but in theory it could be fixed by having the cgo implementation check `isDomainName`.",
 	"user": {
@@ -15,9 +15,10 @@
 			"name": "NeedsFix"
 		}
 	],
-	"comments": 12,
+	"comments": 13,
+	"closed_at": "2016-10-24T15:39:19Z",
 	"created_at": "2015-08-31T23:12:18Z",
-	"updated_at": "2016-10-20T13:52:45Z",
+	"updated_at": "2016-10-24T15:39:19Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

@@ -1,7 +1,7 @@
 {
 	"id": 174589006,
 	"number": 16957,
-	"state": "open",
+	"state": "closed",
 	"title": "net/http/httptrace: function called after RoundTrip returns an error",
 	"body": "The documentation for httptrace says\r\n\r\n```go\r\n// Functions may be\r\n// called concurrently from different goroutines, starting after the\r\n// call to Transport.RoundTrip and ending either when RoundTrip\r\n// returns an error, or when the Response.Body is closed.\r\n```\r\n\r\nHowever, if RoundTrip is canceled or times out before t.dialConn completes, ConnectStart can be called concurrently with code that runs after RoundTrip returns an error.\r\nhttps://golang.org/src/net/http/transport.go#L880\r\n\r\nHere is a sample race found by TSAN:\r\n\r\n```\r\nWARNING: DATA RACE\r\nRead at 0x00c420204418 by goroutine 98:\r\n  [in my code that reads the final trace struct after RoundTrip has returned an error]\r\n\r\nPrevious write at 0x00c420204418 by goroutine 100:\r\n  [in my implementation of ConnectStart]\r\n  net.dialSingle()\r\n      go/gc/src/net/dial.go:511 +0xde5\r\n  net.dialSerial()\r\n      go/gc/src/net/dial.go:489 +0x245\r\n  net.(*Dialer).DialContext()\r\n      go/gc/src/net/dial.go:371 +0x977\r\n  [some frames redacted]\r\n  net/http.(*Transport).dial()\r\n      go/gc/src/net/http/transport.go:821 +0xe3\r\n  net/http.(*Transport).dialConn()\r\n      go/gc/src/net/http/transport.go:962 +0x242a\r\n  net/http.(*Transport).getConn.func4()\r\n      go/gc/src/net/http/transport.go:880 +0xa2\r\n```\r\n\r\nI'm not sure if this is a documentation bug or a code bug. The only way to implement the documentation faithfully is to either (a) prevent calling hooks after the conditions specified in the doc have been reached, or (b) wait for the background t.dialConn to complete before returning from RoundTrip with an error. The second solution doesn't seem practical. The first solution is doable, but do we really need a strict guarantee in the first place?",
 	"user": {
@@ -21,9 +21,10 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 1,
+	"comments": 2,
+	"closed_at": "2016-10-21T20:57:14Z",
 	"created_at": "2016-09-01T18:08:55Z",
-	"updated_at": "2016-10-07T20:05:16Z",
+	"updated_at": "2016-10-21T20:57:14Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

@@ -1,0 +1,12 @@
+{
+	"id": 255401818,
+	"body": "I think the problem is the CGO_LDFLAGS being set, as seen in the Travis log:\n\n\tCGO_LDFLAGS=\"/home/travis/gopath/src/github.com/stripe/sequins/build/lib/libsparkey.a /home/travis/gopath/src/github.com/stripe/sequins/build/lib/libsnappy.a /home/travis/gopath/src/github.com/stripe/sequins/build/lib/libzookeeper_mt.a -lrt -lm -lstdc++\"\n\nOne step of the cgo build is to take the .o files that have been generated so far for the package (containing the Go-specific wrappers) and merge them into one by using (I am simplifying a little):\n\n\t$CC -o _all.o *.o $CGO_LDFLAGS\n\nThe $CGO_LDFLAGS in this invocation has -l arguments stripped out, precisely to avoid this problem, but not explicit paths like foo.a. I believe that if you change your CGO_LDFLAGS to:\n\n\tCGO_LDFLAGS=\"-L/home/travis/gopath/src/github.com/stripe/sequins/build/lib -lsparkey -lsnappy -lzookeeper_mt -lrt -lm -lstdc++\"\n\nthen your build should work. We know to remove *.dylib, *.so, and *.dll from the CGO_LDFLAGS. Perhaps we should also remove *.a.\n\n@ianlancetaylor, what do you think about removing *.a in src/cmd/go/build.go's builder.collect?",
+	"user": {
+		"login": "rsc",
+		"id": 104030,
+		"type": "User",
+		"site_admin": false
+	},
+	"created_at": "2016-10-21T15:04:22Z",
+	"updated_at": "2016-10-21T15:04:22Z"
+}

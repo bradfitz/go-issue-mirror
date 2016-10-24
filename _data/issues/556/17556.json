@@ -1,0 +1,26 @@
+{
+	"id": 184673761,
+	"number": 17556,
+	"state": "open",
+	"title": "x/tools/go/loader: fails to load packages that contain XTest files that use vendored imports",
+	"body": "### What version of Go are you using (`go version`)?\r\ngo version go1.7.1 darwin/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\n\r\n### What did you do?\r\n1. Create a directory that contains a `vendor` directory (`mkdir -p foo/vendor/test.com`)\r\n2. Create a vendored package (`echo 'package bar' \u003e foo/vendor/test.com/bar.go`)\r\n3. Create a Go test file in the directory that imports a vendored package (`echo 'package foo_test; import _ \"test.com/bar\"' \u003e foo/foo_test.go`\r\n4. Use `loadcfg.ImportWithTests(\"./foo\")` to specify the package should be imported\r\n5. Call `loadcfg.Load()` to load the packages\r\n\r\nFull Go test that reproduces the issue:\r\n\r\n```go\r\npackage main_test\r\n\r\nimport (\r\n\t\"io/ioutil\"\r\n\t\"os\"\r\n\t\"path\"\r\n\t\"testing\"\r\n\r\n\t\"golang.org/x/tools/go/loader\"\r\n)\r\n\r\nconst (\r\n\tbar = `package bar`\r\n\tfoo = `package foo; import _ \"test.com/bar\"`\r\n\tfoo_test = `package foo_test; import _ \"test.com/bar\"`\r\n)\r\n\r\nfunc TestRepro(t *testing.T) {\r\n\twd, _ := os.Getwd()\r\n\ttmpDir, _ := ioutil.TempDir(wd, \"\")\r\n\tdefer func() { os.RemoveAll(tmpDir) }()\r\n\r\n\tioutil.WriteFile(path.Join(tmpDir, \"foo.go\"), []byte(foo), 0644)\r\n\tbarDir := path.Join(tmpDir, \"vendor\", \"test.com\", \"bar\")\r\n\tos.MkdirAll(barDir, 0755)\r\n\tioutil.WriteFile(path.Join(barDir, \"bar.go\"), []byte(bar), 0644)\r\n\r\n\tloadcfg := loader.Config{}\r\n\tloadcfg.ImportWithTests(\"./\" + path.Base(tmpDir))\r\n\t// succeeds if non-test file imports vendored package\r\n\tif _, err := loadcfg.Load(); err != nil {\r\n\t\tt.Errorf(\"Error loading package without test\")\r\n\t}\r\n\r\n\t// add test file that imports the vendored directory\r\n\tioutil.WriteFile(path.Join(tmpDir, \"foo_test.go\"), []byte(foo_test), 0644)\r\n\r\n\tloadcfg = loader.Config{}\r\n\tloadcfg.ImportWithTests(\"./\" + path.Base(tmpDir))\r\n\t// fails -- only change was adding a test file that imports the same vendored package\r\n\tif _, err := loadcfg.Load(); err != nil {\r\n\t\tt.Errorf(\"Error loading package that contains test that imports vendored library\")\r\n\t}\r\n\r\n\tloadcfg = loader.Config{}\r\n\tloadcfg.Cwd = tmpDir\r\n\tloadcfg.ImportWithTests(\".\")\r\n\t// succeeds with test file if Cwd is set to the directory that is at the same level as the \"vendor\" directory\r\n\tif _, err := loadcfg.Load(); err != nil {\r\n\t\tt.Errorf(\"Error loading package after Cwd is set\")\r\n\t}\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nThe `loadcfg.Load()` call should succeed without errors\r\n\r\n### What did you see instead?\r\nThe `loadcfg.Load()` call returns the following error:\r\n\r\n```\r\n could not import test.com/bar (cannot find package \"test.com/bar\" in any of:\r\n        /usr/local/go/src/test.com/bar (from $GOROOT)\r\n        /Volumes/git/go/src/test.com/bar (from $GOPATH))\r\n```\r\n\r\n### Notes from investigation\r\n* This works correctly if the current working directory is at the same level as the \"vendor\" directory\r\n* The behavior appears to be correct for non-test files -- if step 3 in the repro steps is replaced with `echo 'package foo; import _ \"test.com/bar\"' \u003e foo/foo.go`, then this works\r\n* This behavior only exists for external test files (package name `*_test`) -- if step 3 in the repro steps is replaced with `echo 'package foo; import _ \"test.com/bar\"' \u003e foo/foo_test.go`, then this works\r\n\r\nSeems to be an issue with how the vendor directory is processed, but the behavior of XTest files should match the behavior of non-test and same-package test files (especially since the built-in Go commands like `go build` and `go test` handle this correctly).",
+	"user": {
+		"login": "nmiyake",
+		"id": 4267425,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 1,
+	"created_at": "2016-10-23T06:03:08Z",
+	"updated_at": "2016-10-24T16:06:48Z",
+	"milestone": {
+		"id": 1067491,
+		"number": 22,
+		"title": "Unreleased"
+	}
+}

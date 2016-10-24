@@ -1,0 +1,27 @@
+{
+	"id": 184771194,
+	"number": 17562,
+	"state": "closed",
+	"title": "cmd/cgo: compiler complains about `C.free(*C.char)` but is happy with `defer C.free(*C.char)`",
+	"body": "### What version of Go are you using (`go version`)?\r\ngo version go1.7.3 linux/amd64\r\n\r\n### What operating system and processor architecture are you using (`go env`)?\r\nGOARCH=\"amd64\"\r\nGOBIN=\"/home/fan/go/bin\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/fan/go\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/linux_amd64\"\r\nCC=\"gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build668013101=/tmp/go-build -gno-record-gcc-switches\"\r\nCXX=\"g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n### What did you do?\r\n```go\r\npackage main\r\n\r\n// #include \u003cstdlib.h\u003e\r\n// #include \u003cstring.h\u003e\r\n//\r\n// const char *s = \"hello\";\r\n//\r\n// char *cstring(int *len) {\r\n//     *len = strlen(s);\r\n//     char *buf = (char *)malloc(*len);\r\n//     return strncpy(buf, s, *len);\r\n// }\r\nimport \"C\"\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n\tfmt.Println(f())\r\n}\r\n\r\nfunc f() string {\r\n\tvar (\r\n\t\tbuf *C.char\r\n\t\tlen C.int\r\n\t)\r\n\r\n\tif buf = C.cstring(\u0026len); buf == nil {\r\n\t\treturn \"\"\r\n\t}\r\n\t// defer C.free(unsafe.Pointer(buf))\r\n\tdefer C.free(buf)\r\n\treturn C.GoStringN(buf, len)\r\n}\r\n\r\nfunc g() string {\r\n\tvar (\r\n\t\tbuf *C.char\r\n\t\tlen C.int\r\n\t)\r\n\r\n\tif buf = C.cstring(\u0026len); buf == nil {\r\n\t\treturn \"\"\r\n\t}\r\n\ts := C.GoStringN(buf, len)\r\n\r\n\t// C.free(unsafe.Pointer(buf))\r\n\tC.free(buf)\r\n\r\n\treturn s\r\n}\r\n```\r\n\r\n### What did you expect to see?\r\nConsistent behavior.\r\n\r\n### What did you see instead?\r\n- Compile error for `C.free(*C.char)`:\r\n```\r\n./test.go:46: cannot use buf (type *C.char) as type unsafe.Pointer in argument to _cgoCheckPointer0\r\n```\r\n- Runtime error for `defer C.free(*C.char)`:\r\n```\r\npanic: interface conversion: interface {} is *main._Ctype_char, not unsafe.Pointer\r\n```\r\n",
+	"user": {
+		"login": "fanyang01",
+		"id": 7264836,
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{
+			"name": "NeedsFix"
+		}
+	],
+	"comments": 2,
+	"closed_at": "2016-10-24T16:56:26Z",
+	"created_at": "2016-10-24T07:50:17Z",
+	"updated_at": "2016-10-24T16:56:27Z",
+	"milestone": {
+		"id": 1709363,
+		"number": 38,
+		"title": "Go1.8"
+	}
+}

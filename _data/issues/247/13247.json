@@ -2,7 +2,7 @@
 	"id": 116884806,
 	"number": 13247,
 	"state": "open",
-	"title": "cmd/go: cgo-using binaries do not build reproducibly",
+	"title": "cmd/go, cmd/cgo: repeatable builds on Solaris",
 	"body": "Binaries built with \"go build\" that use cgo or include packages that use cgo contain references to a temporary directory. Multiple builds for the same binary will produce inconsistent results.\r\n\r\nSimple reproduction:\r\n\r\n```go\r\n// foo.go\r\npackage main\r\n\r\n// #include \u003cmath.h\u003e\r\n// #cgo LDFLAGS: -lm\r\nimport \"C\"\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n        fmt.Println(C.sqrt(4))\r\n}\r\n```\r\n```\r\n$ go build foo.go \u0026\u0026 md5sum foo\r\nd4cc4febe540953e8115417476adc4a4  foo\r\n$ go build foo.go \u0026\u0026 md5sum foo\r\n28f5f670a48e6f72a2f31405d9fbf2cc  foo\r\n$ strings foo | grep go-build\r\n/tmp/go-build847878379/command-line-arguments/_obj/_cgo_export.c\r\n/tmp/go-build847878379/command-line-arguments/_obj/foo.cgo2.c\r\n/tmp/go-build988195549/runtime/cgo/_obj/_cgo_export.c\r\n/tmp/go-build988195549/runtime/cgo/_obj/cgo.cgo2.c\r\n```\r\n\r\nSome build systems require reproducible results: The same inputs should produce precisely the same outputs. The above behavior violates that requirement.\r\n\r\nThe problem appears to be that the gcc command invoked by \"go build\" includes the absolute path of the source file in $WORKDIR, which gcc then bakes into the resulting object file.\r\n\r\nOne fix might be to execute gcc from within $WORKDIR. There is, however, a comment in cmd/go/build.go indicating that the current behavior is intentional: \"We always pass absolute paths of source files so that the error messages will include the full path to a file in need of attention.\"\r\n\r\nAnother possibility might be to use -fdebug-prefix-map to elide $WORKDIR from the debugging information written by gcc. I don't know if this can be generalized to other compilers.",
 	"user": {
 		"login": "neild",
@@ -17,10 +17,10 @@
 	],
 	"comments": 19,
 	"created_at": "2015-11-14T01:21:44Z",
-	"updated_at": "2016-10-06T18:35:55Z",
+	"updated_at": "2016-10-21T14:32:30Z",
 	"milestone": {
-		"id": 1709363,
-		"number": 38,
-		"title": "Go1.8"
+		"id": 2053058,
+		"number": 49,
+		"title": "Go1.9"
 	}
 }

@@ -2,7 +2,7 @@
 	"id": 140575824,
 	"number": 14811,
 	"state": "open",
-	"title": "cmd/go: go test -cover failed to import, without -cover is okay",
+	"title": "cmd/go: go test -cover fails when xtest imports main which imports package being tested",
 	"body": "I'm using\r\n\r\n```\r\n go version\r\ngo version go1.6 darwin/amd64\r\n```\r\nGo env\r\n\r\n```\r\n$ go env\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"darwin\"\r\nGOOS=\"darwin\"\r\nGOPATH=\"/Users/hvn/Github/gomeo\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/local/go\"\r\nGOTOOLDIR=\"/usr/local/go/pkg/tool/darwin_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"clang\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -fno-common\"\r\nCXX=\"clang++\"\r\nCGO_ENABLED=\"1\"\r\n```\r\n\r\nwhen I run go test with coverage (-cover), it failed to import the package that it was okay when I ran test\r\nwithout -cover. I added debug log to compile and rebuild go, I got those log:\r\n```\r\ncompile: LOG: handling import: git.example.com/repo/t-p\r\ncompile: LOG: alldir: $WORK\r\ncompile: LOG: alldir: /Users/hvn/Github/gomeo/pkg/darwin_amd64\r\ncompile: LOG: checking file $WORK/git.example.com/repo/t-p.a\r\ncompile: LOG: checking file /Users/hvn/Github/gomeo/pkg/darwin_amd64/git.example.com/repo/t-p.a\r\n./kickkick.go:7: can't find import: \"git.example.com/repo/t-p\"\r\n```\r\n\r\nAFAIU, it should import from /Users/hvn/Github/gomeo/pkg/darwin_amd64/git.example.com/repo/_test/git.example.com/repo/t-p.a, no? \r\n\r\nhttps://github.com/golang/go/blob/release-branch.go1.6/src/cmd/go/test.go#L697\r\n\r\n```\r\n    // That is, if the package under test is unicode/utf8,\r\n    // then the normal place to write the package archive is\r\n    // $WORK/unicode/utf8.a, but we write the test package archive to\r\n    // $WORK/unicode/utf8/_test/unicode/utf8.a.\r\n    // We write the external test package archive to\r\n    // $WORK/unicode/utf8/_test/unicode/utf8_test.a.\r\n```\r\n\r\nI removed this line, rebuilt go and it worked https://github.com/golang/go/blob/release-branch.go1.6/src/cmd/go/test.go#L850",
 	"user": {
 		"login": "hvnsweeting",
@@ -12,12 +12,12 @@
 	},
 	"labels": [
 		{
-			"name": "NeedsInvestigation"
+			"name": "NeedsDecision"
 		}
 	],
-	"comments": 14,
+	"comments": 17,
 	"created_at": "2016-03-14T05:01:01Z",
-	"updated_at": "2016-08-16T17:52:25Z",
+	"updated_at": "2016-10-21T17:10:50Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,

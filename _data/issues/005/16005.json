@@ -1,8 +1,8 @@
 {
 	"id": 159164321,
 	"number": 16005,
-	"state": "open",
-	"title": "net/http: unexpected interaction between ExpectContinueTimeout and connection pooling",
+	"state": "closed",
+	"title": "net/http: *http.Transport is never collected",
 	"body": "Please answer these questions before submitting your issue. Thanks!\r\n\r\n1. What version of Go are you using (`go version`)?\r\n\r\ngo version go1.6.2 linux/amd64\r\n\r\n2. What operating system and processor architecture are you using (`go env`)?\r\n\r\nGOARCH=\"amd64\"\r\nGOBIN=\"\"\r\nGOEXE=\"\"\r\nGOHOSTARCH=\"amd64\"\r\nGOHOSTOS=\"linux\"\r\nGOOS=\"linux\"\r\nGOPATH=\"/home/powerman/gocode\"\r\nGORACE=\"\"\r\nGOROOT=\"/usr/lib/go\"\r\nGOTOOLDIR=\"/usr/lib/go/pkg/tool/linux_amd64\"\r\nGO15VENDOREXPERIMENT=\"1\"\r\nCC=\"x86_64-pc-linux-gnu-gcc\"\r\nGOGCCFLAGS=\"-fPIC -m64 -pthread -fmessage-length=0\"\r\nCXX=\"x86_64-pc-linux-gnu-g++\"\r\nCGO_ENABLED=\"1\"\r\n\r\n\r\n3. What did you do?\r\n\r\n```go\r\npackage main\r\n\r\nimport (\r\n\t\"fmt\"\r\n\t\"io\"\r\n\t\"io/ioutil\"\r\n\t\"net/http\"\r\n\t\"runtime\"\r\n\t\"time\"\r\n)\r\n\r\nfunc main() {\r\n\tfor {\r\n\t\tc := \u0026http.Client{\r\n\t\t\tTransport: \u0026http.Transport{\r\n\t\t\t\tExpectContinueTimeout: 1 * time.Second, // A\r\n\t\t\t},\r\n\t\t}\r\n\t\tresp, err := c.Get(\"http://google.com\")\r\n\t\tif resp != nil {\r\n\t\t\tio.Copy(ioutil.Discard, resp.Body) // B\r\n\t\t\tresp.Body.Close()                  // B\r\n\t\t}\r\n\t\tfmt.Printf(\"resp=%t, err=%v\\n\", resp != nil, err)\r\n\t\ttime.Sleep(time.Second)\r\n\t\tc.Transport.(*http.Transport).CloseIdleConnections() // C\r\n\t\truntime.SetFinalizer(c, func(interface{}) { fmt.Println(\"--- http.Client GONE\") })\r\n\t\truntime.SetFinalizer(c.Transport, func(interface{}) { fmt.Println(\"--- http.Transport GONE\") })\r\n\t\truntime.GC()\r\n\t}\r\n}\r\n```\r\n\r\n4. What did you expect to see?\r\n\r\n```\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\n--- http.Transport GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\n--- http.Transport GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\n--- http.Transport GONE\r\nresp=true, err=\u003cnil\u003e\r\n^Csignal: interrupt\r\n```\r\n\r\n5. What did you see instead?\r\n\r\nProvided program works correctly and gives output shown above. But if we'll comment any of lines marked `// A` or `// B` or `// C` then http.Transport won't be garbage-collected anymore and output became:\r\n```\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\nresp=true, err=\u003cnil\u003e\r\n--- http.Client GONE\r\nresp=true, err=\u003cnil\u003e\r\n^Csignal: interrupt\r\n```\r\n\r\nI know it's recommended to share same http.Client for all application, but I'm developing load-testing application which simulate thousands of independent clients and thus require own simulated client to use own http.Client and own http.Transport objects to behave more like real independent clients.",
 	"user": {
 		"login": "powerman",
@@ -21,12 +21,39 @@
 		"type": "User",
 		"site_admin": false
 	},
-	"comments": 7,
+	"comments": 17,
+	"closed_at": "2016-10-23T16:29:05Z",
 	"created_at": "2016-06-08T13:32:15Z",
-	"updated_at": "2016-10-07T20:02:58Z",
+	"updated_at": "2016-10-23T17:23:43Z",
 	"milestone": {
 		"id": 1709363,
 		"number": 38,
 		"title": "Go1.8"
-	}
+	},
+	"assignees": [
+		{
+			"login": "bradfitz",
+			"id": 2621,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "aclements",
+			"id": 2688315,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "randall77",
+			"id": 6889504,
+			"type": "User",
+			"site_admin": false
+		},
+		{
+			"login": "matloob",
+			"id": 16470053,
+			"type": "User",
+			"site_admin": false
+		}
+	]
 }
