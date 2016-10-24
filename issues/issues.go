@@ -8,6 +8,7 @@ package issues
 
 import (
 	"go/build"
+	"path/filepath"
 
 	"github.com/bradfitz/issuemirror"
 )
@@ -19,7 +20,7 @@ func Open() (issuemirror.Root, error) {
 	if err != nil {
 		return "", err
 	}
-	return issuemirror.Root(root), nil
+	return issuemirror.Root(filepath.Join(root, "_data")), nil
 }
 
 // importPathToDir resolves the absolute path from importPath.
