@@ -1,3 +1,4 @@
+// servegoissues is a program that serves Go issues over HTTP, so they can be viewed in a browser.
 package main
 
 import (
