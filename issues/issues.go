@@ -8,19 +8,18 @@ package issues
 
 import (
 	"go/build"
-	"path/filepath"
 
 	"github.com/bradfitz/issuemirror"
 )
 
 // Open returns the root of the Go issue mirror cache,
-// looking under $GOPATH/src/github.com/bradfitz/go-issue-mirror.
+// looking under $GOPATH/src/github.com/bradfitz/go-issue-mirror/_data.
 func Open() (issuemirror.Root, error) {
-	root, err := importPathToDir("github.com/bradfitz/go-issue-mirror")
+	root, err := importPathToDir("github.com/bradfitz/go-issue-mirror/_data")
 	if err != nil {
 		return "", err
 	}
-	return issuemirror.Root(filepath.Join(root, "_data")), nil
+	return issuemirror.Root(root), nil
 }
 
 // importPathToDir resolves the absolute path from importPath.
