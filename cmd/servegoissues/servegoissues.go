@@ -214,7 +214,9 @@ func (s issuesService) Get(ctx context.Context, repo issues.RepoSpec, id uint64)
 }
 
 // ListComments lists comments for specified issue id.
-func (s issuesService) ListComments(ctx context.Context, repo issues.RepoSpec, id uint64, opt interface{}) ([]issues.Comment, error) {
+func (s issuesService) ListComments(ctx context.Context, repo issues.RepoSpec, id uint64, opt *issues.ListOptions) ([]issues.Comment, error) {
+	// TODO: Pagination. Respect opt.Start and opt.Length, if given.
+
 	var comments []issues.Comment
 
 	issue, err := s.root.Issue(int(id))
@@ -250,7 +252,7 @@ func (s issuesService) ListComments(ctx context.Context, repo issues.RepoSpec, i
 }
 
 // ListEvents lists events for specified issue id.
-func (issuesService) ListEvents(ctx context.Context, repo issues.RepoSpec, id uint64, opt interface{}) ([]issues.Event, error) {
+func (issuesService) ListEvents(ctx context.Context, repo issues.RepoSpec, id uint64, opt *issues.ListOptions) ([]issues.Event, error) {
 	// For now, no events.
 	// Not sure if issuemirror exposes them. They're pretty optional, so look into this later.
 	return nil, nil
