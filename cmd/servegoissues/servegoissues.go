@@ -17,7 +17,6 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/shurcooL/issues"
 	"github.com/shurcooL/issuesapp"
-	"github.com/shurcooL/issuesapp/common"
 	"github.com/shurcooL/users"
 )
 
@@ -39,18 +38,6 @@ func main() {
 		},
 		BaseURI: func(req *http.Request) string {
 			return "."
-		},
-		BaseState: func(req *http.Request) issuesapp.BaseState {
-			reqPath := req.URL.Path
-			if reqPath == "/" {
-				reqPath = ""
-			}
-			return issuesapp.BaseState{
-				State: common.State{
-					BaseURI: ".",
-					ReqPath: reqPath,
-				},
-			}
 		},
 		HeadPre: `<style type="text/css">
 	body {
