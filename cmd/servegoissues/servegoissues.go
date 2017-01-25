@@ -17,7 +17,6 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/shurcooL/issues"
 	"github.com/shurcooL/issuesapp"
-	"github.com/shurcooL/issuesapp/common"
 	"github.com/shurcooL/users"
 )
 
@@ -34,24 +33,6 @@ func main() {
 	// We provide a simple read-only implementation of issues.Service on top of root,
 	// and a nil users service since this runs locally and doesn't need user authentication.
 	issuesApp := issuesapp.New(issuesService{root: root}, nil, issuesapp.Options{
-		RepoSpec: func(req *http.Request) issues.RepoSpec {
-			return issues.RepoSpec{URI: "github.com/golang/go"}
-		},
-		BaseURI: func(req *http.Request) string {
-			return "."
-		},
-		BaseState: func(req *http.Request) issuesapp.BaseState {
-			reqPath := req.URL.Path
-			if reqPath == "/" {
-				reqPath = ""
-			}
-			return issuesapp.BaseState{
-				State: common.State{
-					BaseURI: ".",
-					ReqPath: reqPath,
-				},
-			}
-		},
 		HeadPre: `<style type="text/css">
 	body {
 		margin: 20px;
@@ -84,7 +65,11 @@ func main() {
 </div>{{end}}`,
 	})
 
-	http.Handle("/", issuesApp)
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		req = req.WithContext(context.WithValue(req.Context(), issuesapp.RepoSpecContextKey, issues.RepoSpec{URI: "github.com/golang/go"}))
+		req = req.WithContext(context.WithValue(req.Context(), issuesapp.BaseURIContextKey, "."))
+		issuesApp.ServeHTTP(w, req)
+	})
 	http.HandleFunc("/login/github", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintln(w, "Sorry, this is a read-only instance and it doesn't support signing in.")
