@@ -33,12 +33,6 @@ func main() {
 	// We provide a simple read-only implementation of issues.Service on top of root,
 	// and a nil users service since this runs locally and doesn't need user authentication.
 	issuesApp := issuesapp.New(issuesService{root: root}, nil, issuesapp.Options{
-		RepoSpec: func(req *http.Request) issues.RepoSpec {
-			return issues.RepoSpec{URI: "github.com/golang/go"}
-		},
-		BaseURI: func(req *http.Request) string {
-			return "."
-		},
 		HeadPre: `<style type="text/css">
 	body {
 		margin: 20px;
@@ -71,7 +65,11 @@ func main() {
 </div>{{end}}`,
 	})
 
-	http.Handle("/", issuesApp)
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		req = req.WithContext(context.WithValue(req.Context(), issuesapp.RepoSpecContextKey, issues.RepoSpec{URI: "github.com/golang/go"}))
+		req = req.WithContext(context.WithValue(req.Context(), issuesapp.BaseURIContextKey, "."))
+		issuesApp.ServeHTTP(w, req)
+	})
 	http.HandleFunc("/login/github", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintln(w, "Sorry, this is a read-only instance and it doesn't support signing in.")
