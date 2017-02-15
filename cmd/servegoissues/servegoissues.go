@@ -229,11 +229,7 @@ func (s issuesService) ListComments(ctx context.Context, repo issues.RepoSpec, i
 
 		return nil
 	})
-	if err != nil {
-		return comments, err
-	}
-
-	return comments, nil
+	return comments, err
 }
 
 // ListEvents lists events for specified issue id.
@@ -263,7 +259,7 @@ func (issuesService) EditComment(ctx context.Context, repo issues.RepoSpec, id u
 	return issues.Comment{}, fmt.Errorf("EditComment: not implemented")
 }
 
-// ghColor converts a GitHub user into a users.User.
+// ghUser converts a GitHub user into a users.User.
 func ghUser(user *github.User) users.User {
 	return users.User{
 		UserSpec: users.UserSpec{
