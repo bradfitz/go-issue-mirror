@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"sort"
@@ -267,8 +266,8 @@ func ghUser(user *github.User) users.User {
 			Domain: "github.com",
 		},
 		Login:     *user.Login,
-		AvatarURL: template.URL(fmt.Sprintf("https://avatars.githubusercontent.com/u/%v?v=3", *user.ID)),
-		HTMLURL:   template.URL(fmt.Sprintf("https://github.com/%v", *user.Login)),
+		AvatarURL: fmt.Sprintf("https://avatars.githubusercontent.com/u/%v?v=3", *user.ID),
+		HTMLURL:   fmt.Sprintf("https://github.com/%v", *user.Login),
 	}
 }
 
