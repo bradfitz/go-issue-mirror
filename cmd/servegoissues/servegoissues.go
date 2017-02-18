@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"sort"
@@ -229,11 +228,7 @@ func (s issuesService) ListComments(ctx context.Context, repo issues.RepoSpec, i
 
 		return nil
 	})
-	if err != nil {
-		return comments, err
-	}
-
-	return comments, nil
+	return comments, err
 }
 
 // ListEvents lists events for specified issue id.
@@ -263,7 +258,7 @@ func (issuesService) EditComment(ctx context.Context, repo issues.RepoSpec, id u
 	return issues.Comment{}, fmt.Errorf("EditComment: not implemented")
 }
 
-// ghColor converts a GitHub user into a users.User.
+// ghUser converts a GitHub user into a users.User.
 func ghUser(user *github.User) users.User {
 	return users.User{
 		UserSpec: users.UserSpec{
@@ -271,8 +266,8 @@ func ghUser(user *github.User) users.User {
 			Domain: "github.com",
 		},
 		Login:     *user.Login,
-		AvatarURL: template.URL(fmt.Sprintf("https://avatars.githubusercontent.com/u/%v?v=3", *user.ID)),
-		HTMLURL:   template.URL(fmt.Sprintf("https://github.com/%v", *user.Login)),
+		AvatarURL: fmt.Sprintf("https://avatars.githubusercontent.com/u/%v?v=3", *user.ID),
+		HTMLURL:   fmt.Sprintf("https://github.com/%v", *user.Login),
 	}
 }
 
