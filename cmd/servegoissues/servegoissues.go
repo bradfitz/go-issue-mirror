@@ -3,6 +3,9 @@
 // license that can be found in the LICENSE file.
 
 // servegoissues is a program that serves Go issues over HTTP, so they can be viewed in a browser.
+//
+// Deprecated: Use golang.org/x/build/maintner/cmd/maintserve instead. maintserve is a more
+// modern, featureful, and supported tool which completely supercedes servegoissues.
 package main
 
 import (
